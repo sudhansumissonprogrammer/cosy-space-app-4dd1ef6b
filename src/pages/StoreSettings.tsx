@@ -177,15 +177,31 @@ export default function StoreSettings() {
               />
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State / Region</Label>
+                <Input id="state" placeholder="Maharashtra" value={stateName} onChange={(e) => setStateName(e.target.value)} maxLength={100} />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="location">Location / Address</Label>
-              <Input
-                id="location"
-                placeholder="123 Main St, City"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                maxLength={500}
-              />
+              <Label htmlFor="location">Full Address</Label>
+              <Input id="location" placeholder="123 Main St, City" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={500} />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="instagram">Instagram URL</Label>
+                <Input id="instagram" placeholder="https://instagram.com/store" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} maxLength={200} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="facebook">Facebook URL</Label>
+                <Input id="facebook" placeholder="https://facebook.com/store" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} maxLength={200} />
+              </div>
             </div>
 
             <div className="space-y-2">
