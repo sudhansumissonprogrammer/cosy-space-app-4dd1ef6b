@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, MessageCircle, Package, Loader2, ChevronLeft, ChevronRight, Tag, ShoppingBag } from "lucide-react";
+import { ArrowLeft, MessageCircle, Package, Loader2, ChevronLeft, ChevronRight, Tag, ShoppingBag, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
+import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function ProductDetail() {
@@ -199,6 +200,13 @@ export default function ProductDetail() {
               variants={variants || []}
             />
           ) : null}
+
+          <AddToCartButton
+            product={product}
+            hasDiscount={!!hasDiscount}
+            currency={currency}
+            variants={variants || []}
+          />
         </div>
       </div>
     </div>
@@ -540,6 +548,45 @@ function BuyNowButton({
       <Button size="lg" className="w-full sm:w-auto" onClick={handleBuyNow}>
         <ShoppingBag className="mr-2 h-5 w-5" />
         Buy Now — {currency} {Number(variantPrice).toFixed(2)}
+      </Button>
+    </div>
+  );
+}
+
+function AddToCartButton({
+  product,
+  hasDiscount,
+  currency,
+  variants,
+}: {
+  product: { id: string; name: string; price: number; sale_price: number | null; image_url: string | null };
+  hasDiscount: boolean;
+  currency: string;
+  variants: Variant[];
+}) {
+  const { addToCart } = useCart();
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+
+  const basePrice = hasDiscount ? product.sale_price! : product.price;
+  const variantPrice = selectedVariant?.price ?? basePrice;
+
+  const handleAdd = () => {
+    addToCart({
+      productId: product.id,
+      variantId: selectedVariant?.id,
+      name: product.name,
+      variantName: selectedVariant?.name,
+      price: variantPrice,
+      image: product.image_url || undefined,
+    });
+    toast.success(`${product.name} added to cart`);
+  };
+
+  return (
+    <div className="mt-2">
+      <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={handleAdd}>
+        <ShoppingCart className="mr-2 h-5 w-5" />
+        Add to Cart
       </Button>
     </div>
   );

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function CheckoutPage() {
@@ -17,6 +18,7 @@ export default function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const productId = searchParams.get("product");
   const variantId = searchParams.get("variant");
+  const { items: cartItems, clearCart } = useCart();
 
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -29,7 +31,9 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
-  const [quantity, setQuantity] = useState(1);
+
+  // Single product mode (legacy URL params)
+  const isSingleMode = !!productId;
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["checkout-product", productId],
@@ -61,7 +65,28 @@ export default function CheckoutPage() {
     enabled: !!variantId,
   });
 
-  if (isLoading) {
+  const currency = store.currency || "USD";
+
+  // Determine checkout items
+  const checkoutItems = isSingleMode && product
+    ? [{
+        productId: product.id,
+        name: variant ? `${product.name} (${variant.name})` : product.name,
+        price: variant?.price ?? (product.sale_price && product.sale_price < product.price ? product.sale_price : product.price),
+        quantity: 1,
+        image: product.image_url,
+      }]
+    : cartItems.map((i) => ({
+        productId: i.productId,
+        name: i.variantName ? `${i.name} (${i.variantName})` : i.name,
+        price: i.price,
+        quantity: i.quantity,
+        image: i.image || null,
+      }));
+
+  const total = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+  if (isLoading && isSingleMode) {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -69,7 +94,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (!product) {
+  if (isSingleMode && !product) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
@@ -81,12 +106,17 @@ export default function CheckoutPage() {
     );
   }
 
-  const hasDiscount = product.sale_price && product.sale_price < product.price;
-  const basePrice = hasDiscount ? product.sale_price! : product.price;
-  const unitPrice = variant?.price ?? basePrice;
-  const total = unitPrice * quantity;
-  const currency = product.currency || "USD";
-  const productName = variant ? `${product.name} (${variant.name})` : product.name;
+  if (!isSingleMode && checkoutItems.length === 0) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+        <h1 className="text-xl font-semibold text-foreground">Your cart is empty</h1>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to={`/store/${store.slug}`}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
+        </Button>
+      </div>
+    );
+  }
 
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
@@ -118,25 +148,31 @@ export default function CheckoutPage() {
         .single();
       if (orderErr) throw orderErr;
 
-      // 2. Create order item
-      await (supabase as any).from("order_items").insert({
+      // 2. Create order items
+      const orderItemsData = checkoutItems.map((item) => ({
         order_id: order.id,
-        product_id: product.id,
-        product_name: productName,
-        quantity,
-        unit_price: unitPrice,
-        total,
-      });
+        product_id: item.productId,
+        product_name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total: item.price * item.quantity,
+      }));
+      await (supabase as any).from("order_items").insert(orderItemsData);
 
       // 3. Save customer lead
       await (supabase as any).from("customer_leads").insert({
         store_id: store.id,
         name: fullName.trim(),
         phone: phone.trim(),
-        product_name: productName,
-        product_id: product.id,
+        product_name: checkoutItems.map((i) => i.name).join(", "),
+        product_id: checkoutItems.length === 1 ? checkoutItems[0].productId : null,
         source: "website_order",
       });
+
+      // Clear cart if using cart mode
+      if (!isSingleMode) {
+        clearCart();
+      }
 
       setOrderId(order.id);
       setOrderPlaced(true);
@@ -173,11 +209,11 @@ export default function CheckoutPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <Link
-          to={`/store/${store.slug}`}
+          to={isSingleMode ? `/store/${store.slug}` : `/store/${store.slug}/cart`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="h-3 w-3" />
-          Back to {store.name}
+          {isSingleMode ? `Back to ${store.name}` : "Back to Cart"}
         </Link>
       </div>
 
@@ -186,7 +222,6 @@ export default function CheckoutPage() {
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Form - 3 cols */}
         <div className="space-y-6 lg:col-span-3">
-          {/* Shipping */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -225,7 +260,6 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Payment */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -253,36 +287,28 @@ export default function CheckoutPage() {
               <CardTitle className="text-base">Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-3">
-                {product.image_url ? (
-                  <img src={product.image_url} alt={product.name} className="h-16 w-16 rounded-lg border object-cover" />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
-                    <Package className="h-6 w-6 text-muted-foreground" />
+              {checkoutItems.map((item, idx) => (
+                <div key={idx} className="flex gap-3">
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} className="h-14 w-14 rounded-lg border object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-accent flex-shrink-0">
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                    <p className="text-sm font-semibold text-foreground">{currency} {(item.price * item.quantity).toFixed(2)}</p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{product.name}</p>
-                  {variant && <p className="text-xs text-muted-foreground">{variant.name}</p>}
-                  <p className="text-sm font-semibold text-foreground mt-1">{currency} {Number(unitPrice).toFixed(2)}</p>
                 </div>
-              </div>
-
-              {/* Quantity */}
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Quantity</Label>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>-</Button>
-                  <span className="w-8 text-center text-sm font-medium">{quantity}</span>
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setQuantity(quantity + 1)}>+</Button>
-                </div>
-              </div>
+              ))}
 
               <Separator />
 
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Subtotal</span>
-                <span className="text-sm font-medium">{currency} {Number(total).toFixed(2)}</span>
+                <span className="text-sm font-medium">{currency} {total.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Shipping</span>
@@ -297,7 +323,7 @@ export default function CheckoutPage() {
 
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-foreground">Total</span>
-                <span className="text-lg font-bold text-foreground">{currency} {Number(total).toFixed(2)}</span>
+                <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
               </div>
 
               <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
