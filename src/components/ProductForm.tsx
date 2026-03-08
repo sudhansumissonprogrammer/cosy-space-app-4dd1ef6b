@@ -95,13 +95,34 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showNewCategory, setShowNewCategory] = useState(false);
+  const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
+  const [categoryImagePreview, setCategoryImagePreview] = useState<string | null>(null);
+
+  const handleCategoryImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) { toast.error("Image must be under 5MB"); return; }
+    setCategoryImageFile(file);
+    setCategoryImagePreview(URL.createObjectURL(file));
+  };
 
   const createCategory = useMutation({
     mutationFn: async (catName: string) => {
       const slug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      let image_url: string | null = null;
+
+      if (categoryImageFile) {
+        const ext = categoryImageFile.name.split(".").pop();
+        const path = `${storeId}/${slug}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("product-images").upload(path, categoryImageFile);
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+        image_url = urlData.publicUrl;
+      }
+
       const { data, error } = await (supabase as any)
         .from("categories")
-        .insert({ store_id: storeId!, name: catName.trim(), slug })
+        .insert({ store_id: storeId!, name: catName.trim(), slug, image_url })
         .select()
         .single();
       if (error) throw error;
@@ -111,6 +132,8 @@ export default function ProductForm({ productId }: ProductFormProps) {
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       setCategory(data.name);
       setNewCategoryName("");
+      setCategoryImageFile(null);
+      setCategoryImagePreview(null);
       setShowNewCategory(false);
       toast.success("Category created");
     },
