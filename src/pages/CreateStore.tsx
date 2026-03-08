@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,25 @@ export default function CreateStore() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
+  const [checkingStore, setCheckingStore] = useState(true);
+
+  // Check if user already has a store
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("stores")
+      .select("id")
+      .eq("owner_id", user.id)
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          toast.error("You already have a store. Only one store per account is allowed.");
+          navigate("/dashboard/stores");
+        } else {
+          setCheckingStore(false);
+        }
+      });
+  }, [user, navigate]);
 
   // Step 1 - Store Info
   const [name, setName] = useState("");
@@ -178,6 +197,14 @@ export default function CreateStore() {
     direction === "forward"
       ? "animate-fade-in"
       : "animate-fade-in";
+
+  if (checkingStore) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 pb-8">

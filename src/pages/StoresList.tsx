@@ -28,15 +28,17 @@ export default function StoresList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">My Stores</h1>
-          <p className="text-sm text-muted-foreground">Manage your storefronts</p>
+          <h1 className="text-2xl font-semibold text-foreground">My Store</h1>
+          <p className="text-sm text-muted-foreground">Manage your storefront</p>
         </div>
-        <Button asChild>
-          <Link to="/dashboard/stores/create">
-            <Plus className="mr-2 h-4 w-4" />
-            New Store
-          </Link>
-        </Button>
+        {(!stores || stores.length === 0) && !isLoading && (
+          <Button asChild>
+            <Link to="/dashboard/stores/create">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Store
+            </Link>
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
