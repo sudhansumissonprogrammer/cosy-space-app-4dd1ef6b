@@ -77,29 +77,17 @@ export default function StorefrontLayout() {
       {/* Sticky Nav */}
       <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-          {store.logo_url ? (
-            <img src={store.logo_url} alt="" className="h-8 w-8 rounded-lg object-cover" />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Store className="h-4 w-4 text-primary-foreground" />
-            </div>
-          )}
-          <Link to={`/store/${store.slug}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
-            {store.name}
+          <Link to={`/store/${store.slug}`}>
+            {store.logo_url ? (
+              <img src={store.logo_url} alt={store.name} className="h-10 w-10 rounded-lg object-cover sm:h-12 sm:w-12" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary sm:h-12 sm:w-12">
+                <Store className="h-5 w-5 text-primary-foreground sm:h-6 sm:w-6" />
+              </div>
+            )}
           </Link>
           <div className="flex-1" />
-          <ShareStoreDialog storeSlug={store.slug} storeName={store.name} />
-          {store.whatsapp_number && (
-            <Button size="sm" asChild>
-              <a
-                href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                WhatsApp
-              </a>
-            </Button>
-          )}
+          <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
         </div>
       </nav>
 
