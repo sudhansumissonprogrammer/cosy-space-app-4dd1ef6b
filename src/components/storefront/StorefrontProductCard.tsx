@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
-import { Heart, Package, ShoppingCart } from "lucide-react";
+import { Package, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface StorefrontProductCardProps {
@@ -9,20 +11,25 @@ interface StorefrontProductCardProps {
 }
 
 export default function StorefrontProductCard({ product, slug }: StorefrontProductCardProps) {
-  const whatsappOrder = () => {
-    // Prevent navigation when clicking Add to Cart
+  const { addToCart } = useCart();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const price = product.sale_price && product.sale_price < product.price
+      ? Number(product.sale_price)
+      : Number(product.price);
+    addToCart({
+      productId: product.id,
+      name: product.name,
+      price,
+      image: product.image_url || undefined,
+    });
+    toast.success(`${product.name} added to cart`);
   };
 
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-lg">
-      {/* Wishlist Heart */}
-      <button
-        className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm shadow-sm transition-colors hover:bg-card"
-        onClick={(e) => e.preventDefault()}
-      >
-        <Heart className="h-4 w-4 text-muted-foreground transition-colors hover:text-destructive" />
-      </button>
-
       {/* Sale Badge */}
       {product.sale_price && (
         <div className="absolute left-2 top-2 z-10">
@@ -80,15 +87,14 @@ export default function StorefrontProductCard({ product, slug }: StorefrontProdu
         </div>
 
         {/* Add to Cart Button */}
-        <Link to={`/store/${slug}/product/${product.slug || product.id}`}>
-          <Button
-            size="sm"
-            className="mt-3 w-full gap-2 rounded-sm text-xs font-bold uppercase tracking-wide"
-          >
-            <ShoppingCart className="h-3.5 w-3.5" />
-            Add to Cart
-          </Button>
-        </Link>
+        <Button
+          size="sm"
+          className="mt-3 w-full gap-2 rounded-sm text-xs font-bold uppercase tracking-wide"
+          onClick={handleAddToCart}
+        >
+          <ShoppingCart className="h-3.5 w-3.5" />
+          Add to Cart
+        </Button>
       </div>
     </div>
   );
