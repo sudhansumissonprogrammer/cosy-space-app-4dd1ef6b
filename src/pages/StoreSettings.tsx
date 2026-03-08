@@ -49,6 +49,10 @@ export default function StoreSettings() {
       setName(store.name);
       setDescription(store.description || "");
       setWhatsappNumber(store.whatsapp_number || "");
+      setLocation((store as any).location || "");
+      if ((store as any).business_hours) {
+        setBusinessHours({ mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "", ...(store as any).business_hours });
+      }
       if (store.logo_url) setLogoPreview(store.logo_url);
       if (store.banner_url) setBannerPreview(store.banner_url);
     }
