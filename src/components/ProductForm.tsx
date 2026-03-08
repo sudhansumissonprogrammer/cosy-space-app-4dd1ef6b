@@ -140,6 +140,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const deleteCategory = useMutation({
+    mutationFn: async (catId: string) => {
+      const { error } = await (supabase as any)
+        .from("categories")
+        .delete()
+        .eq("id", catId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+      toast.success("Category deleted");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   // Load existing product
   const { data: existingProduct } = useQuery({
     queryKey: ["product", productId],
