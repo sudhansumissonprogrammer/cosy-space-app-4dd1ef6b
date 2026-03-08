@@ -198,6 +198,14 @@ export default function CreateStore() {
       ? "animate-fade-in"
       : "animate-fade-in";
 
+  if (checkingStore) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-8 pb-8">
       {/* Header */}
