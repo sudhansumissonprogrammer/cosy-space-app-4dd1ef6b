@@ -50,7 +50,7 @@ export default function CreateStore() {
   const [checkingStore, setCheckingStore] = useState(true);
 
   // Check if user already has a store
-  useState(() => {
+  useEffect(() => {
     if (!user) return;
     supabase
       .from("stores")
@@ -65,7 +65,7 @@ export default function CreateStore() {
           setCheckingStore(false);
         }
       });
-  });
+  }, [user, navigate]);
 
   // Step 1 - Store Info
   const [name, setName] = useState("");
