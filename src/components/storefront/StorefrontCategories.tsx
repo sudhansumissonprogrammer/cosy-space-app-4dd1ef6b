@@ -17,14 +17,14 @@ export default function StorefrontCategories({ categories, activeCategory, onCat
   if (!categories || categories.length === 0) return null;
 
   return (
-    <div className="border-b bg-card">
+    <div className="bg-card">
       <div className="mx-auto max-w-6xl px-4 py-4">
-        <div className="flex gap-5 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => onCategoryChange(activeCategory === cat.name ? null : cat.name)}
-              className="flex flex-col items-center gap-2 flex-shrink-0 transition-all"
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
             >
               <div
                 className={`h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 ${
@@ -41,18 +41,14 @@ export default function StorefrontCategories({ categories, activeCategory, onCat
                   </div>
                 )}
               </div>
-              <span
-                className={`text-xs font-semibold uppercase tracking-wide max-w-[72px] truncate sm:max-w-[80px] ${
-                  activeCategory === cat.name ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
+              <span className="text-[10px] font-bold uppercase tracking-wide text-foreground text-center leading-tight">
                 {cat.name}
               </span>
             </button>
           ))}
           <button
             onClick={() => onCategoryChange(null)}
-            className="flex flex-col items-center gap-2 flex-shrink-0 transition-all"
+            className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
           >
             <div
               className={`flex h-16 w-16 items-center justify-center rounded-full border-2 transition-all sm:h-20 sm:w-20 ${
@@ -63,11 +59,7 @@ export default function StorefrontCategories({ categories, activeCategory, onCat
             >
               <Tag className="h-5 w-5 text-foreground sm:h-6 sm:w-6" />
             </div>
-            <span
-              className={`text-xs font-semibold uppercase tracking-wide max-w-[72px] truncate sm:max-w-[80px] ${
-                activeCategory === null ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
+            <span className="text-[10px] font-bold uppercase tracking-wide text-foreground text-center leading-tight">
               All
             </span>
           </button>
