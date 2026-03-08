@@ -75,6 +75,12 @@ export default function StoresList() {
                       View
                     </Link>
                   </Button>
+                  <Button variant="outline" size="sm" asChild className="flex-1">
+                    <Link to={`/dashboard/stores/${store.id}/products`}>
+                      <Package className="mr-1 h-3 w-3" />
+                      Products
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
