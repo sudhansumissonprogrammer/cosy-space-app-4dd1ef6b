@@ -57,15 +57,9 @@ export default function StorefrontHome() {
 
   return (
     <>
-      <StorefrontCategories
-        categories={storeCategories}
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
-      />
-
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* Search */}
-        <div className="mb-6">
+      {/* Search under header */}
+      <div className="border-b bg-card px-4 py-3">
+        <div className="mx-auto max-w-6xl">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -77,6 +71,15 @@ export default function StorefrontHome() {
             />
           </div>
         </div>
+      </div>
+
+      <StorefrontCategories
+        categories={storeCategories}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+      />
+
+      <div className="mx-auto max-w-6xl px-4 py-6">
 
         {/* Product Grid */}
         <section>
