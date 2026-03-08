@@ -10,8 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe, Palette, Lock, Check } from "lucide-react";
 import { Link } from "react-router-dom";
+
+const THEMES = [
+  { id: "theme-1", name: "Classic", desc: "Clean & modern storefront", available: true },
+  { id: "theme-2", name: "Bold", desc: "Eye-catching vibrant design", available: false },
+  { id: "theme-3", name: "Minimal", desc: "Simple & elegant layout", available: false },
+  { id: "theme-4", name: "Starter", desc: "Starter template with cool UI", available: false },
+];
 
 export default function StoreSettings() {
   const { storeId } = useParams<{ storeId: string }>();
