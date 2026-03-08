@@ -1,0 +1,87 @@
+import { useParams, Link, Outlet } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Store } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
+
+export type StoreData = Tables<"stores">;
+
+export function useStorefront() {
+  const { slug } = useParams<{ slug: string }>();
+
+  const { data: store, isLoading, error } = useQuery({
+    queryKey: ["storefront", slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stores")
+        .select("*")
+        .eq("slug", slug!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!slug,
+  });
+
+  return { store, isLoading, error, slug };
+}
+
+export default function StorefrontLayout() {
+  const { store, isLoading, slug } = useStorefront();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!store) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+        <Store className="h-12 w-12 text-muted-foreground" />
+        <h1 className="text-2xl font-semibold text-foreground">Store not found</h1>
+        <p className="text-muted-foreground">The store "{slug}" doesn't exist.</p>
+        <Button asChild variant="outline">
+          <Link to="/">Go home</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Sticky Nav */}
+      <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+          {store.logo_url ? (
+            <img src={store.logo_url} alt="" className="h-8 w-8 rounded-lg object-cover" />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <Store className="h-4 w-4 text-primary-foreground" />
+            </div>
+          )}
+          <Link to={`/store/${store.slug}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
+            {store.name}
+          </Link>
+          <div className="flex-1" />
+          {store.whatsapp_number && (
+            <Button size="sm" asChild>
+              <a
+                href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                WhatsApp
+              </a>
+            </Button>
+          )}
+        </div>
+      </nav>
+
+      <Outlet context={store} />
+    </div>
+  );
+}
