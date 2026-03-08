@@ -139,6 +139,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
       toast.error("Name and price are required");
       return;
     }
+    if (!isEditing && limitInfo && !limitInfo.can_create) {
+      toast.error(`You've reached the ${limitInfo.plan_name} plan limit of ${limitInfo.product_limit} products. Upgrade to add more.`);
+      return;
+    }
 
     setLoading(true);
     try {

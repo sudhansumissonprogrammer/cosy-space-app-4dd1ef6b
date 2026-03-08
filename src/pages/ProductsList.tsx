@@ -113,13 +113,28 @@ export default function ProductsList() {
             <p className="text-sm text-muted-foreground">{store?.name}</p>
           </div>
         </div>
-        <Button asChild>
+        <Button asChild disabled={limitInfo && !limitInfo.can_create}>
           <Link to={`/dashboard/stores/${storeId}/products/create`}>
             <Plus className="mr-2 h-4 w-4" />
             Add Product
           </Link>
         </Button>
       </div>
+
+      {limitInfo && (
+        <div className="flex items-center justify-between rounded-lg border bg-card p-3 text-sm">
+          <span className="text-muted-foreground">
+            <strong className="text-foreground">{limitInfo.plan_name}</strong> plan — {limitInfo.current_count}/{limitInfo.product_limit ?? "∞"} products used
+          </span>
+          {!limitInfo.can_create && (
+            <Alert variant="destructive" className="mt-0 w-auto border-0 bg-transparent p-0">
+              <AlertDescription className="flex items-center gap-1 text-xs">
+                <AlertCircle className="h-3 w-3" /> Limit reached. Upgrade your plan.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
