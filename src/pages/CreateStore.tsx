@@ -11,9 +11,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
-  Instagram, Facebook, Check, Sparkles,
+  Instagram, Facebook, Check, Sparkles, Globe, MessageCircle,
 } from "lucide-react";
 
 const CURRENCIES = [
