@@ -57,8 +57,6 @@ export default function StorefrontHome() {
 
   return (
     <>
-      <StorefrontHero store={store} />
-
       <StorefrontCategories
         categories={storeCategories}
         activeCategory={activeCategory}
