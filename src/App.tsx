@@ -11,6 +11,9 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import StoresList from "./pages/StoresList";
 import CreateStore from "./pages/CreateStore";
+import ProductsList from "./pages/ProductsList";
+import CreateProduct from "./pages/CreateProduct";
+import EditProduct from "./pages/EditProduct";
 import Storefront from "./pages/Storefront";
 import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
@@ -40,6 +43,9 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="stores" element={<StoresList />} />
               <Route path="stores/create" element={<CreateStore />} />
+              <Route path="stores/:storeId/products" element={<ProductsList />} />
+              <Route path="stores/:storeId/products/create" element={<CreateProduct />} />
+              <Route path="stores/:storeId/products/:productId/edit" element={<EditProduct />} />
               <Route path="analytics" element={<Placeholder />} />
               <Route path="users" element={<Placeholder />} />
               <Route path="documents" element={<Placeholder />} />
