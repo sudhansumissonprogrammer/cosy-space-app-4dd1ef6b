@@ -552,3 +552,42 @@ function BuyNowButton({
     </div>
   );
 }
+
+function AddToCartButton({
+  product,
+  hasDiscount,
+  currency,
+  variants,
+}: {
+  product: { id: string; name: string; price: number; sale_price: number | null; image_url: string | null };
+  hasDiscount: boolean;
+  currency: string;
+  variants: Variant[];
+}) {
+  const { addToCart } = useCart();
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+
+  const basePrice = hasDiscount ? product.sale_price! : product.price;
+  const variantPrice = selectedVariant?.price ?? basePrice;
+
+  const handleAdd = () => {
+    addToCart({
+      productId: product.id,
+      variantId: selectedVariant?.id,
+      name: product.name,
+      variantName: selectedVariant?.name,
+      price: variantPrice,
+      image: product.image_url || undefined,
+    });
+    toast.success(`${product.name} added to cart`);
+  };
+
+  return (
+    <div className="mt-2">
+      <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={handleAdd}>
+        <ShoppingCart className="mr-2 h-5 w-5" />
+        Add to Cart
+      </Button>
+    </div>
+  );
+}
