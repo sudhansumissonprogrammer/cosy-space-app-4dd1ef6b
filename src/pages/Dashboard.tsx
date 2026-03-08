@@ -10,31 +10,36 @@ export default function Dashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", user?.id],
     queryFn: async () => {
-      const [productsRes, ordersRes, customersRes] = await Promise.all([
+      const storesRes = await supabase.from("stores").select("id").eq("owner_id", user!.id);
+      const storeIds = storesRes.data?.map(s => s.id) || [];
+
+      const [productsRes, ordersRes, customersRes, viewsRes] = await Promise.all([
         supabase
           .from("products")
           .select("id", { count: "exact", head: true })
-          .in("store_id", 
-            (await supabase.from("stores").select("id").eq("owner_id", user!.id)).data?.map(s => s.id) || []
-          ),
+          .in("store_id", storeIds),
         supabase
           .from("whatsapp_orders")
           .select("id", { count: "exact", head: true })
-          .in("store_id",
-            (await supabase.from("stores").select("id").eq("owner_id", user!.id)).data?.map(s => s.id) || []
-          ),
+          .in("store_id", storeIds),
         supabase
           .from("customers")
           .select("id", { count: "exact", head: true })
-          .in("store_id",
-            (await supabase.from("stores").select("id").eq("owner_id", user!.id)).data?.map(s => s.id) || []
-          ),
+          .in("store_id", storeIds),
+        storeIds.length > 0
+          ? supabase.rpc("get_store_views", { _store_ids: storeIds })
+          : Promise.resolve({ data: [] }),
       ]);
+
+      const totalViews = (viewsRes.data as any[])?.reduce(
+        (sum: number, r: any) => sum + Number(r.view_count || 0), 0
+      ) || 0;
 
       return {
         total_products: productsRes.count ?? 0,
         total_orders: ordersRes.count ?? 0,
         total_customers: customersRes.count ?? 0,
+        total_views: totalViews,
       };
     },
     enabled: !!user,
@@ -44,7 +49,7 @@ export default function Dashboard() {
     { title: "Total Products", value: stats?.total_products ?? 0, icon: Package },
     { title: "Total Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag },
     { title: "Total Customers", value: stats?.total_customers ?? 0, icon: Users },
-    { title: "Store Views", value: "—", icon: Eye },
+    { title: "Store Views", value: stats?.total_views ?? 0, icon: Eye },
   ];
 
   return (

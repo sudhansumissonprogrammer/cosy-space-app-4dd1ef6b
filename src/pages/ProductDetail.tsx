@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, MessageCircle, Package, Loader2 } from "lucide-react";
+import { ArrowLeft, MessageCircle, Package, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -18,7 +18,6 @@ export default function ProductDetail() {
   const { data: product, isLoading } = useQuery({
     queryKey: ["storefront-product", store.id, productSlug],
     queryFn: async () => {
-      // Try by slug first, then by id
       let { data, error } = await supabase
         .from("products")
         .select("*")
@@ -44,6 +43,29 @@ export default function ProductDetail() {
     },
     enabled: !!store.id && !!productSlug,
   });
+
+  // Fetch additional images
+  const { data: extraImages } = useQuery({
+    queryKey: ["product-images", product?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("product_images")
+        .select("*")
+        .eq("product_id", product!.id)
+        .order("display_order");
+      if (error) throw error;
+      return data as { id: string; image_url: string; display_order: number }[];
+    },
+    enabled: !!product?.id,
+  });
+
+  // Build full image list: main image + extras
+  const allImages = (() => {
+    const imgs: string[] = [];
+    if (product?.image_url) imgs.push(product.image_url);
+    if (extraImages) imgs.push(...extraImages.map((i) => i.image_url));
+    return imgs;
+  })();
 
   if (isLoading) {
     return (
@@ -78,7 +100,6 @@ export default function ProductDetail() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      {/* Breadcrumb */}
       <div className="mb-6">
         <Link
           to={`/store/${store.slug}`}
@@ -90,21 +111,8 @@ export default function ProductDetail() {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Product Image */}
-        <div className="overflow-hidden rounded-2xl bg-accent">
-          {product.image_url ? (
-            <img
-              src={product.image_url}
-              alt={product.name}
-              className="aspect-square w-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="flex aspect-square w-full items-center justify-center">
-              <Package className="h-16 w-16 text-muted-foreground/30" />
-            </div>
-          )}
-        </div>
+        {/* Product Image Gallery */}
+        <ImageGallery images={allImages} productName={product.name} />
 
         {/* Product Info */}
         <div className="flex flex-col">
@@ -116,7 +124,6 @@ export default function ProductDetail() {
 
           <h1 className="text-3xl font-bold text-foreground">{product.name}</h1>
 
-          {/* Price */}
           <div className="mt-4 flex items-baseline gap-3">
             {hasDiscount ? (
               <>
@@ -137,14 +144,12 @@ export default function ProductDetail() {
             )}
           </div>
 
-          {/* Stock */}
           <p className="mt-3 text-sm text-muted-foreground">
             {product.stock_quantity > 0
               ? `${product.stock_quantity} in stock`
               : "Out of stock"}
           </p>
 
-          {/* Description */}
           {product.description && (
             <div className="mt-6">
               <h2 className="mb-2 text-sm font-semibold text-foreground uppercase tracking-wide">Description</h2>
@@ -154,12 +159,69 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* WhatsApp CTA */}
           {store.whatsapp_number && (
             <WhatsAppOrderButton store={store} product={product} hasDiscount={!!hasDiscount} />
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ImageGallery({ images, productName }: { images: string[]; productName: string }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  if (images.length === 0) {
+    return (
+      <div className="overflow-hidden rounded-2xl bg-accent">
+        <div className="flex aspect-square w-full items-center justify-center">
+          <Package className="h-16 w-16 text-muted-foreground/30" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="relative overflow-hidden rounded-2xl bg-accent">
+        <img
+          src={images[activeIndex]}
+          alt={productName}
+          className="aspect-square w-full object-cover"
+          loading="lazy"
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={() => setActiveIndex((i) => (i - 1 + images.length) % images.length)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 shadow backdrop-blur-sm hover:bg-background"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setActiveIndex((i) => (i + 1) % images.length)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 shadow backdrop-blur-sm hover:bg-background"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </>
+        )}
+      </div>
+      {images.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto">
+          {images.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
+                i === activeIndex ? "border-primary" : "border-transparent"
+              }`}
+            >
+              <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -187,7 +249,7 @@ function WhatsAppOrderButton({
 
     setOrdering(true);
     try {
-      await supabase.from("whatsapp_orders").insert({
+      const { data } = await supabase.from("whatsapp_orders").insert({
         store_id: store.id,
         product_id: product.id,
         product_name: product.name,
@@ -195,7 +257,19 @@ function WhatsAppOrderButton({
         customer_phone: customerPhone.trim(),
         customer_name: customerName.trim() || null,
         quantity: 1,
-      });
+      }).select("id").single();
+
+      // Fire order notification (non-blocking)
+      if (data?.id) {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        if (projectId) {
+          fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ order_id: data.id }),
+          }).catch(() => {});
+        }
+      }
     } catch {
       // Don't block the WhatsApp redirect on DB errors
     }
