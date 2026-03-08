@@ -127,7 +127,7 @@ export default function StoreSettings() {
           <CardContent className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="store-name">Store Name *</Label>
-              <Input id="store-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input id="store-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
             </div>
 
             <div className="space-y-2">
