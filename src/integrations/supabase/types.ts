@@ -154,6 +154,39 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          product_limit: number | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+          product_limit?: number | null
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          product_limit?: number | null
+          slug?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null
@@ -285,6 +318,47 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          plan_id: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan_id: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -362,6 +436,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_product_limit: { Args: { _user_id: string }; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
