@@ -1,18 +1,11 @@
-import { LayoutDashboard, Settings, Users, FileText, BarChart3, LogOut, Store } from "lucide-react";
+import { LayoutDashboard, Settings, Store, BarChart3, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarFooter,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
+  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -21,8 +14,6 @@ const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Stores", url: "/dashboard/stores", icon: Store },
   { title: "Analytics", url: "/dashboard/analytics", icon: BarChart3 },
-  { title: "Users", url: "/dashboard/users", icon: Users },
-  { title: "Documents", url: "/dashboard/documents", icon: FileText },
 ];
 
 const bottomItems = [
@@ -44,7 +35,7 @@ export function AppSidebar() {
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
             <LayoutDashboard className="h-4 w-4 text-primary-foreground" />
           </div>
-          {!collapsed && <span className="text-sm font-semibold text-foreground">SaaS Panel</span>}
+          {!collapsed && <span className="text-sm font-semibold text-foreground">Store Admin</span>}
         </div>
 
         <SidebarGroup>
@@ -88,9 +79,7 @@ export function AppSidebar() {
         <Separator />
         <div className="p-2">
           {!collapsed && (
-            <p className="mb-2 truncate px-2 text-xs text-muted-foreground">
-              {user?.email}
-            </p>
+            <p className="mb-2 truncate px-2 text-xs text-muted-foreground">{user?.email}</p>
           )}
           <Button
             variant="ghost"
