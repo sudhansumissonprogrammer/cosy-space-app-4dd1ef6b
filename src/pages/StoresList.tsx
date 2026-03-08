@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Store, ExternalLink, Package, ShoppingBag, Users, Settings, Tag, Share2, Trash2 } from "lucide-react";
+import { Plus, Store, ExternalLink, Package, ShoppingBag, Users, Settings, Tag, Share2, Trash2, UserCheck } from "lucide-react";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
