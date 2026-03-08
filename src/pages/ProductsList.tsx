@@ -48,6 +48,18 @@ export default function ProductsList() {
     enabled: !!storeId && !!user,
   });
 
+  const { data: limitInfo } = useQuery({
+    queryKey: ["product-limit", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("check_product_limit", {
+        _user_id: user!.id,
+      });
+      if (error) throw error;
+      return data as { plan_name: string; product_limit: number | null; current_count: number; can_create: boolean };
+    },
+    enabled: !!user,
+  });
+
   const { data: products, isLoading } = useQuery({
     queryKey: ["products", storeId],
     queryFn: async () => {
