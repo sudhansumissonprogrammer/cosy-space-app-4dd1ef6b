@@ -154,12 +154,12 @@ export default function ProductDetail() {
             <div className="mt-8">
               <Button size="lg" asChild className="w-full sm:w-auto">
                 <a
-                  href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}?text=${encodeURIComponent(`Hi! I'm interested in: ${product.name}`)}`}
+                  href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}?text=${encodeURIComponent(`Hello, I want to order:\n\nProduct: ${product.name}\nPrice: $${Number(hasDiscount ? product.sale_price : product.price).toFixed(2)}\nStore: ${store.name}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <MessageCircle className="mr-2 h-5 w-5" />
-                  Order via WhatsApp
+                  Order on WhatsApp
                 </a>
               </Button>
             </div>
