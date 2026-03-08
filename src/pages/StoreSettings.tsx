@@ -50,7 +50,10 @@ export default function StoreSettings() {
     }
   }, [store]);
 
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
   const uploadFile = async (file: File, bucket: string) => {
+    if (file.size > MAX_FILE_SIZE) throw new Error("File must be less than 5MB");
     const ext = file.name.split(".").pop();
     const path = `${user!.id}/${storeId}/${Date.now()}.${ext}`;
     const { data, error } = await supabase.storage
