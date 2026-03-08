@@ -200,6 +200,13 @@ export default function ProductDetail() {
               variants={variants || []}
             />
           ) : null}
+
+          <AddToCartButton
+            product={product}
+            hasDiscount={!!hasDiscount}
+            currency={currency}
+            variants={variants || []}
+          />
         </div>
       </div>
     </div>
