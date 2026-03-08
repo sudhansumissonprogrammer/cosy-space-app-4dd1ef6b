@@ -13,6 +13,21 @@ import {
 import { toast } from "sonner";
 export default function StoresList() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (storeId: string) => {
+      const { error } = await supabase.from("stores").delete().eq("id", storeId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stores", user?.id] });
+      toast.success("Store deleted successfully");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete store");
+    },
+  });
 
   const { data: stores, isLoading } = useQuery({
     queryKey: ["stores", user?.id],
