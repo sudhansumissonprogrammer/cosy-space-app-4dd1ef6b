@@ -68,29 +68,30 @@ export default function StoresList() {
                 {store.description && (
                   <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">{store.description}</p>
                 )}
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" asChild className="flex-1">
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" asChild>
                     <Link to={`/store/${store.slug}`} target="_blank">
-                      <ExternalLink className="mr-1 h-3 w-3" />
-                      View
+                      <ExternalLink className="mr-1 h-3 w-3" /> View
                     </Link>
                   </Button>
-                  <Button variant="outline" size="sm" asChild className="flex-1">
+                  <Button variant="outline" size="sm" asChild>
                     <Link to={`/dashboard/stores/${store.id}/products`}>
-                      <Package className="mr-1 h-3 w-3" />
-                      Products
+                      <Package className="mr-1 h-3 w-3" /> Products
                     </Link>
                   </Button>
-                  <Button variant="outline" size="sm" asChild className="flex-1">
+                  <Button variant="outline" size="sm" asChild>
                     <Link to={`/dashboard/stores/${store.id}/orders`}>
-                      <ShoppingBag className="mr-1 h-3 w-3" />
-                      Orders
+                      <ShoppingBag className="mr-1 h-3 w-3" /> Orders
                     </Link>
                   </Button>
-                  <Button variant="outline" size="sm" asChild className="flex-1">
+                  <Button variant="outline" size="sm" asChild>
                     <Link to={`/dashboard/stores/${store.id}/customers`}>
-                      <Users className="mr-1 h-3 w-3" />
-                      Customers
+                      <Users className="mr-1 h-3 w-3" /> Customers
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/dashboard/stores/${store.id}/settings`}>
+                      <Settings className="mr-1 h-3 w-3" /> Settings
                     </Link>
                   </Button>
                 </div>
