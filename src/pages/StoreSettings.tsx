@@ -10,8 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe, Palette, Lock, Check } from "lucide-react";
 import { Link } from "react-router-dom";
+
+const THEMES = [
+  { id: "theme-1", name: "Classic", desc: "Clean & modern storefront", available: true },
+  { id: "theme-2", name: "Bold", desc: "Eye-catching vibrant design", available: false },
+  { id: "theme-3", name: "Minimal", desc: "Simple & elegant layout", available: false },
+  { id: "theme-4", name: "Starter", desc: "Starter template with cool UI", available: false },
+];
 
 export default function StoreSettings() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -35,6 +42,7 @@ export default function StoreSettings() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [theme, setTheme] = useState("theme-1");
 
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
@@ -68,6 +76,7 @@ export default function StoreSettings() {
       }
       if (store.logo_url) setLogoPreview(store.logo_url);
       if (store.banner_url) setBannerPreview(store.banner_url);
+      setTheme((store as any).theme || "theme-1");
     }
   }, [store]);
 
@@ -109,6 +118,7 @@ export default function StoreSettings() {
           business_hours: hasHours ? businessHours : null,
           logo_url: logoUrl,
           banner_url: bannerUrl,
+          theme,
         })
         .eq("id", storeId!);
       if (error) throw error;
@@ -308,13 +318,57 @@ export default function StoreSettings() {
                 )}
               </div>
             </div>
-
-            <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
-              {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
-            </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Theme</CardTitle>
+            <CardDescription>Choose your storefront look</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  disabled={!t.available}
+                  onClick={() => t.available && setTheme(t.id)}
+                  className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all ${
+                    !t.available
+                      ? "cursor-not-allowed border-input bg-muted/40 opacity-60"
+                      : theme === t.id
+                      ? "border-primary bg-primary/5 shadow-md"
+                      : "border-input hover:border-primary/30"
+                  }`}
+                >
+                  {!t.available && (
+                    <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      <Lock className="h-2.5 w-2.5" /> Coming Soon
+                    </span>
+                  )}
+                  {theme === t.id && t.available && (
+                    <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </span>
+                  )}
+                  <div className={`flex h-12 w-full items-center justify-center rounded-lg ${
+                    t.available ? "bg-gradient-to-br from-primary/20 to-primary/5" : "bg-muted"
+                  }`}>
+                    <Palette className={`h-5 w-5 ${t.available ? "text-primary" : "text-muted-foreground"}`} />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">{t.desc}</p>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
+          {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Changes
+        </Button>
       </form>
     </div>
   );

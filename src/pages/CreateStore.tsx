@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
-  Instagram, Facebook, Check, Sparkles, Globe, MessageCircle,
+  Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Palette, Lock,
 } from "lucide-react";
 
 const CURRENCIES = [
@@ -40,6 +40,14 @@ const STEPS = [
   { id: 2, title: "Location", icon: MapPin, desc: "Where you are" },
   { id: 3, title: "Contact", icon: Phone, desc: "How to reach you" },
   { id: 4, title: "Social", icon: Instagram, desc: "Your presence" },
+  { id: 5, title: "Theme", icon: Palette, desc: "Pick a look" },
+];
+
+const THEMES = [
+  { id: "theme-1", name: "Classic", desc: "Clean & modern storefront", available: true },
+  { id: "theme-2", name: "Bold", desc: "Eye-catching vibrant design", available: false },
+  { id: "theme-3", name: "Minimal", desc: "Simple & elegant layout", available: false },
+  { id: "theme-4", name: "Starter", desc: "Starter template with cool UI", available: false },
 ];
 
 export default function CreateStore() {
@@ -91,6 +99,9 @@ export default function CreateStore() {
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
 
+  // Step 5 - Theme
+  const [theme, setTheme] = useState("theme-1");
+
   const generateSlug = (value: string) =>
     value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
@@ -137,7 +148,7 @@ export default function CreateStore() {
       return;
     }
     setDirection("forward");
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 5));
   };
 
   const goBack = () => {
@@ -176,6 +187,7 @@ export default function CreateStore() {
         facebook_url: facebookUrl.trim() || null,
         logo_url: logoUrl,
         banner_url: bannerUrl,
+        theme,
       });
 
       if (error) {
@@ -548,12 +560,58 @@ export default function CreateStore() {
                   <div className="flex items-start gap-3">
                     <Sparkles className="mt-0.5 h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">Almost there!</p>
+                      <p className="text-sm font-medium text-foreground">One more step!</p>
                       <p className="text-xs text-muted-foreground">
-                        Social links help build trust and let customers follow your brand. You can always add these later.
+                        Social links help build trust. You can always add these later.
                       </p>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Theme */}
+            {step === 5 && (
+              <div className="space-y-5">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-foreground">Choose a Theme</h2>
+                  <p className="text-sm text-muted-foreground">Pick a look for your storefront</p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {THEMES.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      disabled={!t.available}
+                      onClick={() => t.available && setTheme(t.id)}
+                      className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-5 text-center transition-all ${
+                        !t.available
+                          ? "cursor-not-allowed border-input bg-muted/40 opacity-60"
+                          : theme === t.id
+                          ? "border-primary bg-primary/5 shadow-md"
+                          : "border-input hover:border-primary/30"
+                      }`}
+                    >
+                      {!t.available && (
+                        <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          <Lock className="h-2.5 w-2.5" /> Coming Soon
+                        </span>
+                      )}
+                      {theme === t.id && t.available && (
+                        <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </span>
+                      )}
+                      <div className={`flex h-16 w-full items-center justify-center rounded-lg ${
+                        t.available ? "bg-gradient-to-br from-primary/20 to-primary/5" : "bg-muted"
+                      }`}>
+                        <Palette className={`h-6 w-6 ${t.available ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                      <p className="text-xs text-muted-foreground">{t.desc}</p>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -569,7 +627,7 @@ export default function CreateStore() {
               <div />
             )}
 
-            {step < 4 ? (
+            {step < 5 ? (
               <Button type="button" onClick={goNext} className="gap-2 px-6">
                 Next <ArrowRight className="h-4 w-4" />
               </Button>
