@@ -25,7 +25,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, ArrowLeft, Pencil, Trash2, Package } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, Package, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ProductsList() {
   const { storeId } = useParams<{ storeId: string }>();
