@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Store, Package, Search } from "lucide-react";
+import { MessageCircle, Store, Package, Search, MapPin, Clock, BadgeCheck } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function StorefrontHome() {
