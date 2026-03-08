@@ -1,0 +1,1 @@
+ALTER TABLE public.stores ADD COLUMN theme text NOT NULL DEFAULT 'theme-1';

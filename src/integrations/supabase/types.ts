@@ -564,6 +564,7 @@ export type Database = {
           owner_id: string
           slug: string
           state: string | null
+          theme: string
           updated_at: string
           whatsapp_number: string | null
         }
@@ -586,6 +587,7 @@ export type Database = {
           owner_id: string
           slug: string
           state?: string | null
+          theme?: string
           updated_at?: string
           whatsapp_number?: string | null
         }
@@ -608,6 +610,7 @@ export type Database = {
           owner_id?: string
           slug?: string
           state?: string | null
+          theme?: string
           updated_at?: string
           whatsapp_number?: string | null
         }
