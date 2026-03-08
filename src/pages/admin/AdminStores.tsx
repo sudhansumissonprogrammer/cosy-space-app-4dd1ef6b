@@ -106,16 +106,17 @@ export default function AdminStores() {
           <Card>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Store</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Owner ID</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-40"></TableHead>
-                  </TableRow>
-                </TableHeader>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead>Store</TableHead>
+                     <TableHead>Slug</TableHead>
+                     <TableHead>Owner ID</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead>Verified</TableHead>
+                     <TableHead>Created</TableHead>
+                     <TableHead className="w-48"></TableHead>
+                   </TableRow>
+                 </TableHeader>
                 <TableBody>
                   {filtered.map((store) => (
                     <TableRow key={store.id}>
