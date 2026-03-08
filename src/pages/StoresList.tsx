@@ -117,6 +117,11 @@ export default function StoresList() {
                     </Link>
                   </Button>
                   <Button variant="outline" size="sm" asChild>
+                    <Link to={`/dashboard/stores/${store.id}/leads`}>
+                      <UserCheck className="mr-1 h-3 w-3" /> Leads
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
                     <Link to={`/dashboard/stores/${store.id}/settings`}>
                       <Settings className="mr-1 h-3 w-3" /> Settings
                     </Link>
