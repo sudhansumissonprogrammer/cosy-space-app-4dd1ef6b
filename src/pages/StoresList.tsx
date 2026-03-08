@@ -87,6 +87,12 @@ export default function StoresList() {
                       Orders
                     </Link>
                   </Button>
+                  <Button variant="outline" size="sm" asChild className="flex-1">
+                    <Link to={`/dashboard/stores/${store.id}/customers`}>
+                      <Users className="mr-1 h-3 w-3" />
+                      Customers
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
