@@ -339,6 +339,16 @@ function WhatsAppOrderButton({
         ? `${product.name} (${selectedVariant.name})`
         : product.name;
 
+      // Save customer lead
+      await (supabase as any).from("customer_leads").insert({
+        store_id: store.id,
+        name: customerName.trim() || null,
+        phone: customerPhone.trim(),
+        product_name: productName,
+        product_id: product.id,
+        source: "whatsapp_order",
+      });
+
       const { data } = await supabase.from("whatsapp_orders").insert({
         store_id: store.id,
         product_id: product.id,
