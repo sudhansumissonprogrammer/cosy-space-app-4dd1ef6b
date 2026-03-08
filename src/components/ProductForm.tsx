@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Plus } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -24,6 +24,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const { storeId } = useParams<{ storeId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isEditing = !!productId;
 
   const [loading, setLoading] = useState(false);
@@ -38,6 +39,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // Additional images state
+  const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
+  const [additionalPreviews, setAdditionalPreviews] = useState<{ url: string; isExisting: boolean; id?: string }[]>([]);
+
   // Check product limit
   const { data: limitInfo } = useQuery({
     queryKey: ["product-limit", user?.id],
@@ -51,7 +56,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
     enabled: !!user && !isEditing,
   });
 
-  // Load store to verify ownership
+  // Load store
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
@@ -67,8 +72,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
     enabled: !!storeId && !!user,
   });
 
-  // Load dynamic categories for this store
-  const queryClient = useQueryClient();
+  // Categories
   const { data: categories } = useQuery({
     queryKey: ["categories", storeId],
     queryFn: async () => {
@@ -107,7 +111,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
     onError: (err: any) => toast.error(err.message),
   });
 
-  // Load existing product for editing
+  // Load existing product
   const { data: existingProduct } = useQuery({
     queryKey: ["product", productId],
     queryFn: async () => {
@@ -118,6 +122,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
         .single();
       if (error) throw error;
       return data;
+    },
+    enabled: !!productId,
+  });
+
+  // Load existing additional images
+  const { data: existingImages } = useQuery({
+    queryKey: ["product-images", productId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("product_images")
+        .select("*")
+        .eq("product_id", productId!)
+        .order("display_order");
+      if (error) throw error;
+      return data as { id: string; image_url: string; display_order: number }[];
     },
     enabled: !!productId,
   });
@@ -135,6 +154,12 @@ export default function ProductForm({ productId }: ProductFormProps) {
       if (existingProduct.image_url) setImagePreview(existingProduct.image_url);
     }
   }, [existingProduct]);
+
+  useEffect(() => {
+    if (existingImages) {
+      setAdditionalPreviews(existingImages.map((img) => ({ url: img.image_url, isExisting: true, id: img.id })));
+    }
+  }, [existingImages]);
 
   const generateSlug = (value: string) =>
     value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -155,9 +180,39 @@ export default function ProductForm({ productId }: ProductFormProps) {
     }
   };
 
+  const handleAdditionalFiles = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles: File[] = [];
+    const newPreviews: { url: string; isExisting: boolean }[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name} exceeds 5MB limit`);
+        continue;
+      }
+      newFiles.push(file);
+      newPreviews.push({ url: URL.createObjectURL(file), isExisting: false });
+    }
+    setAdditionalFiles((prev) => [...prev, ...newFiles]);
+    setAdditionalPreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const removeAdditionalImage = async (index: number) => {
+    const preview = additionalPreviews[index];
+    if (preview.isExisting && preview.id) {
+      // Delete from DB
+      await (supabase as any).from("product_images").delete().eq("id", preview.id);
+    } else {
+      // Remove from pending files
+      const newFileIndex = additionalPreviews.slice(0, index).filter((p) => !p.isExisting).length;
+      setAdditionalFiles((prev) => prev.filter((_, i) => i !== newFileIndex));
+    }
+    setAdditionalPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const uploadImage = async (file: File) => {
     const ext = file.name.split(".").pop();
-    const path = `${user!.id}/${storeId}/${Date.now()}.${ext}`;
+    const path = `${user!.id}/${storeId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { data, error } = await supabase.storage
       .from("product-images")
       .upload(path, file, { cacheControl: "3600", upsert: true });
@@ -197,15 +252,16 @@ export default function ProductForm({ productId }: ProductFormProps) {
         image_url: imageUrl,
       };
 
+      let savedProductId = productId;
+
       if (isEditing && productId) {
         const { error } = await supabase
           .from("products")
           .update(productData)
           .eq("id", productId);
         if (error) throw error;
-        toast.success("Product updated!");
       } else {
-        const { error } = await supabase.from("products").insert(productData);
+        const { data, error } = await supabase.from("products").insert(productData).select("id").single();
         if (error) {
           if (error.code === "23505") {
             toast.error("A product with this slug already exists in this store");
@@ -213,9 +269,23 @@ export default function ProductForm({ productId }: ProductFormProps) {
           }
           throw error;
         }
-        toast.success("Product created!");
+        savedProductId = data.id;
       }
 
+      // Upload additional images
+      if (additionalFiles.length > 0 && savedProductId) {
+        const existingCount = additionalPreviews.filter((p) => p.isExisting).length;
+        for (let i = 0; i < additionalFiles.length; i++) {
+          const url = await uploadImage(additionalFiles[i]);
+          await (supabase as any).from("product_images").insert({
+            product_id: savedProductId,
+            image_url: url,
+            display_order: existingCount + i,
+          });
+        }
+      }
+
+      toast.success(isEditing ? "Product updated!" : "Product created!");
       navigate(`/dashboard/stores/${storeId}/products`);
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
@@ -372,9 +442,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
               <Label htmlFor="is-active">Active (visible on storefront)</Label>
             </div>
 
-            {/* Image Upload */}
+            {/* Main Image */}
             <div className="space-y-2">
-              <Label>Product Image</Label>
+              <Label>Main Image</Label>
               {imagePreview ? (
                 <div className="relative inline-block">
                   <img
@@ -404,6 +474,40 @@ export default function ProductForm({ productId }: ProductFormProps) {
                   />
                 </label>
               )}
+            </div>
+
+            {/* Additional Images */}
+            <div className="space-y-2">
+              <Label>Additional Images</Label>
+              <div className="flex flex-wrap gap-3">
+                {additionalPreviews.map((preview, i) => (
+                  <div key={i} className="relative inline-block">
+                    <img
+                      src={preview.url}
+                      alt={`Extra ${i + 1}`}
+                      className="h-24 w-24 rounded-lg border object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeAdditionalImage(i)}
+                      className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                <label className="flex h-24 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-input transition-colors hover:border-primary/50">
+                  <Plus className="h-5 w-5 text-muted-foreground" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleAdditionalFiles(e.target.files)}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">Max 5MB per image. These appear in the product gallery.</p>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
