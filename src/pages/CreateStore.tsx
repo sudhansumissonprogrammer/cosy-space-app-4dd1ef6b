@@ -168,6 +168,7 @@ export default function CreateStore() {
         description: description.trim() || null,
         whatsapp_number: whatsappNumber.trim() || null,
         currency,
+        order_mode: orderMode,
         city: city.trim() || null,
         state: state.trim() || null,
         location: location.trim() || null,
