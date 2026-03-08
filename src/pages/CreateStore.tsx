@@ -73,6 +73,7 @@ export default function CreateStore() {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("USD");
+  const [orderMode, setOrderMode] = useState<"whatsapp" | "website">("whatsapp");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
