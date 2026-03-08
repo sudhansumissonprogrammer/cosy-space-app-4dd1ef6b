@@ -627,7 +627,7 @@ export default function CreateStore() {
               <div />
             )}
 
-            {step < 4 ? (
+            {step < 5 ? (
               <Button type="button" onClick={goNext} className="gap-2 px-6">
                 Next <ArrowRight className="h-4 w-4" />
               </Button>
