@@ -76,13 +76,13 @@ export default function StorefrontLayout() {
     <div className="min-h-screen bg-background">
       {/* Sticky Nav */}
       <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
+        <div className="mx-auto flex h-20 max-w-6xl items-center gap-3 px-4">
           <Link to={`/store/${store.slug}`} className="flex-shrink-0">
             {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] rounded-lg object-contain sm:h-14" />
+              <img src={store.logo_url} alt={store.name} className="h-16 w-auto max-w-[200px] object-contain sm:h-16" />
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary sm:h-14 sm:w-14">
-                <Store className="h-6 w-6 text-primary-foreground sm:h-7 sm:w-7" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary">
+                <Store className="h-8 w-8 text-primary-foreground" />
               </div>
             )}
           </Link>
