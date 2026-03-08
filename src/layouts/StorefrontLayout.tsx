@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useParams, Link, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { Store } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
