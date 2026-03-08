@@ -93,8 +93,8 @@ const App = () => (
               <Route path="stores/:storeId/orders" element={<StoreOrders />} />
               <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
               <Route path="stores/:storeId/settings" element={<StoreSettings />} />
-              <Route path="analytics" element={<Placeholder />} />
-              <Route path="settings" element={<Placeholder />} />
+              <Route path="analytics" element={<StoreAnalytics />} />
+              <Route path="settings" element={<UserSettings />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
