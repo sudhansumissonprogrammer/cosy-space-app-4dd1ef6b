@@ -233,6 +233,7 @@ export type Database = {
       }
       stores: {
         Row: {
+          banner_url: string | null
           created_at: string
           description: string | null
           id: string
@@ -241,8 +242,10 @@ export type Database = {
           owner_id: string
           slug: string
           updated_at: string
+          whatsapp_number: string | null
         }
         Insert: {
+          banner_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -251,8 +254,10 @@ export type Database = {
           owner_id: string
           slug: string
           updated_at?: string
+          whatsapp_number?: string | null
         }
         Update: {
+          banner_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -261,6 +266,7 @@ export type Database = {
           owner_id?: string
           slug?: string
           updated_at?: string
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
