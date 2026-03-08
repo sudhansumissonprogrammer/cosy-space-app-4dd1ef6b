@@ -148,7 +148,7 @@ export default function CreateStore() {
       return;
     }
     setDirection("forward");
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 5));
   };
 
   const goBack = () => {
