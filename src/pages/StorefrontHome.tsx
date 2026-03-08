@@ -244,6 +244,16 @@ export default function StorefrontHome() {
                   Contact us on WhatsApp
                 </a>
               )}
+              {(store as any).instagram_url && (
+                <a href={(store as any).instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary">
+                  <Instagram className="h-4 w-4" /> Instagram
+                </a>
+              )}
+              {(store as any).facebook_url && (
+                <a href={(store as any).facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary">
+                  <Facebook className="h-4 w-4" /> Facebook
+                </a>
+              )}
               {products && (
                 <p className="text-sm text-muted-foreground">
                   {products.length} product{products.length !== 1 ? "s" : ""} available
