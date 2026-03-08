@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Store, Package, Search, MapPin, Clock, BadgeCheck, Instagram, Facebook } from "lucide-react";
+import { MessageCircle, Store, Package, Search, MapPin, Clock, BadgeCheck, Instagram, Facebook, Tag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function StorefrontHome() {
@@ -29,7 +29,19 @@ export default function StorefrontHome() {
     enabled: !!store.id,
   });
 
-  const categories = [...new Set(products?.map((p) => p.category).filter(Boolean))] as string[];
+  const { data: storeCategories } = useQuery({
+    queryKey: ["storefront-categories", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("categories")
+        .select("*")
+        .eq("store_id", store.id)
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; slug: string; image_url: string | null }[];
+    },
+    enabled: !!store.id,
+  });
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
@@ -100,24 +112,34 @@ export default function StorefrontHome() {
               maxLength={100}
             />
           </div>
-          {categories.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              <Badge
-                variant={activeCategory === null ? "default" : "secondary"}
-                className="cursor-pointer"
+          {storeCategories && storeCategories.length > 0 && (
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              <button
                 onClick={() => setActiveCategory(null)}
+                className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-opacity ${activeCategory === null ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
               >
-                All
-              </Badge>
-              {categories.map((cat) => (
-                <Badge
-                  key={cat}
-                  variant={activeCategory === cat ? "default" : "secondary"}
-                  className="cursor-pointer"
-                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                <div className={`flex h-16 w-16 items-center justify-center rounded-full border-2 ${activeCategory === null ? "border-primary bg-primary/10" : "border-border bg-accent"}`}>
+                  <Tag className="h-5 w-5 text-foreground" />
+                </div>
+                <span className="text-xs font-medium text-foreground max-w-[72px] truncate">All</span>
+              </button>
+              {storeCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(activeCategory === cat.name ? null : cat.name)}
+                  className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-opacity ${activeCategory === cat.name ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
                 >
-                  {cat}
-                </Badge>
+                  <div className={`h-16 w-16 rounded-full border-2 overflow-hidden ${activeCategory === cat.name ? "border-primary" : "border-border"}`}>
+                    {cat.image_url ? (
+                      <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-accent">
+                        <Tag className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-foreground max-w-[72px] truncate">{cat.name}</span>
+                </button>
               ))}
             </div>
           )}

@@ -95,13 +95,34 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showNewCategory, setShowNewCategory] = useState(false);
+  const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
+  const [categoryImagePreview, setCategoryImagePreview] = useState<string | null>(null);
+
+  const handleCategoryImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) { toast.error("Image must be under 5MB"); return; }
+    setCategoryImageFile(file);
+    setCategoryImagePreview(URL.createObjectURL(file));
+  };
 
   const createCategory = useMutation({
     mutationFn: async (catName: string) => {
       const slug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      let image_url: string | null = null;
+
+      if (categoryImageFile) {
+        const ext = categoryImageFile.name.split(".").pop();
+        const path = `${storeId}/${slug}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("product-images").upload(path, categoryImageFile);
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+        image_url = urlData.publicUrl;
+      }
+
       const { data, error } = await (supabase as any)
         .from("categories")
-        .insert({ store_id: storeId!, name: catName.trim(), slug })
+        .insert({ store_id: storeId!, name: catName.trim(), slug, image_url })
         .select()
         .single();
       if (error) throw error;
@@ -111,6 +132,8 @@ export default function ProductForm({ productId }: ProductFormProps) {
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       setCategory(data.name);
       setNewCategoryName("");
+      setCategoryImageFile(null);
+      setCategoryImagePreview(null);
       setShowNewCategory(false);
       toast.success("Category created");
     },
@@ -463,19 +486,37 @@ export default function ProductForm({ productId }: ProductFormProps) {
               <div className="space-y-2">
                 <Label>Category</Label>
                 {showNewCategory ? (
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="New category name"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      maxLength={50}
-                    />
-                    <Button type="button" size="sm" onClick={() => newCategoryName.trim() && createCategory.mutate(newCategoryName.trim())} disabled={createCategory.isPending}>
-                      Add
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setShowNewCategory(false)}>
-                      Cancel
-                    </Button>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="New category name"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        maxLength={50}
+                      />
+                      <Button type="button" size="sm" onClick={() => newCategoryName.trim() && createCategory.mutate(newCategoryName.trim())} disabled={createCategory.isPending}>
+                        {createCategory.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => { setShowNewCategory(false); setCategoryImageFile(null); setCategoryImagePreview(null); }}>
+                        Cancel
+                      </Button>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Category Photo (optional)</Label>
+                      {categoryImagePreview ? (
+                        <div className="relative mt-1 inline-block">
+                          <img src={categoryImagePreview} alt="" className="h-16 w-16 rounded-full border object-cover" />
+                          <button type="button" onClick={() => { setCategoryImageFile(null); setCategoryImagePreview(null); }} className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="mt-1 flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-input transition-colors hover:border-primary/50">
+                          <Upload className="h-4 w-4 text-muted-foreground" />
+                          <input type="file" accept="image/*" className="hidden" onChange={handleCategoryImage} />
+                        </label>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex gap-2">
