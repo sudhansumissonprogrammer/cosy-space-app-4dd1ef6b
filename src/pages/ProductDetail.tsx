@@ -182,7 +182,15 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {store.whatsapp_number && (
+          {(store as any).order_mode === "website" ? (
+            <BuyNowButton
+              store={store}
+              product={product}
+              hasDiscount={!!hasDiscount}
+              currency={currency}
+              variants={variants || []}
+            />
+          ) : store.whatsapp_number ? (
             <WhatsAppOrderButton
               store={store}
               product={product}
@@ -190,7 +198,7 @@ export default function ProductDetail() {
               currency={currency}
               variants={variants || []}
             />
-          )}
+          ) : null}
         </div>
       </div>
     </div>
