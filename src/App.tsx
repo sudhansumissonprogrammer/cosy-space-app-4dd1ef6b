@@ -37,6 +37,7 @@ import UserSettings from "./pages/UserSettings";
 import CouponsPage from "./pages/CouponsPage";
 import CustomerLeads from "./pages/CustomerLeads";
 import CheckoutPage from "./pages/CheckoutPage";
+import CartPage from "./pages/CartPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
