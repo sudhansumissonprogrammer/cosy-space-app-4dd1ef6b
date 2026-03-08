@@ -79,12 +79,15 @@ export default function StoreSettings() {
       if (logoFile) logoUrl = await uploadFile(logoFile, "store-logos");
       if (bannerFile) bannerUrl = await uploadFile(bannerFile, "store-banners");
 
-      const { error } = await supabase
+      const hasHours = Object.values(businessHours).some((v) => v.trim());
+      const { error } = await (supabase as any)
         .from("stores")
         .update({
           name: name.trim(),
           description: description.trim() || null,
           whatsapp_number: whatsappNumber.trim() || null,
+          location: location.trim() || null,
+          business_hours: hasHours ? businessHours : null,
           logo_url: logoUrl,
           banner_url: bannerUrl,
         })
