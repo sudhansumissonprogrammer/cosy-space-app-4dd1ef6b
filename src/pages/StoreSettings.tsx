@@ -365,12 +365,10 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
-            <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
-              {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
-            </Button>
-          </CardContent>
-        </Card>
+        <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
+          {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Changes
+        </Button>
       </form>
     </div>
   );
