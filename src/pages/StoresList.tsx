@@ -1,12 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Store, ExternalLink, Package, ShoppingBag, Users, Settings, Tag, Share2 } from "lucide-react";
+import { Plus, Store, ExternalLink, Package, ShoppingBag, Users, Settings, Tag, Share2, Trash2 } from "lucide-react";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
-
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 export default function StoresList() {
   const { user } = useAuth();
 
