@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Store } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import ShareStoreDialog from "@/components/ShareStoreDialog";
+import { useMetaTags } from "@/hooks/useMetaTags";
 
 export type StoreData = Tables<"stores">;
 
