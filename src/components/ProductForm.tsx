@@ -67,6 +67,46 @@ export default function ProductForm({ productId }: ProductFormProps) {
     enabled: !!storeId && !!user,
   });
 
+  // Load dynamic categories for this store
+  const queryClient = useQueryClient();
+  const { data: categories } = useQuery({
+    queryKey: ["categories", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("store_id", storeId!)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!storeId,
+  });
+
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [showNewCategory, setShowNewCategory] = useState(false);
+
+  const createCategory = useMutation({
+    mutationFn: async (catName: string) => {
+      const slug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const { data, error } = await supabase
+        .from("categories")
+        .insert({ store_id: storeId!, name: catName.trim(), slug })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+      setCategory(data.name);
+      setNewCategoryName("");
+      setShowNewCategory(false);
+      toast.success("Category created");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   // Load existing product for editing
   const { data: existingProduct } = useQuery({
     queryKey: ["product", productId],
