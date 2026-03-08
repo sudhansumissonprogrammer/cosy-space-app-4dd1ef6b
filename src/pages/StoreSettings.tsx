@@ -162,6 +162,34 @@ export default function StoreSettings() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="location">Location / Address</Label>
+              <Input
+                id="location"
+                placeholder="123 Main St, City"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                maxLength={500}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Business Hours</Label>
+              <div className="grid gap-2">
+                {Object.entries(businessHours).map(([day, hours]) => (
+                  <div key={day} className="flex items-center gap-2">
+                    <span className="w-10 text-sm font-medium capitalize text-muted-foreground">{day}</span>
+                    <Input
+                      placeholder="9:00-18:00 or Closed"
+                      value={hours}
+                      onChange={(e) => setBusinessHours((prev) => ({ ...prev, [day]: e.target.value }))}
+                      maxLength={50}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Logo</Label>

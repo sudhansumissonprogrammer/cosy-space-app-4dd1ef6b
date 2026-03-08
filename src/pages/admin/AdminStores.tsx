@@ -137,7 +137,15 @@ export default function AdminStores() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{format(new Date(store.created_at), "MMM d, yyyy")}</TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
+                        <Badge
+                          variant={(store as any).is_verified ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => toggleVerify.mutate({ storeId: store.id, verified: !(store as any).is_verified })}
+                        >
+                          {(store as any).is_verified ? <><BadgeCheck className="mr-1 h-3 w-3" /> Verified</> : "Unverified"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                           {store.is_suspended ? (
                             <Button variant="outline" size="sm" onClick={() => toggleSuspend.mutate({ storeId: store.id, suspend: false })}>
                               <CheckCircle className="mr-1 h-3 w-3" /> Activate

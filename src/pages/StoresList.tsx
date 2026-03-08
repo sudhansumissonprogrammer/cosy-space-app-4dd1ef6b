@@ -91,10 +91,24 @@ export default function StoresList() {
                     </Link>
                   </Button>
                   <Button variant="outline" size="sm" asChild>
+                    <Link to={`/dashboard/stores/${store.id}/coupons`}>
+                      <Tag className="mr-1 h-3 w-3" /> Coupons
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
                     <Link to={`/dashboard/stores/${store.id}/settings`}>
                       <Settings className="mr-1 h-3 w-3" /> Settings
                     </Link>
                   </Button>
+                  <ShareStoreDialog
+                    storeSlug={store.slug}
+                    storeName={store.name}
+                    trigger={
+                      <Button variant="outline" size="sm">
+                        <Share2 className="mr-1 h-3 w-3" /> Share
+                      </Button>
+                    }
+                  />
                 </div>
               </CardContent>
             </Card>
