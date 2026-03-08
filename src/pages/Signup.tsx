@@ -10,6 +10,7 @@ import { LayoutDashboard, Loader2 } from "lucide-react";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
