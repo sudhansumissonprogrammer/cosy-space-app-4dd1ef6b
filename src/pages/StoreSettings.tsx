@@ -21,6 +21,11 @@ export default function StoreSettings() {
   const [description, setDescription] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [location, setLocation] = useState("");
+  const [city, setCity] = useState("");
+  const [stateName, setStateName] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
   const [businessHours, setBusinessHours] = useState<Record<string, string>>({
     mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "",
   });
