@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Store, Package, Search, MapPin, Clock, BadgeCheck, Instagram, Facebook } from "lucide-react";
+import { MessageCircle, Store, Package, Search, MapPin, Clock, BadgeCheck, Instagram, Facebook, Tag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function StorefrontHome() {
@@ -29,7 +29,19 @@ export default function StorefrontHome() {
     enabled: !!store.id,
   });
 
-  const categories = [...new Set(products?.map((p) => p.category).filter(Boolean))] as string[];
+  const { data: storeCategories } = useQuery({
+    queryKey: ["storefront-categories", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("categories")
+        .select("*")
+        .eq("store_id", store.id)
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; slug: string; image_url: string | null }[];
+    },
+    enabled: !!store.id,
+  });
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
