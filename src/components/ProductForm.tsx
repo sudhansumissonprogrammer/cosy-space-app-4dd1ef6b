@@ -319,6 +319,34 @@ export default function ProductForm({ productId }: ProductFormProps) {
         }
       }
 
+      // Save variants
+      if (savedProductId) {
+        // Delete removed existing variants
+        const existingIds = existingVariants?.map((v) => v.id) || [];
+        const keptIds = variants.filter((v) => v.isExisting && v.id).map((v) => v.id!);
+        const removedIds = existingIds.filter((id) => !keptIds.includes(id));
+        for (const id of removedIds) {
+          await (supabase as any).from("product_variants").delete().eq("id", id);
+        }
+        // Upsert variants
+        for (let i = 0; i < variants.length; i++) {
+          const v = variants[i];
+          const variantData = {
+            product_id: savedProductId,
+            name: v.name.trim(),
+            sku: v.sku.trim() || null,
+            price: v.price ? parseFloat(v.price) : null,
+            stock_quantity: parseInt(v.stock) || 0,
+            display_order: i,
+          };
+          if (v.isExisting && v.id) {
+            await (supabase as any).from("product_variants").update(variantData).eq("id", v.id);
+          } else {
+            await (supabase as any).from("product_variants").insert(variantData);
+          }
+        }
+      }
+
       toast.success(isEditing ? "Product updated!" : "Product created!");
       navigate(`/dashboard/stores/${storeId}/products`);
     } catch (err: any) {
