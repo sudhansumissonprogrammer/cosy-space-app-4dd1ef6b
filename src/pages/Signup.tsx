@@ -31,20 +31,26 @@ export default function Signup() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { full_name: fullName.trim() || null },
-      },
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Account created! Check your email to confirm.");
-      navigate("/login");
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: { full_name: fullName.trim() || null },
+        },
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Account created! Check your email to confirm.");
+        navigate("/login");
+      }
+    } catch (err: any) {
+      console.error("Signup network error:", err);
+      toast.error("Network error. Please check your internet connection and try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
