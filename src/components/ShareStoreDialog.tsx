@@ -9,9 +9,10 @@ interface ShareStoreDialogProps {
   storeSlug: string;
   storeName: string;
   trigger?: React.ReactNode;
+  iconOnly?: boolean;
 }
 
-export default function ShareStoreDialog({ storeSlug, storeName, trigger }: ShareStoreDialogProps) {
+export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOnly }: ShareStoreDialogProps) {
   const [copied, setCopied] = useState(false);
   const storeUrl = `${window.location.origin}/store/${storeSlug}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(storeUrl)}`;
