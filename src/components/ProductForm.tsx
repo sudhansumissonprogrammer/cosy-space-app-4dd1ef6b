@@ -43,6 +43,24 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
   const [additionalPreviews, setAdditionalPreviews] = useState<{ url: string; isExisting: boolean; id?: string }[]>([]);
 
+  // Variants state
+  interface VariantRow { id?: string; name: string; sku: string; price: string; stock: string; isExisting?: boolean }
+  const [variants, setVariants] = useState<VariantRow[]>([]);
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [price, setPrice] = useState("");
+  const [salePrice, setSalePrice] = useState("");
+  const [description, setDescription] = useState("");
+  const [stockQuantity, setStockQuantity] = useState("0");
+  const [category, setCategory] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Additional images state
+  const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
+  const [additionalPreviews, setAdditionalPreviews] = useState<{ url: string; isExisting: boolean; id?: string }[]>([]);
+
   // Check product limit
   const { data: limitInfo } = useQuery({
     queryKey: ["product-limit", user?.id],
