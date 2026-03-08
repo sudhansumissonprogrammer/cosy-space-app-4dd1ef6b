@@ -146,6 +146,7 @@ export default function AdminStores() {
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        <div className="flex gap-1">
                           {store.is_suspended ? (
                             <Button variant="outline" size="sm" onClick={() => toggleSuspend.mutate({ storeId: store.id, suspend: false })}>
                               <CheckCircle className="mr-1 h-3 w-3" /> Activate
