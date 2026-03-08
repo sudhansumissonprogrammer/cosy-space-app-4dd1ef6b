@@ -55,6 +55,11 @@ export default function StoreSettings() {
       setDescription(store.description || "");
       setWhatsappNumber(store.whatsapp_number || "");
       setLocation((store as any).location || "");
+      setCity((store as any).city || "");
+      setStateName((store as any).state || "");
+      setCurrency((store as any).currency || "USD");
+      setInstagramUrl((store as any).instagram_url || "");
+      setFacebookUrl((store as any).facebook_url || "");
       if ((store as any).business_hours) {
         setBusinessHours({ mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "", ...(store as any).business_hours });
       }
