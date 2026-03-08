@@ -99,6 +99,9 @@ export default function CreateStore() {
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
 
+  // Step 5 - Theme
+  const [theme, setTheme] = useState("theme-1");
+
   const generateSlug = (value: string) =>
     value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
