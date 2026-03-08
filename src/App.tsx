@@ -18,6 +18,7 @@ import StorefrontLayout from "./layouts/StorefrontLayout";
 import StorefrontHome from "./pages/StorefrontHome";
 import ProductDetail from "./pages/ProductDetail";
 import StoreOrders from "./pages/StoreOrders";
+import StoreCustomers from "./pages/StoreCustomers";
 import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
 
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="stores/:storeId/products/create" element={<CreateProduct />} />
               <Route path="stores/:storeId/products/:productId/edit" element={<EditProduct />} />
               <Route path="stores/:storeId/orders" element={<StoreOrders />} />
+              <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
               <Route path="analytics" element={<Placeholder />} />
               <Route path="users" element={<Placeholder />} />
               <Route path="documents" element={<Placeholder />} />

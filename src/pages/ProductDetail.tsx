@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ArrowLeft, MessageCircle, Package, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -171,10 +173,17 @@ function WhatsAppOrderButton({
   hasDiscount: boolean;
 }) {
   const [ordering, setOrdering] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
 
   const finalPrice = hasDiscount ? product.sale_price! : product.price;
 
   const handleOrder = async () => {
+    if (!customerPhone.trim()) {
+      toast.error("Please enter your phone number");
+      return;
+    }
+
     setOrdering(true);
     try {
       await supabase.from("whatsapp_orders").insert({
@@ -182,6 +191,8 @@ function WhatsAppOrderButton({
         product_id: product.id,
         product_name: product.name,
         product_price: finalPrice,
+        customer_phone: customerPhone.trim(),
+        customer_name: customerName.trim() || null,
         quantity: 1,
       });
     } catch {
@@ -190,7 +201,7 @@ function WhatsAppOrderButton({
     setOrdering(false);
 
     const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
-    const text = `Hello, I want to order:\n\nProduct: ${product.name}\nPrice: $${Number(finalPrice).toFixed(2)}\nStore: ${store.name}`;
+    const text = `Hello, I want to order:\n\nProduct: ${product.name}\nPrice: $${Number(finalPrice).toFixed(2)}\nStore: ${store.name}\n\nName: ${customerName.trim() || "—"}\nPhone: ${customerPhone.trim()}`;
     window.open(
       `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`,
       "_blank"
@@ -198,7 +209,29 @@ function WhatsAppOrderButton({
   };
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="customer-name" className="text-xs">Your Name</Label>
+          <Input
+            id="customer-name"
+            placeholder="John Doe"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            maxLength={100}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="customer-phone" className="text-xs">Your Phone *</Label>
+          <Input
+            id="customer-phone"
+            placeholder="+1234567890"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            maxLength={20}
+          />
+        </div>
+      </div>
       <Button size="lg" className="w-full sm:w-auto" onClick={handleOrder} disabled={ordering}>
         {ordering ? (
           <Loader2 className="mr-2 h-5 w-5 animate-spin" />

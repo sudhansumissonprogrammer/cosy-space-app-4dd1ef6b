@@ -21,6 +21,7 @@ export type Database = {
           email: string
           id: string
           name: string | null
+          order_count: number
           phone: string | null
           store_id: string
           updated_at: string
@@ -31,6 +32,7 @@ export type Database = {
           email: string
           id?: string
           name?: string | null
+          order_count?: number
           phone?: string | null
           store_id: string
           updated_at?: string
@@ -41,6 +43,7 @@ export type Database = {
           email?: string
           id?: string
           name?: string | null
+          order_count?: number
           phone?: string | null
           store_id?: string
           updated_at?: string
@@ -282,6 +285,7 @@ export type Database = {
       whatsapp_orders: {
         Row: {
           created_at: string
+          customer_name: string | null
           customer_phone: string | null
           id: string
           product_id: string | null
@@ -293,6 +297,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_name?: string | null
           customer_phone?: string | null
           id?: string
           product_id?: string | null
@@ -304,6 +309,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_name?: string | null
           customer_phone?: string | null
           id?: string
           product_id?: string | null
