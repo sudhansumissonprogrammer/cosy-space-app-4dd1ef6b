@@ -96,7 +96,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const authClient = createClient(supabaseUrl, anonKey);
     const authHeaders = {
       "Content-Type": "application/json",
       apikey: anonKey,
