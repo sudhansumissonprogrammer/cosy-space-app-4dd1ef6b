@@ -40,6 +40,14 @@ const STEPS = [
   { id: 2, title: "Location", icon: MapPin, desc: "Where you are" },
   { id: 3, title: "Contact", icon: Phone, desc: "How to reach you" },
   { id: 4, title: "Social", icon: Instagram, desc: "Your presence" },
+  { id: 5, title: "Theme", icon: Palette, desc: "Pick a look" },
+];
+
+const THEMES = [
+  { id: "theme-1", name: "Classic", desc: "Clean & modern storefront", available: true },
+  { id: "theme-2", name: "Bold", desc: "Eye-catching vibrant design", available: false },
+  { id: "theme-3", name: "Minimal", desc: "Simple & elegant layout", available: false },
+  { id: "theme-4", name: "Starter", desc: "Starter template with cool UI", available: false },
 ];
 
 export default function CreateStore() {
