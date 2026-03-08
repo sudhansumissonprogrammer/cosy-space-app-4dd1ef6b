@@ -186,6 +186,38 @@ export type Database = {
           },
         ]
       }
+      page_views: {
+        Row: {
+          created_at: string
+          id: string
+          path: string | null
+          store_id: string
+          visitor_ip: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path?: string | null
+          store_id: string
+          visitor_ip?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string | null
+          store_id?: string
+          visitor_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_views_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           created_at: string
@@ -218,6 +250,38 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      product_images: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -474,6 +538,13 @@ export type Database = {
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
+      get_store_views: {
+        Args: { _store_ids: string[] }
+        Returns: {
+          store_id: string
+          view_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
