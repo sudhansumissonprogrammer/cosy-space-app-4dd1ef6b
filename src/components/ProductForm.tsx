@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -136,6 +136,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
       setCategoryImagePreview(null);
       setShowNewCategory(false);
       toast.success("Category created");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteCategory = useMutation({
+    mutationFn: async (catId: string) => {
+      const { error } = await (supabase as any)
+        .from("categories")
+        .delete()
+        .eq("id", catId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+      toast.success("Category deleted");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -526,9 +541,24 @@ export default function ProductForm({ productId }: ProductFormProps) {
                       </SelectTrigger>
                       <SelectContent>
                         {categories?.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.name}>
-                            {cat.name}
-                          </SelectItem>
+                          <div key={cat.id} className="flex items-center group">
+                            <SelectItem value={cat.name} className="flex-1">
+                              {cat.name}
+                            </SelectItem>
+                            <button
+                              type="button"
+                              className="mr-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Delete category "${cat.name}"?`)) {
+                                  deleteCategory.mutate(cat.id);
+                                  if (category === cat.name) setCategory("");
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         ))}
                       </SelectContent>
                     </Select>
