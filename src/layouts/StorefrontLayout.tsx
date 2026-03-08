@@ -33,6 +33,12 @@ export function useStorefront() {
 export default function StorefrontLayout() {
   const { store, isLoading, slug } = useStorefront();
 
+  useMetaTags({
+    title: store ? `${store.name} — Store` : undefined,
+    description: store?.description || undefined,
+    ogImage: store?.logo_url || undefined,
+  });
+
   // Track page view
   useEffect(() => {
     if (!store?.id) return;
