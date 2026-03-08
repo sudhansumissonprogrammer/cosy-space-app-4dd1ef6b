@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
-  Instagram, Facebook, Check, Sparkles, Globe, MessageCircle,
+  Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Palette, Lock,
 } from "lucide-react";
 
 const CURRENCIES = [
