@@ -307,6 +307,31 @@ export default function CreateStore() {
                   </Select>
                 </div>
 
+                {/* Order Mode */}
+                <div className="space-y-2">
+                  <Label>How do you want to take orders?</Label>
+                  <RadioGroup value={orderMode} onValueChange={(v) => setOrderMode(v as "whatsapp" | "website")} className="grid gap-3 sm:grid-cols-2">
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                      <RadioGroupItem value="whatsapp" className="mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                          <MessageCircle className="h-4 w-4 text-green-600" /> Order via WhatsApp
+                        </p>
+                        <p className="text-xs text-muted-foreground">Take orders via WhatsApp messages</p>
+                      </div>
+                    </label>
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "website" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                      <RadioGroupItem value="website" className="mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                          <Globe className="h-4 w-4 text-blue-600" /> Order via Website
+                        </p>
+                        <p className="text-xs text-muted-foreground">Customers checkout on your site</p>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                </div>
+
                 {/* Logo + Banner side by side */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
