@@ -481,14 +481,14 @@ function WhatsAppOrderButton({
         )}
       </div>
 
-      <Button size="lg" className="w-full sm:w-auto" onClick={handleOrder} disabled={ordering}>
+      <button className="btn-gold inline-flex w-full items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest sm:w-auto" onClick={handleOrder} disabled={ordering}>
         {ordering ? (
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin" />
         ) : (
-          <MessageCircle className="mr-2 h-5 w-5" />
+          <MessageCircle className="h-5 w-5" />
         )}
         Order on WhatsApp — {currency} {Number(finalPrice).toFixed(2)}
-      </Button>
+      </button>
     </div>
   );
 }
@@ -545,10 +545,10 @@ function BuyNowButton({
         </div>
       )}
 
-      <Button size="lg" className="w-full sm:w-auto" onClick={handleBuyNow}>
-        <ShoppingBag className="mr-2 h-5 w-5" />
+      <button className="btn-gold inline-flex w-full items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest sm:w-auto" onClick={handleBuyNow}>
+        <ShoppingBag className="h-5 w-5" />
         Buy Now — {currency} {Number(variantPrice).toFixed(2)}
-      </Button>
+      </button>
     </div>
   );
 }
@@ -584,10 +584,10 @@ function AddToCartButton({
 
   return (
     <div className="mt-2">
-      <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={handleAdd}>
-        <ShoppingCart className="mr-2 h-5 w-5" />
+      <button className="btn-gold inline-flex w-full items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest sm:w-auto" onClick={handleAdd}>
         Add to Cart
-      </Button>
+        <ShoppingCart className="h-5 w-5" />
+      </button>
     </div>
   );
 }

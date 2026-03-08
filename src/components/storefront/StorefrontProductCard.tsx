@@ -87,14 +87,13 @@ export default function StorefrontProductCard({ product, slug }: StorefrontProdu
         </div>
 
         {/* Add to Cart Button */}
-        <Button
-          size="sm"
-          className="mt-3 w-full gap-2 rounded-sm text-xs font-bold uppercase tracking-wide"
+        <button
+          className="btn-gold mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest"
           onClick={handleAddToCart}
         >
-          <ShoppingCart className="h-3.5 w-3.5" />
           Add to Cart
-        </Button>
+          <ShoppingCart className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );
