@@ -146,6 +146,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   const handleFileSelect = (file: File | null) => {
     if (file) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error("File must be less than 5MB");
+        return;
+      }
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
     }
