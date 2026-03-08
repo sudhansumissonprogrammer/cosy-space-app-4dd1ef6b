@@ -43,6 +43,12 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
   const [additionalPreviews, setAdditionalPreviews] = useState<{ url: string; isExisting: boolean; id?: string }[]>([]);
 
+  // Variants state
+  interface VariantRow { id?: string; name: string; sku: string; price: string; stock: string; isExisting?: boolean }
+  const [variants, setVariants] = useState<VariantRow[]>([]);
+
+
+
   // Check product limit
   const { data: limitInfo } = useQuery({
     queryKey: ["product-limit", user?.id],
@@ -140,6 +146,34 @@ export default function ProductForm({ productId }: ProductFormProps) {
     },
     enabled: !!productId,
   });
+
+  // Load existing variants
+  const { data: existingVariants } = useQuery({
+    queryKey: ["product-variants-edit", productId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", productId!)
+        .order("display_order");
+      if (error) throw error;
+      return data as { id: string; name: string; sku: string | null; price: number | null; stock_quantity: number }[];
+    },
+    enabled: !!productId,
+  });
+
+  useEffect(() => {
+    if (existingVariants) {
+      setVariants(existingVariants.map((v) => ({
+        id: v.id,
+        name: v.name,
+        sku: v.sku || "",
+        price: v.price !== null ? String(v.price) : "",
+        stock: String(v.stock_quantity),
+        isExisting: true,
+      })));
+    }
+  }, [existingVariants]);
 
   useEffect(() => {
     if (existingProduct) {
@@ -282,6 +316,34 @@ export default function ProductForm({ productId }: ProductFormProps) {
             image_url: url,
             display_order: existingCount + i,
           });
+        }
+      }
+
+      // Save variants
+      if (savedProductId) {
+        // Delete removed existing variants
+        const existingIds = existingVariants?.map((v) => v.id) || [];
+        const keptIds = variants.filter((v) => v.isExisting && v.id).map((v) => v.id!);
+        const removedIds = existingIds.filter((id) => !keptIds.includes(id));
+        for (const id of removedIds) {
+          await (supabase as any).from("product_variants").delete().eq("id", id);
+        }
+        // Upsert variants
+        for (let i = 0; i < variants.length; i++) {
+          const v = variants[i];
+          const variantData = {
+            product_id: savedProductId,
+            name: v.name.trim(),
+            sku: v.sku.trim() || null,
+            price: v.price ? parseFloat(v.price) : null,
+            stock_quantity: parseInt(v.stock) || 0,
+            display_order: i,
+          };
+          if (v.isExisting && v.id) {
+            await (supabase as any).from("product_variants").update(variantData).eq("id", v.id);
+          } else {
+            await (supabase as any).from("product_variants").insert(variantData);
+          }
         }
       }
 
@@ -508,6 +570,69 @@ export default function ProductForm({ productId }: ProductFormProps) {
                 </label>
               </div>
               <p className="text-xs text-muted-foreground">Max 5MB per image. These appear in the product gallery.</p>
+            </div>
+
+            {/* Variants */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Variants (Size/Color)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVariants((prev) => [...prev, { name: "", sku: "", price: "", stock: "0" }])}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> Add Variant
+                </Button>
+              </div>
+              {variants.length > 0 && (
+                <div className="space-y-2">
+                  {variants.map((v, i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-lg border p-2">
+                      <Input
+                        placeholder="Name (e.g. Red / L)"
+                        value={v.name}
+                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, name: e.target.value } : vr))}
+                        className="flex-1"
+                        maxLength={100}
+                      />
+                      <Input
+                        placeholder="SKU"
+                        value={v.sku}
+                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, sku: e.target.value } : vr))}
+                        className="w-24"
+                        maxLength={50}
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Price"
+                        value={v.price}
+                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, price: e.target.value } : vr))}
+                        className="w-24"
+                        step="0.01"
+                        min="0"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Stock"
+                        value={v.stock}
+                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, stock: e.target.value } : vr))}
+                        className="w-20"
+                        min="0"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setVariants((prev) => prev.filter((_, idx) => idx !== i))}
+                      >
+                        <X className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Leave price empty to use the product's base price.</p>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>

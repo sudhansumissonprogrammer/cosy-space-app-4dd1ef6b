@@ -20,6 +20,10 @@ export default function StoreSettings() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [location, setLocation] = useState("");
+  const [businessHours, setBusinessHours] = useState<Record<string, string>>({
+    mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "",
+  });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -45,6 +49,10 @@ export default function StoreSettings() {
       setName(store.name);
       setDescription(store.description || "");
       setWhatsappNumber(store.whatsapp_number || "");
+      setLocation((store as any).location || "");
+      if ((store as any).business_hours) {
+        setBusinessHours({ mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "", ...(store as any).business_hours });
+      }
       if (store.logo_url) setLogoPreview(store.logo_url);
       if (store.banner_url) setBannerPreview(store.banner_url);
     }
@@ -71,12 +79,15 @@ export default function StoreSettings() {
       if (logoFile) logoUrl = await uploadFile(logoFile, "store-logos");
       if (bannerFile) bannerUrl = await uploadFile(bannerFile, "store-banners");
 
-      const { error } = await supabase
+      const hasHours = Object.values(businessHours).some((v) => v.trim());
+      const { error } = await (supabase as any)
         .from("stores")
         .update({
           name: name.trim(),
           description: description.trim() || null,
           whatsapp_number: whatsappNumber.trim() || null,
+          location: location.trim() || null,
+          business_hours: hasHours ? businessHours : null,
           logo_url: logoUrl,
           banner_url: bannerUrl,
         })
@@ -149,6 +160,34 @@ export default function StoreSettings() {
                 value={whatsappNumber}
                 onChange={(e) => setWhatsappNumber(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location / Address</Label>
+              <Input
+                id="location"
+                placeholder="123 Main St, City"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                maxLength={500}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Business Hours</Label>
+              <div className="grid gap-2">
+                {Object.entries(businessHours).map(([day, hours]) => (
+                  <div key={day} className="flex items-center gap-2">
+                    <span className="w-10 text-sm font-medium capitalize text-muted-foreground">{day}</span>
+                    <Input
+                      placeholder="9:00-18:00 or Closed"
+                      value={hours}
+                      onChange={(e) => setBusinessHours((prev) => ({ ...prev, [day]: e.target.value }))}
+                      maxLength={50}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Store } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import ShareStoreDialog from "@/components/ShareStoreDialog";
+import { useMetaTags } from "@/hooks/useMetaTags";
 
 export type StoreData = Tables<"stores">;
 
@@ -30,6 +32,12 @@ export function useStorefront() {
 
 export default function StorefrontLayout() {
   const { store, isLoading, slug } = useStorefront();
+
+  useMetaTags({
+    title: store ? `${store.name} — Store` : undefined,
+    description: store?.description || undefined,
+    ogImage: store?.logo_url || undefined,
+  });
 
   // Track page view
   useEffect(() => {
@@ -80,6 +88,7 @@ export default function StorefrontLayout() {
             {store.name}
           </Link>
           <div className="flex-1" />
+          <ShareStoreDialog storeSlug={store.slug} storeName={store.name} />
           {store.whatsapp_number && (
             <Button size="sm" asChild>
               <a

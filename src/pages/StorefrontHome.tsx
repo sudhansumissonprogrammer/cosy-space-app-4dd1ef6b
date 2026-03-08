@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Store, Package, Search } from "lucide-react";
+import { MessageCircle, Store, Package, Search, MapPin, Clock, BadgeCheck } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function StorefrontHome() {
@@ -70,7 +70,12 @@ export default function StorefrontHome() {
                 </div>
               )}
               <div className="mb-1 min-w-0 flex-1">
-                <h1 className="text-3xl font-bold text-foreground sm:text-4xl">{store.name}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold text-foreground sm:text-4xl">{store.name}</h1>
+                  {(store as any).is_verified && (
+                    <BadgeCheck className="h-6 w-6 text-primary" />
+                  )}
+                </div>
                 {store.description && (
                   <p className="mt-1 max-w-xl text-sm text-muted-foreground sm:text-base">
                     {store.description}
@@ -168,15 +173,15 @@ export default function StorefrontHome() {
                         {product.sale_price ? (
                           <>
                             <span className="text-lg font-bold text-foreground">
-                              ${Number(product.sale_price).toFixed(2)}
+                              {product.currency} {Number(product.sale_price).toFixed(2)}
                             </span>
                             <span className="text-sm text-muted-foreground line-through">
-                              ${Number(product.price).toFixed(2)}
+                              {product.currency} {Number(product.price).toFixed(2)}
                             </span>
                           </>
                         ) : (
                           <span className="text-lg font-bold text-foreground">
-                            ${Number(product.price).toFixed(2)}
+                            {product.currency} {Number(product.price).toFixed(2)}
                           </span>
                         )}
                       </div>
@@ -208,6 +213,26 @@ export default function StorefrontHome() {
               )}
             </div>
             <div className="space-y-3">
+              {(store as any).location && (
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  {(store as any).location}
+                </p>
+              )}
+              {(store as any).business_hours && (
+                <div className="space-y-1">
+                  <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Clock className="h-4 w-4" /> Business Hours
+                  </p>
+                  {Object.entries((store as any).business_hours as Record<string, string>).map(([day, hours]) => (
+                    hours ? (
+                      <p key={day} className="ml-6 text-sm text-muted-foreground">
+                        <span className="inline-block w-10 capitalize">{day}</span> {hours}
+                      </p>
+                    ) : null
+                  ))}
+                </div>
+              )}
               {store.whatsapp_number && (
                 <a
                   href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}

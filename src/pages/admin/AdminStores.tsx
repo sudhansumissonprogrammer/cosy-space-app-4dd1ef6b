@@ -13,7 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Store, Ban, CheckCircle, Trash2, Search } from "lucide-react";
+import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck } from "lucide-react";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
@@ -58,6 +58,18 @@ export default function AdminStores() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const toggleVerify = useMutation({
+    mutationFn: async ({ storeId, verified }: { storeId: string; verified: boolean }) => {
+      const { error } = await (supabase as any).from("stores").update({ is_verified: verified }).eq("id", storeId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-stores"] });
+      toast.success("Store verification updated");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const deleteStore = useMutation({
     mutationFn: async (storeId: string) => {
       const { error } = await supabase.from("stores").delete().eq("id", storeId);
@@ -94,16 +106,17 @@ export default function AdminStores() {
           <Card>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Store</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Owner ID</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-40"></TableHead>
-                  </TableRow>
-                </TableHeader>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead>Store</TableHead>
+                     <TableHead>Slug</TableHead>
+                     <TableHead>Owner ID</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead>Verified</TableHead>
+                     <TableHead>Created</TableHead>
+                     <TableHead className="w-48"></TableHead>
+                   </TableRow>
+                 </TableHeader>
                 <TableBody>
                   {filtered.map((store) => (
                     <TableRow key={store.id}>
@@ -123,6 +136,15 @@ export default function AdminStores() {
                         <Badge variant={store.is_suspended ? "destructive" : "secondary"}>{store.is_suspended ? "Suspended" : "Active"}</Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{format(new Date(store.created_at), "MMM d, yyyy")}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={(store as any).is_verified ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => toggleVerify.mutate({ storeId: store.id, verified: !(store as any).is_verified })}
+                        >
+                          {(store as any).is_verified ? <><BadgeCheck className="mr-1 h-3 w-3" /> Verified</> : "Unverified"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           {store.is_suspended ? (

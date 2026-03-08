@@ -46,6 +46,59 @@ export type Database = {
           },
         ]
       }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_order_amount: number
+          starts_at: string
+          store_id: string
+          used_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_type?: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_amount?: number
+          starts_at?: string
+          store_id: string
+          used_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_amount?: number
+          starts_at?: string
+          store_id?: string
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: Json | null
@@ -283,6 +336,50 @@ export type Database = {
           },
         ]
       }
+      product_variants: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          price: number | null
+          product_id: string
+          sku: string | null
+          stock_quantity: number
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number | null
+          product_id: string
+          sku?: string | null
+          stock_quantity?: number
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number | null
+          product_id?: string
+          sku?: string | null
+          stock_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
@@ -378,10 +475,13 @@ export type Database = {
       stores: {
         Row: {
           banner_url: string | null
+          business_hours: Json | null
           created_at: string
           description: string | null
           id: string
           is_suspended: boolean
+          is_verified: boolean
+          location: string | null
           logo_url: string | null
           name: string
           owner_id: string
@@ -391,10 +491,13 @@ export type Database = {
         }
         Insert: {
           banner_url?: string | null
+          business_hours?: Json | null
           created_at?: string
           description?: string | null
           id?: string
           is_suspended?: boolean
+          is_verified?: boolean
+          location?: string | null
           logo_url?: string | null
           name: string
           owner_id: string
@@ -404,10 +507,13 @@ export type Database = {
         }
         Update: {
           banner_url?: string | null
+          business_hours?: Json | null
           created_at?: string
           description?: string | null
           id?: string
           is_suspended?: boolean
+          is_verified?: boolean
+          location?: string | null
           logo_url?: string | null
           name?: string
           owner_id?: string

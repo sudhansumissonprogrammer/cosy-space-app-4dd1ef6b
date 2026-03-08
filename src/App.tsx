@@ -34,6 +34,7 @@ import StoreCustomers from "./pages/StoreCustomers";
 import StoreSettings from "./pages/StoreSettings";
 import StoreAnalytics from "./pages/StoreAnalytics";
 import UserSettings from "./pages/UserSettings";
+import CouponsPage from "./pages/CouponsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,7 @@ const App = () => (
               <Route path="stores/:storeId/orders" element={<StoreOrders />} />
               <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
               <Route path="stores/:storeId/settings" element={<StoreSettings />} />
+              <Route path="stores/:storeId/coupons" element={<CouponsPage />} />
               <Route path="analytics" element={<StoreAnalytics />} />
               <Route path="settings" element={<UserSettings />} />
             </Route>

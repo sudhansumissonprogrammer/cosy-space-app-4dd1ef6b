@@ -62,10 +62,19 @@ export default function StoreOrders() {
     mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
       const { error } = await supabase.from("whatsapp_orders").update({ status }).eq("id", orderId);
       if (error) throw error;
+      return { orderId, status };
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["whatsapp-orders", storeId] });
       toast.success("Order status updated");
+
+      // Open WhatsApp to notify customer
+      const order = orders?.find((o) => o.id === variables.orderId);
+      if (order?.customer_phone && store?.whatsapp_number) {
+        const phone = order.customer_phone.replace(/[^0-9+]/g, "");
+        const text = `Hi ${order.customer_name || "there"}, your order for ${order.product_name} has been updated to: *${variables.status.toUpperCase()}*.\n\n— ${store.name}`;
+        window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
+      }
     },
     onError: (err: any) => toast.error(err.message),
   });
