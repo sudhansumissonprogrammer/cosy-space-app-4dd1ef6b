@@ -153,18 +153,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const userId = (signupBody as Record<string, unknown>)?.user &&
-      typeof (signupBody as Record<string, unknown>).user === "object"
-      ? ((signupBody as Record<string, unknown>).user as Record<string, unknown>).id
-      : null;
-
-    if (payload.fullName && typeof userId === "string") {
-      await authClient
-        .from("profiles")
-        .update({ full_name: payload.fullName.trim() })
-        .eq("user_id", userId);
-    }
-
     return new Response(JSON.stringify({ data: signupBody }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
