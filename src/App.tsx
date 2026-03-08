@@ -14,7 +14,9 @@ import CreateStore from "./pages/CreateStore";
 import ProductsList from "./pages/ProductsList";
 import CreateProduct from "./pages/CreateProduct";
 import EditProduct from "./pages/EditProduct";
-import Storefront from "./pages/Storefront";
+import StorefrontLayout from "./layouts/StorefrontLayout";
+import StorefrontHome from "./pages/StorefrontHome";
+import ProductDetail from "./pages/ProductDetail";
 import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
 
