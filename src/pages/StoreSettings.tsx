@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function StoreSettings() {
@@ -24,6 +25,7 @@ export default function StoreSettings() {
   const [city, setCity] = useState("");
   const [stateName, setStateName] = useState("");
   const [currency, setCurrency] = useState("USD");
+  const [orderMode, setOrderMode] = useState<"whatsapp" | "website">("whatsapp");
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
   const [businessHours, setBusinessHours] = useState<Record<string, string>>({
@@ -58,6 +60,7 @@ export default function StoreSettings() {
       setCity((store as any).city || "");
       setStateName((store as any).state || "");
       setCurrency((store as any).currency || "USD");
+      setOrderMode((store as any).order_mode || "whatsapp");
       setInstagramUrl((store as any).instagram_url || "");
       setFacebookUrl((store as any).facebook_url || "");
       if ((store as any).business_hours) {
@@ -100,6 +103,7 @@ export default function StoreSettings() {
           city: city.trim() || null,
           state: stateName.trim() || null,
           currency,
+          order_mode: orderMode,
           instagram_url: instagramUrl.trim() || null,
           facebook_url: facebookUrl.trim() || null,
           business_hours: hasHours ? businessHours : null,
@@ -165,6 +169,30 @@ export default function StoreSettings() {
                 rows={3}
                 maxLength={1000}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Order Mode</Label>
+              <RadioGroup value={orderMode} onValueChange={(v) => setOrderMode(v as "whatsapp" | "website")} className="grid gap-3 sm:grid-cols-2">
+                <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 transition-all ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                  <RadioGroupItem value="whatsapp" className="mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                      <MessageCircle className="h-3.5 w-3.5 text-green-600" /> WhatsApp
+                    </p>
+                    <p className="text-xs text-muted-foreground">Orders via WhatsApp</p>
+                  </div>
+                </label>
+                <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 transition-all ${orderMode === "website" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                  <RadioGroupItem value="website" className="mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                      <Globe className="h-3.5 w-3.5 text-blue-600" /> Website
+                    </p>
+                    <p className="text-xs text-muted-foreground">Checkout on site</p>
+                  </div>
+                </label>
+              </RadioGroup>
             </div>
 
             <div className="space-y-2">

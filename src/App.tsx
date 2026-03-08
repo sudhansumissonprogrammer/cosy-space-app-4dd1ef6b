@@ -36,6 +36,7 @@ import StoreAnalytics from "./pages/StoreAnalytics";
 import UserSettings from "./pages/UserSettings";
 import CouponsPage from "./pages/CouponsPage";
 import CustomerLeads from "./pages/CustomerLeads";
+import CheckoutPage from "./pages/CheckoutPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
             <Route path="/store/:slug" element={<StorefrontLayout />}>
               <Route index element={<StorefrontHome />} />
               <Route path="product/:productSlug" element={<ProductDetail />} />
+              <Route path="checkout" element={<CheckoutPage />} />
             </Route>
 
             {/* User Dashboard */}

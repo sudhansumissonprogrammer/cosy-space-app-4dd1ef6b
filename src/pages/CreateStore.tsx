@@ -11,9 +11,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
-  Instagram, Facebook, Check, Sparkles,
+  Instagram, Facebook, Check, Sparkles, Globe, MessageCircle,
 } from "lucide-react";
 
 const CURRENCIES = [
@@ -72,6 +73,7 @@ export default function CreateStore() {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("USD");
+  const [orderMode, setOrderMode] = useState<"whatsapp" | "website">("whatsapp");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -166,6 +168,7 @@ export default function CreateStore() {
         description: description.trim() || null,
         whatsapp_number: whatsappNumber.trim() || null,
         currency,
+        order_mode: orderMode,
         city: city.trim() || null,
         state: state.trim() || null,
         location: location.trim() || null,
@@ -304,6 +307,31 @@ export default function CreateStore() {
                   </Select>
                 </div>
 
+                {/* Order Mode */}
+                <div className="space-y-2">
+                  <Label>How do you want to take orders?</Label>
+                  <RadioGroup value={orderMode} onValueChange={(v) => setOrderMode(v as "whatsapp" | "website")} className="grid gap-3 sm:grid-cols-2">
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                      <RadioGroupItem value="whatsapp" className="mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                          <MessageCircle className="h-4 w-4 text-green-600" /> Order via WhatsApp
+                        </p>
+                        <p className="text-xs text-muted-foreground">Take orders via WhatsApp messages</p>
+                      </div>
+                    </label>
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "website" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                      <RadioGroupItem value="website" className="mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                          <Globe className="h-4 w-4 text-blue-600" /> Order via Website
+                        </p>
+                        <p className="text-xs text-muted-foreground">Customers checkout on your site</p>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                </div>
+
                 {/* Logo + Banner side by side */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
@@ -431,7 +459,7 @@ export default function CreateStore() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="whatsapp">WhatsApp Number</Label>
+                  <Label htmlFor="whatsapp">WhatsApp Number {orderMode === "whatsapp" ? "*" : "(optional)"}</Label>
                   <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
                     <span className="flex-shrink-0 px-3 text-muted-foreground">
                       <Phone className="h-4 w-4" />
@@ -446,17 +474,27 @@ export default function CreateStore() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Customers will use this to place orders via WhatsApp
+                    {orderMode === "whatsapp"
+                      ? "Customers will use this to place orders via WhatsApp"
+                      : "Optional — for customer support"}
                   </p>
                 </div>
 
                 <div className="rounded-xl border bg-accent/30 p-4">
                   <div className="flex items-start gap-3">
-                    <Phone className="mt-0.5 h-5 w-5 text-primary" />
+                    {orderMode === "whatsapp" ? (
+                      <Phone className="mt-0.5 h-5 w-5 text-primary" />
+                    ) : (
+                      <Globe className="mt-0.5 h-5 w-5 text-primary" />
+                    )}
                     <div>
-                      <p className="text-sm font-medium text-foreground">WhatsApp ordering</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {orderMode === "whatsapp" ? "WhatsApp ordering" : "Website ordering"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        When customers click "Order on WhatsApp", a pre-filled message with product details will open in WhatsApp. Make sure to include your country code.
+                        {orderMode === "whatsapp"
+                          ? "When customers click \"Order on WhatsApp\", a pre-filled message with product details will open in WhatsApp. Make sure to include your country code."
+                          : "Customers will see a \"Buy Now\" button and checkout directly on your website with address and COD payment."}
                       </p>
                     </div>
                   </div>

@@ -238,35 +238,56 @@ export type Database = {
       }
       orders: {
         Row: {
+          city: string | null
           created_at: string
           currency: string
           customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
           id: string
           notes: string | null
+          payment_method: string
+          pincode: string | null
+          state: string | null
           status: string
           store_id: string
+          street_address: string | null
           total: number
           updated_at: string
         }
         Insert: {
+          city?: string | null
           created_at?: string
           currency?: string
           customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string
+          pincode?: string | null
+          state?: string | null
           status?: string
           store_id: string
+          street_address?: string | null
           total?: number
           updated_at?: string
         }
         Update: {
+          city?: string | null
           created_at?: string
           currency?: string
           customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string
+          pincode?: string | null
+          state?: string | null
           status?: string
           store_id?: string
+          street_address?: string | null
           total?: number
           updated_at?: string
         }
@@ -536,6 +557,7 @@ export type Database = {
           location: string | null
           logo_url: string | null
           name: string
+          order_mode: string
           owner_id: string
           slug: string
           state: string | null
@@ -557,6 +579,7 @@ export type Database = {
           location?: string | null
           logo_url?: string | null
           name: string
+          order_mode?: string
           owner_id: string
           slug: string
           state?: string | null
@@ -578,6 +601,7 @@ export type Database = {
           location?: string | null
           logo_url?: string | null
           name?: string
+          order_mode?: string
           owner_id?: string
           slug?: string
           state?: string | null
