@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Store, ExternalLink, Package, ShoppingBag, Users, Settings, Tag, Share2, Trash2 } from "lucide-react";
+import { Plus, Store, ExternalLink, Package, ShoppingBag, Users, Settings, Tag, Share2, Trash2, UserCheck } from "lucide-react";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -114,6 +114,11 @@ export default function StoresList() {
                   <Button variant="outline" size="sm" asChild>
                     <Link to={`/dashboard/stores/${store.id}/coupons`}>
                       <Tag className="mr-1 h-3 w-3" /> Coupons
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/dashboard/stores/${store.id}/leads`}>
+                      <UserCheck className="mr-1 h-3 w-3" /> Leads
                     </Link>
                   </Button>
                   <Button variant="outline" size="sm" asChild>
