@@ -58,6 +58,18 @@ export default function AdminStores() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const toggleVerify = useMutation({
+    mutationFn: async ({ storeId, verified }: { storeId: string; verified: boolean }) => {
+      const { error } = await (supabase as any).from("stores").update({ is_verified: verified }).eq("id", storeId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-stores"] });
+      toast.success("Store verification updated");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const deleteStore = useMutation({
     mutationFn: async (storeId: string) => {
       const { error } = await supabase.from("stores").delete().eq("id", storeId);
