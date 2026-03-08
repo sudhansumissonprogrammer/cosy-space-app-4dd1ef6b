@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,21 +11,10 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const CATEGORIES = [
-  "Electronics",
-  "Clothing",
-  "Accessories",
-  "Food & Beverage",
-  "Home & Garden",
-  "Health & Beauty",
-  "Sports",
-  "Books",
-  "Toys",
-  "Other",
-];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 interface ProductFormProps {
   productId?: string;
