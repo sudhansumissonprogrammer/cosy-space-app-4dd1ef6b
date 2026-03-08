@@ -245,20 +245,11 @@ export default function CreateStore() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="store-slug">Store URL *</Label>
-                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-sm text-muted-foreground">/store/</span>
-                    <Input
-                      id="store-slug"
-                      placeholder="my-fashion-store"
-                      value={slug}
-                      onChange={(e) => setSlug(generateSlug(e.target.value))}
-                      maxLength={100}
-                      className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
-                    />
-                  </div>
-                </div>
+                {slug && (
+                  <p className="text-xs text-muted-foreground">
+                    Your store URL: <span className="font-medium text-foreground">/store/{slug}</span>
+                  </p>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
