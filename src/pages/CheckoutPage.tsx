@@ -1,0 +1,313 @@
+import { useState } from "react";
+import { useSearchParams, useOutletContext, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard } from "lucide-react";
+import type { StoreData } from "@/layouts/StorefrontLayout";
+
+export default function CheckoutPage() {
+  const store = useOutletContext<StoreData>();
+  const [searchParams] = useSearchParams();
+  const productId = searchParams.get("product");
+  const variantId = searchParams.get("variant");
+
+  const [placing, setPlacing] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+
+  // Form
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [quantity, setQuantity] = useState(1);
+
+  const { data: product, isLoading } = useQuery({
+    queryKey: ["checkout-product", productId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", productId!)
+        .eq("is_active", true)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!productId,
+  });
+
+  const { data: variant } = useQuery({
+    queryKey: ["checkout-variant", variantId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("product_variants")
+        .select("*")
+        .eq("id", variantId!)
+        .eq("is_active", true)
+        .single();
+      if (error) throw error;
+      return data as { id: string; name: string; price: number | null };
+    },
+    enabled: !!variantId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+        <h1 className="text-xl font-semibold text-foreground">Product not found</h1>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to={`/store/${store.slug}`}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const hasDiscount = product.sale_price && product.sale_price < product.price;
+  const basePrice = hasDiscount ? product.sale_price! : product.price;
+  const unitPrice = variant?.price ?? basePrice;
+  const total = unitPrice * quantity;
+  const currency = product.currency || "USD";
+  const productName = variant ? `${product.name} (${variant.name})` : product.name;
+
+  const handlePlaceOrder = async () => {
+    if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
+    if (!phone.trim()) { toast.error("Please enter your phone number"); return; }
+    if (!streetAddress.trim()) { toast.error("Please enter your street address"); return; }
+    if (!city.trim()) { toast.error("Please enter your city"); return; }
+    if (!state.trim()) { toast.error("Please enter your state"); return; }
+    if (!pincode.trim()) { toast.error("Please enter your pincode"); return; }
+
+    setPlacing(true);
+    try {
+      // 1. Create order
+      const { data: order, error: orderErr } = await (supabase as any)
+        .from("orders")
+        .insert({
+          store_id: store.id,
+          total,
+          currency,
+          status: "pending",
+          customer_name: fullName.trim(),
+          customer_phone: phone.trim(),
+          street_address: streetAddress.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          pincode: pincode.trim(),
+          payment_method: "cod",
+        })
+        .select("id")
+        .single();
+      if (orderErr) throw orderErr;
+
+      // 2. Create order item
+      await (supabase as any).from("order_items").insert({
+        order_id: order.id,
+        product_id: product.id,
+        product_name: productName,
+        quantity,
+        unit_price: unitPrice,
+        total,
+      });
+
+      // 3. Save customer lead
+      await (supabase as any).from("customer_leads").insert({
+        store_id: store.id,
+        name: fullName.trim(),
+        phone: phone.trim(),
+        product_name: productName,
+        product_id: product.id,
+        source: "website_order",
+      });
+
+      setOrderId(order.id);
+      setOrderPlaced(true);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to place order");
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  if (orderPlaced) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <CheckCircle2 className="h-8 w-8 text-primary" />
+        </div>
+        <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
+        <p className="mt-2 text-muted-foreground">
+          Your order has been placed successfully. The store will contact you shortly.
+        </p>
+        {orderId && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span>
+          </p>
+        )}
+        <Button asChild className="mt-6">
+          <Link to={`/store/${store.slug}`}>Continue Shopping</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mb-6">
+        <Link
+          to={`/store/${store.slug}`}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          Back to {store.name}
+        </Link>
+      </div>
+
+      <h1 className="mb-6 text-2xl font-bold text-foreground">Checkout</h1>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* Form - 3 cols */}
+        <div className="space-y-6 lg:col-span-3">
+          {/* Shipping */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MapPin className="h-4 w-4" /> Shipping Address
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone">Phone *</Label>
+                  <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="street">Street Address *</Label>
+                <Input id="street" placeholder="123 Main Street, Apt 4B" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="city">City / Town *</Label>
+                  <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="state">State *</Label>
+                  <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pincode">Pincode *</Label>
+                  <Input id="pincode" placeholder="400001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CreditCard className="h-4 w-4" /> Payment Method
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-primary">
+                  <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Cash on Delivery (COD)</p>
+                  <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Order Summary - 2 cols */}
+        <div className="lg:col-span-2">
+          <Card className="sticky top-20">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base">Order Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-3">
+                {product.image_url ? (
+                  <img src={product.image_url} alt={product.name} className="h-16 w-16 rounded-lg border object-cover" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
+                    <Package className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{product.name}</p>
+                  {variant && <p className="text-xs text-muted-foreground">{variant.name}</p>}
+                  <p className="text-sm font-semibold text-foreground mt-1">{currency} {Number(unitPrice).toFixed(2)}</p>
+                </div>
+              </div>
+
+              {/* Quantity */}
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Quantity</Label>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>-</Button>
+                  <span className="w-8 text-center text-sm font-medium">{quantity}</span>
+                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setQuantity(quantity + 1)}>+</Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Subtotal</span>
+                <span className="text-sm font-medium">{currency} {Number(total).toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Shipping</span>
+                <span className="text-sm font-medium text-primary">Free</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Payment</span>
+                <Badge variant="secondary">COD</Badge>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground">Total</span>
+                <span className="text-lg font-bold text-foreground">{currency} {Number(total).toFixed(2)}</span>
+              </div>
+
+              <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
+                {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Place Order
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

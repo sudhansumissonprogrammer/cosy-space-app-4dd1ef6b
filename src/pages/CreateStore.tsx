@@ -459,7 +459,7 @@ export default function CreateStore() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="whatsapp">WhatsApp Number</Label>
+                  <Label htmlFor="whatsapp">WhatsApp Number {orderMode === "whatsapp" ? "*" : "(optional)"}</Label>
                   <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
                     <span className="flex-shrink-0 px-3 text-muted-foreground">
                       <Phone className="h-4 w-4" />
@@ -474,17 +474,27 @@ export default function CreateStore() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Customers will use this to place orders via WhatsApp
+                    {orderMode === "whatsapp"
+                      ? "Customers will use this to place orders via WhatsApp"
+                      : "Optional — for customer support"}
                   </p>
                 </div>
 
                 <div className="rounded-xl border bg-accent/30 p-4">
                   <div className="flex items-start gap-3">
-                    <Phone className="mt-0.5 h-5 w-5 text-primary" />
+                    {orderMode === "whatsapp" ? (
+                      <Phone className="mt-0.5 h-5 w-5 text-primary" />
+                    ) : (
+                      <Globe className="mt-0.5 h-5 w-5 text-primary" />
+                    )}
                     <div>
-                      <p className="text-sm font-medium text-foreground">WhatsApp ordering</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {orderMode === "whatsapp" ? "WhatsApp ordering" : "Website ordering"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        When customers click "Order on WhatsApp", a pre-filled message with product details will open in WhatsApp. Make sure to include your country code.
+                        {orderMode === "whatsapp"
+                          ? "When customers click \"Order on WhatsApp\", a pre-filled message with product details will open in WhatsApp. Make sure to include your country code."
+                          : "Customers will see a \"Buy Now\" button and checkout directly on your website with address and COD payment."}
                       </p>
                     </div>
                   </div>

@@ -484,3 +484,63 @@ function WhatsAppOrderButton({
     </div>
   );
 }
+
+function BuyNowButton({
+  store,
+  product,
+  hasDiscount,
+  currency,
+  variants,
+}: {
+  store: StoreData;
+  product: { id: string; name: string; price: number; sale_price: number | null };
+  hasDiscount: boolean;
+  currency: string;
+  variants: Variant[];
+}) {
+  const navigate = useNavigate();
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+
+  const basePrice = hasDiscount ? product.sale_price! : product.price;
+  const variantPrice = selectedVariant?.price ?? basePrice;
+
+  const handleBuyNow = () => {
+    const params = new URLSearchParams({ product: product.id });
+    if (selectedVariant) params.set("variant", selectedVariant.id);
+    navigate(`/store/${store.slug}/checkout?${params.toString()}`);
+  };
+
+  return (
+    <div className="mt-8 space-y-4">
+      {variants.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wide">Variant</Label>
+          <div className="flex flex-wrap gap-2">
+            {variants.map((v) => (
+              <Button
+                key={v.id}
+                type="button"
+                variant={selectedVariant?.id === v.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
+                disabled={v.stock_quantity <= 0}
+              >
+                {v.name}
+                {v.price !== null && v.price !== basePrice && (
+                  <span className="ml-1 text-xs opacity-70">
+                    ({currency} {Number(v.price).toFixed(2)})
+                  </span>
+                )}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Button size="lg" className="w-full sm:w-auto" onClick={handleBuyNow}>
+        <ShoppingBag className="mr-2 h-5 w-5" />
+        Buy Now — {currency} {Number(variantPrice).toFixed(2)}
+      </Button>
+    </div>
+  );
+}
