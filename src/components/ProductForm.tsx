@@ -72,13 +72,13 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const { data: categories } = useQuery({
     queryKey: ["categories", storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("categories")
         .select("*")
         .eq("store_id", storeId!)
         .order("name");
       if (error) throw error;
-      return data;
+      return data as { id: string; name: string; slug: string; store_id: string }[];
     },
     enabled: !!storeId,
   });
