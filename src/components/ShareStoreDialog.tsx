@@ -40,9 +40,15 @@ export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOn
     <Dialog>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="outline" size="sm">
-            <Share2 className="mr-1 h-3 w-3" /> Share
-          </Button>
+          iconOnly ? (
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Share2 className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm">
+              <Share2 className="mr-1 h-3 w-3" /> Share
+            </Button>
+          )
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
