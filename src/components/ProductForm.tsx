@@ -147,6 +147,34 @@ export default function ProductForm({ productId }: ProductFormProps) {
     enabled: !!productId,
   });
 
+  // Load existing variants
+  const { data: existingVariants } = useQuery({
+    queryKey: ["product-variants-edit", productId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", productId!)
+        .order("display_order");
+      if (error) throw error;
+      return data as { id: string; name: string; sku: string | null; price: number | null; stock_quantity: number }[];
+    },
+    enabled: !!productId,
+  });
+
+  useEffect(() => {
+    if (existingVariants) {
+      setVariants(existingVariants.map((v) => ({
+        id: v.id,
+        name: v.name,
+        sku: v.sku || "",
+        price: v.price !== null ? String(v.price) : "",
+        stock: String(v.stock_quantity),
+        isExisting: true,
+      })));
+    }
+  }, [existingVariants]);
+
   useEffect(() => {
     if (existingProduct) {
       setName(existingProduct.name);
