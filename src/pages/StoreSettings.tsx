@@ -137,6 +137,7 @@ export default function StoreSettings() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
+                maxLength={1000}
               />
             </div>
 

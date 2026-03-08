@@ -6,15 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { ArrowLeft, Users } from "lucide-react";
 import { format } from "date-fns";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 export default function StoreCustomers() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -23,26 +20,32 @@ export default function StoreCustomers() {
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("*")
-        .eq("id", storeId!)
-        .eq("owner_id", user!.id)
-        .maybeSingle();
+      const { data, error } = await supabase.from("stores").select("*").eq("id", storeId!).eq("owner_id", user!.id).maybeSingle();
       if (error) throw error;
       return data;
     },
     enabled: !!storeId && !!user,
   });
 
+  const { data: countData } = useQuery({
+    queryKey: ["store-customers-count", storeId],
+    queryFn: async () => {
+      const { count, error } = await supabase.from("customers").select("*", { count: "exact", head: true }).eq("store_id", storeId!);
+      if (error) throw error;
+      return count;
+    },
+    enabled: !!storeId,
+  });
+
+  const pagination = usePagination(countData ?? undefined);
+
   const { data: customers, isLoading } = useQuery({
-    queryKey: ["store-customers", storeId],
+    queryKey: ["store-customers", storeId, pagination.page],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("customers")
-        .select("*")
-        .eq("store_id", storeId!)
-        .order("order_count", { ascending: false });
+        .from("customers").select("*").eq("store_id", storeId!)
+        .order("order_count", { ascending: false })
+        .range(pagination.from, pagination.to);
       if (error) throw error;
       return data;
     },
@@ -53,9 +56,7 @@ export default function StoreCustomers() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <p className="text-muted-foreground">Store not found</p>
-        <Button asChild variant="outline">
-          <Link to="/dashboard/stores">Back to stores</Link>
-        </Button>
+        <Button asChild variant="outline"><Link to="/dashboard/stores">Back to stores</Link></Button>
       </div>
     );
   }
@@ -63,11 +64,7 @@ export default function StoreCustomers() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to="/dashboard/stores">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
+        <Button variant="ghost" size="icon" asChild><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Customers</h1>
           <p className="text-sm text-muted-foreground">{store?.name}</p>
@@ -79,52 +76,41 @@ export default function StoreCustomers() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       ) : customers && customers.length > 0 ? (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="text-center">Orders</TableHead>
-                  <TableHead>Joined</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium text-foreground">
-                      {customer.name || "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {customer.phone || "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {customer.email?.endsWith("@whatsapp")
-                        ? "—"
-                        : customer.email}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="secondary">{customer.order_count}</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(customer.created_at), "MMM d, yyyy")}
-                    </TableCell>
+        <>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="text-center">Orders</TableHead>
+                    <TableHead>Joined</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {customers.map((customer) => (
+                    <TableRow key={customer.id}>
+                      <TableCell className="font-medium text-foreground">{customer.name || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{customer.phone || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{customer.email?.endsWith("@whatsapp") ? "—" : customer.email}</TableCell>
+                      <TableCell className="text-center"><Badge variant="secondary">{customer.order_count}</Badge></TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{format(new Date(customer.created_at), "MMM d, yyyy")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+          <PaginationControls page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} />
+        </>
       ) : (
         <Card>
           <CardContent className="flex min-h-[200px] flex-col items-center justify-center gap-3">
             <Users className="h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">No customers yet</p>
-            <p className="text-sm text-muted-foreground">
-              Customers are created automatically when orders are placed
-            </p>
+            <p className="text-sm text-muted-foreground">Customers are created automatically when orders are placed</p>
           </CardContent>
         </Card>
       )}

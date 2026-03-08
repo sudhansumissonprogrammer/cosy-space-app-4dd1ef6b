@@ -97,6 +97,7 @@ export default function ProductDetail() {
               src={product.image_url}
               alt={product.name}
               className="aspect-square w-full object-cover"
+              loading="lazy"
             />
           ) : (
             <div className="flex aspect-square w-full items-center justify-center">

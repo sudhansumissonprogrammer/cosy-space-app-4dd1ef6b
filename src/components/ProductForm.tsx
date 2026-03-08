@@ -330,18 +330,40 @@ export default function ProductForm({ productId }: ProductFormProps) {
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {showNewCategory ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="New category name"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      maxLength={50}
+                    />
+                    <Button type="button" size="sm" onClick={() => newCategoryName.trim() && createCategory.mutate(newCategoryName.trim())} disabled={createCategory.isPending}>
+                      Add
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setShowNewCategory(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories?.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" size="icon" variant="outline" onClick={() => setShowNewCategory(true)} title="New category">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 

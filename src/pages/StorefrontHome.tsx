@@ -1,14 +1,18 @@
+import { useState, useMemo } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Store, Package } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MessageCircle, Store, Package, Search } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["storefront-products", store.id],
@@ -27,13 +31,22 @@ export default function StorefrontHome() {
 
   const categories = [...new Set(products?.map((p) => p.category).filter(Boolean))] as string[];
 
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter((p) => {
+      const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = !activeCategory || p.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchQuery, activeCategory]);
+
   return (
     <>
       {/* Hero Banner */}
       <section className="relative">
         {store.banner_url ? (
           <div className="h-64 w-full sm:h-80 lg:h-96">
-            <img src={store.banner_url} alt="" className="h-full w-full object-cover" />
+            <img src={store.banner_url} alt="" className="h-full w-full object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
           </div>
         ) : (
@@ -49,6 +62,7 @@ export default function StorefrontHome() {
                   src={store.logo_url}
                   alt={store.name}
                   className="h-20 w-20 rounded-2xl border-4 border-background object-cover shadow-lg sm:h-28 sm:w-28"
+                  loading="lazy"
                 />
               ) : (
                 <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-background bg-card shadow-lg sm:h-28 sm:w-28">
@@ -69,27 +83,58 @@ export default function StorefrontHome() {
       </section>
 
       <div className="mx-auto max-w-6xl px-4 py-10">
-        {/* Category Badges */}
-        {categories.length > 0 && (
-          <div className="mb-6 flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <Badge key={cat} variant="secondary" className="text-xs">
-                {cat}
-              </Badge>
-            ))}
+        {/* Search & Filter */}
+        <div className="mb-6 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+              maxLength={100}
+            />
           </div>
-        )}
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <Badge
+                variant={activeCategory === null ? "default" : "secondary"}
+                className="cursor-pointer"
+                onClick={() => setActiveCategory(null)}
+              >
+                All
+              </Badge>
+              {categories.map((cat) => (
+                <Badge
+                  key={cat}
+                  variant={activeCategory === cat ? "default" : "secondary"}
+                  className="cursor-pointer"
+                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                >
+                  {cat}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Product Grid */}
         <section>
-          <h2 className="mb-6 text-xl font-semibold text-foreground">Products</h2>
+          <h2 className="mb-6 text-xl font-semibold text-foreground">
+            Products
+            {filteredProducts.length !== (products?.length || 0) && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({filteredProducts.length} of {products?.length})
+              </span>
+            )}
+          </h2>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : products && products.length > 0 ? (
+          ) : filteredProducts.length > 0 ? (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <Link
                   key={product.id}
                   to={`/store/${slug}/product/${product.slug || product.id}`}
@@ -102,6 +147,7 @@ export default function StorefrontHome() {
                           src={product.image_url}
                           alt={product.name}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
@@ -142,7 +188,9 @@ export default function StorefrontHome() {
           ) : (
             <Card>
               <CardContent className="flex min-h-[200px] items-center justify-center">
-                <p className="text-muted-foreground">No products available yet.</p>
+                <p className="text-muted-foreground">
+                  {searchQuery || activeCategory ? "No products match your search." : "No products available yet."}
+                </p>
               </CardContent>
             </Card>
           )}
