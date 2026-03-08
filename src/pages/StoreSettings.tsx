@@ -103,6 +103,7 @@ export default function StoreSettings() {
           city: city.trim() || null,
           state: stateName.trim() || null,
           currency,
+          order_mode: orderMode,
           instagram_url: instagramUrl.trim() || null,
           facebook_url: facebookUrl.trim() || null,
           business_hours: hasHours ? businessHours : null,
