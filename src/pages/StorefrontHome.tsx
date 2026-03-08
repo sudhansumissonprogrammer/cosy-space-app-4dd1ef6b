@@ -173,15 +173,15 @@ export default function StorefrontHome() {
                         {product.sale_price ? (
                           <>
                             <span className="text-lg font-bold text-foreground">
-                              ${Number(product.sale_price).toFixed(2)}
+                              {product.currency} {Number(product.sale_price).toFixed(2)}
                             </span>
                             <span className="text-sm text-muted-foreground line-through">
-                              ${Number(product.price).toFixed(2)}
+                              {product.currency} {Number(product.price).toFixed(2)}
                             </span>
                           </>
                         ) : (
                           <span className="text-lg font-bold text-foreground">
-                            ${Number(product.price).toFixed(2)}
+                            {product.currency} {Number(product.price).toFixed(2)}
                           </span>
                         )}
                       </div>
