@@ -42,6 +42,7 @@ export default function StoreSettings() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [theme, setTheme] = useState("theme-1");
 
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
