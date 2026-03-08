@@ -49,6 +49,19 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // Check product limit
+  const { data: limitInfo } = useQuery({
+    queryKey: ["product-limit", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("check_product_limit", {
+        _user_id: user!.id,
+      });
+      if (error) throw error;
+      return data as { plan_name: string; product_limit: number | null; current_count: number; can_create: boolean };
+    },
+    enabled: !!user && !isEditing,
+  });
+
   // Load store to verify ownership
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
