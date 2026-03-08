@@ -70,7 +70,12 @@ export default function StorefrontHome() {
                 </div>
               )}
               <div className="mb-1 min-w-0 flex-1">
-                <h1 className="text-3xl font-bold text-foreground sm:text-4xl">{store.name}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold text-foreground sm:text-4xl">{store.name}</h1>
+                  {(store as any).is_verified && (
+                    <BadgeCheck className="h-6 w-6 text-primary" />
+                  )}
+                </div>
                 {store.description && (
                   <p className="mt-1 max-w-xl text-sm text-muted-foreground sm:text-base">
                     {store.description}
