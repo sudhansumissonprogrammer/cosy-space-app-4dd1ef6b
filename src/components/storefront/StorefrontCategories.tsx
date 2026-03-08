@@ -20,6 +20,36 @@ export default function StorefrontCategories({ categories, activeCategory, onCat
     <div className="border-b bg-card">
       <div className="mx-auto max-w-6xl px-4 py-4">
         <div className="flex gap-5 overflow-x-auto pb-1 scrollbar-hide">
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => onCategoryChange(activeCategory === cat.name ? null : cat.name)}
+              className="flex flex-col items-center gap-2 flex-shrink-0 transition-all"
+            >
+              <div
+                className={`h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 ${
+                  activeCategory === cat.name
+                    ? "border-primary shadow-md"
+                    : "border-border hover:border-primary/50 hover:shadow-sm"
+                }`}
+              >
+                {cat.image_url ? (
+                  <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-accent">
+                    <Tag className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" />
+                  </div>
+                )}
+              </div>
+              <span
+                className={`text-xs font-semibold uppercase tracking-wide max-w-[72px] truncate sm:max-w-[80px] ${
+                  activeCategory === cat.name ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                {cat.name}
+              </span>
+            </button>
+          ))}
           <button
             onClick={() => onCategoryChange(null)}
             className="flex flex-col items-center gap-2 flex-shrink-0 transition-all"
