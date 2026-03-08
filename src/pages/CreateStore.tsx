@@ -47,6 +47,25 @@ export default function CreateStore() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
+  const [checkingStore, setCheckingStore] = useState(true);
+
+  // Check if user already has a store
+  useState(() => {
+    if (!user) return;
+    supabase
+      .from("stores")
+      .select("id")
+      .eq("owner_id", user.id)
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          toast.error("You already have a store. Only one store per account is allowed.");
+          navigate("/dashboard/stores");
+        } else {
+          setCheckingStore(false);
+        }
+      });
+  });
 
   // Step 1 - Store Info
   const [name, setName] = useState("");
