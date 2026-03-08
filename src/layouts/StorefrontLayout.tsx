@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,18 @@ export function useStorefront() {
 
 export default function StorefrontLayout() {
   const { store, isLoading, slug } = useStorefront();
+
+  // Track page view
+  useEffect(() => {
+    if (!store?.id) return;
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    if (!projectId) return;
+    fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ store_id: store.id, path: window.location.pathname }),
+    }).catch(() => {}); // fire and forget
+  }, [store?.id]);
 
   if (isLoading) {
     return (
