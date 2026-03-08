@@ -572,6 +572,69 @@ export default function ProductForm({ productId }: ProductFormProps) {
               <p className="text-xs text-muted-foreground">Max 5MB per image. These appear in the product gallery.</p>
             </div>
 
+            {/* Variants */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Variants (Size/Color)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVariants((prev) => [...prev, { name: "", sku: "", price: "", stock: "0" }])}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> Add Variant
+                </Button>
+              </div>
+              {variants.length > 0 && (
+                <div className="space-y-2">
+                  {variants.map((v, i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-lg border p-2">
+                      <Input
+                        placeholder="Name (e.g. Red / L)"
+                        value={v.name}
+                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, name: e.target.value } : vr))}
+                        className="flex-1"
+                        maxLength={100}
+                      />
+                      <Input
+                        placeholder="SKU"
+                        value={v.sku}
+                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, sku: e.target.value } : vr))}
+                        className="w-24"
+                        maxLength={50}
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Price"
+                        value={v.price}
+                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, price: e.target.value } : vr))}
+                        className="w-24"
+                        step="0.01"
+                        min="0"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Stock"
+                        value={v.stock}
+                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, stock: e.target.value } : vr))}
+                        className="w-20"
+                        min="0"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setVariants((prev) => prev.filter((_, idx) => idx !== i))}
+                      >
+                        <X className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Leave price empty to use the product's base price.</p>
+            </div>
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? "Update Product" : "Add Product"}
