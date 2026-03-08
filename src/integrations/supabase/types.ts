@@ -255,6 +255,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_blocked: boolean
           updated_at: string
           user_id: string
         }
@@ -263,6 +264,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_blocked?: boolean
           updated_at?: string
           user_id: string
         }
@@ -271,6 +273,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_blocked?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -437,6 +440,7 @@ export type Database = {
     }
     Functions: {
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
+      get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {

@@ -14,6 +14,8 @@ import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminStores from "./pages/admin/AdminStores";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import StoresList from "./pages/StoresList";
@@ -26,6 +28,7 @@ import StorefrontHome from "./pages/StorefrontHome";
 import ProductDetail from "./pages/ProductDetail";
 import StoreOrders from "./pages/StoreOrders";
 import StoreCustomers from "./pages/StoreCustomers";
+import StoreSettings from "./pages/StoreSettings";
 import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
 
@@ -57,6 +60,8 @@ const App = () => (
               <Route path="users" element={<AdminUsers />} />
               <Route path="stores" element={<AdminStores />} />
               <Route path="orders" element={<AdminOrders />} />
+              <Route path="subscriptions" element={<AdminSubscriptions />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
             </Route>
 
             {/* Public Storefront */}
@@ -82,9 +87,8 @@ const App = () => (
               <Route path="stores/:storeId/products/:productId/edit" element={<EditProduct />} />
               <Route path="stores/:storeId/orders" element={<StoreOrders />} />
               <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
+              <Route path="stores/:storeId/settings" element={<StoreSettings />} />
               <Route path="analytics" element={<Placeholder />} />
-              <Route path="users" element={<Placeholder />} />
-              <Route path="documents" element={<Placeholder />} />
               <Route path="settings" element={<Placeholder />} />
             </Route>
 

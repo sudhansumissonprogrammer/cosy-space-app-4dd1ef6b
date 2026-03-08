@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Store, ShoppingBag, Ban } from "lucide-react";
+import { Users, Store, ShoppingBag, Ban, Package, DollarSign, UserX } from "lucide-react";
 
 export default function AdminOverview() {
   const { data: stats, isLoading } = useQuery({
@@ -12,8 +12,11 @@ export default function AdminOverview() {
       return data as {
         total_users: number;
         total_stores: number;
+        total_products: number;
         total_orders: number;
+        total_revenue: number;
         suspended_stores: number;
+        blocked_users: number;
       };
     },
   });
@@ -21,8 +24,11 @@ export default function AdminOverview() {
   const cards = [
     { title: "Total Users", value: stats?.total_users ?? 0, icon: Users },
     { title: "Total Stores", value: stats?.total_stores ?? 0, icon: Store },
+    { title: "Total Products", value: stats?.total_products ?? 0, icon: Package },
     { title: "Total Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag },
+    { title: "Total Revenue", value: `$${Number(stats?.total_revenue ?? 0).toFixed(2)}`, icon: DollarSign },
     { title: "Suspended Stores", value: stats?.suspended_stores ?? 0, icon: Ban },
+    { title: "Blocked Users", value: stats?.blocked_users ?? 0, icon: UserX },
   ];
 
   return (

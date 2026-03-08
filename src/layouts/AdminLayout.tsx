@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Shield, Users, Store, ShoppingBag, LogOut, LayoutDashboard } from "lucide-react";
+import { Shield, Users, Store, ShoppingBag, LogOut, LayoutDashboard, CreditCard, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,8 @@ const navItems = [
   { title: "Users", url: "/admin/users", icon: Users },
   { title: "Stores", url: "/admin/stores", icon: Store },
   { title: "Orders", url: "/admin/orders", icon: ShoppingBag },
+  { title: "Subscriptions", url: "/admin/subscriptions", icon: CreditCard },
+  { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
 ];
 
 export default function AdminLayout() {
@@ -17,7 +19,6 @@ export default function AdminLayout() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
       <aside className="flex w-64 flex-col border-r bg-card">
         <div className="flex h-14 items-center gap-2 border-b px-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive">
@@ -61,7 +62,6 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col">
         <header className="h-14 flex items-center border-b bg-card px-6">
           <h2 className="text-sm font-medium text-foreground">Admin Panel</h2>

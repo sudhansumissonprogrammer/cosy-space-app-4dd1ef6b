@@ -1,18 +1,22 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Users } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { Users, Ban, CheckCircle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 export default function AdminUsers() {
+  const queryClient = useQueryClient();
+
   const { data: profiles, isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
@@ -23,6 +27,35 @@ export default function AdminUsers() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const toggleBlock = useMutation({
+    mutationFn: async ({ userId, block }: { userId: string; block: boolean }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_blocked: block })
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      toast.success("User updated");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (profileId: string) => {
+      const { error } = await supabase.from("profiles").delete().eq("id", profileId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      toast.success("User profile deleted");
+    },
+    onError: (err: any) => toast.error(err.message),
   });
 
   return (
@@ -41,7 +74,9 @@ export default function AdminUsers() {
                 <TableRow>
                   <TableHead>User ID</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead className="w-40"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -53,8 +88,43 @@ export default function AdminUsers() {
                     <TableCell className="font-medium text-foreground">
                       {profile.full_name || "—"}
                     </TableCell>
+                    <TableCell>
+                      <Badge variant={(profile as any).is_blocked ? "destructive" : "secondary"}>
+                        {(profile as any).is_blocked ? "Blocked" : "Active"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {format(new Date(profile.created_at), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {(profile as any).is_blocked ? (
+                          <Button variant="outline" size="sm" onClick={() => toggleBlock.mutate({ userId: profile.user_id, block: false })}>
+                            <CheckCircle className="mr-1 h-3 w-3" /> Unblock
+                          </Button>
+                        ) : (
+                          <Button variant="outline" size="sm" onClick={() => toggleBlock.mutate({ userId: profile.user_id, block: true })}>
+                            <Ban className="mr-1 h-3 w-3" /> Block
+                          </Button>
+                        )}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this user?</AlertDialogTitle>
+                              <AlertDialogDescription>This will permanently delete the user profile.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteUser.mutate(profile.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
