@@ -1,0 +1,212 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Loader2, Upload, X, Crown } from "lucide-react";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+export default function UserSettings() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const [fullName, setFullName] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: subscription } = useQuery({
+    queryKey: ["my-subscription", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("*, plans:plan_id(name, price, product_limit)")
+        .eq("user_id", user!.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || "");
+      if (profile.avatar_url) setAvatarPreview(profile.avatar_url);
+    }
+  }, [profile]);
+
+  const updateProfile = useMutation({
+    mutationFn: async () => {
+      let avatarUrl = profile?.avatar_url || null;
+      if (avatarFile) {
+        const ext = avatarFile.name.split(".").pop();
+        const path = `${user!.id}/avatar.${ext}`;
+        const { data, error } = await supabase.storage
+          .from("store-logos")
+          .upload(path, avatarFile, { cacheControl: "3600", upsert: true });
+        if (error) throw error;
+        avatarUrl = supabase.storage.from("store-logos").getPublicUrl(data.path).data.publicUrl;
+      }
+      const { error } = await supabase
+        .from("profiles")
+        .update({ full_name: fullName.trim() || null, avatar_url: avatarUrl })
+        .eq("user_id", user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Profile updated!");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const updatePassword = useMutation({
+    mutationFn: async () => {
+      if (newPassword.length < 6) throw new Error("Password must be at least 6 characters");
+      if (newPassword !== confirmPassword) throw new Error("Passwords do not match");
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Password updated!");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const handleAvatarChange = (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File must be less than 5MB");
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-6">
+      <h1 className="text-2xl font-semibold text-foreground">Account Settings</h1>
+
+      {/* Current Plan */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Current Plan</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {subscription ? (
+            <div className="flex items-center gap-3">
+              <Crown className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium text-foreground">{(subscription.plans as any)?.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  ${Number((subscription.plans as any)?.price || 0).toFixed(2)}/mo —{" "}
+                  {(subscription.plans as any)?.product_limit
+                    ? `${(subscription.plans as any).product_limit} products`
+                    : "Unlimited products"}
+                </p>
+              </div>
+              <Badge variant="default" className="ml-auto">Active</Badge>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Free plan</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Profile */}
+      <form onSubmit={(e) => { e.preventDefault(); updateProfile.mutate(); }}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Profile</CardTitle>
+            <CardDescription>Your public display information</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Avatar</Label>
+              {avatarPreview ? (
+                <div className="relative inline-block">
+                  <img src={avatarPreview} alt="Avatar" className="h-16 w-16 rounded-full border object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => { setAvatarFile(null); setAvatarPreview(null); }}
+                    className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-input hover:border-primary/50">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAvatarChange(e.target.files?.[0])} />
+                </label>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="full-name">Full Name</Label>
+              <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input value={user?.email || ""} disabled />
+            </div>
+            <Button type="submit" disabled={updateProfile.isPending}>
+              {updateProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Profile
+            </Button>
+          </CardContent>
+        </Card>
+      </form>
+
+      {/* Change Password */}
+      <form onSubmit={(e) => { e.preventDefault(); updatePassword.mutate(); }}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Change Password</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-pw">New Password</Label>
+              <Input id="new-pw" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={6} maxLength={128} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-pw">Confirm New Password</Label>
+              <Input id="confirm-pw" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} minLength={6} maxLength={128} />
+            </div>
+            <Button type="submit" disabled={updatePassword.isPending}>
+              {updatePassword.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Update Password
+            </Button>
+          </CardContent>
+        </Card>
+      </form>
+    </div>
+  );
+}

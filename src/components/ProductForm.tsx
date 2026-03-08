@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,21 +11,10 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const CATEGORIES = [
-  "Electronics",
-  "Clothing",
-  "Accessories",
-  "Food & Beverage",
-  "Home & Garden",
-  "Health & Beauty",
-  "Sports",
-  "Books",
-  "Toys",
-  "Other",
-];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 interface ProductFormProps {
   productId?: string;
@@ -78,6 +67,46 @@ export default function ProductForm({ productId }: ProductFormProps) {
     enabled: !!storeId && !!user,
   });
 
+  // Load dynamic categories for this store
+  const queryClient = useQueryClient();
+  const { data: categories } = useQuery({
+    queryKey: ["categories", storeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("categories")
+        .select("*")
+        .eq("store_id", storeId!)
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; slug: string; store_id: string }[];
+    },
+    enabled: !!storeId,
+  });
+
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [showNewCategory, setShowNewCategory] = useState(false);
+
+  const createCategory = useMutation({
+    mutationFn: async (catName: string) => {
+      const slug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const { data, error } = await (supabase as any)
+        .from("categories")
+        .insert({ store_id: storeId!, name: catName.trim(), slug })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as { id: string; name: string };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+      setCategory(data.name);
+      setNewCategoryName("");
+      setShowNewCategory(false);
+      toast.success("Category created");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   // Load existing product for editing
   const { data: existingProduct } = useQuery({
     queryKey: ["product", productId],
@@ -117,6 +146,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   const handleFileSelect = (file: File | null) => {
     if (file) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error("File must be less than 5MB");
+        return;
+      }
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
     }
@@ -297,18 +330,40 @@ export default function ProductForm({ productId }: ProductFormProps) {
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {showNewCategory ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="New category name"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      maxLength={50}
+                    />
+                    <Button type="button" size="sm" onClick={() => newCategoryName.trim() && createCategory.mutate(newCategoryName.trim())} disabled={createCategory.isPending}>
+                      Add
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setShowNewCategory(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories?.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" size="icon" variant="outline" onClick={() => setShowNewCategory(true)} title="New category">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 

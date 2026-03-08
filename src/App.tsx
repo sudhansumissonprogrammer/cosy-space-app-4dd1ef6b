@@ -8,6 +8,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AdminLogin from "./pages/AdminLogin";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminOverview from "./pages/admin/AdminOverview";
@@ -29,7 +31,8 @@ import ProductDetail from "./pages/ProductDetail";
 import StoreOrders from "./pages/StoreOrders";
 import StoreCustomers from "./pages/StoreCustomers";
 import StoreSettings from "./pages/StoreSettings";
-import Placeholder from "./pages/Placeholder";
+import StoreAnalytics from "./pages/StoreAnalytics";
+import UserSettings from "./pages/UserSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +48,8 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Admin */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -88,8 +93,8 @@ const App = () => (
               <Route path="stores/:storeId/orders" element={<StoreOrders />} />
               <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
               <Route path="stores/:storeId/settings" element={<StoreSettings />} />
-              <Route path="analytics" element={<Placeholder />} />
-              <Route path="settings" element={<Placeholder />} />
+              <Route path="analytics" element={<StoreAnalytics />} />
+              <Route path="settings" element={<UserSettings />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

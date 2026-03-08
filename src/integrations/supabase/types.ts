@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: Json | null
@@ -451,6 +483,7 @@ export type Database = {
       }
       is_order_owner: { Args: { _order_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      is_user_blocked: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"

@@ -13,17 +13,30 @@ import {
 import { toast } from "sonner";
 import { Users, Ban, CheckCircle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 export default function AdminUsers() {
   const queryClient = useQueryClient();
 
+  const { data: countData } = useQuery({
+    queryKey: ["admin-users-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase.from("profiles").select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count;
+    },
+  });
+
+  const pagination = usePagination(countData ?? undefined);
+
   const { data: profiles, isLoading } = useQuery({
-    queryKey: ["admin-users"],
+    queryKey: ["admin-users", pagination.page],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from("profiles").select("*")
+        .order("created_at", { ascending: false })
+        .range(pagination.from, pagination.to);
       if (error) throw error;
       return data;
     },
@@ -31,10 +44,7 @@ export default function AdminUsers() {
 
   const toggleBlock = useMutation({
     mutationFn: async ({ userId, block }: { userId: string; block: boolean }) => {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_blocked: block })
-        .eq("user_id", userId);
+      const { error } = await supabase.from("profiles").update({ is_blocked: block }).eq("user_id", userId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -67,71 +77,64 @@ export default function AdminUsers() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       ) : profiles && profiles.length > 0 ? (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="w-40"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {profiles.map((profile) => (
-                  <TableRow key={profile.id}>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {profile.user_id.slice(0, 12)}...
-                    </TableCell>
-                    <TableCell className="font-medium text-foreground">
-                      {profile.full_name || "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={(profile as any).is_blocked ? "destructive" : "secondary"}>
-                        {(profile as any).is_blocked ? "Blocked" : "Active"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(profile.created_at), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {(profile as any).is_blocked ? (
-                          <Button variant="outline" size="sm" onClick={() => toggleBlock.mutate({ userId: profile.user_id, block: false })}>
-                            <CheckCircle className="mr-1 h-3 w-3" /> Unblock
-                          </Button>
-                        ) : (
-                          <Button variant="outline" size="sm" onClick={() => toggleBlock.mutate({ userId: profile.user_id, block: true })}>
-                            <Ban className="mr-1 h-3 w-3" /> Block
-                          </Button>
-                        )}
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete this user?</AlertDialogTitle>
-                              <AlertDialogDescription>This will permanently delete the user profile.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteUser.mutate(profile.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+        <>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead className="w-40"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {profiles.map((profile) => (
+                    <TableRow key={profile.id}>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{profile.user_id.slice(0, 12)}...</TableCell>
+                      <TableCell className="font-medium text-foreground">{profile.full_name || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={profile.is_blocked ? "destructive" : "secondary"}>
+                          {profile.is_blocked ? "Blocked" : "Active"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{format(new Date(profile.created_at), "MMM d, yyyy")}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {profile.is_blocked ? (
+                            <Button variant="outline" size="sm" onClick={() => toggleBlock.mutate({ userId: profile.user_id, block: false })}>
+                              <CheckCircle className="mr-1 h-3 w-3" /> Unblock
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={() => toggleBlock.mutate({ userId: profile.user_id, block: true })}>
+                              <Ban className="mr-1 h-3 w-3" /> Block
+                            </Button>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete this user?</AlertDialogTitle>
+                                <AlertDialogDescription>This will permanently delete the user profile.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteUser.mutate(profile.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+          <PaginationControls page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} />
+        </>
       ) : (
         <Card>
           <CardContent className="flex min-h-[200px] items-center justify-center">
