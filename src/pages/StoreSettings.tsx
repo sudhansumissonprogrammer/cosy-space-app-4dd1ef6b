@@ -118,6 +118,7 @@ export default function StoreSettings() {
           business_hours: hasHours ? businessHours : null,
           logo_url: logoUrl,
           banner_url: bannerUrl,
+          theme,
         })
         .eq("id", storeId!);
       if (error) throw error;
