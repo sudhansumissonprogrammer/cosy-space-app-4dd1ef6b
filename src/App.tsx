@@ -5,8 +5,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import AdminLogin from "./pages/AdminLogin";
+import AdminLayout from "./layouts/AdminLayout";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminStores from "./pages/admin/AdminStores";
+import AdminOrders from "./pages/admin/AdminOrders";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import StoresList from "./pages/StoresList";
@@ -35,10 +42,30 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+
+            {/* Admin */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            >
+              <Route index element={<AdminOverview />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="stores" element={<AdminStores />} />
+              <Route path="orders" element={<AdminOrders />} />
+            </Route>
+
+            {/* Public Storefront */}
             <Route path="/store/:slug" element={<StorefrontLayout />}>
               <Route index element={<StorefrontHome />} />
               <Route path="product/:productSlug" element={<ProductDetail />} />
             </Route>
+
+            {/* User Dashboard */}
             <Route
               path="/dashboard"
               element={
@@ -60,6 +87,7 @@ const App = () => (
               <Route path="documents" element={<Placeholder />} />
               <Route path="settings" element={<Placeholder />} />
             </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
