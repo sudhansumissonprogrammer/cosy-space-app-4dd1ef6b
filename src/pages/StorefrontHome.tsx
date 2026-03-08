@@ -116,7 +116,7 @@ export default function StorefrontHome() {
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
               <button
                 onClick={() => setActiveCategory(null)}
-                className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-opacity ${activeCategory === null ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
+                className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-all ${activeCategory === null ? "" : "hover:scale-105"}`}
               >
                 <div className={`flex h-16 w-16 items-center justify-center rounded-full border-2 ${activeCategory === null ? "border-primary bg-primary/10" : "border-border bg-accent"}`}>
                   <Tag className="h-5 w-5 text-foreground" />
@@ -127,7 +127,7 @@ export default function StorefrontHome() {
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(activeCategory === cat.name ? null : cat.name)}
-                  className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-opacity ${activeCategory === cat.name ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
+                  className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-all ${activeCategory === cat.name ? "" : "hover:scale-105"}`}
                 >
                   <div className={`h-16 w-16 rounded-full border-2 overflow-hidden ${activeCategory === cat.name ? "border-primary" : "border-border"}`}>
                     {cat.image_url ? (
