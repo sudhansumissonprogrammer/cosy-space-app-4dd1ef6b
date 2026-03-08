@@ -88,6 +88,7 @@ export default function StorefrontLayout() {
             {store.name}
           </Link>
           <div className="flex-1" />
+          <ShareStoreDialog storeSlug={store.slug} storeName={store.name} />
           {store.whatsapp_number && (
             <Button size="sm" asChild>
               <a
