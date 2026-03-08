@@ -20,6 +20,10 @@ export default function StoreSettings() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [location, setLocation] = useState("");
+  const [businessHours, setBusinessHours] = useState<Record<string, string>>({
+    mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "",
+  });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
