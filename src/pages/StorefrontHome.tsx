@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Store, Package, Search, MapPin, Clock, BadgeCheck } from "lucide-react";
+import { MessageCircle, Store, Package, Search, MapPin, Clock, BadgeCheck, Instagram, Facebook } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function StorefrontHome() {
@@ -242,6 +242,16 @@ export default function StorefrontHome() {
                 >
                   <MessageCircle className="h-4 w-4" />
                   Contact us on WhatsApp
+                </a>
+              )}
+              {(store as any).instagram_url && (
+                <a href={(store as any).instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary">
+                  <Instagram className="h-4 w-4" /> Instagram
+                </a>
+              )}
+              {(store as any).facebook_url && (
+                <a href={(store as any).facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary">
+                  <Facebook className="h-4 w-4" /> Facebook
                 </a>
               )}
               {products && (
