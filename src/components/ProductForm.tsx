@@ -89,13 +89,13 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const createCategory = useMutation({
     mutationFn: async (catName: string) => {
       const slug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("categories")
         .insert({ store_id: storeId!, name: catName.trim(), slug })
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return data as { id: string; name: string };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
