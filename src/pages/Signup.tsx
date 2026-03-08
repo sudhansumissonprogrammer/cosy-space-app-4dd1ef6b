@@ -16,9 +16,41 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const isFetchFailure = (message: string) =>
+    message.toLowerCase().includes("failed to fetch") ||
+    message.toLowerCase().includes("network");
+
+  const signUpWithProxy = async (
+    signupEmail: string,
+    signupPassword: string,
+    signupFullName: string
+  ) => {
+    const { data, error } = await supabase.functions.invoke("auth-proxy", {
+      body: {
+        action: "signup",
+        email: signupEmail,
+        password: signupPassword,
+        fullName: signupFullName || null,
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message || "Unable to connect to authentication service");
+    }
+
+    const proxyError = (data as { error?: string } | null)?.error;
+    if (proxyError) {
+      throw new Error(proxyError);
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !confirmPassword) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedFullName = fullName.trim();
+
+    if (!normalizedEmail || !password || !confirmPassword) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -30,25 +62,52 @@ export default function Signup() {
       toast.error("Password must be at least 6 characters");
       return;
     }
+
     setLoading(true);
+
     try {
       const { error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { full_name: fullName.trim() || null },
+          data: { full_name: normalizedFullName || null },
         },
       });
+
       if (error) {
+        if (isFetchFailure(error.message)) {
+          await signUpWithProxy(normalizedEmail, password, normalizedFullName);
+          toast.success("Account created! Check your email to confirm.");
+          navigate("/login");
+          return;
+        }
+
         toast.error(error.message);
-      } else {
-        toast.success("Account created! Check your email to confirm.");
-        navigate("/login");
+        return;
       }
-    } catch (err: any) {
+
+      toast.success("Account created! Check your email to confirm.");
+      navigate("/login");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to create account";
+
+      if (isFetchFailure(message)) {
+        try {
+          await signUpWithProxy(normalizedEmail, password, normalizedFullName);
+          toast.success("Account created! Check your email to confirm.");
+          navigate("/login");
+          return;
+        } catch (proxyErr) {
+          const proxyMessage =
+            proxyErr instanceof Error ? proxyErr.message : "Unable to create account. Please try again.";
+          toast.error(proxyMessage);
+          return;
+        }
+      }
+
       console.error("Signup network error:", err);
-      toast.error("Network error. Please check your internet connection and try again.");
+      toast.error(message);
     } finally {
       setLoading(false);
     }
