@@ -127,7 +127,7 @@ export default function StorefrontHome() {
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(activeCategory === cat.name ? null : cat.name)}
-                  className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-opacity ${activeCategory === cat.name ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
+                  className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-all ${activeCategory === cat.name ? "" : "hover:scale-105"}`}
                 >
                   <div className={`h-16 w-16 rounded-full border-2 overflow-hidden ${activeCategory === cat.name ? "border-primary" : "border-border"}`}>
                     {cat.image_url ? (
