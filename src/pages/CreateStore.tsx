@@ -187,6 +187,7 @@ export default function CreateStore() {
         facebook_url: facebookUrl.trim() || null,
         logo_url: logoUrl,
         banner_url: bannerUrl,
+        theme,
       });
 
       if (error) {
