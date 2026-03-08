@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useParams, Link, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, MessageCircle, Package } from "lucide-react";
+import { ArrowLeft, MessageCircle, Package, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export default function ProductDetail() {
@@ -151,21 +153,60 @@ export default function ProductDetail() {
 
           {/* WhatsApp CTA */}
           {store.whatsapp_number && (
-            <div className="mt-8">
-              <Button size="lg" asChild className="w-full sm:w-auto">
-                <a
-                  href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}?text=${encodeURIComponent(`Hello, I want to order:\n\nProduct: ${product.name}\nPrice: $${Number(hasDiscount ? product.sale_price : product.price).toFixed(2)}\nStore: ${store.name}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MessageCircle className="mr-2 h-5 w-5" />
-                  Order on WhatsApp
-                </a>
-              </Button>
-            </div>
+            <WhatsAppOrderButton store={store} product={product} hasDiscount={!!hasDiscount} />
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function WhatsAppOrderButton({
+  store,
+  product,
+  hasDiscount,
+}: {
+  store: StoreData;
+  product: { id: string; name: string; price: number; sale_price: number | null };
+  hasDiscount: boolean;
+}) {
+  const [ordering, setOrdering] = useState(false);
+
+  const finalPrice = hasDiscount ? product.sale_price! : product.price;
+
+  const handleOrder = async () => {
+    setOrdering(true);
+    try {
+      await supabase.from("whatsapp_orders").insert({
+        store_id: store.id,
+        product_id: product.id,
+        product_name: product.name,
+        product_price: finalPrice,
+        quantity: 1,
+      });
+    } catch {
+      // Don't block the WhatsApp redirect on DB errors
+    }
+    setOrdering(false);
+
+    const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
+    const text = `Hello, I want to order:\n\nProduct: ${product.name}\nPrice: $${Number(finalPrice).toFixed(2)}\nStore: ${store.name}`;
+    window.open(
+      `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`,
+      "_blank"
+    );
+  };
+
+  return (
+    <div className="mt-8">
+      <Button size="lg" className="w-full sm:w-auto" onClick={handleOrder} disabled={ordering}>
+        {ordering ? (
+          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+        ) : (
+          <MessageCircle className="mr-2 h-5 w-5" />
+        )}
+        Order on WhatsApp
+      </Button>
     </div>
   );
 }

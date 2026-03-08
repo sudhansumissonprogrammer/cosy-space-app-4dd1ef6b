@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Store, ExternalLink, Package } from "lucide-react";
+import { Plus, Store, ExternalLink, Package, ShoppingBag } from "lucide-react";
 
 export default function StoresList() {
   const { user } = useAuth();
@@ -79,6 +79,12 @@ export default function StoresList() {
                     <Link to={`/dashboard/stores/${store.id}/products`}>
                       <Package className="mr-1 h-3 w-3" />
                       Products
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild className="flex-1">
+                    <Link to={`/dashboard/stores/${store.id}/orders`}>
+                      <ShoppingBag className="mr-1 h-3 w-3" />
+                      Orders
                     </Link>
                   </Button>
                 </div>

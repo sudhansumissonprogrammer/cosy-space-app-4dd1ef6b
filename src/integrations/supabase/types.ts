@@ -279,6 +279,57 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_orders: {
+        Row: {
+          created_at: string
+          customer_phone: string | null
+          id: string
+          product_id: string | null
+          product_name: string
+          product_price: number
+          quantity: number
+          status: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_phone?: string | null
+          id?: string
+          product_id?: string | null
+          product_name: string
+          product_price: number
+          quantity?: number
+          status?: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_phone?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string
+          product_price?: number
+          quantity?: number
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
