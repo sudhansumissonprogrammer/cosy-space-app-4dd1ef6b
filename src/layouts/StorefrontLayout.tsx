@@ -70,7 +70,10 @@ function HamburgerMenu({ store }: { store: StoreData }) {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="h-10 w-10 p-0">
-          <Menu className="h-6 w-6" strokeWidth={1} />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <line x1="4" y1="8" x2="14" y2="8" />
+            <line x1="4" y1="14" x2="20" y2="14" />
+          </svg>
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[280px] p-0">
