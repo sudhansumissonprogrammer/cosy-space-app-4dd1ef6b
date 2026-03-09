@@ -50,7 +50,7 @@ export default function StorefrontContact() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
 
-  const features: Feature[] = (store.features as Feature[]) || [];
+  const features: Feature[] = (store.features as unknown as Feature[]) || [];
   const businessHours = (store.business_hours as Record<string, string>) || {};
 
   const submitMutation = useMutation({
