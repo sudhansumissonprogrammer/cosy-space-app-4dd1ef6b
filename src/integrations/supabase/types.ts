@@ -544,6 +544,36 @@ export type Database = {
         }
         Relationships: []
       }
+      store_payment_config: {
+        Row: {
+          created_at: string
+          id: string
+          payment_methods: Json
+          razorpay_key_id: string | null
+          razorpay_key_secret: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payment_methods?: Json
+          razorpay_key_id?: string | null
+          razorpay_key_secret?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payment_methods?: Json
+          razorpay_key_id?: string | null
+          razorpay_key_secret?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stores: {
         Row: {
           banner_url: string | null
