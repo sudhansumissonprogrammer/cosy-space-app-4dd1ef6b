@@ -95,6 +95,7 @@ export default function StoreSettings() {
       if (store.logo_url) setLogoPreview(store.logo_url);
       if (store.banner_url) setBannerPreview(store.banner_url);
       setTheme((store as any).theme || "theme-1");
+      if (store.features) setFeatures(store.features as unknown as Feature[]);
     }
   }, [store]);
 
