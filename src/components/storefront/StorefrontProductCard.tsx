@@ -33,9 +33,6 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
     ? Math.round(((Number(product.price) - Number(product.sale_price)) / Number(product.price)) * 100)
     : null;
 
-  const showWhatsApp = (orderMode === "whatsapp" || orderMode === "both") && !!store.whatsapp_number;
-  const showBuyNow = orderMode === "website" || orderMode === "both";
-
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-lg">
       {/* Trending / Sale Badge */}
