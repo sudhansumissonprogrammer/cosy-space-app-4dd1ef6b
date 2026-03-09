@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useOutletContext, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,10 +8,28 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export default function CheckoutPage() {
   const store = useOutletContext<StoreData>();
@@ -23,6 +41,7 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
 
   // Form
   const [fullName, setFullName] = useState("");
@@ -32,7 +51,6 @@ export default function CheckoutPage() {
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
 
-  // Single product mode (legacy URL params)
   const isSingleMode = !!productId;
 
   const { data: product, isLoading } = useQuery({
@@ -65,9 +83,32 @@ export default function CheckoutPage() {
     enabled: !!variantId,
   });
 
+  // Fetch payment config for this store
+  const { data: paymentConfig } = useQuery({
+    queryKey: ["store-payment-config", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_payment_config")
+        .select("payment_methods, razorpay_key_id")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { payment_methods: string[]; razorpay_key_id: string | null } | null;
+    },
+  });
+
+  const availableMethods = paymentConfig?.payment_methods || ["cod"];
+  const hasCod = availableMethods.includes("cod");
+  const hasRazorpay = availableMethods.includes("razorpay");
+
+  // Set default payment method
+  useEffect(() => {
+    if (hasCod) setPaymentMethod("cod");
+    else if (hasRazorpay) setPaymentMethod("razorpay");
+  }, [hasCod, hasRazorpay]);
+
   const currency = store.currency || "USD";
 
-  // Determine checkout items
   const checkoutItems = isSingleMode && product
     ? [{
         productId: product.id,
@@ -118,6 +159,48 @@ export default function CheckoutPage() {
     );
   }
 
+  const createOrder = async () => {
+    const { data: order, error: orderErr } = await (supabase as any)
+      .from("orders")
+      .insert({
+        store_id: store.id,
+        total,
+        currency,
+        status: "pending",
+        customer_name: fullName.trim(),
+        customer_phone: phone.trim(),
+        street_address: streetAddress.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        pincode: pincode.trim(),
+        payment_method: paymentMethod,
+      })
+      .select("id")
+      .single();
+    if (orderErr) throw orderErr;
+
+    const orderItemsData = checkoutItems.map((item) => ({
+      order_id: order.id,
+      product_id: item.productId,
+      product_name: item.name,
+      quantity: item.quantity,
+      unit_price: item.price,
+      total: item.price * item.quantity,
+    }));
+    await (supabase as any).from("order_items").insert(orderItemsData);
+
+    await (supabase as any).from("customer_leads").insert({
+      store_id: store.id,
+      name: fullName.trim(),
+      phone: phone.trim(),
+      product_name: checkoutItems.map((i) => i.name).join(", "),
+      product_id: checkoutItems.length === 1 ? checkoutItems[0].productId : null,
+      source: "website_order",
+    });
+
+    return order.id as string;
+  };
+
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
     if (!phone.trim()) { toast.error("Please enter your phone number"); return; }
@@ -128,58 +211,89 @@ export default function CheckoutPage() {
 
     setPlacing(true);
     try {
-      // 1. Create order
-      const { data: order, error: orderErr } = await (supabase as any)
-        .from("orders")
-        .insert({
-          store_id: store.id,
-          total,
-          currency,
-          status: "pending",
-          customer_name: fullName.trim(),
-          customer_phone: phone.trim(),
-          street_address: streetAddress.trim(),
-          city: city.trim(),
-          state: state.trim(),
-          pincode: pincode.trim(),
-          payment_method: "cod",
-        })
-        .select("id")
-        .single();
-      if (orderErr) throw orderErr;
+      const newOrderId = await createOrder();
 
-      // 2. Create order items
-      const orderItemsData = checkoutItems.map((item) => ({
-        order_id: order.id,
-        product_id: item.productId,
-        product_name: item.name,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total: item.price * item.quantity,
-      }));
-      await (supabase as any).from("order_items").insert(orderItemsData);
+      if (paymentMethod === "razorpay") {
+        // Razorpay flow
+        const loaded = await loadRazorpayScript();
+        if (!loaded) throw new Error("Failed to load payment gateway");
 
-      // 3. Save customer lead
-      await (supabase as any).from("customer_leads").insert({
-        store_id: store.id,
-        name: fullName.trim(),
-        phone: phone.trim(),
-        product_name: checkoutItems.map((i) => i.name).join(", "),
-        product_id: checkoutItems.length === 1 ? checkoutItems[0].productId : null,
-        source: "website_order",
-      });
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/razorpay-order`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              store_id: store.id,
+              amount: total,
+              currency,
+              order_id: newOrderId,
+            }),
+          }
+        );
+        const rzpData = await res.json();
+        if (!res.ok) throw new Error(rzpData.error || "Payment initiation failed");
 
-      // Clear cart if using cart mode
-      if (!isSingleMode) {
-        clearCart();
+        const options = {
+          key: rzpData.key_id,
+          amount: rzpData.amount,
+          currency: rzpData.currency,
+          name: store.name,
+          description: `Order #${newOrderId.slice(0, 8)}`,
+          order_id: rzpData.razorpay_order_id,
+          handler: async (response: any) => {
+            try {
+              const verifyRes = await fetch(
+                `https://${projectId}.supabase.co/functions/v1/razorpay-verify`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                    order_id: newOrderId,
+                    store_id: store.id,
+                  }),
+                }
+              );
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) throw new Error(verifyData.error);
+
+              if (!isSingleMode) clearCart();
+              setOrderId(newOrderId);
+              setOrderPlaced(true);
+            } catch (err: any) {
+              toast.error("Payment verification failed. Contact the store.");
+            }
+          },
+          prefill: {
+            name: fullName,
+            contact: phone,
+          },
+          theme: { color: "#6366f1" },
+          modal: {
+            ondismiss: () => {
+              toast.error("Payment cancelled. Your order is pending.");
+              setPlacing(false);
+            },
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+        return; // Don't setPlacing(false) here — Razorpay modal handles it
       }
 
-      setOrderId(order.id);
+      // COD flow
+      if (!isSingleMode) clearCart();
+      setOrderId(newOrderId);
       setOrderPlaced(true);
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
-      setPlacing(false);
+      if (paymentMethod !== "razorpay") setPlacing(false);
     }
   };
 
@@ -267,15 +381,42 @@ export default function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-primary">
-                  <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+              {hasCod && hasRazorpay ? (
+                <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "cod" | "razorpay")} className="space-y-3">
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-4 transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                    <RadioGroupItem value="cod" />
+                    <Banknote className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Cash on Delivery</p>
+                      <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
+                    </div>
+                  </label>
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-4 transition-all ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                    <RadioGroupItem value="razorpay" />
+                    <CreditCard className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Pay Online</p>
+                      <p className="text-xs text-muted-foreground">Cards, UPI, Net Banking, Wallets</p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              ) : hasRazorpay ? (
+                <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4">
+                  <CreditCard className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Pay Online</p>
+                    <p className="text-xs text-muted-foreground">Cards, UPI, Net Banking, Wallets</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Cash on Delivery (COD)</p>
-                  <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
+              ) : (
+                <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4">
+                  <Banknote className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Cash on Delivery (COD)</p>
+                    <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -316,7 +457,9 @@ export default function CheckoutPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Payment</span>
-                <Badge variant="secondary">COD</Badge>
+                <Badge variant="secondary">
+                  {paymentMethod === "razorpay" ? "Online" : "COD"}
+                </Badge>
               </div>
 
               <Separator />
@@ -328,7 +471,7 @@ export default function CheckoutPage() {
 
               <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
                 {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Place Order
+                {paymentMethod === "razorpay" ? "Pay Now" : "Place Order"}
               </Button>
             </CardContent>
           </Card>
