@@ -108,31 +108,8 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
           )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="mt-3 flex flex-col gap-2">
-          {/* WhatsApp Order Button */}
-          {showWhatsApp && (
-            <button
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-success bg-success/10 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-success-foreground hover:bg-success/20 transition-colors"
-              onClick={handleWhatsApp}
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              Order on WhatsApp
-            </button>
-          )}
-
-          {/* Buy Now Button */}
-          {showBuyNow && (
-            <button
-              className="btn-gold inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-[10px] font-extrabold uppercase tracking-widest"
-              onClick={handleBuyNow}
-            >
-              <ShoppingBag className="h-3.5 w-3.5" />
-              Buy Now
-            </button>
-          )}
-
-          {/* Add to Cart — always visible */}
+        {/* Action Button */}
+        <div className="mt-3">
           <button
             className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-foreground hover:bg-accent transition-colors"
             onClick={handleAddToCart}
