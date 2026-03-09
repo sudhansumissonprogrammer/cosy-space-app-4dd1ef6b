@@ -413,6 +413,7 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg">Theme</CardTitle>
             <CardDescription>Choose your storefront look</CardDescription>
