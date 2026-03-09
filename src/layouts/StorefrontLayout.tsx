@@ -177,32 +177,34 @@ export default function StorefrontLayout() {
 
   return (
     <CartProvider slug={store.slug}>
-      <div className="min-h-screen bg-background">
-        {/* Marquee Banner */}
-        <StorefrontMarquee />
-        
-        {/* Sticky Nav */}
-        <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
-          <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-            <HamburgerMenu store={store} />
-            <Link to={`/store/${store.slug}`} className="flex-shrink-0">
-              {store.logo_url ? (
-                <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                  <Store className="h-5 w-5 text-primary-foreground" />
-                </div>
-              )}
-            </Link>
-            <div className="flex-1" />
-            <WishlistBadge slug={store.slug} />
-            <CartBadge slug={store.slug} />
-            <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
-          </div>
-        </nav>
+      <WishlistProvider slug={store.slug}>
+        <div className="min-h-screen bg-background">
+          {/* Marquee Banner */}
+          <StorefrontMarquee />
+          
+          {/* Sticky Nav */}
+          <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
+            <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+              <HamburgerMenu store={store} />
+              <Link to={`/store/${store.slug}`} className="flex-shrink-0">
+                {store.logo_url ? (
+                  <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                    <Store className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                )}
+              </Link>
+              <div className="flex-1" />
+              <WishlistBadge slug={store.slug} />
+              <CartBadge slug={store.slug} />
+              <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
+            </div>
+          </nav>
 
-        <Outlet context={store} />
-      </div>
+          <Outlet context={store} />
+        </div>
+      </WishlistProvider>
     </CartProvider>
   );
 }
