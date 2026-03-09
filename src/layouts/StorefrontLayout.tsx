@@ -93,6 +93,9 @@ export default function StorefrontLayout() {
   return (
     <CartProvider slug={store.slug}>
       <div className="min-h-screen bg-background">
+        {/* Marquee Banner */}
+        <StorefrontMarquee />
+        
         {/* Sticky Nav */}
         <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
           <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
