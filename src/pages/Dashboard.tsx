@@ -2,32 +2,39 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, ShoppingBag, Users, Eye } from "lucide-react";
+import { Package, ShoppingBag, Users, Eye, TrendingUp } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, LineChart, Line,
+} from "recharts";
 
 export default function Dashboard() {
   const { user } = useAuth();
 
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ["dashboard-stats", user?.id],
+  const { data: storeIds } = useQuery({
+    queryKey: ["my-store-ids", user?.id],
     queryFn: async () => {
-      const storesRes = await supabase.from("stores").select("id").eq("owner_id", user!.id);
-      const storeIds = storesRes.data?.map(s => s.id) || [];
+      const { data, error } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("owner_id", user!.id);
+      if (error) throw error;
+      return data?.map((s) => s.id) || [];
+    },
+    enabled: !!user,
+  });
 
+  const ids = storeIds || [];
+
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["dashboard-stats", ids],
+    queryFn: async () => {
       const [productsRes, ordersRes, customersRes, viewsRes] = await Promise.all([
-        supabase
-          .from("products")
-          .select("id", { count: "exact", head: true })
-          .in("store_id", storeIds),
-        supabase
-          .from("whatsapp_orders")
-          .select("id", { count: "exact", head: true })
-          .in("store_id", storeIds),
-        supabase
-          .from("customers")
-          .select("id", { count: "exact", head: true })
-          .in("store_id", storeIds),
-        storeIds.length > 0
-          ? supabase.rpc("get_store_views", { _store_ids: storeIds })
+        supabase.from("products").select("id", { count: "exact", head: true }).in("store_id", ids),
+        supabase.from("whatsapp_orders").select("id", { count: "exact", head: true }).in("store_id", ids),
+        supabase.from("customers").select("id", { count: "exact", head: true }).in("store_id", ids),
+        ids.length > 0
+          ? supabase.rpc("get_store_views", { _store_ids: ids })
           : Promise.resolve({ data: [] }),
       ]);
 
@@ -42,13 +49,54 @@ export default function Dashboard() {
         total_views: totalViews,
       };
     },
-    enabled: !!user,
+    enabled: ids.length > 0,
   });
+
+  const { data: ordersData } = useQuery({
+    queryKey: ["dashboard-orders-analytics", ids],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_orders")
+        .select("created_at, product_price, quantity, product_name")
+        .in("store_id", ids)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: ids.length > 0,
+  });
+
+  const ordersByMonth = (() => {
+    if (!ordersData) return [];
+    const map: Record<string, { month: string; orders: number; revenue: number }> = {};
+    ordersData.forEach((o) => {
+      const month = o.created_at.slice(0, 7);
+      if (!map[month]) map[month] = { month, orders: 0, revenue: 0 };
+      map[month].orders += 1;
+      map[month].revenue += Number(o.product_price) * o.quantity;
+    });
+    return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
+  })();
+
+  const topProducts = (() => {
+    if (!ordersData) return [];
+    const map: Record<string, { name: string; count: number; revenue: number }> = {};
+    ordersData.forEach((o) => {
+      const key = o.product_name;
+      if (!map[key]) map[key] = { name: key, count: 0, revenue: 0 };
+      map[key].count += o.quantity;
+      map[key].revenue += Number(o.product_price) * o.quantity;
+    });
+    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10);
+  })();
+
+  const totalRevenue = ordersData?.reduce((sum, o) => sum + Number(o.product_price) * o.quantity, 0) || 0;
 
   const cards = [
     { title: "Total Products", value: stats?.total_products ?? 0, icon: Package },
     { title: "Total Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag },
-    { title: "Total Customers", value: stats?.total_customers ?? 0, icon: Users },
+    { title: "Revenue", value: `$${totalRevenue.toFixed(2)}`, icon: TrendingUp },
+    { title: "Customers", value: stats?.total_customers ?? 0, icon: Users },
     { title: "Store Views", value: stats?.total_views ?? 0, icon: Eye },
   ];
 
@@ -64,19 +112,87 @@ export default function Dashboard() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {cards.map((card) => (
-            <Card key={card.title}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
-                <card.icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">{card.value}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {cards.map((card) => (
+              <Card key={card.title}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
+                  <card.icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">{card.value}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Revenue Over Time */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Revenue Over Time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ordersByMonth.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={ordersByMonth}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="month" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="py-8 text-center text-muted-foreground">No order data yet</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Orders Over Time */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Orders Over Time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ordersByMonth.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={ordersByMonth}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="month" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip />
+                    <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="py-8 text-center text-muted-foreground">No order data yet</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Products */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Top Products by Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topProducts.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={topProducts} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis type="number" className="text-xs" />
+                    <YAxis dataKey="name" type="category" width={120} className="text-xs" />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="py-8 text-center text-muted-foreground">No product data yet</p>
+              )}
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );
