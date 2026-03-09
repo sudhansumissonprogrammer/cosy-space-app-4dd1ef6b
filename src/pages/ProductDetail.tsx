@@ -418,18 +418,6 @@ function WhatsAppOrderForm({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs">Coupon Code</Label>
-        <div className="flex gap-2">
-          <Input placeholder="SAVE10" value={couponCode} onChange={(e) => { setCouponCode(e.target.value); setCouponDiscount(null); }} maxLength={30} />
-          <Button type="button" variant="outline" onClick={applyCoupon} disabled={validatingCoupon || !couponCode.trim()}>
-            {validatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : <Tag className="h-4 w-4" />}
-          </Button>
-        </div>
-        {couponDiscount && (
-          <p className="text-xs text-primary">Discount applied! Total: {currency} {Number(finalPrice).toFixed(2)}</p>
-        )}
-      </div>
 
       <Button className="w-full" onClick={handleOrder} disabled={ordering}>
         {ordering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}
