@@ -81,6 +81,7 @@ export default function CategoryDetail() {
                   key={product.id}
                   product={product}
                   slug={slug!}
+                  store={store}
                 />
               ))}
             </div>

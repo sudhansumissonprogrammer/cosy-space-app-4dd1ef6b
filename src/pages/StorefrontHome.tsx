@@ -99,6 +99,7 @@ export default function StorefrontHome() {
                   key={product.id}
                   product={product}
                   slug={slug!}
+                  store={store}
                 />
               ))}
             </div>
