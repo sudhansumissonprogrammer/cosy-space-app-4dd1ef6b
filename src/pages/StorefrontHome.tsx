@@ -29,6 +29,7 @@ export default function StorefrontHome() {
       return data;
     },
     enabled: !!store.id,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: storeCategories } = useQuery({
