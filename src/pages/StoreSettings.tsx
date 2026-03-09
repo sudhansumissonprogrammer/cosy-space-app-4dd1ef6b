@@ -50,7 +50,8 @@ export default function StoreSettings() {
   const [city, setCity] = useState("");
   const [stateName, setStateName] = useState("");
   const [currency, setCurrency] = useState("USD");
-  const [currency, setCurrency] = useState("USDconst [facebookUrl, setFacebookUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
   const [businessHours, setBusinessHours] = useState<Record<string, string>>({
     mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "",
   });
