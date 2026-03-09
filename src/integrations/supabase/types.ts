@@ -551,6 +551,7 @@ export type Database = {
           city: string | null
           created_at: string
           currency: string
+          custom_domain: string | null
           description: string | null
           facebook_url: string | null
           features: Json | null
@@ -575,6 +576,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           currency?: string
+          custom_domain?: string | null
           description?: string | null
           facebook_url?: string | null
           features?: Json | null
@@ -599,6 +601,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           currency?: string
+          custom_domain?: string | null
           description?: string | null
           facebook_url?: string | null
           features?: Json | null

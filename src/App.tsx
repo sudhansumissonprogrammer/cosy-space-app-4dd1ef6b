@@ -24,6 +24,8 @@ import Dashboard from "./pages/Dashboard";
 import StoresList from "./pages/StoresList";
 import CreateStore from "./pages/CreateStore";
 import ProductsList from "./pages/ProductsList";
+import BulkUpload from "./pages/BulkUpload";
+import StoreDomain from "./pages/StoreDomain";
 import CreateProduct from "./pages/CreateProduct";
 import EditProduct from "./pages/EditProduct";
 import StorefrontLayout from "./layouts/StorefrontLayout";
@@ -102,9 +104,11 @@ const App = () => (
               <Route path="stores/:storeId/products" element={<ProductsList />} />
               <Route path="stores/:storeId/products/create" element={<CreateProduct />} />
               <Route path="stores/:storeId/products/:productId/edit" element={<EditProduct />} />
+              <Route path="stores/:storeId/products/bulk-upload" element={<BulkUpload />} />
               <Route path="stores/:storeId/orders" element={<StoreOrders />} />
               <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
               <Route path="stores/:storeId/settings" element={<StoreSettings />} />
+              <Route path="stores/:storeId/domain" element={<StoreDomain />} />
               <Route path="stores/:storeId/coupons" element={<CouponsPage />} />
               <Route path="stores/:storeId/leads" element={<CustomerLeads />} />
               <Route path="analytics" element={<StoreAnalytics />} />

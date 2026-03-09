@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Plus, ArrowLeft, Pencil, Trash2, Package, AlertCircle } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, Package, AlertCircle, Upload } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 
@@ -102,9 +102,14 @@ export default function ProductsList() {
             <p className="text-sm text-muted-foreground">{store?.name}</p>
           </div>
         </div>
-        <Button asChild disabled={limitInfo && !limitInfo.can_create}>
-          <Link to={`/dashboard/stores/${storeId}/products/create`}><Plus className="mr-2 h-4 w-4" />Add Product</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link to={`/dashboard/stores/${storeId}/products/bulk-upload`}><Upload className="mr-2 h-4 w-4" />Import CSV</Link>
+          </Button>
+          <Button asChild disabled={limitInfo && !limitInfo.can_create}>
+            <Link to={`/dashboard/stores/${storeId}/products/create`}><Plus className="mr-2 h-4 w-4" />Add Product</Link>
+          </Button>
+        </div>
       </div>
 
       {limitInfo && (
