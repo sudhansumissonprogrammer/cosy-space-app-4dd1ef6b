@@ -5,11 +5,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { Store, Package, Search, MapPin, Clock, BadgeCheck, Instagram, Facebook, Tag, Heart, ShoppingCart, MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontHero from "@/components/storefront/StorefrontHero";
 import StorefrontCategories from "@/components/storefront/StorefrontCategories";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import StorefrontAbout from "@/components/storefront/StorefrontAbout";
+
+function ProductCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
+      <div className="px-2.5 pb-2.5 pt-2 space-y-2">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-2.5 w-16" />
+          <Skeleton className="h-2.5 w-10" />
+        </div>
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-3/4" />
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-9 w-full rounded-lg sm:h-10" />
+      </div>
+    </div>
+  );
+}
 
 export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
@@ -32,7 +51,7 @@ export default function StorefrontHome() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: storeCategories } = useQuery({
+  const { data: storeCategories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["storefront-categories", store.id],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -76,6 +95,7 @@ export default function StorefrontHome() {
       <StorefrontCategories
         categories={storeCategories}
         storeSlug={slug!}
+        isLoading={categoriesLoading}
       />
 
       <div className="mx-auto max-w-6xl px-4 py-6">
@@ -91,8 +111,10 @@ export default function StorefrontHome() {
             )}
           </h2>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
