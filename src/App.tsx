@@ -31,6 +31,7 @@ import EditProduct from "./pages/EditProduct";
 import StorefrontLayout from "./layouts/StorefrontLayout";
 import StorefrontHome from "./pages/StorefrontHome";
 import StorefrontContact from "./pages/StorefrontContact";
+import WishlistPage from "./pages/WishlistPage";
 import ProductDetail from "./pages/ProductDetail";
 import CategoryDetail from "./pages/CategoryDetail";
 import StoreOrders from "./pages/StoreOrders";
