@@ -103,7 +103,14 @@
   }
 }
 
-@layer components {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   .btn-gold {
     background: linear-gradient(135deg, hsl(40 70% 55%), hsl(43 80% 65%), hsl(40 70% 55%));
     color: hsl(30 30% 15%);
