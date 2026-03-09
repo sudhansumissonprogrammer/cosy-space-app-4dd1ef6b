@@ -183,15 +183,8 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {(store as any).order_mode === "website" ? (
-            <BuyNowButton
-              store={store}
-              product={product}
-              hasDiscount={!!hasDiscount}
-              currency={currency}
-              variants={variants || []}
-            />
-          ) : store.whatsapp_number ? (
+          {/* WhatsApp button: show for whatsapp or both */}
+          {((store as any).order_mode === "whatsapp" || (store as any).order_mode === "both") && store.whatsapp_number && (
             <WhatsAppOrderButton
               store={store}
               product={product}
@@ -199,7 +192,18 @@ export default function ProductDetail() {
               currency={currency}
               variants={variants || []}
             />
-          ) : null}
+          )}
+
+          {/* Buy Now button: show for website or both */}
+          {((store as any).order_mode === "website" || (store as any).order_mode === "both") && (
+            <BuyNowButton
+              store={store}
+              product={product}
+              hasDiscount={!!hasDiscount}
+              currency={currency}
+              variants={variants || []}
+            />
+          )}
 
           <AddToCartButton
             product={product}
