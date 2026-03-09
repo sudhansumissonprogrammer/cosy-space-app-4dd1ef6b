@@ -1,4 +1,5 @@
 import { Tag } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Category {
   id: string;
@@ -9,8 +10,7 @@ interface Category {
 
 interface StorefrontCategoriesProps {
   categories: Category[] | undefined;
-  activeCategory: string | null;
-  onCategoryChange: (category: string | null) => void;
+  storeSlug: string;
 }
 
 export default function StorefrontCategories({ categories, activeCategory, onCategoryChange }: StorefrontCategoriesProps) {
