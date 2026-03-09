@@ -7,11 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+m "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe, Palette, Lock, Check, Plus, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe, Palette, Lock, Check, Plus, Trash2 } from "lucide-r Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ICON_OPTIONS = [
