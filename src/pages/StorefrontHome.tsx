@@ -105,7 +105,7 @@ export default function StorefrontHome() {
           ) : (
             <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
               <p className="text-muted-foreground">
-                {searchQuery || activeCategory ? "No products match your search." : "No products available yet."}
+                {searchQuery ? "No products match your search." : "No products available yet."}
               </p>
             </div>
           )}

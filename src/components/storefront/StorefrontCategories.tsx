@@ -13,7 +13,7 @@ interface StorefrontCategoriesProps {
   storeSlug: string;
 }
 
-export default function StorefrontCategories({ categories, activeCategory, onCategoryChange }: StorefrontCategoriesProps) {
+export default function StorefrontCategories({ categories, storeSlug }: StorefrontCategoriesProps) {
   if (!categories || categories.length === 0) return null;
 
   return (
@@ -21,18 +21,12 @@ export default function StorefrontCategories({ categories, activeCategory, onCat
       <div className="mx-auto max-w-6xl px-4 py-4">
         <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
           {categories.map((cat) => (
-            <button
+            <Link
               key={cat.id}
-              onClick={() => onCategoryChange(activeCategory === cat.name ? null : cat.name)}
+              to={`/store/${storeSlug}/category/${cat.slug}`}
               className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
             >
-              <div
-                className={`h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 ${
-                  activeCategory === cat.name
-                    ? "border-primary shadow-md"
-                    : "border-border hover:border-primary/50 hover:shadow-sm"
-                }`}
-              >
+              <div className="h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border hover:border-primary/50 hover:shadow-sm">
                 {cat.image_url ? (
                   <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
                 ) : (
@@ -44,25 +38,8 @@ export default function StorefrontCategories({ categories, activeCategory, onCat
               <span className="text-[10px] font-bold uppercase tracking-wide text-foreground text-center leading-tight">
                 {cat.name}
               </span>
-            </button>
+            </Link>
           ))}
-          <button
-            onClick={() => onCategoryChange(null)}
-            className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
-          >
-            <div
-              className={`flex h-16 w-16 items-center justify-center rounded-full border-2 transition-all sm:h-20 sm:w-20 ${
-                activeCategory === null
-                  ? "border-primary bg-primary/10 shadow-md"
-                  : "border-border bg-accent hover:border-primary/50 hover:shadow-sm"
-              }`}
-            >
-              <Tag className="h-5 w-5 text-foreground sm:h-6 sm:w-6" />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wide text-foreground text-center leading-tight">
-              All
-            </span>
-          </button>
         </div>
       </div>
     </div>
