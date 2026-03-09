@@ -367,43 +367,7 @@ function WhatsAppOrderForm({
   const [ordering, setOrdering] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [couponCode, setCouponCode] = useState("");
-  const [couponDiscount, setCouponDiscount] = useState<{ type: string; value: number } | null>(null);
-  const [validatingCoupon, setValidatingCoupon] = useState(false);
-
-  let finalPrice = variantPrice;
-  if (couponDiscount) {
-    finalPrice = couponDiscount.type === "percentage"
-      ? variantPrice * (1 - couponDiscount.value / 100)
-      : Math.max(0, variantPrice - couponDiscount.value);
-  }
-
-  const applyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setValidatingCoupon(true);
-    try {
-      const { data, error } = await (supabase as any)
-        .from("coupons")
-        .select("*")
-        .eq("store_id", store.id)
-        .eq("code", couponCode.trim().toUpperCase())
-        .eq("is_active", true)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) { toast.error("Invalid coupon code"); setCouponDiscount(null); return; }
-      if (data.min_order_amount && variantPrice < Number(data.min_order_amount)) {
-        toast.error(`Minimum order amount is ${currency} ${Number(data.min_order_amount).toFixed(2)}`);
-        setCouponDiscount(null);
-        return;
-      }
-      setCouponDiscount({ type: data.discount_type, value: Number(data.discount_value) });
-      toast.success(`Coupon applied! ${data.discount_type === "percentage" ? `${data.discount_value}% off` : `${currency} ${Number(data.discount_value).toFixed(2)} off`}`);
-    } catch {
-      toast.error("Failed to validate coupon");
-    } finally {
-      setValidatingCoupon(false);
-    }
-  };
+  const finalPrice = variantPrice;
 
   const handleOrder = async () => {
     if (!customerPhone.trim()) { toast.error("Please enter your phone number"); return; }
@@ -437,8 +401,7 @@ function WhatsAppOrderForm({
 
     const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
     const variantInfo = selectedVariant ? `\nVariant: ${selectedVariant.name}` : "";
-    const couponInfo = couponDiscount ? `\nCoupon: ${couponCode.toUpperCase()} (${couponDiscount.type === "percentage" ? `${couponDiscount.value}%` : `${currency} ${couponDiscount.value}`} off)` : "";
-    const text = `Hello, I want to order:\n\nProduct: ${product.name}${variantInfo}\nPrice: ${currency} ${Number(finalPrice).toFixed(2)}${couponInfo}\nStore: ${store.name}\n\nName: ${customerName.trim() || "—"}\nPhone: ${customerPhone.trim()}`;
+    const text = `Hello, I want to order:\n\nProduct: ${product.name}${variantInfo}\nPrice: ${currency} ${Number(finalPrice).toFixed(2)}\nStore: ${store.name}\n\nName: ${customerName.trim() || "—"}\nPhone: ${customerPhone.trim()}`;
     window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -455,18 +418,6 @@ function WhatsAppOrderForm({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs">Coupon Code</Label>
-        <div className="flex gap-2">
-          <Input placeholder="SAVE10" value={couponCode} onChange={(e) => { setCouponCode(e.target.value); setCouponDiscount(null); }} maxLength={30} />
-          <Button type="button" variant="outline" onClick={applyCoupon} disabled={validatingCoupon || !couponCode.trim()}>
-            {validatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : <Tag className="h-4 w-4" />}
-          </Button>
-        </div>
-        {couponDiscount && (
-          <p className="text-xs text-primary">Discount applied! Total: {currency} {Number(finalPrice).toFixed(2)}</p>
-        )}
-      </div>
 
       <Button className="w-full" onClick={handleOrder} disabled={ordering}>
         {ordering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}

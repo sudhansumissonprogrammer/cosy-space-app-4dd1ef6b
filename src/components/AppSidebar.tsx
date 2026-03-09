@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
-  Users, UserCheck, Tag, Globe, Store, Plus, CreditCard,
+  Users, UserCheck, Globe, Store, Plus, CreditCard,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -50,7 +50,7 @@ export function AppSidebar() {
         { title: "Orders", url: `/dashboard/stores/${storeId}/orders`, icon: ShoppingBag },
         { title: "Customers", url: `/dashboard/stores/${storeId}/customers`, icon: Users },
         { title: "Leads", url: `/dashboard/stores/${storeId}/leads`, icon: UserCheck },
-        { title: "Coupons", url: `/dashboard/stores/${storeId}/coupons`, icon: Tag },
+        
         { title: "Orders & Payments", url: `/dashboard/stores/${storeId}/payments`, icon: CreditCard },
         { title: "Domain", url: `/dashboard/stores/${storeId}/domain`, icon: Globe },
         { title: "Store Settings", url: `/dashboard/stores/${storeId}/settings`, icon: Settings },
