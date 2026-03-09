@@ -343,6 +343,77 @@ export default function StoreSettings() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-lg">Why Choose Us</CardTitle>
+            <CardDescription>Manage selling points shown on your Contact page</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {features.map((feature, idx) => (
+              <div key={idx} className="flex gap-2 items-start rounded-lg border p-3">
+                <div className="flex-1 space-y-2">
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <Select
+                      value={feature.icon}
+                      onValueChange={(v) => {
+                        const updated = [...features];
+                        updated[idx] = { ...updated[idx], icon: v };
+                        setFeatures(updated);
+                      }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Icon" /></SelectTrigger>
+                      <SelectContent>
+                        {ICON_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="Title"
+                      value={feature.title}
+                      onChange={(e) => {
+                        const updated = [...features];
+                        updated[idx] = { ...updated[idx], title: e.target.value };
+                        setFeatures(updated);
+                      }}
+                      className="sm:col-span-2"
+                      maxLength={50}
+                    />
+                  </div>
+                  <Input
+                    placeholder="Description"
+                    value={feature.description}
+                    onChange={(e) => {
+                      const updated = [...features];
+                      updated[idx] = { ...updated[idx], description: e.target.value };
+                      setFeatures(updated);
+                    }}
+                    maxLength={100}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={() => setFeatures(features.filter((_, i) => i !== idx))}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            {features.length < 6 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFeatures([...features, { icon: "Award", title: "", description: "" }])}
+              >
+                <Plus className="mr-1 h-4 w-4" /> Add Feature
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
+          <CardHeader>
             <CardTitle className="text-lg">Theme</CardTitle>
             <CardDescription>Choose your storefront look</CardDescription>
           </CardHeader>
