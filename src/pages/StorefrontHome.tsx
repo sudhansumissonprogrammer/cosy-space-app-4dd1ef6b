@@ -15,7 +15,6 @@ export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["storefront-products", store.id],
