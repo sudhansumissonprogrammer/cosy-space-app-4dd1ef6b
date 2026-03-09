@@ -24,6 +24,8 @@ import Dashboard from "./pages/Dashboard";
 import StoresList from "./pages/StoresList";
 import CreateStore from "./pages/CreateStore";
 import ProductsList from "./pages/ProductsList";
+import BulkUpload from "./pages/BulkUpload";
+import StoreDomain from "./pages/StoreDomain";
 import CreateProduct from "./pages/CreateProduct";
 import EditProduct from "./pages/EditProduct";
 import StorefrontLayout from "./layouts/StorefrontLayout";
