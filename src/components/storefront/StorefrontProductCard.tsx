@@ -85,8 +85,8 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
             </p>
           ) : <span />}
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Star className="h-3 w-3 fill-warning text-warning" />
-            <span className="font-semibold">4.5</span>
+            <Star className="h-3 w-3 fill-green-500 text-green-500" />
+            <span className="font-semibold">{getProductRating(product.id)}</span>
           </div>
         </div>
 
