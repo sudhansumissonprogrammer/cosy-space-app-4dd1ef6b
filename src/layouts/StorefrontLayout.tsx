@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, Outlet } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -205,6 +205,43 @@ function StorefrontSkeleton() {
 
 export default function StorefrontLayout() {
   const { store, isLoading, slug } = useStorefront();
+  const queryClient = useQueryClient();
+
+  // Prefetch products & categories as soon as store.id is available
+  // so data is cached before StorefrontHome mounts
+  useEffect(() => {
+    if (!store?.id) return;
+    const storeId = store.id;
+
+    queryClient.prefetchQuery({
+      queryKey: ["storefront-products", storeId],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return data;
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+
+    queryClient.prefetchQuery({
+      queryKey: ["storefront-categories", storeId],
+      queryFn: async () => {
+        const { data, error } = await (supabase as any)
+          .from("categories")
+          .select("*")
+          .eq("store_id", storeId)
+          .order("name");
+        if (error) throw error;
+        return data;
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  }, [store?.id, queryClient]);
 
   useMetaTags({
     title: store ? `${store.name} — Store` : undefined,
