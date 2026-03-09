@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
-import { Package, ShoppingCart, Star, Zap } from "lucide-react";
+import { Package, ShoppingCart, Star, Heart, Zap } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
-import { useMemo } from "react";
+import { useState } from "react";
 import type { Tables } from "@/integrations/supabase/types";
 
-// Generate a deterministic pseudo-random rating between 4.2-4.9 based on product id
 function getProductRating(productId: string): number {
   let hash = 0;
   for (let i = 0; i < productId.length; i++) {
@@ -24,6 +23,7 @@ interface StorefrontProductCardProps {
 
 export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
   const { addToCart } = useCart();
+  const [wishlisted, setWishlisted] = useState(false);
 
   const price = product.sale_price && product.sale_price < product.price
     ? Number(product.sale_price)
@@ -41,34 +41,54 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
     toast.success(`${product.name} added to cart`);
   };
 
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setWishlisted((prev) => !prev);
+    toast.success(wishlisted ? "Removed from wishlist" : "Added to wishlist");
+  };
+
   const discountPercent = product.sale_price && product.sale_price < product.price
     ? Math.round(((Number(product.price) - Number(product.sale_price)) / Number(product.price)) * 100)
     : null;
 
   return (
-    <div className="group relative overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-lg">
-      {/* Trending / Sale Badge */}
-      {product.sale_price && (
-        <div className="absolute left-2 top-2 z-10">
-          <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-bold text-card">
-            <Zap className="h-3 w-3" />
-            Trending
-          </span>
-        </div>
-      )}
+    <div className="group relative overflow-hidden rounded-2xl bg-card shadow-sm transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-xl">
+      {/* Image Section */}
+      <Link to={`/store/${slug}/product/${product.slug || product.id}`} className="block">
+        <div className="relative aspect-square w-full overflow-hidden rounded-t-2xl bg-secondary/40 p-2 sm:p-3">
+          {/* Trending Badge */}
+          {product.sale_price && (
+            <div className="absolute left-3 top-3 z-10">
+              <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold text-card backdrop-blur-md"
+                style={{ background: "rgba(0,0,0,0.65)" }}>
+                <Zap className="h-3 w-3" />
+                Trending
+              </span>
+            </div>
+          )}
 
-      {/* Product Image */}
-      <Link to={`/store/${slug}/product/${product.slug || product.id}`}>
-        <div className="aspect-square w-full overflow-hidden bg-secondary">
+          {/* Wishlist Icon */}
+          <button
+            onClick={handleWishlist}
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-md transition-transform duration-300 hover:scale-110"
+          >
+            <Heart
+              className={`h-4 w-4 transition-colors duration-300 ${
+                wishlisted ? "fill-destructive text-destructive" : "text-muted-foreground hover:text-destructive"
+              }`}
+            />
+          </button>
+
           {product.image_url ? (
             <img
               src={product.image_url}
               alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="h-full w-full rounded-xl object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
+            <div className="flex h-full w-full items-center justify-center rounded-xl">
               <Package className="h-10 w-10 text-muted-foreground/40" />
             </div>
           )}
@@ -76,8 +96,8 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       </Link>
 
       {/* Product Info */}
-      <div className="p-3">
-        {/* Category & Rating Row */}
+      <div className="p-3 sm:p-4">
+        {/* Category & Rating */}
         <div className="mb-1 flex items-center justify-between">
           {product.category ? (
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -120,13 +140,13 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
           )}
         </div>
 
-        {/* Action Button */}
+        {/* Add to Cart Button */}
         <div className="mt-3">
           <button
-            className="btn-gold inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-[10px] font-extrabold uppercase tracking-widest"
+            className="btn-gold flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl text-[11px] font-extrabold uppercase tracking-widest transition-transform duration-300 sm:h-12 sm:text-xs md:hover:scale-[1.02]"
             onClick={handleAddToCart}
           >
-            <ShoppingCart className="h-3.5 w-3.5" />
+            <ShoppingCart className="h-4 w-4 shrink-0" />
             Add to Cart
           </button>
         </div>
