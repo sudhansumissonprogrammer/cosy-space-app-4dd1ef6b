@@ -401,8 +401,7 @@ function WhatsAppOrderForm({
 
     const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
     const variantInfo = selectedVariant ? `\nVariant: ${selectedVariant.name}` : "";
-    const couponInfo = couponDiscount ? `\nCoupon: ${couponCode.toUpperCase()} (${couponDiscount.type === "percentage" ? `${couponDiscount.value}%` : `${currency} ${couponDiscount.value}`} off)` : "";
-    const text = `Hello, I want to order:\n\nProduct: ${product.name}${variantInfo}\nPrice: ${currency} ${Number(finalPrice).toFixed(2)}${couponInfo}\nStore: ${store.name}\n\nName: ${customerName.trim() || "—"}\nPhone: ${customerPhone.trim()}`;
+    const text = `Hello, I want to order:\n\nProduct: ${product.name}${variantInfo}\nPrice: ${currency} ${Number(finalPrice).toFixed(2)}\nStore: ${store.name}\n\nName: ${customerName.trim() || "—"}\nPhone: ${customerPhone.trim()}`;
     window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
