@@ -4,11 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Store, ShoppingCart, Home, Tag, Mail } from "lucide-react";
+import { Store, ShoppingCart, Home, Tag, Mail, Heart } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { CartProvider, useCart } from "@/contexts/CartContext";
+import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 
 export type StoreData = Tables<"stores">;
@@ -43,6 +44,22 @@ function CartBadge({ slug }: { slug: string }) {
       {cartCount > 0 && (
         <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
           {cartCount > 99 ? "99+" : cartCount}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function WishlistBadge({ slug }: { slug: string }) {
+  const { wishlistCount } = useWishlist();
+  return (
+    <Link to={`/store/${slug}/wishlist`} className="relative">
+      <Button variant="ghost" size="icon" className="h-9 w-9">
+        <Heart className="h-5 w-5" />
+      </Button>
+      {wishlistCount > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+          {wishlistCount > 99 ? "99+" : wishlistCount}
         </span>
       )}
     </Link>
@@ -90,6 +107,14 @@ function HamburgerMenu({ store }: { store: StoreData }) {
             >
               <Home className="h-4 w-4" />
               Home
+            </Link>
+            <Link
+              to={`/store/${store.slug}/wishlist`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Heart className="h-4 w-4" />
+              Wishlist
             </Link>
             <Link
               to={`/store/${store.slug}/contact`}
@@ -168,31 +193,34 @@ export default function StorefrontLayout() {
 
   return (
     <CartProvider slug={store.slug}>
-      <div className="min-h-screen bg-background">
-        {/* Marquee Banner */}
-        <StorefrontMarquee />
-        
-        {/* Sticky Nav */}
-        <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
-          <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-            <HamburgerMenu store={store} />
-            <Link to={`/store/${store.slug}`} className="flex-shrink-0">
-              {store.logo_url ? (
-                <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                  <Store className="h-5 w-5 text-primary-foreground" />
-                </div>
-              )}
-            </Link>
-            <div className="flex-1" />
-            <CartBadge slug={store.slug} />
-            <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
-          </div>
-        </nav>
+      <WishlistProvider slug={store.slug}>
+        <div className="min-h-screen bg-background">
+          {/* Marquee Banner */}
+          <StorefrontMarquee />
+          
+          {/* Sticky Nav */}
+          <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
+            <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+              <HamburgerMenu store={store} />
+              <Link to={`/store/${store.slug}`} className="flex-shrink-0">
+                {store.logo_url ? (
+                  <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                    <Store className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                )}
+              </Link>
+              <div className="flex-1" />
+              <WishlistBadge slug={store.slug} />
+              <CartBadge slug={store.slug} />
+              <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
+            </div>
+          </nav>
 
-        <Outlet context={store} />
-      </div>
+          <Outlet context={store} />
+        </div>
+      </WishlistProvider>
     </CartProvider>
   );
 }

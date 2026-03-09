@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Package, ShoppingCart, Star, Zap } from "lucide-react";
+import { Package, ShoppingCart, Star, Zap, Heart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -22,6 +23,9 @@ interface StorefrontProductCardProps {
 
 export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
   const { addToCart } = useCart();
+  const { isWishlisted, toggleWishlist } = useWishlist();
+
+  const wishlisted = isWishlisted(product.id);
 
   const price = product.sale_price && product.sale_price < product.price
     ? Number(product.sale_price)
@@ -37,6 +41,21 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       image: product.image_url || undefined,
     });
     toast.success(`${product.name} added to cart`);
+  };
+
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist({
+      productId: product.id,
+      name: product.name,
+      price: Number(product.price),
+      salePrice: product.sale_price ? Number(product.sale_price) : undefined,
+      image: product.image_url || undefined,
+      slug: product.slug || product.id,
+      category: product.category || undefined,
+    });
+    toast.success(wishlisted ? "Removed from wishlist" : "Added to wishlist");
   };
 
   const discountPercent = product.sale_price && product.sale_price < product.price
@@ -59,6 +78,18 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
               </span>
             </div>
           )}
+
+          {/* Wishlist Heart */}
+          <button
+            onClick={handleWishlist}
+            className="absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-md transition-transform duration-200 hover:scale-110"
+          >
+            <Heart
+              className={`h-4 w-4 transition-colors duration-200 ${
+                wishlisted ? "fill-destructive text-destructive" : "text-muted-foreground"
+              }`}
+            />
+          </button>
 
           {product.image_url ? (
             <img
