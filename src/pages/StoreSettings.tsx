@@ -50,8 +50,7 @@ export default function StoreSettings() {
   const [city, setCity] = useState("");
   const [stateName, setStateName] = useState("");
   const [currency, setCurrency] = useState("USD");
-  const [currency, setCurrency] = useState("USDnstagramUrl] = useState("");
-  const [facebookUrl, setFacebookUrl] = useState("");
+  const [currency, setCurrency] = useState("USDconst [facebookUrl, setFacebookUrl] = useState("");
   const [businessHours, setBusinessHours] = useState<Record<string, string>>({
     mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "",
   });
@@ -85,8 +84,7 @@ export default function StoreSettings() {
       setCity((store as any).city || "");
       setStateName((store as any).state || "");
       setCurrency((store as any).currency || "USD");
-      setOrderMode((store as any).order_Currency((store as any).currency || "USDe as any).instagram_url || "");
-      setFacebookUrl((store as any).facebook_url || "");
+      setOrderMode((store as any).order_Currency((store as any).currencCurrency((store as any).currency || "USDetFacebookUrl((store as any).facebook_url || "");
       if ((store as any).business_hours) {
         setBusinessHours({ mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "", ...(store as any).business_hours });
       }
@@ -130,7 +128,7 @@ export default function StoreSettings() {
           state: stateName.trim() || null,
           currency,
           order_mode: orderMode,
-          instagram_url: instagramUrl.trim() || null,
+          instagcurrency.trim() || null,
           facebook_url: facebookUrl.trim() || null,
           business_hours: hasHours ? businessHours : null,
           logo_url: logoUrl,
