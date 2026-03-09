@@ -197,29 +197,8 @@ export default function StoreSettings() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Order Mode</Label>
-              <RadioGroup value={orderMode} onValueChange={(v) => setOrderMode(v as "whatsapp" | "website")} className="grid gap-3 sm:grid-cols-2">
-                <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 transition-all ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
-                  <RadioGroupItem value="whatsapp" className="mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                      <MessageCircle className="h-3.5 w-3.5 text-green-600" /> WhatsApp
-                    </p>
-                    <p className="text-xs text-muted-foreground">Orders via WhatsApp</p>
-                  </div>
-                </label>
-                <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 transition-all ${orderMode === "website" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
-                  <RadioGroupItem value="website" className="mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                      <Globe className="h-3.5 w-3.5 text-blue-600" /> Website
-                    </p>
-                    <p className="text-xs text-muted-foreground">Checkout on site</p>
-                  </div>
-                </label>
-              </RadioGroup>
-            </div>
+
+
 
             <div className="space-y-2">
               <Label htmlFor="whatsapp">WhatsApp Number</Label>
