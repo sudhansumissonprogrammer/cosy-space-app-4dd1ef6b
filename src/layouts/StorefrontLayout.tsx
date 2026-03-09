@@ -69,8 +69,8 @@ function HamburgerMenu({ store }: { store: StoreData }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Menu className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="h-10 w-10 p-0">
+          <Menu className="h-6 w-6" strokeWidth={1.5} />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[280px] p-0">
