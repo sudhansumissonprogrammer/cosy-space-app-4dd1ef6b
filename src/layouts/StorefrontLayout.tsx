@@ -90,6 +90,14 @@ function HamburgerMenu({ store }: { store: StoreData }) {
               <Home className="h-4 w-4" />
               Home
             </Link>
+            <Link
+              to={`/store/${store.slug}/contact`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Mail className="h-4 w-4" />
+              Contact Us
+            </Link>
             {categories && categories.length > 0 && (
               <>
                 <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
