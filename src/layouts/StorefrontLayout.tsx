@@ -195,6 +195,7 @@ export default function StorefrontLayout() {
               )}
             </Link>
             <div className="flex-1" />
+            <WishlistBadge slug={store.slug} />
             <CartBadge slug={store.slug} />
             <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
           </div>
