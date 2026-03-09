@@ -53,25 +53,19 @@ export default function CategoryDetail() {
 
   return (
     <>
-      {/* Fixed Header with Back Button */}
-      <div className="sticky top-14 z-20 border-b bg-card/80 backdrop-blur-md">
-        <div className="mx-auto flex h-12 max-w-6xl items-center gap-3 px-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(`/store/${slug}`)}
-            className="h-9 w-9 flex-shrink-0"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="truncate text-lg font-semibold text-foreground">
-            {category?.name || "Category"}
-          </h1>
-        </div>
-      </div>
-
       {/* Products Grid */}
       <div className="mx-auto max-w-6xl px-4 py-6">
+        {/* Floating Back Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(`/store/${slug}`)}
+          className="mb-4 rounded-full bg-background text-foreground shadow-sm hover:shadow-md"
+        >
+          <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+          Back
+        </Button>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
