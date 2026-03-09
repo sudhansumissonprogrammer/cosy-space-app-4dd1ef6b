@@ -35,7 +35,7 @@ export default function StorefrontCategories({ categories, storeSlug }: Storefro
                   </div>
                 )}
               </div>
-              <span className="text-[11px] font-normal tracking-wide text-foreground text-center leading-tight" style={{ fontFamily: "'Alegreya SC', serif" }}>
+              <span className="text-[11px] font-medium uppercase tracking-wide text-foreground text-center leading-tight" style={{ fontFamily: "sans-serif" }}>
                 {cat.name}
               </span>
             </Link>
