@@ -163,6 +163,7 @@ export default function StorefrontLayout() {
         {/* Sticky Nav */}
         <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
           <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+            <HamburgerMenu store={store} />
             <Link to={`/store/${store.slug}`} className="flex-shrink-0">
               {store.logo_url ? (
                 <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[140px] object-contain sm:h-10" />
