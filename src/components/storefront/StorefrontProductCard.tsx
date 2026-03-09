@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
-import { Package, ShoppingCart } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Package, ShoppingCart, Star, Zap } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -28,13 +27,18 @@ export default function StorefrontProductCard({ product, slug }: StorefrontProdu
     toast.success(`${product.name} added to cart`);
   };
 
+  const discountPercent = product.sale_price && product.sale_price < product.price
+    ? Math.round(((Number(product.price) - Number(product.sale_price)) / Number(product.price)) * 100)
+    : null;
+
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-lg">
-      {/* Sale Badge */}
+      {/* Trending / Sale Badge */}
       {product.sale_price && (
         <div className="absolute left-2 top-2 z-10">
-          <span className="rounded-sm bg-destructive px-2 py-0.5 text-[10px] font-bold uppercase text-destructive-foreground">
-            Sale
+          <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-bold text-card">
+            <Zap className="h-3 w-3" />
+            Trending
           </span>
         </div>
       )}
@@ -58,30 +62,46 @@ export default function StorefrontProductCard({ product, slug }: StorefrontProdu
       </Link>
 
       {/* Product Info */}
-      <div className="p-3 text-center">
-        {product.category && (
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {product.category}
-          </p>
-        )}
+      <div className="p-3">
+        {/* Category & Rating Row */}
+        <div className="mb-1 flex items-center justify-between">
+          {product.category ? (
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {product.category}
+            </p>
+          ) : <span />}
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Star className="h-3 w-3 fill-warning text-warning" />
+            <span className="font-semibold">4.5</span>
+          </div>
+        </div>
+
+        {/* Product Name */}
         <Link to={`/store/${slug}/product/${product.slug || product.id}`}>
-          <h3 className="text-sm font-bold text-foreground line-clamp-2 transition-colors group-hover:text-primary sm:text-base">
+          <h3 className="text-xs font-bold text-foreground line-clamp-2 transition-colors group-hover:text-primary sm:text-sm">
             {product.name}
           </h3>
         </Link>
-        <div className="mt-2 flex items-center justify-center gap-2">
+
+        {/* Price Row */}
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           {product.sale_price ? (
             <>
-              <span className="text-base font-bold text-foreground sm:text-lg">
-                ₹{Number(product.sale_price).toFixed(2)}
+              <span className="text-sm font-bold text-foreground sm:text-base">
+                ₹{Number(product.sale_price).toFixed(0)}
               </span>
-              <span className="text-xs text-muted-foreground line-through sm:text-sm">
-                ₹{Number(product.price).toFixed(2)}
+              <span className="text-[11px] text-muted-foreground line-through">
+                ₹{Number(product.price).toFixed(0)}
               </span>
+              {discountPercent && (
+                <span className="rounded-sm bg-success px-1.5 py-0.5 text-[10px] font-bold text-success-foreground">
+                  {discountPercent}% off
+                </span>
+              )}
             </>
           ) : (
-            <span className="text-base font-bold text-foreground sm:text-lg">
-              ₹{Number(product.price).toFixed(2)}
+            <span className="text-sm font-bold text-foreground sm:text-base">
+              ₹{Number(product.price).toFixed(0)}
             </span>
           )}
         </div>
