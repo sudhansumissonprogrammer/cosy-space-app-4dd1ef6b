@@ -4,13 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Store, ExternalLink, Package, ShoppingBag, Users, Settings, Tag, Share2, Trash2, UserCheck } from "lucide-react";
+import { Plus, Store, ExternalLink, Share2, Trash2 } from "lucide-react";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+
 export default function StoresList() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -22,6 +23,7 @@ export default function StoresList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["stores", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["my-store", user?.id] });
       toast.success("Store deleted successfully");
     },
     onError: (err: any) => {
@@ -94,36 +96,6 @@ export default function StoresList() {
                   <Button variant="outline" size="sm" asChild>
                     <Link to={`/store/${store.slug}`} target="_blank">
                       <ExternalLink className="mr-1 h-3 w-3" /> View
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/dashboard/stores/${store.id}/products`}>
-                      <Package className="mr-1 h-3 w-3" /> Products
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/dashboard/stores/${store.id}/orders`}>
-                      <ShoppingBag className="mr-1 h-3 w-3" /> Orders
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/dashboard/stores/${store.id}/customers`}>
-                      <Users className="mr-1 h-3 w-3" /> Customers
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/dashboard/stores/${store.id}/coupons`}>
-                      <Tag className="mr-1 h-3 w-3" /> Coupons
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/dashboard/stores/${store.id}/leads`}>
-                      <UserCheck className="mr-1 h-3 w-3" /> Leads
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/dashboard/stores/${store.id}/settings`}>
-                      <Settings className="mr-1 h-3 w-3" /> Settings
                     </Link>
                   </Button>
                   <ShareStoreDialog
