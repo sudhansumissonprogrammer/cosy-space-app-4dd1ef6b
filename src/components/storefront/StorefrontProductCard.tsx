@@ -1,5 +1,5 @@
-import { Link, useNavigate } from "react-router-dom";
-import { Package, ShoppingCart, Star, Zap, MessageCircle, ShoppingBag } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Package, ShoppingCart, Star, Zap } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
