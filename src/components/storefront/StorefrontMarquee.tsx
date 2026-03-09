@@ -25,9 +25,10 @@ export default function StorefrontMarquee() {
 
   return (
     <div
-      className="w-full overflow-hidden py-2.5 font-['Alegreya_SC'] text-[13px] md:text-[15px] text-black"
+      className="w-full overflow-hidden py-2.5 text-[13px] md:text-[15px] text-black"
       style={{
         background: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+        fontFamily: "'Alegreya SC', serif",
       }}
     >
       <div className="flex w-max animate-marquee hover:[animation-play-state:paused]">
