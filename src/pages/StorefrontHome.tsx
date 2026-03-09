@@ -73,8 +73,7 @@ export default function StorefrontHome() {
 
       <StorefrontCategories
         categories={storeCategories}
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
+        storeSlug={slug!}
       />
 
       <div className="mx-auto max-w-6xl px-4 py-6">
