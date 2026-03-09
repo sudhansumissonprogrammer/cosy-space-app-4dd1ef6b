@@ -51,6 +51,7 @@ export function AppSidebar() {
         { title: "Customers", url: `/dashboard/stores/${storeId}/customers`, icon: Users },
         { title: "Leads", url: `/dashboard/stores/${storeId}/leads`, icon: UserCheck },
         { title: "Coupons", url: `/dashboard/stores/${storeId}/coupons`, icon: Tag },
+        { title: "Orders & Payments", url: `/dashboard/stores/${storeId}/payments`, icon: CreditCard },
         { title: "Domain", url: `/dashboard/stores/${storeId}/domain`, icon: Globe },
         { title: "Store Settings", url: `/dashboard/stores/${storeId}/settings`, icon: Settings },
       ]

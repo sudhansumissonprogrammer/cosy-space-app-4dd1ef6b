@@ -112,6 +112,7 @@ const App = () => (
               <Route path="stores/:storeId/domain" element={<StoreDomain />} />
               <Route path="stores/:storeId/coupons" element={<CouponsPage />} />
               <Route path="stores/:storeId/leads" element={<CustomerLeads />} />
+              <Route path="stores/:storeId/payments" element={<StorePayments />} />
               <Route path="analytics" element={<StoreAnalytics />} />
               <Route path="settings" element={<UserSettings />} />
             </Route>
