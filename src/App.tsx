@@ -104,6 +104,7 @@ const App = () => (
               <Route path="stores/:storeId/products" element={<ProductsList />} />
               <Route path="stores/:storeId/products/create" element={<CreateProduct />} />
               <Route path="stores/:storeId/products/:productId/edit" element={<EditProduct />} />
+              <Route path="stores/:storeId/products/bulk-upload" element={<BulkUpload />} />
               <Route path="stores/:storeId/orders" element={<StoreOrders />} />
               <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
               <Route path="stores/:storeId/settings" element={<StoreSettings />} />
