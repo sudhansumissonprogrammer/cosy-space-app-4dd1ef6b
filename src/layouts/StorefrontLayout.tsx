@@ -50,6 +50,22 @@ function CartBadge({ slug }: { slug: string }) {
   );
 }
 
+function WishlistBadge({ slug }: { slug: string }) {
+  const { wishlistCount } = useWishlist();
+  return (
+    <Link to={`/store/${slug}/wishlist`} className="relative">
+      <Button variant="ghost" size="icon" className="h-9 w-9">
+        <Heart className="h-5 w-5" />
+      </Button>
+      {wishlistCount > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+          {wishlistCount > 99 ? "99+" : wishlistCount}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 function HamburgerMenu({ store }: { store: StoreData }) {
   const [open, setOpen] = useState(false);
 
