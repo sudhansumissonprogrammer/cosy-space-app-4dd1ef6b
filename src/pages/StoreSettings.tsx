@@ -138,6 +138,7 @@ export default function StoreSettings() {
           logo_url: logoUrl,
           banner_url: bannerUrl,
           theme,
+          features: features.length > 0 ? features : null,
         })
         .eq("id", storeId!);
       if (error) throw error;
