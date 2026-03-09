@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
@@ -50,82 +50,107 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+const LoadingSpinner = () => (
+  <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+  </div>
+);
+
+/** Routes that need auth context (dashboard, admin, login, etc.) */
+function AuthRoutes() {
+  return (
+    <AuthProvider>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+
+        {/* Admin */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }
+        >
+          <Route index element={<AdminOverview />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="stores" element={<AdminStores />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="subscriptions" element={<AdminSubscriptions />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
+        </Route>
+
+        {/* User Dashboard */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="stores" element={<StoresList />} />
+          <Route path="stores/create" element={<CreateStore />} />
+          <Route path="stores/:storeId/products" element={<ProductsList />} />
+          <Route path="stores/:storeId/products/create" element={<CreateProduct />} />
+          <Route path="stores/:storeId/products/:productId/edit" element={<EditProduct />} />
+          <Route path="stores/:storeId/products/bulk-upload" element={<BulkUpload />} />
+          <Route path="stores/:storeId/orders" element={<StoreOrders />} />
+          <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
+          <Route path="stores/:storeId/settings" element={<StoreSettings />} />
+          <Route path="stores/:storeId/domain" element={<StoreDomain />} />
+          <Route path="stores/:storeId/leads" element={<CustomerLeads />} />
+          <Route path="stores/:storeId/payments" element={<StorePayments />} />
+          <Route path="analytics" element={<StoreAnalytics />} />
+          <Route path="settings" element={<UserSettings />} />
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AuthProvider>
+  );
+}
+
+/** Router that splits storefront (no auth) from everything else */
+function AppRouter() {
+  const location = useLocation();
+  const isStorefront = location.pathname.startsWith("/store/");
+
+  if (isStorefront) {
+    return (
+      <Routes>
+        <Route path="/store/:slug" element={<StorefrontLayout />}>
+          <Route index element={<StorefrontHome />} />
+          <Route path="contact" element={<StorefrontContact />} />
+          <Route path="category/:categorySlug" element={<CategoryDetail />} />
+          <Route path="product/:productSlug" element={<ProductDetail />} />
+          <Route path="cart" element={<CartPage />} />
+          <Route path="wishlist" element={<WishlistPage />} />
+          <Route path="checkout" element={<CheckoutPage />} />
+        </Route>
+      </Routes>
+    );
+  }
+
+  return <AuthRoutes />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-
-            {/* Admin */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <AdminLayout />
-                </AdminRoute>
-              }
-            >
-              <Route index element={<AdminOverview />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="stores" element={<AdminStores />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="subscriptions" element={<AdminSubscriptions />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
-            </Route>
-
-            {/* Public Storefront */}
-            <Route path="/store/:slug" element={<StorefrontLayout />}>
-              <Route index element={<StorefrontHome />} />
-              <Route path="contact" element={<StorefrontContact />} />
-              <Route path="category/:categorySlug" element={<CategoryDetail />} />
-              <Route path="product/:productSlug" element={<ProductDetail />} />
-              <Route path="cart" element={<CartPage />} />
-              <Route path="wishlist" element={<WishlistPage />} />
-              <Route path="checkout" element={<CheckoutPage />} />
-            </Route>
-
-            {/* User Dashboard */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="stores" element={<StoresList />} />
-              <Route path="stores/create" element={<CreateStore />} />
-              <Route path="stores/:storeId/products" element={<ProductsList />} />
-              <Route path="stores/:storeId/products/create" element={<CreateProduct />} />
-              <Route path="stores/:storeId/products/:productId/edit" element={<EditProduct />} />
-              <Route path="stores/:storeId/products/bulk-upload" element={<BulkUpload />} />
-              <Route path="stores/:storeId/orders" element={<StoreOrders />} />
-              <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
-              <Route path="stores/:storeId/settings" element={<StoreSettings />} />
-              <Route path="stores/:storeId/domain" element={<StoreDomain />} />
-              
-              <Route path="stores/:storeId/leads" element={<CustomerLeads />} />
-              <Route path="stores/:storeId/payments" element={<StorePayments />} />
-              <Route path="analytics" element={<StoreAnalytics />} />
-              <Route path="settings" element={<UserSettings />} />
-            </Route>
-
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          </Suspense>
-        </AuthProvider>
+        <Suspense fallback={<LoadingSpinner />}>
+          <AppRouter />
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
