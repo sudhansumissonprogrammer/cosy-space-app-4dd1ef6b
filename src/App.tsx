@@ -29,6 +29,7 @@ import EditProduct from "./pages/EditProduct";
 import StorefrontLayout from "./layouts/StorefrontLayout";
 import StorefrontHome from "./pages/StorefrontHome";
 import ProductDetail from "./pages/ProductDetail";
+import CategoryDetail from "./pages/CategoryDetail";
 import StoreOrders from "./pages/StoreOrders";
 import StoreCustomers from "./pages/StoreCustomers";
 import StoreSettings from "./pages/StoreSettings";
@@ -78,6 +79,7 @@ const App = () => (
             {/* Public Storefront */}
             <Route path="/store/:slug" element={<StorefrontLayout />}>
               <Route index element={<StorefrontHome />} />
+              <Route path="category/:categorySlug" element={<CategoryDetail />} />
               <Route path="product/:productSlug" element={<ProductDetail />} />
               <Route path="cart" element={<CartPage />} />
               <Route path="checkout" element={<CheckoutPage />} />

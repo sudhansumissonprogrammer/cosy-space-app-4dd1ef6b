@@ -15,7 +15,6 @@ export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["storefront-products", store.id],
@@ -50,10 +49,9 @@ export default function StorefrontHome() {
     if (!products) return [];
     return products.filter((p) => {
       const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = !activeCategory || p.category === activeCategory;
-      return matchesSearch && matchesCategory;
+      return matchesSearch;
     });
-  }, [products, searchQuery, activeCategory]);
+  }, [products, searchQuery]);
 
   return (
     <>
@@ -75,8 +73,7 @@ export default function StorefrontHome() {
 
       <StorefrontCategories
         categories={storeCategories}
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
+        storeSlug={slug!}
       />
 
       <div className="mx-auto max-w-6xl px-4 py-6">
@@ -108,7 +105,7 @@ export default function StorefrontHome() {
           ) : (
             <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
               <p className="text-muted-foreground">
-                {searchQuery || activeCategory ? "No products match your search." : "No products available yet."}
+                {searchQuery ? "No products match your search." : "No products available yet."}
               </p>
             </div>
           )}
