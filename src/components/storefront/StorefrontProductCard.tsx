@@ -2,7 +2,19 @@ import { Link } from "react-router-dom";
 import { Package, ShoppingCart, Star, Zap } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
+import { useMemo } from "react";
 import type { Tables } from "@/integrations/supabase/types";
+
+// Generate a deterministic pseudo-random rating between 4.2-4.9 based on product id
+function getProductRating(productId: string): number {
+  let hash = 0;
+  for (let i = 0; i < productId.length; i++) {
+    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+    hash |= 0;
+  }
+  const ratings = [4.2, 4.3, 4.3, 4.4, 4.5, 4.5, 4.5, 4.6, 4.6, 4.6, 4.6, 4.7, 4.8, 4.9];
+  return ratings[Math.abs(hash) % ratings.length];
+}
 
 interface StorefrontProductCardProps {
   product: Tables<"products">;
@@ -73,8 +85,8 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
             </p>
           ) : <span />}
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Star className="h-3 w-3 fill-warning text-warning" />
-            <span className="font-semibold">4.5</span>
+            <Star className="h-3 w-3 fill-green-500 text-green-500" />
+            <span className="font-semibold">{getProductRating(product.id)}</span>
           </div>
         </div>
 
