@@ -29,6 +29,7 @@ export default function StorefrontHome() {
       return data;
     },
     enabled: !!store.id,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: storeCategories } = useQuery({
@@ -43,6 +44,7 @@ export default function StorefrontHome() {
       return data as { id: string; name: string; slug: string; image_url: string | null }[];
     },
     enabled: !!store.id,
+    staleTime: 5 * 60 * 1000,
   });
 
   const filteredProducts = useMemo(() => {

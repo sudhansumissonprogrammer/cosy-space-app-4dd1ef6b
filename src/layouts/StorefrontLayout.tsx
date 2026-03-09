@@ -29,6 +29,7 @@ export function useStorefront() {
       return data;
     },
     enabled: !!slug,
+    staleTime: 5 * 60 * 1000,
   });
 
   return { store, isLoading, error, slug };
@@ -163,11 +164,14 @@ export default function StorefrontLayout() {
     if (!store?.id) return;
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     if (!projectId) return;
-    fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ store_id: store.id, path: window.location.pathname }),
-    }).catch(() => {});
+    const timer = setTimeout(() => {
+      fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store_id: store.id, path: window.location.pathname }),
+      }).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(timer);
   }, [store?.id]);
 
   if (isLoading) {
