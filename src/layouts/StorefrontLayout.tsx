@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Store, ShoppingCart } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Store, ShoppingCart, Menu, Home, Tag } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -40,11 +41,74 @@ function CartBadge({ slug }: { slug: string }) {
         <ShoppingCart className="h-5 w-5" />
       </Button>
       {cartCount > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
           {cartCount > 99 ? "99+" : cartCount}
         </span>
       )}
     </Link>
+  );
+}
+
+function HamburgerMenu({ store }: { store: StoreData }) {
+  const [open, setOpen] = useState(false);
+
+  const { data: categories } = useQuery({
+    queryKey: ["storefront-categories-menu", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("categories")
+        .select("*")
+        .eq("store_id", store.id)
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; slug: string; image_url: string | null }[];
+    },
+    enabled: !!store.id,
+  });
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-9 w-9">
+          <Menu className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-[280px] p-0">
+        <div className="flex flex-col">
+          <div className="border-b bg-card p-4">
+            <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+          </div>
+          <nav className="flex flex-col gap-1 p-4">
+            <Link
+              to={`/store/${store.slug}`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Home className="h-4 w-4" />
+              Home
+            </Link>
+            {categories && categories.length > 0 && (
+              <>
+                <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Categories
+                </div>
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    to={`/store/${store.slug}/category/${cat.slug}`}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                  >
+                    <Tag className="h-4 w-4" />
+                    {cat.name}
+                  </Link>
+                ))}
+              </>
+            )}
+          </nav>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -99,6 +163,7 @@ export default function StorefrontLayout() {
         {/* Sticky Nav */}
         <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
           <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+            <HamburgerMenu store={store} />
             <Link to={`/store/${store.slug}`} className="flex-shrink-0">
               {store.logo_url ? (
                 <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[140px] object-contain sm:h-10" />
