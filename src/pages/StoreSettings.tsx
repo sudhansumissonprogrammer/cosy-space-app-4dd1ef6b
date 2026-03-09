@@ -85,7 +85,8 @@ export default function StoreSettings() {
       setCity((store as any).city || "");
       setStateName((store as any).state || "");
       setCurrency((store as any).currency || "USD");
-      setOrderMode((store as any).order_Currency((store as any).currencCurrency((store as any).currency || "USDetFacebookUrl((store as any).facebook_url || "");
+      setInstagramUrl((store as any).instagram_url || "");
+      setFacebookUrl((store as any).facebook_url || "");
       if ((store as any).business_hours) {
         setBusinessHours({ mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "", ...(store as any).business_hours });
       }
