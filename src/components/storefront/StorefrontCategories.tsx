@@ -49,12 +49,12 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
                     </div>
                   )}
                 </div>
-                <span className="text-[11px] font-medium tracking-wide text-foreground text-center leading-tight" style={{ fontFamily: "'Alegreya SC', serif" }}>
+                <span className="text-[11px] font-semibold tracking-wide text-foreground text-center leading-tight" style={{ fontFamily: "'Alegreya SC', serif" }}>
                   {cat.name.split(' ').map((word, i) => (
                     <span key={i}>
                       {i > 0 && ' '}
-                      <span className="text-[13px]">{word.charAt(0)}</span>
-                      <span className="text-[10px]">{word.slice(1)}</span>
+                      <span className="text-[13px] font-semibold">{word.charAt(0)}</span>
+                      <span className="text-[10px] font-semibold">{word.slice(1)}</span>
                     </span>
                   ))}
                 </span>
