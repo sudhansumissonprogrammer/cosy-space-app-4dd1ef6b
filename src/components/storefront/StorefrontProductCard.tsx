@@ -111,7 +111,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
         {/* Action Button */}
         <div className="mt-3">
           <button
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-foreground hover:bg-accent transition-colors"
+            className="btn-gold inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-[10px] font-extrabold uppercase tracking-widest"
             onClick={handleAddToCart}
           >
             <ShoppingCart className="h-3.5 w-3.5" />
