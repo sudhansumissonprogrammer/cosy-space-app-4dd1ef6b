@@ -1,28 +1,38 @@
 export default function StorefrontMarquee() {
   const items = [
-    { icon: "🚚", text: "FREE DELIVERY" },
-    { icon: "👜", text: "PREMIUM QUALITY" },
+    { icon: "🚚", text: "Free Delivery" },
+    { icon: "🔄", text: "Easy Returns" },
+    { icon: "🔒", text: "Secure Payment Gateway" },
+    { icon: "💰", text: "Cash On Delivery Available" },
+    { icon: "👜", text: "Premium Quality" },
   ];
 
+  const separator = <span className="text-black/70">•</span>;
+
+  const Group = ({ prefix }: { prefix: string }) => (
+    <div className="flex items-center gap-[35px] pr-[35px] md:gap-[60px] md:pr-[60px]">
+      {items.map((item, idx) => (
+        <span key={`${prefix}-${idx}`} className="flex items-center gap-2 whitespace-nowrap">
+          <span className="inline-flex items-center gap-2">
+            <span>{item.icon}</span>
+            <span>{item.text}</span>
+          </span>
+          {idx < items.length - 1 && separator}
+        </span>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="overflow-hidden btn-gold py-1.5">
-      <div className="flex animate-marquee whitespace-nowrap">
-        {/* First set */}
-        {items.map((item, idx) => (
-          <div key={`set1-${idx}`} className="mx-8 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-black">
-            <span>{item.icon}</span>
-            <span>{item.text}</span>
-            <span className="mx-4 text-black">◆</span>
-          </div>
-        ))}
-        {/* Second set (duplicate for seamless loop) */}
-        {items.map((item, idx) => (
-          <div key={`set2-${idx}`} className="mx-8 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-black">
-            <span>{item.icon}</span>
-            <span>{item.text}</span>
-            <span className="mx-4 text-black">◆</span>
-          </div>
-        ))}
+    <div
+      className="w-full overflow-hidden py-2.5 font-['Alegreya_SC'] text-[13px] md:text-[15px] text-black"
+      style={{
+        background: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+      }}
+    >
+      <div className="flex w-max animate-marquee hover:[animation-play-state:paused]">
+        <Group prefix="a" />
+        <Group prefix="b" />
       </div>
     </div>
   );
