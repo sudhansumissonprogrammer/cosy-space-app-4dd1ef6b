@@ -12,8 +12,6 @@ interface StorefrontProductCardProps {
 
 export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
   const { addToCart } = useCart();
-  const navigate = useNavigate();
-  const orderMode = (store as any).order_mode || "whatsapp";
 
   const price = product.sale_price && product.sale_price < product.price
     ? Number(product.sale_price)
@@ -29,23 +27,6 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       image: product.image_url || undefined,
     });
     toast.success(`${product.name} added to cart`);
-  };
-
-  const handleWhatsApp = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!store.whatsapp_number) return;
-    const phone = store.whatsapp_number.replace(/[^0-9+]/g, "");
-    const currency = product.currency || "USD";
-    const text = `Hello, I want to order:\n\nProduct: ${product.name}\nPrice: ${currency} ${price.toFixed(2)}\nStore: ${store.name}`;
-    window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
-  };
-
-  const handleBuyNow = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const params = new URLSearchParams({ product: product.id });
-    navigate(`/store/${slug}/checkout?${params.toString()}`);
   };
 
   const discountPercent = product.sale_price && product.sale_price < product.price
