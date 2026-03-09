@@ -194,7 +194,7 @@ export default function StorefrontLayout() {
   return (
     <CartProvider slug={store.slug}>
       <WishlistProvider slug={store.slug}>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background font-sans" style={{ fontVariant: "small-caps" }}>
           {/* Marquee Banner */}
           <StorefrontMarquee />
           
