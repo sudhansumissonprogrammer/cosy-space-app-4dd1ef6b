@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Plus, ArrowLeft, Pencil, Trash2, Package, AlertCircle } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, Package, AlertCircle, Upload } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 
