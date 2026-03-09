@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Plus, ArrowLeft, Pencil, Trash2, Package, AlertCircle, Upload } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, Package, AlertCircle, Upload, Download } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 
@@ -92,6 +92,26 @@ export default function ProductsList() {
     );
   }
 
+  const exportCSV = () => {
+    if (!products || products.length === 0) return;
+    const headers = ["name","price","sale_price","description","category","stock_quantity","sku","slug","is_active","currency","image_url"];
+    const escape = (v: string | null | undefined) => {
+      if (v == null) return "";
+      const s = String(v);
+      return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = products.map(p => headers.map(h => escape((p as any)[h])).join(","));
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${store?.slug || "products"}-export.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Products exported");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -103,6 +123,9 @@ export default function ProductsList() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCSV} disabled={!products || products.length === 0}>
+            <Download className="mr-2 h-4 w-4" />Export CSV
+          </Button>
           <Button variant="outline" asChild>
             <Link to={`/dashboard/stores/${storeId}/products/bulk-upload`}><Upload className="mr-2 h-4 w-4" />Import CSV</Link>
           </Button>
