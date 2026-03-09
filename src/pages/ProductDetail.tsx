@@ -367,43 +367,7 @@ function WhatsAppOrderForm({
   const [ordering, setOrdering] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [couponCode, setCouponCode] = useState("");
-  const [couponDiscount, setCouponDiscount] = useState<{ type: string; value: number } | null>(null);
-  const [validatingCoupon, setValidatingCoupon] = useState(false);
-
-  let finalPrice = variantPrice;
-  if (couponDiscount) {
-    finalPrice = couponDiscount.type === "percentage"
-      ? variantPrice * (1 - couponDiscount.value / 100)
-      : Math.max(0, variantPrice - couponDiscount.value);
-  }
-
-  const applyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setValidatingCoupon(true);
-    try {
-      const { data, error } = await (supabase as any)
-        .from("coupons")
-        .select("*")
-        .eq("store_id", store.id)
-        .eq("code", couponCode.trim().toUpperCase())
-        .eq("is_active", true)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) { toast.error("Invalid coupon code"); setCouponDiscount(null); return; }
-      if (data.min_order_amount && variantPrice < Number(data.min_order_amount)) {
-        toast.error(`Minimum order amount is ${currency} ${Number(data.min_order_amount).toFixed(2)}`);
-        setCouponDiscount(null);
-        return;
-      }
-      setCouponDiscount({ type: data.discount_type, value: Number(data.discount_value) });
-      toast.success(`Coupon applied! ${data.discount_type === "percentage" ? `${data.discount_value}% off` : `${currency} ${Number(data.discount_value).toFixed(2)} off`}`);
-    } catch {
-      toast.error("Failed to validate coupon");
-    } finally {
-      setValidatingCoupon(false);
-    }
-  };
+  const finalPrice = variantPrice;
 
   const handleOrder = async () => {
     if (!customerPhone.trim()) { toast.error("Please enter your phone number"); return; }
