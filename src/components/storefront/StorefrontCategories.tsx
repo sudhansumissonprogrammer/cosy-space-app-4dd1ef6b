@@ -30,7 +30,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
   return (
     <div className="bg-background">
       <div className="mx-auto max-w-6xl px-4 py-4">
-        <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
           {isLoading ? (
             Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)
           ) : (
