@@ -10,8 +10,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe, Palette, Lock, Check } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe, Palette, Lock, Check, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const ICON_OPTIONS = [
+  { value: "Award", label: "Award" },
+  { value: "Leaf", label: "Leaf" },
+  { value: "Shield", label: "Shield" },
+  { value: "Star", label: "Star" },
+  { value: "Sparkles", label: "Sparkles" },
+  { value: "Heart", label: "Heart" },
+  { value: "Truck", label: "Truck" },
+  { value: "ThumbsUp", label: "ThumbsUp" },
+];
+
+interface Feature {
+  icon: string;
+  title: string;
+  description: string;
+}
 
 const THEMES = [
   { id: "theme-1", name: "Classic", desc: "Clean & modern storefront", available: true },
