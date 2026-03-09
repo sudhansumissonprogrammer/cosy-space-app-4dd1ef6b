@@ -35,7 +35,7 @@ export default function StorefrontCategories({ categories, storeSlug }: Storefro
                   </div>
                 )}
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wide text-foreground text-center leading-tight">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-foreground text-center leading-tight font-sans" style={{ fontVariant: "small-caps" }}>
                 {cat.name}
               </span>
             </Link>
