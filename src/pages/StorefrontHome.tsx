@@ -49,10 +49,9 @@ export default function StorefrontHome() {
     if (!products) return [];
     return products.filter((p) => {
       const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = !activeCategory || p.category === activeCategory;
-      return matchesSearch && matchesCategory;
+      return matchesSearch;
     });
-  }, [products, searchQuery, activeCategory]);
+  }, [products, searchQuery]);
 
   return (
     <>
