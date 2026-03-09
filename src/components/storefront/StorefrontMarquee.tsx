@@ -5,11 +5,11 @@ export default function StorefrontMarquee() {
   ];
 
   return (
-    <div className="overflow-hidden bg-[hsl(38_95%_55%)] py-2">
+    <div className="overflow-hidden bg-[hsl(42_90%_52%)] py-1.5">
       <div className="flex animate-marquee whitespace-nowrap">
         {/* First set */}
         {items.map((item, idx) => (
-          <div key={`set1-${idx}`} className="mx-8 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-black">
+          <div key={`set1-${idx}`} className="mx-8 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-black">
             <span>{item.icon}</span>
             <span>{item.text}</span>
             <span className="mx-4 text-black">◆</span>
@@ -17,7 +17,7 @@ export default function StorefrontMarquee() {
         ))}
         {/* Second set (duplicate for seamless loop) */}
         {items.map((item, idx) => (
-          <div key={`set2-${idx}`} className="mx-8 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-black">
+          <div key={`set2-${idx}`} className="mx-8 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-black">
             <span>{item.icon}</span>
             <span>{item.text}</span>
             <span className="mx-4 text-black">◆</span>
