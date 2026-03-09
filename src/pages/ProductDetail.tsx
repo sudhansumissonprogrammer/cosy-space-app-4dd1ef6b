@@ -4,18 +4,31 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ArrowLeft, MessageCircle, Package, Loader2, ChevronLeft, ChevronRight, Tag, ShoppingBag, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
+interface Variant {
+  id: string;
+  name: string;
+  price: number | null;
+  stock_quantity: number;
+  sku: string | null;
+}
+
 export default function ProductDetail() {
   const store = useOutletContext<StoreData>();
   const { productSlug } = useParams<{ productSlug: string }>();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["storefront-product", store.id, productSlug],
@@ -46,7 +59,6 @@ export default function ProductDetail() {
     enabled: !!store.id && !!productSlug,
   });
 
-  // Fetch additional images
   const { data: extraImages } = useQuery({
     queryKey: ["product-images", product?.id],
     queryFn: async () => {
@@ -61,7 +73,6 @@ export default function ProductDetail() {
     enabled: !!product?.id,
   });
 
-  // Fetch variants
   const { data: variants } = useQuery({
     queryKey: ["product-variants", product?.id],
     queryFn: async () => {
@@ -72,19 +83,17 @@ export default function ProductDetail() {
         .eq("is_active", true)
         .order("display_order");
       if (error) throw error;
-      return data as { id: string; name: string; price: number | null; stock_quantity: number; sku: string | null }[];
+      return data as Variant[];
     },
     enabled: !!product?.id,
   });
 
-  // SEO meta tags
   useMetaTags({
     title: product ? `${product.name} — ${store.name}` : undefined,
     description: product?.description || undefined,
     ogImage: product?.image_url || undefined,
   });
 
-  // Build full image list
   const allImages = (() => {
     const imgs: string[] = [];
     if (product?.image_url) imgs.push(product.image_url);
@@ -123,6 +132,29 @@ export default function ProductDetail() {
     ? Math.round(((product.price - product.sale_price!) / product.price) * 100)
     : 0;
   const currency = product.currency || "USD";
+  const basePrice = hasDiscount ? product.sale_price! : product.price;
+  const variantPrice = selectedVariant?.price ?? basePrice;
+  const orderMode = (store as any).order_mode || "whatsapp";
+  const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
+  const showBuyNow = orderMode === "website" || orderMode === "both";
+
+  const handleAddToCart = () => {
+    addToCart({
+      productId: product.id,
+      variantId: selectedVariant?.id,
+      name: product.name,
+      variantName: selectedVariant?.name,
+      price: variantPrice,
+      image: product.image_url || undefined,
+    });
+    toast.success(`${product.name} added to cart`);
+  };
+
+  const handleBuyNow = () => {
+    const params = new URLSearchParams({ product: product.id });
+    if (selectedVariant) params.set("variant", selectedVariant.id);
+    navigate(`/store/${store.slug}/checkout?${params.toString()}`);
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -183,40 +215,84 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* WhatsApp button: show for whatsapp or both */}
-          {((store as any).order_mode === "whatsapp" || (store as any).order_mode === "both") && store.whatsapp_number && (
-            <WhatsAppOrderButton
-              store={store}
-              product={product}
-              hasDiscount={!!hasDiscount}
-              currency={currency}
-              variants={variants || []}
-            />
+          {/* Shared variant selector */}
+          {(variants || []).length > 0 && (
+            <div className="mt-6 space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wide">Variant</Label>
+              <div className="flex flex-wrap gap-2">
+                {(variants || []).map((v) => (
+                  <Button
+                    key={v.id}
+                    type="button"
+                    variant={selectedVariant?.id === v.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
+                    disabled={v.stock_quantity <= 0}
+                  >
+                    {v.name}
+                    {v.price !== null && v.price !== basePrice && (
+                      <span className="ml-1 text-xs opacity-70">
+                        ({currency} {Number(v.price).toFixed(2)})
+                      </span>
+                    )}
+                  </Button>
+                ))}
+              </div>
+            </div>
           )}
 
-          {/* Buy Now button: show for website or both */}
-          {((store as any).order_mode === "website" || (store as any).order_mode === "both") && (
-            <BuyNowButton
-              store={store}
-              product={product}
-              hasDiscount={!!hasDiscount}
-              currency={currency}
-              variants={variants || []}
-            />
-          )}
+          {/* Action buttons */}
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <button
+              className="btn-gold inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest"
+              onClick={handleAddToCart}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              Add to Cart
+            </button>
 
-          <AddToCartButton
-            product={product}
-            hasDiscount={!!hasDiscount}
-            currency={currency}
-            variants={variants || []}
-          />
+            {showBuyNow && (
+              <button
+                className="btn-gold inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest"
+                onClick={handleBuyNow}
+              >
+                <ShoppingBag className="h-5 w-5" />
+                Buy Now — {currency} {Number(variantPrice).toFixed(2)}
+              </button>
+            )}
+
+            {showWhatsApp && store.whatsapp_number && (
+              <Dialog open={whatsappOpen} onOpenChange={setWhatsappOpen}>
+                <DialogTrigger asChild>
+                  <button className="btn-gold inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest">
+                    <MessageCircle className="h-5 w-5" />
+                    Order on WhatsApp
+                  </button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Order on WhatsApp</DialogTitle>
+                  </DialogHeader>
+                  <WhatsAppOrderForm
+                    store={store}
+                    product={product}
+                    selectedVariant={selectedVariant}
+                    basePrice={basePrice}
+                    variantPrice={variantPrice}
+                    currency={currency}
+                    onComplete={() => setWhatsappOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+/* ── Image Gallery ── */
 function ImageGallery({ images, productName }: { images: string[]; productName: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -233,12 +309,7 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
   return (
     <div className="space-y-3">
       <div className="relative overflow-hidden rounded-2xl bg-accent">
-        <img
-          src={images[activeIndex]}
-          alt={productName}
-          className="aspect-square w-full object-cover"
-          loading="lazy"
-        />
+        <img src={images[activeIndex]} alt={productName} className="aspect-square w-full object-cover" loading="lazy" />
         {images.length > 1 && (
           <>
             <button
@@ -275,45 +346,36 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
   );
 }
 
-interface Variant {
-  id: string;
-  name: string;
-  price: number | null;
-  stock_quantity: number;
-  sku: string | null;
-}
-
-function WhatsAppOrderButton({
+/* ── WhatsApp Order Form (inside dialog) ── */
+function WhatsAppOrderForm({
   store,
   product,
-  hasDiscount,
+  selectedVariant,
+  basePrice,
+  variantPrice,
   currency,
-  variants,
+  onComplete,
 }: {
   store: StoreData;
   product: { id: string; name: string; price: number; sale_price: number | null };
-  hasDiscount: boolean;
+  selectedVariant: Variant | null;
+  basePrice: number;
+  variantPrice: number;
   currency: string;
-  variants: Variant[];
+  onComplete: () => void;
 }) {
   const [ordering, setOrdering] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState<{ type: string; value: number } | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 
-  const basePrice = hasDiscount ? product.sale_price! : product.price;
-  const variantPrice = selectedVariant?.price ?? basePrice;
-  
   let finalPrice = variantPrice;
   if (couponDiscount) {
-    if (couponDiscount.type === "percentage") {
-      finalPrice = variantPrice * (1 - couponDiscount.value / 100);
-    } else {
-      finalPrice = Math.max(0, variantPrice - couponDiscount.value);
-    }
+    finalPrice = couponDiscount.type === "percentage"
+      ? variantPrice * (1 - couponDiscount.value / 100)
+      : Math.max(0, variantPrice - couponDiscount.value);
   }
 
   const applyCoupon = async () => {
@@ -328,11 +390,7 @@ function WhatsAppOrderButton({
         .eq("is_active", true)
         .maybeSingle();
       if (error) throw error;
-      if (!data) {
-        toast.error("Invalid coupon code");
-        setCouponDiscount(null);
-        return;
-      }
+      if (!data) { toast.error("Invalid coupon code"); setCouponDiscount(null); return; }
       if (data.min_order_amount && variantPrice < Number(data.min_order_amount)) {
         toast.error(`Minimum order amount is ${currency} ${Number(data.min_order_amount).toFixed(2)}`);
         setCouponDiscount(null);
@@ -348,250 +406,72 @@ function WhatsAppOrderButton({
   };
 
   const handleOrder = async () => {
-    if (!customerPhone.trim()) {
-      toast.error("Please enter your phone number");
-      return;
-    }
-
+    if (!customerPhone.trim()) { toast.error("Please enter your phone number"); return; }
     setOrdering(true);
     try {
-      const productName = selectedVariant
-        ? `${product.name} (${selectedVariant.name})`
-        : product.name;
+      const productName = selectedVariant ? `${product.name} (${selectedVariant.name})` : product.name;
 
-      // Save customer lead
       await (supabase as any).from("customer_leads").insert({
-        store_id: store.id,
-        name: customerName.trim() || null,
-        phone: customerPhone.trim(),
-        product_name: productName,
-        product_id: product.id,
-        source: "whatsapp_order",
+        store_id: store.id, name: customerName.trim() || null, phone: customerPhone.trim(),
+        product_name: productName, product_id: product.id, source: "whatsapp_order",
       });
 
       const { data } = await supabase.from("whatsapp_orders").insert({
-        store_id: store.id,
-        product_id: product.id,
-        product_name: productName,
-        product_price: finalPrice,
-        customer_phone: customerPhone.trim(),
-        customer_name: customerName.trim() || null,
-        quantity: 1,
+        store_id: store.id, product_id: product.id, product_name: productName,
+        product_price: finalPrice, customer_phone: customerPhone.trim(),
+        customer_name: customerName.trim() || null, quantity: 1,
       }).select("id").single();
-
-      // Increment coupon used_count
-      if (couponDiscount && couponCode) {
-        await (supabase as any)
-          .from("coupons")
-          .update({ used_count: undefined }) // use rpc ideally, but simple increment
-          .eq("store_id", store.id)
-          .eq("code", couponCode.trim().toUpperCase());
-      }
 
       if (data?.id) {
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         if (projectId) {
           fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ order_id: data.id }),
           }).catch(() => {});
         }
       }
-    } catch {
-      // Don't block the WhatsApp redirect
-    }
+    } catch { /* Don't block WhatsApp redirect */ }
     setOrdering(false);
+    onComplete();
 
     const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
     const variantInfo = selectedVariant ? `\nVariant: ${selectedVariant.name}` : "";
     const couponInfo = couponDiscount ? `\nCoupon: ${couponCode.toUpperCase()} (${couponDiscount.type === "percentage" ? `${couponDiscount.value}%` : `${currency} ${couponDiscount.value}`} off)` : "";
     const text = `Hello, I want to order:\n\nProduct: ${product.name}${variantInfo}\nPrice: ${currency} ${Number(finalPrice).toFixed(2)}${couponInfo}\nStore: ${store.name}\n\nName: ${customerName.trim() || "—"}\nPhone: ${customerPhone.trim()}`;
-    window.open(
-      `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`,
-      "_blank"
-    );
+    window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   return (
-    <div className="mt-8 space-y-4">
-      {/* Variant selector */}
-      {variants.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-xs font-semibold uppercase tracking-wide">Variant</Label>
-          <div className="flex flex-wrap gap-2">
-            {variants.map((v) => (
-              <Button
-                key={v.id}
-                type="button"
-                variant={selectedVariant?.id === v.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
-                disabled={v.stock_quantity <= 0}
-              >
-                {v.name}
-                {v.price !== null && v.price !== basePrice && (
-                  <span className="ml-1 text-xs opacity-70">
-                    ({currency} {Number(v.price).toFixed(2)})
-                  </span>
-                )}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-
+    <div className="space-y-4 pt-2">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="customer-name" className="text-xs">Your Name</Label>
-          <Input
-            id="customer-name"
-            placeholder="John Doe"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            maxLength={100}
-          />
+          <Label htmlFor="wa-name" className="text-xs">Your Name</Label>
+          <Input id="wa-name" placeholder="John Doe" value={customerName} onChange={(e) => setCustomerName(e.target.value)} maxLength={100} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="customer-phone" className="text-xs">Your Phone *</Label>
-          <Input
-            id="customer-phone"
-            placeholder="+1234567890"
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            maxLength={20}
-          />
+          <Label htmlFor="wa-phone" className="text-xs">Your Phone *</Label>
+          <Input id="wa-phone" placeholder="+1234567890" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} maxLength={20} />
         </div>
       </div>
 
-      {/* Coupon */}
       <div className="space-y-1.5">
         <Label className="text-xs">Coupon Code</Label>
         <div className="flex gap-2">
-          <Input
-            placeholder="SAVE10"
-            value={couponCode}
-            onChange={(e) => { setCouponCode(e.target.value); setCouponDiscount(null); }}
-            maxLength={30}
-          />
+          <Input placeholder="SAVE10" value={couponCode} onChange={(e) => { setCouponCode(e.target.value); setCouponDiscount(null); }} maxLength={30} />
           <Button type="button" variant="outline" onClick={applyCoupon} disabled={validatingCoupon || !couponCode.trim()}>
             {validatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : <Tag className="h-4 w-4" />}
           </Button>
         </div>
         {couponDiscount && (
-          <p className="text-xs text-primary">
-            Discount applied! Total: {currency} {Number(finalPrice).toFixed(2)}
-          </p>
+          <p className="text-xs text-primary">Discount applied! Total: {currency} {Number(finalPrice).toFixed(2)}</p>
         )}
       </div>
 
-      <button className="btn-gold inline-flex w-full items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest sm:w-auto" onClick={handleOrder} disabled={ordering}>
-        {ordering ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
-        ) : (
-          <MessageCircle className="h-5 w-5" />
-        )}
-        Order on WhatsApp — {currency} {Number(finalPrice).toFixed(2)}
-      </button>
-    </div>
-  );
-}
-
-function BuyNowButton({
-  store,
-  product,
-  hasDiscount,
-  currency,
-  variants,
-}: {
-  store: StoreData;
-  product: { id: string; name: string; price: number; sale_price: number | null };
-  hasDiscount: boolean;
-  currency: string;
-  variants: Variant[];
-}) {
-  const navigate = useNavigate();
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-
-  const basePrice = hasDiscount ? product.sale_price! : product.price;
-  const variantPrice = selectedVariant?.price ?? basePrice;
-
-  const handleBuyNow = () => {
-    const params = new URLSearchParams({ product: product.id });
-    if (selectedVariant) params.set("variant", selectedVariant.id);
-    navigate(`/store/${store.slug}/checkout?${params.toString()}`);
-  };
-
-  return (
-    <div className="mt-8 space-y-4">
-      {variants.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-xs font-semibold uppercase tracking-wide">Variant</Label>
-          <div className="flex flex-wrap gap-2">
-            {variants.map((v) => (
-              <Button
-                key={v.id}
-                type="button"
-                variant={selectedVariant?.id === v.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
-                disabled={v.stock_quantity <= 0}
-              >
-                {v.name}
-                {v.price !== null && v.price !== basePrice && (
-                  <span className="ml-1 text-xs opacity-70">
-                    ({currency} {Number(v.price).toFixed(2)})
-                  </span>
-                )}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <button className="btn-gold inline-flex w-full items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest sm:w-auto" onClick={handleBuyNow}>
-        <ShoppingBag className="h-5 w-5" />
-        Buy Now — {currency} {Number(variantPrice).toFixed(2)}
-      </button>
-    </div>
-  );
-}
-
-function AddToCartButton({
-  product,
-  hasDiscount,
-  currency,
-  variants,
-}: {
-  product: { id: string; name: string; price: number; sale_price: number | null; image_url: string | null };
-  hasDiscount: boolean;
-  currency: string;
-  variants: Variant[];
-}) {
-  const { addToCart } = useCart();
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-
-  const basePrice = hasDiscount ? product.sale_price! : product.price;
-  const variantPrice = selectedVariant?.price ?? basePrice;
-
-  const handleAdd = () => {
-    addToCart({
-      productId: product.id,
-      variantId: selectedVariant?.id,
-      name: product.name,
-      variantName: selectedVariant?.name,
-      price: variantPrice,
-      image: product.image_url || undefined,
-    });
-    toast.success(`${product.name} added to cart`);
-  };
-
-  return (
-    <div className="mt-2">
-      <button className="btn-gold inline-flex w-full items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest sm:w-auto" onClick={handleAdd}>
-        Add to Cart
-        <ShoppingCart className="h-5 w-5" />
-      </button>
+      <Button className="w-full" onClick={handleOrder} disabled={ordering}>
+        {ordering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}
+        Confirm & Open WhatsApp — {currency} {Number(finalPrice).toFixed(2)}
+      </Button>
     </div>
   );
 }
