@@ -69,8 +69,8 @@ function HamburgerMenu({ store }: { store: StoreData }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Menu className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="h-10 w-10 p-0">
+          <Menu className="h-6 w-6" strokeWidth={1.5} />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[280px] p-0">
@@ -166,7 +166,7 @@ export default function StorefrontLayout() {
             <HamburgerMenu store={store} />
             <Link to={`/store/${store.slug}`} className="flex-shrink-0">
               {store.logo_url ? (
-                <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[140px] object-contain sm:h-10" />
+                <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                   <Store className="h-5 w-5 text-primary-foreground" />
