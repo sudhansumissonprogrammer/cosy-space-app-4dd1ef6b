@@ -413,6 +413,30 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
+        {/* Domain Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Custom Domain</CardTitle>
+            <CardDescription>Connect your own domain to this store</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                {store?.custom_domain ? (
+                  <span>Connected: <strong className="text-foreground">{store.custom_domain}</strong></span>
+                ) : (
+                  "No custom domain configured"
+                )}
+              </div>
+              <Button variant="outline" asChild>
+                <Link to={`/dashboard/stores/${storeId}/domain`}>
+                  <Globe className="mr-2 h-4 w-4" /> Configure Domain
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Theme</CardTitle>
