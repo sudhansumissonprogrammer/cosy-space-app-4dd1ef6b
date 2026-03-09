@@ -5,7 +5,7 @@ export default function StorefrontMarquee() {
   ];
 
   return (
-    <div className="overflow-hidden bg-[hsl(42_90%_52%)] py-1.5">
+    <div className="overflow-hidden btn-gold py-1.5">
       <div className="flex animate-marquee whitespace-nowrap">
         {/* First set */}
         {items.map((item, idx) => (
