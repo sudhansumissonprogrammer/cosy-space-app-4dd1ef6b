@@ -553,6 +553,7 @@ export type Database = {
           currency: string
           description: string | null
           facebook_url: string | null
+          features: Json | null
           id: string
           instagram_url: string | null
           is_suspended: boolean
@@ -576,6 +577,7 @@ export type Database = {
           currency?: string
           description?: string | null
           facebook_url?: string | null
+          features?: Json | null
           id?: string
           instagram_url?: string | null
           is_suspended?: boolean
@@ -599,6 +601,7 @@ export type Database = {
           currency?: string
           description?: string | null
           facebook_url?: string | null
+          features?: Json | null
           id?: string
           instagram_url?: string | null
           is_suspended?: boolean

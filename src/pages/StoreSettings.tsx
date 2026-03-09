@@ -10,8 +10,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe, Palette, Lock, Check } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, MessageCircle, Globe, Palette, Lock, Check, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const ICON_OPTIONS = [
+  { value: "Award", label: "Award" },
+  { value: "Leaf", label: "Leaf" },
+  { value: "Shield", label: "Shield" },
+  { value: "Star", label: "Star" },
+  { value: "Sparkles", label: "Sparkles" },
+  { value: "Heart", label: "Heart" },
+  { value: "Truck", label: "Truck" },
+  { value: "ThumbsUp", label: "ThumbsUp" },
+];
+
+interface Feature {
+  icon: string;
+  title: string;
+  description: string;
+}
 
 const THEMES = [
   { id: "theme-1", name: "Classic", desc: "Clean & modern storefront", available: true },
@@ -43,7 +61,7 @@ export default function StoreSettings() {
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [theme, setTheme] = useState("theme-1");
-
+  const [features, setFeatures] = useState<Feature[]>([]);
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
@@ -77,6 +95,7 @@ export default function StoreSettings() {
       if (store.logo_url) setLogoPreview(store.logo_url);
       if (store.banner_url) setBannerPreview(store.banner_url);
       setTheme((store as any).theme || "theme-1");
+      if (store.features) setFeatures(store.features as unknown as Feature[]);
     }
   }, [store]);
 
@@ -119,6 +138,7 @@ export default function StoreSettings() {
           logo_url: logoUrl,
           banner_url: bannerUrl,
           theme,
+          features: features.length > 0 ? features : null,
         })
         .eq("id", storeId!);
       if (error) throw error;
@@ -318,6 +338,78 @@ export default function StoreSettings() {
                 )}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Why Choose Us</CardTitle>
+            <CardDescription>Manage selling points shown on your Contact page</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {features.map((feature, idx) => (
+              <div key={idx} className="flex gap-2 items-start rounded-lg border p-3">
+                <div className="flex-1 space-y-2">
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <Select
+                      value={feature.icon}
+                      onValueChange={(v) => {
+                        const updated = [...features];
+                        updated[idx] = { ...updated[idx], icon: v };
+                        setFeatures(updated);
+                      }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Icon" /></SelectTrigger>
+                      <SelectContent>
+                        {ICON_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="Title"
+                      value={feature.title}
+                      onChange={(e) => {
+                        const updated = [...features];
+                        updated[idx] = { ...updated[idx], title: e.target.value };
+                        setFeatures(updated);
+                      }}
+                      className="sm:col-span-2"
+                      maxLength={50}
+                    />
+                  </div>
+                  <Input
+                    placeholder="Description"
+                    value={feature.description}
+                    onChange={(e) => {
+                      const updated = [...features];
+                      updated[idx] = { ...updated[idx], description: e.target.value };
+                      setFeatures(updated);
+                    }}
+                    maxLength={100}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={() => setFeatures(features.filter((_, i) => i !== idx))}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            {features.length < 6 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFeatures([...features, { icon: "Award", title: "", description: "" }])}
+              >
+                <Plus className="mr-1 h-4 w-4" /> Add Feature
+              </Button>
+            )}
           </CardContent>
         </Card>
 

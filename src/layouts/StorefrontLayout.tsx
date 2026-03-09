@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Store, ShoppingCart, Menu, Home, Tag } from "lucide-react";
+import { Store, ShoppingCart, Home, Tag, Mail } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -89,6 +89,14 @@ function HamburgerMenu({ store }: { store: StoreData }) {
             >
               <Home className="h-4 w-4" />
               Home
+            </Link>
+            <Link
+              to={`/store/${store.slug}/contact`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Mail className="h-4 w-4" />
+              Contact Us
             </Link>
             {categories && categories.length > 0 && (
               <>
