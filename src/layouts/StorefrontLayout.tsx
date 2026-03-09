@@ -93,6 +93,14 @@ function HamburgerMenu({ store }: { store: StoreData }) {
               Home
             </Link>
             <Link
+              to={`/store/${store.slug}/wishlist`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Heart className="h-4 w-4" />
+              Wishlist
+            </Link>
+            <Link
               to={`/store/${store.slug}/contact`}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
