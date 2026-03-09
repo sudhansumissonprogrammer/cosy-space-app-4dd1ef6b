@@ -8,6 +8,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { CartProvider, useCart } from "@/contexts/CartContext";
+import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 
 export type StoreData = Tables<"stores">;
 
