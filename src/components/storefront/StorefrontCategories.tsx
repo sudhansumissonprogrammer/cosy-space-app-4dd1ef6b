@@ -17,7 +17,7 @@ export default function StorefrontCategories({ categories, storeSlug }: Storefro
   if (!categories || categories.length === 0) return null;
 
   return (
-    <div className="bg-card">
+    <div className="bg-background">
       <div className="mx-auto max-w-6xl px-4 py-4">
         <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
           {categories.map((cat) => (
