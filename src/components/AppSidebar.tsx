@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
-  Users, UserCheck, Tag, Globe, Store, Plus, CreditCard,
+  Users, UserCheck, Globe, Store, Plus, CreditCard,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
