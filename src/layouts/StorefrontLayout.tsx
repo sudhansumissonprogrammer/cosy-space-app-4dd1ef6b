@@ -29,6 +29,7 @@ export function useStorefront() {
       return data;
     },
     enabled: !!slug,
+    staleTime: 5 * 60 * 1000,
   });
 
   return { store, isLoading, error, slug };
