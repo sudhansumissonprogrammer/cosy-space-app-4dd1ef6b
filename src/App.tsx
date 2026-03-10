@@ -133,6 +133,8 @@ function AppRouter() {
         <Route path="/" element={<StorefrontLayout slugOverride={subdomainSlug} />}>
           <Route index element={<StorefrontHome />} />
           <Route path="contact" element={<StorefrontContact />} />
+          <Route path="return-policy" element={<StorefrontReturnPolicy />} />
+          <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
           <Route path="category/:categorySlug" element={<CategoryDetail />} />
           <Route path="product/:productSlug" element={<ProductDetail />} />
           <Route path="cart" element={<CartPage />} />
@@ -151,6 +153,8 @@ function AppRouter() {
         <Route path="/store/:slug" element={<StorefrontLayout />}>
           <Route index element={<StorefrontHome />} />
           <Route path="contact" element={<StorefrontContact />} />
+          <Route path="return-policy" element={<StorefrontReturnPolicy />} />
+          <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
           <Route path="category/:categorySlug" element={<CategoryDetail />} />
           <Route path="product/:productSlug" element={<ProductDetail />} />
           <Route path="cart" element={<CartPage />} />

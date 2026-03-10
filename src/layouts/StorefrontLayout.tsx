@@ -329,6 +329,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
           </nav>
 
           <Outlet context={store} />
+          <StorefrontFooter store={store} />
         </div>
       </WishlistProvider>
     </CartProvider>
