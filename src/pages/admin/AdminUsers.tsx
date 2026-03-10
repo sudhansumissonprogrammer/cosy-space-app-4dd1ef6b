@@ -21,6 +21,7 @@ export default function AdminUsers() {
 
   const { data: countData } = useQuery({
     queryKey: ["admin-users-count"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { count, error } = await supabase.from("profiles").select("*", { count: "exact", head: true });
       if (error) throw error;
