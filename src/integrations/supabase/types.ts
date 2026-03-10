@@ -789,6 +789,7 @@ export type Database = {
           view_count: number
         }[]
       }
+      get_storefront_data: { Args: { _slug: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
