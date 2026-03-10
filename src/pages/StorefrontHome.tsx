@@ -84,13 +84,24 @@ export default function StorefrontHome() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const priceRanges: { label: string; range: [number, number] }[] = [
+    { label: "Under ₹500", range: [0, 500] },
+    { label: "₹500 – ₹1000", range: [500, 1000] },
+    { label: "₹1000 – ₹2000", range: [1000, 2000] },
+    { label: "₹2000+", range: [2000, Infinity] },
+  ];
+
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter((p) => {
       const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesSearch;
+      const matchesCategory = !selectedCategory || p.category === selectedCategory;
+      const effectivePrice = p.sale_price ?? p.price;
+      const matchesPrice = !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
+      const matchesAvail = availability === "all" || p.stock_quantity > 0;
+      return matchesSearch && matchesCategory && matchesPrice && matchesAvail;
     });
-  }, [products, searchQuery]);
+  }, [products, searchQuery, selectedCategory, priceRange, availability]);
 
   return (
     <>
