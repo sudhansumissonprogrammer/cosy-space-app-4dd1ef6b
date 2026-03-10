@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link, useOutletContext, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,9 +30,19 @@ export default function ProductDetail() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const queryClient = useQueryClient();
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [whatsappOpen, setWhatsappOpen] = useState(false);
+
+  // Try to get product instantly from cached storefront data
+  const getCachedProduct = () => {
+    const cached = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+    if (!cached) return undefined;
+    return cached.find(
+      (p: any) => p.slug === productSlug || p.id === productSlug
+    ) || undefined;
+  };
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["storefront-product", store.id, productSlug],
@@ -60,36 +70,42 @@ export default function ProductDetail() {
       if (error) throw error;
       return data;
     },
+    initialData: getCachedProduct,
     enabled: !!store.id && !!productSlug,
+    staleTime: 2 * 60 * 1000,
   });
 
+  const productId = product?.id;
+
   const { data: extraImages } = useQuery({
-    queryKey: ["product-images", product?.id],
+    queryKey: ["product-images", productId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("product_images")
         .select("*")
-        .eq("product_id", product!.id)
+        .eq("product_id", productId!)
         .order("display_order");
       if (error) throw error;
       return data as { id: string; image_url: string; display_order: number }[];
     },
-    enabled: !!product?.id,
+    enabled: !!productId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: variants } = useQuery({
-    queryKey: ["product-variants", product?.id],
+    queryKey: ["product-variants", productId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("product_variants")
         .select("*")
-        .eq("product_id", product!.id)
+        .eq("product_id", productId!)
         .eq("is_active", true)
         .order("display_order");
       if (error) throw error;
       return data as Variant[];
     },
-    enabled: !!product?.id,
+    enabled: !!productId,
+    staleTime: 5 * 60 * 1000,
   });
 
   useMetaTags({
@@ -320,7 +336,7 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
   return (
     <div className="space-y-3">
       <div className="relative overflow-hidden rounded-2xl bg-accent">
-        <img src={images[activeIndex]} alt={productName} className="aspect-square w-full object-cover" loading="lazy" />
+        <img src={images[activeIndex]} alt={productName} className="aspect-square w-full object-cover" decoding="async" fetchPriority="high" />
         {images.length > 1 && (
           <>
             <button
