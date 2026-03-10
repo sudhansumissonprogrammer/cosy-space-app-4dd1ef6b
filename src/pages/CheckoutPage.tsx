@@ -376,6 +376,8 @@ export default function CheckoutPage() {
               // Auto-create guest account if not logged in
               if (!customer) {
                 createGuestAccount(newOrderId);
+              } else {
+                saveAddressToAccount();
               }
             } catch (err: any) {
               toast.error("Payment verification failed. Contact the store.");
