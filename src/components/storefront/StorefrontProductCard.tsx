@@ -21,8 +21,8 @@ type BadgeType = "trending" | "new" | "bestseller";
 
 const badges: { type: BadgeType; label: string; Icon: typeof Zap; bg: string }[] = [
   { type: "trending", label: "Trending", Icon: Zap, bg: "bg-foreground/90 text-card" },
-  { type: "new", label: "New Arrival", Icon: Sparkles, bg: "bg-emerald-500/90 text-white" },
-  { type: "bestseller", label: "Best Seller", Icon: Flame, bg: "bg-orange-500/90 text-white" },
+  { type: "new", label: "New Arrival", Icon: Sparkles, bg: "bg-white/30 backdrop-blur-md border border-white/40 text-foreground shadow-sm" },
+  { type: "bestseller", label: "Best Seller", Icon: Flame, bg: "bg-white/30 backdrop-blur-md border border-white/40 text-foreground shadow-sm" },
 ];
 
 function getProductBadge(productId: string, isBestSelling: boolean): typeof badges[number] {
