@@ -580,6 +580,7 @@ export type Database = {
       stores: {
         Row: {
           banner_url: string | null
+          best_selling_carousel: boolean
           business_hours: Json | null
           city: string | null
           created_at: string
@@ -607,6 +608,7 @@ export type Database = {
         }
         Insert: {
           banner_url?: string | null
+          best_selling_carousel?: boolean
           business_hours?: Json | null
           city?: string | null
           created_at?: string
@@ -634,6 +636,7 @@ export type Database = {
         }
         Update: {
           banner_url?: string | null
+          best_selling_carousel?: boolean
           business_hours?: Json | null
           city?: string | null
           created_at?: string

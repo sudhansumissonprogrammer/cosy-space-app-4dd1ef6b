@@ -1,0 +1,1 @@
+ALTER TABLE public.stores ADD COLUMN best_selling_carousel boolean NOT NULL DEFAULT false;
