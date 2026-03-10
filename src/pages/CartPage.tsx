@@ -116,7 +116,7 @@ export default function CartPage() {
                   Order on WhatsApp
                 </Button>
               ) : (
-                <Button className="w-full" size="lg" onClick={() => navigate(`/store/${store.slug}/checkout`)}>
+                <Button className="w-full" size="lg" onClick={() => navigate(storefrontPath(store.slug, "checkout"))}>
                   <ShoppingBag className="mr-2 h-5 w-5" />
                   Proceed to Checkout
                 </Button>
