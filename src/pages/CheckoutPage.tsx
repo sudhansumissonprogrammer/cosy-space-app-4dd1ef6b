@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote, BookMarked } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
