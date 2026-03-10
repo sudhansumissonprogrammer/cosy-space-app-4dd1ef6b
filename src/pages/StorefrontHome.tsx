@@ -10,7 +10,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontHero from "@/components/storefront/StorefrontHero";
 import StorefrontCategories from "@/components/storefront/StorefrontCategories";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
-import StorefrontAbout from "@/components/storefront/StorefrontAbout";
+
 import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
 
 function ProductCardSkeleton() {
@@ -329,7 +329,7 @@ export default function StorefrontHome() {
           )}
         </section>
 
-        <StorefrontAbout store={store} productCount={products?.length || 0} />
+        
       </div>
     </>
   );
