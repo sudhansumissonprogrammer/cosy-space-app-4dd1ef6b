@@ -142,7 +142,7 @@ export default function CheckoutPage() {
         <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
         <h1 className="text-xl font-semibold text-foreground">Product not found</h1>
         <Button asChild variant="outline" className="mt-4">
-          <Link to={`/store/${store.slug}`}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
+           <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
         </Button>
       </div>
     );
