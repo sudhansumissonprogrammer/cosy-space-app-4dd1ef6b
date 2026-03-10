@@ -60,6 +60,8 @@ export default function StoreSettings() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [heroFile, setHeroFile] = useState<File | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string | null>(null);
   const [theme, setTheme] = useState("theme-1");
   const [features, setFeatures] = useState<Feature[]>([]);
   const [returnPolicy, setReturnPolicy] = useState("");
