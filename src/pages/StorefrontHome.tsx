@@ -62,7 +62,7 @@ export default function StorefrontHome() {
     return () => document.removeEventListener("mousedown", handler);
   }, [filtersOpen]);
 
-  const activeFilterCount = [selectedCategory, priceRange, availability !== "all"].filter(Boolean).length;
+  const activeFilterCount = [priceRange, availability !== "all", bestSellingFilter !== "all"].filter(Boolean).length;
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["storefront-products", store.id],
