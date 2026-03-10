@@ -266,6 +266,42 @@ export default function CheckoutPage() {
     }
   };
 
+  const saveAddressToAccount = async () => {
+    if (!customer?.id) return;
+    try {
+      // Check if customer already has this address saved
+      const { data: existing } = await supabase
+        .from("customer_addresses")
+        .select("id")
+        .eq("storefront_customer_id", customer.id)
+        .eq("street_address", streetAddress.trim())
+        .eq("pincode", pincode.trim())
+        .maybeSingle();
+
+      if (existing) return; // Already saved
+
+      // Check if customer has any addresses (to set default)
+      const { count } = await supabase
+        .from("customer_addresses")
+        .select("id", { count: "exact", head: true })
+        .eq("storefront_customer_id", customer.id);
+
+      await supabase.from("customer_addresses").insert({
+        storefront_customer_id: customer.id,
+        label: "Home",
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        street_address: streetAddress.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        pincode: pincode.trim(),
+        is_default: (count ?? 0) === 0,
+      });
+    } catch (err) {
+      console.error("Failed to save address to account:", err);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
     if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { toast.error("Please enter a valid email"); return; }
