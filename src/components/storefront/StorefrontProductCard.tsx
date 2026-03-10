@@ -17,6 +17,25 @@ function getProductRating(productId: string): number {
   return ratings[Math.abs(hash) % ratings.length];
 }
 
+type BadgeType = "trending" | "new" | "bestseller";
+
+const badges: { type: BadgeType; label: string; Icon: typeof Zap; bg: string }[] = [
+  { type: "trending", label: "Trending", Icon: Zap, bg: "bg-foreground/90 text-card" },
+  { type: "new", label: "New Arrival", Icon: Sparkles, bg: "bg-emerald-500/90 text-white" },
+  { type: "bestseller", label: "Best Seller", Icon: Flame, bg: "bg-orange-500/90 text-white" },
+];
+
+function getProductBadge(productId: string, isBestSelling: boolean): typeof badges[number] {
+  if (isBestSelling) return badges[2]; // Best Seller
+  let hash = 0;
+  for (let i = 0; i < productId.length; i++) {
+    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % 3;
+  return badges[idx];
+}
+
 interface StorefrontProductCardProps {
   product: Tables<"products">;
   slug: string;
