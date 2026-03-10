@@ -67,18 +67,17 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
     e.stopPropagation();
     if (isAdding) return;
     setIsAdding(true);
-    setTimeout(() => {
-      addToCart({
-        productId: product.id,
-        name: product.name,
-        price,
-        image: product.image_url || undefined,
-      });
-      setIsAdding(false);
-      setJustAdded(true);
-      toast.success(`${product.name} added to cart`);
-      setTimeout(() => setJustAdded(false), 1500);
-    }, 600);
+    // Instant add — no artificial delay
+    addToCart({
+      productId: product.id,
+      name: product.name,
+      price,
+      image: product.image_url || undefined,
+    });
+    setIsAdding(false);
+    setJustAdded(true);
+    toast.success(`${product.name} added to cart`);
+    setTimeout(() => setJustAdded(false), 1200);
   };
 
   const handleIncrement = (e: React.MouseEvent) => {
