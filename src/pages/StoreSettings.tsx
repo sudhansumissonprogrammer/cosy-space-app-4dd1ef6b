@@ -454,6 +454,28 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
+        {/* Best Selling Display */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" /> Best Selling Display
+            </CardTitle>
+            <CardDescription>Choose how best-selling products appear on your storefront</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Carousel Mode</p>
+                <p className="text-xs text-muted-foreground">Show best-selling products in a swipeable carousel instead of a grid</p>
+              </div>
+              <Switch
+                checked={bestSellingCarousel}
+                onCheckedChange={setBestSellingCarousel}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Theme</CardTitle>
