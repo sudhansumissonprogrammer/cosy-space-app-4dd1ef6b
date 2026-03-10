@@ -45,6 +45,15 @@ export default function StorefrontHome() {
   const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
   const [sortOpen, setSortOpen] = useState(false);
 
+  useStoreJsonLd({
+    storeName: store.name,
+    storeSlug: store.slug,
+    description: store.description,
+    logo: store.logo_url,
+    location: store.location,
+    whatsappNumber: store.whatsapp_number,
+  });
+
   const applyAndClose = (fn: () => void) => {
     fn();
     setFiltersOpen(false);
