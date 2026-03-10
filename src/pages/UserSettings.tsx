@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Upload, X, Crown } from "lucide-react";
-import { compressImage } from "@/lib/imageCompression";
+import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
