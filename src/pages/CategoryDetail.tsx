@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import { storefrontPath } from "@/lib/subdomain";
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
