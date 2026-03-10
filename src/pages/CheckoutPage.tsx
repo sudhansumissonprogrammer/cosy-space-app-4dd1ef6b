@@ -213,6 +213,7 @@ export default function CheckoutPage() {
         state: state.trim(),
         pincode: pincode.trim(),
         payment_method: paymentMethod,
+        ...(customer?.id ? { storefront_customer_id: customer.id } : {}),
       })
       .select("id")
       .single();
