@@ -15,6 +15,7 @@ import { Users, Ban, CheckCircle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { TableSkeleton } from "@/components/admin/AdminSkeletons";
 
 export default function AdminUsers() {
   const queryClient = useQueryClient();

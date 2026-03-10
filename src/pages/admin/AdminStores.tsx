@@ -17,6 +17,7 @@ import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck } from "lucide-reac
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { TableSkeleton } from "@/components/admin/AdminSkeletons";
 
 export default function AdminStores() {
   const queryClient = useQueryClient();
