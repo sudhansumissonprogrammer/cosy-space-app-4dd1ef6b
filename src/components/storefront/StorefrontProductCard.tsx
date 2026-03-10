@@ -21,8 +21,8 @@ interface StorefrontProductCardProps {
   store: Tables<"stores">;
 }
 
-const cardShadow = "0px 1px 1px rgba(0,0,0,0.05), 0px 2px 2px rgba(0,0,0,0.05), 0px 4px 4px rgba(0,0,0,0.05), 0px 8px 8px rgba(0,0,0,0.05), 0px 16px 16px rgba(0,0,0,0.05)";
-const cardHoverShadow = "0px 4px 6px rgba(0,0,0,0.08), 0px 10px 20px rgba(0,0,0,0.10), 0px 20px 40px rgba(0,0,0,0.12)";
+const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
+const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
 export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
   const { addToCart } = useCart();
