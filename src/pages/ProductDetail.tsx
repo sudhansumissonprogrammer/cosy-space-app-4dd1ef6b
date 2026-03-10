@@ -117,6 +117,24 @@ export default function ProductDetail() {
     canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
   });
 
+  useProductJsonLd({
+    product: product ? {
+      name: product.name,
+      description: product.description,
+      image_url: product.image_url,
+      price: Number(product.price),
+      sale_price: product.sale_price ? Number(product.sale_price) : null,
+      currency: product.currency || store.currency || "INR",
+      slug: product.slug,
+      id: product.id,
+      category: product.category,
+      stock_quantity: product.stock_quantity,
+      sku: product.sku,
+    } : { name: "", price: 0, id: "", currency: "INR" },
+    storeSlug: store.slug,
+    storeName: store.name,
+  });
+
   const allImages = (() => {
     const imgs: string[] = [];
     if (product?.image_url) imgs.push(product.image_url);
