@@ -2,8 +2,7 @@ import { useState, useMemo } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, SlidersHorizontal, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,6 +11,7 @@ import StorefrontHero from "@/components/storefront/StorefrontHero";
 import StorefrontCategories from "@/components/storefront/StorefrontCategories";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import StorefrontAbout from "@/components/storefront/StorefrontAbout";
+import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
 
 function ProductCardSkeleton() {
   return (
@@ -39,6 +39,8 @@ export default function StorefrontHome() {
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [availability, setAvailability] = useState<"all" | "in_stock">("all");
   const [bestSellingFilter, setBestSellingFilter] = useState<"all" | "best_selling">("all");
+  const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
+  const [sortOpen, setSortOpen] = useState(false);
 
   const applyAndClose = (fn: () => void) => {
     fn();
@@ -92,8 +94,8 @@ export default function StorefrontHome() {
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
-    return products.filter((p) => {
-      if ((p as any).is_best_selling) return false; // exclude best sellers from popular
+    const filtered = products.filter((p) => {
+      if ((p as any).is_best_selling) return false;
       const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
       const effectivePrice = p.sale_price ?? p.price;
       const matchesPrice = !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
@@ -101,7 +103,23 @@ export default function StorefrontHome() {
       const matchesBestSelling = bestSellingFilter === "all" || (p as any).is_best_selling;
       return matchesSearch && matchesPrice && matchesAvail && matchesBestSelling;
     });
-  }, [products, searchQuery, priceRange, availability, bestSellingFilter]);
+
+    const sorted = [...filtered];
+    switch (sortBy) {
+      case "price_asc":
+        sorted.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price));
+        break;
+      case "price_desc":
+        sorted.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price));
+        break;
+      case "newest":
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      default:
+        break;
+    }
+    return sorted;
+  }, [products, searchQuery, priceRange, availability, bestSellingFilter, sortBy]);
 
   return (
     <>
@@ -109,21 +127,12 @@ export default function StorefrontHome() {
       <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1">
         <div className="mx-auto max-w-6xl">
           <div className="relative flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-10 rounded-full border-0 bg-accent/60 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0"
-                maxLength={100}
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+            <StorefrontSearchBar
+              products={products}
+              slug={slug!}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
             <Button
               variant="ghost"
               size="icon"
@@ -248,14 +257,52 @@ export default function StorefrontHome() {
 
         {/* Product Grid */}
         <section>
-          <h2 className="mb-5 text-xl font-bold text-foreground">
-            Popular Products
-            {filteredProducts.length !== (products?.length || 0) && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({filteredProducts.length} of {products?.length})
-              </span>
-            )}
-          </h2>
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-foreground">
+              Popular Products
+              {filteredProducts.length !== (products?.length || 0) && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({filteredProducts.length} of {products?.length})
+                </span>
+              )}
+            </h2>
+            <div className="relative">
+              <button
+                onClick={() => setSortOpen(!sortOpen)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-accent/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+              >
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">
+                  {sortBy === "popular" && "Popular"}
+                  {sortBy === "price_asc" && "Price: Low"}
+                  {sortBy === "price_desc" && "Price: High"}
+                  {sortBy === "newest" && "Newest"}
+                </span>
+              </button>
+              {sortOpen && (
+                <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+                  {([
+                    { value: "popular", label: "Popular" },
+                    { value: "price_asc", label: "Price: Low → High" },
+                    { value: "price_desc", label: "Price: High → Low" },
+                    { value: "newest", label: "Newest First" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
+                      className={`block w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
+                        sortBy === opt.value
+                          ? "bg-primary/10 text-primary"
+                          : "text-foreground hover:bg-accent/60"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           {isLoading ? (
             <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
