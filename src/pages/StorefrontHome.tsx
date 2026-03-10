@@ -244,7 +244,24 @@ export default function StorefrontHome() {
         isLoading={categoriesLoading}
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mx-auto max-w-6xl px-4 py-6 space-y-8">
+
+        {/* Best Selling Section */}
+        {bestSellingProducts.length > 0 && (
+          <section>
+            <h2 className="mb-4 text-xl font-bold text-foreground">🔥 Best Selling</h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {bestSellingProducts.map((product) => (
+                <StorefrontProductCard
+                  key={product.id}
+                  product={product}
+                  slug={slug!}
+                  store={store}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Product Grid */}
         <section>
