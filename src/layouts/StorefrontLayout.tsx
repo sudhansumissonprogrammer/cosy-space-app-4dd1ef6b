@@ -41,19 +41,19 @@ export function useStorefront(slugOverride?: string) {
   return { store, isLoading, error, slug };
 }
 
-function CartBadge({ slug }: { slug: string }) {
-  const { cartCount } = useCart();
+function CartBadge() {
+  const { cartCount, openCart } = useCart();
   return (
-    <Link to={storefrontPath(slug, "cart")} className="relative">
-      <Button variant="ghost" size="icon" className="h-9 w-9">
+    <button onClick={openCart} className="relative">
+      <div className="flex h-9 w-9 items-center justify-center rounded-md text-foreground hover:bg-accent transition-colors">
         <ShoppingCart className="h-5 w-5" />
-      </Button>
+      </div>
       {cartCount > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background">
           {cartCount > 99 ? "99+" : cartCount}
         </span>
       )}
-    </Link>
+    </button>
   );
 }
 
