@@ -56,32 +56,41 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
-  // Auto-fill from customer's default address
-  const { data: defaultAddress } = useQuery({
-    queryKey: ["checkout-default-address", customer?.id],
+  // Fetch ALL saved addresses for logged-in customer
+  const { data: savedAddresses } = useQuery({
+    queryKey: ["checkout-saved-addresses", customer?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("customer_addresses")
         .select("*")
         .eq("storefront_customer_id", customer!.id)
-        .eq("is_default", true)
-        .maybeSingle();
-      return data;
+        .order("is_default", { ascending: false });
+      return data || [];
     },
     enabled: !!customer?.id,
   });
 
+  // Auto-select default address on load
   useEffect(() => {
-    if (defaultAddress) {
-      if (!fullName) setFullName(defaultAddress.full_name || "");
-      if (!phone) setPhone(defaultAddress.phone || "");
-      if (!streetAddress) setStreetAddress(defaultAddress.street_address || "");
-      if (!city) setCity(defaultAddress.city || "");
-      if (!state) setState(defaultAddress.state || "");
-      if (!pincode) setPincode(defaultAddress.pincode || "");
+    if (savedAddresses?.length && !selectedAddressId) {
+      const defaultAddr = savedAddresses.find((a: any) => a.is_default) || savedAddresses[0];
+      if (defaultAddr) {
+        selectAddress(defaultAddr);
+      }
     }
-  }, [defaultAddress]);
+  }, [savedAddresses]);
+
+  const selectAddress = (addr: any) => {
+    setSelectedAddressId(addr.id);
+    setFullName(addr.full_name || "");
+    setPhone(addr.phone || "");
+    setStreetAddress(addr.street_address || "");
+    setCity(addr.city || "");
+    setState(addr.state || "");
+    setPincode(addr.pincode || "");
+  };
 
   // Auto-fill email from logged-in customer
   useEffect(() => {
