@@ -595,6 +595,7 @@ export type Database = {
           is_verified: boolean
           location: string | null
           logo_url: string | null
+          mobile_hero_url: string | null
           name: string
           order_mode: string
           owner_id: string
@@ -623,6 +624,7 @@ export type Database = {
           is_verified?: boolean
           location?: string | null
           logo_url?: string | null
+          mobile_hero_url?: string | null
           name: string
           order_mode?: string
           owner_id: string
@@ -651,6 +653,7 @@ export type Database = {
           is_verified?: boolean
           location?: string | null
           logo_url?: string | null
+          mobile_hero_url?: string | null
           name?: string
           order_mode?: string
           owner_id?: string
