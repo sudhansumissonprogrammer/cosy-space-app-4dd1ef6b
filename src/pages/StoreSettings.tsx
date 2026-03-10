@@ -394,6 +394,38 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
+        {/* Policies */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Store Policies</CardTitle>
+            <CardDescription>Customize your return and shipping policies. Leave blank to use default templates.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="return-policy">Return Policy</Label>
+              <Textarea
+                id="return-policy"
+                value={returnPolicy}
+                onChange={(e) => setReturnPolicy(e.target.value)}
+                rows={6}
+                placeholder="Leave blank for a default return policy template..."
+                maxLength={5000}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shipping-policy">Shipping Policy</Label>
+              <Textarea
+                id="shipping-policy"
+                value={shippingPolicy}
+                onChange={(e) => setShippingPolicy(e.target.value)}
+                rows={6}
+                placeholder="Leave blank for a default shipping policy template..."
+                maxLength={5000}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Domain Settings */}
         <Card>
           <CardHeader>
