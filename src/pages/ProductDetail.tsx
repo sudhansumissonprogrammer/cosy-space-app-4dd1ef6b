@@ -291,6 +291,15 @@ export default function ProductDetail() {
           </div>
         </div>
       </div>
+
+      {/* Related Products */}
+      <RelatedProducts
+        storeId={store.id}
+        storeSlug={store.slug}
+        currentProductId={product.id}
+        currentCategory={product.category}
+        store={store}
+      />
     </div>
   );
 }
