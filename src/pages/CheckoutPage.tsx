@@ -413,9 +413,11 @@ export default function CheckoutPage() {
         num_items: checkoutItems.length,
       });
 
-      // Auto-create guest account if not logged in
+      // Auto-create guest account if not logged in, or save address for logged-in
       if (!customer) {
         createGuestAccount(newOrderId);
+      } else {
+        saveAddressToAccount();
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
