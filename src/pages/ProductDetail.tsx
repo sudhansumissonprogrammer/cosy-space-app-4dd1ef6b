@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, MessageCircle, Package, Loader2, ChevronLeft, ChevronRight, Tag, ShoppingBag, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Package, ChevronLeft, ChevronRight, Tag, ShoppingBag, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
@@ -35,7 +34,6 @@ export default function ProductDetail() {
   const queryClient = useQueryClient();
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-  const [whatsappOpen, setWhatsappOpen] = useState(false);
 
   // Try to get product instantly from cached storefront data
   const getCachedProduct = () => {
@@ -312,28 +310,19 @@ export default function ProductDetail() {
             )}
 
             {showWhatsApp && store.whatsapp_number && (
-              <Dialog open={whatsappOpen} onOpenChange={setWhatsappOpen}>
-                <DialogTrigger asChild>
-                  <button className="inline-flex items-center justify-center gap-2 rounded-md bg-[#25D366] px-6 py-3 text-sm font-extrabold uppercase tracking-widest text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98]">
-                    <svg viewBox="0 0 32 32" fill="white" className="h-5 w-5"><path d="M16.004 3.2C9.056 3.2 3.406 8.848 3.404 15.8c-.001 2.222.58 4.392 1.683 6.303L3.2 28.8l6.867-1.802A12.56 12.56 0 0 0 16 28.398h.005C22.95 28.398 28.6 22.75 28.6 15.8 28.6 8.85 22.95 3.2 16.004 3.2Zm0 22.997h-.004a10.44 10.44 0 0 1-5.318-1.457l-.382-.226-3.955 1.038 1.055-3.858-.249-.395A10.42 10.42 0 0 1 5.54 15.8c.002-5.77 4.697-10.463 10.466-10.463 5.77 0 10.463 4.695 10.463 10.464 0 5.77-4.695 10.465-10.465 10.465v-.069Zm5.74-7.835c-.315-.158-1.863-.92-2.152-1.025-.289-.105-.499-.158-.71.158-.21.315-.815 1.025-.999 1.236-.184.21-.368.236-.683.079-.315-.158-1.33-.49-2.533-1.562-.937-.835-1.568-1.867-1.752-2.182-.184-.315-.02-.486.138-.643.142-.141.315-.368.473-.552.158-.184.21-.315.315-.526.106-.21.053-.394-.026-.552-.079-.158-.71-1.71-.973-2.341-.256-.615-.517-.532-.71-.542-.184-.008-.394-.01-.604-.01s-.552.079-.841.394c-.29.315-1.104 1.078-1.104 2.63 0 1.552 1.13 3.052 1.288 3.262.158.21 2.224 3.396 5.388 4.762.753.326 1.341.52 1.8.665.756.24 1.444.206 1.988.125.607-.09 1.863-.762 2.126-1.498.263-.736.263-1.367.184-1.498-.079-.132-.289-.21-.604-.369Z"/></svg>
-                    Order on WhatsApp
-                  </button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Order on WhatsApp</DialogTitle>
-                  </DialogHeader>
-                  <WhatsAppOrderForm
-                    store={store}
-                    product={product}
-                    selectedVariant={selectedVariant}
-                    basePrice={basePrice}
-                    variantPrice={variantPrice}
-                    currency={currency}
-                    onComplete={() => setWhatsappOpen(false)}
-                  />
-                </DialogContent>
-              </Dialog>
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-[#25D366] px-6 py-3 text-sm font-extrabold uppercase tracking-widest text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98]"
+                onClick={() => {
+                  const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
+                  const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
+                  const productUrl = `${window.location.origin}${window.location.pathname}`;
+                  const text = `Hi ${store.name}! 👋\n\nI want to buy *${product.name}${variantInfo}*\n\n💰 Price: ${currency} ${Number(variantPrice).toFixed(0)}\n\n🔗 ${productUrl}\n\nPlease share availability, delivery time & payment options.`;
+                  window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
+                }}
+              >
+                <svg viewBox="0 0 32 32" fill="white" className="h-5 w-5"><path d="M16.004 3.2C9.056 3.2 3.406 8.848 3.404 15.8c-.001 2.222.58 4.392 1.683 6.303L3.2 28.8l6.867-1.802A12.56 12.56 0 0 0 16 28.398h.005C22.95 28.398 28.6 22.75 28.6 15.8 28.6 8.85 22.95 3.2 16.004 3.2Zm0 22.997h-.004a10.44 10.44 0 0 1-5.318-1.457l-.382-.226-3.955 1.038 1.055-3.858-.249-.395A10.42 10.42 0 0 1 5.54 15.8c.002-5.77 4.697-10.463 10.466-10.463 5.77 0 10.463 4.695 10.463 10.464 0 5.77-4.695 10.465-10.465 10.465v-.069Zm5.74-7.835c-.315-.158-1.863-.92-2.152-1.025-.289-.105-.499-.158-.71.158-.21.315-.815 1.025-.999 1.236-.184.21-.368.236-.683.079-.315-.158-1.33-.49-2.533-1.562-.937-.835-1.568-1.867-1.752-2.182-.184-.315-.02-.486.138-.643.142-.141.315-.368.473-.552.158-.184.21-.315.315-.526.106-.21.053-.394-.026-.552-.079-.158-.71-1.71-.973-2.341-.256-.615-.517-.532-.71-.542-.184-.008-.394-.01-.604-.01s-.552.079-.841.394c-.29.315-1.104 1.078-1.104 2.63 0 1.552 1.13 3.052 1.288 3.262.158.21 2.224 3.396 5.388 4.762.753.326 1.341.52 1.8.665.756.24 1.444.206 1.988.125.607-.09 1.863-.762 2.126-1.498.263-.736.263-1.367.184-1.498-.079-.132-.289-.21-.604-.369Z"/></svg>
+                Order on WhatsApp
+              </button>
             )}
           </div>
         </div>
@@ -405,86 +394,7 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
   );
 }
 
-/* ── WhatsApp Order Form (inside dialog) ── */
-function WhatsAppOrderForm({
-  store,
-  product,
-  selectedVariant,
-  basePrice,
-  variantPrice,
-  currency,
-  onComplete,
-}: {
-  store: StoreData;
-  product: { id: string; name: string; price: number; sale_price: number | null };
-  selectedVariant: Variant | null;
-  basePrice: number;
-  variantPrice: number;
-  currency: string;
-  onComplete: () => void;
-}) {
-  const [ordering, setOrdering] = useState(false);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const finalPrice = variantPrice;
 
-  const handleOrder = async () => {
-    if (!customerPhone.trim()) { toast.error("Please enter your phone number"); return; }
-    setOrdering(true);
-    try {
-      const productName = selectedVariant ? `${product.name} (${selectedVariant.name})` : product.name;
-
-      await (supabase as any).from("customer_leads").insert({
-        store_id: store.id, name: customerName.trim() || null, phone: customerPhone.trim(),
-        product_name: productName, product_id: product.id, source: "whatsapp_order",
-      });
-
-      const { data } = await supabase.from("whatsapp_orders").insert({
-        store_id: store.id, product_id: product.id, product_name: productName,
-        product_price: finalPrice, customer_phone: customerPhone.trim(),
-        customer_name: customerName.trim() || null, quantity: 1,
-      }).select("id").single();
-
-      if (data?.id) {
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        if (projectId) {
-          fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ order_id: data.id }),
-          }).catch(() => {});
-        }
-      }
-    } catch { /* Don't block WhatsApp redirect */ }
-    setOrdering(false);
-    onComplete();
-
-    const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
-    const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
-    const productUrl = `${window.location.origin}${window.location.pathname}`;
-    const text = `Hi 👋\n\nI want to buy ${product.name}${variantInfo}\n\n💰 Price: ${currency} ${Number(finalPrice).toFixed(0)}\n\n🏬 Store: ${store.name}\n\n🔗 Product link: ${productUrl}\n\nPlease share availability, delivery time & payment options.`;
-    window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
-  };
-
-  return (
-    <div className="space-y-4 pt-2">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="wa-name" className="text-xs">Your Name</Label>
-          <Input id="wa-name" placeholder="John Doe" value={customerName} onChange={(e) => setCustomerName(e.target.value)} maxLength={100} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="wa-phone" className="text-xs">Your Phone *</Label>
-          <Input id="wa-phone" placeholder="+1234567890" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} maxLength={20} />
-        </div>
-      </div>
-
-      <Button className="w-full" onClick={handleOrder} disabled={ordering}>
-        {ordering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}
-        Confirm & Open WhatsApp — {currency} {Number(finalPrice).toFixed(2)}
-      </Button>
-    </div>
-  );
-}
 
 /* ── Related Products ── */
 function RelatedProducts({
