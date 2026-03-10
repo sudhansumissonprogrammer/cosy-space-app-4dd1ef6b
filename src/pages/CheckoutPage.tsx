@@ -363,9 +363,9 @@ export default function CheckoutPage() {
               const verifyData = await verifyRes.json();
               if (!verifyRes.ok) throw new Error(verifyData.error);
 
-              if (!isSingleMode) clearCart();
               setOrderId(newOrderId);
               setOrderPlaced(true);
+              if (!isSingleMode) clearCart();
               fbPixelTrack("Purchase", {
                 content_ids: checkoutItems.map((i) => i.productId),
                 contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
@@ -401,10 +401,10 @@ export default function CheckoutPage() {
         return; // Don't setPlacing(false) here — Razorpay modal handles it
       }
 
-      // COD flow
-      if (!isSingleMode) clearCart();
+      // COD flow — set success state BEFORE clearing cart to prevent empty cart flash
       setOrderId(newOrderId);
       setOrderPlaced(true);
+      if (!isSingleMode) clearCart();
       fbPixelTrack("Purchase", {
         content_ids: checkoutItems.map((i) => i.productId),
         contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
