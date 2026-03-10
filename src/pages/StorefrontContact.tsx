@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
   MapPin,
@@ -24,18 +23,13 @@ import {
   ThumbsUp,
   Loader2,
   Send,
+  MessageCircle,
+  ArrowRight,
 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  Award,
-  Leaf,
-  Shield,
-  Star,
-  Sparkles,
-  Heart,
-  Truck,
-  ThumbsUp,
+  Award, Leaf, Shield, Star, Sparkles, Heart, Truck, ThumbsUp,
 };
 
 interface Feature {
@@ -52,6 +46,8 @@ export default function StorefrontContact() {
 
   const features: Feature[] = (store.features as unknown as Feature[]) || [];
   const businessHours = (store.business_hours as Record<string, string>) || {};
+  const hasHours = Object.values(businessHours).some((v) => v?.trim());
+  const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -83,158 +79,186 @@ export default function StorefrontContact() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 space-y-12">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-foreground">Contact Us</h1>
-        <p className="mt-2 text-muted-foreground">
-          We'd love to hear from you. Get in touch with us!
-        </p>
+    <div className="min-h-[70vh]">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-accent/30 to-background px-4 py-16 text-center">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.15),transparent_50%)]" />
+        <div className="relative mx-auto max-w-2xl">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 backdrop-blur-sm">
+            <MessageCircle className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+            Get in Touch
+          </h1>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Have a question or need help? We'd love to hear from you.
+          </p>
+        </div>
       </div>
 
       {/* Why Choose Us */}
       {features.length > 0 && (
-        <section>
-          <h2 className="mb-6 text-center text-2xl font-semibold text-foreground">
-            Why Choose Us
+        <section className="mx-auto max-w-6xl px-4 py-12">
+          <h2 className="mb-8 text-center text-2xl font-bold text-foreground">
+            Why Choose {store.name}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, idx) => {
               const IconComponent = ICON_MAP[feature.icon] || Award;
               return (
-                <Card key={idx} className="text-center">
-                  <CardContent className="pt-6">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                      <IconComponent className="h-6 w-6 text-primary" />
+                <div
+                  key={idx}
+                  className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 text-center transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                  <div className="relative">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 transition-transform duration-300 group-hover:scale-110">
+                      <IconComponent className="h-7 w-7 text-primary" />
                     </div>
-                    <h3 className="font-semibold text-foreground">{feature.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {feature.description}
-                    </p>
-                  </CardContent>
-                </Card>
+                    <h3 className="font-bold text-foreground">{feature.title}</h3>
+                    <p className="mt-1.5 text-sm text-muted-foreground">{feature.description}</p>
+                  </div>
+                </div>
               );
             })}
           </div>
         </section>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Contact Form */}
-        <Card>
-          <CardContent className="pt-6">
-            <h2 className="mb-4 text-xl font-semibold text-foreground">Send us a Message</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Your Name</Label>
-                <Input
-                  id="name"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={100}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
-                <Input
-                  id="phone"
-                  placeholder="+1234567890"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  maxLength={20}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="message">Message</Label>
-                <Textarea
-                  id="message"
-                  placeholder="How can we help you?"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
-                  maxLength={1000}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={submitMutation.isPending}>
-                {submitMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
-                Send Message
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Store Info */}
-        <div className="space-y-6">
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">Store Information</h2>
-
-              {store.location && (
-                <div className="flex items-start gap-3">
-                  <MapPin className="mt-0.5 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">Address</p>
-                    <p className="text-sm text-muted-foreground">{store.location}</p>
-                    {(store.city || store.state) && (
-                      <p className="text-sm text-muted-foreground">
-                        {[store.city, store.state].filter(Boolean).join(", ")}
-                      </p>
-                    )}
+      {/* Contact Form + Info */}
+      <section className="mx-auto max-w-6xl px-4 pb-16">
+        <div className="grid gap-8 lg:grid-cols-5">
+          {/* Form */}
+          <div className="lg:col-span-3">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+              <h2 className="text-2xl font-bold text-foreground">Send us a Message</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Fill out the form and we'll respond as soon as possible.</p>
+              <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium">Your Name</Label>
+                    <Input
+                      id="name"
+                      placeholder="John Doe"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      maxLength={100}
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm font-medium">Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      placeholder="+1234567890"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      maxLength={20}
+                      className="h-11 rounded-xl"
+                    />
                   </div>
                 </div>
-              )}
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-sm font-medium">Message</Label>
+                  <Textarea
+                    id="message"
+                    placeholder="Tell us how we can help you..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={5}
+                    maxLength={1000}
+                    className="rounded-xl resize-none"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="h-12 w-full rounded-xl text-base font-semibold"
+                  disabled={submitMutation.isPending}
+                >
+                  {submitMutation.isPending ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-5 w-5" />
+                  )}
+                  Send Message
+                </Button>
+              </form>
+            </div>
+          </div>
 
-              {store.whatsapp_number && (
-                <div className="flex items-start gap-3">
-                  <Phone className="mt-0.5 h-5 w-5 text-primary" />
+          {/* Info Sidebar */}
+          <div className="space-y-5 lg:col-span-2">
+            {/* Address Card */}
+            {address && (
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
                   <div>
-                    <p className="font-medium text-foreground">WhatsApp</p>
-                    <a
-                      href={`https://wa.me/${store.whatsapp_number.replace(/\D/g, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline"
-                    >
-                      {store.whatsapp_number}
-                    </a>
+                    <p className="text-sm font-semibold text-foreground">Our Address</p>
+                    <p className="text-sm text-muted-foreground">{address}</p>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {Object.values(businessHours).some((v) => v) && (
-                <div className="flex items-start gap-3">
-                  <Clock className="mt-0.5 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">Business Hours</p>
-                    <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
-                      {Object.entries(businessHours).map(([day, hours]) =>
-                        hours ? (
-                          <p key={day}>
-                            <span className="capitalize">{day}</span>: {hours}
-                          </p>
-                        ) : null
-                      )}
-                    </div>
-                  </div>
+            {/* WhatsApp Card */}
+            {store.whatsapp_number && (
+              <a
+                href={`https://wa.me/${store.whatsapp_number.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:border-green-500/30 hover:shadow-md"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-500/10">
+                  <Phone className="h-5 w-5 text-green-600" />
                 </div>
-              )}
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">WhatsApp</p>
+                  <p className="text-sm text-muted-foreground">{store.whatsapp_number}</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+              </a>
+            )}
 
-              {(store.instagram_url || store.facebook_url) && (
-                <div className="flex items-center gap-3 pt-2">
+            {/* Business Hours Card */}
+            {hasHours && (
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <Clock className="h-5 w-5 text-primary" />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">Business Hours</p>
+                </div>
+                <div className="space-y-1.5 pl-[52px]">
+                  {Object.entries(businessHours).map(([day, hours]) =>
+                    hours?.trim() ? (
+                      <div key={day} className="flex justify-between text-sm">
+                        <span className="capitalize text-muted-foreground">{day}</span>
+                        <span className="font-medium text-foreground">{hours}</span>
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Social Links */}
+            {(store.instagram_url || store.facebook_url) && (
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <p className="mb-3 text-sm font-semibold text-foreground">Follow Us</p>
+                <div className="flex gap-3">
                   {store.instagram_url && (
                     <a
                       href={store.instagram_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-accent hover:bg-accent/80"
+                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 transition-all hover:scale-105 hover:shadow-md"
                     >
-                      <Instagram className="h-5 w-5" />
+                      <Instagram className="h-5 w-5 text-pink-600" />
                     </a>
                   )}
                   {store.facebook_url && (
@@ -242,17 +266,17 @@ export default function StorefrontContact() {
                       href={store.facebook_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-accent hover:bg-accent/80"
+                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 transition-all hover:scale-105 hover:shadow-md"
                     >
-                      <Facebook className="h-5 w-5" />
+                      <Facebook className="h-5 w-5 text-blue-600" />
                     </a>
                   )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
