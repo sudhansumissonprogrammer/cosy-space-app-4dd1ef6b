@@ -1,6 +1,7 @@
 import { Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { storefrontPath } from "@/lib/subdomain";
 
 interface Category {
   id: string;
