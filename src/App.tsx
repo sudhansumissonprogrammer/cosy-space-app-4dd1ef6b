@@ -43,14 +43,14 @@ const StorefrontPrivacyPolicy = lazy(() => import("./pages/StorefrontPrivacyPoli
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
-const StoreOrders = lazy(() => import("./pages/StoreOrders"));
-const StoreCustomers = lazy(() => import("./pages/StoreCustomers"));
-const StoreSettings = lazy(() => import("./pages/StoreSettings"));
-const StoreAnalytics = lazy(() => import("./pages/StoreAnalytics"));
-const UserSettings = lazy(() => import("./pages/UserSettings"));
-const CustomerLeads = lazy(() => import("./pages/CustomerLeads"));
-const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
-const StorePayments = lazy(() => import("./pages/StorePayments"));
+import StoreOrders from "./pages/StoreOrders";
+import StoreCustomers from "./pages/StoreCustomers";
+import StoreSettings from "./pages/StoreSettings";
+import StoreAnalytics from "./pages/StoreAnalytics";
+import UserSettings from "./pages/UserSettings";
+import CustomerLeads from "./pages/CustomerLeads";
+import CheckoutPage from "./pages/CheckoutPage";
+import StorePayments from "./pages/StorePayments";
 const CartPage = lazy(() => import("./pages/CartPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
