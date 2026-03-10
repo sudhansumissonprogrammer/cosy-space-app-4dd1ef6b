@@ -15,8 +15,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export type StoreData = Tables<"stores">;
 
-export function useStorefront() {
-  const { slug } = useParams<{ slug: string }>();
+export function useStorefront(slugOverride?: string) {
+  const { slug: paramSlug } = useParams<{ slug: string }>();
+  const slug = slugOverride || paramSlug;
 
   const { data: store, isLoading, error } = useQuery({
     queryKey: ["storefront", slug],
