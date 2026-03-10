@@ -39,6 +39,8 @@ export default function StorefrontHome() {
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [availability, setAvailability] = useState<"all" | "in_stock">("all");
   const [bestSellingFilter, setBestSellingFilter] = useState<"all" | "best_selling">("all");
+  const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
+  const [sortOpen, setSortOpen] = useState(false);
 
   const applyAndClose = (fn: () => void) => {
     fn();
