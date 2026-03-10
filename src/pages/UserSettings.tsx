@@ -65,11 +65,12 @@ export default function UserSettings() {
     mutationFn: async () => {
       let avatarUrl = profile?.avatar_url || null;
       if (avatarFile) {
-        const ext = avatarFile.name.split(".").pop();
+        const compressedAvatar = await compressImage(avatarFile);
+        const ext = compressedAvatar.name.split(".").pop();
         const path = `${user!.id}/avatar.${ext}`;
         const { data, error } = await supabase.storage
           .from("store-logos")
-          .upload(path, avatarFile, { cacheControl: "3600", upsert: true });
+          .upload(path, compressedAvatar, { cacheControl: "3600", upsert: true });
         if (error) throw error;
         avatarUrl = supabase.storage.from("store-logos").getPublicUrl(data.path).data.publicUrl;
       }
