@@ -10,6 +10,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontHero from "@/components/storefront/StorefrontHero";
 import StorefrontCategories from "@/components/storefront/StorefrontCategories";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 
 import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
 
@@ -240,19 +241,23 @@ export default function StorefrontHome() {
 
         {/* Best Selling Section */}
         {bestSellingProducts.length > 0 && (
-          <section>
-            <h2 className="mb-4 text-xl font-bold text-foreground">🔥 Best Selling</h2>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {bestSellingProducts.map((product) => (
-                <StorefrontProductCard
-                  key={product.id}
-                  product={product}
-                  slug={slug!}
-                  store={store}
-                />
-              ))}
-            </div>
-          </section>
+          (store as any).best_selling_carousel ? (
+            <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} />
+          ) : (
+            <section>
+              <h2 className="mb-4 text-xl font-bold text-foreground">🔥 Best Selling</h2>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {bestSellingProducts.map((product) => (
+                  <StorefrontProductCard
+                    key={product.id}
+                    product={product}
+                    slug={slug!}
+                    store={store}
+                  />
+                ))}
+              </div>
+            </section>
+          )
         )}
 
         {/* Product Grid */}

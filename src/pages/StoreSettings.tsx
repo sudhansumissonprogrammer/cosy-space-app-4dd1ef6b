@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Globe, Palette, Lock, Check, Plus, Trash2 } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Globe, Palette, Lock, Check, Plus, Trash2, Flame } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -62,6 +63,7 @@ export default function StoreSettings() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [returnPolicy, setReturnPolicy] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
+  const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
@@ -97,6 +99,7 @@ export default function StoreSettings() {
       if (store.features) setFeatures(store.features as unknown as Feature[]);
       setReturnPolicy((store as any).return_policy || "");
       setShippingPolicy((store as any).shipping_policy || "");
+      setBestSellingCarousel((store as any).best_selling_carousel || false);
     }
   }, [store]);
 
@@ -141,6 +144,7 @@ export default function StoreSettings() {
           features: features.length > 0 ? features : null,
           return_policy: returnPolicy.trim() || null,
           shipping_policy: shippingPolicy.trim() || null,
+          best_selling_carousel: bestSellingCarousel,
         })
         .eq("id", storeId!);
       if (error) throw error;
@@ -446,6 +450,28 @@ export default function StoreSettings() {
                   <Globe className="mr-2 h-4 w-4" /> Configure Domain
                 </Link>
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Best Selling Display */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" /> Best Selling Display
+            </CardTitle>
+            <CardDescription>Choose how best-selling products appear on your storefront</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Carousel Mode</p>
+                <p className="text-xs text-muted-foreground">Show best-selling products in a swipeable carousel instead of a grid</p>
+              </div>
+              <Switch
+                checked={bestSellingCarousel}
+                onCheckedChange={setBestSellingCarousel}
+              />
             </div>
           </CardContent>
         </Card>
