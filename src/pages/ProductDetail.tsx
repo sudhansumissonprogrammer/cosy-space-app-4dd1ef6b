@@ -17,6 +17,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import type { Tables } from "@/integrations/supabase/types";
+import { fbPixelTrack } from "@/hooks/useFacebookPixel";
 
 interface Variant {
   id: string;
