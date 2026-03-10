@@ -2,8 +2,7 @@ import { useState, useMemo } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, SlidersHorizontal, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,6 +11,7 @@ import StorefrontHero from "@/components/storefront/StorefrontHero";
 import StorefrontCategories from "@/components/storefront/StorefrontCategories";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import StorefrontAbout from "@/components/storefront/StorefrontAbout";
+import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
 
 function ProductCardSkeleton() {
   return (
