@@ -275,6 +275,13 @@ export default function CheckoutPage() {
               if (!isSingleMode) clearCart();
               setOrderId(newOrderId);
               setOrderPlaced(true);
+              fbPixelTrack("Purchase", {
+                content_ids: checkoutItems.map((i) => i.productId),
+                contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
+                value: total,
+                currency,
+                num_items: checkoutItems.length,
+              });
             } catch (err: any) {
               toast.error("Payment verification failed. Contact the store.");
             }
