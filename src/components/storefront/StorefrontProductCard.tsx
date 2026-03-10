@@ -195,14 +195,14 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
           <div className="flex h-9 sm:h-10 w-full items-center rounded-xl border-2 border-[#b8860b] overflow-hidden bg-gradient-to-r from-[#d4a030]/10 to-[#b8860b]/10">
             <button
               onClick={handleDecrement}
-              className="flex h-full w-10 items-center justify-center bg-[#d4a030]/20 text-[#b8860b] transition-colors hover:bg-[#d4a030]/30 active:scale-95"
+              className="flex h-full w-10 items-center justify-center bg-[#d4a030]/20 text-foreground transition-colors hover:bg-[#d4a030]/30 active:scale-95"
             >
               <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
             </button>
-            <span className="flex-1 text-center text-xs font-extrabold text-[#b8860b]">{cartQty} in cart</span>
+            <span className="flex-1 text-center text-xs font-extrabold text-foreground">{cartQty} in cart</span>
             <button
               onClick={handleIncrement}
-              className="flex h-full w-10 items-center justify-center bg-[#d4a030]/20 text-[#b8860b] transition-colors hover:bg-[#d4a030]/30 active:scale-95"
+              className="flex h-full w-10 items-center justify-center bg-[#d4a030]/20 text-foreground transition-colors hover:bg-[#d4a030]/30 active:scale-95"
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
             </button>
