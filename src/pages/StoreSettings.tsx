@@ -60,6 +60,8 @@ export default function StoreSettings() {
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [theme, setTheme] = useState("theme-1");
   const [features, setFeatures] = useState<Feature[]>([]);
+  const [returnPolicy, setReturnPolicy] = useState("");
+  const [shippingPolicy, setShippingPolicy] = useState("");
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
@@ -93,6 +95,8 @@ export default function StoreSettings() {
       if (store.banner_url) setBannerPreview(store.banner_url);
       setTheme((store as any).theme || "theme-1");
       if (store.features) setFeatures(store.features as unknown as Feature[]);
+      setReturnPolicy((store as any).return_policy || "");
+      setShippingPolicy((store as any).shipping_policy || "");
     }
   }, [store]);
 
@@ -135,6 +139,8 @@ export default function StoreSettings() {
           banner_url: bannerUrl,
           theme,
           features: features.length > 0 ? features : null,
+          return_policy: returnPolicy.trim() || null,
+          shipping_policy: shippingPolicy.trim() || null,
         })
         .eq("id", storeId!);
       if (error) throw error;
@@ -385,6 +391,38 @@ export default function StoreSettings() {
                 <Plus className="mr-1 h-4 w-4" /> Add Feature
               </Button>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Policies */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Store Policies</CardTitle>
+            <CardDescription>Customize your return and shipping policies. Leave blank to use default templates.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="return-policy">Return Policy</Label>
+              <Textarea
+                id="return-policy"
+                value={returnPolicy}
+                onChange={(e) => setReturnPolicy(e.target.value)}
+                rows={6}
+                placeholder="Leave blank for a default return policy template..."
+                maxLength={5000}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shipping-policy">Shipping Policy</Label>
+              <Textarea
+                id="shipping-policy"
+                value={shippingPolicy}
+                onChange={(e) => setShippingPolicy(e.target.value)}
+                rows={6}
+                placeholder="Leave blank for a default shipping policy template..."
+                maxLength={5000}
+              />
+            </div>
           </CardContent>
         </Card>
 

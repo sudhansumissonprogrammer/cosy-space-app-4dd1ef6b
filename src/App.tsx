@@ -35,6 +35,8 @@ const EditProduct = lazy(() => import("./pages/EditProduct"));
 import StorefrontLayout from "./layouts/StorefrontLayout";
 import StorefrontHome from "./pages/StorefrontHome";
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
+const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
+const StorefrontShippingPolicy = lazy(() => import("./pages/StorefrontShippingPolicy"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
@@ -131,6 +133,8 @@ function AppRouter() {
         <Route path="/" element={<StorefrontLayout slugOverride={subdomainSlug} />}>
           <Route index element={<StorefrontHome />} />
           <Route path="contact" element={<StorefrontContact />} />
+          <Route path="return-policy" element={<StorefrontReturnPolicy />} />
+          <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
           <Route path="category/:categorySlug" element={<CategoryDetail />} />
           <Route path="product/:productSlug" element={<ProductDetail />} />
           <Route path="cart" element={<CartPage />} />
@@ -149,6 +153,8 @@ function AppRouter() {
         <Route path="/store/:slug" element={<StorefrontLayout />}>
           <Route index element={<StorefrontHome />} />
           <Route path="contact" element={<StorefrontContact />} />
+          <Route path="return-policy" element={<StorefrontReturnPolicy />} />
+          <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
           <Route path="category/:categorySlug" element={<CategoryDetail />} />
           <Route path="product/:productSlug" element={<ProductDetail />} />
           <Route path="cart" element={<CartPage />} />

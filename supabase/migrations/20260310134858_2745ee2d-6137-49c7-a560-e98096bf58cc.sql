@@ -1,0 +1,1 @@
+ALTER TABLE public.stores ADD COLUMN return_policy text, ADD COLUMN shipping_policy text;

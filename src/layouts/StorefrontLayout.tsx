@@ -4,13 +4,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Store, ShoppingCart, Home, Tag, Mail, Heart } from "lucide-react";
+import { Store, ShoppingCart, Home, Tag, Mail, Heart, RotateCcw, Truck } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
+import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
@@ -127,6 +128,22 @@ function HamburgerMenu({ store }: { store: StoreData }) {
             >
               <Mail className="h-4 w-4" />
               Contact Us
+            </Link>
+            <Link
+              to={storefrontPath(store.slug, "return-policy")}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Return Policy
+            </Link>
+            <Link
+              to={storefrontPath(store.slug, "shipping-policy")}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Truck className="h-4 w-4" />
+              Shipping Policy
             </Link>
             {categories && categories.length > 0 && (
               <>
@@ -312,6 +329,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
           </nav>
 
           <Outlet context={store} />
+          <StorefrontFooter store={store} />
         </div>
       </WishlistProvider>
     </CartProvider>
