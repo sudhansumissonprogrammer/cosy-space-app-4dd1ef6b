@@ -135,11 +135,12 @@ export default function CreateStore() {
   };
 
   const uploadFile = async (file: File, bucket: string, path: string) => {
-    const compressed = await compressImage(file);
-    // Update path extension to match compressed format
-    const ext = compressed.name.split(".").pop();
+    const result = await compressImage(file);
+    const msg = getCompressionMessage(result);
+    if (msg) toast.success(msg);
+    const ext = result.file.name.split(".").pop();
     const basePath = path.replace(/\.[^/.]+$/, "");
-    const { data, error } = await supabase.storage.from(bucket).upload(`${basePath}.${ext}`, compressed, {
+    const { data, error } = await supabase.storage.from(bucket).upload(`${basePath}.${ext}`, result.file, {
       cacheControl: "3600",
       upsert: true,
     });

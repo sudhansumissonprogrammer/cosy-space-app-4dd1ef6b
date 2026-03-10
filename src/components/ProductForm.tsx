@@ -289,12 +289,14 @@ export default function ProductForm({ productId }: ProductFormProps) {
   };
 
   const uploadImage = async (file: File) => {
-    const compressed = await compressImage(file);
-    const ext = compressed.name.split(".").pop();
+    const result = await compressImage(file);
+    const msg = getCompressionMessage(result);
+    if (msg) toast.success(msg);
+    const ext = result.file.name.split(".").pop();
     const path = `${user!.id}/${storeId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { data, error } = await supabase.storage
       .from("product-images")
-      .upload(path, compressed, { cacheControl: "3600", upsert: true });
+      .upload(path, result.file, { cacheControl: "3600", upsert: true });
     if (error) throw error;
     return supabase.storage.from("product-images").getPublicUrl(data.path).data.publicUrl;
   };
