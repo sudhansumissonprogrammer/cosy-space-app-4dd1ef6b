@@ -18,6 +18,9 @@ interface CartContextType {
   clearCart: () => void;
   cartTotal: number;
   cartCount: number;
+  isCartOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -35,10 +38,14 @@ export function CartProvider({ slug, children }: { slug: string; children: React
       return [];
     }
   });
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(getStorageKey(slug), JSON.stringify(items));
   }, [items, slug]);
+
+  const openCart = useCallback(() => setIsCartOpen(true), []);
+  const closeCart = useCallback(() => setIsCartOpen(false), []);
 
   const addToCart = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     setItems((prev) => {
@@ -52,6 +59,7 @@ export function CartProvider({ slug, children }: { slug: string; children: React
       }
       return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
+    setIsCartOpen(true);
   }, []);
 
   const removeFromCart = useCallback((productId: string, variantId?: string) => {
@@ -76,7 +84,7 @@ export function CartProvider({ slug, children }: { slug: string; children: React
   const cartCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, isCartOpen, openCart, closeCart }}>
       {children}
     </CartContext.Provider>
   );
