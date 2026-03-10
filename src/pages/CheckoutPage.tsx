@@ -478,3 +478,55 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+function CheckoutSkeleton() {
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <Skeleton className="mb-6 h-4 w-28" />
+      <Skeleton className="mb-6 h-8 w-40" />
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="space-y-6 lg:col-span-3">
+          {/* Address card skeleton */}
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <Skeleton className="h-5 w-40" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+            <Skeleton className="h-10 w-full rounded-md" />
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+          </div>
+          {/* Payment card skeleton */}
+          <div className="rounded-xl border border-border bg-card p-6 space-y-3">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+          </div>
+        </div>
+        {/* Order summary skeleton */}
+        <div className="lg:col-span-2">
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <Skeleton className="h-5 w-32" />
+            <div className="flex gap-3">
+              <Skeleton className="h-14 w-14 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            </div>
+            <Skeleton className="h-px w-full" />
+            <div className="flex justify-between">
+              <Skeleton className="h-5 w-12" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+            <Skeleton className="h-12 w-full rounded-lg" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
