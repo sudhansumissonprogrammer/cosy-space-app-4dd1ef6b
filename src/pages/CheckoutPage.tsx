@@ -83,6 +83,11 @@ export default function CheckoutPage() {
     }
   }, [defaultAddress]);
 
+  // Auto-fill email from logged-in customer
+  useEffect(() => {
+    if (customer?.email && !email) setEmail(customer.email);
+  }, [customer]);
+
   const isSingleMode = !!productId;
 
   const { data: product, isLoading } = useQuery({
