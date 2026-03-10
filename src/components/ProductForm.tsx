@@ -36,6 +36,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [stockQuantity, setStockQuantity] = useState("0");
   const [category, setCategory] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [isBestSelling, setIsBestSelling] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
