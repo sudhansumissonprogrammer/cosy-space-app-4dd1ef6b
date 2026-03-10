@@ -41,7 +41,7 @@ export function useStorefront(slugOverride?: string) {
 function CartBadge({ slug }: { slug: string }) {
   const { cartCount } = useCart();
   return (
-    <Link to={`/store/${slug}/cart`} className="relative">
+    <Link to={storefrontPath(slug, "cart")} className="relative">
       <Button variant="ghost" size="icon" className="h-9 w-9">
         <ShoppingCart className="h-5 w-5" />
       </Button>
