@@ -63,6 +63,7 @@ export default function StoreSettings() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [returnPolicy, setReturnPolicy] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
+  const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
