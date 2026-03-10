@@ -41,7 +41,7 @@ export default function CartPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <Link
-          to={`/store/${store.slug}`}
+          to={storefrontPath(store.slug)}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="h-3 w-3" />
