@@ -220,6 +220,8 @@ export default function StorefrontHome() {
           )}
         </div>
       </div>
+
+      <StorefrontCategories
         categories={storeCategories}
         storeSlug={slug!}
         isLoading={categoriesLoading}
