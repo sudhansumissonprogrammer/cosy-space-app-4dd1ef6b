@@ -113,7 +113,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-secondary/40 rounded-xl">
+            <div className="flex h-full w-full items-center justify-center bg-secondary/40">
               <Package className="h-10 w-10 text-muted-foreground/40" />
             </div>
           )}
