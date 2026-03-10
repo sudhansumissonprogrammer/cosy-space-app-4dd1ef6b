@@ -224,6 +224,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       setStockQuantity(String(existingProduct.stock_quantity));
       setCategory(existingProduct.category || "");
       setIsActive(existingProduct.is_active);
+      setIsBestSelling((existingProduct as any).is_best_selling ?? false);
       if (existingProduct.image_url) setImagePreview(existingProduct.image_url);
     }
   }, [existingProduct]);
