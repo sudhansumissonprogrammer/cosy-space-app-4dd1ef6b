@@ -35,6 +35,17 @@ export default function StorefrontHome() {
   const { slug } = useParams<{ slug: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersVisible, setFiltersVisible] = useState(false);
+
+  // Animate filter panel open/close
+  useEffect(() => {
+    if (filtersOpen) {
+      setFiltersVisible(true);
+    } else {
+      const timer = setTimeout(() => setFiltersVisible(false), 250);
+      return () => clearTimeout(timer);
+    }
+  }, [filtersOpen]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [availability, setAvailability] = useState<"all" | "in_stock">("all");
@@ -140,8 +151,14 @@ export default function StorefrontHome() {
           </div>
 
           {/* Filter Panel */}
-          {filtersOpen && (
-            <div className="mt-3 rounded-2xl bg-accent/40 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+          {filtersVisible && (
+            <div
+              className={`mt-3 rounded-2xl bg-accent/40 overflow-hidden transition-all duration-250 ease-out ${
+                filtersOpen
+                  ? "max-h-[500px] opacity-100 p-4 space-y-4"
+                  : "max-h-0 opacity-0 p-0"
+              }`}
+            >
               {/* Category Filter */}
               {storeCategories && storeCategories.length > 0 && (
                 <div>
