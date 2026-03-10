@@ -61,7 +61,7 @@ export default function WishlistPage() {
               <div key={item.productId} className="flex gap-3 rounded-2xl border border-border bg-card p-3">
                 {/* Image */}
                 <Link
-                  to={`/store/${slug}/product/${item.slug || item.productId}`}
+                  to={storefrontPath(slug!, `product/${item.slug || item.productId}`)}
                   className="h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-secondary/40"
                 >
                   {item.image ? (
