@@ -325,7 +325,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
               </Link>
               <div className="flex-1" />
               <WishlistBadge slug={store.slug} />
-              <CartBadge slug={store.slug} />
+              <CartBadge />
               <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
             </div>
           </nav>
