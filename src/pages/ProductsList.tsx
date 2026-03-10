@@ -127,6 +127,9 @@ export default function ProductsList() {
           <Button variant="outline" onClick={exportCSV} disabled={!products || products.length === 0}>
             <Download className="mr-2 h-4 w-4" />Export CSV
           </Button>
+          {products && products.length > 0 && (
+            <BulkEditDialog products={products} storeId={storeId!} />
+          )}
           <Button variant="outline" asChild>
             <Link to={`/dashboard/stores/${storeId}/products/bulk-upload`}><Upload className="mr-2 h-4 w-4" />Import CSV</Link>
           </Button>
