@@ -136,7 +136,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
                 {categories.map((cat) => (
                   <Link
                     key={cat.id}
-                    to={`/store/${store.slug}/category/${cat.slug}`}
+                    to={storefrontPath(store.slug, `category/${cat.slug}`)}
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                   >
