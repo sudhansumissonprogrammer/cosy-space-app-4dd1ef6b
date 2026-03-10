@@ -129,6 +129,22 @@ function HamburgerMenu({ store }: { store: StoreData }) {
               <Mail className="h-4 w-4" />
               Contact Us
             </Link>
+            <Link
+              to={storefrontPath(store.slug, "return-policy")}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Return Policy
+            </Link>
+            <Link
+              to={storefrontPath(store.slug, "shipping-policy")}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Truck className="h-4 w-4" />
+              Shipping Policy
+            </Link>
             {categories && categories.length > 0 && (
               <>
                 <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
