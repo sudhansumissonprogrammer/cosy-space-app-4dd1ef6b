@@ -573,9 +573,15 @@ export default function ProductForm({ productId }: ProductFormProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Switch id="is-active" checked={isActive} onCheckedChange={setIsActive} />
-              <Label htmlFor="is-active">Active (visible on storefront)</Label>
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-3">
+                <Switch id="is-active" checked={isActive} onCheckedChange={setIsActive} />
+                <Label htmlFor="is-active">Active (visible on storefront)</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch id="is-best-selling" checked={isBestSelling} onCheckedChange={setIsBestSelling} />
+                <Label htmlFor="is-best-selling">Best Selling</Label>
+              </div>
             </div>
 
             {/* Main Image */}

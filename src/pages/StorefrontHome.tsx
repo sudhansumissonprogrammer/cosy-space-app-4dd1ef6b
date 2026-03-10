@@ -227,7 +227,7 @@ export default function StorefrontHome() {
               {/* Clear Filters */}
               {activeFilterCount > 0 && (
                 <button
-                  onClick={() => { setSelectedCategory(null); setPriceRange(null); setAvailability("all"); }}
+                  onClick={() => { setPriceRange(null); setAvailability("all"); setBestSellingFilter("all"); }}
                   className="text-xs text-destructive hover:underline font-medium"
                 >
                   Clear all filters
