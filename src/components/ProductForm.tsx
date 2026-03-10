@@ -323,8 +323,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
         stock_quantity: parseInt(stockQuantity) || 0,
         category: category || null,
         is_active: isActive,
+        is_best_selling: isBestSelling,
         image_url: imageUrl,
-      };
+      } as any;
 
       let savedProductId = productId;
 
