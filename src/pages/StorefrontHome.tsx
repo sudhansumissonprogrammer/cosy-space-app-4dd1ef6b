@@ -233,7 +233,7 @@ export default function StorefrontHome() {
         {bestSellingProducts.length > 0 && (
           <section>
             <h2 className="mb-4 text-xl font-bold text-foreground">🔥 Best Selling</h2>
-            <div className="grid grid-cols-2 gap-5 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {bestSellingProducts.map((product) => (
                 <StorefrontProductCard
                   key={product.id}
@@ -257,13 +257,13 @@ export default function StorefrontHome() {
             )}
           </h2>
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-5 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 gap-5 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {filteredProducts.map((product) => (
                 <StorefrontProductCard
                   key={product.id}
