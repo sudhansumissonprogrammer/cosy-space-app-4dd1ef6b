@@ -12,6 +12,7 @@ import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
@@ -330,6 +331,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
 
           <Outlet context={store} />
           <StorefrontFooter store={store} />
+          <FloatingWhatsApp store={store} />
         </div>
       </WishlistProvider>
     </CartProvider>
