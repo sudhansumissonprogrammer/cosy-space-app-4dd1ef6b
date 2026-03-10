@@ -67,18 +67,17 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
     e.stopPropagation();
     if (isAdding) return;
     setIsAdding(true);
-    setTimeout(() => {
-      addToCart({
-        productId: product.id,
-        name: product.name,
-        price,
-        image: product.image_url || undefined,
-      });
-      setIsAdding(false);
-      setJustAdded(true);
-      toast.success(`${product.name} added to cart`);
-      setTimeout(() => setJustAdded(false), 1500);
-    }, 600);
+    // Instant add — no artificial delay
+    addToCart({
+      productId: product.id,
+      name: product.name,
+      price,
+      image: product.image_url || undefined,
+    });
+    setIsAdding(false);
+    setJustAdded(true);
+    toast.success(`${product.name} added to cart`);
+    setTimeout(() => setJustAdded(false), 1200);
   };
 
   const handleIncrement = (e: React.MouseEvent) => {
@@ -163,6 +162,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
               alt={product.name}
               className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-secondary/40">
