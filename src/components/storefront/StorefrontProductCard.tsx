@@ -21,8 +21,8 @@ interface StorefrontProductCardProps {
   store: Tables<"stores">;
 }
 
-const cardShadow = "0px 1px 1px rgba(0,0,0,0.05), 0px 2px 2px rgba(0,0,0,0.05), 0px 4px 4px rgba(0,0,0,0.05), 0px 8px 8px rgba(0,0,0,0.05), 0px 16px 16px rgba(0,0,0,0.05)";
-const cardHoverShadow = "0px 4px 6px rgba(0,0,0,0.08), 0px 10px 20px rgba(0,0,0,0.10), 0px 20px 40px rgba(0,0,0,0.12)";
+const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
+const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
 export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
   const { addToCart } = useCart();
@@ -69,11 +69,11 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
 
   return (
     <div
-      className="group rounded-2xl bg-card overflow-hidden transition-all duration-300 ease-out cursor-pointer"
+      className="group rounded-xl bg-card overflow-hidden border border-border/50 transition-all duration-300 ease-out cursor-pointer"
       style={{ boxShadow: cardShadow }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = cardHoverShadow;
-        e.currentTarget.style.transform = "translateY(-6px)";
+        e.currentTarget.style.transform = "translateY(-4px)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.boxShadow = cardShadow;
@@ -82,7 +82,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
     >
       {/* Image */}
       <Link to={`/store/${slug}/product/${product.slug || product.id}`} className="block">
-        <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/5" }}>
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/4" }}>
           {/* Trending Badge */}
           {product.sale_price && (
             <div className="absolute left-2 top-2 z-10">
@@ -121,7 +121,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       </Link>
 
       {/* Info */}
-      <div className="px-3 pt-3 pb-3 sm:px-4 sm:pb-4 space-y-1.5">
+      <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
         {/* Category & Rating */}
         <div className="flex items-center justify-between">
           <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
