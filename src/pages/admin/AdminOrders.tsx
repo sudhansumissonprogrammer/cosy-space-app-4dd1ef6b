@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingBag } from "lucide-react";
+import { TableSkeleton } from "@/components/admin/AdminSkeletons";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
@@ -74,9 +75,7 @@ export default function AdminOrders() {
 
         <TabsContent value="whatsapp" className="space-y-4">
           {waLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
+            <TableSkeleton columns={7} rows={5} />
           ) : waOrders && waOrders.length > 0 ? (
             <>
               <Card>
@@ -127,9 +126,7 @@ export default function AdminOrders() {
 
         <TabsContent value="website" className="space-y-4">
           {webLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
+            <TableSkeleton columns={9} rows={5} />
           ) : webOrders && webOrders.length > 0 ? (
             <>
               <Card>

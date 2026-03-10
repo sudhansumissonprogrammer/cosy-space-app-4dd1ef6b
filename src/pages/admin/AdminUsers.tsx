@@ -15,6 +15,7 @@ import { Users, Ban, CheckCircle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { TableSkeleton } from "@/components/admin/AdminSkeletons";
 
 export default function AdminUsers() {
   const queryClient = useQueryClient();
@@ -75,9 +76,7 @@ export default function AdminUsers() {
       <h1 className="text-2xl font-semibold text-foreground">All Users</h1>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+        <TableSkeleton columns={5} rows={6} />
       ) : profiles && profiles.length > 0 ? (
         <>
           <Card>

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { ChartSkeleton } from "@/components/admin/AdminSkeletons";
 
 export default function AdminAnalytics() {
   const { data: analytics, isLoading } = useQuery({
@@ -20,8 +21,13 @@ export default function AdminAnalytics() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold text-foreground">Analytics</h1>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ChartSkeleton />
+          <ChartSkeleton />
+          <div className="lg:col-span-2"><ChartSkeleton /></div>
+        </div>
       </div>
     );
   }
