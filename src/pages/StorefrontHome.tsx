@@ -50,6 +50,11 @@ export default function StorefrontHome() {
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [availability, setAvailability] = useState<"all" | "in_stock">("all");
   const [bestSellingFilter, setBestSellingFilter] = useState<"all" | "best_selling">("all");
+
+  const applyAndClose = (fn: () => void) => {
+    fn();
+    setFiltersOpen(false);
+  };
   const filterRef = useRef<HTMLDivElement>(null);
 
   // Close filter panel on outside click
