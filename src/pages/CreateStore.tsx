@@ -85,8 +85,10 @@ export default function CreateStore() {
   const [orderMode, setOrderMode] = useState<"whatsapp" | "website">("whatsapp");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [heroFile, setHeroFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string | null>(null);
 
   // Step 2 - Location
   const [city, setCity] = useState("");
