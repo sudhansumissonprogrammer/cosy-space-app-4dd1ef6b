@@ -500,89 +500,92 @@ export default function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Saved address picker */}
-              {savedAddresses && savedAddresses.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <BookMarked className="h-3.5 w-3.5" /> Saved Addresses
-                  </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {savedAddresses.map((addr: any) => (
-                      <button
-                        key={addr.id}
-                        type="button"
-                        onClick={() => selectAddress(addr)}
-                        className={`rounded-lg border-2 px-3 py-2 text-left text-xs transition-all ${
-                          selectedAddressId === addr.id
-                            ? "border-primary bg-primary/5"
-                            : "border-input hover:border-primary/30"
-                        }`}
-                      >
-                        <span className="font-medium text-foreground">{addr.label}</span>
-                        {addr.is_default && (
-                          <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0">Default</Badge>
-                        )}
-                        <p className="mt-0.5 text-muted-foreground line-clamp-1">
-                          {[addr.street_address, addr.city].filter(Boolean).join(", ")}
-                        </p>
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedAddressId(null);
-                        setFullName("");
-                        setPhone("");
-                        setStreetAddress("");
-                        setCity("");
-                        setState("");
-                        setPincode("");
-                      }}
-                      className={`rounded-lg border-2 border-dashed px-3 py-2 text-xs transition-all ${
-                        selectedAddressId === null
-                          ? "border-primary bg-primary/5"
-                          : "border-input hover:border-primary/30"
-                      }`}
-                    >
-                      <span className="font-medium text-foreground">+ New Address</span>
-                    </button>
-                  </div>
-                  <Separator />
-                </div>
-              )}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone">Phone *</Label>
-                  <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
-                </div>
-              </div>
+              {/* Email field always visible */}
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email *</Label>
                 <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
                 {!customer && <p className="text-xs text-muted-foreground">An account will be created so you can track your orders</p>}
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="street">Street Address *</Label>
-                <Input id="street" placeholder="123 Main Street, Apt 4B" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="city">City / Town *</Label>
-                  <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+
+              {/* If customer has saved addresses, show address cards */}
+              {savedAddresses && savedAddresses.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="grid gap-2">
+                    {savedAddresses.map((addr: any) => (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => selectAddress(addr)}
+                        className={`relative w-full rounded-xl border-2 p-3 text-left transition-all ${
+                          selectedAddressId === addr.id
+                            ? "border-primary bg-primary/5"
+                            : "border-input hover:border-primary/30"
+                        }`}
+                      >
+                        {selectedAddressId === addr.id && (
+                          <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-semibold text-foreground">{addr.label}</span>
+                          {addr.is_default && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Default</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-foreground">{addr.full_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {[addr.street_address, addr.city, addr.state, addr.pincode].filter(Boolean).join(", ")}
+                        </p>
+                        {addr.phone && <p className="text-xs text-muted-foreground mt-0.5">{addr.phone}</p>}
+                      </button>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setNewAddr({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
+                      setShowNewAddressDialog(true);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Add New Address
+                  </Button>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="state">State *</Label>
-                  <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="pincode">Pincode *</Label>
-                  <Input id="pincode" placeholder="400001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} />
-                </div>
-              </div>
+              ) : (
+                /* No saved addresses — show inline form */
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="fullName">Full Name *</Label>
+                      <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="phone">Phone *</Label>
+                      <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="street">Street Address *</Label>
+                    <Input id="street" placeholder="123 Main Street, Apt 4B" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="city">City / Town *</Label>
+                      <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="state">State *</Label>
+                      <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pincode">Pincode *</Label>
+                      <Input id="pincode" placeholder="400001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} />
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
