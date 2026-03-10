@@ -329,7 +329,7 @@ export default function StorefrontHome() {
           )}
         </section>
 
-        <StorefrontAbout store={store} productCount={products?.length || 0} />
+        
       </div>
     </>
   );
