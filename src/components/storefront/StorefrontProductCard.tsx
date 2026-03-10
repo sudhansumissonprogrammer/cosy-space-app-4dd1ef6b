@@ -25,13 +25,15 @@ const badges: { type: BadgeType; label: string; Icon: typeof Zap; bg: string }[]
   { type: "bestseller", label: "Best Seller", Icon: Flame, bg: "bg-white/30 backdrop-blur-md border border-white/40 text-foreground shadow-sm" },
 ];
 
-function getProductBadge(productId: string, isBestSelling: boolean): typeof badges[number] {
+function getProductBadge(productId: string, isBestSelling: boolean): typeof badges[number] | null {
   if (isBestSelling) return badges[2]; // Best Seller
   let hash = 0;
   for (let i = 0; i < productId.length; i++) {
     hash = ((hash << 5) - hash) + productId.charCodeAt(i);
     hash |= 0;
   }
+  // ~30% of products get no badge
+  if (Math.abs(hash) % 10 < 3) return null;
   const idx = Math.abs(hash) % 3;
   return badges[idx];
 }
@@ -131,6 +133,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
           {/* Badge */}
           {(() => {
             const badge = getProductBadge(product.id, product.is_best_selling);
+            if (!badge) return null;
             const BadgeIcon = badge.Icon;
             return (
               <div className="absolute left-2 top-2 z-10">
