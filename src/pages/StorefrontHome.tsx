@@ -191,7 +191,7 @@ export default function StorefrontHome() {
                   <button
                     key={pr.label}
                     onClick={() => applyAndClose(() => setPriceRange(pr.range))}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${priceRange?.[0] === pr.range[0] ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${priceRange?.[0] === pr.range[0] ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
                   >
                     {pr.label}
                   </button>
