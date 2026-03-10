@@ -100,9 +100,7 @@ export default function AdminStores() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+        <TableSkeleton columns={7} rows={6} />
       ) : filtered && filtered.length > 0 ? (
         <>
           <Card>

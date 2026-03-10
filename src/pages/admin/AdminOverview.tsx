@@ -38,9 +38,7 @@ export default function AdminOverview() {
       <h1 className="text-2xl font-semibold text-foreground">Overview</h1>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+        <StatCardsSkeleton />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map((card) => (
