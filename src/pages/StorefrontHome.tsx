@@ -297,7 +297,7 @@ export default function StorefrontHome() {
                       onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
                       className={`block w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
                         sortBy === opt.value
-                          ? "bg-primary/10 text-primary"
+                          ? "bg-foreground/10 text-foreground font-bold"
                           : "text-foreground hover:bg-accent/60"
                       }`}
                     >
