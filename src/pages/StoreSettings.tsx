@@ -60,6 +60,8 @@ export default function StoreSettings() {
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [theme, setTheme] = useState("theme-1");
   const [features, setFeatures] = useState<Feature[]>([]);
+  const [returnPolicy, setReturnPolicy] = useState("");
+  const [shippingPolicy, setShippingPolicy] = useState("");
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
