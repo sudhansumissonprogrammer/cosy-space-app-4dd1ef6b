@@ -102,6 +102,56 @@ export type Database = {
           },
         ]
       }
+      customer_addresses: {
+        Row: {
+          city: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          is_default: boolean
+          label: string
+          phone: string | null
+          pincode: string | null
+          state: string | null
+          storefront_customer_id: string
+          street_address: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          is_default?: boolean
+          label?: string
+          phone?: string | null
+          pincode?: string | null
+          state?: string | null
+          storefront_customer_id: string
+          street_address?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          is_default?: boolean
+          label?: string
+          phone?: string | null
+          pincode?: string | null
+          state?: string | null
+          storefront_customer_id?: string
+          street_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_addresses_storefront_customer_id_fkey"
+            columns: ["storefront_customer_id"]
+            isOneToOne: false
+            referencedRelation: "storefront_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_leads: {
         Row: {
           created_at: string
@@ -146,6 +196,42 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_wishlists: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          storefront_customer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          storefront_customer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          storefront_customer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_wishlists_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_wishlists_storefront_customer_id_fkey"
+            columns: ["storefront_customer_id"]
+            isOneToOne: false
+            referencedRelation: "storefront_customers"
             referencedColumns: ["id"]
           },
         ]
@@ -254,6 +340,7 @@ export type Database = {
           state: string | null
           status: string
           store_id: string
+          storefront_customer_id: string | null
           street_address: string | null
           total: number
           updated_at: string
@@ -272,6 +359,7 @@ export type Database = {
           state?: string | null
           status?: string
           store_id: string
+          storefront_customer_id?: string | null
           street_address?: string | null
           total?: number
           updated_at?: string
@@ -290,6 +378,7 @@ export type Database = {
           state?: string | null
           status?: string
           store_id?: string
+          storefront_customer_id?: string | null
           street_address?: string | null
           total?: number
           updated_at?: string
@@ -307,6 +396,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_storefront_customer_id_fkey"
+            columns: ["storefront_customer_id"]
+            isOneToOne: false
+            referencedRelation: "storefront_customers"
             referencedColumns: ["id"]
           },
         ]
@@ -577,6 +673,44 @@ export type Database = {
         }
         Relationships: []
       }
+      storefront_customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          phone: string | null
+          store_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          store_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          store_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storefront_customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           banner_url: string | null
@@ -808,6 +942,10 @@ export type Database = {
       }
       is_order_owner: { Args: { _order_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      is_storefront_customer: {
+        Args: { _customer_id: string }
+        Returns: boolean
+      }
       is_user_blocked: { Args: never; Returns: boolean }
     }
     Enums: {

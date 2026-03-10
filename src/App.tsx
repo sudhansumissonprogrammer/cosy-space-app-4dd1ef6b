@@ -43,6 +43,9 @@ const StorefrontPrivacyPolicy = lazy(() => import("./pages/StorefrontPrivacyPoli
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
+const StorefrontLogin = lazy(() => import("./pages/StorefrontLogin"));
+const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
+const StorefrontAccount = lazy(() => import("./pages/StorefrontAccount"));
 import StoreOrders from "./pages/StoreOrders";
 import StoreCustomers from "./pages/StoreCustomers";
 import StoreSettings from "./pages/StoreSettings";
@@ -153,6 +156,9 @@ function AppRouter() {
           <Route path="cart" element={<CartPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="login" element={<StorefrontLogin />} />
+          <Route path="signup" element={<StorefrontSignup />} />
+          <Route path="account" element={<StorefrontAccount />} />
         </Route>
       </Routes>
     );
@@ -176,6 +182,9 @@ function AppRouter() {
           <Route path="cart" element={<CartPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="login" element={<StorefrontLogin />} />
+          <Route path="signup" element={<StorefrontSignup />} />
+          <Route path="account" element={<StorefrontAccount />} />
         </Route>
       </Routes>
     );

@@ -4,12 +4,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Store, ShoppingCart, Home, Tag, Mail, Heart, RotateCcw, Truck, FileText, Shield } from "lucide-react";
+import { Store, ShoppingCart, Home, Tag, Mail, Heart, RotateCcw, Truck, FileText, Shield, User } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
+import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
@@ -74,6 +75,18 @@ function WishlistBadge({ slug }: { slug: string }) {
   );
 }
 
+function AccountBadge({ slug }: { slug: string }) {
+  const { user, loading } = useStorefrontAuth();
+  if (loading) return null;
+  return (
+    <Link to={storefrontPath(slug, user ? "account" : "login")}>
+      <Button variant="ghost" size="icon" className="h-9 w-9">
+        <User className="h-5 w-5" />
+      </Button>
+    </Link>
+  );
+}
+
 function HamburgerMenu({ store }: { store: StoreData }) {
   const [open, setOpen] = useState(false);
 
@@ -124,6 +137,14 @@ function HamburgerMenu({ store }: { store: StoreData }) {
             >
               <Home className="h-4 w-4" />
               Home
+            </Link>
+            <Link
+              to={storefrontPath(store.slug, "account")}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <User className="h-4 w-4" />
+              My Account
             </Link>
             <Link
               to={storefrontPath(store.slug, "wishlist")}
@@ -300,35 +321,38 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   return (
     <CartProvider slug={store.slug}>
       <WishlistProvider slug={store.slug}>
-        <div className="min-h-screen bg-background font-sans" style={{ fontVariant: "small-caps" }}>
-          {/* Marquee Banner */}
-          <StorefrontMarquee />
-          
-          {/* Sticky Nav */}
-          <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
-            <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-              <HamburgerMenu store={store} />
-              <Link to={storefrontPath(store.slug)} className="flex-shrink-0">
-                {store.logo_url ? (
-                  <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" />
-                ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                    <Store className="h-5 w-5 text-primary-foreground" />
-                  </div>
-                )}
-              </Link>
-              <div className="flex-1" />
-              <WishlistBadge slug={store.slug} />
-              <CartBadge />
-              <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
-            </div>
-          </nav>
+        <StorefrontAuthProvider storeId={store.id}>
+          <div className="min-h-screen bg-background font-sans" style={{ fontVariant: "small-caps" }}>
+            {/* Marquee Banner */}
+            <StorefrontMarquee />
+            
+            {/* Sticky Nav */}
+            <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
+              <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+                <HamburgerMenu store={store} />
+                <Link to={storefrontPath(store.slug)} className="flex-shrink-0">
+                  {store.logo_url ? (
+                    <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                      <Store className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                  )}
+                </Link>
+                <div className="flex-1" />
+                <AccountBadge slug={store.slug} />
+                <WishlistBadge slug={store.slug} />
+                <CartBadge />
+                <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
+              </div>
+            </nav>
 
-          <Outlet context={store} />
-          <StorefrontFooter store={store} />
-          <SideCart store={store} />
-          <FloatingWhatsApp store={store} />
-        </div>
+            <Outlet context={store} />
+            <StorefrontFooter store={store} />
+            <SideCart store={store} />
+            <FloatingWhatsApp store={store} />
+          </div>
+        </StorefrontAuthProvider>
       </WishlistProvider>
     </CartProvider>
   );
