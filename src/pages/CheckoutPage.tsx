@@ -43,6 +43,7 @@ export default function CheckoutPage() {
   const variantId = searchParams.get("variant");
   const { items: cartItems, clearCart } = useCart();
   const { customer } = useStorefrontAuth();
+  const qc = useQueryClient();
 
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -58,6 +59,8 @@ export default function CheckoutPage() {
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showNewAddressDialog, setShowNewAddressDialog] = useState(false);
+  const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
 
   // Fetch ALL saved addresses for logged-in customer
   const { data: savedAddresses } = useQuery({
