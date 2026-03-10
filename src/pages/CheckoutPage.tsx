@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote, BookMarked } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -56,32 +56,41 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
-  // Auto-fill from customer's default address
-  const { data: defaultAddress } = useQuery({
-    queryKey: ["checkout-default-address", customer?.id],
+  // Fetch ALL saved addresses for logged-in customer
+  const { data: savedAddresses } = useQuery({
+    queryKey: ["checkout-saved-addresses", customer?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("customer_addresses")
         .select("*")
         .eq("storefront_customer_id", customer!.id)
-        .eq("is_default", true)
-        .maybeSingle();
-      return data;
+        .order("is_default", { ascending: false });
+      return data || [];
     },
     enabled: !!customer?.id,
   });
 
+  // Auto-select default address on load
   useEffect(() => {
-    if (defaultAddress) {
-      if (!fullName) setFullName(defaultAddress.full_name || "");
-      if (!phone) setPhone(defaultAddress.phone || "");
-      if (!streetAddress) setStreetAddress(defaultAddress.street_address || "");
-      if (!city) setCity(defaultAddress.city || "");
-      if (!state) setState(defaultAddress.state || "");
-      if (!pincode) setPincode(defaultAddress.pincode || "");
+    if (savedAddresses?.length && !selectedAddressId) {
+      const defaultAddr = savedAddresses.find((a: any) => a.is_default) || savedAddresses[0];
+      if (defaultAddr) {
+        selectAddress(defaultAddr);
+      }
     }
-  }, [defaultAddress]);
+  }, [savedAddresses]);
+
+  const selectAddress = (addr: any) => {
+    setSelectedAddressId(addr.id);
+    setFullName(addr.full_name || "");
+    setPhone(addr.phone || "");
+    setStreetAddress(addr.street_address || "");
+    setCity(addr.city || "");
+    setState(addr.state || "");
+    setPincode(addr.pincode || "");
+  };
 
   // Auto-fill email from logged-in customer
   useEffect(() => {
@@ -487,6 +496,56 @@ export default function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Saved address picker */}
+              {savedAddresses && savedAddresses.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <BookMarked className="h-3.5 w-3.5" /> Saved Addresses
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {savedAddresses.map((addr: any) => (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => selectAddress(addr)}
+                        className={`rounded-lg border-2 px-3 py-2 text-left text-xs transition-all ${
+                          selectedAddressId === addr.id
+                            ? "border-primary bg-primary/5"
+                            : "border-input hover:border-primary/30"
+                        }`}
+                      >
+                        <span className="font-medium text-foreground">{addr.label}</span>
+                        {addr.is_default && (
+                          <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0">Default</Badge>
+                        )}
+                        <p className="mt-0.5 text-muted-foreground line-clamp-1">
+                          {[addr.street_address, addr.city].filter(Boolean).join(", ")}
+                        </p>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAddressId(null);
+                        setFullName("");
+                        setPhone("");
+                        setStreetAddress("");
+                        setCity("");
+                        setState("");
+                        setPincode("");
+                      }}
+                      className={`rounded-lg border-2 border-dashed px-3 py-2 text-xs transition-all ${
+                        selectedAddressId === null
+                          ? "border-primary bg-primary/5"
+                          : "border-input hover:border-primary/30"
+                      }`}
+                    >
+                      <span className="font-medium text-foreground">+ New Address</span>
+                    </button>
+                  </div>
+                  <Separator />
+                </div>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="fullName">Full Name *</Label>
