@@ -130,6 +130,18 @@ export default function CheckoutPage() {
 
   const total = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
+  // Facebook Pixel: InitiateCheckout
+  useEffect(() => {
+    if (checkoutItems.length === 0) return;
+    fbPixelTrack("InitiateCheckout", {
+      content_ids: checkoutItems.map((i) => i.productId),
+      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
+      num_items: checkoutItems.length,
+      value: total,
+      currency,
+    });
+  }, []);
+
   if (isLoading && isSingleMode) {
     return <CheckoutSkeleton />;
   }
