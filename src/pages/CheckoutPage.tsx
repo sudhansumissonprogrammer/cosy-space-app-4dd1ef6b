@@ -401,9 +401,24 @@ export default function CheckoutPage() {
             Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span>
           </p>
         )}
-        <Button asChild className="mt-6">
-          <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
-        </Button>
+        {!customer && (
+          <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <p className="text-sm text-foreground font-medium">Account created!</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              An account has been created with <strong>{email}</strong>. Use "Forgot Password" on the login page to set your password and track your orders.
+            </p>
+          </div>
+        )}
+        <div className="mt-6 flex flex-col gap-2 items-center">
+          {!customer && (
+            <Button asChild variant="outline">
+              <Link to={storefrontPath(store.slug, "login")}>Sign In to Track Orders</Link>
+            </Button>
+          )}
+          <Button asChild>
+            <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
+          </Button>
+        </div>
       </div>
     );
   }
