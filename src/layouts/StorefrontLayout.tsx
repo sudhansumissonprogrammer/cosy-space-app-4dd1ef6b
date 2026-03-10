@@ -235,35 +235,25 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     if (!store?.id) return;
     const storeId = store.id;
 
+    // Use RPC to fetch everything in one call, then seed individual caches
     queryClient.prefetchQuery({
-      queryKey: ["storefront-products", storeId],
+      queryKey: ["storefront-bulk", storeId],
       queryFn: async () => {
-        const { data, error } = await supabase
-          .from("products")
-          .select("*")
-          .eq("store_id", storeId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false });
+        const { data, error } = await supabase.rpc("get_storefront_data", { _slug: store.slug });
         if (error) throw error;
-        return data;
+        const result = data as any;
+        // Seed individual caches so StorefrontHome reads them instantly
+        if (result.products) {
+          queryClient.setQueryData(["storefront-products", storeId], result.products);
+        }
+        if (result.categories) {
+          queryClient.setQueryData(["storefront-categories", storeId], result.categories);
+        }
+        return result;
       },
       staleTime: 5 * 60 * 1000,
     });
-
-    queryClient.prefetchQuery({
-      queryKey: ["storefront-categories", storeId],
-      queryFn: async () => {
-        const { data, error } = await (supabase as any)
-          .from("categories")
-          .select("*")
-          .eq("store_id", storeId)
-          .order("name");
-        if (error) throw error;
-        return data;
-      },
-      staleTime: 5 * 60 * 1000,
-    });
-  }, [store?.id, queryClient]);
+  }, [store?.id, queryClient, store?.slug]);
 
   useMetaTags({
     title: store ? `${store.name} — Store` : undefined,
