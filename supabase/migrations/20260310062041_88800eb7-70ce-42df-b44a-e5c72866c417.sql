@@ -1,0 +1,1 @@
+ALTER TABLE public.products ADD COLUMN is_best_selling boolean NOT NULL DEFAULT false;
