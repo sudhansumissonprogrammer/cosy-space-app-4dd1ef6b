@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Package, ChevronLeft, ChevronRight, Tag, ShoppingBag, ShoppingCart, Share2, Copy, Facebook, Twitter, X } from "lucide-react";
+import { ArrowLeft, Package, ChevronLeft, ChevronRight, Tag, ShoppingBag, ShoppingCart, Share2, Copy, Facebook, Twitter, X, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
@@ -382,25 +382,119 @@ function ShareButtons({ productName }: { productName: string }) {
   );
 }
 
-/* ── Image Gallery with Pinch-to-Zoom ── */
+/* ── Image Gallery with Fullscreen Lightbox (Shopify-style) ── */
 function ImageGallery({ images, productName }: { images: string[]; productName: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [zoomed, setZoomed] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  if (images.length === 0) {
+    return (
+      <div className="overflow-hidden rounded-2xl bg-accent">
+        <div className="flex aspect-square w-full items-center justify-center">
+          <Package className="h-16 w-16 text-muted-foreground/30" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-3">
+        {/* Main image — tap to open lightbox */}
+        <div
+          className="relative overflow-hidden rounded-2xl bg-accent cursor-zoom-in select-none"
+          onClick={() => setLightboxOpen(true)}
+        >
+          <img
+            src={images[activeIndex]}
+            alt={productName}
+            className="aspect-square w-full object-cover"
+            decoding="async"
+            fetchPriority="high"
+            draggable={false}
+          />
+          {/* Zoom hint */}
+          <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow backdrop-blur-sm">
+            <ZoomIn className="h-3.5 w-3.5" /> Tap to zoom
+          </div>
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setActiveIndex((i) => (i - 1 + images.length) % images.length); }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 shadow backdrop-blur-sm hover:bg-background"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setActiveIndex((i) => (i + 1) % images.length); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 shadow backdrop-blur-sm hover:bg-background"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
+        {images.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto">
+            {images.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
+                  i === activeIndex ? "border-primary" : "border-transparent"
+                }`}
+              >
+                <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Fullscreen Lightbox */}
+      {lightboxOpen && (
+        <FullscreenLightbox
+          images={images}
+          productName={productName}
+          initialIndex={activeIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+/* ── Fullscreen Lightbox with Pinch-to-Zoom ── */
+function FullscreenLightbox({
+  images,
+  productName,
+  initialIndex,
+  onClose,
+}: {
+  images: string[];
+  productName: string;
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
   const lastDistance = useRef<number | null>(null);
-  const lastCenter = useRef<{ x: number; y: number } | null>(null);
   const isDragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
 
   const resetZoom = useCallback(() => {
     setScale(1);
     setTranslate({ x: 0, y: 0 });
-    setZoomed(false);
   }, []);
 
   useEffect(() => { resetZoom(); }, [activeIndex, resetZoom]);
+
+  // Lock body scroll
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
 
   const getDistance = (t1: React.Touch, t2: React.Touch) =>
     Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
@@ -409,10 +503,6 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
     if (e.touches.length === 2) {
       e.preventDefault();
       lastDistance.current = getDistance(e.touches[0], e.touches[1]);
-      lastCenter.current = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-      };
     } else if (e.touches.length === 1 && scale > 1) {
       isDragging.current = true;
       lastPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -423,9 +513,8 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
     if (e.touches.length === 2 && lastDistance.current !== null) {
       e.preventDefault();
       const dist = getDistance(e.touches[0], e.touches[1]);
-      const newScale = Math.min(4, Math.max(1, scale * (dist / lastDistance.current)));
+      const newScale = Math.min(5, Math.max(1, scale * (dist / lastDistance.current)));
       setScale(newScale);
-      setZoomed(newScale > 1);
       lastDistance.current = dist;
       if (newScale <= 1) setTranslate({ x: 0, y: 0 });
     } else if (e.touches.length === 1 && isDragging.current && scale > 1) {
@@ -439,7 +528,6 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
 
   const handleTouchEnd = () => {
     lastDistance.current = null;
-    lastCenter.current = null;
     isDragging.current = false;
     if (scale <= 1) resetZoom();
   };
@@ -449,83 +537,92 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
     if (scale > 1) {
       resetZoom();
     } else {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (rect) {
-        const x = e.clientX - rect.left - rect.width / 2;
-        const y = e.clientY - rect.top - rect.height / 2;
-        setScale(2.5);
-        setTranslate({ x: -x, y: -y });
-        setZoomed(true);
-      }
+      setScale(2.5);
+      setTranslate({ x: 0, y: 0 });
     }
   };
 
-  if (images.length === 0) {
-    return (
-      <div className="overflow-hidden rounded-2xl bg-accent">
-        <div className="flex aspect-square w-full items-center justify-center">
-          <Package className="h-16 w-16 text-muted-foreground/30" />
-        </div>
-      </div>
-    );
-  }
+  // Swipe to change image (when not zoomed)
+  const swipeStart = useRef<number | null>(null);
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && scale <= 1) {
+      swipeStart.current = e.touches[0].clientX;
+    }
+  };
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    if (swipeStart.current !== null && scale <= 1 && e.changedTouches.length === 1) {
+      const diff = e.changedTouches[0].clientX - swipeStart.current;
+      if (Math.abs(diff) > 60) {
+        if (diff < 0 && activeIndex < images.length - 1) setActiveIndex(i => i + 1);
+        if (diff > 0 && activeIndex > 0) setActiveIndex(i => i - 1);
+      }
+      swipeStart.current = null;
+    }
+  };
 
   return (
-    <div className="space-y-3">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black/95 animate-in fade-in duration-200">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 py-3 text-white">
+        <span className="text-sm font-medium opacity-80">
+          {images.length > 1 ? `${activeIndex + 1} / ${images.length}` : productName}
+        </span>
+        <button
+          onClick={onClose}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm shadow transition-all hover:scale-110 active:scale-95"
+        >
+          <X className="h-5 w-5 text-white" strokeWidth={2.5} />
+        </button>
+      </div>
+
+      {/* Image area */}
       <div
-        ref={containerRef}
-        className="relative overflow-hidden rounded-2xl bg-accent touch-none cursor-zoom-in select-none"
-        onTouchStart={handleTouchStart}
+        className="flex flex-1 items-center justify-center overflow-hidden touch-none select-none"
+        onTouchStart={(e) => { handleTouchStart(e); handleSwipeStart(e); }}
         onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        onTouchEnd={(e) => { handleTouchEnd(); handleSwipeEnd(e); }}
         onDoubleClick={handleDoubleClick}
-        style={{ cursor: zoomed ? "grab" : "zoom-in" }}
+        style={{ cursor: scale > 1 ? "grab" : "default" }}
       >
         <img
           src={images[activeIndex]}
           alt={productName}
-          className="aspect-square w-full object-cover transition-transform duration-100"
+          className="max-h-full max-w-full object-contain transition-transform duration-100"
           style={{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})` }}
-          decoding="async"
-          fetchPriority="high"
           draggable={false}
         />
-        {zoomed && (
-          <button
-            onClick={resetZoom}
-            className="absolute top-2 right-2 z-10 rounded-full bg-background/80 p-1.5 shadow backdrop-blur-sm hover:bg-background"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-        {images.length > 1 && !zoomed && (
-          <>
-            <button
-              onClick={() => setActiveIndex((i) => (i - 1 + images.length) % images.length)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 shadow backdrop-blur-sm hover:bg-background"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setActiveIndex((i) => (i + 1) % images.length)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 shadow backdrop-blur-sm hover:bg-background"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </>
-        )}
       </div>
+
+      {/* Desktop arrows */}
+      {images.length > 1 && scale <= 1 && (
+        <>
+          <button
+            onClick={() => setActiveIndex((i) => (i - 1 + images.length) % images.length)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm text-white hover:bg-white/25 transition-all"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => setActiveIndex((i) => (i + 1) % images.length)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm text-white hover:bg-white/25 transition-all"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </>
+      )}
+
+      {/* Thumbnail strip */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex justify-center gap-2 px-4 py-3 overflow-x-auto">
           {images.map((img, i) => (
             <button
               key={i}
-              onClick={() => setActiveIndex(i)}
-              className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
-                i === activeIndex ? "border-primary" : "border-transparent"
+              onClick={() => { setActiveIndex(i); resetZoom(); }}
+              className={`h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                i === activeIndex ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-80"
               }`}
             >
-              <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+              <img src={img} alt="" className="h-full w-full object-cover" />
             </button>
           ))}
         </div>
