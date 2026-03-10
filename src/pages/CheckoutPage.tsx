@@ -41,6 +41,7 @@ export default function CheckoutPage() {
   const productId = searchParams.get("product");
   const variantId = searchParams.get("variant");
   const { items: cartItems, clearCart } = useCart();
+  const { customer } = useStorefrontAuth();
 
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -54,6 +55,32 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
+
+  // Auto-fill from customer's default address
+  const { data: defaultAddress } = useQuery({
+    queryKey: ["checkout-default-address", customer?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("customer_addresses")
+        .select("*")
+        .eq("storefront_customer_id", customer!.id)
+        .eq("is_default", true)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!customer?.id,
+  });
+
+  useEffect(() => {
+    if (defaultAddress) {
+      if (!fullName) setFullName(defaultAddress.full_name || "");
+      if (!phone) setPhone(defaultAddress.phone || "");
+      if (!streetAddress) setStreetAddress(defaultAddress.street_address || "");
+      if (!city) setCity(defaultAddress.city || "");
+      if (!state) setState(defaultAddress.state || "");
+      if (!pincode) setPincode(defaultAddress.pincode || "");
+    }
+  }, [defaultAddress]);
 
   const isSingleMode = !!productId;
 
