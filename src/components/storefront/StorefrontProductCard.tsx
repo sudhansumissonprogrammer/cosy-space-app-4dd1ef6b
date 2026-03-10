@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Package, ShoppingCart, Star, Zap, Heart } from "lucide-react";
+import { Package, ShoppingCart, Star, Zap, Heart, Check, Plus, Minus, Loader2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
@@ -26,10 +27,15 @@ const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
 export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
-  const { addToCart } = useCart();
+  const { addToCart, items, updateQuantity } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const [isAdding, setIsAdding] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
 
   const wishlisted = isWishlisted(product.id);
+
+  const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
+  const cartQty = cartItem?.quantity || 0;
 
   const price = product.sale_price && product.sale_price < product.price
     ? Number(product.sale_price)
@@ -38,13 +44,32 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      price,
-      image: product.image_url || undefined,
-    });
-    toast.success(`${product.name} added to cart`);
+    if (isAdding) return;
+    setIsAdding(true);
+    setTimeout(() => {
+      addToCart({
+        productId: product.id,
+        name: product.name,
+        price,
+        image: product.image_url || undefined,
+      });
+      setIsAdding(false);
+      setJustAdded(true);
+      toast.success(`${product.name} added to cart`);
+      setTimeout(() => setJustAdded(false), 1500);
+    }, 600);
+  };
+
+  const handleIncrement = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    updateQuantity(product.id, undefined, cartQty + 1);
+  };
+
+  const handleDecrement = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    updateQuantity(product.id, undefined, cartQty - 1);
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -165,13 +190,53 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
         </div>
 
         {/* Add to Cart */}
-        <button
-          className="btn-gold flex h-9 w-full items-center justify-center gap-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-widest sm:h-10 sm:text-[11px] transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-          onClick={handleAddToCart}
-        >
-          <ShoppingCart className="h-3.5 w-3.5" />
-          <span className="whitespace-nowrap">ADD TO CART</span>
-        </button>
+        {cartQty > 0 && !isAdding && !justAdded ? (
+          /* Quantity controls */
+          <div className="flex h-9 sm:h-10 w-full items-center rounded-xl border-2 border-primary overflow-hidden">
+            <button
+              onClick={handleDecrement}
+              className="flex h-full w-10 items-center justify-center bg-primary/10 text-primary transition-colors hover:bg-primary/20 active:scale-95"
+            >
+              <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </button>
+            <span className="flex-1 text-center text-xs font-extrabold text-foreground">{cartQty} in cart</span>
+            <button
+              onClick={handleIncrement}
+              className="flex h-full w-10 items-center justify-center bg-primary/10 text-primary transition-colors hover:bg-primary/20 active:scale-95"
+            >
+              <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </button>
+          </div>
+        ) : (
+          <button
+            className={`flex h-9 w-full items-center justify-center gap-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-widest sm:h-10 sm:text-[11px] transition-all duration-300 active:scale-[0.98] ${
+              justAdded
+                ? "bg-success text-success-foreground"
+                : isAdding
+                ? "btn-gold opacity-80 cursor-wait"
+                : "btn-gold hover:brightness-110"
+            }`}
+            onClick={handleAddToCart}
+            disabled={isAdding}
+          >
+            {isAdding ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span className="whitespace-nowrap">Adding...</span>
+              </>
+            ) : justAdded ? (
+              <>
+                <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                <span className="whitespace-nowrap">Added to Cart</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="h-3.5 w-3.5" />
+                <span className="whitespace-nowrap">ADD TO CART</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
