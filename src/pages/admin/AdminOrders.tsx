@@ -40,6 +40,7 @@ export default function AdminOrders() {
   // Website orders
   const { data: webCount } = useQuery({
     queryKey: ["admin-web-orders-count"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { count, error } = await supabase.from("orders").select("*", { count: "exact", head: true });
       if (error) throw error;
