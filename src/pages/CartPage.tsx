@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2, MessageCircle, Package, ShoppingBag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { storefrontPath } from "@/lib/subdomain";
 
 export default function CartPage() {
   const store = useOutletContext<StoreData>();
