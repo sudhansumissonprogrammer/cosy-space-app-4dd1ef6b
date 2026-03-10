@@ -170,6 +170,7 @@ export default function CreateStore() {
     try {
       let logoUrl: string | null = null;
       let bannerUrl: string | null = null;
+      let mobileHeroUrl: string | null = null;
 
       if (logoFile) {
         const ext = logoFile.name.split(".").pop();
@@ -178,6 +179,10 @@ export default function CreateStore() {
       if (bannerFile) {
         const ext = bannerFile.name.split(".").pop();
         bannerUrl = await uploadFile(bannerFile, "store-banners", `${user.id}/${slug}-banner.${ext}`);
+      }
+      if (heroFile) {
+        const ext = heroFile.name.split(".").pop();
+        mobileHeroUrl = await uploadFile(heroFile, "store-banners", `${user.id}/${slug}-mobile-hero.${ext}`);
       }
 
       const { error } = await (supabase as any).from("stores").insert({
@@ -195,6 +200,7 @@ export default function CreateStore() {
         facebook_url: facebookUrl.trim() || null,
         logo_url: logoUrl,
         banner_url: bannerUrl,
+        mobile_hero_url: mobileHeroUrl,
         theme,
       });
 
