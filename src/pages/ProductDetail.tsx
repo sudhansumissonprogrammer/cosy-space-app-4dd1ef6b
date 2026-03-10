@@ -427,8 +427,9 @@ function WhatsAppOrderForm({
     onComplete();
 
     const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
-    const variantInfo = selectedVariant ? `\nVariant: ${selectedVariant.name}` : "";
-    const text = `Hello, I want to order:\n\nProduct: ${product.name}${variantInfo}\nPrice: ${currency} ${Number(finalPrice).toFixed(2)}\nStore: ${store.name}\n\nName: ${customerName.trim() || "—"}\nPhone: ${customerPhone.trim()}`;
+    const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
+    const productUrl = `${window.location.origin}${window.location.pathname}`;
+    const text = `Hi 👋\n\nI want to buy ${product.name}${variantInfo}\n\n💰 Price: ${currency} ${Number(finalPrice).toFixed(0)}\n\n🏬 Store: ${store.name}\n\n🔗 Product link: ${productUrl}\n\nPlease share availability, delivery time & payment options.`;
     window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
