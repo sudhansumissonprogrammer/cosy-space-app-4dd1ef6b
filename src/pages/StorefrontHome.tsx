@@ -35,6 +35,17 @@ export default function StorefrontHome() {
   const { slug } = useParams<{ slug: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersVisible, setFiltersVisible] = useState(false);
+
+  // Animate filter panel open/close
+  useEffect(() => {
+    if (filtersOpen) {
+      setFiltersVisible(true);
+    } else {
+      const timer = setTimeout(() => setFiltersVisible(false), 250);
+      return () => clearTimeout(timer);
+    }
+  }, [filtersOpen]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [availability, setAvailability] = useState<"all" | "in_stock">("all");
