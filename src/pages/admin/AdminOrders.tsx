@@ -25,6 +25,7 @@ export default function AdminOrders() {
   const waPag = usePagination(waCount ?? undefined);
   const { data: waOrders, isLoading: waLoading } = useQuery({
     queryKey: ["admin-wa-orders", waPag.page],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_orders")
