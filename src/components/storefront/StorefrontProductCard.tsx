@@ -199,7 +199,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
             >
               <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
             </button>
-            <span className="flex-1 text-center text-xs font-extrabold">{cartQty} in cart</span>
+            <span className="flex-1 text-center text-[10px] font-extrabold whitespace-nowrap">{cartQty} in cart</span>
             <button
               onClick={handleIncrement}
               className="flex h-full w-10 items-center justify-center transition-opacity hover:opacity-80 active:scale-95"
