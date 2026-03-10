@@ -15,6 +15,7 @@ export default function AdminOrders() {
   // WhatsApp orders
   const { data: waCount } = useQuery({
     queryKey: ["admin-wa-orders-count"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { count, error } = await supabase.from("whatsapp_orders").select("*", { count: "exact", head: true });
       if (error) throw error;
