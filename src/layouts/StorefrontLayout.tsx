@@ -57,7 +57,7 @@ function CartBadge({ slug }: { slug: string }) {
 function WishlistBadge({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
-    <Link to={`/store/${slug}/wishlist`} className="relative">
+    <Link to={storefrontPath(slug, "wishlist")} className="relative">
       <Button variant="ghost" size="icon" className="h-9 w-9">
         <Heart className="h-5 w-5" />
       </Button>
