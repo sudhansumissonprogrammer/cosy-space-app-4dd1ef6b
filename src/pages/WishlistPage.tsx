@@ -47,7 +47,7 @@ export default function WishlistPage() {
           <Heart className="h-12 w-12 text-muted-foreground/30" />
           <p className="text-muted-foreground">Your wishlist is empty</p>
           <Button asChild variant="outline">
-            <Link to={`/store/${slug}`}>Continue Shopping</Link>
+            <Link to={storefrontPath(slug!, "")}>Continue Shopping</Link>
           </Button>
         </div>
       ) : (
