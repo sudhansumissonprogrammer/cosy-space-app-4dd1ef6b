@@ -16,6 +16,7 @@ import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
   Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Palette, Lock,
 } from "lucide-react";
+import { compressImage } from "@/lib/imageCompression";
 
 const CURRENCIES = [
   { code: "USD", label: "US Dollar ($)" },
@@ -134,7 +135,11 @@ export default function CreateStore() {
   };
 
   const uploadFile = async (file: File, bucket: string, path: string) => {
-    const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
+    const compressed = await compressImage(file);
+    // Update path extension to match compressed format
+    const ext = compressed.name.split(".").pop();
+    const basePath = path.replace(/\.[^/.]+$/, "");
+    const { data, error } = await supabase.storage.from(bucket).upload(`${basePath}.${ext}`, compressed, {
       cacheControl: "3600",
       upsert: true,
     });
