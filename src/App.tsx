@@ -182,6 +182,9 @@ function AppRouter() {
           <Route path="cart" element={<CartPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="login" element={<StorefrontLogin />} />
+          <Route path="signup" element={<StorefrontSignup />} />
+          <Route path="account" element={<StorefrontAccount />} />
         </Route>
       </Routes>
     );
