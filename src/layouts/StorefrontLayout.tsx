@@ -13,6 +13,7 @@ import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import SideCart from "@/components/storefront/SideCart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
