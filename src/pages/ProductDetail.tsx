@@ -336,7 +336,7 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
   return (
     <div className="space-y-3">
       <div className="relative overflow-hidden rounded-2xl bg-accent">
-        <img src={images[activeIndex]} alt={productName} className="aspect-square w-full object-cover" loading="lazy" />
+        <img src={images[activeIndex]} alt={productName} className="aspect-square w-full object-cover" decoding="async" fetchPriority="high" />
         {images.length > 1 && (
           <>
             <button
