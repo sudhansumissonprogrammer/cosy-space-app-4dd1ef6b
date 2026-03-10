@@ -144,6 +144,7 @@ export default function StoreSettings() {
           features: features.length > 0 ? features : null,
           return_policy: returnPolicy.trim() || null,
           shipping_policy: shippingPolicy.trim() || null,
+          best_selling_carousel: bestSellingCarousel,
         })
         .eq("id", storeId!);
       if (error) throw error;
