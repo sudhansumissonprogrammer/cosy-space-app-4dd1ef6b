@@ -164,29 +164,24 @@ export default function StorefrontHome() {
                   : "max-h-0 opacity-0 p-0"
               }`}
             >
-              {/* Category Filter */}
-              {storeCategories && storeCategories.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Category</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setSelectedCategory(null)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${!selectedCategory ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                    >
-                      All
-                    </button>
-                    {storeCategories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(selectedCategory === cat.name ? null : cat.name)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${selectedCategory === cat.name ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                      >
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
+              {/* Best Selling Filter */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Best Selling</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setBestSellingFilter("all")}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "all" ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setBestSellingFilter(bestSellingFilter === "best_selling" ? "all" : "best_selling")}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "best_selling" ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
+                  >
+                    Best Selling
+                  </button>
                 </div>
-              )}
+              </div>
 
               {/* Price Range */}
               <div>
