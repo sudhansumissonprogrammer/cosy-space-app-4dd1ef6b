@@ -10,6 +10,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontHero from "@/components/storefront/StorefrontHero";
 import StorefrontCategories from "@/components/storefront/StorefrontCategories";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 
 import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
 
