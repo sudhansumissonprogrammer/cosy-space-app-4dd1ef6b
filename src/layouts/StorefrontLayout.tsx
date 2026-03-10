@@ -11,6 +11,7 @@ import { useMetaTags } from "@/hooks/useMetaTags";
 import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
+import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
