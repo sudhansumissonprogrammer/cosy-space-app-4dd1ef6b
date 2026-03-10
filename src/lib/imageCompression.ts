@@ -4,23 +4,43 @@
  * - Converts to WebP (falls back to JPEG)
  * - Targets 100-200KB output
  */
+
+export interface CompressionResult {
+  file: File;
+  originalSize: number;
+  compressedSize: number;
+  skipped: boolean;
+}
+
+function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  return `${Math.round(bytes / 1024)}KB`;
+}
+
+export function getCompressionMessage(result: CompressionResult): string | null {
+  if (result.skipped) return null;
+  const reduction = Math.round((1 - result.compressedSize / result.originalSize) * 100);
+  return `Image compressed: ${formatSize(result.originalSize)} → ${formatSize(result.compressedSize)} (${reduction}% smaller)`;
+}
+
 export async function compressImage(
   file: File,
   maxDimension = 1200,
   quality = 0.8
-): Promise<File> {
+): Promise<CompressionResult> {
+  const originalSize = file.size;
+
   // Skip if already small enough (under 200KB)
   if (file.size <= 200 * 1024) {
-    return file;
+    return { file, originalSize, compressedSize: file.size, skipped: true };
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
       try {
         let { width, height } = img;
 
-        // Scale down if exceeds max dimension
         if (width > maxDimension || height > maxDimension) {
           if (width > height) {
             height = Math.round((height / width) * maxDimension);
@@ -37,38 +57,31 @@ export async function compressImage(
 
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          resolve(file); // fallback to original
+          resolve({ file, originalSize, compressedSize: file.size, skipped: true });
           return;
         }
 
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Try WebP first, fall back to JPEG
         const tryFormat = (format: string, q: number): Promise<Blob | null> =>
           new Promise((res) => {
-            canvas.toBlob(
-              (blob) => res(blob),
-              format,
-              q
-            );
+            canvas.toBlob((blob) => res(blob), format, q);
           });
 
         (async () => {
           let blob = await tryFormat("image/webp", quality);
           let ext = "webp";
 
-          // If WebP not supported or blob is null, fall back to JPEG
           if (!blob || blob.size === 0) {
             blob = await tryFormat("image/jpeg", quality);
             ext = "jpg";
           }
 
           if (!blob) {
-            resolve(file);
+            resolve({ file, originalSize, compressedSize: file.size, skipped: true });
             return;
           }
 
-          // If still too large (>300KB), reduce quality iteratively
           let currentQuality = quality - 0.1;
           while (blob.size > 300 * 1024 && currentQuality > 0.3) {
             blob = await tryFormat(`image/${ext === "webp" ? "webp" : "jpeg"}`, currentQuality);
@@ -77,7 +90,7 @@ export async function compressImage(
           }
 
           if (!blob) {
-            resolve(file);
+            resolve({ file, originalSize, compressedSize: file.size, skipped: true });
             return;
           }
 
@@ -86,14 +99,14 @@ export async function compressImage(
             type: `image/${ext === "webp" ? "webp" : "jpeg"}`,
           });
 
-          resolve(compressedFile);
+          resolve({ file: compressedFile, originalSize, compressedSize: blob.size, skipped: false });
         })();
       } catch {
-        resolve(file); // fallback to original on any error
+        resolve({ file, originalSize, compressedSize: file.size, skipped: true });
       }
     };
 
-    img.onerror = () => resolve(file); // fallback to original
+    img.onerror = () => resolve({ file, originalSize, compressedSize: file.size, skipped: true });
     img.src = URL.createObjectURL(file);
   });
 }
