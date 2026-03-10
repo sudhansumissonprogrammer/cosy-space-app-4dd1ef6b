@@ -325,6 +325,9 @@ export default function ProductDetail() {
               </button>
             )}
           </div>
+
+          {/* Share Buttons */}
+          <ShareButtons productName={product.name} />
         </div>
       </div>
 
