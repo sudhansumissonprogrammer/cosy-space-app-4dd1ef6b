@@ -13,6 +13,7 @@ import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
+import SideCart from "@/components/storefront/SideCart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
@@ -40,19 +41,19 @@ export function useStorefront(slugOverride?: string) {
   return { store, isLoading, error, slug };
 }
 
-function CartBadge({ slug }: { slug: string }) {
-  const { cartCount } = useCart();
+function CartBadge() {
+  const { cartCount, openCart } = useCart();
   return (
-    <Link to={storefrontPath(slug, "cart")} className="relative">
-      <Button variant="ghost" size="icon" className="h-9 w-9">
+    <button onClick={openCart} className="relative">
+      <div className="flex h-9 w-9 items-center justify-center rounded-md text-foreground hover:bg-accent transition-colors">
         <ShoppingCart className="h-5 w-5" />
-      </Button>
+      </div>
       {cartCount > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background">
           {cartCount > 99 ? "99+" : cartCount}
         </span>
       )}
-    </Link>
+    </button>
   );
 }
 
@@ -324,13 +325,14 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
               </Link>
               <div className="flex-1" />
               <WishlistBadge slug={store.slug} />
-              <CartBadge slug={store.slug} />
+              <CartBadge />
               <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
             </div>
           </nav>
 
           <Outlet context={store} />
           <StorefrontFooter store={store} />
+          <SideCart store={store} />
           <FloatingWhatsApp store={store} />
         </div>
       </WishlistProvider>
