@@ -121,7 +121,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       </Link>
 
       {/* Info */}
-      <div className="pt-3 space-y-1.5">
+      <div className="px-3 pt-3 pb-3 sm:px-4 sm:pb-4 space-y-1.5">
         {/* Category & Rating */}
         <div className="flex items-center justify-between">
           <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
