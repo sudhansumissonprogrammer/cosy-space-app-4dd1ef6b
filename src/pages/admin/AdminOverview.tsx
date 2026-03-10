@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Store, ShoppingBag, Ban, Package, DollarSign, UserX } from "lucide-react";
+import { StatCardsSkeleton } from "@/components/admin/AdminSkeletons";
 
 export default function AdminOverview() {
   const { data: stats, isLoading } = useQuery({
