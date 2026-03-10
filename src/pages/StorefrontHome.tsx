@@ -138,7 +138,7 @@ export default function StorefrontHome() {
               variant="ghost"
               size="icon"
               onClick={() => setFiltersOpen(true)}
-              className={`h-10 w-10 rounded-full shrink-0 transition-colors ${activeFilterCount > 0 ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-accent/60 hover:bg-accent"}`}
+              className={`h-10 w-10 rounded-full shrink-0 transition-colors ${activeFilterCount > 0 ? "bg-foreground text-background hover:bg-foreground/90" : "bg-accent/60 hover:bg-accent"}`}
             >
               <SlidersHorizontal className="h-4 w-4" />
               {activeFilterCount > 0 && (
