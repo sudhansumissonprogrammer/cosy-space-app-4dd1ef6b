@@ -157,6 +157,7 @@ export default function StoreSettings() {
           return_policy: returnPolicy.trim() || null,
           shipping_policy: shippingPolicy.trim() || null,
           best_selling_carousel: bestSellingCarousel,
+          facebook_pixel_id: facebookPixelId.trim() || null,
         })
         .eq("id", storeId!);
       if (error) throw error;

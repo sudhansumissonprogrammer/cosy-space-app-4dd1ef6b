@@ -15,6 +15,7 @@ import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import { fbPixelTrack } from "@/hooks/useFacebookPixel";
 
 declare global {
   interface Window {

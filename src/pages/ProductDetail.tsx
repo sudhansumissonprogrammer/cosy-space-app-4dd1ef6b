@@ -118,6 +118,18 @@ export default function ProductDetail() {
     canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
   });
 
+  // Facebook Pixel: ViewContent
+  useEffect(() => {
+    if (!product) return;
+    fbPixelTrack("ViewContent", {
+      content_name: product.name,
+      content_ids: [product.id],
+      content_type: "product",
+      value: product.sale_price && product.sale_price < product.price ? product.sale_price : product.price,
+      currency: product.currency || store.currency || "INR",
+    });
+  }, [product?.id]);
+
   useProductJsonLd({
     product: product ? {
       name: product.name,
