@@ -127,21 +127,12 @@ export default function StorefrontHome() {
       <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1">
         <div className="mx-auto max-w-6xl">
           <div className="relative flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-10 rounded-full border-0 bg-accent/60 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0"
-                maxLength={100}
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+            <StorefrontSearchBar
+              products={products}
+              slug={slug!}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
             <Button
               variant="ghost"
               size="icon"
