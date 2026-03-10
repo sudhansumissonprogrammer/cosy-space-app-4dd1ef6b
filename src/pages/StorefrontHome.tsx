@@ -237,7 +237,7 @@ export default function StorefrontHome() {
         isLoading={categoriesLoading}
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-8 space-y-10">
+      <div className="mx-auto max-w-6xl px-4 pt-4 pb-8 space-y-6">
 
         {/* Best Selling Section */}
         {bestSellingProducts.length > 0 && (
