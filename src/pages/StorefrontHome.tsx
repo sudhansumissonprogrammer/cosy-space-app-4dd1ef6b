@@ -34,6 +34,24 @@ export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const [searchQuery, setSearchQuery] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
+  const [availability, setAvailability] = useState<"all" | "in_stock">("all");
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Close filter panel on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFiltersOpen(false);
+      }
+    };
+    if (filtersOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [filtersOpen]);
+
+  const activeFilterCount = [selectedCategory, priceRange, availability !== "all"].filter(Boolean).length;
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["storefront-products", store.id],
