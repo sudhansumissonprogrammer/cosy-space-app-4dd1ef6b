@@ -170,7 +170,7 @@ export default function StorefrontHome() {
                 </button>
                 <button
                   onClick={() => applyAndClose(() => setBestSellingFilter("best_selling"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "best_selling" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "best_selling" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
                 >
                   Best Selling
                 </button>
