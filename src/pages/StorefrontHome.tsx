@@ -105,7 +105,7 @@ export default function StorefrontHome() {
   return (
     <>
       {/* Search + Filters — seamless with nav */}
-      <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1" ref={filterRef}>
+      <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1">
         <div className="mx-auto max-w-6xl">
           <div className="relative flex items-center gap-2">
             <div className="relative flex-1">
@@ -126,100 +126,99 @@ export default function StorefrontHome() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              className={`h-10 w-10 rounded-full shrink-0 transition-colors ${filtersOpen || activeFilterCount > 0 ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-accent/60 hover:bg-accent"}`}
+              onClick={() => setFiltersOpen(true)}
+              className={`h-10 w-10 rounded-full shrink-0 transition-colors ${activeFilterCount > 0 ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-accent/60 hover:bg-accent"}`}
             >
               <SlidersHorizontal className="h-4 w-4" />
-              {activeFilterCount > 0 && !filtersOpen && (
+              {activeFilterCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
                   {activeFilterCount}
                 </span>
               )}
             </Button>
           </div>
-
-          {/* Filter Panel */}
-          {filtersVisible && (
-            <div
-              className={`mt-3 rounded-2xl bg-accent/40 overflow-hidden transition-all duration-250 ease-out ${
-                filtersOpen
-                  ? "max-h-[500px] opacity-100 p-4 space-y-4"
-                  : "max-h-0 opacity-0 p-0"
-              }`}
-            >
-              {/* Best Selling Filter */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Best Selling</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setBestSellingFilter("all")}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "all" ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setBestSellingFilter(bestSellingFilter === "best_selling" ? "all" : "best_selling")}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "best_selling" ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                  >
-                    Best Selling
-                  </button>
-                </div>
-              </div>
-
-              {/* Price Range */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Price Range</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setPriceRange(null)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${!priceRange ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                  >
-                    Any
-                  </button>
-                  {priceRanges.map((pr) => (
-                    <button
-                      key={pr.label}
-                      onClick={() => setPriceRange(priceRange?.[0] === pr.range[0] ? null : pr.range)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${priceRange?.[0] === pr.range[0] ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                    >
-                      {pr.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Availability */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setAvailability("all")}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "all" ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setAvailability(availability === "in_stock" ? "all" : "in_stock")}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "in_stock" ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                  >
-                    In Stock
-                  </button>
-                </div>
-              </div>
-
-              {/* Clear Filters */}
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={() => { setPriceRange(null); setAvailability("all"); setBestSellingFilter("all"); }}
-                  className="text-xs text-destructive hover:underline font-medium"
-                >
-                  Clear all filters
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Filter Dialog */}
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Filters</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 pt-2">
+            {/* Best Selling Filter */}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Best Selling</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => applyAndClose(() => setBestSellingFilter("all"))}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "all" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => applyAndClose(() => setBestSellingFilter("best_selling"))}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "best_selling" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                >
+                  Best Selling
+                </button>
+              </div>
+            </div>
+
+            {/* Price Range */}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Price Range</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => applyAndClose(() => setPriceRange(null))}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${!priceRange ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                >
+                  Any
+                </button>
+                {priceRanges.map((pr) => (
+                  <button
+                    key={pr.label}
+                    onClick={() => applyAndClose(() => setPriceRange(pr.range))}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${priceRange?.[0] === pr.range[0] ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                  >
+                    {pr.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Availability */}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => applyAndClose(() => setAvailability("all"))}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "all" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => applyAndClose(() => setAvailability("in_stock"))}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "in_stock" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                >
+                  In Stock
+                </button>
+              </div>
+            </div>
+
+            {/* Clear Filters */}
+            {activeFilterCount > 0 && (
+              <button
+                onClick={() => applyAndClose(() => { setPriceRange(null); setAvailability("all"); setBestSellingFilter("all"); })}
+                className="text-xs text-destructive hover:underline font-medium"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <StorefrontCategories
         categories={storeCategories}
