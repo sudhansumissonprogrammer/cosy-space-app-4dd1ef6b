@@ -46,9 +46,9 @@ export default function StorefrontHome() {
       return () => clearTimeout(timer);
     }
   }, [filtersOpen]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [availability, setAvailability] = useState<"all" | "in_stock">("all");
+  const [bestSellingFilter, setBestSellingFilter] = useState<"all" | "best_selling">("all");
   const filterRef = useRef<HTMLDivElement>(null);
 
   // Close filter panel on outside click
@@ -62,7 +62,7 @@ export default function StorefrontHome() {
     return () => document.removeEventListener("mousedown", handler);
   }, [filtersOpen]);
 
-  const activeFilterCount = [selectedCategory, priceRange, availability !== "all"].filter(Boolean).length;
+  const activeFilterCount = [priceRange, availability !== "all", bestSellingFilter !== "all"].filter(Boolean).length;
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["storefront-products", store.id],
@@ -102,17 +102,22 @@ export default function StorefrontHome() {
     { label: "₹2000+", range: [2000, Infinity] },
   ];
 
+  const bestSellingProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter((p: any) => p.is_best_selling);
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter((p) => {
       const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = !selectedCategory || p.category === selectedCategory;
       const effectivePrice = p.sale_price ?? p.price;
       const matchesPrice = !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
       const matchesAvail = availability === "all" || p.stock_quantity > 0;
-      return matchesSearch && matchesCategory && matchesPrice && matchesAvail;
+      const matchesBestSelling = bestSellingFilter === "all" || (p as any).is_best_selling;
+      return matchesSearch && matchesPrice && matchesAvail && matchesBestSelling;
     });
-  }, [products, searchQuery, selectedCategory, priceRange, availability]);
+  }, [products, searchQuery, priceRange, availability, bestSellingFilter]);
 
   return (
     <>
@@ -159,29 +164,24 @@ export default function StorefrontHome() {
                   : "max-h-0 opacity-0 p-0"
               }`}
             >
-              {/* Category Filter */}
-              {storeCategories && storeCategories.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Category</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setSelectedCategory(null)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${!selectedCategory ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                    >
-                      All
-                    </button>
-                    {storeCategories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(selectedCategory === cat.name ? null : cat.name)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${selectedCategory === cat.name ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
-                      >
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
+              {/* Best Selling Filter */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Best Selling</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setBestSellingFilter("all")}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "all" ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setBestSellingFilter(bestSellingFilter === "best_selling" ? "all" : "best_selling")}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "best_selling" ? "bg-primary text-primary-foreground" : "bg-background/80 text-foreground hover:bg-background"}`}
+                  >
+                    Best Selling
+                  </button>
                 </div>
-              )}
+              </div>
 
               {/* Price Range */}
               <div>
@@ -227,7 +227,7 @@ export default function StorefrontHome() {
               {/* Clear Filters */}
               {activeFilterCount > 0 && (
                 <button
-                  onClick={() => { setSelectedCategory(null); setPriceRange(null); setAvailability("all"); }}
+                  onClick={() => { setPriceRange(null); setAvailability("all"); setBestSellingFilter("all"); }}
                   className="text-xs text-destructive hover:underline font-medium"
                 >
                   Clear all filters
@@ -244,7 +244,24 @@ export default function StorefrontHome() {
         isLoading={categoriesLoading}
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mx-auto max-w-6xl px-4 py-6 space-y-8">
+
+        {/* Best Selling Section */}
+        {bestSellingProducts.length > 0 && (
+          <section>
+            <h2 className="mb-4 text-xl font-bold text-foreground">🔥 Best Selling</h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {bestSellingProducts.map((product) => (
+                <StorefrontProductCard
+                  key={product.id}
+                  product={product}
+                  slug={slug!}
+                  store={store}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Product Grid */}
         <section>

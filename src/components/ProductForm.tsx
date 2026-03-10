@@ -36,6 +36,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [stockQuantity, setStockQuantity] = useState("0");
   const [category, setCategory] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [isBestSelling, setIsBestSelling] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -223,6 +224,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       setStockQuantity(String(existingProduct.stock_quantity));
       setCategory(existingProduct.category || "");
       setIsActive(existingProduct.is_active);
+      setIsBestSelling((existingProduct as any).is_best_selling ?? false);
       if (existingProduct.image_url) setImagePreview(existingProduct.image_url);
     }
   }, [existingProduct]);
@@ -321,8 +323,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
         stock_quantity: parseInt(stockQuantity) || 0,
         category: category || null,
         is_active: isActive,
+        is_best_selling: isBestSelling,
         image_url: imageUrl,
-      };
+      } as any;
 
       let savedProductId = productId;
 
@@ -570,9 +573,15 @@ export default function ProductForm({ productId }: ProductFormProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Switch id="is-active" checked={isActive} onCheckedChange={setIsActive} />
-              <Label htmlFor="is-active">Active (visible on storefront)</Label>
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-3">
+                <Switch id="is-active" checked={isActive} onCheckedChange={setIsActive} />
+                <Label htmlFor="is-active">Active (visible on storefront)</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch id="is-best-selling" checked={isBestSelling} onCheckedChange={setIsBestSelling} />
+                <Label htmlFor="is-best-selling">Best Selling</Label>
+              </div>
             </div>
 
             {/* Main Image */}
