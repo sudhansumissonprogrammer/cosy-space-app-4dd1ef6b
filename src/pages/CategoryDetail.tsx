@@ -14,7 +14,7 @@ export default function CategoryDetail() {
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
   const navigate = useNavigate();
 
-  const { data: category } = useQuery({
+  const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -29,7 +29,7 @@ export default function CategoryDetail() {
     enabled: !!store.id && !!categorySlug,
   });
 
-  const { data: products, isLoading } = useQuery({
+  const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["category-products", store.id, category?.name],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -45,10 +45,23 @@ export default function CategoryDetail() {
     enabled: !!store.id && !!category?.name,
   });
 
-  if (!category && !isLoading) {
+  const isLoading = categoryLoading || productsLoading || (!category && !categoryLoading === false);
+
+  if (!categoryLoading && !category) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Category not found</p>
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(storefrontPath(slug!, ""))}
+          className="mb-4 rounded-full bg-background text-foreground shadow-sm hover:shadow-md"
+        >
+          <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+          Back
+        </Button>
+        <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
+          <p className="text-muted-foreground">Category not found</p>
+        </div>
       </div>
     );
   }
@@ -68,7 +81,7 @@ export default function CategoryDetail() {
           Back
         </Button>
 
-        {isLoading ? (
+        {categoryLoading || productsLoading ? (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
