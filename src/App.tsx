@@ -135,6 +135,7 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<StorefrontLayout slugOverride={subdomainSlug} />}>
           <Route index element={<StorefrontHome />} />
+          <Route path="best-sellers" element={<StorefrontBestSellers />} />
           <Route path="contact" element={<StorefrontContact />} />
           <Route path="return-policy" element={<StorefrontReturnPolicy />} />
           <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
