@@ -14,6 +14,7 @@ import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 
 import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
+import { useStoreJsonLd } from "@/hooks/useJsonLd";
 
 function ProductCardSkeleton() {
   return (
