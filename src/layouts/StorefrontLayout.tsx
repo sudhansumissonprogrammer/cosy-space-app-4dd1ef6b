@@ -12,11 +12,13 @@ import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import { Skeleton } from "@/components/ui/skeleton";
+import { storefrontPath } from "@/lib/subdomain";
 
 export type StoreData = Tables<"stores">;
 
-export function useStorefront() {
-  const { slug } = useParams<{ slug: string }>();
+export function useStorefront(slugOverride?: string) {
+  const { slug: paramSlug } = useParams<{ slug: string }>();
+  const slug = slugOverride || paramSlug;
 
   const { data: store, isLoading, error } = useQuery({
     queryKey: ["storefront", slug],
@@ -39,7 +41,7 @@ export function useStorefront() {
 function CartBadge({ slug }: { slug: string }) {
   const { cartCount } = useCart();
   return (
-    <Link to={`/store/${slug}/cart`} className="relative">
+    <Link to={storefrontPath(slug, "cart")} className="relative">
       <Button variant="ghost" size="icon" className="h-9 w-9">
         <ShoppingCart className="h-5 w-5" />
       </Button>
@@ -55,7 +57,7 @@ function CartBadge({ slug }: { slug: string }) {
 function WishlistBadge({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
-    <Link to={`/store/${slug}/wishlist`} className="relative">
+    <Link to={storefrontPath(slug, "wishlist")} className="relative">
       <Button variant="ghost" size="icon" className="h-9 w-9">
         <Heart className="h-5 w-5" />
       </Button>
@@ -103,7 +105,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
           </div>
           <nav className="flex flex-col gap-1 p-4">
             <Link
-              to={`/store/${store.slug}`}
+              to={storefrontPath(store.slug)}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
@@ -111,7 +113,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
               Home
             </Link>
             <Link
-              to={`/store/${store.slug}/wishlist`}
+              to={storefrontPath(store.slug, "wishlist")}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
@@ -119,7 +121,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
               Wishlist
             </Link>
             <Link
-              to={`/store/${store.slug}/contact`}
+              to={storefrontPath(store.slug, "contact")}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
@@ -134,7 +136,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
                 {categories.map((cat) => (
                   <Link
                     key={cat.id}
-                    to={`/store/${store.slug}/category/${cat.slug}`}
+                    to={storefrontPath(store.slug, `category/${cat.slug}`)}
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                   >
@@ -203,8 +205,8 @@ function StorefrontSkeleton() {
   );
 }
 
-export default function StorefrontLayout() {
-  const { store, isLoading, slug } = useStorefront();
+export default function StorefrontLayout({ slugOverride }: { slugOverride?: string } = {}) {
+  const { store, isLoading, slug } = useStorefront(slugOverride);
   const queryClient = useQueryClient();
 
   // Prefetch products & categories as soon as store.id is available
@@ -292,7 +294,7 @@ export default function StorefrontLayout() {
           <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
             <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
               <HamburgerMenu store={store} />
-              <Link to={`/store/${store.slug}`} className="flex-shrink-0">
+              <Link to={storefrontPath(store.slug)} className="flex-shrink-0">
                 {store.logo_url ? (
                   <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" />
                 ) : (

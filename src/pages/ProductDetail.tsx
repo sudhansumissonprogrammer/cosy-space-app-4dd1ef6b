@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { storefrontPath } from "@/lib/subdomain";
 
 interface Variant {
   id: string;
@@ -117,7 +118,7 @@ export default function ProductDetail() {
           <h1 className="text-2xl font-semibold text-foreground">Product not found</h1>
           <p className="text-muted-foreground">This product doesn't exist or is no longer available.</p>
           <Button asChild variant="outline">
-            <Link to={`/store/${store.slug}`}>
+            <Link to={storefrontPath(store.slug)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to store
             </Link>
@@ -153,14 +154,14 @@ export default function ProductDetail() {
   const handleBuyNow = () => {
     const params = new URLSearchParams({ product: product.id });
     if (selectedVariant) params.set("variant", selectedVariant.id);
-    navigate(`/store/${store.slug}/checkout?${params.toString()}`);
+    navigate(storefrontPath(store.slug, `checkout?${params.toString()}`));
   };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6">
         <Link
-          to={`/store/${store.slug}`}
+          to={storefrontPath(store.slug)}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="h-3 w-3" />

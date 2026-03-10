@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { storefrontPath } from "@/lib/subdomain";
 
 declare global {
   interface Window {
@@ -141,7 +142,7 @@ export default function CheckoutPage() {
         <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
         <h1 className="text-xl font-semibold text-foreground">Product not found</h1>
         <Button asChild variant="outline" className="mt-4">
-          <Link to={`/store/${store.slug}`}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
+           <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
         </Button>
       </div>
     );
@@ -153,7 +154,7 @@ export default function CheckoutPage() {
         <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
         <h1 className="text-xl font-semibold text-foreground">Your cart is empty</h1>
         <Button asChild variant="outline" className="mt-4">
-          <Link to={`/store/${store.slug}`}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
+          <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
         </Button>
       </div>
     );
@@ -313,7 +314,7 @@ export default function CheckoutPage() {
           </p>
         )}
         <Button asChild className="mt-6">
-          <Link to={`/store/${store.slug}`}>Continue Shopping</Link>
+          <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
         </Button>
       </div>
     );
@@ -323,7 +324,7 @@ export default function CheckoutPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <Link
-          to={isSingleMode ? `/store/${store.slug}` : `/store/${store.slug}/cart`}
+          to={isSingleMode ? storefrontPath(store.slug) : storefrontPath(store.slug, "cart")}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="h-3 w-3" />

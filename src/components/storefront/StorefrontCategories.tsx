@@ -1,6 +1,7 @@
 import { Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { storefrontPath } from "@/lib/subdomain";
 
 interface Category {
   id: string;
@@ -37,7 +38,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
             categories!.map((cat) => (
               <Link
                 key={cat.id}
-                to={`/store/${storeSlug}/category/${cat.slug}`}
+                to={storefrontPath(storeSlug, `category/${cat.slug}`)}
                 className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
               >
                 <div className="h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border hover:border-primary/50 hover:shadow-sm">

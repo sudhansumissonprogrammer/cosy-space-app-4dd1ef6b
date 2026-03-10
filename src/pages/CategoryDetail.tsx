@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import { storefrontPath } from "@/lib/subdomain";
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
@@ -59,7 +60,7 @@ export default function CategoryDetail() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => navigate(`/store/${slug}`)}
+          onClick={() => navigate(storefrontPath(slug!, ""))}
           className="mb-4 rounded-full bg-background text-foreground shadow-sm hover:shadow-md"
         >
           <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />

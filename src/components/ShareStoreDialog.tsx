@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Share2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { ROOT_DOMAIN } from "@/lib/subdomain";
 
 interface ShareStoreDialogProps {
   storeSlug: string;
@@ -14,7 +15,7 @@ interface ShareStoreDialogProps {
 
 export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOnly }: ShareStoreDialogProps) {
   const [copied, setCopied] = useState(false);
-  const storeUrl = `${window.location.origin}/store/${storeSlug}`;
+  const storeUrl = `https://${storeSlug}.${ROOT_DOMAIN}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(storeUrl)}`;
 
   const handleCopy = async () => {

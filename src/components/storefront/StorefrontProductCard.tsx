@@ -4,6 +4,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { storefrontPath } from "@/lib/subdomain";
 
 function getProductRating(productId: string): number {
   let hash = 0;
@@ -81,7 +82,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       }}
     >
       {/* Image */}
-      <Link to={`/store/${slug}/product/${product.slug || product.id}`} className="block p-1 pb-0">
+      <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
         <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "3/4" }}>
           {/* Trending Badge */}
           {product.sale_price && (
@@ -134,7 +135,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
         </div>
 
         {/* Name */}
-        <Link to={`/store/${slug}/product/${product.slug || product.id}`}>
+        <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)}>
           <h3 className="text-xs font-bold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">
             {product.name}
           </h3>

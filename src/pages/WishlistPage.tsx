@@ -5,6 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { storefrontPath } from "@/lib/subdomain";
 
 export default function WishlistPage() {
   const store = useOutletContext<StoreData>();
@@ -46,7 +47,7 @@ export default function WishlistPage() {
           <Heart className="h-12 w-12 text-muted-foreground/30" />
           <p className="text-muted-foreground">Your wishlist is empty</p>
           <Button asChild variant="outline">
-            <Link to={`/store/${slug}`}>Continue Shopping</Link>
+            <Link to={storefrontPath(slug!, "")}>Continue Shopping</Link>
           </Button>
         </div>
       ) : (
@@ -60,7 +61,7 @@ export default function WishlistPage() {
               <div key={item.productId} className="flex gap-3 rounded-2xl border border-border bg-card p-3">
                 {/* Image */}
                 <Link
-                  to={`/store/${slug}/product/${item.slug || item.productId}`}
+                  to={storefrontPath(slug!, `product/${item.slug || item.productId}`)}
                   className="h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-secondary/40"
                 >
                   {item.image ? (
@@ -80,7 +81,7 @@ export default function WishlistPage() {
                         {item.category}
                       </p>
                     )}
-                    <Link to={`/store/${slug}/product/${item.slug || item.productId}`}>
+                    <Link to={storefrontPath(slug!, `product/${item.slug || item.productId}`)}>
                       <h3 className="text-xs font-bold text-foreground line-clamp-2">{item.name}</h3>
                     </Link>
                     <div className="mt-1 flex flex-wrap items-center gap-1">

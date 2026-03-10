@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2, MessageCircle, Package, ShoppingBag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { storefrontPath } from "@/lib/subdomain";
 
 export default function CartPage() {
   const store = useOutletContext<StoreData>();
@@ -30,7 +31,7 @@ export default function CartPage() {
         <h1 className="text-2xl font-bold text-foreground">Your cart is empty</h1>
         <p className="mt-2 text-muted-foreground">Add some products to get started.</p>
         <Button asChild className="mt-6">
-          <Link to={`/store/${store.slug}`}>Continue Shopping</Link>
+          <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
         </Button>
       </div>
     );
@@ -40,7 +41,7 @@ export default function CartPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <Link
-          to={`/store/${store.slug}`}
+          to={storefrontPath(store.slug)}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="h-3 w-3" />
@@ -115,7 +116,7 @@ export default function CartPage() {
                   Order on WhatsApp
                 </Button>
               ) : (
-                <Button className="w-full" size="lg" onClick={() => navigate(`/store/${store.slug}/checkout`)}>
+                <Button className="w-full" size="lg" onClick={() => navigate(storefrontPath(store.slug, "checkout"))}>
                   <ShoppingBag className="mr-2 h-5 w-5" />
                   Proceed to Checkout
                 </Button>
