@@ -371,6 +371,28 @@ export default function StoreSettings() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-lg">Tracking & Analytics</CardTitle>
+            <CardDescription>Connect your Facebook Pixel for Meta Ads tracking</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fb-pixel">Facebook Pixel ID</Label>
+              <Input
+                id="fb-pixel"
+                placeholder="e.g. 123456789012345"
+                value={facebookPixelId}
+                onChange={(e) => setFacebookPixelId(e.target.value)}
+                maxLength={20}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter your Facebook Pixel ID to track PageView, ViewContent, AddToCart, InitiateCheckout and Purchase events automatically.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-lg">Why Choose Us</CardTitle>
             <CardDescription>Manage selling points shown on your Contact page</CardDescription>
           </CardHeader>
