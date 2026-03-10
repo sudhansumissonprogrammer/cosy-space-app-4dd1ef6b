@@ -45,8 +45,10 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
               {[
                 { to: storefrontPath(store.slug), label: "Home" },
                 { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
-                { to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" },
+                { to: storefrontPath(store.slug, "return-policy"), label: "Return, Refund & Cancellation" },
                 { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" },
+                { to: storefrontPath(store.slug, "terms"), label: "Terms & Conditions" },
+                { to: storefrontPath(store.slug, "privacy-policy"), label: "Privacy Policy" },
               ].map((link) => (
                 <Link
                   key={link.label}

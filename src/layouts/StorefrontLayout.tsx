@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Store, ShoppingCart, Home, Tag, Mail, Heart, RotateCcw, Truck } from "lucide-react";
+import { Store, ShoppingCart, Home, Tag, Mail, Heart, RotateCcw, Truck, FileText, Shield } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -137,7 +137,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
               <RotateCcw className="h-4 w-4" />
-              Return Policy
+              Return, Refund & Cancellation
             </Link>
             <Link
               to={storefrontPath(store.slug, "shipping-policy")}
@@ -146,6 +146,22 @@ function HamburgerMenu({ store }: { store: StoreData }) {
             >
               <Truck className="h-4 w-4" />
               Shipping Policy
+            </Link>
+            <Link
+              to={storefrontPath(store.slug, "terms")}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <FileText className="h-4 w-4" />
+              Terms & Conditions
+            </Link>
+            <Link
+              to={storefrontPath(store.slug, "privacy-policy")}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Shield className="h-4 w-4" />
+              Privacy Policy
             </Link>
             {categories && categories.length > 0 && (
               <>

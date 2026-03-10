@@ -4,19 +4,30 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 
-function DefaultReturnPolicy({ store }: { store: StoreData }) {
+function DefaultPolicy({ store }: { store: StoreData }) {
   const name = store.name;
   const contact = store.whatsapp_number
     ? `WhatsApp us at ${store.whatsapp_number}`
     : "contact us through our Contact page";
+  const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
 
   return (
     <div className="prose prose-sm max-w-none text-muted-foreground">
-      <h2 className="text-lg font-semibold text-foreground">Return & Refund Policy</h2>
       <p>
-        At <strong>{name}</strong>, we want you to be completely satisfied with your purchase. If you're not happy with your order, we're here to help.
+        At <strong>{name}</strong>, customer satisfaction is our top priority. Please read our complete Return, Refund &amp; Cancellation policy below.
       </p>
 
+      {/* ── CANCELLATION ── */}
+      <h2 className="text-lg font-semibold text-foreground">Order Cancellation</h2>
+      <ul className="list-disc pl-5 space-y-1">
+        <li>Orders can be cancelled before they are shipped or dispatched.</li>
+        <li>To cancel an order, {contact} with your order details as soon as possible.</li>
+        <li>Once an order has been shipped, it cannot be cancelled — you may initiate a return instead.</li>
+        <li>If payment was already collected, the full amount will be refunded to the original payment method within <strong>5–7 business days</strong> of cancellation confirmation.</li>
+      </ul>
+
+      {/* ── RETURNS ── */}
+      <h2 className="text-lg font-semibold text-foreground">Returns</h2>
       <h3 className="text-base font-semibold text-foreground">Eligibility</h3>
       <ul className="list-disc pl-5 space-y-1">
         <li>Items must be returned within <strong>7 days</strong> of delivery.</li>
@@ -33,23 +44,38 @@ function DefaultReturnPolicy({ store }: { store: StoreData }) {
         <li>Items marked as "Final Sale"</li>
       </ul>
 
-      <h3 className="text-base font-semibold text-foreground">Refund Process</h3>
+      <h3 className="text-base font-semibold text-foreground">How to Initiate a Return</h3>
       <ol className="list-decimal pl-5 space-y-1">
-        <li>Initiate a return by contacting us — {contact}.</li>
+        <li>{contact} with your order number and reason for return.</li>
         <li>We'll provide return instructions and a return authorization.</li>
-        <li>Ship the item back to us (return shipping may apply).</li>
-        <li>Once received and inspected, your refund will be processed within <strong>5–7 business days</strong>.</li>
+        <li>Pack the item securely and ship it back (return shipping costs may apply unless the item is defective).</li>
       </ol>
 
-      <h3 className="text-base font-semibold text-foreground">Exchanges</h3>
+      {/* ── REFUNDS ── */}
+      <h2 className="text-lg font-semibold text-foreground">Refunds</h2>
+      <ul className="list-disc pl-5 space-y-1">
+        <li>Once we receive and inspect the returned item, we will notify you of the approval or rejection of your refund.</li>
+        <li>Approved refunds will be processed within <strong>5–7 business days</strong> to the original payment method.</li>
+        <li>Shipping charges are non-refundable unless the return is due to our error (wrong or defective item).</li>
+        <li>If you haven't received your refund after the stated period, please {contact}.</li>
+      </ul>
+
+      {/* ── EXCHANGES ── */}
+      <h2 className="text-lg font-semibold text-foreground">Exchanges</h2>
       <p>
-        If you received a defective or damaged item, please {contact} immediately. We'll arrange a replacement at no extra cost.
+        If you received a defective or damaged item, please {contact} immediately. We'll arrange a replacement at no extra cost, subject to availability.
       </p>
 
-      <h3 className="text-base font-semibold text-foreground">Contact Us</h3>
+      {/* ── CONTACT ── */}
+      <h2 className="text-lg font-semibold text-foreground">Contact Us</h2>
       <p>
-        For any questions about returns, please {contact}. We're happy to assist you.
+        For any questions about returns, refunds, or cancellations, please {contact}. We're happy to assist you.
       </p>
+      {address && (
+        <p>
+          <strong>Address:</strong> {address}
+        </p>
+      )}
     </div>
   );
 }
@@ -66,14 +92,14 @@ export default function StorefrontReturnPolicy() {
         <ArrowLeft className="h-4 w-4" /> Back to store
       </Link>
 
-      <h1 className="mb-6 text-2xl font-bold text-foreground">Return Policy</h1>
+      <h1 className="mb-6 text-2xl font-bold text-foreground">Return, Refund &amp; Cancellation Policy</h1>
 
-      {(store as any).return_policy ? (
+      {store.return_policy ? (
         <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-          {(store as any).return_policy}
+          {store.return_policy}
         </div>
       ) : (
-        <DefaultReturnPolicy store={store} />
+        <DefaultPolicy store={store} />
       )}
     </div>
   );
