@@ -346,6 +346,11 @@ export default function CheckoutPage() {
         currency,
         num_items: checkoutItems.length,
       });
+
+      // Auto-create guest account if not logged in
+      if (!customer) {
+        createGuestAccount(newOrderId);
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
