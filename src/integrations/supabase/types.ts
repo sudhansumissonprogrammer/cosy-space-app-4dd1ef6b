@@ -597,6 +597,8 @@ export type Database = {
           name: string
           order_mode: string
           owner_id: string
+          return_policy: string | null
+          shipping_policy: string | null
           slug: string
           state: string | null
           theme: string
@@ -622,6 +624,8 @@ export type Database = {
           name: string
           order_mode?: string
           owner_id: string
+          return_policy?: string | null
+          shipping_policy?: string | null
           slug: string
           state?: string | null
           theme?: string
@@ -647,6 +651,8 @@ export type Database = {
           name?: string
           order_mode?: string
           owner_id?: string
+          return_policy?: string | null
+          shipping_policy?: string | null
           slug?: string
           state?: string | null
           theme?: string
