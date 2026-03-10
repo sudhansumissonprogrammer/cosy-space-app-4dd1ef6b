@@ -218,24 +218,24 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
         {/* Add to Cart */}
         {cartQty > 0 && !isAdding && !justAdded ? (
           /* Quantity controls */
-          <div className="flex h-9 sm:h-10 w-full items-center rounded-xl overflow-hidden btn-gold">
+          <div className="flex h-7 sm:h-8 w-full items-center rounded-lg overflow-hidden btn-gold">
             <button
               onClick={handleDecrement}
-              className="flex h-full w-10 items-center justify-center transition-opacity hover:opacity-80 active:scale-95"
+              className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-95"
             >
-              <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+              <Minus className="h-3 w-3" strokeWidth={2.5} />
             </button>
-            <span className="flex-1 text-center text-[10px] font-extrabold whitespace-nowrap">{cartQty} in cart</span>
+            <span className="flex-1 text-center text-[9px] font-extrabold whitespace-nowrap">{cartQty} in cart</span>
             <button
               onClick={handleIncrement}
-              className="flex h-full w-10 items-center justify-center transition-opacity hover:opacity-80 active:scale-95"
+              className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-95"
             >
-              <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+              <Plus className="h-3 w-3" strokeWidth={2.5} />
             </button>
           </div>
         ) : (
           <button
-            className={`flex h-9 w-full items-center justify-center gap-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-widest sm:h-10 sm:text-[11px] transition-all duration-300 active:scale-[0.98] ${
+            className={`flex h-7 w-full items-center justify-center gap-1.5 rounded-lg text-[9px] font-extrabold uppercase tracking-widest sm:h-8 sm:text-[10px] transition-all duration-300 active:scale-[0.98] ${
               justAdded
                 ? "bg-success text-success-foreground"
                 : isAdding
