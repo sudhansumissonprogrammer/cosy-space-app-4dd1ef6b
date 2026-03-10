@@ -16,6 +16,7 @@ import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
+import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 
 declare global {
   interface Window {
