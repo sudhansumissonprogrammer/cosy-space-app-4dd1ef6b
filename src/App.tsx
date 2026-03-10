@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
+import { getSubdomainSlug } from "@/lib/subdomain";
 
 // Lazy-loaded pages & layouts
 const Login = lazy(() => import("./pages/Login"));
