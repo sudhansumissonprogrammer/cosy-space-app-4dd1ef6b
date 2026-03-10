@@ -242,6 +242,25 @@ export default function CheckoutPage() {
     return order.id as string;
   };
 
+  const createGuestAccount = async (orderId: string) => {
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      await fetch(`https://${projectId}.supabase.co/functions/v1/create-guest-account`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          phone: phone.trim(),
+          name: fullName.trim(),
+          store_id: store.id,
+          order_id: orderId,
+        }),
+      });
+    } catch (err) {
+      console.error("Guest account creation failed:", err);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
     if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { toast.error("Please enter a valid email"); return; }
