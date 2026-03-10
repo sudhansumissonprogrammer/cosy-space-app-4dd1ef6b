@@ -104,7 +104,16 @@ function HamburgerMenu({ store }: { store: StoreData }) {
       <SheetContent side="left" className="w-[280px] p-0">
         <div className="flex flex-col">
           <div className="border-b bg-card p-4">
-            <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+            {store.logo_url ? (
+              <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[160px] object-contain" />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+                  <Store className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <span className="text-lg font-bold text-foreground">{store.name}</span>
+              </div>
+            )}
           </div>
           <nav className="flex flex-col gap-1 p-4">
             <Link
@@ -138,30 +147,6 @@ function HamburgerMenu({ store }: { store: StoreData }) {
             >
               <RotateCcw className="h-4 w-4" />
               Return, Refund & Cancellation
-            </Link>
-            <Link
-              to={storefrontPath(store.slug, "shipping-policy")}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <Truck className="h-4 w-4" />
-              Shipping Policy
-            </Link>
-            <Link
-              to={storefrontPath(store.slug, "terms")}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <FileText className="h-4 w-4" />
-              Terms & Conditions
-            </Link>
-            <Link
-              to={storefrontPath(store.slug, "privacy-policy")}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <Shield className="h-4 w-4" />
-              Privacy Policy
             </Link>
             {categories && categories.length > 0 && (
               <>
