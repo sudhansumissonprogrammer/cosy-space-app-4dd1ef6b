@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ArrowLeft, MessageCircle, Package, Loader2, ChevronLeft, ChevronRight, Tag, ShoppingBag, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
+import { useProductJsonLd } from "@/hooks/useJsonLd";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
