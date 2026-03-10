@@ -29,6 +29,7 @@ export default function AdminSubscriptions() {
   // Plans
   const { data: plans } = useQuery({
     queryKey: ["admin-plans"],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase.from("plans").select("*").order("price");
       if (error) throw error;
