@@ -15,6 +15,7 @@ export default function AdminOrders() {
   // WhatsApp orders
   const { data: waCount } = useQuery({
     queryKey: ["admin-wa-orders-count"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { count, error } = await supabase.from("whatsapp_orders").select("*", { count: "exact", head: true });
       if (error) throw error;
@@ -24,6 +25,7 @@ export default function AdminOrders() {
   const waPag = usePagination(waCount ?? undefined);
   const { data: waOrders, isLoading: waLoading } = useQuery({
     queryKey: ["admin-wa-orders", waPag.page],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_orders")
@@ -38,6 +40,7 @@ export default function AdminOrders() {
   // Website orders
   const { data: webCount } = useQuery({
     queryKey: ["admin-web-orders-count"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { count, error } = await supabase.from("orders").select("*", { count: "exact", head: true });
       if (error) throw error;
@@ -47,6 +50,7 @@ export default function AdminOrders() {
   const webPag = usePagination(webCount ?? undefined);
   const { data: webOrders, isLoading: webLoading } = useQuery({
     queryKey: ["admin-web-orders", webPag.page],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("orders")

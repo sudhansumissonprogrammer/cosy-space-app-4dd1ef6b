@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 export default function AdminAnalytics() {
   const { data: analytics, isLoading } = useQuery({
     queryKey: ["admin-analytics"],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_admin_analytics");
       if (error) throw error;

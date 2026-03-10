@@ -24,6 +24,7 @@ export default function AdminStores() {
 
   const { data: countData } = useQuery({
     queryKey: ["admin-stores-count"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { count, error } = await supabase.from("stores").select("*", { count: "exact", head: true });
       if (error) throw error;
@@ -35,6 +36,7 @@ export default function AdminStores() {
 
   const { data: stores, isLoading } = useQuery({
     queryKey: ["admin-stores", pagination.page],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores").select("*")

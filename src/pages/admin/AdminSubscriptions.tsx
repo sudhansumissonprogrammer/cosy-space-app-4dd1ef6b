@@ -29,6 +29,7 @@ export default function AdminSubscriptions() {
   // Plans
   const { data: plans } = useQuery({
     queryKey: ["admin-plans"],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase.from("plans").select("*").order("price");
       if (error) throw error;
@@ -39,6 +40,7 @@ export default function AdminSubscriptions() {
   // Subscriptions with user + plan info
   const { data: subscriptions } = useQuery({
     queryKey: ["admin-subscriptions"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")
@@ -52,6 +54,7 @@ export default function AdminSubscriptions() {
   // Stores for assignment
   const { data: stores } = useQuery({
     queryKey: ["admin-stores"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase.from("stores").select("id, name, owner_id").order("name");
       if (error) throw error;
