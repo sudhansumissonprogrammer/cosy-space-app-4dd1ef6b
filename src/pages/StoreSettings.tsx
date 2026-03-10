@@ -149,6 +149,7 @@ export default function StoreSettings() {
           business_hours: hasHours ? businessHours : null,
           logo_url: logoUrl,
           banner_url: bannerUrl,
+          mobile_hero_url: mobileHeroUrl,
           theme,
           features: features.length > 0 ? features : null,
           return_policy: returnPolicy.trim() || null,
