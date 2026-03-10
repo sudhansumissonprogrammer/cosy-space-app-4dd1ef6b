@@ -69,8 +69,17 @@ export default function CategoryDetail() {
         </Button>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
+                <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
+                <div className="px-2.5 pb-2.5 pt-2 space-y-2">
+                  <Skeleton className="h-3.5 w-full" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-9 w-full rounded-lg" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : products && products.length > 0 ? (
           <>

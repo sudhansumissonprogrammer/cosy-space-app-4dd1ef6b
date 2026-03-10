@@ -130,11 +130,7 @@ export default function CheckoutPage() {
   const total = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   if (isLoading && isSingleMode) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+    return <CheckoutSkeleton />;
   }
 
   if (isSingleMode && !product) {
