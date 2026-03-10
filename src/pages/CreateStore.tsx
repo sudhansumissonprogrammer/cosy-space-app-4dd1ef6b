@@ -16,7 +16,7 @@ import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
   Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Palette, Lock,
 } from "lucide-react";
-import { compressImage } from "@/lib/imageCompression";
+import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 
 const CURRENCIES = [
   { code: "USD", label: "US Dollar ($)" },
