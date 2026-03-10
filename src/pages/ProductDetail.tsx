@@ -154,7 +154,7 @@ export default function ProductDetail() {
   const handleBuyNow = () => {
     const params = new URLSearchParams({ product: product.id });
     if (selectedVariant) params.set("variant", selectedVariant.id);
-    navigate(`/store/${store.slug}/checkout?${params.toString()}`);
+    navigate(storefrontPath(store.slug, `checkout?${params.toString()}`));
   };
 
   return (
