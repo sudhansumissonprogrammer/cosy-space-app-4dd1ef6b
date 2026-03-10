@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Plus, ArrowLeft, Pencil, Trash2, Package, AlertCircle, Upload, Download } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import BulkEditDialog from "@/components/BulkEditDialog";
 
 export default function ProductsList() {
   const { storeId } = useParams<{ storeId: string }>();
