@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import type { Tables } from "@/integrations/supabase/types";
+import { fbPixelTrack } from "@/hooks/useFacebookPixel";
 
 interface Variant {
   id: string;
@@ -116,6 +117,18 @@ export default function ProductDetail() {
     storeSlug: store.slug,
     canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
   });
+
+  // Facebook Pixel: ViewContent
+  useEffect(() => {
+    if (!product) return;
+    fbPixelTrack("ViewContent", {
+      content_name: product.name,
+      content_ids: [product.id],
+      content_type: "product",
+      value: product.sale_price && product.sale_price < product.price ? product.sale_price : product.price,
+      currency: product.currency || store.currency || "INR",
+    });
+  }, [product?.id]);
 
   useProductJsonLd({
     product: product ? {

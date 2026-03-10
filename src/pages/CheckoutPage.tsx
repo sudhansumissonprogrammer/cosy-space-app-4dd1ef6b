@@ -15,6 +15,7 @@ import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import { fbPixelTrack } from "@/hooks/useFacebookPixel";
 
 declare global {
   interface Window {
@@ -128,6 +129,18 @@ export default function CheckoutPage() {
       }));
 
   const total = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+  // Facebook Pixel: InitiateCheckout
+  useEffect(() => {
+    if (checkoutItems.length === 0) return;
+    fbPixelTrack("InitiateCheckout", {
+      content_ids: checkoutItems.map((i) => i.productId),
+      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
+      num_items: checkoutItems.length,
+      value: total,
+      currency,
+    });
+  }, []);
 
   if (isLoading && isSingleMode) {
     return <CheckoutSkeleton />;
@@ -262,6 +275,13 @@ export default function CheckoutPage() {
               if (!isSingleMode) clearCart();
               setOrderId(newOrderId);
               setOrderPlaced(true);
+              fbPixelTrack("Purchase", {
+                content_ids: checkoutItems.map((i) => i.productId),
+                contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
+                value: total,
+                currency,
+                num_items: checkoutItems.length,
+              });
             } catch (err: any) {
               toast.error("Payment verification failed. Contact the store.");
             }
@@ -288,6 +308,13 @@ export default function CheckoutPage() {
       if (!isSingleMode) clearCart();
       setOrderId(newOrderId);
       setOrderPlaced(true);
+      fbPixelTrack("Purchase", {
+        content_ids: checkoutItems.map((i) => i.productId),
+        contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
+        value: total,
+        currency,
+        num_items: checkoutItems.length,
+      });
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {

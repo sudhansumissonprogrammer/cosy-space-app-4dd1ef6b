@@ -67,6 +67,7 @@ export default function StoreSettings() {
   const [returnPolicy, setReturnPolicy] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
+  const [facebookPixelId, setFacebookPixelId] = useState("");
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
@@ -104,6 +105,7 @@ export default function StoreSettings() {
       setReturnPolicy((store as any).return_policy || "");
       setShippingPolicy((store as any).shipping_policy || "");
       setBestSellingCarousel((store as any).best_selling_carousel || false);
+      setFacebookPixelId((store as any).facebook_pixel_id || "");
     }
   }, [store]);
 
@@ -155,6 +157,7 @@ export default function StoreSettings() {
           return_policy: returnPolicy.trim() || null,
           shipping_policy: shippingPolicy.trim() || null,
           best_selling_carousel: bestSellingCarousel,
+          facebook_pixel_id: facebookPixelId.trim() || null,
         })
         .eq("id", storeId!);
       if (error) throw error;
@@ -362,6 +365,28 @@ export default function StoreSettings() {
                   />
                 </label>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Tracking & Analytics</CardTitle>
+            <CardDescription>Connect your Facebook Pixel for Meta Ads tracking</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fb-pixel">Facebook Pixel ID</Label>
+              <Input
+                id="fb-pixel"
+                placeholder="e.g. 123456789012345"
+                value={facebookPixelId}
+                onChange={(e) => setFacebookPixelId(e.target.value)}
+                maxLength={20}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter your Facebook Pixel ID to track PageView, ViewContent, AddToCart, InitiateCheckout and Purchase events automatically.
+              </p>
             </div>
           </CardContent>
         </Card>

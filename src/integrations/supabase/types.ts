@@ -587,6 +587,7 @@ export type Database = {
           currency: string
           custom_domain: string | null
           description: string | null
+          facebook_pixel_id: string | null
           facebook_url: string | null
           features: Json | null
           id: string
@@ -616,6 +617,7 @@ export type Database = {
           currency?: string
           custom_domain?: string | null
           description?: string | null
+          facebook_pixel_id?: string | null
           facebook_url?: string | null
           features?: Json | null
           id?: string
@@ -645,6 +647,7 @@ export type Database = {
           currency?: string
           custom_domain?: string | null
           description?: string | null
+          facebook_pixel_id?: string | null
           facebook_url?: string | null
           features?: Json | null
           id?: string

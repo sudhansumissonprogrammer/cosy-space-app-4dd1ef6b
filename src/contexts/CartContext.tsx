@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { fbPixelTrack } from "@/hooks/useFacebookPixel";
 
 export interface CartItem {
   productId: string;
@@ -60,6 +61,13 @@ export function CartProvider({ slug, children }: { slug: string; children: React
       return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
     setIsCartOpen(true);
+    fbPixelTrack("AddToCart", {
+      content_name: item.name,
+      content_ids: [item.productId],
+      content_type: "product",
+      value: item.price,
+      currency: "INR",
+    });
   }, []);
 
   const removeFromCart = useCallback((productId: string, variantId?: string) => {
