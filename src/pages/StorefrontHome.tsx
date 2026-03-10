@@ -94,8 +94,8 @@ export default function StorefrontHome() {
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
-    return products.filter((p) => {
-      if ((p as any).is_best_selling) return false; // exclude best sellers from popular
+    const filtered = products.filter((p) => {
+      if ((p as any).is_best_selling) return false;
       const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
       const effectivePrice = p.sale_price ?? p.price;
       const matchesPrice = !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
@@ -103,7 +103,23 @@ export default function StorefrontHome() {
       const matchesBestSelling = bestSellingFilter === "all" || (p as any).is_best_selling;
       return matchesSearch && matchesPrice && matchesAvail && matchesBestSelling;
     });
-  }, [products, searchQuery, priceRange, availability, bestSellingFilter]);
+
+    const sorted = [...filtered];
+    switch (sortBy) {
+      case "price_asc":
+        sorted.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price));
+        break;
+      case "price_desc":
+        sorted.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price));
+        break;
+      case "newest":
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      default:
+        break;
+    }
+    return sorted;
+  }, [products, searchQuery, priceRange, availability, bestSellingFilter, sortBy]);
 
   return (
     <>
