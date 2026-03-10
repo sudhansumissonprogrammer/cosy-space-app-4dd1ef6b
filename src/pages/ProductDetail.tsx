@@ -13,6 +13,8 @@ import { useMetaTags } from "@/hooks/useMetaTags";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface Variant {
   id: string;
