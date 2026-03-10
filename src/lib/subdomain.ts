@@ -40,4 +40,17 @@ export function getSubdomainSlug(): string | null {
   return subdomain;
 }
 
+/**
+ * Build a storefront-relative path.
+ * In subdomain mode: returns "/path" directly.
+ * In path mode: returns "/store/{slug}/path".
+ */
+export function storefrontPath(slug: string, path: string = ""): string {
+  const subdomain = getSubdomainSlug();
+  if (subdomain) {
+    return path ? `/${path}` : "/";
+  }
+  return path ? `/store/${slug}/${path}` : `/store/${slug}`;
+}
+
 export { ROOT_DOMAIN };
