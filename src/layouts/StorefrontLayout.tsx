@@ -139,6 +139,14 @@ function HamburgerMenu({ store }: { store: StoreData }) {
               Home
             </Link>
             <Link
+              to={storefrontPath(store.slug, "account")}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <User className="h-4 w-4" />
+              My Account
+            </Link>
+            <Link
               to={storefrontPath(store.slug, "wishlist")}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
