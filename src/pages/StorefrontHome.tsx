@@ -93,6 +93,7 @@ export default function StorefrontHome() {
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter((p) => {
+      if ((p as any).is_best_selling) return false; // exclude best sellers from popular
       const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
       const effectivePrice = p.sale_price ?? p.price;
       const matchesPrice = !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
