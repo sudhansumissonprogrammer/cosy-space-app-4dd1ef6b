@@ -5,6 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { storefrontPath } from "@/lib/subdomain";
 
 export default function WishlistPage() {
   const store = useOutletContext<StoreData>();
