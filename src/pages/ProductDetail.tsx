@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { storefrontPath } from "@/lib/subdomain";
 
 interface Variant {
   id: string;
