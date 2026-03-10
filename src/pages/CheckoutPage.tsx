@@ -50,6 +50,7 @@ export default function CheckoutPage() {
 
   // Form
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [city, setCity] = useState("");
@@ -81,6 +82,11 @@ export default function CheckoutPage() {
       if (!pincode) setPincode(defaultAddress.pincode || "");
     }
   }, [defaultAddress]);
+
+  // Auto-fill email from logged-in customer
+  useEffect(() => {
+    if (customer?.email && !email) setEmail(customer.email);
+  }, [customer]);
 
   const isSingleMode = !!productId;
 
@@ -241,8 +247,28 @@ export default function CheckoutPage() {
     return order.id as string;
   };
 
+  const createGuestAccount = async (orderId: string) => {
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      await fetch(`https://${projectId}.supabase.co/functions/v1/create-guest-account`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          phone: phone.trim(),
+          name: fullName.trim(),
+          store_id: store.id,
+          order_id: orderId,
+        }),
+      });
+    } catch (err) {
+      console.error("Guest account creation failed:", err);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { toast.error("Please enter a valid email"); return; }
     if (!phone.trim()) { toast.error("Please enter your phone number"); return; }
     if (!streetAddress.trim()) { toast.error("Please enter your street address"); return; }
     if (!city.trim()) { toast.error("Please enter your city"); return; }
@@ -311,6 +337,10 @@ export default function CheckoutPage() {
                 currency,
                 num_items: checkoutItems.length,
               });
+              // Auto-create guest account if not logged in
+              if (!customer) {
+                createGuestAccount(newOrderId);
+              }
             } catch (err: any) {
               toast.error("Payment verification failed. Contact the store.");
             }
@@ -344,6 +374,11 @@ export default function CheckoutPage() {
         currency,
         num_items: checkoutItems.length,
       });
+
+      // Auto-create guest account if not logged in
+      if (!customer) {
+        createGuestAccount(newOrderId);
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
@@ -366,9 +401,24 @@ export default function CheckoutPage() {
             Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span>
           </p>
         )}
-        <Button asChild className="mt-6">
-          <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
-        </Button>
+        {!customer && (
+          <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <p className="text-sm text-foreground font-medium">Account created!</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              An account has been created with <strong>{email}</strong>. Use "Forgot Password" on the login page to set your password and track your orders.
+            </p>
+          </div>
+        )}
+        <div className="mt-6 flex flex-col gap-2 items-center">
+          {!customer && (
+            <Button asChild variant="outline">
+              <Link to={storefrontPath(store.slug, "login")}>Sign In to Track Orders</Link>
+            </Button>
+          )}
+          <Button asChild>
+            <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -406,6 +456,11 @@ export default function CheckoutPage() {
                   <Label htmlFor="phone">Phone *</Label>
                   <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email *</Label>
+                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
+                {!customer && <p className="text-xs text-muted-foreground">An account will be created so you can track your orders</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="street">Street Address *</Label>
