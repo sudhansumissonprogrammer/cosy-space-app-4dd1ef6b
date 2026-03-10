@@ -244,6 +244,7 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { toast.error("Please enter a valid email"); return; }
     if (!phone.trim()) { toast.error("Please enter your phone number"); return; }
     if (!streetAddress.trim()) { toast.error("Please enter your street address"); return; }
     if (!city.trim()) { toast.error("Please enter your city"); return; }
