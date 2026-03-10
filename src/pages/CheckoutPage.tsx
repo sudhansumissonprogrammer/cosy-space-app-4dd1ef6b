@@ -409,6 +409,11 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="email">Email *</Label>
+                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
+                {!customer && <p className="text-xs text-muted-foreground">An account will be created so you can track your orders</p>}
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="street">Street Address *</Label>
                 <Input id="street" placeholder="123 Main Street, Apt 4B" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
               </div>
