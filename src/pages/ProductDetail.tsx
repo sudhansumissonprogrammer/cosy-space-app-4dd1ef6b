@@ -118,7 +118,7 @@ export default function ProductDetail() {
           <h1 className="text-2xl font-semibold text-foreground">Product not found</h1>
           <p className="text-muted-foreground">This product doesn't exist or is no longer available.</p>
           <Button asChild variant="outline">
-            <Link to={`/store/${store.slug}`}>
+            <Link to={storefrontPath(store.slug)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to store
             </Link>
