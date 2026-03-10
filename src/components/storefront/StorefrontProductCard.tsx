@@ -69,7 +69,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
 
   return (
     <div
-      className="group rounded-2xl bg-card p-3 sm:p-4 transition-all duration-300 ease-out cursor-pointer"
+      className="group rounded-2xl bg-card overflow-hidden transition-all duration-300 ease-out cursor-pointer"
       style={{ boxShadow: cardShadow }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = cardHoverShadow;
