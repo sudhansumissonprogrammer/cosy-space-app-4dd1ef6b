@@ -496,6 +496,56 @@ export default function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Saved address picker */}
+              {savedAddresses && savedAddresses.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <BookMarked className="h-3.5 w-3.5" /> Saved Addresses
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {savedAddresses.map((addr: any) => (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => selectAddress(addr)}
+                        className={`rounded-lg border-2 px-3 py-2 text-left text-xs transition-all ${
+                          selectedAddressId === addr.id
+                            ? "border-primary bg-primary/5"
+                            : "border-input hover:border-primary/30"
+                        }`}
+                      >
+                        <span className="font-medium text-foreground">{addr.label}</span>
+                        {addr.is_default && (
+                          <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0">Default</Badge>
+                        )}
+                        <p className="mt-0.5 text-muted-foreground line-clamp-1">
+                          {[addr.street_address, addr.city].filter(Boolean).join(", ")}
+                        </p>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAddressId(null);
+                        setFullName("");
+                        setPhone("");
+                        setStreetAddress("");
+                        setCity("");
+                        setState("");
+                        setPincode("");
+                      }}
+                      className={`rounded-lg border-2 border-dashed px-3 py-2 text-xs transition-all ${
+                        selectedAddressId === null
+                          ? "border-primary bg-primary/5"
+                          : "border-input hover:border-primary/30"
+                      }`}
+                    >
+                      <span className="font-medium text-foreground">+ New Address</span>
+                    </button>
+                  </div>
+                  <Separator />
+                </div>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="fullName">Full Name *</Label>
