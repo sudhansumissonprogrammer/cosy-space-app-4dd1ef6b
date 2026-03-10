@@ -692,6 +692,90 @@ export default function CheckoutPage() {
           </Card>
         </div>
       </div>
+
+      {/* New Address Dialog */}
+      <Dialog open={showNewAddressDialog} onOpenChange={setShowNewAddressDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Address</DialogTitle>
+            <DialogDescription>Enter your shipping address details below.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Label</Label>
+                <Input value={newAddr.label} onChange={(e) => setNewAddr(p => ({ ...p, label: e.target.value }))} placeholder="Home / Work" maxLength={50} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Full Name *</Label>
+                <Input value={newAddr.full_name} onChange={(e) => setNewAddr(p => ({ ...p, full_name: e.target.value }))} placeholder="John Doe" maxLength={100} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Phone *</Label>
+              <Input value={newAddr.phone} onChange={(e) => setNewAddr(p => ({ ...p, phone: e.target.value }))} placeholder="+91 98765 43210" maxLength={20} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Street Address *</Label>
+              <Input value={newAddr.street_address} onChange={(e) => setNewAddr(p => ({ ...p, street_address: e.target.value }))} placeholder="123 Main Street" maxLength={300} />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">City *</Label>
+                <Input value={newAddr.city} onChange={(e) => setNewAddr(p => ({ ...p, city: e.target.value }))} placeholder="Mumbai" maxLength={100} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">State *</Label>
+                <Input value={newAddr.state} onChange={(e) => setNewAddr(p => ({ ...p, state: e.target.value }))} placeholder="Maharashtra" maxLength={100} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Pincode *</Label>
+                <Input value={newAddr.pincode} onChange={(e) => setNewAddr(p => ({ ...p, pincode: e.target.value }))} placeholder="400001" maxLength={10} />
+              </div>
+            </div>
+            <Button
+              className="w-full"
+              disabled={!newAddr.full_name.trim() || !newAddr.phone.trim() || !newAddr.street_address.trim() || !newAddr.city.trim() || !newAddr.state.trim() || !newAddr.pincode.trim()}
+              onClick={async () => {
+                if (!customer?.id) return;
+                try {
+                  const { count } = await supabase
+                    .from("customer_addresses")
+                    .select("id", { count: "exact", head: true })
+                    .eq("storefront_customer_id", customer.id);
+
+                  const { data: saved, error } = await supabase
+                    .from("customer_addresses")
+                    .insert({
+                      storefront_customer_id: customer.id,
+                      label: newAddr.label.trim() || "Home",
+                      full_name: newAddr.full_name.trim(),
+                      phone: newAddr.phone.trim(),
+                      street_address: newAddr.street_address.trim(),
+                      city: newAddr.city.trim(),
+                      state: newAddr.state.trim(),
+                      pincode: newAddr.pincode.trim(),
+                      is_default: (count ?? 0) === 0,
+                    })
+                    .select()
+                    .single();
+
+                  if (error) throw error;
+
+                  qc.invalidateQueries({ queryKey: ["checkout-saved-addresses", customer.id] });
+                  selectAddress(saved);
+                  setShowNewAddressDialog(false);
+                  toast.success("Address saved!");
+                } catch (err) {
+                  toast.error("Failed to save address");
+                }
+              }}
+            >
+              Save & Use This Address
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
