@@ -138,7 +138,7 @@ export default function StorefrontHome() {
               variant="ghost"
               size="icon"
               onClick={() => setFiltersOpen(true)}
-              className={`h-10 w-10 rounded-full shrink-0 transition-colors ${activeFilterCount > 0 ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-accent/60 hover:bg-accent"}`}
+              className={`h-10 w-10 rounded-full shrink-0 transition-colors ${activeFilterCount > 0 ? "bg-foreground text-background hover:bg-foreground/90" : "bg-accent/60 hover:bg-accent"}`}
             >
               <SlidersHorizontal className="h-4 w-4" />
               {activeFilterCount > 0 && (
@@ -164,13 +164,13 @@ export default function StorefrontHome() {
               <div className="flex gap-2">
                 <button
                   onClick={() => applyAndClose(() => setBestSellingFilter("all"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "all" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "all" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
                 >
                   All
                 </button>
                 <button
                   onClick={() => applyAndClose(() => setBestSellingFilter("best_selling"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "best_selling" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "best_selling" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
                 >
                   Best Selling
                 </button>
@@ -183,7 +183,7 @@ export default function StorefrontHome() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => applyAndClose(() => setPriceRange(null))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${!priceRange ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${!priceRange ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
                 >
                   Any
                 </button>
@@ -191,7 +191,7 @@ export default function StorefrontHome() {
                   <button
                     key={pr.label}
                     onClick={() => applyAndClose(() => setPriceRange(pr.range))}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${priceRange?.[0] === pr.range[0] ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${priceRange?.[0] === pr.range[0] ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
                   >
                     {pr.label}
                   </button>
@@ -205,13 +205,13 @@ export default function StorefrontHome() {
               <div className="flex gap-2">
                 <button
                   onClick={() => applyAndClose(() => setAvailability("all"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "all" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "all" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
                 >
                   All
                 </button>
                 <button
                   onClick={() => applyAndClose(() => setAvailability("in_stock"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "in_stock" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "in_stock" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
                 >
                   In Stock
                 </button>
@@ -297,7 +297,7 @@ export default function StorefrontHome() {
                       onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
                       className={`block w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
                         sortBy === opt.value
-                          ? "bg-primary/10 text-primary"
+                          ? "bg-foreground/10 text-foreground font-bold"
                           : "text-foreground hover:bg-accent/60"
                       }`}
                     >

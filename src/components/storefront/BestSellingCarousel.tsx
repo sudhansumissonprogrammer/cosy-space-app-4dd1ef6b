@@ -1,4 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import {
   Carousel,
@@ -10,6 +12,7 @@ import {
 } from "@/components/ui/carousel";
 import StorefrontProductCard from "./StorefrontProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { storefrontPath } from "@/lib/subdomain";
 
 interface BestSellingCarouselProps {
   products: any[];
@@ -33,7 +36,15 @@ export default function BestSellingCarousel({ products, slug, store }: BestSelli
 
   return (
     <section>
-      <h2 className="mb-4 text-xl font-bold text-foreground">🔥 Best Selling</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-foreground">🔥 Best Selling</h2>
+        <Link
+          to={storefrontPath(slug, "best-sellers")}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:underline"
+        >
+          View All <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
       <div className="relative px-0 md:px-12">
         <Carousel
           setApi={setApi}
@@ -64,7 +75,7 @@ export default function BestSellingCarousel({ products, slug, store }: BestSelli
           <CarouselNext className="hidden md:inline-flex -right-2 md:-right-10" />
         </Carousel>
 
-        {/* Mobile arrows */}
+        {/* Mobile arrows + dots */}
         <div className="flex md:hidden items-center justify-center gap-4 mt-3">
           <button
             onClick={() => api?.scrollPrev()}
@@ -73,15 +84,13 @@ export default function BestSellingCarousel({ products, slug, store }: BestSelli
           >
             ‹
           </button>
-
-          {/* Dot indicators */}
           <div className="flex items-center gap-1.5">
             {Array.from({ length: count }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => api?.scrollTo(i)}
                 className={`rounded-full transition-all duration-300 ${
-              i === current
+                  i === current
                     ? "w-5 h-2 bg-foreground"
                     : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                 }`}
@@ -89,7 +98,6 @@ export default function BestSellingCarousel({ products, slug, store }: BestSelli
               />
             ))}
           </div>
-
           <button
             onClick={() => api?.scrollNext()}
             className="h-8 w-8 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-accent transition-colors"
@@ -99,14 +107,14 @@ export default function BestSellingCarousel({ products, slug, store }: BestSelli
           </button>
         </div>
 
-        {/* Desktop dot indicators */}
+        {/* Desktop dots */}
         <div className="hidden md:flex items-center justify-center gap-1.5 mt-3">
           {Array.from({ length: count }).map((_, i) => (
             <button
               key={i}
               onClick={() => api?.scrollTo(i)}
               className={`rounded-full transition-all duration-300 ${
-              i === current
+                i === current
                   ? "w-5 h-2 bg-foreground"
                   : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
               }`}
