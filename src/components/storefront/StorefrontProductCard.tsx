@@ -133,6 +133,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
           {/* Badge */}
           {(() => {
             const badge = getProductBadge(product.id, product.is_best_selling);
+            if (!badge) return null;
             const BadgeIcon = badge.Icon;
             return (
               <div className="absolute left-2 top-2 z-10">
