@@ -324,7 +324,7 @@ export default function CheckoutPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <Link
-          to={isSingleMode ? `/store/${store.slug}` : `/store/${store.slug}/cart`}
+          to={isSingleMode ? storefrontPath(store.slug) : storefrontPath(store.slug, "cart")}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="h-3 w-3" />

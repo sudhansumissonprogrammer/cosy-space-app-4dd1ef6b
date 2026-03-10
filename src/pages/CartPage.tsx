@@ -31,7 +31,7 @@ export default function CartPage() {
         <h1 className="text-2xl font-bold text-foreground">Your cart is empty</h1>
         <p className="mt-2 text-muted-foreground">Add some products to get started.</p>
         <Button asChild className="mt-6">
-          <Link to={`/store/${store.slug}`}>Continue Shopping</Link>
+          <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
         </Button>
       </div>
     );

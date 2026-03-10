@@ -135,7 +135,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
         </div>
 
         {/* Name */}
-        <Link to={`/store/${slug}/product/${product.slug || product.id}`}>
+        <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)}>
           <h3 className="text-xs font-bold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">
             {product.name}
           </h3>

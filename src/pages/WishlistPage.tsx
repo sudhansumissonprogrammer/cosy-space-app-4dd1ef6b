@@ -81,7 +81,7 @@ export default function WishlistPage() {
                         {item.category}
                       </p>
                     )}
-                    <Link to={`/store/${slug}/product/${item.slug || item.productId}`}>
+                    <Link to={storefrontPath(slug!, `product/${item.slug || item.productId}`)}>
                       <h3 className="text-xs font-bold text-foreground line-clamp-2">{item.name}</h3>
                     </Link>
                     <div className="mt-1 flex flex-wrap items-center gap-1">

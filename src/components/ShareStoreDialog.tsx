@@ -15,7 +15,7 @@ interface ShareStoreDialogProps {
 
 export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOnly }: ShareStoreDialogProps) {
   const [copied, setCopied] = useState(false);
-  const storeUrl = `${window.location.origin}/store/${storeSlug}`;
+  const storeUrl = `https://${storeSlug}.${ROOT_DOMAIN}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(storeUrl)}`;
 
   const handleCopy = async () => {
