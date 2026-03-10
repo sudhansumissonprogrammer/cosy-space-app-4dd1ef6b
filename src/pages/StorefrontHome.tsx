@@ -36,17 +36,6 @@ export default function StorefrontHome() {
   const { slug } = useParams<{ slug: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filtersVisible, setFiltersVisible] = useState(false);
-
-  // Animate filter panel open/close
-  useEffect(() => {
-    if (filtersOpen) {
-      setFiltersVisible(true);
-    } else {
-      const timer = setTimeout(() => setFiltersVisible(false), 250);
-      return () => clearTimeout(timer);
-    }
-  }, [filtersOpen]);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [availability, setAvailability] = useState<"all" | "in_stock">("all");
   const [bestSellingFilter, setBestSellingFilter] = useState<"all" | "best_selling">("all");
@@ -55,18 +44,6 @@ export default function StorefrontHome() {
     fn();
     setFiltersOpen(false);
   };
-  const filterRef = useRef<HTMLDivElement>(null);
-
-  // Close filter panel on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setFiltersOpen(false);
-      }
-    };
-    if (filtersOpen) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [filtersOpen]);
 
   const activeFilterCount = [priceRange, availability !== "all", bestSellingFilter !== "all"].filter(Boolean).length;
 
