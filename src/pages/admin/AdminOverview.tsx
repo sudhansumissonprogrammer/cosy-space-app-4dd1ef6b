@@ -6,6 +6,7 @@ import { Users, Store, ShoppingBag, Ban, Package, DollarSign, UserX } from "luci
 export default function AdminOverview() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_admin_stats");
       if (error) throw error;

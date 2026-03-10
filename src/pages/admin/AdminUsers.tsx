@@ -33,6 +33,7 @@ export default function AdminUsers() {
 
   const { data: profiles, isLoading } = useQuery({
     queryKey: ["admin-users", pagination.page],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles").select("*")

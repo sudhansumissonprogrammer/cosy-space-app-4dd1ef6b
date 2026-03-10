@@ -54,6 +54,7 @@ export default function AdminSubscriptions() {
   // Stores for assignment
   const { data: stores } = useQuery({
     queryKey: ["admin-stores"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase.from("stores").select("id, name, owner_id").order("name");
       if (error) throw error;

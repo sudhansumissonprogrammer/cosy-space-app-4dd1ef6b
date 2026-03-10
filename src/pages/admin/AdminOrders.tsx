@@ -50,6 +50,7 @@ export default function AdminOrders() {
   const webPag = usePagination(webCount ?? undefined);
   const { data: webOrders, isLoading: webLoading } = useQuery({
     queryKey: ["admin-web-orders", webPag.page],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("orders")
