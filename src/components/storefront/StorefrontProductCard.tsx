@@ -21,9 +21,6 @@ interface StorefrontProductCardProps {
   store: Tables<"stores">;
 }
 
-const cardShadow = "0px 1px 1px rgba(0,0,0,0.05), 0px 2px 2px rgba(0,0,0,0.05), 0px 4px 4px rgba(0,0,0,0.05), 0px 8px 8px rgba(0,0,0,0.05), 0px 16px 16px rgba(0,0,0,0.05)";
-const cardHoverShadow = "0px 4px 6px rgba(0,0,0,0.08), 0px 10px 20px rgba(0,0,0,0.10), 0px 20px 40px rgba(0,0,0,0.12)";
-
 export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -68,25 +65,14 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
   const categoryLabel = product.category || "TOP RATED";
 
   return (
-    <div
-      className="group rounded-2xl bg-card p-3 sm:p-4 transition-all duration-300 ease-out cursor-pointer"
-      style={{ boxShadow: cardShadow }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = cardHoverShadow;
-        e.currentTarget.style.transform = "translateY(-6px)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = cardShadow;
-        e.currentTarget.style.transform = "translateY(0)";
-      }}
-    >
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
       {/* Image */}
       <Link to={`/store/${slug}/product/${product.slug || product.id}`} className="block">
-        <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "4/5" }}>
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/5" }}>
           {/* Trending Badge */}
           {product.sale_price && (
-            <div className="absolute left-2 top-2 z-10">
-              <span className="inline-flex items-center gap-1 rounded-full bg-foreground/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-card">
+            <div className="absolute left-2.5 top-2.5 z-10">
+              <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-bold text-card">
                 <Zap className="h-3 w-3" />
                 Trending
               </span>
@@ -96,7 +82,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
           {/* Wishlist Heart */}
           <button
             onClick={handleWishlist}
-            className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm shadow-sm transition-all duration-200 hover:scale-110 hover:bg-card"
+            className="absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-md transition-transform duration-200 hover:scale-110"
           >
             <Heart
               className={`h-4 w-4 transition-colors duration-200 ${
@@ -109,11 +95,11 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
             <img
               src={product.image_url}
               alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+              className="h-full w-full object-cover"
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-secondary/40 rounded-xl">
+            <div className="flex h-full w-full items-center justify-center bg-secondary/40">
               <Package className="h-10 w-10 text-muted-foreground/40" />
             </div>
           )}
@@ -121,27 +107,27 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       </Link>
 
       {/* Info */}
-      <div className="pt-3 space-y-1.5">
+      <div className="px-2.5 pb-2.5 pt-2">
         {/* Category & Rating */}
-        <div className="flex items-center justify-between">
+        <div className="mb-0.5 flex items-center justify-between">
           <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
             {categoryLabel}
           </p>
           <div className="flex items-center gap-0.5">
-            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+            <Star className="h-3 w-3 fill-green-500 text-green-500" />
             <span className="text-[10px] font-semibold text-foreground">{getProductRating(product.id)}</span>
           </div>
         </div>
 
         {/* Name */}
         <Link to={`/store/${slug}/product/${product.slug || product.id}`}>
-          <h3 className="text-xs font-bold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">
+          <h3 className="text-xs font-bold leading-tight text-foreground line-clamp-2">
             {product.name}
           </h3>
         </Link>
 
         {/* Price */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="mt-1 flex flex-wrap items-center gap-1">
           {product.sale_price ? (
             <>
               <span className="text-sm font-extrabold text-foreground">
@@ -151,7 +137,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
                 ₹{Number(product.price).toFixed(0)}
               </span>
               {discountPercent && (
-                <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[9px] font-bold text-success">
+                <span className="rounded bg-success px-1 py-px text-[9px] font-bold text-success-foreground">
                   {discountPercent}% off
                 </span>
               )}
@@ -164,13 +150,15 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
         </div>
 
         {/* Add to Cart */}
-        <button
-          className="btn-gold flex h-9 w-full items-center justify-center gap-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-widest sm:h-10 sm:text-[11px] transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-          onClick={handleAddToCart}
-        >
-          <ShoppingCart className="h-3.5 w-3.5" />
-          <span className="whitespace-nowrap">ADD TO CART</span>
-        </button>
+        <div className="mt-2">
+          <button
+            className="btn-gold flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-widest sm:h-10 sm:text-[11px]"
+            onClick={handleAddToCart}
+          >
+            <ShoppingCart className="h-3.5 w-3.5" />
+            ADD TO CART
+          </button>
+        </div>
       </div>
     </div>
   );
