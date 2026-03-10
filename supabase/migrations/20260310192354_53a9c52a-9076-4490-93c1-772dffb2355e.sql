@@ -1,0 +1,1 @@
+ALTER TABLE public.stores ADD COLUMN facebook_pixel_id text DEFAULT NULL;
