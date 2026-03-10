@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { compressImage } from "@/lib/imageCompression";
+import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -114,10 +114,12 @@ export default function ProductForm({ productId }: ProductFormProps) {
       let image_url: string | null = null;
 
       if (categoryImageFile) {
-        const compressedCat = await compressImage(categoryImageFile);
-        const ext = compressedCat.name.split(".").pop();
+        const result = await compressImage(categoryImageFile);
+        const msg = getCompressionMessage(result);
+        if (msg) toast.success(msg);
+        const ext = result.file.name.split(".").pop();
         const path = `${storeId}/${slug}-${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("product-images").upload(path, compressedCat);
+        const { error: upErr } = await supabase.storage.from("product-images").upload(path, result.file);
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
         image_url = urlData.publicUrl;
@@ -287,12 +289,14 @@ export default function ProductForm({ productId }: ProductFormProps) {
   };
 
   const uploadImage = async (file: File) => {
-    const compressed = await compressImage(file);
-    const ext = compressed.name.split(".").pop();
+    const result = await compressImage(file);
+    const msg = getCompressionMessage(result);
+    if (msg) toast.success(msg);
+    const ext = result.file.name.split(".").pop();
     const path = `${user!.id}/${storeId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { data, error } = await supabase.storage
       .from("product-images")
-      .upload(path, compressed, { cacheControl: "3600", upsert: true });
+      .upload(path, result.file, { cacheControl: "3600", upsert: true });
     if (error) throw error;
     return supabase.storage.from("product-images").getPublicUrl(data.path).data.publicUrl;
   };

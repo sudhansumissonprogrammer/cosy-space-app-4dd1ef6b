@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Upload, X, Crown } from "lucide-react";
-import { compressImage } from "@/lib/imageCompression";
+import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -65,12 +65,14 @@ export default function UserSettings() {
     mutationFn: async () => {
       let avatarUrl = profile?.avatar_url || null;
       if (avatarFile) {
-        const compressedAvatar = await compressImage(avatarFile);
-        const ext = compressedAvatar.name.split(".").pop();
+        const result = await compressImage(avatarFile);
+        const msg = getCompressionMessage(result);
+        if (msg) toast.success(msg);
+        const ext = result.file.name.split(".").pop();
         const path = `${user!.id}/avatar.${ext}`;
         const { data, error } = await supabase.storage
           .from("store-logos")
-          .upload(path, compressedAvatar, { cacheControl: "3600", upsert: true });
+          .upload(path, result.file, { cacheControl: "3600", upsert: true });
         if (error) throw error;
         avatarUrl = supabase.storage.from("store-logos").getPublicUrl(data.path).data.publicUrl;
       }
