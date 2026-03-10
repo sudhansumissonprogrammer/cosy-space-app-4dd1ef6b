@@ -159,6 +159,8 @@ function AppRouter() {
           <Route path="contact" element={<StorefrontContact />} />
           <Route path="return-policy" element={<StorefrontReturnPolicy />} />
           <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
+          <Route path="terms" element={<StorefrontTerms />} />
+          <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
           <Route path="category/:categorySlug" element={<CategoryDetail />} />
           <Route path="product/:productSlug" element={<ProductDetail />} />
           <Route path="cart" element={<CartPage />} />
