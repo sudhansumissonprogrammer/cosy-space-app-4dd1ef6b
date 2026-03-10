@@ -192,7 +192,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (!isSingleMode && checkoutItems.length === 0) {
+  if (!isSingleMode && checkoutItems.length === 0 && !orderPlaced) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
