@@ -328,22 +328,24 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
             
             {/* Sticky Nav */}
             <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
-              <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+              <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
                 <HamburgerMenu store={store} />
-                <Link to={storefrontPath(store.slug)} className="flex-shrink-0">
+                <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0">
                   {store.logo_url ? (
-                    <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" />
+                    <img src={store.logo_url} alt={store.name} className="h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[160px] object-contain" />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                      <Store className="h-5 w-5 text-primary-foreground" />
+                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
+                      <Store className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
                     </div>
                   )}
                 </Link>
                 <div className="flex-1" />
-                <AccountBadge slug={store.slug} />
-                <WishlistBadge slug={store.slug} />
-                <CartBadge />
-                <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
+                <div className="flex items-center gap-0 sm:gap-1">
+                  <AccountBadge slug={store.slug} />
+                  <WishlistBadge slug={store.slug} />
+                  <CartBadge />
+                  <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
+                </div>
               </div>
             </nav>
 
