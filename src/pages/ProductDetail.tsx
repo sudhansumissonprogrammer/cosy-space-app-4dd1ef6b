@@ -432,11 +432,67 @@ function WhatsAppOrderForm({
         </div>
       </div>
 
-
       <Button className="w-full" onClick={handleOrder} disabled={ordering}>
         {ordering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}
         Confirm & Open WhatsApp — {currency} {Number(finalPrice).toFixed(2)}
       </Button>
     </div>
+  );
+}
+
+/* ── Related Products ── */
+function RelatedProducts({
+  storeId,
+  storeSlug,
+  currentProductId,
+  currentCategory,
+  store,
+}: {
+  storeId: string;
+  storeSlug: string;
+  currentProductId: string;
+  currentCategory: string | null;
+  store: Tables<"stores">;
+}) {
+  const { data: related } = useQuery({
+    queryKey: ["related-products", storeId, currentProductId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .neq("id", currentProductId)
+        .limit(8);
+      if (error) throw error;
+
+      // Prioritize same category
+      if (currentCategory && data.length > 4) {
+        const sameCategory = data.filter((p) => p.category === currentCategory);
+        const otherCategory = data.filter((p) => p.category !== currentCategory);
+        return [...sameCategory, ...otherCategory].slice(0, 4);
+      }
+      return data.slice(0, 4);
+    },
+    enabled: !!storeId && !!currentProductId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (!related || related.length === 0) return null;
+
+  return (
+    <section className="mt-12 pt-8 border-t border-border">
+      <h2 className="mb-5 text-xl font-bold text-foreground">You May Also Like</h2>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+        {related.map((product) => (
+          <StorefrontProductCard
+            key={product.id}
+            product={product}
+            slug={storeSlug}
+            store={store}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
