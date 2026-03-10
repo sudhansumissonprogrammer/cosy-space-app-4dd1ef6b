@@ -54,7 +54,14 @@ import StorePayments from "./pages/StorePayments";
 const CartPage = lazy(() => import("./pages/CartPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 3 * 60 * 1000, // 3 minutes — prevents refetch on every navigation
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const LoadingSpinner = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
