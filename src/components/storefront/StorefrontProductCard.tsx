@@ -27,10 +27,15 @@ const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
 export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
-  const { addToCart } = useCart();
+  const { addToCart, items, updateQuantity } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const [isAdding, setIsAdding] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
 
   const wishlisted = isWishlisted(product.id);
+
+  const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
+  const cartQty = cartItem?.quantity || 0;
 
   const price = product.sale_price && product.sale_price < product.price
     ? Number(product.sale_price)
@@ -39,13 +44,32 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      price,
-      image: product.image_url || undefined,
-    });
-    toast.success(`${product.name} added to cart`);
+    if (isAdding) return;
+    setIsAdding(true);
+    setTimeout(() => {
+      addToCart({
+        productId: product.id,
+        name: product.name,
+        price,
+        image: product.image_url || undefined,
+      });
+      setIsAdding(false);
+      setJustAdded(true);
+      toast.success(`${product.name} added to cart`);
+      setTimeout(() => setJustAdded(false), 1500);
+    }, 600);
+  };
+
+  const handleIncrement = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    updateQuantity(product.id, undefined, cartQty + 1);
+  };
+
+  const handleDecrement = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    updateQuantity(product.id, undefined, cartQty - 1);
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
