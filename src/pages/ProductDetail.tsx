@@ -34,7 +34,6 @@ export default function ProductDetail() {
   const queryClient = useQueryClient();
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-  const [whatsappOpen, setWhatsappOpen] = useState(false);
 
   // Try to get product instantly from cached storefront data
   const getCachedProduct = () => {
