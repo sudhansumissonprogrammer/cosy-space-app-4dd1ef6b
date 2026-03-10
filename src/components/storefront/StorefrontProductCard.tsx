@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Package, ShoppingCart, Star, Zap, Heart, Check, Plus, Minus, Loader2 } from "lucide-react";
+import { Package, ShoppingCart, Star, Zap, Heart, Check, Plus, Minus, Loader2, Flame, Sparkles } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
@@ -15,6 +15,25 @@ function getProductRating(productId: string): number {
   }
   const ratings = [4.2, 4.3, 4.3, 4.4, 4.5, 4.5, 4.5, 4.6, 4.6, 4.6, 4.6, 4.7, 4.8, 4.9];
   return ratings[Math.abs(hash) % ratings.length];
+}
+
+type BadgeType = "trending" | "new" | "bestseller";
+
+const badges: { type: BadgeType; label: string; Icon: typeof Zap; bg: string }[] = [
+  { type: "trending", label: "Trending", Icon: Zap, bg: "bg-foreground/90 text-card" },
+  { type: "new", label: "New Arrival", Icon: Sparkles, bg: "bg-emerald-500/90 text-white" },
+  { type: "bestseller", label: "Best Seller", Icon: Flame, bg: "bg-orange-500/90 text-white" },
+];
+
+function getProductBadge(productId: string, isBestSelling: boolean): typeof badges[number] {
+  if (isBestSelling) return badges[2]; // Best Seller
+  let hash = 0;
+  for (let i = 0; i < productId.length; i++) {
+    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % 3;
+  return badges[idx];
 }
 
 interface StorefrontProductCardProps {
@@ -109,15 +128,19 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       {/* Image */}
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
         <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "3/4" }}>
-          {/* Trending Badge */}
-          {product.sale_price && (
-            <div className="absolute left-2 top-2 z-10">
-              <span className="inline-flex items-center gap-1 rounded-full bg-foreground/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-card">
-                <Zap className="h-3 w-3" />
-                Trending
-              </span>
-            </div>
-          )}
+          {/* Badge */}
+          {(() => {
+            const badge = getProductBadge(product.id, product.is_best_selling);
+            const BadgeIcon = badge.Icon;
+            return (
+              <div className="absolute left-2 top-2 z-10">
+                <span className={`inline-flex items-center gap-1 rounded-full backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold ${badge.bg}`}>
+                  <BadgeIcon className="h-3 w-3" />
+                  {badge.label}
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Wishlist Heart */}
           <button
