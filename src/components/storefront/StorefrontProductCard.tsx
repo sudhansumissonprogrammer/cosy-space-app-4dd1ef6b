@@ -137,7 +137,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
             const BadgeIcon = badge.Icon;
             return (
               <div className="absolute left-2 top-2 z-10">
-                <span className={`inline-flex items-center gap-1 rounded-full backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold ${badge.bg}`}>
+                <span className={`inline-flex items-center gap-0.5 rounded-full backdrop-blur-sm px-1.5 py-0.5 text-[8px] font-bold ${badge.bg}`}>
                   <BadgeIcon className="h-3 w-3" />
                   {badge.label}
                 </span>
