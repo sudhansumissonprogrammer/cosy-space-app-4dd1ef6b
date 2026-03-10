@@ -102,17 +102,22 @@ export default function StorefrontHome() {
     { label: "₹2000+", range: [2000, Infinity] },
   ];
 
+  const bestSellingProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter((p: any) => p.is_best_selling);
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter((p) => {
       const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = !selectedCategory || p.category === selectedCategory;
       const effectivePrice = p.sale_price ?? p.price;
       const matchesPrice = !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
       const matchesAvail = availability === "all" || p.stock_quantity > 0;
-      return matchesSearch && matchesCategory && matchesPrice && matchesAvail;
+      const matchesBestSelling = bestSellingFilter === "all" || (p as any).is_best_selling;
+      return matchesSearch && matchesPrice && matchesAvail && matchesBestSelling;
     });
-  }, [products, searchQuery, selectedCategory, priceRange, availability]);
+  }, [products, searchQuery, priceRange, availability, bestSellingFilter]);
 
   return (
     <>
