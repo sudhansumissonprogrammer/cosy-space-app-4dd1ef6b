@@ -14,6 +14,7 @@ import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 
 import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
+import { useStoreJsonLd } from "@/hooks/useJsonLd";
 
 function ProductCardSkeleton() {
   return (
@@ -43,6 +44,15 @@ export default function StorefrontHome() {
   const [bestSellingFilter, setBestSellingFilter] = useState<"all" | "best_selling">("all");
   const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
   const [sortOpen, setSortOpen] = useState(false);
+
+  useStoreJsonLd({
+    storeName: store.name,
+    storeSlug: store.slug,
+    description: store.description,
+    logo: store.logo_url,
+    location: store.location,
+    whatsappNumber: store.whatsapp_number,
+  });
 
   const applyAndClose = (fn: () => void) => {
     fn();
@@ -337,7 +347,6 @@ export default function StorefrontHome() {
           )}
         </section>
 
-        
       </div>
     </>
   );

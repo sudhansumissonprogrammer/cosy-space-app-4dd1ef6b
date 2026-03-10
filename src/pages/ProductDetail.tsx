@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ArrowLeft, MessageCircle, Package, Loader2, ChevronLeft, ChevronRight, Tag, ShoppingBag, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
+import { useProductJsonLd } from "@/hooks/useJsonLd";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -114,6 +115,24 @@ export default function ProductDetail() {
     ogImage: product?.image_url || undefined,
     storeSlug: store.slug,
     canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
+  });
+
+  useProductJsonLd({
+    product: product ? {
+      name: product.name,
+      description: product.description,
+      image_url: product.image_url,
+      price: Number(product.price),
+      sale_price: product.sale_price ? Number(product.sale_price) : null,
+      currency: product.currency || store.currency || "INR",
+      slug: product.slug,
+      id: product.id,
+      category: product.category,
+      stock_quantity: product.stock_quantity,
+      sku: product.sku,
+    } : { name: "", price: 0, id: "", currency: "INR" },
+    storeSlug: store.slug,
+    storeName: store.name,
   });
 
   const allImages = (() => {
