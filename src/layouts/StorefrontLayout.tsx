@@ -105,7 +105,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
           </div>
           <nav className="flex flex-col gap-1 p-4">
             <Link
-              to={`/store/${store.slug}`}
+              to={storefrontPath(store.slug)}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
@@ -113,7 +113,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
               Home
             </Link>
             <Link
-              to={`/store/${store.slug}/wishlist`}
+              to={storefrontPath(store.slug, "wishlist")}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
@@ -121,7 +121,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
               Wishlist
             </Link>
             <Link
-              to={`/store/${store.slug}/contact`}
+              to={storefrontPath(store.slug, "contact")}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
