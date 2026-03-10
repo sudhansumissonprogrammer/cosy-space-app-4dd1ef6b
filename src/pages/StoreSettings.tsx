@@ -139,6 +139,8 @@ export default function StoreSettings() {
           banner_url: bannerUrl,
           theme,
           features: features.length > 0 ? features : null,
+          return_policy: returnPolicy.trim() || null,
+          shipping_policy: shippingPolicy.trim() || null,
         })
         .eq("id", storeId!);
       if (error) throw error;
