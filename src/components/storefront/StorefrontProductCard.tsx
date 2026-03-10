@@ -81,8 +81,8 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       }}
     >
       {/* Image */}
-      <Link to={`/store/${slug}/product/${product.slug || product.id}`} className="block">
-        <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/4" }}>
+      <Link to={`/store/${slug}/product/${product.slug || product.id}`} className="block p-2 pb-0">
+        <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "3/4" }}>
           {/* Trending Badge */}
           {product.sale_price && (
             <div className="absolute left-2 top-2 z-10">
