@@ -122,8 +122,27 @@ function AuthRoutes() {
 /** Router that splits storefront (no auth) from everything else */
 function AppRouter() {
   const location = useLocation();
-  const isStorefront = location.pathname.startsWith("/store/");
+  const subdomainSlug = getSubdomainSlug();
 
+  // Subdomain-based storefront (e.g. brand.storivo.in)
+  if (subdomainSlug) {
+    return (
+      <Routes>
+        <Route path="/" element={<StorefrontLayout slugOverride={subdomainSlug} />}>
+          <Route index element={<StorefrontHome />} />
+          <Route path="contact" element={<StorefrontContact />} />
+          <Route path="category/:categorySlug" element={<CategoryDetail />} />
+          <Route path="product/:productSlug" element={<ProductDetail />} />
+          <Route path="cart" element={<CartPage />} />
+          <Route path="wishlist" element={<WishlistPage />} />
+          <Route path="checkout" element={<CheckoutPage />} />
+        </Route>
+      </Routes>
+    );
+  }
+
+  // Path-based storefront (/store/:slug)
+  const isStorefront = location.pathname.startsWith("/store/");
   if (isStorefront) {
     return (
       <Routes>
