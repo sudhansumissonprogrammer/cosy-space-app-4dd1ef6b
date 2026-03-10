@@ -314,7 +314,7 @@ export default function CheckoutPage() {
           </p>
         )}
         <Button asChild className="mt-6">
-          <Link to={`/store/${store.slug}`}>Continue Shopping</Link>
+          <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
         </Button>
       </div>
     );
