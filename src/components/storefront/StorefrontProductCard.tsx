@@ -69,7 +69,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
 
   return (
     <div
-      className="group rounded-2xl bg-card p-3 sm:p-4 transition-all duration-300 ease-out cursor-pointer"
+      className="group rounded-2xl bg-card overflow-hidden transition-all duration-300 ease-out cursor-pointer"
       style={{ boxShadow: cardShadow }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = cardHoverShadow;
@@ -82,7 +82,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
     >
       {/* Image */}
       <Link to={`/store/${slug}/product/${product.slug || product.id}`} className="block">
-        <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "4/5" }}>
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/5" }}>
           {/* Trending Badge */}
           {product.sale_price && (
             <div className="absolute left-2 top-2 z-10">
@@ -113,7 +113,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-secondary/40 rounded-xl">
+            <div className="flex h-full w-full items-center justify-center bg-secondary/40">
               <Package className="h-10 w-10 text-muted-foreground/40" />
             </div>
           )}
@@ -121,7 +121,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       </Link>
 
       {/* Info */}
-      <div className="pt-3 space-y-1.5">
+      <div className="px-3 pt-3 pb-3 sm:px-4 sm:pb-4 space-y-1.5">
         {/* Category & Rating */}
         <div className="flex items-center justify-between">
           <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
