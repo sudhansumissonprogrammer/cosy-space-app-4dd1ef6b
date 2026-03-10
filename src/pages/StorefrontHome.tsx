@@ -211,7 +211,7 @@ export default function StorefrontHome() {
                 </button>
                 <button
                   onClick={() => applyAndClose(() => setAvailability("in_stock"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "in_stock" ? "bg-primary text-primary-foreground" : "bg-accent text-foreground hover:bg-accent/80"}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "in_stock" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
                 >
                   In Stock
                 </button>
