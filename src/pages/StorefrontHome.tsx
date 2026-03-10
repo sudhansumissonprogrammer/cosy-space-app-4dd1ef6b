@@ -13,6 +13,7 @@ import StorefrontProductCard from "@/components/storefront/StorefrontProductCard
 import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 
 import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
+import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 
 function ProductCardSkeleton() {
   return (
@@ -236,6 +237,8 @@ export default function StorefrontHome() {
         storeSlug={slug!}
         isLoading={categoriesLoading}
       />
+
+      <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
 
       <div className="mx-auto max-w-6xl px-4 pt-4 pb-8 space-y-6">
 

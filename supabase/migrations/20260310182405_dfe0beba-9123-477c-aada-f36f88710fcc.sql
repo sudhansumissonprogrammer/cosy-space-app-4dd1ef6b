@@ -1,0 +1,1 @@
+ALTER TABLE public.stores ADD COLUMN mobile_hero_url text DEFAULT null;

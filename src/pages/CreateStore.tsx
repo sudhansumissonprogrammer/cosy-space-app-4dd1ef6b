@@ -85,8 +85,10 @@ export default function CreateStore() {
   const [orderMode, setOrderMode] = useState<"whatsapp" | "website">("whatsapp");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [heroFile, setHeroFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string | null>(null);
 
   // Step 2 - Location
   const [city, setCity] = useState("");
@@ -168,6 +170,7 @@ export default function CreateStore() {
     try {
       let logoUrl: string | null = null;
       let bannerUrl: string | null = null;
+      let mobileHeroUrl: string | null = null;
 
       if (logoFile) {
         const ext = logoFile.name.split(".").pop();
@@ -176,6 +179,10 @@ export default function CreateStore() {
       if (bannerFile) {
         const ext = bannerFile.name.split(".").pop();
         bannerUrl = await uploadFile(bannerFile, "store-banners", `${user.id}/${slug}-banner.${ext}`);
+      }
+      if (heroFile) {
+        const ext = heroFile.name.split(".").pop();
+        mobileHeroUrl = await uploadFile(heroFile, "store-banners", `${user.id}/${slug}-mobile-hero.${ext}`);
       }
 
       const { error } = await (supabase as any).from("stores").insert({
@@ -193,6 +200,7 @@ export default function CreateStore() {
         facebook_url: facebookUrl.trim() || null,
         logo_url: logoUrl,
         banner_url: bannerUrl,
+        mobile_hero_url: mobileHeroUrl,
         theme,
       });
 
@@ -404,6 +412,35 @@ export default function CreateStore() {
                       </label>
                     )}
                   </div>
+                </div>
+
+                {/* Mobile Hero Banner (optional) */}
+                <div className="space-y-2">
+                  <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(optional — shown only on mobile)</span></Label>
+                  {heroPreview ? (
+                    <div className="relative">
+                      <img src={heroPreview} alt="Mobile Hero" className="w-full rounded-xl border object-contain max-h-48" />
+                      <button
+                        type="button"
+                        onClick={() => removeFile(setHeroFile, setHeroPreview)}
+                        className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-input transition-all hover:border-primary/50 hover:bg-accent/50">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Upload mobile hero image</span>
+                      <span className="text-[10px] text-muted-foreground/70">You can skip this</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setHeroFile, setHeroPreview)}
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
             )}
