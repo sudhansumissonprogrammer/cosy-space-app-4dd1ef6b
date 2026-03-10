@@ -114,10 +114,12 @@ export default function ProductForm({ productId }: ProductFormProps) {
       let image_url: string | null = null;
 
       if (categoryImageFile) {
-        const compressedCat = await compressImage(categoryImageFile);
-        const ext = compressedCat.name.split(".").pop();
+        const result = await compressImage(categoryImageFile);
+        const msg = getCompressionMessage(result);
+        if (msg) toast.success(msg);
+        const ext = result.file.name.split(".").pop();
         const path = `${storeId}/${slug}-${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("product-images").upload(path, compressedCat);
+        const { error: upErr } = await supabase.storage.from("product-images").upload(path, result.file);
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
         image_url = urlData.publicUrl;
