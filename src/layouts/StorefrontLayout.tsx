@@ -75,6 +75,18 @@ function WishlistBadge({ slug }: { slug: string }) {
   );
 }
 
+function AccountBadge({ slug }: { slug: string }) {
+  const { user, loading } = useStorefrontAuth();
+  if (loading) return null;
+  return (
+    <Link to={storefrontPath(slug, user ? "account" : "login")}>
+      <Button variant="ghost" size="icon" className="h-9 w-9">
+        <User className="h-5 w-5" />
+      </Button>
+    </Link>
+  );
+}
+
 function HamburgerMenu({ store }: { store: StoreData }) {
   const [open, setOpen] = useState(false);
 
