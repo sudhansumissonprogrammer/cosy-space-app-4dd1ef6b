@@ -347,12 +347,6 @@ export default function StorefrontHome() {
           )}
         </section>
 
-  useStoreJsonLd({
-    storeName: store.name, storeSlug: store.slug,
-    description: store.description, logo: store.logo_url,
-    location: store.location, whatsappNumber: store.whatsapp_number,
-  });
-
       </div>
     </>
   );
