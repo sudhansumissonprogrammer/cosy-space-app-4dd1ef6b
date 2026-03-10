@@ -413,6 +413,35 @@ export default function CreateStore() {
                     )}
                   </div>
                 </div>
+
+                {/* Mobile Hero Banner (optional) */}
+                <div className="space-y-2">
+                  <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(optional — shown only on mobile)</span></Label>
+                  {heroPreview ? (
+                    <div className="relative">
+                      <img src={heroPreview} alt="Mobile Hero" className="w-full rounded-xl border object-contain max-h-48" />
+                      <button
+                        type="button"
+                        onClick={() => removeFile(setHeroFile, setHeroPreview)}
+                        className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-input transition-all hover:border-primary/50 hover:bg-accent/50">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Upload mobile hero image</span>
+                      <span className="text-[10px] text-muted-foreground/70">You can skip this</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setHeroFile, setHeroPreview)}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
             )}
 

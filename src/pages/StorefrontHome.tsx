@@ -238,6 +238,8 @@ export default function StorefrontHome() {
         isLoading={categoriesLoading}
       />
 
+      <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
+
       <div className="mx-auto max-w-6xl px-4 pt-4 pb-8 space-y-6">
 
         {/* Best Selling Section */}

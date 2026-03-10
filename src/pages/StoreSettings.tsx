@@ -333,6 +333,36 @@ export default function StoreSettings() {
                 )}
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(shown only on mobile)</span></Label>
+              {heroPreview ? (
+                <div className="relative inline-block">
+                  <img src={heroPreview} alt="Mobile Hero" className="w-full max-h-32 rounded-lg border object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => { setHeroFile(null); setHeroPreview(null); }}
+                    className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input hover:border-primary/50">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Upload mobile hero</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) { setHeroFile(f); setHeroPreview(URL.createObjectURL(f)); }
+                    }}
+                  />
+                </label>
+              )}
+            </div>
           </CardContent>
         </Card>
 
