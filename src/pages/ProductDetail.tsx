@@ -343,9 +343,122 @@ export default function ProductDetail() {
   );
 }
 
-/* ── Image Gallery ── */
+/* ── Share Buttons ── */
+function ShareButtons({ productName }: { productName: string }) {
+  const url = window.location.href;
+  const text = `Check out ${productName}!`;
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied!");
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  return (
+    <div className="mt-6 flex items-center gap-3">
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Share</span>
+      <Button variant="outline" size="icon" className="h-8 w-8" onClick={copyLink} title="Copy link">
+        <Copy className="h-3.5 w-3.5" />
+      </Button>
+      <Button variant="outline" size="icon" className="h-8 w-8" asChild title="Share on WhatsApp">
+        <a href={`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`} target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.243-1.213l-.304-.181-2.868.852.852-2.868-.181-.304A8 8 0 1 1 12 20z"/></svg>
+        </a>
+      </Button>
+      <Button variant="outline" size="icon" className="h-8 w-8" asChild title="Share on Facebook">
+        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer">
+          <Facebook className="h-3.5 w-3.5" />
+        </a>
+      </Button>
+      <Button variant="outline" size="icon" className="h-8 w-8" asChild title="Share on X">
+        <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">
+          <Twitter className="h-3.5 w-3.5" />
+        </a>
+      </Button>
+    </div>
+  );
+}
+
+/* ── Image Gallery with Pinch-to-Zoom ── */
 function ImageGallery({ images, productName }: { images: string[]; productName: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastDistance = useRef<number | null>(null);
+  const lastCenter = useRef<{ x: number; y: number } | null>(null);
+  const isDragging = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+
+  const resetZoom = useCallback(() => {
+    setScale(1);
+    setTranslate({ x: 0, y: 0 });
+    setZoomed(false);
+  }, []);
+
+  useEffect(() => { resetZoom(); }, [activeIndex, resetZoom]);
+
+  const getDistance = (t1: React.Touch, t2: React.Touch) =>
+    Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      lastDistance.current = getDistance(e.touches[0], e.touches[1]);
+      lastCenter.current = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      };
+    } else if (e.touches.length === 1 && scale > 1) {
+      isDragging.current = true;
+      lastPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && lastDistance.current !== null) {
+      e.preventDefault();
+      const dist = getDistance(e.touches[0], e.touches[1]);
+      const newScale = Math.min(4, Math.max(1, scale * (dist / lastDistance.current)));
+      setScale(newScale);
+      setZoomed(newScale > 1);
+      lastDistance.current = dist;
+      if (newScale <= 1) setTranslate({ x: 0, y: 0 });
+    } else if (e.touches.length === 1 && isDragging.current && scale > 1) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - lastPos.current.x;
+      const dy = e.touches[0].clientY - lastPos.current.y;
+      setTranslate(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+      lastPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+
+  const handleTouchEnd = () => {
+    lastDistance.current = null;
+    lastCenter.current = null;
+    isDragging.current = false;
+    if (scale <= 1) resetZoom();
+  };
+
+  // Desktop: double-click to zoom
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (scale > 1) {
+      resetZoom();
+    } else {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect) {
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        setScale(2.5);
+        setTranslate({ x: -x, y: -y });
+        setZoomed(true);
+      }
+    }
+  };
 
   if (images.length === 0) {
     return (
@@ -359,9 +472,33 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
 
   return (
     <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-2xl bg-accent">
-        <img src={images[activeIndex]} alt={productName} className="aspect-square w-full object-cover" decoding="async" fetchPriority="high" />
-        {images.length > 1 && (
+      <div
+        ref={containerRef}
+        className="relative overflow-hidden rounded-2xl bg-accent touch-none cursor-zoom-in select-none"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onDoubleClick={handleDoubleClick}
+        style={{ cursor: zoomed ? "grab" : "zoom-in" }}
+      >
+        <img
+          src={images[activeIndex]}
+          alt={productName}
+          className="aspect-square w-full object-cover transition-transform duration-100"
+          style={{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})` }}
+          decoding="async"
+          fetchPriority="high"
+          draggable={false}
+        />
+        {zoomed && (
+          <button
+            onClick={resetZoom}
+            className="absolute top-2 right-2 z-10 rounded-full bg-background/80 p-1.5 shadow backdrop-blur-sm hover:bg-background"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+        {images.length > 1 && !zoomed && (
           <>
             <button
               onClick={() => setActiveIndex((i) => (i - 1 + images.length) % images.length)}
