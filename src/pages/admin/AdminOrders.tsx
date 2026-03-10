@@ -74,9 +74,7 @@ export default function AdminOrders() {
 
         <TabsContent value="whatsapp" className="space-y-4">
           {waLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
+            <TableSkeleton columns={7} rows={5} />
           ) : waOrders && waOrders.length > 0 ? (
             <>
               <Card>
