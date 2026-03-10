@@ -95,6 +95,8 @@ export default function StoreSettings() {
       if (store.banner_url) setBannerPreview(store.banner_url);
       setTheme((store as any).theme || "theme-1");
       if (store.features) setFeatures(store.features as unknown as Feature[]);
+      setReturnPolicy((store as any).return_policy || "");
+      setShippingPolicy((store as any).shipping_policy || "");
     }
   }, [store]);
 
