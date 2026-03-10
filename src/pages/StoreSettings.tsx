@@ -99,6 +99,7 @@ export default function StoreSettings() {
       if (store.features) setFeatures(store.features as unknown as Feature[]);
       setReturnPolicy((store as any).return_policy || "");
       setShippingPolicy((store as any).shipping_policy || "");
+      setBestSellingCarousel((store as any).best_selling_carousel || false);
     }
   }, [store]);
 
