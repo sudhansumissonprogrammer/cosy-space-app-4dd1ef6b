@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { fbPixelTrack } from "@/hooks/useFacebookPixel";
 
 export interface CartItem {
   productId: string;
