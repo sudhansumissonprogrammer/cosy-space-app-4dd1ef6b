@@ -204,8 +204,8 @@ function StorefrontSkeleton() {
   );
 }
 
-export default function StorefrontLayout() {
-  const { store, isLoading, slug } = useStorefront();
+export default function StorefrontLayout({ slugOverride }: { slugOverride?: string } = {}) {
+  const { store, isLoading, slug } = useStorefront(slugOverride);
   const queryClient = useQueryClient();
 
   // Prefetch products & categories as soon as store.id is available
