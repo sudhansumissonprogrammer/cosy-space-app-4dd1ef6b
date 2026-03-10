@@ -128,7 +128,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
     >
       {/* Image */}
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
-        <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "3/4" }}>
+        <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "4/5" }}>
           {/* Badge */}
           {(() => {
             const badge = getProductBadge(product.id, product.is_best_selling);

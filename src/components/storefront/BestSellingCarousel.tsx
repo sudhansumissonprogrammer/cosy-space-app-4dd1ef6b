@@ -81,8 +81,8 @@ export default function BestSellingCarousel({ products, slug, store }: BestSelli
                 key={i}
                 onClick={() => api?.scrollTo(i)}
                 className={`rounded-full transition-all duration-300 ${
-                  i === current
-                    ? "w-5 h-2 bg-primary"
+              i === current
+                    ? "w-5 h-2 bg-foreground"
                     : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                 }`}
                 aria-label={`Go to slide ${i + 1}`}
@@ -106,8 +106,8 @@ export default function BestSellingCarousel({ products, slug, store }: BestSelli
               key={i}
               onClick={() => api?.scrollTo(i)}
               className={`rounded-full transition-all duration-300 ${
-                i === current
-                  ? "w-5 h-2 bg-primary"
+              i === current
+                  ? "w-5 h-2 bg-foreground"
                   : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
               }`}
               aria-label={`Go to slide ${i + 1}`}
