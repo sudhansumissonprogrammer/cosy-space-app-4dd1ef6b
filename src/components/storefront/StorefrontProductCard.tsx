@@ -128,15 +128,19 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
       {/* Image */}
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
         <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "3/4" }}>
-          {/* Trending Badge */}
-          {product.sale_price && (
-            <div className="absolute left-2 top-2 z-10">
-              <span className="inline-flex items-center gap-1 rounded-full bg-foreground/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-card">
-                <Zap className="h-3 w-3" />
-                Trending
-              </span>
-            </div>
-          )}
+          {/* Badge */}
+          {(() => {
+            const badge = getProductBadge(product.id, product.is_best_selling);
+            const BadgeIcon = badge.Icon;
+            return (
+              <div className="absolute left-2 top-2 z-10">
+                <span className={`inline-flex items-center gap-1 rounded-full backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold ${badge.bg}`}>
+                  <BadgeIcon className="h-3 w-3" />
+                  {badge.label}
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Wishlist Heart */}
           <button
