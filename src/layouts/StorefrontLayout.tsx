@@ -331,6 +331,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
 
           <Outlet context={store} />
           <StorefrontFooter store={store} />
+          <FloatingWhatsApp store={store} />
         </div>
       </WishlistProvider>
     </CartProvider>
