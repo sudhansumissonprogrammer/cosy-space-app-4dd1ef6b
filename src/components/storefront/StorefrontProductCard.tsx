@@ -192,7 +192,7 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
         {/* Add to Cart */}
         {cartQty > 0 && !isAdding && !justAdded ? (
           /* Quantity controls */
-          <div className="flex h-9 sm:h-10 w-full items-center rounded-xl border-2 border-primary overflow-hidden">
+          <div className="flex h-9 sm:h-10 w-full items-center rounded-xl border-2 border-[#b8860b] overflow-hidden bg-gradient-to-r from-[#d4a030]/10 to-[#b8860b]/10">
             <button
               onClick={handleDecrement}
               className="flex h-full w-10 items-center justify-center bg-primary/10 text-primary transition-colors hover:bg-primary/20 active:scale-95"
