@@ -249,6 +249,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     title: store ? `${store.name} — Store` : undefined,
     description: store?.description || undefined,
     ogImage: store?.logo_url || undefined,
+    storeSlug: store?.slug,
   });
 
   // Track page view

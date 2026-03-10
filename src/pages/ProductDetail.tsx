@@ -93,6 +93,8 @@ export default function ProductDetail() {
     title: product ? `${product.name} — ${store.name}` : undefined,
     description: product?.description || undefined,
     ogImage: product?.image_url || undefined,
+    storeSlug: store.slug,
+    canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
   });
 
   const allImages = (() => {
