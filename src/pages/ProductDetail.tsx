@@ -904,28 +904,48 @@ function PaymentIcons() {
   );
 }
 
-/* ── Mini Payment Icons for Safe Checkout badge ── */
-function PaymentIconsMini() {
+/* ── Real Payment Logos ── */
+function RealPaymentLogos({ size = "normal" }: { size?: "normal" | "mini" }) {
+  const h = size === "mini" ? "h-5" : "h-6";
+  const w = size === "mini" ? "w-8" : "w-10";
+  const imgH = size === "mini" ? "h-3.5" : "h-4";
   return (
     <div className="flex items-center gap-1">
-      <div className="flex h-5 w-7 items-center justify-center rounded border border-border bg-card">
-        <svg viewBox="0 0 48 32" className="h-3 w-5">
+      {/* Visa */}
+      <div className={`flex ${h} ${w} items-center justify-center rounded border border-border bg-white`}>
+        <svg viewBox="0 0 48 32" className={imgH}>
           <rect width="48" height="32" rx="4" fill="#1A1F71"/>
           <text x="24" y="20" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="sans-serif">VISA</text>
         </svg>
       </div>
-      <div className="flex h-5 w-7 items-center justify-center rounded border border-border bg-card">
-        <svg viewBox="0 0 48 32" className="h-3 w-5">
+      {/* Mastercard */}
+      <div className={`flex ${h} ${w} items-center justify-center rounded border border-border bg-white`}>
+        <svg viewBox="0 0 48 32" className={imgH}>
           <rect width="48" height="32" rx="4" fill="#252525"/>
           <circle cx="19" cy="16" r="8" fill="#EB001B"/>
           <circle cx="29" cy="16" r="8" fill="#F79E1B"/>
           <path d="M24 10.3a8 8 0 010 11.4 8 8 0 000-11.4z" fill="#FF5F00"/>
         </svg>
       </div>
-      <div className="flex h-5 w-7 items-center justify-center rounded border border-border bg-card">
-        <svg viewBox="0 0 48 32" className="h-3 w-5">
-          <rect width="48" height="32" rx="4" fill="#fff"/>
-          <text x="24" y="20" textAnchor="middle" fill="#5f259f" fontSize="10" fontWeight="bold" fontFamily="sans-serif">UPI</text>
+      {/* Razorpay */}
+      <div className={`flex ${h} ${w} items-center justify-center rounded border border-border bg-[#072654]`}>
+        <svg viewBox="0 0 48 32" className={imgH}>
+          <path d="M18 8l-4 16h3.5l1.5-6 3 6h3.5l-4.5-8 3-8h-3.5l-1.5 5-1.5-5H18z" fill="#fff"/>
+          <path d="M30 8l-4 16h3.5L33.5 8H30z" fill="#3395FF"/>
+        </svg>
+      </div>
+      {/* Google Pay */}
+      <div className={`flex ${h} ${w} items-center justify-center rounded border border-border bg-white`}>
+        <svg viewBox="0 0 48 32" className={imgH}>
+          <text x="24" y="18" textAnchor="middle" fontSize="7" fontWeight="bold" fontFamily="sans-serif">
+            <tspan fill="#4285F4">G</tspan><tspan fill="#EA4335">P</tspan><tspan fill="#FBBC04">a</tspan><tspan fill="#34A853">y</tspan>
+          </text>
+        </svg>
+      </div>
+      {/* PhonePe */}
+      <div className={`flex ${h} ${w} items-center justify-center rounded border border-border bg-[#5f259f]`}>
+        <svg viewBox="0 0 48 32" className={imgH}>
+          <text x="24" y="20" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="sans-serif">PhPe</text>
         </svg>
       </div>
     </div>
