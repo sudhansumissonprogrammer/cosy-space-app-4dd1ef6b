@@ -209,21 +209,14 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     </table>
   </div>
 
-  <!-- QR + Tracking -->
+  ${order.tracking_number ? `
   <hr class="divider"/>
-  <div style="display:flex;align-items:center;gap:3mm;">
-    <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(order.tracking_url || order.tracking_number || order.id)}" style="width:20mm;height:20mm;" />
-    <div style="flex:1;">
-      ${order.tracking_number ? `
-        <div class="sec-label">Tracking</div>
-        <div class="sec-val" style="font-family:monospace;font-size:8px;">${order.tracking_number}</div>
-      ` : `
-        <div class="sec-label">Order ID</div>
-        <div class="sec-val" style="font-family:monospace;font-size:7px;">${order.id.toUpperCase()}</div>
-      `}
-      <div class="sec-label" style="margin-top:1mm;">Scan QR to track</div>
+  <div class="row">
+    <div class="col">
+      <div class="sec-label">Tracking</div>
+      <div class="sec-val" style="font-family:monospace;font-size:8px;">${order.tracking_number}</div>
     </div>
-  </div>
+  </div>` : ""}
 
   <!-- Footer -->
   <div class="label-footer">
@@ -349,28 +342,13 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
           </div>
         </div>
 
-        {/* QR Code + Tracking */}
-        <div className="flex items-center gap-2 rounded border border-border bg-muted/20 px-2 py-1.5">
-          <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(order.tracking_url || order.tracking_number || order.id)}`}
-            alt="QR Code"
-            className="w-14 h-14"
-          />
-          <div className="flex-1">
-            {order.tracking_number ? (
-              <>
-                <p className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground">Tracking</p>
-                <p className="text-[9px] text-foreground font-mono">{order.tracking_number}</p>
-              </>
-            ) : (
-              <>
-                <p className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground">Order ID</p>
-                <p className="text-[8px] text-foreground font-mono">{order.id.toUpperCase()}</p>
-              </>
-            )}
-            <p className="text-[7px] text-muted-foreground mt-0.5">Scan QR to track</p>
+        {/* Tracking */}
+        {order.tracking_number && (
+          <div className="rounded border-l-2 border-primary/50 bg-primary/5 px-2 py-1.5">
+            <p className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground">Tracking</p>
+            <p className="text-[9px] text-foreground font-mono">{order.tracking_number}</p>
           </div>
-        </div>
+        )}
 
         {/* Footer */}
         <div className="border-t border-border pt-2 text-center">
