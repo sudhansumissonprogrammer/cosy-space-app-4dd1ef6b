@@ -71,8 +71,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 {Object.entries(hours!).map(([day, time]) =>
                   time?.trim() ? (
                     <div key={day} className="flex justify-between text-sm">
-                      <span className="capitalize text-muted-foreground">{day}</span>
-                      <span className="text-foreground">{time}</span>
+                      <span className="capitalize opacity-70">{day}</span>
+                      <span className="opacity-90">{time}</span>
                     </div>
                   ) : null
                 )}
