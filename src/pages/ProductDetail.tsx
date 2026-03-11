@@ -631,8 +631,8 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Payment Icons + Wishlist row */}
-          <div className="mt-4 flex items-center justify-between">
+          {/* Wishlist button */}
+          <div className="mt-4">
             <button
               onClick={handleWishlist}
               className={`flex items-center gap-2 text-sm transition-all duration-200 ${
@@ -640,14 +640,8 @@ export default function ProductDetail() {
               }`}
             >
               <Heart className={`h-4 w-4 transition-transform duration-200 ${wishlisted ? "fill-destructive text-destructive scale-110" : ""}`} />
-              {wishlisted ? "Saved" : "Wishlist"}
+              {wishlisted ? "Saved" : "Add to Wishlist"}
             </button>
-
-            {/* Payment method icons */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-muted-foreground mr-1">We accept</span>
-              <PaymentIcons />
-            </div>
           </div>
 
           {/* Delivery & Trust Badges */}
