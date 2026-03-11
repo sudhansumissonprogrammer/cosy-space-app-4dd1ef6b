@@ -486,22 +486,22 @@ export default function ProductDetail() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               {/* Add to Cart */}
               <button
-                className={`relative flex items-center justify-center gap-2 rounded-xl text-sm font-extrabold uppercase tracking-widest overflow-hidden transition-all duration-300 active:scale-[0.97] ${
+                className={`relative flex items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
                   justAdded
                     ? "bg-success text-success-foreground"
                     : "btn-gold hover:brightness-110"
                 }`}
                 onClick={handleAddToCart}
-                style={{ minHeight: "54px" }}
+                style={{ minHeight: "46px" }}
               >
                 {justAdded ? (
                   <span className="flex items-center gap-2 animate-fade-in">
-                    <Check className="h-5 w-5" strokeWidth={3} />
+                    <Check className="h-4 w-4" strokeWidth={3} />
                     Added!
                   </span>
                 ) : (
                   <span className={`flex items-center gap-2 ${cartBounce ? "animate-bounce-once" : ""}`}>
-                    <ShoppingCart className="h-5 w-5" />
+                    <ShoppingCart className="h-4 w-4" />
                     Add to Cart
                   </span>
                 )}
@@ -510,10 +510,10 @@ export default function ProductDetail() {
               {/* Buy Now */}
               {showBuyNow && (
                 <Button
-                  className="h-[54px] w-full rounded-xl text-sm font-extrabold uppercase tracking-widest"
+                  className="h-[46px] w-full rounded-xl text-xs font-extrabold uppercase tracking-wider"
                   onClick={handleBuyNow}
                 >
-                  <ShoppingBag className="mr-2 h-5 w-5" />
+                  <ShoppingBag className="mr-2 h-4 w-4" />
                   Buy Now
                 </Button>
               )}
