@@ -1755,11 +1755,52 @@ export default function StoreThemeSettings() {
     enabled: !!storeId,
   });
 
+  // Fetch real products for preview
+  const { data: storeProducts } = useQuery({
+    queryKey: ["store-products-preview", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, price, sale_price, image_url, is_best_selling, category")
+        .eq("store_id", storeId!)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!storeId,
+  });
+
+  // Fetch real categories for preview
+  const { data: storeCategories } = useQuery({
+    queryKey: ["store-categories-preview", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, image_url")
+        .eq("store_id", storeId!)
+        .limit(6);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!storeId,
+  });
+
+  const previewProducts = storeProducts && storeProducts.length > 0
+    ? mapDbProductsToPreview(storeProducts)
+    : DEFAULT_PRODUCTS;
+
+  const previewCategories = storeCategories && storeCategories.length > 0
+    ? mapDbCategoriesToPreview(storeCategories)
+    : DEFAULT_CATEGORIES;
+
   const currentTheme = store?.theme || "theme-1";
   const defaults = THEME_DEFAULTS[currentTheme] || THEME_DEFAULTS["theme-1"];
 
   const [config, setConfig] = useState<ThemeConfig>(defaults);
   const [dirty, setDirty] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
 
   useEffect(() => {
     if (themeConfig) {
