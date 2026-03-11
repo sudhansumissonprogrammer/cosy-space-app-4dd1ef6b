@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ArrowLeft, ShoppingBag, Truck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import OrderInvoice from "@/components/OrderInvoice";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
