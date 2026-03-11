@@ -722,12 +722,6 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* CRO #1: Customer Reviews Section restored */}
-      <CustomerReviews
-        reviews={fakeReviews}
-        rating={stats.rating}
-        reviewCount={stats.reviewCount}
-      />
 
       {/* CRO #6: "Complete the Look" (renamed from "You May Also Like") */}
       <RelatedProducts
