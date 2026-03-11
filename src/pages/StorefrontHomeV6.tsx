@@ -86,7 +86,7 @@ function HeroSection({ store }: { store: StoreData }) {
             <div
               className="flex items-center justify-center"
               style={{
-                aspectRatio: "4/5",
+                aspectRatio: window.innerWidth < 640 ? "1/1" : "4/5",
                 maxHeight: "560px",
                 borderRadius: "24px",
                 background: `linear-gradient(135deg, var(--storefront-primary, #2563EB)15, var(--storefront-accent, #F97316)10)`,
