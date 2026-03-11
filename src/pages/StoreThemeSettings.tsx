@@ -33,13 +33,34 @@ const BUTTON_STYLES = [
   { value: "square", label: "Square" },
 ];
 
-const MARQUEE_PRESETS = [
-  { label: "Gold Classic", value: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)" },
-  { label: "Dark Elegant", value: "linear-gradient(90deg, #1a1a1a, #333333, #1a1a1a)" },
-  { label: "Rose Gold", value: "linear-gradient(90deg, #b76e79, #f0c9cf, #b76e79)" },
-  { label: "Ocean Blue", value: "linear-gradient(90deg, #1e3a5f, #4a90d9, #1e3a5f)" },
-  { label: "Forest Green", value: "linear-gradient(90deg, #2d5016, #6b8f3c, #2d5016)" },
-  { label: "Custom", value: "custom" },
+const COLOR_COMBINATIONS = [
+  {
+    id: "royal-gold",
+    name: "Royal Gold",
+    primary: "#b8873c",
+    accent: "#000000",
+    text: "#1a1a1a",
+    background: "#f7f5f0",
+    marquee: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+  },
+  {
+    id: "midnight-rose",
+    name: "Midnight Rose",
+    primary: "#b76e79",
+    accent: "#2d2d2d",
+    text: "#1a1a1a",
+    background: "#fdf8f8",
+    marquee: "linear-gradient(90deg, #b76e79, #f0c9cf, #b76e79)",
+  },
+  {
+    id: "ocean-luxe",
+    name: "Ocean Luxe",
+    primary: "#1e3a5f",
+    accent: "#c9a84c",
+    text: "#1a1a1a",
+    background: "#f5f7fa",
+    marquee: "linear-gradient(90deg, #1e3a5f, #4a90d9, #1e3a5f)",
+  },
 ];
 
 const THEME_DEFAULTS: Record<string, ThemeConfig> = {
