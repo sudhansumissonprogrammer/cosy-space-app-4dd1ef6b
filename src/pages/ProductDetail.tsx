@@ -1027,31 +1027,14 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
           )}
         </div>
 
-        {/* Mobile: Dot indicators */}
+        {/* Thumbnail strip */}
         {images.length > 1 && (
-          <div className="flex justify-center gap-1.5 sm:hidden">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveIndex(i)}
-                className={`rounded-full transition-all duration-300 ${
-                  i === activeIndex
-                    ? "w-6 h-2 bg-primary"
-                    : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                }`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Desktop: Thumbnail strip */}
-        {images.length > 1 && (
-          <div className="hidden sm:flex gap-2 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-0.5 py-1">
             {images.map((img, i) => (
               <button
                 key={i}
                 onClick={() => setActiveIndex(i)}
-                className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                className={`h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                   i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
                 }`}
               >
