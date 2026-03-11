@@ -231,7 +231,6 @@ export default function StorefrontSearchOverlay({
                           className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
                           loading="lazy"
                         />
-                        />
                       ) : (
                         <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary/40 flex-shrink-0">
                           <Package className="h-5 w-5 text-muted-foreground/50" />
