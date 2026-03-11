@@ -2072,20 +2072,51 @@ export default function StoreThemeSettings() {
 
           {/* Full Storefront Preview */}
           <div>
-            <h4 className="mb-3 text-sm font-semibold">Full Storefront Preview</h4>
-            {currentTheme === "theme-6" ? (
-              <ProCleanPreview config={config} storeName={store?.name || "My Store"} />
-            ) : currentTheme === "theme-5" ? (
-              <StartupPreview config={config} storeName={store?.name || "My Store"} />
-            ) : currentTheme === "theme-4" ? (
-              <LuxuryPreview config={config} storeName={store?.name || "My Store"} />
-            ) : currentTheme === "theme-3" ? (
-              <AppStylePreview config={config} storeName={store?.name || "My Store"} />
-            ) : currentTheme === "theme-2" ? (
-              <BoldModernPreview config={config} storeName={store?.name || "My Store"} />
-            ) : (
-              <FullStorefrontPreview config={config} storeName={store?.name || "My Store"} />
+            <div className="mb-3 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Full Storefront Preview</h4>
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-1">
+                <button
+                  onClick={() => setPreviewMode("mobile")}
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                    previewMode === "mobile"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Smartphone className="h-3.5 w-3.5" />
+                  Mobile
+                </button>
+                <button
+                  onClick={() => setPreviewMode("desktop")}
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                    previewMode === "desktop"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Monitor className="h-3.5 w-3.5" />
+                  Desktop
+                </button>
+              </div>
+            </div>
+            {storeProducts && storeProducts.length > 0 && (
+              <p className="mb-3 text-xs text-muted-foreground">Showing your actual products &amp; categories</p>
             )}
+            <div className={previewMode === "desktop" ? "overflow-x-auto" : ""}>
+              {currentTheme === "theme-6" ? (
+                <ProCleanPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
+              ) : currentTheme === "theme-5" ? (
+                <StartupPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
+              ) : currentTheme === "theme-4" ? (
+                <LuxuryPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
+              ) : currentTheme === "theme-3" ? (
+                <AppStylePreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
+              ) : currentTheme === "theme-2" ? (
+                <BoldModernPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
+              ) : (
+                <FullStorefrontPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
+              )}
+            </div>
           </div>
 
           {/* Actions */}
