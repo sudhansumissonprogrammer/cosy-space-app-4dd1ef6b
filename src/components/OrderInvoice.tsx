@@ -266,10 +266,6 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     };
   }, [order, store]);
 
-  const items = order.order_items || [];
-  const currency = order.currency || store?.currency || "INR";
-  const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
-  const subtotal = items.reduce((sum: number, item: any) => sum + Number(item.total || 0), 0);
 
   const statusColor: Record<string, string> = {
     pending: "bg-amber-100 text-amber-800",
