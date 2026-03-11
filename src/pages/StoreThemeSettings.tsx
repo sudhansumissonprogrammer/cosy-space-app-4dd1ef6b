@@ -984,7 +984,11 @@ export default function StoreThemeSettings() {
           {/* Full Storefront Preview */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Full Storefront Preview</h4>
-            <FullStorefrontPreview config={config} storeName={store?.name || "My Store"} />
+            {currentTheme === "theme-2" ? (
+              <BoldModernPreview config={config} storeName={store?.name || "My Store"} />
+            ) : (
+              <FullStorefrontPreview config={config} storeName={store?.name || "My Store"} />
+            )}
           </div>
 
           {/* Actions */}
