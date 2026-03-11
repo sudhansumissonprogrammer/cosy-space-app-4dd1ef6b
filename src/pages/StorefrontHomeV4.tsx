@@ -191,7 +191,7 @@ function BrandStory({ store }: { store: StoreData }) {
             Learn More <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-        <div className="relative" style={{ aspectRatio: window.innerWidth < 640 ? "1/1" : "4/5" }}>
+        <div className="relative aspect-square sm:aspect-[4/5]">
           {(store as any).banner_url ? (
             <img
               src={optimizeImageUrl((store as any).banner_url, 800)}
