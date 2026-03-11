@@ -1091,7 +1091,7 @@ function CustomerReviews({
               <Star className="h-3 w-3 fill-success text-success" />
               <div className="flex-1 h-2 rounded-full bg-accent overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-success transition-all duration-500"
+                  className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
               </div>
