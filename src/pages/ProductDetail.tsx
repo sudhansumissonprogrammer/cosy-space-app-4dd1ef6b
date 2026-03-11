@@ -131,7 +131,10 @@ export default function ProductDetail() {
 
   // Scroll to top when navigating between product pages
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    // Use both methods to ensure scroll reset works across all browsers
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [productSlug]);
   const { addToCart, items, cartTotal } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
