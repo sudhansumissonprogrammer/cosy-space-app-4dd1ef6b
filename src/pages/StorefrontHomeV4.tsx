@@ -168,7 +168,7 @@ function LookbookSection({ products, slug }: { products: any[]; slug: string }) 
 /* ── Brand Story ── */
 function BrandStory({ store }: { store: StoreData }) {
   return (
-    <section className="mx-auto max-w-7xl px-6 py-20 lg:px-12">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-20 lg:px-12">
       <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
         <div>
           <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-4" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
