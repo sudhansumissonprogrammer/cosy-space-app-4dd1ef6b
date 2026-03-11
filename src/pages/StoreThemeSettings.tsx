@@ -1593,7 +1593,9 @@ export default function StoreThemeSettings() {
           {/* Full Storefront Preview */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Full Storefront Preview</h4>
-            {currentTheme === "theme-4" ? (
+            {currentTheme === "theme-5" ? (
+              <StartupPreview config={config} storeName={store?.name || "My Store"} />
+            ) : currentTheme === "theme-4" ? (
               <LuxuryPreview config={config} storeName={store?.name || "My Store"} />
             ) : currentTheme === "theme-3" ? (
               <AppStylePreview config={config} storeName={store?.name || "My Store"} />
