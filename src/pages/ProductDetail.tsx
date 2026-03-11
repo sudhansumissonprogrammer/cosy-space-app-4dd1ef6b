@@ -347,7 +347,30 @@ export default function ProductDetail() {
           )}
 
           {/* Title */}
-          <h1 className="text-2xl font-bold text-foreground leading-tight sm:text-3xl">{product.name}</h1>
+          <div className="flex items-start justify-between gap-2">
+            <h1 className="text-2xl font-bold text-foreground leading-tight sm:text-3xl">{product.name}</h1>
+            <button
+              onClick={async () => {
+                const url = window.location.href;
+                if (navigator.share) {
+                  try {
+                    await navigator.share({ title: product.name, url });
+                  } catch {}
+                } else {
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    toast.success("Link copied!");
+                  } catch {
+                    toast.error("Failed to copy");
+                  }
+                }
+              }}
+              className="mt-1 shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              title="Share"
+            >
+              <Share2 className="h-5 w-5" />
+            </button>
+          </div>
 
           {/* Rating & Social Proof */}
           <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -624,8 +647,6 @@ export default function ProductDetail() {
             </AccordionItem>
           </div>
 
-          {/* Share Buttons */}
-          <ShareButtons productName={product.name} />
         </div>
       </div>
 
