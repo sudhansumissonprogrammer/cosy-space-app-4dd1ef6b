@@ -893,10 +893,8 @@ function RealPaymentLogos() {
         <img src="/icons/phonepe.png" alt="PhonePe" className="h-6 object-contain" />
       </div>
       {/* UPI */}
-      <div className="flex h-8 w-12 items-center justify-center rounded-md border border-border bg-white">
-        <svg viewBox="0 0 48 32" className="h-5 w-8">
-          <text x="24" y="21" textAnchor="middle" fill="#5f259f" fontSize="12" fontWeight="bold" fontFamily="sans-serif">UPI</text>
-        </svg>
+      <div className="flex h-8 w-12 items-center justify-center rounded-md border border-border bg-white overflow-hidden">
+        <img src="/icons/upi.png" alt="UPI" className="h-5 object-contain" />
       </div>
     </div>
   );
