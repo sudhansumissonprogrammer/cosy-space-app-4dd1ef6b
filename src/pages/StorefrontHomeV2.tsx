@@ -1,0 +1,334 @@
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useOutletContext, useParams, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { Search, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import type { StoreData } from "@/layouts/StorefrontLayout";
+import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+import LazyRender from "@/components/storefront/LazyRender";
+import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import { Skeleton } from "@/components/ui/skeleton";
+import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
+
+/* ── Hero Carousel ── */
+function HeroCarousel({ store }: { store: StoreData }) {
+  const queryClient = useQueryClient();
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const [current, setCurrent] = useState(0);
+
+  // Use banner, mobile hero, and best-selling product images as slides
+  const slides = useMemo(() => {
+    const s: { image: string; title: string; subtitle: string; link?: string }[] = [];
+    if ((store as any).banner_url) {
+      s.push({ image: (store as any).banner_url, title: store.name, subtitle: store.description || "Discover our collection" });
+    }
+    if ((store as any).mobile_hero_url) {
+      s.push({ image: (store as any).mobile_hero_url, title: "New Arrivals", subtitle: "Shop the latest trends" });
+    }
+    // Add best-selling products as slides
+    const bestSelling = products?.filter((p: any) => p.is_best_selling && p.image_url).slice(0, 3) || [];
+    bestSelling.forEach((p: any) => {
+      s.push({ image: p.image_url, title: p.name, subtitle: `₹${p.sale_price || p.price}`, link: storefrontPath(store.slug, `product/${p.slug || p.id}`) });
+    });
+    // Fallback: if no slides, create gradient-based ones
+    if (s.length === 0) {
+      s.push({ image: "", title: store.name, subtitle: store.description || "Explore our collection" });
+      s.push({ image: "", title: "New Collection", subtitle: "Premium quality products" });
+    }
+    return s;
+  }, [store, products]);
+
+  const slideCount = slides.length;
+
+  useEffect(() => {
+    if (slideCount <= 1) return;
+    const timer = setInterval(() => setCurrent((c) => (c + 1) % slideCount), 5000);
+    return () => clearInterval(timer);
+  }, [slideCount]);
+
+  const prev = () => setCurrent((c) => (c - 1 + slideCount) % slideCount);
+  const next = () => setCurrent((c) => (c + 1) % slideCount);
+
+  const slide = slides[current];
+
+  return (
+    <div className="relative w-full overflow-hidden" style={{ height: "85vh", minHeight: "500px", maxHeight: "800px" }}>
+      {/* Slide image / gradient fallback */}
+      {slide.image ? (
+        <img
+          src={optimizeImageUrl(slide.image, 1200)}
+          alt={slide.title}
+          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
+          loading="eager"
+        />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(135deg, var(--storefront-primary, #b8873c), var(--storefront-accent, #000))` }}
+        />
+      )}
+
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+
+      {/* Content */}
+      <div className="absolute inset-0 flex items-end">
+        <div className="w-full px-6 pb-20 sm:px-12 sm:pb-24 max-w-6xl mx-auto">
+          <h1
+            className="text-3xl font-bold text-white sm:text-5xl lg:text-6xl leading-tight drop-shadow-lg"
+            style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
+          >
+            {slide.title}
+          </h1>
+          <p className="mt-2 text-sm text-white/80 sm:text-lg max-w-md">{slide.subtitle}</p>
+          {slide.link ? (
+            <Link
+              to={slide.link}
+              className="mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold uppercase tracking-wider transition-transform hover:scale-105"
+              style={{
+                backgroundColor: "var(--storefront-primary, #b8873c)",
+                color: "var(--storefront-btn-text, #fff)",
+                borderRadius: "var(--storefront-button-radius, 0.5rem)",
+              }}
+            >
+              Shop Now
+            </Link>
+          ) : (
+            <button
+              className="mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold uppercase tracking-wider transition-transform hover:scale-105"
+              style={{
+                backgroundColor: "var(--storefront-primary, #b8873c)",
+                color: "var(--storefront-btn-text, #fff)",
+                borderRadius: "var(--storefront-button-radius, 0.5rem)",
+              }}
+            >
+              Explore Collection
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Arrows */}
+      {slideCount > 1 && (
+        <>
+          <button onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition hover:bg-white/30">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button onClick={next} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition hover:bg-white/30">
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </>
+      )}
+
+      {/* Dot indicators */}
+      {slideCount > 1 && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className="h-2 rounded-full transition-all duration-300"
+              style={{
+                width: i === current ? "24px" : "8px",
+                backgroundColor: i === current ? "var(--storefront-primary, #fff)" : "rgba(255,255,255,0.5)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Category Pills ── */
+function CategoryPills({ categories, slug }: { categories: any[] | undefined; slug: string }) {
+  if (!categories || categories.length === 0) return null;
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="flex flex-wrap gap-2">
+        {categories.map((cat: any) => (
+          <Link
+            key={cat.id}
+            to={storefrontPath(slug, `category/${cat.slug}`)}
+            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all hover:scale-105"
+            style={{
+              borderColor: "var(--storefront-primary, hsl(var(--border)))",
+              color: "var(--storefront-text, hsl(var(--foreground)))",
+            }}
+          >
+            {cat.image_url && (
+              <img src={cat.image_url} alt={cat.name} className="h-6 w-6 rounded-full object-cover" loading="lazy" />
+            )}
+            {cat.name}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Masonry Product Grid ── */
+function MasonryGrid({ products, slug, store }: { products: any[]; slug: string; store: StoreData }) {
+  return (
+    <div className="columns-2 gap-3 sm:gap-4 md:columns-3 lg:columns-4 space-y-3 sm:space-y-4">
+      {products.map((product, idx) => (
+        <div key={product.id} className="break-inside-avoid">
+          <StorefrontProductCard product={product} slug={slug} store={store} priority={idx < 4} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function StorefrontHomeV2() {
+  const store = useOutletContext<StoreData>();
+  const { slug } = useParams<{ slug: string }>();
+  const queryClient = useQueryClient();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [openFilters, setOpenFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
+  const [sortOpen, setSortOpen] = useState(false);
+
+  useStoreJsonLd({
+    storeName: store.name,
+    storeSlug: store.slug,
+    description: store.description,
+    logo: store.logo_url,
+    location: store.location,
+    whatsappNumber: store.whatsapp_number,
+  });
+
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+
+  const bestSellingProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter((p: any) => p.is_best_selling);
+  }, [products]);
+
+  const allSorted = useMemo(() => {
+    if (!products) return [];
+    const sorted = [...products];
+    switch (sortBy) {
+      case "price_asc": sorted.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price)); break;
+      case "price_desc": sorted.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price)); break;
+      case "newest": sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
+    }
+    return sorted;
+  }, [products, sortBy]);
+
+  return (
+    <>
+      {/* Hero Carousel */}
+      <HeroCarousel store={store} />
+
+      {/* Search bar */}
+      <div className="sticky top-16 z-20 border-b px-4 py-3" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
+        <div className="mx-auto max-w-6xl flex items-center gap-2">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex flex-1 items-center gap-2.5 rounded-full border px-4 py-2.5 text-sm transition-colors"
+            style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))20", color: "var(--storefront-text, hsl(var(--foreground)))80" }}
+          >
+            <Search className="h-4 w-4 shrink-0" />
+            <span>Search products...</span>
+          </button>
+          <button
+            onClick={() => { setSearchOpen(true); setOpenFilters(true); }}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
+            style={{ backgroundColor: "var(--storefront-primary, hsl(var(--foreground)))", color: "var(--storefront-btn-text, hsl(var(--background)))" }}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <StorefrontSearchOverlay
+        open={searchOpen}
+        onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
+        products={products}
+        slug={slug!}
+        initialFiltersOpen={openFilters}
+      />
+
+      {/* Category Pills */}
+      <CategoryPills categories={storeCategories} slug={slug!} />
+
+      {/* Products */}
+      <div className="mx-auto max-w-6xl px-3 sm:px-4 pb-12 space-y-8">
+        {/* Sort bar */}
+        <div className="flex items-center justify-between">
+          <h2
+            className="text-xl font-bold tracking-tight sm:text-2xl"
+            style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
+          >
+            All Products
+          </h2>
+          <div className="relative">
+            <button
+              onClick={() => setSortOpen(!sortOpen)}
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))20" }}
+            >
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">
+                {sortBy === "popular" && "Popular"}
+                {sortBy === "price_asc" && "Price: Low"}
+                {sortBy === "price_desc" && "Price: High"}
+                {sortBy === "newest" && "Newest"}
+              </span>
+            </button>
+            {sortOpen && (
+              <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border bg-popover shadow-lg" style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))10" }}>
+                {([
+                  { value: "popular", label: "Popular" },
+                  { value: "price_asc", label: "Price: Low → High" },
+                  { value: "price_desc", label: "Price: High → Low" },
+                  { value: "newest", label: "Newest First" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
+                    className={`block w-full px-3 py-2 text-left text-xs font-medium transition-colors ${sortBy === opt.value ? "font-bold" : ""}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Masonry Grid */}
+        {!products ? (
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="overflow-hidden rounded-xl border bg-card">
+                <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
+                <div className="p-2.5 space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-9 w-full rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : allSorted.length > 0 ? (
+          <>
+            <MasonryGrid products={allSorted.slice(0, 12)} slug={slug!} store={store} />
+            {allSorted.length > 12 && (
+              <LazyRender rootMargin="400px" minHeight={400}>
+                <MasonryGrid products={allSorted.slice(12)} slug={slug!} store={store} />
+              </LazyRender>
+            )}
+          </>
+        ) : (
+          <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
+            <p className="text-muted-foreground">No products available yet.</p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
