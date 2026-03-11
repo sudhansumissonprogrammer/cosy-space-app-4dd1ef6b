@@ -613,20 +613,12 @@ export default function ProductDetail() {
               <div className="absolute -right-3 -top-3 opacity-[0.06]">
                 <ShieldCheck className="h-20 w-20 text-emerald-600" />
               </div>
-              <div className="flex items-center justify-center gap-2 mb-2 relative z-10">
+              <div className="flex items-center justify-center gap-2 mb-2.5 relative z-10">
                 <Lock className="h-3.5 w-3.5 text-emerald-600" />
                 <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Guaranteed Safe Checkout</span>
               </div>
-              <div className="flex items-center justify-center gap-3 relative z-10">
-                <div className="flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 border border-emerald-200/50">
-                  <ShieldCheck className="h-3 w-3 text-emerald-600" />
-                  <span className="text-[9px] font-bold text-emerald-700">SSL Secure</span>
-                </div>
-                <div className="flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 border border-emerald-200/50">
-                  <Shield className="h-3 w-3 text-emerald-600" />
-                  <span className="text-[9px] font-bold text-emerald-700">256-bit Encryption</span>
-                </div>
-                <RealPaymentLogos size="mini" />
+              <div className="flex items-center justify-center relative z-10">
+                <RealPaymentLogos />
               </div>
             </div>
           )}
@@ -871,39 +863,40 @@ function CountdownTimer({ productId }: { productId: string }) {
 }
 
 /* ── Real Payment Logos ── */
-function RealPaymentLogos({ size = "normal" }: { size?: "normal" | "mini" }) {
-  const boxClass = size === "mini" ? "h-6 w-10" : "h-8 w-12";
-  const imgClass = size === "mini" ? "h-4" : "h-5";
+function RealPaymentLogos() {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center justify-center gap-1.5 flex-wrap">
       {/* Visa */}
-      <div className={`flex ${boxClass} items-center justify-center rounded-md border border-border bg-white`}>
-        <svg viewBox="0 0 256 83" className={imgClass}>
+      <div className="flex h-8 w-12 items-center justify-center rounded-md border border-border bg-white">
+        <svg viewBox="0 0 256 83" className="h-4 w-8">
           <path d="M132.916 2.214l-14.08 53.896h-15.07L118.06 2.214h14.856zm60.166 34.79l7.928-21.86 4.562 21.86h-12.49zm16.81 19.106h13.926L211.36 2.214h-12.854c-2.894 0-5.336 1.682-6.42 4.27L170.98 56.11h14.94l2.968-8.2h18.244l1.722 8.2h-.002zm-37.164-17.588c.062-14.134-19.548-14.912-19.412-21.224.042-1.92 1.872-3.966 5.876-4.486 1.988-.26 7.472-.46 13.694 2.4l2.438-11.386C171.668 2.614 167.09 1.47 161.482 1.47c-14.066 0-23.964 7.478-24.044 18.178-.088 7.918 7.066 12.332 12.454 14.966 5.538 2.696 7.398 4.426 7.376 6.836-.04 3.694-4.42 5.324-8.508 5.388-7.148.11-11.296-1.932-14.604-3.474l-2.576 12.042c3.32 1.526 9.456 2.858 15.818 2.924 14.94 0 24.72-7.38 24.766-18.824l.004-.002zm-58.96-36.308L97.834 56.11H82.71L66.994 14.872c-.956-3.752-1.786-5.132-4.688-6.716C58.086 5.786 51.4 3.532 45.46 2.12L45.8 2.214h24.14c3.444 0 6.538 2.294 7.326 6.262l5.978 31.758 14.762-38.02h14.762z" fill="#1A1F71"/>
         </svg>
       </div>
       {/* Mastercard */}
-      <div className={`flex ${boxClass} items-center justify-center rounded-md border border-border bg-white`}>
-        <svg viewBox="0 0 48 32" className={imgClass}>
+      <div className="flex h-8 w-12 items-center justify-center rounded-md border border-border bg-white">
+        <svg viewBox="0 0 48 32" className="h-5 w-8">
           <circle cx="19" cy="16" r="10" fill="#EB001B"/>
           <circle cx="29" cy="16" r="10" fill="#F79E1B"/>
           <path d="M24 8.6a10 10 0 010 14.8 10 10 0 000-14.8z" fill="#FF5F00"/>
         </svg>
       </div>
       {/* Razorpay */}
-      <div className={`flex ${boxClass} items-center justify-center rounded-md border border-border bg-[#072654]`}>
-        <svg viewBox="0 0 512 512" className={imgClass}>
-          <path fill="#3395FF" d="M369.1 160.8L244 448h-52.4l59.5-137.2-62.7-150h54.4l35.3 95.4z"/>
-          <path fill="#fff" d="M399 160.8h-51.4L283 448h52.4z"/>
-        </svg>
+      <div className="flex h-8 w-14 items-center justify-center rounded-md border border-border bg-white overflow-hidden px-1">
+        <img src="/icons/razorpay.png" alt="Razorpay" className="h-4 object-contain" />
       </div>
       {/* Google Pay */}
-      <div className={`flex ${boxClass} items-center justify-center rounded-md border border-border bg-white overflow-hidden`}>
-        <img src="/icons/gpay.svg" alt="Google Pay" className={`${imgClass} object-contain`} />
+      <div className="flex h-8 w-12 items-center justify-center rounded-md border border-border bg-white overflow-hidden">
+        <img src="/icons/gpay.svg" alt="Google Pay" className="h-5 object-contain" />
       </div>
       {/* PhonePe */}
-      <div className={`flex ${boxClass} items-center justify-center rounded-md border border-border bg-[#5f259f] overflow-hidden`}>
-        <img src="/icons/phonepe.svg" alt="PhonePe" className={`${imgClass} object-contain brightness-0 invert`} />
+      <div className="flex h-8 w-12 items-center justify-center rounded-md border border-border bg-white overflow-hidden">
+        <img src="/icons/phonepe.png" alt="PhonePe" className="h-6 object-contain" />
+      </div>
+      {/* UPI */}
+      <div className="flex h-8 w-12 items-center justify-center rounded-md border border-border bg-white">
+        <svg viewBox="0 0 48 32" className="h-5 w-8">
+          <text x="24" y="21" textAnchor="middle" fill="#5f259f" fontSize="12" fontWeight="bold" fontFamily="sans-serif">UPI</text>
+        </svg>
       </div>
     </div>
   );
