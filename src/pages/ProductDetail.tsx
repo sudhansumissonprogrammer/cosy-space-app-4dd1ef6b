@@ -1061,9 +1061,11 @@ function CustomerReviews({
     <section className="mt-12 pt-8 border-t border-border">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Customer Reviews</h2>
-          <div className="mt-1 flex items-center gap-2">
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-1 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
+          <div className="pl-4">
+            <h2 className="text-xl font-bold text-foreground">Customer Reviews</h2>
+            <div className="mt-1 flex items-center gap-2">
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
                 <Star
