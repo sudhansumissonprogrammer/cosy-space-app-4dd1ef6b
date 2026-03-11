@@ -149,7 +149,7 @@ export default function CheckoutPage() {
     queryKey: ["store-payment-config", store.id],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
-        .from("store_payment_config")
+        .from("store_payment_config_public")
         .select("payment_methods, razorpay_key_id")
         .eq("store_id", store.id)
         .maybeSingle();
