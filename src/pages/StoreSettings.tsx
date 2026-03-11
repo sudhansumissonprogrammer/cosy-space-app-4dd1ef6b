@@ -245,6 +245,19 @@ export default function StoreSettings() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="owner-email">Notification Email</Label>
+              <Input
+                id="owner-email"
+                type="email"
+                placeholder="you@example.com"
+                value={ownerEmail}
+                onChange={(e) => setOwnerEmail(e.target.value)}
+                maxLength={200}
+              />
+              <p className="text-xs text-muted-foreground">Order notification emails will be sent to this address</p>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
