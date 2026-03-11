@@ -433,7 +433,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Price Block */}
-          <div className="mt-4 rounded-xl bg-accent/50 p-3 sm:p-4">
+          <div className="mt-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 p-3 sm:p-4">
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-3xl font-extrabold text-foreground sm:text-4xl">
                 {currency} {Number(variantPrice).toFixed(2)}
@@ -609,19 +609,22 @@ export default function ProductDetail() {
 
           {/* CRO #4: Guaranteed Safe Checkout */}
           {!isOutOfStock && (
-            <div className="mt-4 rounded-xl border border-dashed border-success/40 bg-success/5 p-3">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Lock className="h-3.5 w-3.5 text-success" />
-                <span className="text-xs font-bold text-success uppercase tracking-wide">Guaranteed Safe Checkout</span>
+            <div className="mt-4 rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50 to-green-50 p-3 relative overflow-hidden">
+              <div className="absolute -right-3 -top-3 opacity-[0.06]">
+                <ShieldCheck className="h-20 w-20 text-emerald-600" />
               </div>
-              <div className="flex items-center justify-center gap-3">
-                <div className="flex items-center gap-1 rounded-md bg-card px-2 py-1 border border-border">
-                  <ShieldCheck className="h-3 w-3 text-success" />
-                  <span className="text-[9px] font-bold text-muted-foreground">SSL Secure</span>
+              <div className="flex items-center justify-center gap-2 mb-2 relative z-10">
+                <Lock className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Guaranteed Safe Checkout</span>
+              </div>
+              <div className="flex items-center justify-center gap-3 relative z-10">
+                <div className="flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 border border-emerald-200/50">
+                  <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                  <span className="text-[9px] font-bold text-emerald-700">SSL Secure</span>
                 </div>
-                <div className="flex items-center gap-1 rounded-md bg-card px-2 py-1 border border-border">
-                  <Shield className="h-3 w-3 text-primary" />
-                  <span className="text-[9px] font-bold text-muted-foreground">256-bit Encryption</span>
+                <div className="flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 border border-emerald-200/50">
+                  <Shield className="h-3 w-3 text-emerald-600" />
+                  <span className="text-[9px] font-bold text-emerald-700">256-bit Encryption</span>
                 </div>
                 <PaymentIconsMini />
               </div>
@@ -650,26 +653,17 @@ export default function ProductDetail() {
           {/* Delivery & Trust Badges */}
           <div className="mt-5 rounded-xl border border-border p-3 space-y-2.5">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <Truck className="h-4 w-4 text-primary" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+                <Truck className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs font-bold text-foreground">Free Delivery</p>
-                <p className="text-[10px] text-muted-foreground">Get it by <strong className="text-foreground">{deliveryDate}</strong></p>
+                <p className="text-xs font-bold text-foreground">Free & Express Delivery</p>
+                <p className="text-[10px] text-muted-foreground">Get it by <strong className="text-foreground">{deliveryDate}</strong> · As fast as 3 days 🚀</p>
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
-                <Clock className="h-4 w-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-foreground">Express Delivery</p>
-                <p className="text-[10px] text-muted-foreground">Get it in just 3 days! 🚀</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <RotateCcw className="h-4 w-4 text-primary" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                <RotateCcw className="h-4 w-4 text-orange-600" />
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">Easy Returns</p>
@@ -677,8 +671,8 @@ export default function ProductDetail() {
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <Shield className="h-4 w-4 text-primary" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
+                <Shield className="h-4 w-4 text-purple-600" />
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">Secure Checkout</p>
@@ -703,6 +697,7 @@ export default function ProductDetail() {
             {product.description && (
               <AccordionItem
                 title="Product Description"
+                icon={<Package className="h-3.5 w-3.5 text-blue-600" />}
                 isOpen={openAccordion === "description"}
                 onToggle={() => toggleAccordion("description")}
               >
@@ -713,6 +708,7 @@ export default function ProductDetail() {
             )}
             <AccordionItem
               title="Shipping Information"
+              icon={<Truck className="h-3.5 w-3.5 text-amber-600" />}
               isOpen={openAccordion === "shipping"}
               onToggle={() => toggleAccordion("shipping")}
             >
@@ -725,6 +721,7 @@ export default function ProductDetail() {
             </AccordionItem>
             <AccordionItem
               title="Returns & Exchange"
+              icon={<RotateCcw className="h-3.5 w-3.5 text-orange-600" />}
               isOpen={openAccordion === "returns"}
               onToggle={() => toggleAccordion("returns")}
             >
@@ -857,21 +854,21 @@ function CountdownTimer({ productId }: { productId: string }) {
   }, [seed]);
 
   return (
-    <div className="mt-2 flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-1.5">
-      <Timer className="h-3.5 w-3.5 text-destructive animate-pulse" />
-      <span className="text-xs font-bold text-destructive">
+    <div className="mt-2 flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500/10 to-red-500/10 border border-amber-300/40 px-3 py-1.5">
+      <Timer className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
+      <span className="text-xs font-bold text-amber-700">
         Offer ends in
       </span>
       <div className="flex items-center gap-1">
-        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-destructive px-1.5 py-0.5 text-[11px] font-extrabold text-destructive-foreground tabular-nums">
+        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-gradient-to-b from-amber-500 to-orange-600 px-1.5 py-0.5 text-[11px] font-extrabold text-white tabular-nums shadow-sm">
           {String(timeLeft.hours).padStart(2, "0")}h
         </span>
-        <span className="text-xs font-bold text-destructive">:</span>
-        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-destructive px-1.5 py-0.5 text-[11px] font-extrabold text-destructive-foreground tabular-nums">
+        <span className="text-xs font-bold text-amber-600">:</span>
+        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-gradient-to-b from-amber-500 to-orange-600 px-1.5 py-0.5 text-[11px] font-extrabold text-white tabular-nums shadow-sm">
           {String(timeLeft.minutes).padStart(2, "0")}m
         </span>
-        <span className="text-xs font-bold text-destructive">:</span>
-        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-destructive px-1.5 py-0.5 text-[11px] font-extrabold text-destructive-foreground tabular-nums">
+        <span className="text-xs font-bold text-amber-600">:</span>
+        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-gradient-to-b from-amber-500 to-orange-600 px-1.5 py-0.5 text-[11px] font-extrabold text-white tabular-nums shadow-sm">
           {String(timeLeft.seconds).padStart(2, "0")}s
         </span>
       </div>
@@ -1004,9 +1001,9 @@ function FrequentlyBoughtTogether({
   };
 
   return (
-    <div className="mt-5 rounded-xl border border-border bg-accent/30 p-4">
+    <div className="mt-5 rounded-xl border border-violet-200/50 bg-gradient-to-br from-violet-50 to-indigo-50 p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Zap className="h-4 w-4 text-warning" />
+        <Zap className="h-4 w-4 text-violet-600" />
         <h3 className="text-sm font-bold text-foreground">Frequently Bought Together</h3>
       </div>
       <div className="flex items-center gap-2 mb-3 overflow-x-auto">
@@ -1067,9 +1064,11 @@ function CustomerReviews({
     <section className="mt-12 pt-8 border-t border-border">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Customer Reviews</h2>
-          <div className="mt-1 flex items-center gap-2">
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-1 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
+          <div className="pl-4">
+            <h2 className="text-xl font-bold text-foreground">Customer Reviews</h2>
+            <div className="mt-1 flex items-center gap-2">
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
                 <Star
@@ -1080,6 +1079,7 @@ function CustomerReviews({
             </div>
             <span className="text-sm font-bold text-foreground">{rating}</span>
             <span className="text-sm text-muted-foreground">based on {reviewCount} reviews</span>
+          </div>
           </div>
         </div>
       </div>
@@ -1094,7 +1094,7 @@ function CustomerReviews({
               <Star className="h-3 w-3 fill-success text-success" />
               <div className="flex-1 h-2 rounded-full bg-accent overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-success transition-all duration-500"
+                  className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -1109,7 +1109,7 @@ function CustomerReviews({
         {displayed.map((review) => (
           <div
             key={review.id}
-            className="rounded-xl border border-border p-4 transition-all hover:shadow-sm"
+            className="rounded-xl border border-border p-4 transition-all hover:shadow-md hover:border-amber-200/60 hover:bg-gradient-to-r hover:from-amber-50/30 hover:to-transparent"
           >
             <div className="flex items-start gap-3">
               <img
@@ -1166,11 +1166,13 @@ function CustomerReviews({
 /* ── Accordion Item ── */
 function AccordionItem({
   title,
+  icon,
   isOpen,
   onToggle,
   children,
 }: {
   title: string;
+  icon?: React.ReactNode;
   isOpen: boolean;
   onToggle: () => void;
   children: React.ReactNode;
@@ -1181,7 +1183,11 @@ function AccordionItem({
         onClick={onToggle}
         className="flex w-full items-center justify-between px-4 py-3 text-sm font-bold text-foreground hover:bg-accent/30 transition-colors"
       >
-        {title}
+        <span className="flex items-center gap-2">
+          {icon}
+          {title}
+        </span>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen && (
@@ -1298,7 +1304,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
             draggable={false}
           />
 
-          <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow backdrop-blur-sm">
+          <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow backdrop-blur-sm">
             <ZoomIn className="h-3.5 w-3.5" /> Tap to zoom
           </div>
 
