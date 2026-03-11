@@ -170,138 +170,161 @@ function FullStorefrontPreview({ config, storeName }: { config: ThemeConfig; sto
   const fakeCategories = ["Handbags", "Totes", "Clutches", "Slings"];
 
   return (
-    <div className="overflow-hidden rounded-xl border shadow-lg" style={{ backgroundColor: config.background_color, maxHeight: "700px", overflowY: "auto" }}>
-      {/* Marquee */}
-      <div
-        className="px-4 py-2 text-center text-[10px] font-medium tracking-wide"
-        style={{ background: config.marquee_gradient, color: config.text_color, fontVariant: "small-caps" }}
-      >
-        🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payment • 💰 Cash On Delivery • 👜 Premium Quality
-      </div>
-
-      {/* Navbar */}
-      <div className="border-b px-4 py-2.5 flex items-center gap-3" style={{ backgroundColor: config.background_color + "ee" }}>
-        <Menu className="h-5 w-5" style={{ color: config.text_color }} />
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: config.primary_color }}>
-          <Store className="h-4 w-4" style={{ color: btnText }} />
-        </div>
-        <span className="text-sm font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</span>
-        <div className="flex-1" />
-        <div className="flex items-center gap-2">
-          <User className="h-4 w-4" style={{ color: config.text_color + "99" }} />
-          <Heart className="h-4 w-4" style={{ color: config.text_color + "99" }} />
-          <div className="relative">
-            <ShoppingCart className="h-4 w-4" style={{ color: config.text_color }} />
-            <span className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>2</span>
+    <div className="flex justify-center">
+      {/* Mobile Phone Frame */}
+      <div className="relative mx-auto" style={{ width: "375px" }}>
+        {/* Phone bezel */}
+        <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
+          {/* Notch */}
+          <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
+            <div className="h-2 w-2 rounded-full bg-gray-600" />
           </div>
-        </div>
-      </div>
 
-      {/* Search Bar */}
-      <div className="border-b px-4 py-2" style={{ backgroundColor: config.background_color }}>
-        <div className="flex items-center gap-2 rounded-lg border px-3 py-1.5" style={{ borderColor: config.text_color + "20" }}>
-          <Search className="h-3.5 w-3.5" style={{ color: config.text_color + "60" }} />
-          <span className="text-xs" style={{ color: config.text_color + "50", fontFamily: config.heading_font }}>Search products...</span>
-        </div>
-      </div>
-
-      {/* Categories */}
-      <div className="border-b px-4 py-3 flex gap-4" style={{ backgroundColor: config.background_color }}>
-        {fakeCategories.map((cat) => (
-          <div key={cat} className="flex flex-col items-center gap-1 flex-shrink-0">
-            <div className="h-10 w-10 rounded-full border-2 flex items-center justify-center" style={{ borderColor: config.primary_color + "50", backgroundColor: config.primary_color + "10" }}>
-              <Tag className="h-4 w-4" style={{ color: config.primary_color }} />
+          {/* Screen content */}
+          <div className="bg-white" style={{ height: "680px", overflowY: "auto", backgroundColor: config.background_color }}>
+            {/* Marquee */}
+            <div
+              className="px-3 py-1.5 text-center text-[9px] font-medium tracking-wide"
+              style={{ background: config.marquee_gradient, color: config.text_color, fontVariant: "small-caps" }}
+            >
+              🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payment
             </div>
-            <span className="text-[8px] font-semibold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{cat}</span>
-          </div>
-        ))}
-      </div>
 
-      {/* Hero Banner Placeholder */}
-      <div className="mx-4 mt-3 rounded-xl overflow-hidden" style={{ background: `linear-gradient(135deg, ${config.primary_color}22, ${config.accent_color}22)` }}>
-        <div className="px-6 py-8 text-center">
-          <h2 className="text-xl font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>New Collection</h2>
-          <p className="mt-1 text-xs" style={{ color: config.text_color + "88", fontFamily: config.body_font }}>Discover our latest arrivals</p>
-          <button
-            className="mt-3 px-5 py-1.5 text-[10px] font-bold uppercase tracking-wider"
-            style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${primaryLight}, ${config.primary_color})`, color: btnText, borderRadius: btnRadius }}
-          >
-            Shop Now
-          </button>
-        </div>
-      </div>
-
-      {/* Product Grid */}
-      <div className="px-4 py-4">
-        <h3 className="mb-3 text-sm font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>All Products</h3>
-        <div className="grid grid-cols-2 gap-3">
-          {fakeProducts.map((product, i) => (
-            <div key={i} className="overflow-hidden rounded-xl border" style={{ borderColor: config.text_color + "10", backgroundColor: config.background_color }}>
-              {/* Image placeholder */}
-              <div className="relative" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "0a" }}>
-                <div className="flex h-full w-full items-center justify-center">
-                  <Package className="h-8 w-8" style={{ color: config.text_color + "20" }} />
-                </div>
-                {i === 0 && (
-                  <span className="absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[7px] font-bold" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
-                    Trending
-                  </span>
-                )}
+            {/* Navbar */}
+            <div className="border-b px-3 py-2 flex items-center gap-2" style={{ backgroundColor: config.background_color + "ee" }}>
+              <Menu className="h-4 w-4" style={{ color: config.text_color }} />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: config.primary_color }}>
+                <Store className="h-3 w-3" style={{ color: btnText }} />
               </div>
-              <div className="px-2 pb-2 pt-1.5 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[7px] font-bold uppercase tracking-wider" style={{ color: config.text_color + "70" }}>TOP RATED</span>
-                  <div className="flex items-center gap-0.5">
-                    <Star className="h-2.5 w-2.5 fill-current" style={{ color: config.primary_color }} />
-                    <span className="text-[8px] font-bold" style={{ color: config.text_color }}>{product.rating}</span>
+              <span className="text-xs font-bold truncate" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</span>
+              <div className="flex-1" />
+              <div className="flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" style={{ color: config.text_color + "99" }} />
+                <Heart className="h-3.5 w-3.5" style={{ color: config.text_color + "99" }} />
+                <div className="relative">
+                  <ShoppingCart className="h-3.5 w-3.5" style={{ color: config.text_color }} />
+                  <span className="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>2</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="border-b px-3 py-1.5" style={{ backgroundColor: config.background_color }}>
+              <div className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5" style={{ borderColor: config.text_color + "20" }}>
+                <Search className="h-3 w-3" style={{ color: config.text_color + "60" }} />
+                <span className="text-[10px]" style={{ color: config.text_color + "50", fontFamily: config.heading_font }}>Search products...</span>
+              </div>
+            </div>
+
+            {/* Categories */}
+            <div className="border-b px-3 py-2.5 flex gap-3 overflow-hidden" style={{ backgroundColor: config.background_color }}>
+              {fakeCategories.map((cat) => (
+                <div key={cat} className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <div className="h-9 w-9 rounded-full border-2 flex items-center justify-center" style={{ borderColor: config.primary_color + "50", backgroundColor: config.primary_color + "10" }}>
+                    <Tag className="h-3.5 w-3.5" style={{ color: config.primary_color }} />
                   </div>
+                  <span className="text-[7px] font-semibold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{cat}</span>
                 </div>
-                <p className="text-[10px] font-bold leading-tight" style={{ color: config.text_color, fontFamily: config.heading_font }}>{product.name}</p>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs font-extrabold" style={{ color: config.text_color }}>{product.price}</span>
-                  {product.oldPrice && (
-                    <>
-                      <span className="text-[8px] line-through" style={{ color: config.text_color + "60" }}>{product.oldPrice}</span>
-                      <span className="rounded-full px-1 py-0.5 text-[7px] font-bold" style={{ backgroundColor: config.primary_color + "15", color: config.primary_color }}>{product.discount}</span>
-                    </>
-                  )}
-                </div>
+              ))}
+            </div>
+
+            {/* Hero Banner */}
+            <div className="mx-3 mt-2.5 rounded-xl overflow-hidden" style={{ background: `linear-gradient(135deg, ${config.primary_color}22, ${config.accent_color}22)` }}>
+              <div className="px-4 py-6 text-center">
+                <h2 className="text-base font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>New Collection</h2>
+                <p className="mt-0.5 text-[10px]" style={{ color: config.text_color + "88", fontFamily: config.body_font }}>Discover our latest arrivals</p>
                 <button
-                  className="flex h-6 w-full items-center justify-center gap-1 text-[8px] font-extrabold uppercase tracking-widest"
+                  className="mt-2.5 px-4 py-1.5 text-[9px] font-bold uppercase tracking-wider"
                   style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${primaryLight}, ${config.primary_color})`, color: btnText, borderRadius: btnRadius }}
                 >
-                  <ShoppingCart className="h-2.5 w-2.5" />
-                  ADD TO CART
+                  Shop Now
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Footer */}
-      <div className="mt-2 px-4 py-4 border-t" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded" style={{ backgroundColor: config.primary_color }}>
-                <Store className="h-3 w-3" style={{ color: btnText }} />
+            {/* Product Grid */}
+            <div className="px-3 py-3">
+              <h3 className="mb-2 text-xs font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>All Products</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {fakeProducts.map((product, i) => (
+                  <div key={i} className="overflow-hidden rounded-lg border" style={{ borderColor: config.text_color + "10", backgroundColor: config.background_color }}>
+                    <div className="relative" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Package className="h-6 w-6" style={{ color: config.text_color + "20" }} />
+                      </div>
+                      {i === 0 && (
+                        <span className="absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[6px] font-bold" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
+                          Trending
+                        </span>
+                      )}
+                      {i === 2 && (
+                        <span className="absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[6px] font-bold" style={{ backgroundColor: config.primary_color + "20", color: config.primary_color, border: `1px solid ${config.primary_color}30` }}>
+                          Best Seller
+                        </span>
+                      )}
+                    </div>
+                    <div className="px-1.5 pb-1.5 pt-1 space-y-0.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[6px] font-bold uppercase tracking-wider" style={{ color: config.text_color + "70" }}>TOP RATED</span>
+                        <div className="flex items-center gap-0.5">
+                          <Star className="h-2 w-2 fill-current" style={{ color: config.primary_color }} />
+                          <span className="text-[7px] font-bold" style={{ color: config.text_color }}>{product.rating}</span>
+                        </div>
+                      </div>
+                      <p className="text-[9px] font-bold leading-tight line-clamp-2" style={{ color: config.text_color, fontFamily: config.heading_font }}>{product.name}</p>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-extrabold" style={{ color: config.text_color }}>{product.price}</span>
+                        {product.oldPrice && (
+                          <>
+                            <span className="text-[7px] line-through" style={{ color: config.text_color + "60" }}>{product.oldPrice}</span>
+                            <span className="rounded-full px-1 text-[6px] font-bold" style={{ backgroundColor: config.primary_color + "15", color: config.primary_color }}>{product.discount}</span>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        className="flex h-5 w-full items-center justify-center gap-0.5 text-[7px] font-extrabold uppercase tracking-wider"
+                        style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${primaryLight}, ${config.primary_color})`, color: btnText, borderRadius: btnRadius }}
+                      >
+                        <ShoppingCart className="h-2 w-2" />
+                        ADD TO CART
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <span className="text-[10px] font-bold">{storeName}</span>
             </div>
-            <p className="text-[8px] opacity-60">Premium quality products at your fingertips.</p>
-          </div>
-          <div>
-            <h4 className="text-[9px] font-bold uppercase tracking-wider mb-1.5" style={{ color: config.primary_color }}>Quick Links</h4>
-            <div className="space-y-0.5">
-              {["Home", "Contact", "Return Policy", "Terms"].map((link) => (
-                <p key={link} className="text-[8px] opacity-60">{link}</p>
-              ))}
+
+            {/* Footer */}
+            <div className="px-3 py-3 border-t" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <div className="flex h-5 w-5 items-center justify-center rounded" style={{ backgroundColor: config.primary_color }}>
+                      <Store className="h-2.5 w-2.5" style={{ color: btnText }} />
+                    </div>
+                    <span className="text-[9px] font-bold">{storeName}</span>
+                  </div>
+                  <p className="text-[7px] opacity-60">Premium quality products.</p>
+                </div>
+                <div>
+                  <h4 className="text-[8px] font-bold uppercase tracking-wider mb-1" style={{ color: config.primary_color }}>Quick Links</h4>
+                  <div className="space-y-0.5">
+                    {["Home", "Contact", "Returns", "Terms"].map((link) => (
+                      <p key={link} className="text-[7px] opacity-60">{link}</p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 border-t pt-1.5 text-center" style={{ borderColor: config.background_color + "15" }}>
+                <p className="text-[6px] opacity-40">© 2026 {storeName}. All rights reserved.</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="mt-3 border-t pt-2 text-center" style={{ borderColor: config.background_color + "15" }}>
-          <p className="text-[7px] opacity-40">© 2026 {storeName}. All rights reserved.</p>
+
+          {/* Bottom bar (home indicator) */}
+          <div className="flex h-5 items-center justify-center bg-gray-800">
+            <div className="h-1 w-24 rounded-full bg-gray-600" />
+          </div>
         </div>
       </div>
     </div>
