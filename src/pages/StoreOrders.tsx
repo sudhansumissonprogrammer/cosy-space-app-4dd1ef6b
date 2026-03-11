@@ -157,8 +157,10 @@ export default function StoreOrders() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "MMM d, HH:mm")}</TableCell>
-                    </TableRow>
+                       <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "MMM d, HH:mm")}</TableCell>
+                       <TableCell>
+                         <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
+                       </TableCell>
                   ))}
                 </TableBody>
               </Table>
