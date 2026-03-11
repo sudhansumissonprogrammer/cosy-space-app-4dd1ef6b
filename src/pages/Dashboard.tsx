@@ -11,22 +11,24 @@ import {
 export default function Dashboard() {
   const { user } = useAuth();
 
-  const { data: stores } = useQuery({
-    queryKey: ["my-stores", user?.id],
+  const { data: store } = useQuery({
+    queryKey: ["my-store", user?.id],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
         .select("id, currency")
-        .eq("owner_id", user!.id);
+        .eq("owner_id", user!.id)
+        .limit(1)
+        .maybeSingle();
       if (error) throw error;
-      return data || [];
+      return data;
     },
     enabled: !!user,
   });
 
-  const ids = stores?.map((s) => s.id) || [];
-  const currency = stores?.[0]?.currency || "USD";
+  const storeId = store?.id;
+  const currency = store?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
   const { data: stats, isLoading } = useQuery({
