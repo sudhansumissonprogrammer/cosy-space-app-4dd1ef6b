@@ -169,6 +169,7 @@ export default function StoreSettings() {
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
           og_image_url: ogImageUrl.trim() || null,
+          owner_email: ownerEmail.trim() || null,
         })
         .eq("id", storeId!);
       if (error) throw error;
