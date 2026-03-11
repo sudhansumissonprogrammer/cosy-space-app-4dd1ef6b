@@ -262,7 +262,7 @@ function TestimonialsSection() {
 /* ── Newsletter ── */
 function NewsletterSection() {
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingBottom: "80px" }}>
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 pb-10 sm:pb-20">
       <div
         className="text-center p-10 sm:p-16"
         style={{
