@@ -18,7 +18,7 @@ export default function AdminLayout() {
   const location = useLocation();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
       <aside className="flex w-64 flex-col border-r bg-card">
         <div className="flex h-14 items-center gap-2 border-b px-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive">
