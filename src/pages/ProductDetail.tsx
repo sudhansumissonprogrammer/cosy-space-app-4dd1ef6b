@@ -1304,7 +1304,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
             draggable={false}
           />
 
-          <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow backdrop-blur-sm">
+          <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow backdrop-blur-sm">
             <ZoomIn className="h-3.5 w-3.5" /> Tap to zoom
           </div>
 
