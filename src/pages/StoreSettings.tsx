@@ -376,7 +376,7 @@ export default function StoreSettings() {
                   <img src={heroPreview} alt="Mobile Hero" className="w-full max-h-32 rounded-lg border object-contain" />
                   <button
                     type="button"
-                    onClick={() => { setHeroFile(null); setHeroPreview(null); }}
+                    onClick={() => { setHeroFile(null); setHeroPreview(null); setHeroRemoved(true); }}
                     className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
                   >
                     <X className="h-3 w-3" />
