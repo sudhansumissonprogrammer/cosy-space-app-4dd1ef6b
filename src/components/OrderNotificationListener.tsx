@@ -4,6 +4,37 @@ import { toast } from "sonner";
 import { ShoppingBag, MessageCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
+// Play a pleasant chime using Web Audio API
+function playNotificationChime() {
+  try {
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+
+    // Two-tone chime: C5 → E5
+    const notes = [
+      { freq: 523.25, start: 0, dur: 0.15 },
+      { freq: 659.25, start: 0.15, dur: 0.25 },
+    ];
+
+    notes.forEach(({ freq, start, dur }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, now + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + start + dur);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + start);
+      osc.stop(now + start + dur);
+    });
+
+    // Close context after sound finishes
+    setTimeout(() => ctx.close(), 600);
+  } catch {
+    // Audio not available — silently ignore
+  }
+}
+
 export default function OrderNotificationListener() {
   const notifiedRef = useRef<Set<string>>(new Set());
 
@@ -28,6 +59,9 @@ export default function OrderNotificationListener() {
     }
 
     const showNotification = (title: string, body: string) => {
+      // Play chime sound
+      playNotificationChime();
+
       // Toast notification (always)
       toast(title, {
         description: body,
