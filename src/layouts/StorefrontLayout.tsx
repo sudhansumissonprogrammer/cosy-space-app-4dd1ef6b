@@ -249,6 +249,7 @@ function StorefrontSkeleton() {
 export default function StorefrontLayout({ slugOverride }: { slugOverride?: string } = {}) {
   const { store, isLoading, slug } = useStorefront(slugOverride);
   const viewTracked = useRef(false);
+  const queryClient = useQueryClient();
 
   useFacebookPixel((store as any)?.facebook_pixel_id);
 
@@ -265,7 +266,6 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     viewTracked.current = true;
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     if (!projectId) return;
-    // Delay to not block rendering
     setTimeout(() => {
       fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
         method: "POST",
@@ -274,6 +274,24 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
       }).catch(() => {});
     }, 3000);
   }, [store?.id]);
+
+  const themeConfig = store ? queryClient.getQueryData<any>(["storefront-theme-config", store.id]) : null;
+
+  // Load Google Font dynamically
+  useEffect(() => {
+    if (!themeConfig) return;
+    const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
+    const families = fonts.map((f: string) => f.replace(/ /g, "+")).join("&family=");
+    const linkId = "storefront-google-fonts";
+    let link = document.getElementById(linkId) as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+    }
+    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
+  }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
   if (isLoading) {
     return <StorefrontSkeleton />;
