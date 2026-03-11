@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.notify-order]
 verify_jwt = false
+
+[functions.razorpay-upi-intent]
+verify_jwt = false
+
+[functions.razorpay-payment-status]
+verify_jwt = false
