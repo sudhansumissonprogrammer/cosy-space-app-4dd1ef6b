@@ -66,9 +66,9 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   /* Sections */
   .row { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
   .col { flex: 1; }
-  .sec-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 1mm; }
+  .sec-label { font-size: 7px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 1mm; }
   .sec-val { font-size: 9px; color: #111; line-height: 1.5; }
-  .sec-val strong { font-weight: 700; }
+  .sec-val strong { font-weight: 600; }
   .sec-val-right { text-align: right; }
 
   .badge {
