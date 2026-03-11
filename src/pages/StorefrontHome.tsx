@@ -62,6 +62,9 @@ export default function StorefrontHome() {
 
   const activeFilterCount = [priceRange, availability !== "all", bestSellingFilter !== "all"].filter(Boolean).length;
 
+  // Use initialData from prefetched RPC to avoid redundant fetch
+  const prefetchedBulk = queryClient.getQueryData<any>(["storefront-bulk", store.id]);
+
   const { data: products, isLoading } = useQuery({
     queryKey: ["storefront-products", store.id],
     queryFn: async () => {
@@ -76,6 +79,7 @@ export default function StorefrontHome() {
     },
     enabled: !!store.id,
     staleTime: 5 * 60 * 1000,
+    initialData: prefetchedBulk?.products,
   });
 
   const { data: storeCategories, isLoading: categoriesLoading } = useQuery({
