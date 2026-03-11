@@ -297,7 +297,7 @@ function GradientNewsletter() {
             Stay in the Loop
           </h2>
           <p className="mt-2 text-sm text-white/70 max-w-md mx-auto">Get exclusive deals, early access, and product drops straight to your inbox.</p>
-          <div className="mt-6 mx-auto max-w-md flex items-center gap-2">
+          <div className="mt-6 mx-auto max-w-md flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <input
               type="email"
               placeholder="your@email.com"
