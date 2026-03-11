@@ -134,8 +134,8 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     border-top: 1px solid #ccc;
     text-align: center;
   }
-  .footer-txt { font-size: 6.5px; color: #888; }
-  .footer-bold { font-size: 7.5px; font-weight: 700; color: #222; margin-bottom: 1px; }
+  .footer-txt { font-size: 7.5px; color: #888; }
+  .footer-bold { font-size: 8.5px; font-weight: 700; color: #222; margin-bottom: 1px; }
 </style>
 </head><body>
 <div class="label">
