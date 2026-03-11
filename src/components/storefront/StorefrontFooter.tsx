@@ -95,7 +95,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="flex items-center gap-2 text-sm opacity-70 transition-opacity hover:opacity-100"
                 >
                   <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                 </a>
