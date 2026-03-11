@@ -120,7 +120,7 @@ export default function StorefrontHome() {
           </button>
           <button
             onClick={() => { setSearchOpen(true); setOpenFilters(true); }}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/60 text-foreground transition-colors hover:bg-accent"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-colors hover:bg-foreground/90"
           >
             <SlidersHorizontal className="h-4 w-4" />
           </button>
