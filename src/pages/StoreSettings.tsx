@@ -594,7 +594,31 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
+        {/* SEO Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> SEO Settings</CardTitle>
+            <CardDescription>Optimize your store for search engines.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Meta Title</Label>
+              <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="Your Store — Best Products Online" maxLength={60} />
+              <p className="text-xs text-muted-foreground">{metaTitle.length}/60 characters</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Meta Description</Label>
+              <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="Discover amazing products at great prices..." maxLength={160} rows={3} />
+              <p className="text-xs text-muted-foreground">{metaDescription.length}/160 characters</p>
+            </div>
+            <div className="space-y-2">
+              <Label>OG Image URL</Label>
+              <Input value={ogImageUrl} onChange={(e) => setOgImageUrl(e.target.value)} placeholder="https://..." maxLength={500} />
+              <p className="text-xs text-muted-foreground">Social sharing preview image (1200×630 recommended)</p>
+            </div>
+          </CardContent>
+        </Card>
+
           {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Changes
         </Button>
