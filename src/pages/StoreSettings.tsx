@@ -332,7 +332,7 @@ export default function StoreSettings() {
                       className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
-                        if (f) { setLogoFile(f); setLogoPreview(URL.createObjectURL(f)); }
+                        if (f) { setLogoFile(f); setLogoPreview(URL.createObjectURL(f)); setLogoRemoved(false); }
                       }}
                     />
                   </label>
