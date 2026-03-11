@@ -182,9 +182,9 @@ export default function StorefrontProductCard({ product, slug, store, priority =
           <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
             {categoryLabel}
           </p>
-          <div className="flex items-center gap-1 rounded bg-success px-1.5 py-0.5">
-            <Star className="h-2.5 w-2.5 fill-white text-white" />
-            <span className="text-[10px] font-bold text-white">{getProductRating(product.id)}</span>
+          <div className="flex items-center gap-0.5">
+            <Star className="h-3 w-3 fill-success text-success" />
+            <span className="text-[10px] font-bold text-foreground">{getProductRating(product.id)}</span>
           </div>
         </div>
 
