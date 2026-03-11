@@ -164,7 +164,7 @@ function BenefitsSection() {
   ];
 
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 pt-6 pb-10 sm:pt-10 sm:pb-20">
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         {benefits.map((b, idx) => (
           <div
