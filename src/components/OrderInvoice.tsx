@@ -334,7 +334,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
                 <span className="tabular-nums">{currencySymbol}{(Number(order.total) - subtotal).toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between border-t-2 border-foreground pt-1 text-[11px] font-extrabold text-foreground">
+            <div className="flex justify-between border-t-2 border-foreground pt-1 text-[11px] font-semibold text-foreground">
               <span>Total</span>
               <span className="tabular-nums">{currencySymbol}{Number(order.total).toFixed(2)}</span>
             </div>
