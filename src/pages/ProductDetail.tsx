@@ -358,7 +358,6 @@ export default function ProductDetail() {
                 />
               ))}
               <span className="ml-1 text-sm font-bold text-foreground">{stats.rating}</span>
-              <span className="text-xs text-muted-foreground">({stats.reviewCount} reviews)</span>
             </div>
             <span className="text-[10px] text-muted-foreground">|</span>
             <span className="text-xs text-success font-semibold flex items-center gap-1">
