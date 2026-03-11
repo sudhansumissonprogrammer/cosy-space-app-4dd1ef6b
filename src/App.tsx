@@ -53,7 +53,7 @@ const LoadingSpinner = () => (
 
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
-  const HomeComponent = theme === "theme-4" ? StorefrontHomeV4 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+  const HomeComponent = theme === "theme-5" ? StorefrontHomeV5 : theme === "theme-4" ? StorefrontHomeV4 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
   return (
     <>
       <Route index element={<HomeComponent />} />
