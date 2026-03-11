@@ -18,7 +18,7 @@ function HeroSection({ store }: { store: StoreData }) {
   const heroProduct = products?.find((p: any) => p.image_url) || null;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingTop: "80px", paddingBottom: "80px" }}>
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 pt-10 pb-10 sm:pt-20 sm:pb-20 lg:pt-[80px] lg:pb-[80px]">
       <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
         {/* Left text */}
         <div>
