@@ -108,7 +108,7 @@ function CategoryGrid({ categories, slug }: { categories: any[]; slug: string })
   if (!categories || categories.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 pt-6 pb-10 sm:pt-10 sm:pb-20">
       <h2
         className="text-2xl font-bold mb-8 sm:text-3xl"
         style={{ fontFamily: "var(--storefront-heading-font, 'Poppins')", color: "var(--storefront-text, #1e293b)" }}
