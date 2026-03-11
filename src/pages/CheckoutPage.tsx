@@ -216,7 +216,30 @@ export default function CheckoutPage() {
       }));
 
   const subtotal = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const total = Math.max(0, subtotal - couponDiscount);
+
+  // Shipping calculation
+  const shippingActive = shippingConfig?.is_active;
+  const shippingCharge = shippingActive
+    ? (shippingConfig.free_shipping_above && subtotal >= Number(shippingConfig.free_shipping_above)
+        ? 0
+        : Number(shippingConfig.flat_rate) || 0)
+    : 0;
+
+  // Tax calculation
+  const taxActive = taxConfig?.is_active && Number(taxConfig?.tax_rate) > 0;
+  const taxRate = taxActive ? Number(taxConfig.tax_rate) : 0;
+  const taxInclusive = taxConfig?.is_inclusive ?? false;
+  const taxName = taxConfig?.tax_name || "Tax";
+  let taxAmount = 0;
+  if (taxActive) {
+    if (taxInclusive) {
+      taxAmount = subtotal - (subtotal / (1 + taxRate / 100));
+    } else {
+      taxAmount = (subtotal * taxRate) / 100;
+    }
+  }
+
+  const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
   // Coupon logic
   const applyCoupon = async () => {
