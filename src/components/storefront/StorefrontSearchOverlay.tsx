@@ -47,7 +47,6 @@ export default function StorefrontSearchOverlay({
     if (open) {
       setQuery("");
       setPriceRange(null);
-      setAvailability("all");
       setSortBy("popular");
       setShowFilters(initialFiltersOpen);
       if (!initialFiltersOpen) {
