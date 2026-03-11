@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Package, ShoppingCart, Star, Zap, Heart, Check, Plus, Minus, Loader2, Flame, Sparkles } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
@@ -6,6 +6,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl, getImageSrcSet } from "@/lib/imageOptimize";
 
 function getProductRating(productId: string): number {
   let hash = 0;
