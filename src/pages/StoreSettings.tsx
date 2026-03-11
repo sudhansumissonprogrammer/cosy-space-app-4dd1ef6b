@@ -71,6 +71,7 @@ export default function StoreSettings() {
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [ogImageUrl, setOgImageUrl] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
@@ -112,6 +113,7 @@ export default function StoreSettings() {
       setMetaTitle((store as any).meta_title || "");
       setMetaDescription((store as any).meta_description || "");
       setOgImageUrl((store as any).og_image_url || "");
+      setOwnerEmail((store as any).owner_email || "");
     }
   }, [store]);
 
@@ -167,6 +169,7 @@ export default function StoreSettings() {
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
           og_image_url: ogImageUrl.trim() || null,
+          owner_email: ownerEmail.trim() || null,
         })
         .eq("id", storeId!);
       if (error) throw error;
@@ -240,6 +243,19 @@ export default function StoreSettings() {
                 value={whatsappNumber}
                 onChange={(e) => setWhatsappNumber(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="owner-email">Notification Email</Label>
+              <Input
+                id="owner-email"
+                type="email"
+                placeholder="you@example.com"
+                value={ownerEmail}
+                onChange={(e) => setOwnerEmail(e.target.value)}
+                maxLength={200}
+              />
+              <p className="text-xs text-muted-foreground">Order notification emails will be sent to this address</p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
