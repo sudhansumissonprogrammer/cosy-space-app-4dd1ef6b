@@ -682,13 +682,7 @@ export default function CheckoutPage() {
                   onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("upi"); setUpiApp("google_pay"); }}
                   className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-3 transition-all ${paymentMethod === "razorpay" && upiApp === "google_pay" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"}`}
                 >
-                  <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-                    <path d="M24.27 24.76L30.61 38H25.56L21.88 29.18L18.64 32.18V38H14.36V10H18.64V26.62L25.12 19.24H30.54L24.27 24.76Z" fill="#3C4043"/>
-                    <path d="M38.84 23.96C38.84 23.18 38.78 22.44 38.66 21.72H32.16V25.86H35.9C35.74 26.86 35.16 27.72 34.28 28.28V30.26H36.66C38.06 28.98 38.84 26.7 38.84 23.96Z" fill="#4285F4"/>
-                    <path d="M32.16 32.16C34.56 32.16 36.56 31.36 36.66 30.26L34.28 28.28C33.52 28.82 32.52 29.12 32.16 29.12C30.34 29.12 28.82 27.78 28.26 25.96H25.78V28.02C27.06 30.54 29.46 32.16 32.16 32.16Z" fill="#34A853"/>
-                    <path d="M28.26 25.96C28.08 25.42 27.98 24.84 27.98 24.24C27.98 23.64 28.08 23.06 28.26 22.52V20.46H25.78C25.16 21.72 24.8 23.12 24.8 24.6C24.8 25.68 25.02 26.72 25.78 28.02L28.26 25.96Z" fill="#FBBC05"/>
-                    <path d="M32.16 19.36C33.34 19.36 34.4 19.76 35.22 20.54L36.72 19.04C35.52 17.92 33.96 17.24 32.16 17.24C29.46 17.24 27.06 18.86 25.78 21.38L28.26 23.44C28.82 21.62 30.34 20.28 32.16 20.28V19.36Z" fill="#EA4335"/>
-                  </svg>
+                  <img src="/icons/gpay.svg" alt="Google Pay" className="h-7 w-7 object-contain" />
                   <span className="text-[10px] font-medium text-foreground">Google Pay</span>
                 </button>
 
