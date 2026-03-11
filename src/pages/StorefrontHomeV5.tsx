@@ -186,7 +186,7 @@ function BenefitsSection() {
         {benefits.map((b, idx) => (
           <div
             key={idx}
-            className="group rounded-2xl border border-white/8 bg-white/[0.03] backdrop-blur-sm p-6 text-center transition-all duration-300 hover:bg-white/[0.06] hover:border-white/15 hover:scale-[1.02]"
+            className="group rounded-2xl border border-white/8 bg-white/[0.03] backdrop-blur-sm p-4 sm:p-6 text-center transition-all duration-300 hover:bg-white/[0.06] hover:border-white/15 hover:scale-[1.02]"
           >
             <div
               className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl mb-4 transition-transform duration-300 group-hover:scale-110"
