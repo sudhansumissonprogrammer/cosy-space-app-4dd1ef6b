@@ -229,7 +229,7 @@ export default function BulkUpload() {
         <CardHeader>
           <CardTitle className="text-lg">Upload CSV</CardTitle>
           <CardDescription>
-            Your CSV should have columns: name, price, sale_price, description, category, stock_quantity, sku
+            Your CSV should have columns: name, price, sale_price, description, category, stock_quantity, sku, image_url
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
