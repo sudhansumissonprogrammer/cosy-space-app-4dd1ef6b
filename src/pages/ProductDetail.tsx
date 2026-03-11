@@ -230,6 +230,8 @@ export default function ProductDetail() {
     return imgs;
   })();
 
+  const fakeReviews = useMemo(() => product ? getFakeReviews(product.id) : [], [product?.id]);
+
   if (isLoading) return <ProductDetailSkeleton />;
 
   if (!product) {
@@ -264,7 +266,6 @@ export default function ProductDetail() {
   const wishlisted = isWishlisted(product.id);
   const isLowStock = product.stock_quantity > 0 && product.stock_quantity <= 10;
   const isOutOfStock = product.stock_quantity <= 0;
-  const fakeReviews = useMemo(() => getFakeReviews(product.id), [product.id]);
 
   const handleAddToCart = () => {
     addToCart({
