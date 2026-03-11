@@ -151,6 +151,7 @@ export default function BulkUpload() {
         category: p.category || null,
         stock_quantity: p.stock_quantity,
         sku: p.sku || null,
+        image_url: p.image_url || null,
         is_active: true,
       }));
 
