@@ -329,7 +329,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
             </div>
             {Number(order.total) !== subtotal && (
               <div className="flex justify-between text-[9px] text-muted-foreground">
-                <span>Ship/Tax</span>
+                <span>{(Number(order.total) - subtotal) < 0 ? 'Discount' : 'Shipping/Tax'}</span>
                 <span className="tabular-nums">{currencySymbol}{(Number(order.total) - subtotal).toFixed(2)}</span>
               </div>
             )}
