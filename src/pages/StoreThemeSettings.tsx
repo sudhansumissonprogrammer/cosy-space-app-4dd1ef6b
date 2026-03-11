@@ -368,6 +368,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #6366F1, #818cf8, #22C55E)",
   },
+  "theme-6": {
+    primary_color: "#2563EB",
+    accent_color: "#1e293b",
+    text_color: "#1e293b",
+    background_color: "#F8FAFC",
+    heading_font: "Poppins",
+    body_font: "Inter",
+    button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #2563EB, #60a5fa, #F97316)",
+  },
 };
 
 const THEMES = [
