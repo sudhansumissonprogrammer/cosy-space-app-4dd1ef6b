@@ -33,11 +33,12 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     doc.open();
     doc.write(`<!DOCTYPE html>
 <html><head><title>Label #${order.id.slice(0, 8).toUpperCase()}</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   @page { size: 100mm 150mm; margin: 3mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color: #000;
     line-height: 1.4;
     font-size: 9px;
@@ -202,7 +203,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   <div class="totals">
     <table class="totals-tbl">
       <tr><td>Subtotal</td><td class="r">${currencySymbol}${subtotal.toFixed(2)}</td></tr>
-      ${Number(order.total) !== subtotal ? `<tr><td>Shipping/Tax</td><td class="r">${currencySymbol}${(Number(order.total) - subtotal).toFixed(2)}</td></tr>` : ""}
+      ${Number(order.total) !== subtotal ? `<tr><td>${(Number(order.total) - subtotal) < 0 ? 'Discount' : 'Shipping/Tax'}</td><td class="r">${currencySymbol}${(Number(order.total) - subtotal).toFixed(2)}</td></tr>` : ""}
       <tr class="grand"><td>Total</td><td class="r">${currencySymbol}${Number(order.total).toFixed(2)}</td></tr>
     </table>
   </div>
@@ -244,7 +245,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   return (
     <div className="space-y-4">
       {/* Compact Preview (matches 4x6 label feel) */}
-      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b-2 border-foreground">
           <div className="flex items-center gap-2">
@@ -328,7 +329,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
             </div>
             {Number(order.total) !== subtotal && (
               <div className="flex justify-between text-[9px] text-muted-foreground">
-                <span>Ship/Tax</span>
+                <span>{(Number(order.total) - subtotal) < 0 ? 'Discount' : 'Shipping/Tax'}</span>
                 <span className="tabular-nums">{currencySymbol}{(Number(order.total) - subtotal).toFixed(2)}</span>
               </div>
             )}
