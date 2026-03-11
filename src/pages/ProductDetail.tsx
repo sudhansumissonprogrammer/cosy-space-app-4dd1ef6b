@@ -591,13 +591,14 @@ export default function ProductDetail() {
 
               {/* Buy Now */}
               {showBuyNow && (
-                <Button
-                  className="h-[46px] w-full rounded-xl text-xs font-extrabold uppercase tracking-wider"
+                <button
+                  className="flex h-[46px] w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
+                  style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                   onClick={handleBuyNow}
                 >
-                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  <ShoppingBag className="h-4 w-4" />
                   Buy Now
-                </Button>
+                </button>
               )}
 
               {/* WhatsApp */}
