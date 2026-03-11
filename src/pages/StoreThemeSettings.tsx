@@ -386,6 +386,7 @@ const THEMES = [
   { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
   { id: "theme-4", name: "Luxury", description: "Premium editorial layout with serif typography & elegant spacing", available: true },
   { id: "theme-5", name: "Startup", description: "Glassmorphism, gradient hero, dark mode with neon accents", available: true },
+  { id: "theme-6", name: "Pro Clean", description: "Modern startup-style with clean layout, structured grid & premium feel", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
