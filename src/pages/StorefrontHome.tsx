@@ -109,13 +109,19 @@ export default function StorefrontHome() {
     <>
       {/* Search bar trigger */}
       <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl flex items-center gap-2">
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex w-full items-center gap-2.5 rounded-full bg-accent/60 px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent"
+            className="flex flex-1 items-center gap-2.5 rounded-full bg-accent/60 px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent"
           >
             <Search className="h-4 w-4 shrink-0" />
             <span>Search products...</span>
+          </button>
+          <button
+            onClick={() => { setSearchOpen(true); setOpenFilters(true); }}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/60 text-foreground transition-colors hover:bg-accent"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
           </button>
         </div>
       </div>
