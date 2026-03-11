@@ -158,6 +158,34 @@ export default function CheckoutPage() {
     },
   });
 
+  // Fetch shipping config
+  const { data: shippingConfig } = useQuery({
+    queryKey: ["store-shipping-config", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_shipping_config")
+        .select("*")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch tax config
+  const { data: taxConfig } = useQuery({
+    queryKey: ["store-tax-config", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_tax_config")
+        .select("*")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const availableMethods = paymentConfig?.payment_methods || ["cod"];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
