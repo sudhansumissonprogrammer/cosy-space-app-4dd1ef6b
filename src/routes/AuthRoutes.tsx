@@ -42,6 +42,7 @@ const StoreCoupons = lazy(() => import("@/pages/StoreCoupons"));
 const StoreShipping = lazy(() => import("@/pages/StoreShipping"));
 const StoreTaxSettings = lazy(() => import("@/pages/StoreTaxSettings"));
 const StoreAbandonedCarts = lazy(() => import("@/pages/StoreAbandonedCarts"));
+const StoreThemeSettings = lazy(() => import("@/pages/StoreThemeSettings"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 export default function AuthRoutes() {
