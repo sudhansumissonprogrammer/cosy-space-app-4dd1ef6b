@@ -127,7 +127,7 @@ function LookbookSection({ products, slug }: { products: any[]; slug: string }) 
   if (lookbookItems.length < 3) return null;
 
   return (
-    <section className="py-20" style={{ backgroundColor: "var(--storefront-accent, #1C1C1C)" }}>
+    <section className="py-10 sm:py-20" style={{ backgroundColor: "var(--storefront-accent, #1C1C1C)" }}>
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
         <div className="text-center mb-12">
           <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-3" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
