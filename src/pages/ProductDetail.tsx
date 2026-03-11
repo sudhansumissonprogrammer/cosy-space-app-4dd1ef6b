@@ -131,7 +131,14 @@ export default function ProductDetail() {
 
   // Scroll to top when navigating between product pages
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    // Multiple approaches to ensure scroll reset works across all browsers/devices
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    // Also try smooth as a delayed fallback for edge cases
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    });
   }, [productSlug]);
   const { addToCart, items, cartTotal } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
