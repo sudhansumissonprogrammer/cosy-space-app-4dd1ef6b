@@ -26,7 +26,7 @@ const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
 
 // Auth + Admin + Dashboard — fully lazy, never loaded on storefront
-const AuthRoutes = lazy(() => import("./routes/AuthRoutes"));
+const LazyAuthRoutes = lazy(() => import("./routes/AuthRoutes"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,7 +82,7 @@ function AppRouter() {
   }
 
   // Everything else — lazy-load the entire auth/admin/dashboard bundle
-  return <AuthRoutes />;
+  return <LazyAuthRoutes />;
 }
 
 const App = () => (
