@@ -114,6 +114,9 @@ export default function SideCart({ store }: SideCartProps) {
                   Clear Cart
                 </button>
               )}
+
+              {/* Upsell */}
+              <CartUpsell storeId={store.id} currency={currency} />
             </div>
 
             {/* Footer / Checkout */}
