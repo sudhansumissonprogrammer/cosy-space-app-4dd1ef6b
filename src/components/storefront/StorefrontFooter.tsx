@@ -32,7 +32,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
               )}
             </div>
             {store.description && (
-              <p className="text-sm leading-relaxed text-muted-foreground line-clamp-3">
+              <p className="text-sm leading-relaxed opacity-80 line-clamp-3">
                 {store.description}
               </p>
             )}
