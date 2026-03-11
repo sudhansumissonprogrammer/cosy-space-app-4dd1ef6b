@@ -6,6 +6,7 @@ import { useCart } from "@/contexts/CartContext";
 import { Minus, Plus, Trash2, ShoppingCart, ShoppingBag, MessageCircle, Package, X } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import CartUpsell from "@/components/storefront/CartUpsell";
 
 interface SideCartProps {
   store: StoreData;
@@ -113,6 +114,9 @@ export default function SideCart({ store }: SideCartProps) {
                   Clear Cart
                 </button>
               )}
+
+              {/* Upsell */}
+              <CartUpsell storeId={store.id} currency={currency} />
             </div>
 
             {/* Footer / Checkout */}
