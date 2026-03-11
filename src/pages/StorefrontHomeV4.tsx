@@ -40,7 +40,7 @@ function LuxuryHero({ store }: { store: StoreData }) {
         <div className="max-w-2xl px-6">
           <div className="mb-4 h-[1px] mx-auto w-12" style={{ backgroundColor: "var(--storefront-primary, #C8A96A)" }} />
           <h1
-            className="text-4xl font-light tracking-[0.12em] uppercase text-white sm:text-5xl lg:text-6xl"
+            className="text-3xl font-light tracking-[0.12em] uppercase text-white sm:text-5xl lg:text-6xl"
             style={{ fontFamily: "var(--storefront-heading-font, 'Playfair Display')" }}
           >
             {store.name}
