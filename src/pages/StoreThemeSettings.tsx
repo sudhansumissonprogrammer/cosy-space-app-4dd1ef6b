@@ -248,12 +248,22 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
   },
+  "theme-3": {
+    primary_color: "#3B82F6",
+    accent_color: "#F97316",
+    text_color: "#1e293b",
+    background_color: "#F8FAFC",
+    heading_font: "Inter",
+    body_font: "Inter",
+    button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #3B82F6, #60a5fa, #F97316)",
+  },
 };
 
 const THEMES = [
   { id: "theme-1", name: "Classic", description: "Elegant gold & black with serif headings", available: true },
   { id: "theme-2", name: "Bold Modern", description: "Transparent header, carousel hero, masonry grid", available: true },
-  { id: "theme-3", name: "Pastel Soft", description: "Soft pastels with rounded elements", available: false },
+  { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
