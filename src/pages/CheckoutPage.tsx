@@ -46,13 +46,9 @@ export default function CheckoutPage() {
   const { customer } = useStorefrontAuth();
   const qc = useQueryClient();
 
-  const { pollPaymentStatus } = usePaymentStatusPoller();
-
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [orderFailed, setOrderFailed] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [paymentStatusText, setPaymentStatusText] = useState("Waiting for payment...");
+  const [orderId, setOrderId] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
   const [razorpayMethod, setRazorpayMethod] = useState<"upi" | "card" | "netbanking" | "wallet">("upi");
