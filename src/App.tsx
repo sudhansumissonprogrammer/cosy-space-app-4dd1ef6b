@@ -56,7 +56,6 @@ const StorefrontTerms = lazy(() => import("./pages/StorefrontTerms"));
 const StorefrontPrivacyPolicy = lazy(() => import("./pages/StorefrontPrivacyPolicy"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
-import { ProductDetailSkeleton } from "./pages/ProductDetail";
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
 const StorefrontLogin = lazy(() => import("./pages/StorefrontLogin"));
 const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
@@ -164,7 +163,7 @@ function AppRouter() {
           <Route path="terms" element={<StorefrontTerms />} />
           <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
           <Route path="category/:categorySlug" element={<CategoryDetail />} />
-          <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}><ProductDetail /></Suspense>} />
+          <Route path="product/:productSlug" element={<ProductDetail />} />
           <Route path="cart" element={<CartPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
@@ -190,7 +189,7 @@ function AppRouter() {
           <Route path="terms" element={<StorefrontTerms />} />
           <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
           <Route path="category/:categorySlug" element={<CategoryDetail />} />
-          <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}><ProductDetail /></Suspense>} />
+          <Route path="product/:productSlug" element={<ProductDetail />} />
           <Route path="cart" element={<CartPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
