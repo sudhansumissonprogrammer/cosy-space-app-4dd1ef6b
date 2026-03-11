@@ -483,10 +483,10 @@ export default function ProductDetail() {
 
           {/* CTA Buttons */}
           {!isOutOfStock && (
-            <div className="mt-6 flex flex-col gap-3">
-              {/* Primary: Add to Cart — Animated */}
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              {/* Add to Cart */}
               <button
-                className={`relative flex w-full items-center justify-center gap-2 rounded-xl text-sm font-extrabold uppercase tracking-widest overflow-hidden transition-all duration-300 active:scale-[0.97] ${
+                className={`relative flex items-center justify-center gap-2 rounded-xl text-sm font-extrabold uppercase tracking-widest overflow-hidden transition-all duration-300 active:scale-[0.97] ${
                   justAdded
                     ? "bg-success text-success-foreground"
                     : "btn-gold hover:brightness-110"
@@ -497,12 +497,12 @@ export default function ProductDetail() {
                 {justAdded ? (
                   <span className="flex items-center gap-2 animate-fade-in">
                     <Check className="h-5 w-5" strokeWidth={3} />
-                    Added to Cart!
+                    Added!
                   </span>
                 ) : (
                   <span className={`flex items-center gap-2 ${cartBounce ? "animate-bounce-once" : ""}`}>
                     <ShoppingCart className="h-5 w-5" />
-                    Add to Cart — {currency} {(variantPrice * quantity).toFixed(2)}
+                    Add to Cart
                   </span>
                 )}
               </button>
