@@ -255,7 +255,7 @@ function CustomerReviews() {
 /* ── Newsletter ── */
 function Newsletter() {
   return (
-    <section className="py-20" style={{ backgroundColor: "var(--storefront-accent, #1C1C1C)" }}>
+    <section className="py-10 sm:py-20" style={{ backgroundColor: "var(--storefront-accent, #1C1C1C)" }}>
       <div className="mx-auto max-w-xl px-6 text-center">
         <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-3" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
           Stay Connected
