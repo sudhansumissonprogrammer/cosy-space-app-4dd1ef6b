@@ -859,6 +859,7 @@ export type Database = {
           name: string
           og_image_url: string | null
           order_mode: string
+          owner_email: string | null
           owner_id: string
           return_policy: string | null
           shipping_policy: string | null
@@ -892,6 +893,7 @@ export type Database = {
           name: string
           og_image_url?: string | null
           order_mode?: string
+          owner_email?: string | null
           owner_id: string
           return_policy?: string | null
           shipping_policy?: string | null
@@ -925,6 +927,7 @@ export type Database = {
           name?: string
           og_image_url?: string | null
           order_mode?: string
+          owner_email?: string | null
           owner_id?: string
           return_policy?: string | null
           shipping_policy?: string | null
