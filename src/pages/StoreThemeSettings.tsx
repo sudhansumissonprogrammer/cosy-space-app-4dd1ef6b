@@ -628,7 +628,7 @@ function FullStorefrontPreview({ config, storeName, products: propProducts, cate
       <div className="px-3 py-3">
         <h3 className="mb-2 text-xs font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>All Products</h3>
         <div className="grid grid-cols-2 gap-2">
-          {FAKE_PRODUCTS.map((product) => (
+          {products.map((product) => (
             <div
               key={product.id}
               className="overflow-hidden rounded-lg border cursor-pointer transition-transform active:scale-[0.97]"
@@ -636,9 +636,13 @@ function FullStorefrontPreview({ config, storeName, products: propProducts, cate
               onClick={() => openProduct(product)}
             >
               <div className="relative" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
-                <div className="flex h-full w-full items-center justify-center">
-                  <Package className="h-6 w-6" style={{ color: config.text_color + "20" }} />
-                </div>
+                {product.image_url ? (
+                  <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Package className="h-6 w-6" style={{ color: config.text_color + "20" }} />
+                  </div>
+                )}
                 {product.badge && (
                   <span className="absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[6px] font-bold" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
                     {product.badge}
