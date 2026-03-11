@@ -9,43 +9,44 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { getSubdomainSlug } from "@/lib/subdomain";
 
-// Lazy-loaded pages & layouts
+// Auth pages — lazy
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
-// Dashboard & admin — eager for instant transitions
-import AdminLayout from "./layouts/AdminLayout";
-import AdminOverview from "./pages/admin/AdminOverview";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminStores from "./pages/admin/AdminStores";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
-import DashboardLayout from "./layouts/DashboardLayout";
-import Dashboard from "./pages/Dashboard";
-import StoresList from "./pages/StoresList";
-import CreateStore from "./pages/CreateStore";
-import ProductsList from "./pages/ProductsList";
-import BulkUpload from "./pages/BulkUpload";
-import StoreDomain from "./pages/StoreDomain";
-import CreateProduct from "./pages/CreateProduct";
-import EditProduct from "./pages/EditProduct";
-import StoreOrders from "./pages/StoreOrders";
-import StoreCustomers from "./pages/StoreCustomers";
-import StoreSettings from "./pages/StoreSettings";
-import StoreAnalytics from "./pages/StoreAnalytics";
-import UserSettings from "./pages/UserSettings";
-import CustomerLeads from "./pages/CustomerLeads";
-import StorePayments from "./pages/StorePayments";
-import StoreCoupons from "./pages/StoreCoupons";
-import StoreShipping from "./pages/StoreShipping";
-import StoreTaxSettings from "./pages/StoreTaxSettings";
-import StoreAbandonedCarts from "./pages/StoreAbandonedCarts";
 
-// Storefront & less-used — lazy for smaller initial bundle
+// Dashboard & admin — lazy so storefront visitors don't download any of this
+const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
+const AdminOverview = lazy(() => import("./pages/admin/AdminOverview"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminStores = lazy(() => import("./pages/admin/AdminStores"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const StoresList = lazy(() => import("./pages/StoresList"));
+const CreateStore = lazy(() => import("./pages/CreateStore"));
+const ProductsList = lazy(() => import("./pages/ProductsList"));
+const BulkUpload = lazy(() => import("./pages/BulkUpload"));
+const StoreDomain = lazy(() => import("./pages/StoreDomain"));
+const CreateProduct = lazy(() => import("./pages/CreateProduct"));
+const EditProduct = lazy(() => import("./pages/EditProduct"));
+const StoreOrders = lazy(() => import("./pages/StoreOrders"));
+const StoreCustomers = lazy(() => import("./pages/StoreCustomers"));
+const StoreSettings = lazy(() => import("./pages/StoreSettings"));
+const StoreAnalytics = lazy(() => import("./pages/StoreAnalytics"));
+const UserSettings = lazy(() => import("./pages/UserSettings"));
+const CustomerLeads = lazy(() => import("./pages/CustomerLeads"));
+const StorePayments = lazy(() => import("./pages/StorePayments"));
+const StoreCoupons = lazy(() => import("./pages/StoreCoupons"));
+const StoreShipping = lazy(() => import("./pages/StoreShipping"));
+const StoreTaxSettings = lazy(() => import("./pages/StoreTaxSettings"));
+const StoreAbandonedCarts = lazy(() => import("./pages/StoreAbandonedCarts"));
+
+// Storefront — eagerly loaded for fast storefront rendering
 import StorefrontLayout from "./layouts/StorefrontLayout";
 import StorefrontHome from "./pages/StorefrontHome";
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
