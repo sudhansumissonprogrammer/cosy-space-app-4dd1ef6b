@@ -1,1 +1,13 @@
 project_id = "nyopdqvfbgnjmqluhynr"
+
+[functions.razorpay-order]
+verify_jwt = false
+
+[functions.razorpay-verify]
+verify_jwt = false
+
+[functions.create-guest-account]
+verify_jwt = false
+
+[functions.notify-order]
+verify_jwt = false
