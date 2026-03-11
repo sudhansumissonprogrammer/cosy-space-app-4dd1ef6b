@@ -1385,140 +1385,97 @@ function StartupPreview({ config, storeName, products: propProducts, categories:
   const btnRadius = config.button_style === "pill" ? "9999px" : config.button_style === "square" ? "0px" : "0.75rem";
 
   return (
-    <div className="flex justify-center">
-      <div className="relative mx-auto" style={{ width: "375px" }}>
-        <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
-          <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
-            <div className="h-2 w-2 rounded-full bg-gray-600" />
+    <PreviewFrame isDesktop={isDesktop} bgColor={config.background_color}>
+      <div style={{ color: config.text_color }}>
+        {/* Glass Nav */}
+        <div className="sticky top-0 z-10 px-3 py-2.5 flex items-center gap-2" style={{ backgroundColor: config.background_color + "e8", backdropFilter: "blur(12px)" }}>
+          <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <Menu className="h-3.5 w-3.5" style={{ color: config.text_color }} />
           </div>
-
-          <div className="relative" style={{ height: "680px", backgroundColor: config.background_color }}>
-            <div className="h-full overflow-y-auto" style={{ color: config.text_color }}>
-              {/* Glass Nav */}
-              <div className="sticky top-0 z-10 px-3 py-2.5 flex items-center gap-2" style={{ backgroundColor: config.background_color + "e8", backdropFilter: "blur(12px)" }}>
-                <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <Menu className="h-3.5 w-3.5" style={{ color: config.text_color }} />
-                </div>
-                <span className="text-[10px] font-bold" style={{ fontFamily: config.heading_font }}>{storeName}</span>
-                <div className="flex-1" />
-                <div className="flex items-center gap-1.5">
-                  <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
-                    <Heart className="h-3 w-3" style={{ color: config.text_color }} />
-                  </div>
-                  <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
-                    <ShoppingCart className="h-3 w-3" style={{ color: config.text_color }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Gradient Hero */}
-              <div className="relative px-4 pt-6 pb-8" style={{
-                background: `radial-gradient(ellipse 80% 60% at 50% -20%, ${config.primary_color}40, transparent), radial-gradient(ellipse 60% 50% at 80% 80%, ${config.accent_color}25, transparent), ${config.background_color}`,
-              }}>
-                <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 mb-3 text-[6px] font-medium" style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: config.accent_color }}>
-                  <Sparkles className="h-2 w-2" /> New Collection
-                </div>
-                <h1 className="text-lg font-bold leading-tight" style={{ fontFamily: config.heading_font }}>{storeName}</h1>
-                <p className="mt-1 text-[8px] opacity-50">Discover premium products crafted for the modern generation.</p>
-                <button className="mt-3 px-4 py-1.5 text-[7px] font-semibold flex items-center gap-1" style={{
-                  background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`,
-                  color: "#fff",
-                  borderRadius: btnRadius,
-                  boxShadow: `0 4px 15px ${config.primary_color}40`,
-                }}>
-                  Shop Now <ArrowRight className="h-2 w-2" />
-                </button>
-              </div>
-
-              {/* Benefits */}
-              <div className="px-3 py-3 grid grid-cols-2 gap-1.5">
-                {[
-                  { icon: "⚡", label: "Fast Delivery" },
-                  { icon: "🛡️", label: "Secure Pay" },
-                  { icon: "🚚", label: "Free Ship" },
-                  { icon: "✨", label: "Premium" },
-                ].map((b) => (
-                  <div key={b.label} className="rounded-xl p-2 text-center" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                    <span className="text-[10px]">{b.icon}</span>
-                    <p className="text-[6px] font-medium mt-0.5" style={{ color: config.text_color }}>{b.label}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Category Tabs */}
-              <div className="px-3 flex gap-1.5 overflow-hidden">
-                {["All", ...FAKE_CATEGORIES.slice(0, 3)].map((cat, i) => (
-                  <div key={cat} className="flex-shrink-0 rounded-lg px-2.5 py-1 text-[6px] font-medium" style={{
-                    background: i === 0 ? `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` : "rgba(255,255,255,0.05)",
-                    color: i === 0 ? "#fff" : config.text_color,
-                    border: i === 0 ? "none" : "1px solid rgba(255,255,255,0.06)",
-                  }}>
-                    {cat}
-                  </div>
-                ))}
-              </div>
-
-              {/* Product Grid */}
-              <div className="px-3 py-3">
-                <h3 className="text-[9px] font-bold mb-2" style={{ fontFamily: config.heading_font }}>Our Products</h3>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {FAKE_PRODUCTS.map((p) => (
-                    <div key={p.id} className="overflow-hidden rounded-xl" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                      <div className="relative flex items-center justify-center" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
-                        <Package className="h-5 w-5" style={{ color: config.text_color + "15" }} />
-                        {p.badge && <span className="absolute top-1 left-1 rounded-full px-1 py-px text-[5px] font-bold" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`, color: "#fff" }}>{p.badge}</span>}
-                      </div>
-                      <div className="p-1.5 space-y-0.5">
-                        <p className="text-[7px] font-semibold line-clamp-1">{p.name}</p>
-                        <span className="text-[7px] font-bold">{p.price}</span>
-                        <button className="w-full h-4 flex items-center justify-center text-[5px] font-bold" style={{
-                          background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`,
-                          color: "#fff",
-                          borderRadius: btnRadius,
-                        }}>Add to Cart</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Testimonial */}
-              <div className="px-3 py-3">
-                <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <div className="flex justify-center gap-0.5 mb-1.5">
-                    {[...Array(5)].map((_, i) => <Star key={i} className="h-2 w-2 fill-current" style={{ color: config.accent_color }} />)}
-                  </div>
-                  <p className="text-[7px] italic opacity-60">"Best online shopping experience ever!"</p>
-                  <div className="mt-2 flex items-center justify-center gap-1.5">
-                    <div className="h-4 w-4 rounded-full text-[5px] font-bold flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`, color: "#fff" }}>AK</div>
-                    <span className="text-[6px] font-medium">Ananya K.</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Newsletter */}
-              <div className="mx-3 mb-3 rounded-xl p-4 text-center" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` }}>
-                <h3 className="text-[9px] font-bold text-white" style={{ fontFamily: config.heading_font }}>Stay in the Loop</h3>
-                <p className="text-[6px] text-white/60 mt-0.5">Get exclusive deals straight to your inbox.</p>
-                <div className="mt-2 flex gap-1">
-                  <div className="flex-1 rounded-lg bg-white/20 px-2 py-1 text-[6px] text-white/50 text-left">your@email.com</div>
-                  <div className="rounded-lg bg-white px-2 py-1 text-[6px] font-semibold" style={{ color: config.primary_color }}>Go</div>
-                </div>
-              </div>
-
-              {/* Dark footer */}
-              <div className="px-3 py-3 border-t text-center" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
-                <p className="text-[6px] opacity-30">© 2026 {storeName}. All rights reserved.</p>
-              </div>
+          <span className="text-[10px] font-bold" style={{ fontFamily: config.heading_font }}>{storeName}</span>
+          <div className="flex-1" />
+          <div className="flex items-center gap-1.5">
+            <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
+              <Heart className="h-3 w-3" style={{ color: config.text_color }} />
+            </div>
+            <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
+              <ShoppingCart className="h-3 w-3" style={{ color: config.text_color }} />
             </div>
           </div>
+        </div>
 
-          <div className="flex h-5 items-center justify-center bg-gray-800">
-            <div className="h-1 w-24 rounded-full bg-gray-600" />
+        {/* Gradient Hero */}
+        <div className="relative px-4 pt-6 pb-8" style={{
+          background: `radial-gradient(ellipse 80% 60% at 50% -20%, ${config.primary_color}40, transparent), radial-gradient(ellipse 60% 50% at 80% 80%, ${config.accent_color}25, transparent), ${config.background_color}`,
+        }}>
+          <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 mb-3 text-[6px] font-medium" style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: config.accent_color }}>
+            <Sparkles className="h-2 w-2" /> New Collection
+          </div>
+          <h1 className="text-lg font-bold leading-tight" style={{ fontFamily: config.heading_font }}>{storeName}</h1>
+          <p className="mt-1 text-[8px] opacity-50">Discover premium products crafted for the modern generation.</p>
+          <button className="mt-3 px-4 py-1.5 text-[7px] font-semibold flex items-center gap-1" style={{
+            background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`, color: "#fff", borderRadius: btnRadius, boxShadow: `0 4px 15px ${config.primary_color}40`,
+          }}>
+            Shop Now <ArrowRight className="h-2 w-2" />
+          </button>
+        </div>
+
+        {/* Benefits */}
+        <div className={`px-3 py-3 grid gap-1.5 ${isDesktop ? "grid-cols-4" : "grid-cols-2"}`}>
+          {[
+            { icon: "⚡", label: "Fast Delivery" },
+            { icon: "🛡️", label: "Secure Pay" },
+            { icon: "🚚", label: "Free Ship" },
+            { icon: "✨", label: "Premium" },
+          ].map((b) => (
+            <div key={b.label} className="rounded-xl p-2 text-center" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <span className="text-[10px]">{b.icon}</span>
+              <p className="text-[6px] font-medium mt-0.5" style={{ color: config.text_color }}>{b.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Category Tabs */}
+        <div className="px-3 flex gap-1.5 overflow-hidden">
+          {["All", ...categories.slice(0, 3).map(c => c.name)].map((cat, i) => (
+            <div key={cat} className="flex-shrink-0 rounded-lg px-2.5 py-1 text-[6px] font-medium" style={{
+              background: i === 0 ? `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` : "rgba(255,255,255,0.05)",
+              color: i === 0 ? "#fff" : config.text_color,
+              border: i === 0 ? "none" : "1px solid rgba(255,255,255,0.06)",
+            }}>
+              {cat}
+            </div>
+          ))}
+        </div>
+
+        {/* Product Grid */}
+        <div className="px-3 py-3">
+          <h3 className="text-[9px] font-bold mb-2" style={{ fontFamily: config.heading_font }}>Our Products</h3>
+          <div className={`grid gap-1.5 ${isDesktop ? "grid-cols-4" : "grid-cols-2"}`}>
+            {products.map((p) => (
+              <div key={p.id} className="overflow-hidden rounded-xl" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
+                  {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : <Package className="h-5 w-5" style={{ color: config.text_color + "15" }} />}
+                  {p.badge && <span className="absolute top-1 left-1 rounded-full px-1 py-px text-[5px] font-bold" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`, color: "#fff" }}>{p.badge}</span>}
+                </div>
+                <div className="p-1.5 space-y-0.5">
+                  <p className="text-[7px] font-semibold line-clamp-1">{p.name}</p>
+                  <span className="text-[7px] font-bold">{p.price}</span>
+                  <button className="w-full h-4 flex items-center justify-center text-[5px] font-bold" style={{
+                    background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`, color: "#fff", borderRadius: btnRadius,
+                  }}>Add to Cart</button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="px-3 py-3 border-t text-center" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+          <p className="text-[6px] opacity-30">© 2026 {storeName}. All rights reserved.</p>
+        </div>
       </div>
-    </div>
+    </PreviewFrame>
   );
 }
 
