@@ -31,10 +31,9 @@ export default function Dashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", ids],
     queryFn: async () => {
-      const [productsRes, webOrdersRes, whatsappOrdersRes, customersRes, viewsRes] = await Promise.all([
+      const [productsRes, ordersRes, customersRes, viewsRes] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }).in("store_id", ids),
         supabase.from("orders").select("id", { count: "exact", head: true }).in("store_id", ids),
-        supabase.from("whatsapp_orders").select("id", { count: "exact", head: true }).in("store_id", ids),
         supabase.from("customers").select("id", { count: "exact", head: true }).in("store_id", ids),
         ids.length > 0
           ? supabase.rpc("get_store_views", { _store_ids: ids })
@@ -47,7 +46,7 @@ export default function Dashboard() {
 
       return {
         total_products: productsRes.count ?? 0,
-        total_orders: (webOrdersRes.count ?? 0) + (whatsappOrdersRes.count ?? 0),
+        total_orders: ordersRes.count ?? 0,
         total_customers: customersRes.count ?? 0,
         total_views: totalViews,
       };
@@ -55,9 +54,8 @@ export default function Dashboard() {
     enabled: ids.length > 0,
   });
 
-  // Fetch website orders for analytics
-  const { data: webOrdersData } = useQuery({
-    queryKey: ["dashboard-web-orders-analytics", ids],
+  const { data: ordersData } = useQuery({
+    queryKey: ["dashboard-orders-analytics", ids],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
@@ -71,51 +69,22 @@ export default function Dashboard() {
     enabled: ids.length > 0,
   });
 
-  // Fetch whatsapp orders for analytics
-  const { data: whatsappOrdersData } = useQuery({
-    queryKey: ["dashboard-whatsapp-orders-analytics", ids],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("whatsapp_orders")
-        .select("created_at, product_price, quantity, product_name, status")
-        .in("store_id", ids)
-        .neq("status", "cancelled")
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data;
-    },
-    enabled: ids.length > 0,
-  });
-
-  // Merge both order sources into monthly aggregates
   const ordersByMonth = (() => {
+    if (!ordersData) return [];
     const map: Record<string, { month: string; orders: number; revenue: number }> = {};
-
-    // Website orders
-    webOrdersData?.forEach((o: any) => {
+    ordersData.forEach((o: any) => {
       const month = o.created_at.slice(0, 7);
       if (!map[month]) map[month] = { month, orders: 0, revenue: 0 };
       map[month].orders += 1;
       map[month].revenue += Number(o.total || 0);
     });
-
-    // WhatsApp orders
-    whatsappOrdersData?.forEach((o) => {
-      const month = o.created_at.slice(0, 7);
-      if (!map[month]) map[month] = { month, orders: 0, revenue: 0 };
-      map[month].orders += 1;
-      map[month].revenue += Number(o.product_price) * o.quantity;
-    });
-
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
   })();
 
-  // Top products from both sources
   const topProducts = (() => {
+    if (!ordersData) return [];
     const map: Record<string, { name: string; count: number; revenue: number }> = {};
-
-    // Website order items
-    webOrdersData?.forEach((o: any) => {
+    ordersData.forEach((o: any) => {
       o.order_items?.forEach((item: any) => {
         const key = item.product_name;
         if (!map[key]) map[key] = { name: key, count: 0, revenue: 0 };
@@ -123,21 +92,10 @@ export default function Dashboard() {
         map[key].revenue += Number(item.total || 0);
       });
     });
-
-    // WhatsApp orders
-    whatsappOrdersData?.forEach((o) => {
-      const key = o.product_name;
-      if (!map[key]) map[key] = { name: key, count: 0, revenue: 0 };
-      map[key].count += o.quantity;
-      map[key].revenue += Number(o.product_price) * o.quantity;
-    });
-
     return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10);
   })();
 
-  const totalRevenue =
-    (webOrdersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0) +
-    (whatsappOrdersData?.reduce((sum, o) => sum + Number(o.product_price) * o.quantity, 0) || 0);
+  const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
 
   const cards = [
     { title: "Total Products", value: stats?.total_products ?? 0, icon: Package },
@@ -174,7 +132,6 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Revenue Over Time */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Revenue Over Time</CardTitle>
@@ -196,7 +153,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Orders Over Time */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Orders Over Time</CardTitle>
@@ -218,7 +174,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Top Products */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Top Products by Orders</CardTitle>
