@@ -59,8 +59,8 @@ function AccountBadgeV5({ slug }: { slug: string }) {
   if (loading) return null;
   return (
     <Link to={storefrontPath(slug, user ? "account" : "login")} className="group">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md border border-white/10 transition-all duration-300 hover:bg-white/20 hover:border-white/20 hover:scale-105">
-        <User className="h-4.5 w-4.5" />
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md border border-white/10 transition-all duration-300 hover:bg-white/20 hover:border-white/20 hover:scale-105">
+        <User className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
       </div>
     </Link>
   );
