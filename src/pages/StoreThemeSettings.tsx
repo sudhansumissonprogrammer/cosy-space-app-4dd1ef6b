@@ -451,7 +451,7 @@ function isLightColor(hex: string): boolean {
 }
 
 /* ── Types for preview ── */
-interface FakeProduct {
+interface PreviewProduct {
   id: number;
   name: string;
   price: string;
@@ -460,16 +460,59 @@ interface FakeProduct {
   discount: string | null;
   rating: number;
   badge: string | null;
+  image_url?: string | null;
 }
 
-const FAKE_PRODUCTS: FakeProduct[] = [
+interface PreviewCategory {
+  name: string;
+  image_url?: string | null;
+}
+
+const DEFAULT_PRODUCTS: PreviewProduct[] = [
   { id: 0, name: "Premium Leather Handbag", price: "₹2,499", priceNum: 2499, oldPrice: "₹3,999", discount: "38% off", rating: 4.7, badge: "Trending" },
   { id: 1, name: "Classic Tote Collection", price: "₹1,899", priceNum: 1899, oldPrice: null, discount: null, rating: 4.5, badge: null },
   { id: 2, name: "Designer Clutch Set", price: "₹1,299", priceNum: 1299, oldPrice: "₹1,999", discount: "35% off", rating: 4.8, badge: "Best Seller" },
   { id: 3, name: "Evening Sling Bag", price: "₹999", priceNum: 999, oldPrice: null, discount: null, rating: 4.3, badge: null },
 ];
 
-const FAKE_CATEGORIES = ["Handbags", "Totes", "Clutches", "Slings"];
+const DEFAULT_CATEGORIES: PreviewCategory[] = [
+  { name: "Handbags" }, { name: "Totes" }, { name: "Clutches" }, { name: "Slings" },
+];
+
+function mapDbProductsToPreview(products: any[]): PreviewProduct[] {
+  const badges = ["Trending", null, "Best Seller", null];
+  return products.slice(0, 4).map((p, i) => {
+    const price = Number(p.sale_price || p.price);
+    const oldPrice = p.sale_price && p.sale_price < p.price ? Number(p.price) : null;
+    const discount = oldPrice ? `${Math.round(((oldPrice - price) / oldPrice) * 100)}% off` : null;
+    return {
+      id: i,
+      name: p.name,
+      price: `₹${price.toLocaleString("en-IN")}`,
+      priceNum: price,
+      oldPrice: oldPrice ? `₹${oldPrice.toLocaleString("en-IN")}` : null,
+      discount,
+      rating: [4.7, 4.5, 4.8, 4.3][i] || 4.5,
+      badge: p.is_best_selling ? "Best Seller" : badges[i % badges.length],
+      image_url: p.image_url,
+    };
+  });
+}
+
+function mapDbCategoriesToPreview(categories: any[]): PreviewCategory[] {
+  return categories.slice(0, 6).map((c) => ({
+    name: c.name,
+    image_url: c.image_url,
+  }));
+}
+
+interface PreviewProps {
+  config: ThemeConfig;
+  storeName: string;
+  products?: PreviewProduct[];
+  categories?: PreviewCategory[];
+  isDesktop?: boolean;
+}
 
 type PreviewScreen = "home" | "product" | "cart";
 
