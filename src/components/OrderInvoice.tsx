@@ -250,7 +250,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
         <div className="flex items-center justify-between pb-2 border-b-2 border-foreground">
           <div className="flex items-center gap-2">
             {store?.logo_url && (
-              <img src={store.logo_url} alt="Store logo" className="h-7 w-auto object-contain" />
+              <img src={store.logo_url} alt="Store logo" className="h-10 w-auto object-contain" />
             )}
             <div>
               <p className="text-[9px] text-muted-foreground leading-tight">
