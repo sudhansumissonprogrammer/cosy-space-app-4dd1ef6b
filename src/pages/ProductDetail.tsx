@@ -354,7 +354,7 @@ export default function ProductDetail() {
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-3.5 w-3.5 ${i < Math.floor(stats.rating) ? "fill-amber-400 text-amber-400" : i < stats.rating ? "fill-amber-400/50 text-amber-400" : "text-muted-foreground/30"}`}
+                  className={`h-3.5 w-3.5 ${i < Math.floor(stats.rating) ? "fill-success text-success" : i < stats.rating ? "fill-success/50 text-success" : "text-muted-foreground/30"}`}
                 />
               ))}
               <span className="ml-1 text-sm font-bold text-foreground">{stats.rating}</span>
