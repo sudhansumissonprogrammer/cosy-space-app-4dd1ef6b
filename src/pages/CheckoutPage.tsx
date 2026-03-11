@@ -437,8 +437,14 @@ export default function CheckoutPage() {
               toast.error("Payment verification failed. Contact the store.");
             }
           },
-          prefill: { name: fullName, email, contact: phone },
+          prefill: { name: fullName, email, contact: phone, method: razorpayMethod === "upi" ? "upi" : undefined },
           theme: { color: "#6366f1" },
+          config: { display: { blocks: { highlighted: { instruments: [
+            ...(razorpayMethod === "upi" ? [{ method: "upi" }] : []),
+            ...(razorpayMethod === "card" ? [{ method: "card" }] : []),
+            ...(razorpayMethod === "netbanking" ? [{ method: "netbanking" }] : []),
+            ...(razorpayMethod === "wallet" ? [{ method: "wallet" }] : []),
+          ] } }, sequence: ["block.highlighted", "block.other"], preferences: { show_default_blocks: true } } },
           modal: { ondismiss: () => { toast.error("Payment cancelled."); setPlacing(false); } },
         };
         const rzp = new window.Razorpay(options);
