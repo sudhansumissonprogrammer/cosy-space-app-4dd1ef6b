@@ -358,6 +358,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #C8A96A, #e8d5a8, #C8A96A)",
   },
+  "theme-5": {
+    primary_color: "#6366F1",
+    accent_color: "#22C55E",
+    text_color: "#e2e8f0",
+    background_color: "#0F172A",
+    heading_font: "Space Grotesk",
+    body_font: "Inter",
+    button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #6366F1, #818cf8, #22C55E)",
+  },
 };
 
 const THEMES = [
@@ -365,6 +375,7 @@ const THEMES = [
   { id: "theme-2", name: "Bold Modern", description: "Transparent header, carousel hero, masonry grid", available: true },
   { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
   { id: "theme-4", name: "Luxury", description: "Premium editorial layout with serif typography & elegant spacing", available: true },
+  { id: "theme-5", name: "Startup", description: "Glassmorphism, gradient hero, dark mode with neon accents", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
