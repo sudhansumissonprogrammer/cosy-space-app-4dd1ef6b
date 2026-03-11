@@ -1,3 +1,5 @@
+import { optimizeImageUrl } from "@/lib/imageOptimize";
+
 interface StorefrontMobileHeroProps {
   mobileHeroUrl: string | null | undefined;
   storeName: string;
@@ -9,10 +11,11 @@ export default function StorefrontMobileHero({ mobileHeroUrl, storeName }: Store
   return (
     <div className="block md:hidden">
       <img
-        src={mobileHeroUrl}
+        src={optimizeImageUrl(mobileHeroUrl, 800)}
         alt={`${storeName} hero banner`}
         className="w-full h-auto object-contain"
         loading="eager"
+        fetchPriority="high"
       />
     </div>
   );
