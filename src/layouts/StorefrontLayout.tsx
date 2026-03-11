@@ -115,7 +115,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
           </svg>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[280px] p-0">
+      <SheetContent side="left" className="storefront-font w-[280px] p-0">
         <div className="flex flex-col">
           <div className="border-b bg-card p-4">
             {store.logo_url ? (
