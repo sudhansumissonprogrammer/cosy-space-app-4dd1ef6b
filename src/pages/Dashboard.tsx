@@ -13,6 +13,7 @@ export default function Dashboard() {
 
   const { data: stores } = useQuery({
     queryKey: ["my-stores", user?.id],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
