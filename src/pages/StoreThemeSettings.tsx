@@ -1093,8 +1093,151 @@ function AppStylePreview({ config, storeName }: { config: ThemeConfig; storeName
     </div>
   );
 }
+/* ── Luxury Preview (Theme 4) ── */
+function LuxuryPreview({ config, storeName }: { config: ThemeConfig; storeName: string }) {
+  const primaryLight = lightenColor(config.primary_color);
+  const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
 
-export default function StoreThemeSettings() {
+  return (
+    <div className="flex justify-center">
+      <div className="relative mx-auto" style={{ width: "375px" }}>
+        <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
+          <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
+            <div className="h-2 w-2 rounded-full bg-gray-600" />
+          </div>
+
+          <div className="relative" style={{ height: "680px", backgroundColor: config.background_color }}>
+            <div className="h-full overflow-y-auto">
+              {/* Gold accent line */}
+              <div className="h-[2px] w-full" style={{ backgroundColor: config.primary_color }} />
+
+              {/* Full-screen hero */}
+              <div className="relative" style={{ height: "260px" }}>
+                <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${config.accent_color}, ${config.text_color})` }} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
+
+                {/* Luxury transparent nav */}
+                <div className="absolute top-0 left-0 right-0 z-10 px-4 py-3 flex items-center justify-between">
+                  <span className="text-[8px] tracking-[0.2em] uppercase text-white/70 font-light">Menu</span>
+                  <span className="text-[10px] tracking-[0.15em] uppercase text-white font-light" style={{ fontFamily: config.heading_font }}>{storeName}</span>
+                  <div className="flex items-center gap-2">
+                    <Heart className="h-3 w-3 text-white/70" />
+                    <ShoppingCart className="h-3 w-3 text-white/70" />
+                  </div>
+                </div>
+
+                {/* Hero content centered */}
+                <div className="absolute inset-0 flex items-center justify-center text-center px-6">
+                  <div>
+                    <div className="h-px w-8 mx-auto mb-2" style={{ backgroundColor: config.primary_color }} />
+                    <h1 className="text-base font-light tracking-[0.12em] uppercase text-white" style={{ fontFamily: config.heading_font }}>{storeName}</h1>
+                    <p className="mt-1 text-[7px] tracking-[0.08em] text-white/60">Curated luxury, timeless elegance</p>
+                    <button className="mt-3 border px-4 py-1.5 text-[6px] tracking-[0.2em] uppercase text-white" style={{ borderColor: config.primary_color }}>
+                      Explore Collection
+                    </button>
+                    <div className="h-px w-8 mx-auto mt-2" style={{ backgroundColor: config.primary_color }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Featured Collection */}
+              <div className="px-4 py-5">
+                <div className="text-center mb-3">
+                  <p className="text-[6px] tracking-[0.3em] uppercase mb-1" style={{ color: config.primary_color }}>Curated Selection</p>
+                  <h2 className="text-[10px] font-light tracking-[0.1em] uppercase" style={{ color: config.text_color, fontFamily: config.heading_font }}>Featured Collection</h2>
+                  <div className="h-px w-8 mx-auto mt-1.5" style={{ backgroundColor: config.primary_color }} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {FAKE_PRODUCTS.slice(0, 2).map((p) => (
+                    <div key={p.id} className="border overflow-hidden" style={{ borderColor: config.text_color + "12" }}>
+                      <div className="flex items-center justify-center" style={{ aspectRatio: "3/4", backgroundColor: config.primary_color + "08" }}>
+                        <Package className="h-6 w-6" style={{ color: config.text_color + "15" }} />
+                      </div>
+                      <div className="p-2">
+                        <p className="text-[5px] tracking-[0.2em] uppercase mb-0.5" style={{ color: config.primary_color }}>Collection</p>
+                        <p className="text-[7px] font-light" style={{ color: config.text_color, fontFamily: config.heading_font }}>{p.name}</p>
+                        <p className="text-[7px] mt-0.5" style={{ color: config.text_color + "70" }}>{p.price}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Product Grid */}
+              <div className="px-4 py-3">
+                <div className="text-center mb-3">
+                  <p className="text-[6px] tracking-[0.3em] uppercase mb-1" style={{ color: config.primary_color }}>Shop</p>
+                  <h2 className="text-[10px] font-light tracking-[0.1em] uppercase" style={{ color: config.text_color, fontFamily: config.heading_font }}>All Products</h2>
+                  <div className="h-px w-8 mx-auto mt-1.5" style={{ backgroundColor: config.primary_color }} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {FAKE_PRODUCTS.map((p) => (
+                    <div key={p.id} className="border" style={{ borderColor: config.text_color + "12" }}>
+                      <div className="flex items-center justify-center" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
+                        <Package className="h-5 w-5" style={{ color: config.text_color + "12" }} />
+                      </div>
+                      <div className="p-1.5 space-y-0.5">
+                        <p className="text-[5px] tracking-[0.2em] uppercase" style={{ color: config.text_color + "50" }}>{p.rating} ★</p>
+                        <p className="text-[7px] font-light line-clamp-1" style={{ color: config.text_color, fontFamily: config.heading_font }}>{p.name}</p>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[7px] font-medium" style={{ color: config.text_color }}>{p.price}</span>
+                          {p.oldPrice && <span className="text-[5px] line-through" style={{ color: config.text_color + "50" }}>{p.oldPrice}</span>}
+                        </div>
+                        <button className="w-full h-4 flex items-center justify-center text-[5px] tracking-[0.1em] uppercase font-medium border" style={{ borderColor: config.text_color + "20", color: config.text_color }}>
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reviews */}
+              <div className="px-4 py-4">
+                <div className="text-center mb-3">
+                  <p className="text-[6px] tracking-[0.3em] uppercase mb-1" style={{ color: config.primary_color }}>Testimonials</p>
+                  <h2 className="text-[10px] font-light tracking-[0.1em] uppercase" style={{ color: config.text_color, fontFamily: config.heading_font }}>What Clients Say</h2>
+                </div>
+                <div className="border p-3 text-center" style={{ borderColor: config.text_color + "12" }}>
+                  <p className="text-[7px] italic opacity-60" style={{ color: config.text_color }}>"Absolutely stunning quality. The craftsmanship is unmatched."</p>
+                  <div className="flex justify-center gap-0.5 mt-1.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-2 w-2 fill-current" style={{ color: config.primary_color }} />
+                    ))}
+                  </div>
+                  <p className="mt-1 text-[6px] tracking-[0.15em] uppercase" style={{ color: config.text_color + "60" }}>— Priya S.</p>
+                </div>
+              </div>
+
+              {/* Newsletter */}
+              <div className="px-4 py-5" style={{ backgroundColor: config.accent_color }}>
+                <div className="text-center">
+                  <p className="text-[6px] tracking-[0.3em] uppercase mb-1" style={{ color: config.primary_color }}>Stay Connected</p>
+                  <h2 className="text-[10px] font-light tracking-[0.1em] uppercase" style={{ color: config.background_color, fontFamily: config.heading_font }}>Join Our World</h2>
+                  <div className="mt-3 flex items-center gap-0 border-b" style={{ borderColor: config.primary_color }}>
+                    <span className="flex-1 text-left text-[7px] py-1.5 px-1" style={{ color: config.background_color + "40" }}>Your email</span>
+                    <span className="text-[6px] tracking-[0.1em] uppercase px-2 py-1.5 font-medium" style={{ backgroundColor: config.primary_color, color: btnText }}>Subscribe</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-4 py-4 border-t text-center" style={{ borderColor: config.text_color + "10" }}>
+                <p className="text-[6px] opacity-40" style={{ color: config.text_color }}>© 2026 {storeName}. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex h-5 items-center justify-center bg-gray-800">
+            <div className="h-1 w-24 rounded-full bg-gray-600" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
   const { storeId } = useParams<{ storeId: string }>();
   const queryClient = useQueryClient();
 
