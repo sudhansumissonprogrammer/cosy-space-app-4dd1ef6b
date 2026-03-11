@@ -54,7 +54,7 @@ function GradientHero({ store }: { store: StoreData }) {
             </div>
 
             <h1
-              className="text-4xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
+              className="text-3xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
               style={{ fontFamily: "var(--storefront-heading-font, 'Space Grotesk')" }}
             >
               {store.name}
