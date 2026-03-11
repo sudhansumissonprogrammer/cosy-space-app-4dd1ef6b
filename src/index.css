@@ -50,7 +50,8 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    font-family: 'Alegreya SC', serif;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    --font-storefront: 'Alegreya SC', serif;
   }
 
   .dark {
