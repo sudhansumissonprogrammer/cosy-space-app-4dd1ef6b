@@ -358,7 +358,6 @@ export default function ProductDetail() {
                 />
               ))}
               <span className="ml-1 text-sm font-bold text-foreground">{stats.rating}</span>
-              <span className="text-xs text-muted-foreground">({stats.reviewCount} reviews)</span>
             </div>
             <span className="text-[10px] text-muted-foreground">|</span>
             <span className="text-xs text-success font-semibold flex items-center gap-1">
@@ -630,8 +629,7 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Customer Reviews Section */}
-      <CustomerReviews reviews={fakeReviews} rating={stats.rating} reviewCount={stats.reviewCount} />
+      {/* Customer Reviews Section removed — only star rating shown inline */}
 
       {/* Related Products */}
       <RelatedProducts
@@ -974,7 +972,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
           <img
             src={images[activeIndex]}
             alt={productName}
-            className="aspect-square w-full object-cover transition-transform duration-300"
+            className="aspect-square w-full object-contain transition-transform duration-300"
             decoding="async"
             fetchPriority="high"
             draggable={false}
