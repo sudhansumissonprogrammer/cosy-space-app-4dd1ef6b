@@ -25,9 +25,8 @@ export default function StoreAnalytics() {
   const currency = stores?.[0]?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
-  // Website orders
-  const { data: webOrdersData } = useQuery({
-    queryKey: ["store-analytics-web-orders", storeIds],
+  const { data: ordersData } = useQuery({
+    queryKey: ["store-analytics-orders", storeIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
@@ -41,48 +40,22 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // WhatsApp orders
-  const { data: whatsappOrdersData } = useQuery({
-    queryKey: ["store-analytics-whatsapp-orders", storeIds],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("whatsapp_orders")
-        .select("created_at, product_price, quantity, product_name, status")
-        .in("store_id", storeIds)
-        .neq("status", "cancelled")
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data;
-    },
-    enabled: storeIds.length > 0,
-  });
-
-  // Aggregate orders by month from both sources
   const ordersByMonth = (() => {
+    if (!ordersData) return [];
     const map: Record<string, { month: string; orders: number; revenue: number }> = {};
-
-    webOrdersData?.forEach((o: any) => {
+    ordersData.forEach((o: any) => {
       const month = o.created_at.slice(0, 7);
       if (!map[month]) map[month] = { month, orders: 0, revenue: 0 };
       map[month].orders += 1;
       map[month].revenue += Number(o.total || 0);
     });
-
-    whatsappOrdersData?.forEach((o) => {
-      const month = o.created_at.slice(0, 7);
-      if (!map[month]) map[month] = { month, orders: 0, revenue: 0 };
-      map[month].orders += 1;
-      map[month].revenue += Number(o.product_price) * o.quantity;
-    });
-
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
   })();
 
-  // Top products from both sources
   const topProducts = (() => {
+    if (!ordersData) return [];
     const map: Record<string, { name: string; count: number; revenue: number }> = {};
-
-    webOrdersData?.forEach((o: any) => {
+    ordersData.forEach((o: any) => {
       o.order_items?.forEach((item: any) => {
         const key = item.product_name;
         if (!map[key]) map[key] = { name: key, count: 0, revenue: 0 };
@@ -90,21 +63,11 @@ export default function StoreAnalytics() {
         map[key].revenue += Number(item.total || 0);
       });
     });
-
-    whatsappOrdersData?.forEach((o) => {
-      const key = o.product_name;
-      if (!map[key]) map[key] = { name: key, count: 0, revenue: 0 };
-      map[key].count += o.quantity;
-      map[key].revenue += Number(o.product_price) * o.quantity;
-    });
-
     return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10);
   })();
 
-  const totalRevenue =
-    (webOrdersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0) +
-    (whatsappOrdersData?.reduce((sum, o) => sum + Number(o.product_price) * o.quantity, 0) || 0);
-  const totalOrders = (webOrdersData?.length || 0) + (whatsappOrdersData?.length || 0);
+  const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
+  const totalOrders = ordersData?.length || 0;
 
   return (
     <div className="space-y-6">
@@ -140,7 +103,6 @@ export default function StoreAnalytics() {
         </Card>
       </div>
 
-      {/* Revenue Over Time */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Revenue Over Time</CardTitle>
@@ -162,7 +124,6 @@ export default function StoreAnalytics() {
         </CardContent>
       </Card>
 
-      {/* Orders Over Time */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Orders Over Time</CardTitle>
@@ -184,7 +145,6 @@ export default function StoreAnalytics() {
         </CardContent>
       </Card>
 
-      {/* Top Products */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Top Products by Orders</CardTitle>
