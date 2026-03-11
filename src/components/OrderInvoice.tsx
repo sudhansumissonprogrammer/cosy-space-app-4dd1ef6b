@@ -351,7 +351,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
 
         {/* Footer */}
         <div className="border-t border-border pt-2 text-center">
-          <p className="text-[9px] font-bold text-foreground">Thank you!</p>
+          <p className="text-[9px] font-medium text-foreground">Thank you!</p>
           <p className="text-[7px] text-muted-foreground">Computer generated — no signature required</p>
         </div>
       </div>
