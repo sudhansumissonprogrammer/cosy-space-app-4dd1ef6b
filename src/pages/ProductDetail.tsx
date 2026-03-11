@@ -1106,7 +1106,7 @@ function CustomerReviews({
         {displayed.map((review) => (
           <div
             key={review.id}
-            className="rounded-xl border border-border p-4 transition-all hover:shadow-sm"
+            className="rounded-xl border border-border p-4 transition-all hover:shadow-md hover:border-amber-200/60 hover:bg-gradient-to-r hover:from-amber-50/30 hover:to-transparent"
           >
             <div className="flex items-start gap-3">
               <img
