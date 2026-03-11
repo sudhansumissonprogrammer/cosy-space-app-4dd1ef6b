@@ -1487,167 +1487,96 @@ function ProCleanPreview({ config, storeName, products: propProducts, categories
   const btnRadius = config.button_style === "pill" ? "9999px" : config.button_style === "square" ? "0px" : "0.75rem";
 
   return (
-    <div className="flex justify-center">
-      <div className="relative mx-auto" style={{ width: "375px" }}>
-        <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
-          <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
-            <div className="h-2 w-2 rounded-full bg-gray-600" />
-          </div>
+    <PreviewFrame isDesktop={isDesktop} bgColor={config.background_color}>
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 border-b px-3 flex items-center" style={{ height: "44px", backgroundColor: config.background_color, borderColor: config.text_color + "08" }}>
+        <div className="flex h-5 w-5 items-center justify-center rounded" style={{ backgroundColor: config.primary_color }}>
+          <Store className="h-2.5 w-2.5" style={{ color: btnText }} />
+        </div>
+        <span className="ml-1.5 text-[9px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</span>
+        <div className="flex-1" />
+        <div className="flex items-center gap-3">
+          <span className="text-[7px] font-medium" style={{ color: config.text_color + "80" }}>Home</span>
+          <span className="text-[7px] font-medium" style={{ color: config.text_color + "80" }}>Shop</span>
+          <span className="text-[7px] font-medium" style={{ color: config.text_color + "80" }}>About</span>
+        </div>
+        <div className="flex items-center gap-2 ml-3">
+          <Search className="h-3 w-3" style={{ color: config.text_color + "60" }} />
+          <ShoppingCart className="h-3 w-3" style={{ color: config.text_color }} />
+          <User className="h-3 w-3" style={{ color: config.text_color + "60" }} />
+        </div>
+      </div>
 
-          <div className="relative" style={{ height: "680px", backgroundColor: config.background_color }}>
-            <div className="h-full overflow-y-auto">
-              {/* Sticky Header */}
-              <div className="sticky top-0 z-10 border-b px-3 flex items-center" style={{ height: "44px", backgroundColor: config.background_color, borderColor: config.text_color + "08" }}>
-                <div className="flex h-5 w-5 items-center justify-center rounded" style={{ backgroundColor: config.primary_color }}>
-                  <Store className="h-2.5 w-2.5" style={{ color: btnText }} />
-                </div>
-                <span className="ml-1.5 text-[9px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</span>
-                <div className="flex-1" />
-                <div className="hidden sm:flex items-center gap-3">
-                  <span className="text-[7px] font-medium" style={{ color: config.text_color + "80" }}>Home</span>
-                  <span className="text-[7px] font-medium" style={{ color: config.text_color + "80" }}>Shop</span>
-                  <span className="text-[7px] font-medium" style={{ color: config.text_color + "80" }}>About</span>
-                </div>
-                <div className="flex items-center gap-2 ml-3">
-                  <Search className="h-3 w-3" style={{ color: config.text_color + "60" }} />
-                  <ShoppingCart className="h-3 w-3" style={{ color: config.text_color }} />
-                  <User className="h-3 w-3" style={{ color: config.text_color + "60" }} />
-                </div>
-              </div>
-
-              {/* Two-column Hero */}
-              <div className="px-4 py-8">
-                <div className="grid grid-cols-2 gap-3 items-center">
-                  <div>
-                    <h1 className="text-sm font-bold leading-tight" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</h1>
-                    <p className="text-[7px] mt-1 leading-relaxed" style={{ color: config.text_color + "70" }}>Discover premium products crafted with care.</p>
-                    <div className="flex gap-1.5 mt-3">
-                      <button className="px-3 py-1.5 text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>
-                        Shop Now →
-                      </button>
-                      <button className="px-3 py-1.5 text-[6px] font-medium border" style={{ borderColor: config.text_color + "20", color: config.text_color, borderRadius: btnRadius }}>
-                        Learn More
-                      </button>
-                    </div>
-                  </div>
-                  <div className="rounded-xl overflow-hidden" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
-                    <div className="flex h-full w-full items-center justify-center">
-                      <Package className="h-8 w-8" style={{ color: config.text_color + "15" }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Category Grid */}
-              <div className="px-4 pb-6">
-                <h3 className="text-[10px] font-bold mb-3" style={{ color: config.text_color, fontFamily: config.heading_font }}>Shop by Category</h3>
-                <div className="grid grid-cols-4 gap-2">
-                  {FAKE_CATEGORIES.map((cat) => (
-                    <div key={cat} className="rounded-xl border overflow-hidden" style={{ borderColor: config.text_color + "08" }}>
-                      <div className="flex items-center justify-center" style={{ aspectRatio: "1/1", backgroundColor: config.primary_color + "06" }}>
-                        <Tag className="h-3.5 w-3.5" style={{ color: config.primary_color + "40" }} />
-                      </div>
-                      <p className="text-center text-[6px] font-semibold py-1" style={{ color: config.text_color, fontFamily: config.heading_font }}>{cat}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Product Grid */}
-              <div className="px-4 pb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[10px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>Featured Products</h3>
-                  <span className="text-[7px] font-medium" style={{ color: config.primary_color }}>View All →</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {FAKE_PRODUCTS.map((product) => (
-                    <div key={product.id} className="rounded-xl border overflow-hidden" style={{ borderColor: config.text_color + "08" }}>
-                      <div className="relative" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Package className="h-5 w-5" style={{ color: config.text_color + "15" }} />
-                        </div>
-                      </div>
-                      <div className="p-2 space-y-1">
-                        <p className="text-[8px] font-semibold line-clamp-1" style={{ color: config.text_color, fontFamily: config.heading_font }}>{product.name}</p>
-                        <p className="text-[9px] font-bold" style={{ color: config.text_color }}>{product.price}</p>
-                        <button className="w-full py-1 text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>
-                          Add to Cart
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Benefits */}
-              <div className="px-4 pb-6">
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { icon: Truck, label: "Fast Shipping" },
-                    { icon: Shield, label: "Secure Pay" },
-                    { icon: ArrowLeft, label: "Easy Returns" },
-                  ].map((b, i) => (
-                    <div key={i} className="rounded-xl border p-2.5 text-center" style={{ borderColor: config.text_color + "08" }}>
-                      <b.icon className="h-3.5 w-3.5 mx-auto mb-1" style={{ color: config.primary_color }} />
-                      <p className="text-[6px] font-semibold" style={{ color: config.text_color }}>{b.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Testimonial */}
-              <div className="px-4 pb-6">
-                <div className="rounded-xl border p-3" style={{ borderColor: config.text_color + "08" }}>
-                  <div className="flex gap-0.5 mb-1.5">
-                    {[...Array(5)].map((_, i) => <Star key={i} className="h-2 w-2 fill-current" style={{ color: config.primary_color }} />)}
-                  </div>
-                  <p className="text-[7px] leading-relaxed" style={{ color: config.text_color + "70" }}>"Amazing quality and fast delivery!"</p>
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <div className="h-4 w-4 rounded-full text-[5px] font-bold flex items-center justify-center" style={{ backgroundColor: config.primary_color, color: btnText }}>AK</div>
-                    <span className="text-[6px] font-medium" style={{ color: config.text_color }}>Ananya K.</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Newsletter */}
-              <div className="mx-4 mb-4 rounded-xl p-4 text-center" style={{ backgroundColor: config.primary_color + "08", border: `1px solid ${config.primary_color}15` }}>
-                <h3 className="text-[9px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>Stay Updated</h3>
-                <p className="text-[6px] mt-0.5" style={{ color: config.text_color + "60" }}>Get special offers straight to your inbox.</p>
-                <div className="mt-2 flex gap-1">
-                  <div className="flex-1 rounded-lg border px-2 py-1 text-[6px] text-left" style={{ borderColor: config.text_color + "15", color: config.text_color + "40" }}>your@email.com</div>
-                  <div className="rounded-lg px-2 py-1 text-[6px] font-semibold" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>Subscribe</div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-4 py-4" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <span className="text-[8px] font-bold">{storeName}</span>
-                    <p className="text-[5px] opacity-50 mt-0.5">Premium products.</p>
-                  </div>
-                  <div>
-                    <h4 className="text-[6px] font-bold uppercase tracking-wider opacity-70 mb-1">Shop</h4>
-                    {["Home", "Best Sellers"].map((l) => <p key={l} className="text-[5px] opacity-40">{l}</p>)}
-                  </div>
-                  <div>
-                    <h4 className="text-[6px] font-bold uppercase tracking-wider opacity-70 mb-1">Support</h4>
-                    {["Contact", "Returns"].map((l) => <p key={l} className="text-[5px] opacity-40">{l}</p>)}
-                  </div>
-                </div>
-                <div className="mt-2 border-t pt-1.5 text-center" style={{ borderColor: config.background_color + "10" }}>
-                  <p className="text-[5px] opacity-30">© 2026 {storeName}. All rights reserved.</p>
-                </div>
-              </div>
+      {/* Two-column Hero */}
+      <div className="px-4 py-8">
+        <div className="grid grid-cols-2 gap-3 items-center">
+          <div>
+            <h1 className="text-sm font-bold leading-tight" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</h1>
+            <p className="text-[7px] mt-1 leading-relaxed" style={{ color: config.text_color + "70" }}>Discover premium products crafted with care.</p>
+            <div className="flex gap-1.5 mt-3">
+              <button className="px-3 py-1.5 text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>Shop Now →</button>
+              <button className="px-3 py-1.5 text-[6px] font-medium border" style={{ borderColor: config.text_color + "20", color: config.text_color, borderRadius: btnRadius }}>Learn More</button>
             </div>
           </div>
-
-          <div className="flex h-5 items-center justify-center bg-gray-800">
-            <div className="h-1 w-24 rounded-full bg-gray-600" />
+          <div className="rounded-xl overflow-hidden" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
+            {products[0]?.image_url ? <img src={products[0].image_url} alt="" className="h-full w-full object-cover" /> : (
+              <div className="flex h-full w-full items-center justify-center"><Package className="h-8 w-8" style={{ color: config.text_color + "15" }} /></div>
+            )}
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Category Grid */}
+      <div className="px-4 pb-6">
+        <h3 className="text-[10px] font-bold mb-3" style={{ color: config.text_color, fontFamily: config.heading_font }}>Shop by Category</h3>
+        <div className="grid grid-cols-4 gap-2">
+          {categories.map((cat) => (
+            <div key={cat.name} className="rounded-xl border overflow-hidden" style={{ borderColor: config.text_color + "08" }}>
+              <div className="flex items-center justify-center overflow-hidden" style={{ aspectRatio: "1/1", backgroundColor: config.primary_color + "06" }}>
+                {cat.image_url ? <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" /> : <Tag className="h-3.5 w-3.5" style={{ color: config.primary_color + "40" }} />}
+              </div>
+              <p className="text-center text-[6px] font-semibold py-1" style={{ color: config.text_color, fontFamily: config.heading_font }}>{cat.name}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Product Grid */}
+      <div className="px-4 pb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[10px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>Featured Products</h3>
+          <span className="text-[7px] font-medium" style={{ color: config.primary_color }}>View All →</span>
+        </div>
+        <div className={`grid gap-3 ${isDesktop ? "grid-cols-4" : "grid-cols-2"}`}>
+          {products.map((product) => (
+            <div key={product.id} className="rounded-xl border overflow-hidden" style={{ borderColor: config.text_color + "08" }}>
+              <div className="relative overflow-hidden" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
+                {product.image_url ? <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" /> : (
+                  <div className="flex h-full w-full items-center justify-center"><Package className="h-5 w-5" style={{ color: config.text_color + "15" }} /></div>
+                )}
+              </div>
+              <div className="p-2 space-y-1">
+                <p className="text-[8px] font-semibold line-clamp-1" style={{ color: config.text_color, fontFamily: config.heading_font }}>{product.name}</p>
+                <p className="text-[9px] font-bold" style={{ color: config.text_color }}>{product.price}</p>
+                <button className="w-full py-1 text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>Add to Cart</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-4" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
+        <div className="grid grid-cols-3 gap-2">
+          <div><span className="text-[8px] font-bold">{storeName}</span></div>
+          <div><h4 className="text-[6px] font-bold uppercase tracking-wider opacity-70 mb-1">Shop</h4></div>
+          <div><h4 className="text-[6px] font-bold uppercase tracking-wider opacity-70 mb-1">Support</h4></div>
+        </div>
+        <div className="mt-2 border-t pt-1.5 text-center" style={{ borderColor: config.background_color + "10" }}>
+          <p className="text-[5px] opacity-30">© 2026 {storeName}. All rights reserved.</p>
+        </div>
+      </div>
+    </PreviewFrame>
   );
 }
 
