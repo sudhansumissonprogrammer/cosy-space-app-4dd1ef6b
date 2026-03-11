@@ -28,7 +28,7 @@ export default function SideCart({ store }: SideCartProps) {
 
   return (
     <Sheet open={isCartOpen} onOpenChange={(open) => !open && closeCart()}>
-      <SheetContent side="right" className="flex w-[85vw] max-w-md flex-col p-0 sm:w-[400px]">
+      <SheetContent side="right" className="storefront-font flex w-[85vw] max-w-md flex-col p-0 sm:w-[400px]">
         {/* Header */}
         <SheetHeader className="border-b px-4 py-4">
           <div className="flex items-center justify-between">
