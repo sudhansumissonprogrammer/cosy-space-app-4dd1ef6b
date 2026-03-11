@@ -37,6 +37,7 @@ function ProductCardSkeleton() {
 export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
