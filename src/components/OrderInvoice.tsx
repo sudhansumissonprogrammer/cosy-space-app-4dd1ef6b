@@ -33,7 +33,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     doc.open();
     doc.write(`<!DOCTYPE html>
 <html><head><title>Label #${order.id.slice(0, 8).toUpperCase()}</title>
-<link href="https://fonts.googleapis.com/css2?family=Changa+One:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   @page { size: 100mm 150mm; margin: 3mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
