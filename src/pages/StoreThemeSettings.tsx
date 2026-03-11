@@ -1028,7 +1028,7 @@ export default function StoreThemeSettings() {
                         ? "linear-gradient(135deg, #f7f5f0 0%, #b8873c 50%, #000000 100%)"
                         : theme.id === "theme-2"
                         ? "linear-gradient(135deg, #ffffff 0%, #2563eb 50%, #1e293b 100%)"
-                        : "linear-gradient(135deg, #fdf2f8 0%, #f9a8d4 50%, #c084fc 100%)",
+                        : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
                   />
                   <div className="p-4">
