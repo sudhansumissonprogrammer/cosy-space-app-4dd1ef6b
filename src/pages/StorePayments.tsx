@@ -32,6 +32,7 @@ export default function StorePayments() {
 
   const { data: store, isLoading: storeLoading } = useQuery({
     queryKey: ["store", storeId],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")

@@ -13,6 +13,7 @@ export default function Dashboard() {
 
   const { data: stores } = useQuery({
     queryKey: ["my-stores", user?.id],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
@@ -30,6 +31,7 @@ export default function Dashboard() {
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", ids],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const [productsRes, ordersRes, customersRes, viewsRes] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }).in("store_id", ids),
@@ -56,13 +58,15 @@ export default function Dashboard() {
 
   const { data: ordersData } = useQuery({
     queryKey: ["dashboard-orders-analytics", ids],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
         .select("created_at, total, status, order_items(product_name, quantity, total)")
         .in("store_id", ids)
         .neq("status", "cancelled")
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        .limit(500);
       if (error) throw error;
       return data as any[];
     },
