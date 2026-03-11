@@ -857,21 +857,21 @@ function CountdownTimer({ productId }: { productId: string }) {
   }, [seed]);
 
   return (
-    <div className="mt-2 flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-1.5">
-      <Timer className="h-3.5 w-3.5 text-destructive animate-pulse" />
-      <span className="text-xs font-bold text-destructive">
+    <div className="mt-2 flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500/10 to-red-500/10 border border-amber-300/40 px-3 py-1.5">
+      <Timer className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
+      <span className="text-xs font-bold text-amber-700">
         Offer ends in
       </span>
       <div className="flex items-center gap-1">
-        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-destructive px-1.5 py-0.5 text-[11px] font-extrabold text-destructive-foreground tabular-nums">
+        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-gradient-to-b from-amber-500 to-orange-600 px-1.5 py-0.5 text-[11px] font-extrabold text-white tabular-nums shadow-sm">
           {String(timeLeft.hours).padStart(2, "0")}h
         </span>
-        <span className="text-xs font-bold text-destructive">:</span>
-        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-destructive px-1.5 py-0.5 text-[11px] font-extrabold text-destructive-foreground tabular-nums">
+        <span className="text-xs font-bold text-amber-600">:</span>
+        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-gradient-to-b from-amber-500 to-orange-600 px-1.5 py-0.5 text-[11px] font-extrabold text-white tabular-nums shadow-sm">
           {String(timeLeft.minutes).padStart(2, "0")}m
         </span>
-        <span className="text-xs font-bold text-destructive">:</span>
-        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-destructive px-1.5 py-0.5 text-[11px] font-extrabold text-destructive-foreground tabular-nums">
+        <span className="text-xs font-bold text-amber-600">:</span>
+        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-gradient-to-b from-amber-500 to-orange-600 px-1.5 py-0.5 text-[11px] font-extrabold text-white tabular-nums shadow-sm">
           {String(timeLeft.seconds).padStart(2, "0")}s
         </span>
       </div>
