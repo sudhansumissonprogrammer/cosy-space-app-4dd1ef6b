@@ -67,9 +67,10 @@ function parseCSV(text: string): ParsedProduct[] {
   const catIdx = headers.indexOf("category");
   const stockIdx = headers.indexOf("stock_quantity");
   const skuIdx = headers.indexOf("sku");
+  const imageIdx = headers.indexOf("image_url");
 
   if (nameIdx === -1 || priceIdx === -1) {
-    return [{ name: "", price: 0, sale_price: null, description: "", category: "", stock_quantity: 0, sku: "", valid: false, error: "CSV must have 'name' and 'price' columns" }];
+    return [{ name: "", price: 0, sale_price: null, description: "", category: "", stock_quantity: 0, sku: "", image_url: "", valid: false, error: "CSV must have 'name' and 'price' columns", row: 2 }];
   }
 
   return lines.slice(1).map((line) => {
