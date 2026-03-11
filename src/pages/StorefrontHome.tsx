@@ -173,8 +173,6 @@ export default function StorefrontHome() {
           )
         )}
 
-        {/* Divider between sections */}
-        {bestSellingProducts.length > 0 && <div className="h-px bg-border/60" />}
 
         {/* Product Grid */}
         <section>
