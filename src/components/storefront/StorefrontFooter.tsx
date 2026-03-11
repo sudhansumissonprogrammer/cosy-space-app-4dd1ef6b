@@ -64,7 +64,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           {/* Column 3: Business Hours */}
           {hasHours && (
             <div className="space-y-3">
-              <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-foreground">
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--storefront-primary, hsl(var(--foreground)))" }}>
                 <Clock className="h-3.5 w-3.5" /> Business Hours
               </h3>
               <div className="space-y-1">
