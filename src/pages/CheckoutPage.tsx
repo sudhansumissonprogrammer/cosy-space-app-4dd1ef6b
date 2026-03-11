@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useOutletContext, Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote, Plus, Check } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, Tag, X, Pencil } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -49,6 +48,7 @@ export default function CheckoutPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   // Form
   const [fullName, setFullName] = useState("");
@@ -59,8 +59,14 @@ export default function CheckoutPage() {
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  const [showNewAddressDialog, setShowNewAddressDialog] = useState(false);
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
+
+  // Coupon
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   // Fetch ALL saved addresses for logged-in customer
   const { data: savedAddresses } = useQuery({
@@ -80,9 +86,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (savedAddresses?.length && !selectedAddressId) {
       const defaultAddr = savedAddresses.find((a: any) => a.is_default) || savedAddresses[0];
-      if (defaultAddr) {
-        selectAddress(defaultAddr);
-      }
+      if (defaultAddr) selectAddress(defaultAddr);
     }
   }, [savedAddresses]);
 
@@ -95,6 +99,8 @@ export default function CheckoutPage() {
     setState(addr.state || "");
     setPincode(addr.pincode || "");
   };
+
+  const selectedAddr = savedAddresses?.find((a: any) => a.id === selectedAddressId);
 
   // Auto-fill email from logged-in customer
   useEffect(() => {
@@ -151,7 +157,6 @@ export default function CheckoutPage() {
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
 
-  // Set default payment method
   useEffect(() => {
     if (hasCod) setPaymentMethod("cod");
     else if (hasRazorpay) setPaymentMethod("razorpay");
@@ -164,6 +169,7 @@ export default function CheckoutPage() {
         productId: product.id,
         name: variant ? `${product.name} (${variant.name})` : product.name,
         price: variant?.price ?? (product.sale_price && product.sale_price < product.price ? product.sale_price : product.price),
+        originalPrice: product.price,
         quantity: 1,
         image: product.image_url,
       }]
@@ -171,11 +177,59 @@ export default function CheckoutPage() {
         productId: i.productId,
         name: i.variantName ? `${i.name} (${i.variantName})` : i.name,
         price: i.price,
+        originalPrice: i.price,
         quantity: i.quantity,
         image: i.image || null,
       }));
 
-  const total = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const total = Math.max(0, subtotal - couponDiscount);
+
+  // Coupon logic
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("store_id", store.id)
+        .eq("code", couponCode.trim().toUpperCase())
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) { toast.error("Invalid coupon code"); setCouponLoading(false); return; }
+
+      const now = new Date();
+      if (data.starts_at && new Date(data.starts_at) > now) { toast.error("Coupon not yet active"); setCouponLoading(false); return; }
+      if (data.expires_at && new Date(data.expires_at) < now) { toast.error("Coupon has expired"); setCouponLoading(false); return; }
+      if (data.max_uses && data.used_count >= data.max_uses) { toast.error("Coupon usage limit reached"); setCouponLoading(false); return; }
+      if (subtotal < (data.min_order_amount || 0)) { toast.error(`Minimum order amount is ${currency} ${data.min_order_amount}`); setCouponLoading(false); return; }
+
+      let discount = 0;
+      if (data.discount_type === "percentage") {
+        discount = (subtotal * data.discount_value) / 100;
+      } else {
+        discount = data.discount_value;
+      }
+      discount = Math.min(discount, subtotal);
+
+      setAppliedCoupon(data);
+      setCouponDiscount(discount);
+      toast.success(`Coupon applied! You save ${currency} ${discount.toFixed(2)}`);
+    } catch {
+      toast.error("Failed to validate coupon");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    setCouponCode("");
+  };
 
   // Facebook Pixel: InitiateCheckout
   useEffect(() => {
@@ -184,14 +238,12 @@ export default function CheckoutPage() {
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
       num_items: checkoutItems.length,
-      value: total,
+      value: subtotal,
       currency,
     });
   }, []);
 
-  if (isLoading && isSingleMode) {
-    return <CheckoutSkeleton />;
-  }
+  if (isLoading && isSingleMode) return <CheckoutSkeleton />;
 
   if (isSingleMode && !product) {
     return (
@@ -199,7 +251,7 @@ export default function CheckoutPage() {
         <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
         <h1 className="text-xl font-semibold text-foreground">Product not found</h1>
         <Button asChild variant="outline" className="mt-4">
-           <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
+          <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
         </Button>
       </div>
     );
@@ -218,6 +270,10 @@ export default function CheckoutPage() {
   }
 
   const createOrder = async () => {
+    const orderNotes = appliedCoupon
+      ? `Coupon: ${appliedCoupon.code} (-${currency} ${couponDiscount.toFixed(2)})`
+      : undefined;
+
     const { data: order, error: orderErr } = await (supabase as any)
       .from("orders")
       .insert({
@@ -232,6 +288,7 @@ export default function CheckoutPage() {
         state: state.trim(),
         pincode: pincode.trim(),
         payment_method: paymentMethod,
+        notes: orderNotes,
         ...(customer?.id ? { storefront_customer_id: customer.id } : {}),
       })
       .select("id")
@@ -257,22 +314,24 @@ export default function CheckoutPage() {
       source: "website_order",
     });
 
+    // Update coupon used_count
+    if (appliedCoupon) {
+      await (supabase as any)
+        .from("coupons")
+        .update({ used_count: (appliedCoupon.used_count || 0) + 1 })
+        .eq("id", appliedCoupon.id);
+    }
+
     return order.id as string;
   };
 
-  const createGuestAccount = async (orderId: string) => {
+  const createGuestAccount = async (ordId: string) => {
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       await fetch(`https://${projectId}.supabase.co/functions/v1/create-guest-account`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          phone: phone.trim(),
-          name: fullName.trim(),
-          store_id: store.id,
-          order_id: orderId,
-        }),
+        body: JSON.stringify({ email: email.trim(), phone: phone.trim(), name: fullName.trim(), store_id: store.id, order_id: ordId }),
       });
     } catch (err) {
       console.error("Guest account creation failed:", err);
@@ -282,7 +341,6 @@ export default function CheckoutPage() {
   const saveAddressToAccount = async () => {
     if (!customer?.id) return;
     try {
-      // Check if customer already has this address saved
       const { data: existing } = await supabase
         .from("customer_addresses")
         .select("id")
@@ -290,15 +348,11 @@ export default function CheckoutPage() {
         .eq("street_address", streetAddress.trim())
         .eq("pincode", pincode.trim())
         .maybeSingle();
-
-      if (existing) return; // Already saved
-
-      // Check if customer has any addresses (to set default)
+      if (existing) return;
       const { count } = await supabase
         .from("customer_addresses")
         .select("id", { count: "exact", head: true })
         .eq("storefront_customer_id", customer.id);
-
       await supabase.from("customer_addresses").insert({
         storefront_customer_id: customer.id,
         label: "Home",
@@ -329,24 +383,14 @@ export default function CheckoutPage() {
       const newOrderId = await createOrder();
 
       if (paymentMethod === "razorpay") {
-        // Razorpay flow
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Failed to load payment gateway");
-
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const res = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/razorpay-order`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              store_id: store.id,
-              amount: total,
-              currency,
-              order_id: newOrderId,
-            }),
-          }
-        );
+        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-order`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ store_id: store.id, amount: total, currency, order_id: newOrderId }),
+        });
         const rzpData = await res.json();
         if (!res.ok) throw new Error(rzpData.error || "Payment initiation failed");
 
@@ -359,79 +403,43 @@ export default function CheckoutPage() {
           order_id: rzpData.razorpay_order_id,
           handler: async (response: any) => {
             try {
-              const verifyRes = await fetch(
-                `https://${projectId}.supabase.co/functions/v1/razorpay-verify`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    razorpay_order_id: response.razorpay_order_id,
-                    razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_signature: response.razorpay_signature,
-                    order_id: newOrderId,
-                    store_id: store.id,
-                  }),
-                }
-              );
+              const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  order_id: newOrderId,
+                  store_id: store.id,
+                }),
+              });
               const verifyData = await verifyRes.json();
               if (!verifyRes.ok) throw new Error(verifyData.error);
-
               setOrderId(newOrderId);
               setOrderPlaced(true);
               if (!isSingleMode) clearCart();
-              fbPixelTrack("Purchase", {
-                content_ids: checkoutItems.map((i) => i.productId),
-                contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
-                value: total,
-                currency,
-                num_items: checkoutItems.length,
-              });
-              // Auto-create guest account if not logged in
-              if (!customer) {
-                createGuestAccount(newOrderId);
-              } else {
-                saveAddressToAccount();
-              }
-            } catch (err: any) {
-              toast.error("Payment verification failed. Contact the store.");
-            }
+              fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+              if (!customer) createGuestAccount(newOrderId);
+              else saveAddressToAccount();
+            } catch { toast.error("Payment verification failed. Contact the store."); }
           },
-          prefill: {
-            name: fullName,
-            contact: phone,
-          },
+          prefill: { name: fullName, contact: phone },
           theme: { color: "#6366f1" },
-          modal: {
-            ondismiss: () => {
-              toast.error("Payment cancelled. Your order is pending.");
-              setPlacing(false);
-            },
-          },
+          modal: { ondismiss: () => { toast.error("Payment cancelled."); setPlacing(false); } },
         };
-
         const rzp = new window.Razorpay(options);
         rzp.open();
-        return; // Don't setPlacing(false) here — Razorpay modal handles it
+        return;
       }
 
-      // COD flow — set success state BEFORE clearing cart to prevent empty cart flash
+      // COD flow
       setOrderId(newOrderId);
       setOrderPlaced(true);
       if (!isSingleMode) clearCart();
-      fbPixelTrack("Purchase", {
-        content_ids: checkoutItems.map((i) => i.productId),
-        contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
-        value: total,
-        currency,
-        num_items: checkoutItems.length,
-      });
-
-      // Auto-create guest account if not logged in, or save address for logged-in
-      if (!customer) {
-        createGuestAccount(newOrderId);
-      } else {
-        saveAddressToAccount();
-      }
+      fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+      if (!customer) createGuestAccount(newOrderId);
+      else saveAddressToAccount();
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
@@ -446,333 +454,343 @@ export default function CheckoutPage() {
           <CheckCircle2 className="h-8 w-8 text-primary" />
         </div>
         <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
-        <p className="mt-2 text-muted-foreground">
-          Your order has been placed successfully. The store will contact you shortly.
-        </p>
-        {orderId && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span>
-          </p>
-        )}
+        <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
+        {orderId && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span></p>}
         {!customer && (
           <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
             <p className="text-sm text-foreground font-medium">Account created!</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              An account has been created with <strong>{email}</strong>. Use "Forgot Password" on the login page to set your password and track your orders.
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">An account has been created with <strong>{email}</strong>. Use "Forgot Password" on the login page to set your password and track your orders.</p>
           </div>
         )}
         <div className="mt-6 flex flex-col gap-2 items-center">
-          {!customer && (
-            <Button asChild variant="outline">
-              <Link to={storefrontPath(store.slug, "login")}>Sign In to Track Orders</Link>
-            </Button>
-          )}
-          <Button asChild>
-            <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
-          </Button>
+          {!customer && <Button asChild variant="outline"><Link to={storefrontPath(store.slug, "login")}>Sign In to Track Orders</Link></Button>}
+          <Button asChild><Link to={storefrontPath(store.slug)}>Continue Shopping</Link></Button>
         </div>
       </div>
     );
   }
 
+  const itemCount = checkoutItems.reduce((s, i) => s + i.quantity, 0);
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6">
+    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8">
+      {/* Header */}
+      <div className="mb-5 flex items-center gap-3">
         <Link
           to={isSingleMode ? storefrontPath(store.slug) : storefrontPath(store.slug, "cart")}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border hover:bg-accent transition-colors"
         >
-          <ArrowLeft className="h-3 w-3" />
-          {isSingleMode ? `Back to ${store.name}` : "Back to Cart"}
+          <ArrowLeft className="h-4 w-4 text-foreground" />
         </Link>
-      </div>
-
-      <h1 className="mb-6 text-2xl font-bold text-foreground">Checkout</h1>
-
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* Form - 3 cols */}
-        <div className="space-y-6 lg:col-span-3">
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <MapPin className="h-4 w-4" /> Shipping Address
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Email field always visible */}
-              <div className="space-y-1.5">
-                <Label htmlFor="email">Email *</Label>
-                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
-                {!customer && <p className="text-xs text-muted-foreground">An account will be created so you can track your orders</p>}
-              </div>
-
-              {/* If customer has saved addresses, show address cards */}
-              {savedAddresses && savedAddresses.length > 0 ? (
-                <div className="space-y-3">
-                  <div className="grid gap-2">
-                    {savedAddresses.map((addr: any) => (
-                      <button
-                        key={addr.id}
-                        type="button"
-                        onClick={() => selectAddress(addr)}
-                        className={`relative w-full rounded-xl border-2 p-3 text-left transition-all ${
-                          selectedAddressId === addr.id
-                            ? "border-primary bg-primary/5"
-                            : "border-input hover:border-primary/30"
-                        }`}
-                      >
-                        {selectedAddressId === addr.id && (
-                          <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-                            <Check className="h-3 w-3 text-primary-foreground" />
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-semibold text-foreground">{addr.label}</span>
-                          {addr.is_default && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Default</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-foreground">{addr.full_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {[addr.street_address, addr.city, addr.state, addr.pincode].filter(Boolean).join(", ")}
-                        </p>
-                        {addr.phone && <p className="text-xs text-muted-foreground mt-0.5">{addr.phone}</p>}
-                      </button>
-                    ))}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      setNewAddr({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
-                      setShowNewAddressDialog(true);
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Add New Address
-                  </Button>
-                </div>
-              ) : (
-                /* No saved addresses — show inline form */
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="fullName">Full Name *</Label>
-                      <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="phone">Phone *</Label>
-                      <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="street">Street Address *</Label>
-                    <Input id="street" placeholder="123 Main Street, Apt 4B" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="city">City / Town *</Label>
-                      <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="state">State *</Label>
-                      <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="pincode">Pincode *</Label>
-                      <Input id="pincode" placeholder="400001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} />
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CreditCard className="h-4 w-4" /> Payment Method
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {hasCod && hasRazorpay ? (
-                <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "cod" | "razorpay")} className="space-y-3">
-                  <label className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-4 transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
-                    <RadioGroupItem value="cod" />
-                    <Banknote className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Cash on Delivery</p>
-                      <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
-                    </div>
-                  </label>
-                  <label className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-4 transition-all ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
-                    <RadioGroupItem value="razorpay" />
-                    <CreditCard className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Pay Online</p>
-                      <p className="text-xs text-muted-foreground">Cards, UPI, Net Banking, Wallets</p>
-                    </div>
-                  </label>
-                </RadioGroup>
-              ) : hasRazorpay ? (
-                <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4">
-                  <CreditCard className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Pay Online</p>
-                    <p className="text-xs text-muted-foreground">Cards, UPI, Net Banking, Wallets</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4">
-                  <Banknote className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Cash on Delivery (COD)</p>
-                    <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Order Summary - 2 cols */}
-        <div className="lg:col-span-2">
-          <Card className="sticky top-20">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base">Order Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {checkoutItems.map((item, idx) => (
-                <div key={idx} className="flex gap-3">
-                  {item.image ? (
-                    <img src={item.image} alt={item.name} className="h-14 w-14 rounded-lg border object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-accent flex-shrink-0">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
-                    <p className="text-sm font-semibold text-foreground">{currency} {(item.price * item.quantity).toFixed(2)}</p>
-                  </div>
-                </div>
-              ))}
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Subtotal</span>
-                <span className="text-sm font-medium">{currency} {total.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Shipping</span>
-                <span className="text-sm font-medium text-primary">Free</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Payment</span>
-                <Badge variant="secondary">
-                  {paymentMethod === "razorpay" ? "Online" : "COD"}
-                </Badge>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground">Total</span>
-                <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
-              </div>
-
-              <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
-                {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {paymentMethod === "razorpay" ? "Pay Now" : "Place Order"}
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="flex items-center gap-2">
+          {store.logo_url && <img src={store.logo_url} alt={store.name} className="h-7 w-7 rounded-full object-cover" />}
+          <span className="text-base font-semibold text-foreground">{store.name}</span>
         </div>
       </div>
 
-      {/* New Address Dialog */}
-      <Dialog open={showNewAddressDialog} onOpenChange={setShowNewAddressDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add New Address</DialogTitle>
-            <DialogDescription>Enter your shipping address details below.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Label</Label>
-                <Input value={newAddr.label} onChange={(e) => setNewAddr(p => ({ ...p, label: e.target.value }))} placeholder="Home / Work" maxLength={50} />
+      {/* 1. Order Summary — Collapsible */}
+      <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} className="mb-4 rounded-xl border border-border bg-card">
+        <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Order Summary ({itemCount} {itemCount === 1 ? "item" : "items"})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">{currency} {subtotal.toFixed(2)}</span>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${summaryOpen ? "rotate-180" : ""}`} />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="border-t border-border px-4 pb-4 pt-3 space-y-3">
+            {checkoutItems.map((item, idx) => (
+              <div key={idx} className="flex gap-3">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="h-14 w-14 rounded-lg border border-border object-cover flex-shrink-0" />
+                ) : (
+                  <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-accent flex-shrink-0">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                </div>
+                <p className="text-sm font-semibold text-foreground whitespace-nowrap">{currency} {(item.price * item.quantity).toFixed(2)}</p>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Full Name *</Label>
-                <Input value={newAddr.full_name} onChange={(e) => setNewAddr(p => ({ ...p, full_name: e.target.value }))} placeholder="John Doe" maxLength={100} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Phone *</Label>
-              <Input value={newAddr.phone} onChange={(e) => setNewAddr(p => ({ ...p, phone: e.target.value }))} placeholder="+91 98765 43210" maxLength={20} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Street Address *</Label>
-              <Input value={newAddr.street_address} onChange={(e) => setNewAddr(p => ({ ...p, street_address: e.target.value }))} placeholder="123 Main Street" maxLength={300} />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">City *</Label>
-                <Input value={newAddr.city} onChange={(e) => setNewAddr(p => ({ ...p, city: e.target.value }))} placeholder="Mumbai" maxLength={100} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">State *</Label>
-                <Input value={newAddr.state} onChange={(e) => setNewAddr(p => ({ ...p, state: e.target.value }))} placeholder="Maharashtra" maxLength={100} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Pincode *</Label>
-                <Input value={newAddr.pincode} onChange={(e) => setNewAddr(p => ({ ...p, pincode: e.target.value }))} placeholder="400001" maxLength={10} />
-              </div>
-            </div>
-            <Button
-              className="w-full"
-              disabled={!newAddr.full_name.trim() || !newAddr.phone.trim() || !newAddr.street_address.trim() || !newAddr.city.trim() || !newAddr.state.trim() || !newAddr.pincode.trim()}
-              onClick={async () => {
-                if (!customer?.id) return;
-                try {
-                  const { count } = await supabase
-                    .from("customer_addresses")
-                    .select("id", { count: "exact", head: true })
-                    .eq("storefront_customer_id", customer.id);
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
-                  const { data: saved, error } = await supabase
-                    .from("customer_addresses")
-                    .insert({
-                      storefront_customer_id: customer.id,
-                      label: newAddr.label.trim() || "Home",
-                      full_name: newAddr.full_name.trim(),
-                      phone: newAddr.phone.trim(),
-                      street_address: newAddr.street_address.trim(),
-                      city: newAddr.city.trim(),
-                      state: newAddr.state.trim(),
-                      pincode: newAddr.pincode.trim(),
-                      is_default: (count ?? 0) === 0,
-                    })
-                    .select()
-                    .single();
-
-                  if (error) throw error;
-
-                  qc.invalidateQueries({ queryKey: ["checkout-saved-addresses", customer.id] });
-                  selectAddress(saved);
-                  setShowNewAddressDialog(false);
-                  toast.success("Address saved!");
-                } catch (err) {
-                  toast.error("Failed to save address");
-                }
-              }}
-            >
-              Save & Use This Address
+      {/* 2. Coupon Code */}
+      <div className="mb-4 rounded-xl border border-border bg-card p-4">
+        {appliedCoupon ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">{appliedCoupon.code}</span>
+              <Badge variant="secondary" className="text-xs">-{currency} {couponDiscount.toFixed(2)}</Badge>
+            </div>
+            <button onClick={removeCoupon} className="text-muted-foreground hover:text-foreground transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Enter coupon code"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                className="pl-9 uppercase"
+                maxLength={30}
+                onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
+              />
+            </div>
+            <Button variant="outline" onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()}>
+              {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
             </Button>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Delivery Details */}
+      <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-4">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">Delivery Details</span>
+        </div>
+
+        {/* Email always visible */}
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-xs">Email *</Label>
+          <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
+          {!customer && <p className="text-[11px] text-muted-foreground">An account will be created to track your orders</p>}
+        </div>
+
+        {/* Saved address summary or inline form */}
+        {savedAddresses && savedAddresses.length > 0 && selectedAddr ? (
+          <div className="rounded-lg border border-border bg-accent/30 p-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-xs font-semibold text-foreground">{selectedAddr.label}</span>
+                  {selectedAddr.is_default && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Default</Badge>}
+                </div>
+                <p className="text-sm text-foreground">{selectedAddr.full_name}</p>
+                <p className="text-xs text-muted-foreground">{[selectedAddr.street_address, selectedAddr.city, selectedAddr.state, selectedAddr.pincode].filter(Boolean).join(", ")}</p>
+                {selectedAddr.phone && <p className="text-xs text-muted-foreground">{selectedAddr.phone}</p>}
+              </div>
+              <Button size="sm" variant="ghost" className="text-xs h-7 px-2" onClick={() => setShowAddressDialog(true)}>
+                <Pencil className="h-3 w-3 mr-1" /> Change
+              </Button>
+            </div>
+          </div>
+        ) : (
+          /* No saved addresses — inline form */
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="fullName" className="text-xs">Full Name *</Label>
+                <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="phone" className="text-xs">Phone *</Label>
+                <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="street" className="text-xs">Street Address *</Label>
+              <Input id="street" placeholder="123 Main Street, Apt 4B" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <Label htmlFor="city" className="text-xs">City *</Label>
+                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="state" className="text-xs">State *</Label>
+                <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="pincode" className="text-xs">Pincode *</Label>
+                <Input id="pincode" placeholder="400001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 4. Payment Method */}
+      <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">Payment Method</span>
+        </div>
+        <div className="grid gap-2">
+          {hasCod && (
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("cod")}
+              className={`flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+            >
+              <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                {paymentMethod === "cod" && <Check className="h-3 w-3 text-primary-foreground" />}
+              </div>
+              <Banknote className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Cash on Delivery</p>
+                <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
+              </div>
+            </button>
+          )}
+          {hasRazorpay && (
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("razorpay")}
+              className={`flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+            >
+              <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                {paymentMethod === "razorpay" && <Check className="h-3 w-3 text-primary-foreground" />}
+              </div>
+              <CreditCard className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Pay Online</p>
+                <p className="text-xs text-muted-foreground">Cards, UPI, Net Banking, Wallets</p>
+              </div>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 5. Price Breakdown + Place Order */}
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span className="text-foreground">{currency} {subtotal.toFixed(2)}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Shipping</span>
+          <span className="text-primary font-medium">Free</span>
+        </div>
+        {couponDiscount > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-primary">Coupon Discount</span>
+            <span className="text-primary font-medium">-{currency} {couponDiscount.toFixed(2)}</span>
+          </div>
+        )}
+        <Separator />
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-foreground">Total</span>
+          <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
+        </div>
+        <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
+          {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {paymentMethod === "razorpay" ? `Pay ${currency} ${total.toFixed(2)}` : `Place Order · ${currency} ${total.toFixed(2)}`}
+        </Button>
+      </div>
+
+      {/* Address Picker Dialog (change or add new) */}
+      <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Choose Address</DialogTitle>
+            <DialogDescription>Select a saved address or add a new one.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {savedAddresses?.map((addr: any) => (
+              <button
+                key={addr.id}
+                type="button"
+                onClick={() => { selectAddress(addr); setShowAddressDialog(false); }}
+                className={`relative w-full rounded-xl border-2 p-3 text-left transition-all ${selectedAddressId === addr.id ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}
+              >
+                {selectedAddressId === addr.id && (
+                  <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                    <Check className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm font-semibold text-foreground">{addr.label}</span>
+                  {addr.is_default && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Default</Badge>}
+                </div>
+                <p className="text-sm text-foreground">{addr.full_name}</p>
+                <p className="text-xs text-muted-foreground">{[addr.street_address, addr.city, addr.state, addr.pincode].filter(Boolean).join(", ")}</p>
+              </button>
+            ))}
+            <Separator className="my-3" />
+            <p className="text-xs font-medium text-muted-foreground mb-2">Add New Address</p>
+            <div className="space-y-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Label</Label>
+                  <Input value={newAddr.label} onChange={(e) => setNewAddr(p => ({ ...p, label: e.target.value }))} placeholder="Home / Work" maxLength={50} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Full Name *</Label>
+                  <Input value={newAddr.full_name} onChange={(e) => setNewAddr(p => ({ ...p, full_name: e.target.value }))} placeholder="John Doe" maxLength={100} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Phone *</Label>
+                <Input value={newAddr.phone} onChange={(e) => setNewAddr(p => ({ ...p, phone: e.target.value }))} placeholder="+91 98765 43210" maxLength={20} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Street Address *</Label>
+                <Input value={newAddr.street_address} onChange={(e) => setNewAddr(p => ({ ...p, street_address: e.target.value }))} placeholder="123 Main Street" maxLength={300} />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">City *</Label>
+                  <Input value={newAddr.city} onChange={(e) => setNewAddr(p => ({ ...p, city: e.target.value }))} placeholder="Mumbai" maxLength={100} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">State *</Label>
+                  <Input value={newAddr.state} onChange={(e) => setNewAddr(p => ({ ...p, state: e.target.value }))} placeholder="MH" maxLength={100} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Pincode *</Label>
+                  <Input value={newAddr.pincode} onChange={(e) => setNewAddr(p => ({ ...p, pincode: e.target.value }))} placeholder="400001" maxLength={10} />
+                </div>
+              </div>
+              <Button
+                className="w-full"
+                disabled={!newAddr.full_name.trim() || !newAddr.phone.trim() || !newAddr.street_address.trim() || !newAddr.city.trim() || !newAddr.state.trim() || !newAddr.pincode.trim()}
+                onClick={async () => {
+                  if (!customer?.id) return;
+                  try {
+                    const { count } = await supabase
+                      .from("customer_addresses")
+                      .select("id", { count: "exact", head: true })
+                      .eq("storefront_customer_id", customer.id);
+                    const { data: saved, error } = await supabase
+                      .from("customer_addresses")
+                      .insert({
+                        storefront_customer_id: customer.id,
+                        label: newAddr.label.trim() || "Home",
+                        full_name: newAddr.full_name.trim(),
+                        phone: newAddr.phone.trim(),
+                        street_address: newAddr.street_address.trim(),
+                        city: newAddr.city.trim(),
+                        state: newAddr.state.trim(),
+                        pincode: newAddr.pincode.trim(),
+                        is_default: (count ?? 0) === 0,
+                      })
+                      .select()
+                      .single();
+                    if (error) throw error;
+                    qc.invalidateQueries({ queryKey: ["checkout-saved-addresses", customer.id] });
+                    selectAddress(saved);
+                    setShowAddressDialog(false);
+                    setNewAddr({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
+                    toast.success("Address saved!");
+                  } catch { toast.error("Failed to save address"); }
+                }}
+              >
+                Save & Use This Address
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -782,52 +800,13 @@ export default function CheckoutPage() {
 
 function CheckoutSkeleton() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Skeleton className="mb-6 h-4 w-28" />
-      <Skeleton className="mb-6 h-8 w-40" />
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="space-y-6 lg:col-span-3">
-          {/* Address card skeleton */}
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-            <Skeleton className="h-5 w-40" />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Skeleton className="h-10 w-full rounded-md" />
-              <Skeleton className="h-10 w-full rounded-md" />
-            </div>
-            <Skeleton className="h-10 w-full rounded-md" />
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Skeleton className="h-10 w-full rounded-md" />
-              <Skeleton className="h-10 w-full rounded-md" />
-              <Skeleton className="h-10 w-full rounded-md" />
-            </div>
-          </div>
-          {/* Payment card skeleton */}
-          <div className="rounded-xl border border-border bg-card p-6 space-y-3">
-            <Skeleton className="h-5 w-36" />
-            <Skeleton className="h-16 w-full rounded-xl" />
-            <Skeleton className="h-16 w-full rounded-xl" />
-          </div>
-        </div>
-        {/* Order summary skeleton */}
-        <div className="lg:col-span-2">
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-            <Skeleton className="h-5 w-32" />
-            <div className="flex gap-3">
-              <Skeleton className="h-14 w-14 rounded-lg" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            </div>
-            <Skeleton className="h-px w-full" />
-            <div className="flex justify-between">
-              <Skeleton className="h-5 w-12" />
-              <Skeleton className="h-6 w-24" />
-            </div>
-            <Skeleton className="h-12 w-full rounded-lg" />
-          </div>
-        </div>
-      </div>
+    <div className="mx-auto max-w-lg px-4 py-6">
+      <Skeleton className="mb-5 h-9 w-9 rounded-full" />
+      <Skeleton className="mb-4 h-14 w-full rounded-xl" />
+      <Skeleton className="mb-4 h-12 w-full rounded-xl" />
+      <Skeleton className="mb-4 h-48 w-full rounded-xl" />
+      <Skeleton className="mb-4 h-32 w-full rounded-xl" />
+      <Skeleton className="h-40 w-full rounded-xl" />
     </div>
   );
 }
