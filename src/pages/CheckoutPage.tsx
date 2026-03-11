@@ -702,10 +702,7 @@ export default function CheckoutPage() {
                   onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("upi"); setUpiApp("paytm"); }}
                   className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-3 transition-all ${paymentMethod === "razorpay" && upiApp === "paytm" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"}`}
                 >
-                  <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-                    <rect width="48" height="48" rx="10" fill="#00BAF2"/>
-                    <text x="24" y="28" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="sans-serif">Pay</text>
-                  </svg>
+                  <img src="/icons/paytm.svg" alt="Paytm" className="h-7 w-7 object-contain" />
                   <span className="text-[10px] font-medium text-foreground">Paytm</span>
                 </button>
 
