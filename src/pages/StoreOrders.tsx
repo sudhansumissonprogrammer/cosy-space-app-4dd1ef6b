@@ -60,13 +60,16 @@ export default function StoreOrders() {
   });
 
   const updateWebStatus = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
-      const { error } = await (supabase as any).from("orders").update({ status }).eq("id", orderId);
+    mutationFn: async ({ orderId, status, tracking_number, tracking_url }: { orderId: string; status: string; tracking_number?: string; tracking_url?: string }) => {
+      const update: any = { status };
+      if (tracking_number !== undefined) update.tracking_number = tracking_number;
+      if (tracking_url !== undefined) update.tracking_url = tracking_url;
+      const { error } = await (supabase as any).from("orders").update(update).eq("id", orderId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["website-orders", storeId] });
-      toast.success("Order status updated");
+      toast.success("Order updated");
     },
     onError: (err: any) => toast.error(err.message),
   });
