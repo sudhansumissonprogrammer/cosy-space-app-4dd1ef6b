@@ -322,7 +322,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     <CartProvider slug={store.slug}>
       <WishlistProvider slug={store.slug}>
         <StorefrontAuthProvider storeId={store.id}>
-          <div className="min-h-screen bg-background font-sans" style={{ fontVariant: "small-caps" }}>
+          <div className="storefront-font min-h-screen bg-background font-sans">
             {/* Marquee Banner */}
             <StorefrontMarquee />
             
