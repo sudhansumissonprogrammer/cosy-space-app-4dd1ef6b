@@ -29,6 +29,7 @@ export default function StoreOrders() {
   const [trackingNumber, setTrackingNumber] = useState("");
   const [trackingUrl, setTrackingUrl] = useState("");
   const [pendingStatus, setPendingStatus] = useState("");
+  const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
 
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
