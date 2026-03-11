@@ -74,7 +74,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     display: inline-block;
     padding: 1px 5px;
     border-radius: 2px;
-    font-size: 6.5px;
+    font-size: 7.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.3px;
