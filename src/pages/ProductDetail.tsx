@@ -697,6 +697,7 @@ export default function ProductDetail() {
             {product.description && (
               <AccordionItem
                 title="Product Description"
+                icon={<Package className="h-3.5 w-3.5 text-blue-600" />}
                 isOpen={openAccordion === "description"}
                 onToggle={() => toggleAccordion("description")}
               >
@@ -707,6 +708,7 @@ export default function ProductDetail() {
             )}
             <AccordionItem
               title="Shipping Information"
+              icon={<Truck className="h-3.5 w-3.5 text-amber-600" />}
               isOpen={openAccordion === "shipping"}
               onToggle={() => toggleAccordion("shipping")}
             >
@@ -719,6 +721,7 @@ export default function ProductDetail() {
             </AccordionItem>
             <AccordionItem
               title="Returns & Exchange"
+              icon={<RotateCcw className="h-3.5 w-3.5 text-orange-600" />}
               isOpen={openAccordion === "returns"}
               onToggle={() => toggleAccordion("returns")}
             >
