@@ -28,7 +28,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 </div>
               )}
               {!store.logo_url && (
-                <span className="text-lg font-bold text-foreground">{store.name}</span>
+                <span className="text-lg font-bold" style={{ color: "var(--storefront-bg, hsl(var(--foreground)))" }}>{store.name}</span>
               )}
             </div>
             {store.description && (
