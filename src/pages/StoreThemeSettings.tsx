@@ -521,6 +521,51 @@ const FAKE_CATEGORIES = DEFAULT_CATEGORIES.map(c => c.name);
 
 type PreviewScreen = "home" | "product" | "cart";
 
+/* ── Reusable Preview Frame (Phone or Desktop) ── */
+function PreviewFrame({ isDesktop, bgColor, children }: { isDesktop?: boolean; bgColor: string; children: React.ReactNode }) {
+  if (isDesktop) {
+    return (
+      <div className="flex justify-center">
+        <div className="w-full max-w-4xl rounded-xl border-2 border-border overflow-hidden shadow-lg">
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 border-b border-border">
+            <div className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
+            <div className="h-2.5 w-2.5 rounded-full bg-warning/60" />
+            <div className="h-2.5 w-2.5 rounded-full bg-success/60" />
+            <div className="flex-1 mx-8 rounded-full bg-background/80 border border-border px-3 py-0.5">
+              <span className="text-[9px] text-muted-foreground">mystore.com</span>
+            </div>
+          </div>
+          <div className="relative" style={{ height: "680px", backgroundColor: bgColor }}>
+            <div className="h-full overflow-y-auto">
+              {children}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-center">
+      <div className="relative mx-auto" style={{ width: "375px" }}>
+        <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
+          <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
+            <div className="h-2 w-2 rounded-full bg-gray-600" />
+          </div>
+          <div className="relative" style={{ height: "680px", backgroundColor: bgColor }}>
+            <div className="h-full overflow-y-auto">
+              {children}
+            </div>
+          </div>
+          <div className="flex h-5 items-center justify-center bg-gray-800">
+            <div className="h-1 w-24 rounded-full bg-gray-600" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Full Storefront Preview Component ── */
 function FullStorefrontPreview({ config, storeName, products: propProducts, categories: propCategories, isDesktop }: PreviewProps) {
   const products = propProducts && propProducts.length > 0 ? propProducts : DEFAULT_PRODUCTS;
