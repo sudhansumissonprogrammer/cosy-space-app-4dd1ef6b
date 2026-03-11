@@ -33,11 +33,12 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     doc.open();
     doc.write(`<!DOCTYPE html>
 <html><head><title>Label #${order.id.slice(0, 8).toUpperCase()}</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   @page { size: 100mm 150mm; margin: 3mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color: #000;
     line-height: 1.4;
     font-size: 9px;
