@@ -596,12 +596,16 @@ function FullStorefrontPreview({ config, storeName, products: propProducts, cate
 
       {/* Categories */}
       <div className="border-b px-3 py-2.5 flex gap-3 overflow-hidden" style={{ backgroundColor: config.background_color }}>
-        {FAKE_CATEGORIES.map((cat) => (
-          <div key={cat} className="flex flex-col items-center gap-1 flex-shrink-0">
-            <div className="h-9 w-9 rounded-full border-2 flex items-center justify-center" style={{ borderColor: config.primary_color + "50", backgroundColor: config.primary_color + "10" }}>
-              <Tag className="h-3.5 w-3.5" style={{ color: config.primary_color }} />
+        {categories.map((cat) => (
+          <div key={cat.name} className="flex flex-col items-center gap-1 flex-shrink-0">
+            <div className="h-9 w-9 rounded-full border-2 flex items-center justify-center overflow-hidden" style={{ borderColor: config.primary_color + "50", backgroundColor: config.primary_color + "10" }}>
+              {cat.image_url ? (
+                <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+              ) : (
+                <Tag className="h-3.5 w-3.5" style={{ color: config.primary_color }} />
+              )}
             </div>
-            <span className="text-[7px] font-semibold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{cat}</span>
+            <span className="text-[7px] font-semibold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{cat.name}</span>
           </div>
         ))}
       </div>
