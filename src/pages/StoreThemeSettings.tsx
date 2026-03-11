@@ -431,69 +431,10 @@ export default function StoreThemeSettings() {
 
           <Separator />
 
-          {/* Live Preview */}
+          {/* Full Storefront Preview */}
           <div>
-            <h4 className="mb-3 text-sm font-semibold">Preview</h4>
-            <div
-              className="overflow-hidden rounded-xl border"
-              style={{ backgroundColor: config.background_color }}
-            >
-              {/* Marquee preview */}
-              <div
-                className="px-4 py-2 text-center text-xs font-medium"
-                style={{ background: config.marquee_gradient, color: config.text_color }}
-              >
-                🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payment
-              </div>
-              <div className="p-4">
-                <h3
-                  className="text-lg font-bold"
-                  style={{ fontFamily: config.heading_font, color: config.text_color }}
-                >
-                  Sample Heading
-                </h3>
-                <p
-                  className="mt-1 text-sm"
-                  style={{ fontFamily: config.body_font, color: config.text_color + "cc" }}
-                >
-                  This is how your body text will look on the storefront.
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    className={`px-4 py-2 text-xs font-bold uppercase tracking-wider ${
-                      config.button_style === "pill"
-                        ? "rounded-full"
-                        : config.button_style === "square"
-                        ? "rounded-none"
-                        : "rounded-lg"
-                    }`}
-                    style={{
-                      background: `linear-gradient(135deg, ${config.primary_color}, ${config.primary_color}dd)`,
-                      color: config.background_color,
-                    }}
-                  >
-                    Add to Cart
-                  </button>
-                  <button
-                    className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border ${
-                      config.button_style === "pill"
-                        ? "rounded-full"
-                        : config.button_style === "square"
-                        ? "rounded-none"
-                        : "rounded-lg"
-                    }`}
-                    style={{
-                      borderColor: config.accent_color,
-                      color: config.accent_color,
-                      backgroundColor: "transparent",
-                    }}
-                  >
-                    Buy Now
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+            <h4 className="mb-3 text-sm font-semibold">Full Storefront Preview</h4>
+            <FullStorefrontPreview config={config} storeName={store?.name || "My Store"} />
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-2">
