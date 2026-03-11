@@ -82,7 +82,7 @@ function AppRouter() {
   }
 
   // Everything else — lazy-load the entire auth/admin/dashboard bundle
-  return <AuthRoutes />;
+  return <LazyAuthRoutes />;
 }
 
 const App = () => (
