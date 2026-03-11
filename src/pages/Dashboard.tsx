@@ -31,7 +31,7 @@ export default function Dashboard() {
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", ids],
-    queryFn: async () => {
+    staleTime: 5 * 60 * 1000,
       const [productsRes, ordersRes, customersRes, viewsRes] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }).in("store_id", ids),
         supabase.from("orders").select("id", { count: "exact", head: true }).in("store_id", ids),
