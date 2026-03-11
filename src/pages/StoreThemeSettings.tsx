@@ -198,7 +198,12 @@ export default function StoreThemeSettings() {
     setDirty(true);
   };
 
-  const selectedMarqueePreset = MARQUEE_PRESETS.find((p) => p.value === config.marquee_gradient);
+  const selectedCombo = COLOR_COMBINATIONS.find(
+    (c) =>
+      c.primary === config.primary_color &&
+      c.accent === config.accent_color &&
+      c.background === config.background_color
+  );
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
