@@ -237,6 +237,9 @@ export default function BulkUpload() {
             <Button variant="outline" onClick={downloadTemplate}>
               <Download className="mr-2 h-4 w-4" /> Download Template
             </Button>
+            <Button variant="outline" onClick={exportProducts}>
+              <Download className="mr-2 h-4 w-4" /> Export Products
+            </Button>
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <Upload className="mr-2 h-4 w-4" /> Choose CSV File
             </Button>
