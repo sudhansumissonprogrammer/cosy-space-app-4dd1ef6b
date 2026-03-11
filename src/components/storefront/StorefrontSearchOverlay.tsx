@@ -63,7 +63,7 @@ export default function StorefrontSearchOverlay({
     }
   }, [open]);
 
-  const activeFilterCount = [priceRange, availability !== "all"].filter(Boolean).length;
+  const activeFilterCount = [priceRange].filter(Boolean).length;
 
   const results = useMemo(() => {
     if (!products) return [];
