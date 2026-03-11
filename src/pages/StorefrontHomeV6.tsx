@@ -281,7 +281,7 @@ function NewsletterSection() {
         <p className="mt-3 text-sm max-w-md mx-auto" style={{ color: "var(--storefront-text, #1e293b)", opacity: 0.6 }}>
           Subscribe to get special offers, exclusive deals, and the latest news.
         </p>
-        <div className="mt-6 mx-auto max-w-md flex items-center gap-3">
+        <div className="mt-6 mx-auto max-w-md flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <input
             type="email"
             placeholder="Enter your email"
