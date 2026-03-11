@@ -68,7 +68,7 @@ function HeroSection({ store }: { store: StoreData }) {
                 src={optimizeImageUrl(heroProduct.image_url, 800)}
                 alt={heroProduct.name}
                 className="w-full object-cover transition-transform duration-700 hover:scale-105"
-                style={{ aspectRatio: "4/5", maxHeight: "560px" }}
+                style={{ aspectRatio: window.innerWidth < 640 ? "1/1" : "4/5", maxHeight: window.innerWidth < 640 ? "350px" : "560px" }}
                 loading="eager"
               />
             </div>
