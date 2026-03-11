@@ -171,6 +171,17 @@ const COLOR_COMBINATIONS = [
   },
 ];
 
+interface ThemeConfig {
+  primary_color: string;
+  accent_color: string;
+  text_color: string;
+  background_color: string;
+  heading_font: string;
+  body_font: string;
+  button_style: string;
+  marquee_gradient: string;
+}
+
 const THEME_DEFAULTS: Record<string, ThemeConfig> = {
   "theme-1": {
     primary_color: "#b8873c",
