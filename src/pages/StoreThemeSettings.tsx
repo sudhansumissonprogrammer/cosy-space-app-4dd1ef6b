@@ -33,13 +33,34 @@ const BUTTON_STYLES = [
   { value: "square", label: "Square" },
 ];
 
-const MARQUEE_PRESETS = [
-  { label: "Gold Classic", value: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)" },
-  { label: "Dark Elegant", value: "linear-gradient(90deg, #1a1a1a, #333333, #1a1a1a)" },
-  { label: "Rose Gold", value: "linear-gradient(90deg, #b76e79, #f0c9cf, #b76e79)" },
-  { label: "Ocean Blue", value: "linear-gradient(90deg, #1e3a5f, #4a90d9, #1e3a5f)" },
-  { label: "Forest Green", value: "linear-gradient(90deg, #2d5016, #6b8f3c, #2d5016)" },
-  { label: "Custom", value: "custom" },
+const COLOR_COMBINATIONS = [
+  {
+    id: "royal-gold",
+    name: "Royal Gold",
+    primary: "#b8873c",
+    accent: "#000000",
+    text: "#1a1a1a",
+    background: "#f7f5f0",
+    marquee: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+  },
+  {
+    id: "midnight-rose",
+    name: "Midnight Rose",
+    primary: "#b76e79",
+    accent: "#2d2d2d",
+    text: "#1a1a1a",
+    background: "#fdf8f8",
+    marquee: "linear-gradient(90deg, #b76e79, #f0c9cf, #b76e79)",
+  },
+  {
+    id: "ocean-luxe",
+    name: "Ocean Luxe",
+    primary: "#1e3a5f",
+    accent: "#c9a84c",
+    text: "#1a1a1a",
+    background: "#f5f7fa",
+    marquee: "linear-gradient(90deg, #1e3a5f, #4a90d9, #1e3a5f)",
+  },
 ];
 
 const THEME_DEFAULTS: Record<string, ThemeConfig> = {
@@ -71,30 +92,6 @@ const THEMES = [
   { id: "theme-2", name: "Bold Modern", description: "Clean minimalist with strong typography", available: false },
   { id: "theme-3", name: "Pastel Soft", description: "Soft pastels with rounded elements", available: false },
 ];
-
-function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-xs font-medium">{label}</Label>
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <input
-            type="color"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="h-9 w-9 cursor-pointer rounded-md border border-input p-0.5"
-          />
-        </div>
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-24 rounded-md border border-input bg-background px-2 text-xs font-mono"
-        />
-      </div>
-    </div>
-  );
-}
 
 export default function StoreThemeSettings() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -201,7 +198,12 @@ export default function StoreThemeSettings() {
     setDirty(true);
   };
 
-  const selectedMarqueePreset = MARQUEE_PRESETS.find((p) => p.value === config.marquee_gradient);
+  const selectedCombo = COLOR_COMBINATIONS.find(
+    (c) =>
+      c.primary === config.primary_color &&
+      c.accent === config.accent_color &&
+      c.background === config.background_color
+  );
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
@@ -287,14 +289,49 @@ export default function StoreThemeSettings() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Colors */}
+          {/* Color Combinations */}
           <div>
-            <h4 className="mb-3 text-sm font-semibold">Colors</h4>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <ColorPicker label="Primary" value={config.primary_color} onChange={(v) => updateField("primary_color", v)} />
-              <ColorPicker label="Accent" value={config.accent_color} onChange={(v) => updateField("accent_color", v)} />
-              <ColorPicker label="Text" value={config.text_color} onChange={(v) => updateField("text_color", v)} />
-              <ColorPicker label="Background" value={config.background_color} onChange={(v) => updateField("background_color", v)} />
+            <h4 className="mb-3 text-sm font-semibold">Color Combination</h4>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {COLOR_COMBINATIONS.map((combo) => {
+                const isSelected = selectedCombo?.id === combo.id;
+                return (
+                  <div
+                    key={combo.id}
+                    onClick={() => {
+                      setConfig((prev) => ({
+                        ...prev,
+                        primary_color: combo.primary,
+                        accent_color: combo.accent,
+                        text_color: combo.text,
+                        background_color: combo.background,
+                        marquee_gradient: combo.marquee,
+                      }));
+                      setDirty(true);
+                    }}
+                    className={`cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${
+                      isSelected
+                        ? "border-foreground shadow-md"
+                        : "border-border hover:border-foreground/40"
+                    }`}
+                  >
+                    <div className="flex h-10">
+                      <div className="flex-1" style={{ backgroundColor: combo.primary }} />
+                      <div className="flex-1" style={{ backgroundColor: combo.accent }} />
+                      <div className="flex-1" style={{ backgroundColor: combo.background }} />
+                      <div className="flex-1" style={{ backgroundColor: combo.text }} />
+                    </div>
+                    <div className="flex items-center justify-between p-3">
+                      <span className="text-sm font-medium">{combo.name}</span>
+                      {isSelected && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Check className="h-3 w-3" /> Selected
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -331,46 +368,19 @@ export default function StoreThemeSettings() {
 
           <Separator />
 
-          {/* Button & Marquee */}
+          {/* Button Style */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Style</h4>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Button Style</Label>
-                <Select value={config.button_style} onValueChange={(v) => updateField("button_style", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {BUTTON_STYLES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Marquee Gradient</Label>
-                <Select
-                  value={selectedMarqueePreset ? config.marquee_gradient : "custom"}
-                  onValueChange={(v) => {
-                    if (v !== "custom") updateField("marquee_gradient", v);
-                  }}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {MARQUEE_PRESETS.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {(!selectedMarqueePreset || selectedMarqueePreset.value === "custom") && (
-                  <input
-                    type="text"
-                    value={config.marquee_gradient}
-                    onChange={(e) => updateField("marquee_gradient", e.target.value)}
-                    placeholder="linear-gradient(90deg, ...)"
-                    className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-xs font-mono"
-                  />
-                )}
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Button Style</Label>
+              <Select value={config.button_style} onValueChange={(v) => updateField("button_style", v)}>
+                <SelectTrigger className="w-full sm:w-1/2"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {BUTTON_STYLES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
