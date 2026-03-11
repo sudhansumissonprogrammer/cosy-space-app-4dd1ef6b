@@ -77,8 +77,7 @@ export default function StorefrontSearchOverlay({
       const effectivePrice = p.sale_price ?? p.price;
       const matchesPrice =
         !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
-      const matchesAvail = availability === "all" || p.stock_quantity > 0;
-      return matchesSearch && matchesPrice && matchesAvail;
+      return matchesSearch && matchesPrice;
     });
 
     switch (sortBy) {
