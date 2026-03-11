@@ -115,7 +115,7 @@ function CategoryGrid({ categories, slug }: { categories: any[]; slug: string })
       >
         Shop by Category
       </h2>
-      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4">
         {categories.slice(0, 8).map((cat) => (
           <Link
             key={cat.id}
