@@ -198,7 +198,7 @@ export default function StorefrontSearchOverlay({
 
           {activeFilterCount > 0 && (
             <button
-              onClick={() => { setPriceRange(null); setAvailability("all"); }}
+              onClick={() => { setPriceRange(null); }}
               className="text-xs text-destructive hover:underline font-medium"
             >
               Clear all filters
