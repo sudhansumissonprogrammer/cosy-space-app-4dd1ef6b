@@ -18,12 +18,12 @@ function HeroSection({ store }: { store: StoreData }) {
   const heroProduct = products?.find((p: any) => p.image_url) || null;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingTop: "80px", paddingBottom: "80px" }}>
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 pt-10 pb-10 sm:pt-20 sm:pb-20 lg:pt-[80px] lg:pb-[80px]">
       <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
         {/* Left text */}
         <div>
           <h1
-            className="text-4xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
+            className="text-3xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
             style={{ fontFamily: "var(--storefront-heading-font, 'Poppins')", color: "var(--storefront-text, #1e293b)" }}
           >
             {store.name}
@@ -67,8 +67,8 @@ function HeroSection({ store }: { store: StoreData }) {
               <img
                 src={optimizeImageUrl(heroProduct.image_url, 800)}
                 alt={heroProduct.name}
-                className="w-full object-cover transition-transform duration-700 hover:scale-105"
-                style={{ aspectRatio: "4/5", maxHeight: "560px" }}
+                className="w-full object-cover transition-transform duration-700 hover:scale-105 aspect-square sm:aspect-[4/5]"
+                style={{ maxHeight: "560px" }}
                 loading="eager"
               />
             </div>
@@ -77,16 +77,15 @@ function HeroSection({ store }: { store: StoreData }) {
               <img
                 src={store.banner_url}
                 alt={store.name}
-                className="w-full object-cover"
-                style={{ aspectRatio: "4/5", maxHeight: "560px" }}
+                className="w-full object-cover aspect-square sm:aspect-[4/5]"
+                style={{ maxHeight: "560px" }}
                 loading="eager"
               />
             </div>
           ) : (
             <div
-              className="flex items-center justify-center"
+              className="flex items-center justify-center aspect-square sm:aspect-[4/5]"
               style={{
-                aspectRatio: "4/5",
                 maxHeight: "560px",
                 borderRadius: "24px",
                 background: `linear-gradient(135deg, var(--storefront-primary, #2563EB)15, var(--storefront-accent, #F97316)10)`,
@@ -108,14 +107,14 @@ function CategoryGrid({ categories, slug }: { categories: any[]; slug: string })
   if (!categories || categories.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 pt-6 pb-10 sm:pt-10 sm:pb-20">
       <h2
         className="text-2xl font-bold mb-8 sm:text-3xl"
         style={{ fontFamily: "var(--storefront-heading-font, 'Poppins')", color: "var(--storefront-text, #1e293b)" }}
       >
         Shop by Category
       </h2>
-      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4">
         {categories.slice(0, 8).map((cat) => (
           <Link
             key={cat.id}
@@ -164,7 +163,7 @@ function BenefitsSection() {
   ];
 
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 pt-6 pb-10 sm:pt-10 sm:pb-20">
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         {benefits.map((b, idx) => (
           <div
@@ -212,7 +211,7 @@ function TestimonialsSection() {
   ];
 
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 pt-6 pb-10 sm:pt-10 sm:pb-20">
       <h2
         className="text-2xl font-bold mb-8 sm:text-3xl"
         style={{ fontFamily: "var(--storefront-heading-font, 'Poppins')", color: "var(--storefront-text, #1e293b)" }}
@@ -262,7 +261,7 @@ function TestimonialsSection() {
 /* ── Newsletter ── */
 function NewsletterSection() {
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingBottom: "80px" }}>
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 pb-10 sm:pb-20">
       <div
         className="text-center p-10 sm:p-16"
         style={{
@@ -281,7 +280,7 @@ function NewsletterSection() {
         <p className="mt-3 text-sm max-w-md mx-auto" style={{ color: "var(--storefront-text, #1e293b)", opacity: 0.6 }}>
           Subscribe to get special offers, exclusive deals, and the latest news.
         </p>
-        <div className="mt-6 mx-auto max-w-md flex items-center gap-3">
+        <div className="mt-6 mx-auto max-w-md flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <input
             type="email"
             placeholder="Enter your email"
@@ -347,7 +346,7 @@ export default function StorefrontHomeV6() {
       )}
 
       {/* Featured Products */}
-      <section className="mx-auto max-w-7xl px-4 lg:px-8" style={{ paddingBottom: "80px" }}>
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 pb-10 sm:pb-20">
         <div className="flex items-center justify-between mb-8">
           <h2
             className="text-2xl font-bold sm:text-3xl"
@@ -365,7 +364,7 @@ export default function StorefrontHomeV6() {
         </div>
 
         {!products ? (
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden" style={{ borderRadius: "16px", border: "1px solid", borderColor: "var(--storefront-text, #1e293b)08" }}>
                 <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
@@ -379,14 +378,14 @@ export default function StorefrontHomeV6() {
           </div>
         ) : products.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
               {products.slice(0, 12).map((product, idx) => (
                 <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} />
               ))}
             </div>
             {products.length > 12 && (
               <LazyRender rootMargin="400px" minHeight={400}>
-                <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 mt-6">
+                <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4 mt-4 sm:mt-6">
                   {products.slice(12).map((product) => (
                     <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} />
                   ))}

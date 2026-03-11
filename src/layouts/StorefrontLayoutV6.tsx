@@ -204,7 +204,7 @@ function CleanHeader({ store }: { store: StoreData }) {
         <div className="flex-1 lg:hidden" />
 
         {/* Right icons */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-3 sm:gap-5">
           <AccountBadgeV6 slug={store.slug} />
           <WishlistBadgeV6 slug={store.slug} />
           <CartBadgeV6 />
@@ -227,7 +227,7 @@ function CleanFooter({ store }: { store: StoreData }) {
         borderColor: "transparent",
       }}
     >
-      <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <h3 className="text-base font-bold mb-3" style={{ fontFamily: "var(--storefront-heading-font, 'Poppins')" }}>

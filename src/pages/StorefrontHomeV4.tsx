@@ -20,7 +20,7 @@ function LuxuryHero({ store }: { store: StoreData }) {
   const bestProduct = products?.find((p: any) => p.is_best_selling && p.image_url);
 
   return (
-    <section className="relative w-full" style={{ height: "100vh", minHeight: "600px", maxHeight: "900px" }}>
+    <section className="relative w-full h-[70vh] sm:h-screen" style={{ minHeight: "400px", maxHeight: "900px" }}>
       {heroImage ? (
         <img
           src={optimizeImageUrl(heroImage, 1400)}
@@ -40,7 +40,7 @@ function LuxuryHero({ store }: { store: StoreData }) {
         <div className="max-w-2xl px-6">
           <div className="mb-4 h-[1px] mx-auto w-12" style={{ backgroundColor: "var(--storefront-primary, #C8A96A)" }} />
           <h1
-            className="text-4xl font-light tracking-[0.12em] uppercase text-white sm:text-5xl lg:text-6xl"
+            className="text-3xl font-light tracking-[0.12em] uppercase text-white sm:text-5xl lg:text-6xl"
             style={{ fontFamily: "var(--storefront-heading-font, 'Playfair Display')" }}
           >
             {store.name}
@@ -70,7 +70,7 @@ function FeaturedCollection({ products, slug, store }: { products: any[]; slug: 
   if (featured.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-20 lg:px-12">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-20 lg:px-12">
       <div className="text-center mb-12">
         <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-3" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
           Curated Selection
@@ -90,8 +90,7 @@ function FeaturedCollection({ products, slug, store }: { products: any[]; slug: 
           <Link
             key={product.id}
             to={storefrontPath(slug, `product/${product.slug || product.id}`)}
-            className="group relative overflow-hidden"
-            style={{ aspectRatio: idx === 0 ? "3/4" : "4/3" }}
+            className={`group relative overflow-hidden ${idx === 0 ? "aspect-square sm:aspect-[3/4]" : "aspect-[4/3]"}`}
           >
             {product.image_url ? (
               <img
@@ -127,8 +126,8 @@ function LookbookSection({ products, slug }: { products: any[]; slug: string }) 
   if (lookbookItems.length < 3) return null;
 
   return (
-    <section className="py-20" style={{ backgroundColor: "var(--storefront-accent, #1C1C1C)" }}>
-      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+    <section className="py-10 sm:py-20" style={{ backgroundColor: "var(--storefront-accent, #1C1C1C)" }}>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-12">
         <div className="text-center mb-12">
           <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-3" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
             Style Guide
@@ -168,7 +167,7 @@ function LookbookSection({ products, slug }: { products: any[]; slug: string }) 
 /* ── Brand Story ── */
 function BrandStory({ store }: { store: StoreData }) {
   return (
-    <section className="mx-auto max-w-7xl px-6 py-20 lg:px-12">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-20 lg:px-12">
       <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
         <div>
           <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-4" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
@@ -192,7 +191,7 @@ function BrandStory({ store }: { store: StoreData }) {
             Learn More <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-        <div className="relative" style={{ aspectRatio: "4/5" }}>
+        <div className="relative aspect-square sm:aspect-[4/5]">
           {(store as any).banner_url ? (
             <img
               src={optimizeImageUrl((store as any).banner_url, 800)}
@@ -204,7 +203,7 @@ function BrandStory({ store }: { store: StoreData }) {
             <div className="h-full w-full" style={{ background: `linear-gradient(135deg, var(--storefront-primary, #C8A96A)15, var(--storefront-accent, #1C1C1C)15)` }} />
           )}
           {/* Decorative border */}
-          <div className="absolute -bottom-3 -right-3 h-full w-full border-2 -z-10" style={{ borderColor: "var(--storefront-primary, #C8A96A)30" }} />
+          <div className="absolute -bottom-3 -right-3 h-full w-full border-2 -z-10 hidden sm:block" style={{ borderColor: "var(--storefront-primary, #C8A96A)30" }} />
         </div>
       </div>
     </section>
@@ -220,7 +219,7 @@ function CustomerReviews() {
   ];
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-20 lg:px-12">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-20 lg:px-12">
       <div className="text-center mb-12">
         <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-3" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
           Testimonials
@@ -236,7 +235,7 @@ function CustomerReviews() {
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {reviews.map((review, idx) => (
-          <div key={idx} className="border p-8 text-center" style={{ borderColor: "var(--storefront-text, #1C1C1C)12" }}>
+          <div key={idx} className="border p-5 sm:p-8 text-center" style={{ borderColor: "var(--storefront-text, #1C1C1C)12" }}>
             <Quote className="mx-auto h-6 w-6 mb-4 opacity-20" style={{ color: "var(--storefront-primary, #C8A96A)" }} />
             <p className="text-sm leading-relaxed italic opacity-70">"{review.text}"</p>
             <div className="mt-6 flex items-center justify-center gap-0.5">
@@ -255,7 +254,7 @@ function CustomerReviews() {
 /* ── Newsletter ── */
 function Newsletter() {
   return (
-    <section className="py-20" style={{ backgroundColor: "var(--storefront-accent, #1C1C1C)" }}>
+    <section className="py-10 sm:py-20" style={{ backgroundColor: "var(--storefront-accent, #1C1C1C)" }}>
       <div className="mx-auto max-w-xl px-6 text-center">
         <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-3" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
           Stay Connected
@@ -269,7 +268,7 @@ function Newsletter() {
         <p className="mt-3 text-sm opacity-50" style={{ color: "var(--storefront-bg, #F8F5F0)" }}>
           Be the first to know about new collections and exclusive offers.
         </p>
-        <div className="mt-8 flex items-center gap-0">
+        <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0">
           <input
             type="email"
             placeholder="Your email address"
@@ -335,7 +334,7 @@ export default function StorefrontHomeV4() {
       {products && <FeaturedCollection products={allProducts} slug={slug!} store={store} />}
 
       {/* Product Grid */}
-      <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-12">
         <div className="text-center mb-12">
           <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-3" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
             Shop

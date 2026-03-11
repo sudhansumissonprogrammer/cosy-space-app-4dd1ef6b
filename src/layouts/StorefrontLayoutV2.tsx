@@ -23,8 +23,8 @@ function CartBadgeV2() {
   const { cartCount, openCart } = useCart();
   return (
     <button onClick={openCart} className="relative">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
-        <ShoppingCart className="h-5 w-5" />
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+        <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
       {cartCount > 0 && (
         <span
@@ -42,8 +42,8 @@ function WishlistBadgeV2({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
     <Link to={storefrontPath(slug, "wishlist")} className="relative">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
-        <Heart className="h-5 w-5" />
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+        <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
       {wishlistCount > 0 && (
         <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
@@ -59,8 +59,8 @@ function AccountBadgeV2({ slug }: { slug: string }) {
   if (loading) return null;
   return (
     <Link to={storefrontPath(slug, user ? "account" : "login")}>
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
-        <User className="h-5 w-5" />
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+        <User className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
     </Link>
   );
@@ -85,8 +85,8 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
         {/* Hamburger */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
-              <Menu className="h-5 w-5" />
+            <button className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+              <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="storefront-font w-[280px] p-0">

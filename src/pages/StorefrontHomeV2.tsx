@@ -53,7 +53,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
   const slide = slides[current];
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ height: "85vh", minHeight: "500px", maxHeight: "800px" }}>
+    <div className="relative w-full overflow-hidden h-[60vh] sm:h-[85vh]" style={{ minHeight: "350px", maxHeight: "800px" }}>
       {/* Slide image / gradient fallback */}
       {slide.image ? (
         <img
@@ -74,9 +74,9 @@ function HeroCarousel({ store }: { store: StoreData }) {
 
       {/* Content */}
       <div className="absolute inset-0 flex items-end">
-        <div className="w-full px-6 pb-20 sm:px-12 sm:pb-24 max-w-6xl mx-auto">
+        <div className="w-full px-4 pb-14 sm:px-12 sm:pb-24 max-w-6xl mx-auto">
           <h1
-            className="text-3xl font-bold text-white sm:text-5xl lg:text-6xl leading-tight drop-shadow-lg"
+            className="text-2xl font-bold text-white sm:text-5xl lg:text-6xl leading-tight drop-shadow-lg"
             style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
           >
             {slide.title}

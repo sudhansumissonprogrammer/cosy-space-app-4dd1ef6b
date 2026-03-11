@@ -18,7 +18,7 @@ function GradientHero({ store }: { store: StoreData }) {
   const floatingProducts = products?.filter((p: any) => p.image_url).slice(0, 3) || [];
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ minHeight: "90vh" }}>
+    <section className="relative w-full overflow-hidden" style={{ minHeight: "70vh" }}>
       {/* Gradient background */}
       <div
         className="absolute inset-0"
@@ -42,7 +42,7 @@ function GradientHero({ store }: { store: StoreData }) {
       />
 
       {/* Content */}
-      <div className="relative mx-auto max-w-7xl px-6 pt-32 pb-20 lg:px-12 lg:pt-40">
+      <div className="relative mx-auto max-w-7xl px-4 pt-24 pb-16 sm:px-6 sm:pt-32 sm:pb-20 lg:px-12 lg:pt-40">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           {/* Left: Text */}
           <div className="animate-fade-in">
@@ -54,7 +54,7 @@ function GradientHero({ store }: { store: StoreData }) {
             </div>
 
             <h1
-              className="text-4xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
+              className="text-3xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
               style={{ fontFamily: "var(--storefront-heading-font, 'Space Grotesk')" }}
             >
               {store.name}
@@ -181,12 +181,12 @@ function BenefitsSection() {
   ];
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-12">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
         {benefits.map((b, idx) => (
           <div
             key={idx}
-            className="group rounded-2xl border border-white/8 bg-white/[0.03] backdrop-blur-sm p-6 text-center transition-all duration-300 hover:bg-white/[0.06] hover:border-white/15 hover:scale-[1.02]"
+            className="group rounded-2xl border border-white/8 bg-white/[0.03] backdrop-blur-sm p-4 sm:p-6 text-center transition-all duration-300 hover:bg-white/[0.06] hover:border-white/15 hover:scale-[1.02]"
           >
             <div
               className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl mb-4 transition-transform duration-300 group-hover:scale-110"
@@ -222,7 +222,7 @@ function TestimonialsSlider() {
   const review = reviews[current];
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-12">
       <div className="text-center mb-10">
         <span
           className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[11px] font-medium mb-4"
@@ -283,9 +283,9 @@ function TestimonialsSlider() {
 /* ── Newsletter ── */
 function GradientNewsletter() {
   return (
-    <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-12">
       <div
-        className="relative overflow-hidden rounded-3xl p-8 md:p-12 text-center"
+        className="relative overflow-hidden rounded-3xl p-6 sm:p-8 md:p-12 text-center"
         style={{
           background: `linear-gradient(135deg, var(--storefront-primary, #6366F1), var(--storefront-accent, #22C55E))`,
         }}
@@ -297,7 +297,7 @@ function GradientNewsletter() {
             Stay in the Loop
           </h2>
           <p className="mt-2 text-sm text-white/70 max-w-md mx-auto">Get exclusive deals, early access, and product drops straight to your inbox.</p>
-          <div className="mt-6 mx-auto max-w-md flex items-center gap-2">
+          <div className="mt-6 mx-auto max-w-md flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <input
               type="email"
               placeholder="your@email.com"
@@ -356,7 +356,7 @@ export default function StorefrontHomeV5() {
       <BenefitsSection />
 
       {/* Products with Category Tabs */}
-      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-12">
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-12">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <span
