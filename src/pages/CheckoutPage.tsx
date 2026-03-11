@@ -35,46 +35,7 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
-function usePaymentStatusPoller() {
-  const pollPaymentStatus = async (
-    razorpayPaymentId: string,
-    storeId: string,
-    orderId: string,
-    onStatusChange: (status: string) => void,
-    maxAttempts = 60
-  ) => {
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    let attempts = 0;
 
-    const poll = async (): Promise<string> => {
-      attempts++;
-      try {
-        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-payment-status`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: anonKey },
-          body: JSON.stringify({ razorpay_payment_id: razorpayPaymentId, store_id: storeId, order_id: orderId }),
-        });
-        const data = await res.json();
-        const status = data.status || "created";
-        onStatusChange(status);
-
-        if (status === "captured" || status === "authorized") return "success";
-        if (status === "failed") return "failed";
-        if (attempts >= maxAttempts) return "timeout";
-
-        await new Promise((r) => setTimeout(r, 3000));
-        return poll();
-      } catch {
-        if (attempts >= maxAttempts) return "timeout";
-        await new Promise((r) => setTimeout(r, 3000));
-        return poll();
-      }
-    };
-    return poll();
-  };
-  return { pollPaymentStatus };
-}
 
 export default function CheckoutPage() {
   const store = useOutletContext<StoreData>();
