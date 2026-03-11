@@ -93,30 +93,6 @@ const THEMES = [
   { id: "theme-3", name: "Pastel Soft", description: "Soft pastels with rounded elements", available: false },
 ];
 
-function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-xs font-medium">{label}</Label>
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <input
-            type="color"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="h-9 w-9 cursor-pointer rounded-md border border-input p-0.5"
-          />
-        </div>
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-24 rounded-md border border-input bg-background px-2 text-xs font-mono"
-        />
-      </div>
-    </div>
-  );
-}
-
 export default function StoreThemeSettings() {
   const { storeId } = useParams<{ storeId: string }>();
   const queryClient = useQueryClient();
