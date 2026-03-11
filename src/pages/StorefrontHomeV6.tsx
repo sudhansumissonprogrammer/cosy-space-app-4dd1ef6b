@@ -23,7 +23,7 @@ function HeroSection({ store }: { store: StoreData }) {
         {/* Left text */}
         <div>
           <h1
-            className="text-4xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
+            className="text-3xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
             style={{ fontFamily: "var(--storefront-heading-font, 'Poppins')", color: "var(--storefront-text, #1e293b)" }}
           >
             {store.name}
