@@ -154,174 +154,458 @@ function isLightColor(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
+/* ── Types for preview ── */
+interface FakeProduct {
+  id: number;
+  name: string;
+  price: string;
+  priceNum: number;
+  oldPrice: string | null;
+  discount: string | null;
+  rating: number;
+  badge: string | null;
+}
+
+const FAKE_PRODUCTS: FakeProduct[] = [
+  { id: 0, name: "Premium Leather Handbag", price: "₹2,499", priceNum: 2499, oldPrice: "₹3,999", discount: "38% off", rating: 4.7, badge: "Trending" },
+  { id: 1, name: "Classic Tote Collection", price: "₹1,899", priceNum: 1899, oldPrice: null, discount: null, rating: 4.5, badge: null },
+  { id: 2, name: "Designer Clutch Set", price: "₹1,299", priceNum: 1299, oldPrice: "₹1,999", discount: "35% off", rating: 4.8, badge: "Best Seller" },
+  { id: 3, name: "Evening Sling Bag", price: "₹999", priceNum: 999, oldPrice: null, discount: null, rating: 4.3, badge: null },
+];
+
+const FAKE_CATEGORIES = ["Handbags", "Totes", "Clutches", "Slings"];
+
+type PreviewScreen = "home" | "product" | "cart";
+
 /* ── Full Storefront Preview Component ── */
 function FullStorefrontPreview({ config, storeName }: { config: ThemeConfig; storeName: string }) {
   const primaryLight = lightenColor(config.primary_color);
   const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
   const btnRadius = config.button_style === "pill" ? "9999px" : config.button_style === "square" ? "0px" : "0.5rem";
 
-  const fakeProducts = [
-    { name: "Premium Leather Handbag", price: "₹2,499", oldPrice: "₹3,999", discount: "38% off", rating: 4.7 },
-    { name: "Classic Tote Collection", price: "₹1,899", oldPrice: null, discount: null, rating: 4.5 },
-    { name: "Designer Clutch Set", price: "₹1,299", oldPrice: "₹1,999", discount: "35% off", rating: 4.8 },
-    { name: "Evening Sling Bag", price: "₹999", oldPrice: null, discount: null, rating: 4.3 },
-  ];
+  const [screen, setScreen] = useState<PreviewScreen>("home");
+  const [selectedProduct, setSelectedProduct] = useState<FakeProduct | null>(null);
+  const [cartItems, setCartItems] = useState<{ product: FakeProduct; qty: number }[]>([]);
+  const [showCart, setShowCart] = useState(false);
 
-  const fakeCategories = ["Handbags", "Totes", "Clutches", "Slings"];
+  const cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
+  const cartTotal = cartItems.reduce((s, i) => s + i.product.priceNum * i.qty, 0);
+
+  const addToCart = useCallback((product: FakeProduct) => {
+    setCartItems((prev) => {
+      const existing = prev.find((i) => i.product.id === product.id);
+      if (existing) return prev.map((i) => i.product.id === product.id ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, { product, qty: 1 }];
+    });
+    setShowCart(true);
+  }, []);
+
+  const openProduct = (product: FakeProduct) => {
+    setSelectedProduct(product);
+    setScreen("product");
+  };
+
+  const goHome = () => {
+    setScreen("home");
+    setSelectedProduct(null);
+  };
+
+  /* ── Shared Navbar ── */
+  const Navbar = ({ showBack = false }: { showBack?: boolean }) => (
+    <div className="sticky top-0 z-10 border-b px-3 py-2 flex items-center gap-2" style={{ backgroundColor: config.background_color + "f5", backdropFilter: "blur(8px)" }}>
+      {showBack ? (
+        <button onClick={goHome} className="flex items-center justify-center h-7 w-7 rounded-lg" style={{ color: config.text_color }}>
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+      ) : (
+        <Menu className="h-4 w-4" style={{ color: config.text_color }} />
+      )}
+      <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: config.primary_color }}>
+        <Store className="h-3 w-3" style={{ color: btnText }} />
+      </div>
+      <span className="text-xs font-bold truncate" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</span>
+      <div className="flex-1" />
+      <div className="flex items-center gap-1.5">
+        <Heart className="h-3.5 w-3.5" style={{ color: config.text_color + "99" }} />
+        <button onClick={() => setShowCart(true)} className="relative">
+          <ShoppingCart className="h-3.5 w-3.5" style={{ color: config.text_color }} />
+          {cartCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>{cartCount}</span>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ── Home Screen ── */
+  const HomeScreen = () => (
+    <>
+      {/* Search */}
+      <div className="border-b px-3 py-1.5" style={{ backgroundColor: config.background_color }}>
+        <div className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5" style={{ borderColor: config.text_color + "20" }}>
+          <Search className="h-3 w-3" style={{ color: config.text_color + "60" }} />
+          <span className="text-[10px]" style={{ color: config.text_color + "50", fontFamily: config.heading_font }}>Search products...</span>
+        </div>
+      </div>
+
+      {/* Categories */}
+      <div className="border-b px-3 py-2.5 flex gap-3 overflow-hidden" style={{ backgroundColor: config.background_color }}>
+        {FAKE_CATEGORIES.map((cat) => (
+          <div key={cat} className="flex flex-col items-center gap-1 flex-shrink-0">
+            <div className="h-9 w-9 rounded-full border-2 flex items-center justify-center" style={{ borderColor: config.primary_color + "50", backgroundColor: config.primary_color + "10" }}>
+              <Tag className="h-3.5 w-3.5" style={{ color: config.primary_color }} />
+            </div>
+            <span className="text-[7px] font-semibold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{cat}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Hero */}
+      <div className="mx-3 mt-2.5 rounded-xl overflow-hidden" style={{ background: `linear-gradient(135deg, ${config.primary_color}22, ${config.accent_color}22)` }}>
+        <div className="px-4 py-6 text-center">
+          <h2 className="text-base font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>New Collection</h2>
+          <p className="mt-0.5 text-[10px]" style={{ color: config.text_color + "88", fontFamily: config.body_font }}>Discover our latest arrivals</p>
+          <button
+            className="mt-2.5 px-4 py-1.5 text-[9px] font-bold uppercase tracking-wider"
+            style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${primaryLight}, ${config.primary_color})`, color: btnText, borderRadius: btnRadius }}
+          >
+            Shop Now
+          </button>
+        </div>
+      </div>
+
+      {/* Products */}
+      <div className="px-3 py-3">
+        <h3 className="mb-2 text-xs font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>All Products</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {FAKE_PRODUCTS.map((product) => (
+            <div
+              key={product.id}
+              className="overflow-hidden rounded-lg border cursor-pointer transition-transform active:scale-[0.97]"
+              style={{ borderColor: config.text_color + "10", backgroundColor: config.background_color }}
+              onClick={() => openProduct(product)}
+            >
+              <div className="relative" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
+                <div className="flex h-full w-full items-center justify-center">
+                  <Package className="h-6 w-6" style={{ color: config.text_color + "20" }} />
+                </div>
+                {product.badge && (
+                  <span className="absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[6px] font-bold" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
+                    {product.badge}
+                  </span>
+                )}
+              </div>
+              <div className="px-1.5 pb-1.5 pt-1 space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[6px] font-bold uppercase tracking-wider" style={{ color: config.text_color + "70" }}>TOP RATED</span>
+                  <div className="flex items-center gap-0.5">
+                    <Star className="h-2 w-2 fill-current" style={{ color: config.primary_color }} />
+                    <span className="text-[7px] font-bold" style={{ color: config.text_color }}>{product.rating}</span>
+                  </div>
+                </div>
+                <p className="text-[9px] font-bold leading-tight line-clamp-2" style={{ color: config.text_color, fontFamily: config.heading_font }}>{product.name}</p>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-extrabold" style={{ color: config.text_color }}>{product.price}</span>
+                  {product.oldPrice && (
+                    <>
+                      <span className="text-[7px] line-through" style={{ color: config.text_color + "60" }}>{product.oldPrice}</span>
+                      <span className="rounded-full px-1 text-[6px] font-bold" style={{ backgroundColor: config.primary_color + "15", color: config.primary_color }}>{product.discount}</span>
+                    </>
+                  )}
+                </div>
+                <button
+                  className="flex h-5 w-full items-center justify-center gap-0.5 text-[7px] font-extrabold uppercase tracking-wider"
+                  style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${primaryLight}, ${config.primary_color})`, color: btnText, borderRadius: btnRadius }}
+                  onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                >
+                  <ShoppingCart className="h-2 w-2" />
+                  ADD TO CART
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="px-3 py-3 border-t" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="flex h-5 w-5 items-center justify-center rounded" style={{ backgroundColor: config.primary_color }}>
+                <Store className="h-2.5 w-2.5" style={{ color: btnText }} />
+              </div>
+              <span className="text-[9px] font-bold">{storeName}</span>
+            </div>
+            <p className="text-[7px] opacity-60">Premium quality products.</p>
+          </div>
+          <div>
+            <h4 className="text-[8px] font-bold uppercase tracking-wider mb-1" style={{ color: config.primary_color }}>Quick Links</h4>
+            <div className="space-y-0.5">
+              {["Home", "Contact", "Returns", "Terms"].map((link) => (
+                <p key={link} className="text-[7px] opacity-60">{link}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="mt-2 border-t pt-1.5 text-center" style={{ borderColor: config.background_color + "15" }}>
+          <p className="text-[6px] opacity-40">© 2026 {storeName}. All rights reserved.</p>
+        </div>
+      </div>
+    </>
+  );
+
+  /* ── Product Detail Screen ── */
+  const ProductScreen = () => {
+    if (!selectedProduct) return null;
+    const p = selectedProduct;
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto">
+          {/* Product Image */}
+          <div className="relative" style={{ aspectRatio: "1/1", backgroundColor: config.primary_color + "08" }}>
+            <div className="flex h-full w-full items-center justify-center">
+              <Package className="h-12 w-12" style={{ color: config.text_color + "20" }} />
+            </div>
+            {p.badge && (
+              <span className="absolute left-3 top-3 rounded-full px-2 py-0.5 text-[7px] font-bold" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
+                {p.badge}
+              </span>
+            )}
+            <button className="absolute right-3 top-3 h-7 w-7 rounded-full flex items-center justify-center" style={{ backgroundColor: config.background_color + "cc" }}>
+              <Heart className="h-3.5 w-3.5" style={{ color: config.text_color + "80" }} />
+            </button>
+            {/* Dot indicators */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-1.5 rounded-full" style={{ width: i === 0 ? "12px" : "6px", backgroundColor: i === 0 ? config.primary_color : config.text_color + "30" }} />
+              ))}
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="px-3 py-3 space-y-2.5">
+            {/* Rating */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-2.5 w-2.5 fill-current" style={{ color: i < Math.floor(p.rating) ? config.primary_color : config.text_color + "20" }} />
+                ))}
+                <span className="ml-1 text-[9px] font-bold" style={{ color: config.text_color }}>{p.rating}</span>
+              </div>
+              <span className="text-[8px]" style={{ color: config.text_color + "50" }}>|</span>
+              <span className="text-[8px] font-semibold flex items-center gap-0.5" style={{ color: config.primary_color }}>
+                <Flame className="h-2.5 w-2.5" /> 52+ sold
+              </span>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-sm font-bold leading-snug" style={{ color: config.text_color, fontFamily: config.heading_font }}>{p.name}</h1>
+
+            {/* Price Block */}
+            <div className="rounded-lg p-2.5" style={{ background: `linear-gradient(135deg, ${config.primary_color}11, ${config.primary_color}22)`, border: `1px solid ${config.primary_color}20` }}>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-lg font-extrabold" style={{ color: config.text_color }}>{p.price}</span>
+                {p.oldPrice && (
+                  <>
+                    <span className="text-[10px] line-through" style={{ color: config.text_color + "60" }}>{p.oldPrice}</span>
+                    <span className="rounded-full px-1.5 py-0.5 text-[7px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>{p.discount}</span>
+                  </>
+                )}
+              </div>
+              <p className="text-[7px] mt-0.5" style={{ color: config.text_color + "70" }}>Inclusive of all taxes</p>
+            </div>
+
+            {/* Live viewers */}
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: config.primary_color }} />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: config.primary_color }} />
+              </span>
+              <span className="text-[8px]" style={{ color: config.text_color + "80" }}>
+                <Eye className="inline h-2.5 w-2.5 mr-0.5" />
+                <strong style={{ color: config.text_color }}>8 people</strong> viewing now
+              </span>
+            </div>
+
+            {/* Variants */}
+            <div className="space-y-1.5">
+              <p className="text-[8px] font-bold uppercase tracking-wider" style={{ color: config.text_color + "70" }}>Select Size</p>
+              <div className="flex gap-1.5">
+                {["S", "M", "L", "XL"].map((size, i) => (
+                  <button
+                    key={size}
+                    className="h-7 w-9 rounded-lg border-2 text-[8px] font-bold transition-all"
+                    style={{
+                      borderColor: i === 1 ? config.primary_color : config.text_color + "20",
+                      backgroundColor: i === 1 ? config.primary_color + "15" : "transparent",
+                      color: config.text_color,
+                    }}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Trust badges */}
+            <div className="rounded-lg border p-2 space-y-1.5" style={{ borderColor: config.text_color + "15" }}>
+              <div className="flex items-center gap-2">
+                <Truck className="h-3 w-3" style={{ color: config.primary_color }} />
+                <div>
+                  <p className="text-[8px] font-bold" style={{ color: config.text_color }}>Free Delivery</p>
+                  <p className="text-[6px]" style={{ color: config.text_color + "60" }}>Get it by Mon, Mar 16</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Shield className="h-3 w-3" style={{ color: config.primary_color }} />
+                <p className="text-[8px] font-bold" style={{ color: config.text_color }}>Secure Checkout</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky bottom CTA */}
+        <div className="border-t px-3 py-2 flex gap-2" style={{ backgroundColor: config.background_color, borderColor: config.text_color + "15" }}>
+          <button
+            className="flex-1 h-9 flex items-center justify-center gap-1 text-[8px] font-extrabold uppercase tracking-wider"
+            style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${primaryLight}, ${config.primary_color})`, color: btnText, borderRadius: btnRadius }}
+            onClick={() => addToCart(p)}
+          >
+            <ShoppingCart className="h-3 w-3" /> Add to Cart
+          </button>
+          <button
+            className="flex-1 h-9 flex items-center justify-center gap-1 text-[8px] font-extrabold uppercase tracking-wider"
+            style={{ backgroundColor: config.accent_color, color: config.background_color, borderRadius: btnRadius }}
+          >
+            <ShoppingBag className="h-3 w-3" /> Buy Now
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Side Cart Overlay ── */
+  const CartOverlay = () => (
+    <div className="absolute inset-0 z-20 flex">
+      {/* Backdrop */}
+      <div className="flex-1 bg-black/40" onClick={() => setShowCart(false)} />
+      {/* Cart drawer */}
+      <div className="w-[80%] flex flex-col" style={{ backgroundColor: config.background_color }}>
+        {/* Header */}
+        <div className="border-b px-3 py-2.5 flex items-center justify-between" style={{ borderColor: config.text_color + "15" }}>
+          <div className="flex items-center gap-1.5">
+            <ShoppingCart className="h-3.5 w-3.5" style={{ color: config.text_color }} />
+            <span className="text-[10px] font-bold" style={{ color: config.text_color }}>Cart ({cartCount})</span>
+          </div>
+          <button onClick={() => setShowCart(false)}>
+            <X className="h-3.5 w-3.5" style={{ color: config.text_color + "80" }} />
+          </button>
+        </div>
+
+        {/* Items */}
+        {cartItems.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-2">
+            <ShoppingCart className="h-8 w-8" style={{ color: config.text_color + "20" }} />
+            <p className="text-[10px] font-semibold" style={{ color: config.text_color }}>Your cart is empty</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+              {cartItems.map((item) => (
+                <div key={item.product.id} className="flex gap-2 rounded-lg border p-2" style={{ borderColor: config.text_color + "10" }}>
+                  <div className="h-12 w-12 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: config.primary_color + "08" }}>
+                    <Package className="h-4 w-4" style={{ color: config.text_color + "25" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[8px] font-bold line-clamp-1" style={{ color: config.text_color, fontFamily: config.heading_font }}>{item.product.name}</p>
+                    <p className="text-[9px] font-extrabold mt-0.5" style={{ color: config.text_color }}>₹{(item.product.priceNum * item.qty).toLocaleString()}</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <div className="flex items-center rounded border" style={{ borderColor: config.text_color + "20" }}>
+                        <button
+                          className="h-4 w-5 flex items-center justify-center text-[8px]"
+                          onClick={() => setCartItems((prev) => prev.map((i) => i.product.id === item.product.id ? { ...i, qty: Math.max(1, i.qty - 1) } : i))}
+                        >
+                          <Minus className="h-2 w-2" style={{ color: config.text_color }} />
+                        </button>
+                        <span className="w-4 text-center text-[8px] font-bold" style={{ color: config.text_color }}>{item.qty}</span>
+                        <button
+                          className="h-4 w-5 flex items-center justify-center text-[8px]"
+                          onClick={() => setCartItems((prev) => prev.map((i) => i.product.id === item.product.id ? { ...i, qty: i.qty + 1 } : i))}
+                        >
+                          <Plus className="h-2 w-2" style={{ color: config.text_color }} />
+                        </button>
+                      </div>
+                      <button
+                        className="ml-auto"
+                        onClick={() => setCartItems((prev) => prev.filter((i) => i.product.id !== item.product.id))}
+                      >
+                        <X className="h-2.5 w-2.5" style={{ color: "#ef4444" }} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Cart footer */}
+            <div className="border-t px-3 py-2.5 space-y-2" style={{ borderColor: config.text_color + "15" }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-medium" style={{ color: config.text_color + "80" }}>Subtotal</span>
+                <span className="text-[11px] font-bold" style={{ color: config.text_color }}>₹{cartTotal.toLocaleString()}</span>
+              </div>
+              <button
+                className="flex h-8 w-full items-center justify-center gap-1 text-[8px] font-bold uppercase tracking-wider"
+                style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${primaryLight}, ${config.primary_color})`, color: btnText, borderRadius: btnRadius }}
+              >
+                <ShoppingBag className="h-3 w-3" /> Proceed to Checkout
+              </button>
+              <button
+                className="w-full text-center text-[8px] font-medium py-1"
+                style={{ color: config.text_color + "80" }}
+                onClick={() => setShowCart(false)}
+              >
+                Continue Shopping
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex justify-center">
-      {/* Mobile Phone Frame */}
       <div className="relative mx-auto" style={{ width: "375px" }}>
-        {/* Phone bezel */}
         <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
           {/* Notch */}
           <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
             <div className="h-2 w-2 rounded-full bg-gray-600" />
           </div>
 
-          {/* Screen content */}
-          <div className="bg-white" style={{ height: "680px", overflowY: "auto", backgroundColor: config.background_color }}>
-            {/* Marquee */}
-            <div
-              className="px-3 py-1.5 text-center text-[9px] font-medium tracking-wide"
-              style={{ background: config.marquee_gradient, color: config.text_color, fontVariant: "small-caps" }}
-            >
-              🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payment
+          {/* Screen */}
+          <div className="relative" style={{ height: "680px", backgroundColor: config.background_color }}>
+            {/* Main content area */}
+            <div className="h-full overflow-y-auto">
+              {/* Marquee */}
+              <div
+                className="px-3 py-1.5 text-center text-[9px] font-medium tracking-wide"
+                style={{ background: config.marquee_gradient, color: config.text_color, fontVariant: "small-caps" }}
+              >
+                🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payment
+              </div>
+
+              <Navbar showBack={screen === "product"} />
+
+              {screen === "home" && <HomeScreen />}
+              {screen === "product" && <ProductScreen />}
             </div>
 
-            {/* Navbar */}
-            <div className="border-b px-3 py-2 flex items-center gap-2" style={{ backgroundColor: config.background_color + "ee" }}>
-              <Menu className="h-4 w-4" style={{ color: config.text_color }} />
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: config.primary_color }}>
-                <Store className="h-3 w-3" style={{ color: btnText }} />
-              </div>
-              <span className="text-xs font-bold truncate" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</span>
-              <div className="flex-1" />
-              <div className="flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5" style={{ color: config.text_color + "99" }} />
-                <Heart className="h-3.5 w-3.5" style={{ color: config.text_color + "99" }} />
-                <div className="relative">
-                  <ShoppingCart className="h-3.5 w-3.5" style={{ color: config.text_color }} />
-                  <span className="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>2</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="border-b px-3 py-1.5" style={{ backgroundColor: config.background_color }}>
-              <div className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5" style={{ borderColor: config.text_color + "20" }}>
-                <Search className="h-3 w-3" style={{ color: config.text_color + "60" }} />
-                <span className="text-[10px]" style={{ color: config.text_color + "50", fontFamily: config.heading_font }}>Search products...</span>
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div className="border-b px-3 py-2.5 flex gap-3 overflow-hidden" style={{ backgroundColor: config.background_color }}>
-              {fakeCategories.map((cat) => (
-                <div key={cat} className="flex flex-col items-center gap-1 flex-shrink-0">
-                  <div className="h-9 w-9 rounded-full border-2 flex items-center justify-center" style={{ borderColor: config.primary_color + "50", backgroundColor: config.primary_color + "10" }}>
-                    <Tag className="h-3.5 w-3.5" style={{ color: config.primary_color }} />
-                  </div>
-                  <span className="text-[7px] font-semibold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{cat}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Hero Banner */}
-            <div className="mx-3 mt-2.5 rounded-xl overflow-hidden" style={{ background: `linear-gradient(135deg, ${config.primary_color}22, ${config.accent_color}22)` }}>
-              <div className="px-4 py-6 text-center">
-                <h2 className="text-base font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>New Collection</h2>
-                <p className="mt-0.5 text-[10px]" style={{ color: config.text_color + "88", fontFamily: config.body_font }}>Discover our latest arrivals</p>
-                <button
-                  className="mt-2.5 px-4 py-1.5 text-[9px] font-bold uppercase tracking-wider"
-                  style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${primaryLight}, ${config.primary_color})`, color: btnText, borderRadius: btnRadius }}
-                >
-                  Shop Now
-                </button>
-              </div>
-            </div>
-
-            {/* Product Grid */}
-            <div className="px-3 py-3">
-              <h3 className="mb-2 text-xs font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>All Products</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {fakeProducts.map((product, i) => (
-                  <div key={i} className="overflow-hidden rounded-lg border" style={{ borderColor: config.text_color + "10", backgroundColor: config.background_color }}>
-                    <div className="relative" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
-                      <div className="flex h-full w-full items-center justify-center">
-                        <Package className="h-6 w-6" style={{ color: config.text_color + "20" }} />
-                      </div>
-                      {i === 0 && (
-                        <span className="absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[6px] font-bold" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
-                          Trending
-                        </span>
-                      )}
-                      {i === 2 && (
-                        <span className="absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[6px] font-bold" style={{ backgroundColor: config.primary_color + "20", color: config.primary_color, border: `1px solid ${config.primary_color}30` }}>
-                          Best Seller
-                        </span>
-                      )}
-                    </div>
-                    <div className="px-1.5 pb-1.5 pt-1 space-y-0.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[6px] font-bold uppercase tracking-wider" style={{ color: config.text_color + "70" }}>TOP RATED</span>
-                        <div className="flex items-center gap-0.5">
-                          <Star className="h-2 w-2 fill-current" style={{ color: config.primary_color }} />
-                          <span className="text-[7px] font-bold" style={{ color: config.text_color }}>{product.rating}</span>
-                        </div>
-                      </div>
-                      <p className="text-[9px] font-bold leading-tight line-clamp-2" style={{ color: config.text_color, fontFamily: config.heading_font }}>{product.name}</p>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-extrabold" style={{ color: config.text_color }}>{product.price}</span>
-                        {product.oldPrice && (
-                          <>
-                            <span className="text-[7px] line-through" style={{ color: config.text_color + "60" }}>{product.oldPrice}</span>
-                            <span className="rounded-full px-1 text-[6px] font-bold" style={{ backgroundColor: config.primary_color + "15", color: config.primary_color }}>{product.discount}</span>
-                          </>
-                        )}
-                      </div>
-                      <button
-                        className="flex h-5 w-full items-center justify-center gap-0.5 text-[7px] font-extrabold uppercase tracking-wider"
-                        style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${primaryLight}, ${config.primary_color})`, color: btnText, borderRadius: btnRadius }}
-                      >
-                        <ShoppingCart className="h-2 w-2" />
-                        ADD TO CART
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-3 py-3 border-t" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <div className="flex h-5 w-5 items-center justify-center rounded" style={{ backgroundColor: config.primary_color }}>
-                      <Store className="h-2.5 w-2.5" style={{ color: btnText }} />
-                    </div>
-                    <span className="text-[9px] font-bold">{storeName}</span>
-                  </div>
-                  <p className="text-[7px] opacity-60">Premium quality products.</p>
-                </div>
-                <div>
-                  <h4 className="text-[8px] font-bold uppercase tracking-wider mb-1" style={{ color: config.primary_color }}>Quick Links</h4>
-                  <div className="space-y-0.5">
-                    {["Home", "Contact", "Returns", "Terms"].map((link) => (
-                      <p key={link} className="text-[7px] opacity-60">{link}</p>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-2 border-t pt-1.5 text-center" style={{ borderColor: config.background_color + "15" }}>
-                <p className="text-[6px] opacity-40">© 2026 {storeName}. All rights reserved.</p>
-              </div>
-            </div>
+            {/* Cart Overlay */}
+            {showCart && <CartOverlay />}
           </div>
 
-          {/* Bottom bar (home indicator) */}
+          {/* Home indicator */}
           <div className="flex h-5 items-center justify-center bg-gray-800">
             <div className="h-1 w-24 rounded-full bg-gray-600" />
           </div>
