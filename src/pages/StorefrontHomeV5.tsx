@@ -283,7 +283,7 @@ function TestimonialsSlider() {
 /* ── Newsletter ── */
 function GradientNewsletter() {
   return (
-    <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-12">
       <div
         className="relative overflow-hidden rounded-3xl p-8 md:p-12 text-center"
         style={{
