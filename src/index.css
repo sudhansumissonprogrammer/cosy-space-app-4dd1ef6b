@@ -150,6 +150,10 @@
   .animate-marquee {
     animation: marquee 20s linear infinite;
   }
+
+  .safe-area-bottom {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
 }
 
 @keyframes marquee {
