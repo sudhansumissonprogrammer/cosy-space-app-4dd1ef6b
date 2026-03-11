@@ -645,7 +645,7 @@ export default function ProductDetail() {
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md p-3 sm:hidden safe-area-bottom">
           <div className="flex items-center gap-3">
             <div className="shrink-0 min-w-0">
-              <p className="text-lg font-extrabold text-foreground leading-tight">
+              <p className="text-sm font-extrabold text-foreground leading-tight">
                 {currency} {(variantPrice * quantity).toFixed(2)}
               </p>
               {hasDiscount && (
