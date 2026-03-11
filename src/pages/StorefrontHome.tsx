@@ -144,7 +144,7 @@ export default function StorefrontHome() {
 
       <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
 
-      <div className="mx-auto max-w-6xl px-4 pt-4 pb-8 space-y-5">
+      <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
         {/* Best Selling Section */}
         {bestSellingProducts.length > 0 && (
           (store as any).best_selling_carousel ? (
@@ -158,7 +158,7 @@ export default function StorefrontHome() {
                 </h2>
                 <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {bestSellingProducts.map((product, idx) => (
                   <StorefrontProductCard
                     key={product.id}
@@ -219,13 +219,13 @@ export default function StorefrontHome() {
             </div>
           </div>
           {isLoading || !products ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : nonBestSellingProducts.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {nonBestSellingProducts.map((product, idx) => (
                 <StorefrontProductCard
                   key={product.id}
