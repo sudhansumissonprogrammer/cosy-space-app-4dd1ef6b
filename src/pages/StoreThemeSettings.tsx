@@ -1260,7 +1260,9 @@ function AppStylePreview({ config, storeName, products: propProducts, categories
   );
 }
 /* ── Luxury Preview (Theme 4) ── */
-function LuxuryPreview({ config, storeName }: { config: ThemeConfig; storeName: string }) {
+function LuxuryPreview({ config, storeName, products: propProducts, categories: propCategories, isDesktop }: PreviewProps) {
+  const products = propProducts && propProducts.length > 0 ? propProducts : DEFAULT_PRODUCTS;
+  const categories = propCategories && propCategories.length > 0 ? propCategories : DEFAULT_CATEGORIES;
   const primaryLight = lightenColor(config.primary_color);
   const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
 
