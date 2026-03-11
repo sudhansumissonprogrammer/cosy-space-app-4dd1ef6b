@@ -280,9 +280,9 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   useFacebookPixel((store as any)?.facebook_pixel_id);
 
   useMetaTags({
-    title: store ? `${store.name} — Store` : undefined,
-    description: store?.description || undefined,
-    ogImage: store?.logo_url || undefined,
+    title: (store as any)?.meta_title || (store ? `${store.name} — Store` : undefined),
+    description: (store as any)?.meta_description || store?.description || undefined,
+    ogImage: (store as any)?.og_image_url || store?.logo_url || undefined,
     storeSlug: store?.slug,
   });
 
