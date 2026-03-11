@@ -1570,7 +1570,7 @@ function RelatedProducts({
 }
 
 /* ── Product Detail Skeleton ── */
-function ProductDetailSkeleton() {
+export function ProductDetailSkeleton() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <Skeleton className="mb-4 h-4 w-48" />
