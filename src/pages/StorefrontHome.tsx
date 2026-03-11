@@ -95,6 +95,7 @@ export default function StorefrontHome() {
     },
     enabled: !!store.id,
     staleTime: 5 * 60 * 1000,
+    initialData: prefetchedBulk?.categories,
   });
 
   const priceRanges: { label: string; range: [number, number] }[] = [
