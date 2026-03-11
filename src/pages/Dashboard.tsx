@@ -32,16 +32,14 @@ export default function Dashboard() {
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["dashboard-stats", ids],
+    queryKey: ["dashboard-stats", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const [productsRes, ordersRes, customersRes, viewsRes] = await Promise.all([
-        supabase.from("products").select("id", { count: "exact", head: true }).in("store_id", ids),
-        supabase.from("orders").select("id", { count: "exact", head: true }).in("store_id", ids),
-        supabase.from("customers").select("id", { count: "exact", head: true }).in("store_id", ids),
-        ids.length > 0
-          ? supabase.rpc("get_store_views", { _store_ids: ids })
-          : Promise.resolve({ data: [] }),
+        supabase.from("products").select("id", { count: "exact", head: true }).eq("store_id", storeId!),
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("store_id", storeId!),
+        supabase.from("customers").select("id", { count: "exact", head: true }).eq("store_id", storeId!),
+        supabase.rpc("get_store_views", { _store_ids: [storeId!] }),
       ]);
 
       const totalViews = (viewsRes.data as any[])?.reduce(
@@ -55,24 +53,24 @@ export default function Dashboard() {
         total_views: totalViews,
       };
     },
-    enabled: ids.length > 0,
+    enabled: !!storeId,
   });
 
   const { data: ordersData } = useQuery({
-    queryKey: ["dashboard-orders-analytics", ids],
+    queryKey: ["dashboard-orders-analytics", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
         .select("created_at, total, status, order_items(product_name, quantity, total)")
-        .in("store_id", ids)
+        .eq("store_id", storeId!)
         .neq("status", "cancelled")
         .order("created_at", { ascending: true })
         .limit(500);
       if (error) throw error;
       return data as any[];
     },
-    enabled: ids.length > 0,
+    enabled: !!storeId,
   });
 
   const ordersByMonth = (() => {
