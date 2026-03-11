@@ -204,7 +204,7 @@ function CleanHeader({ store }: { store: StoreData }) {
         <div className="flex-1 lg:hidden" />
 
         {/* Right icons */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-3 sm:gap-5">
           <AccountBadgeV6 slug={store.slug} />
           <WishlistBadgeV6 slug={store.slug} />
           <CartBadgeV6 />
