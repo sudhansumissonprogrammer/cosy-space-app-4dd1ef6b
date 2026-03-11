@@ -666,21 +666,78 @@ export default function CheckoutPage() {
               </div>
             </button>
           )}
+
           {hasRazorpay && (
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("razorpay")}
-              className={`flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-            >
-              <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-                {paymentMethod === "razorpay" && <Check className="h-3 w-3 text-primary-foreground" />}
-              </div>
-              <CreditCard className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Pay Online</p>
-                <p className="text-xs text-muted-foreground">Cards, UPI, Net Banking, Wallets</p>
-              </div>
-            </button>
+            <>
+              {/* UPI */}
+              <button
+                type="button"
+                onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("upi"); }}
+                className={`flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "razorpay" && razorpayMethod === "upi" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+              >
+                <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" && razorpayMethod === "upi" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                  {paymentMethod === "razorpay" && razorpayMethod === "upi" && <Check className="h-3 w-3 text-primary-foreground" />}
+                </div>
+                <Smartphone className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">UPI</p>
+                  <p className="text-xs text-muted-foreground">GPay, PhonePe, Paytm & more</p>
+                </div>
+                <div className="flex items-center gap-1 opacity-60">
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">GPay</span>
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">PhonePe</span>
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">Paytm</span>
+                </div>
+              </button>
+
+              {/* Cards */}
+              <button
+                type="button"
+                onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("card"); }}
+                className={`flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "razorpay" && razorpayMethod === "card" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+              >
+                <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" && razorpayMethod === "card" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                  {paymentMethod === "razorpay" && razorpayMethod === "card" && <Check className="h-3 w-3 text-primary-foreground" />}
+                </div>
+                <CreditCard className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Credit / Debit Card</p>
+                  <p className="text-xs text-muted-foreground">Visa, Mastercard, RuPay</p>
+                </div>
+              </button>
+
+              {/* Net Banking */}
+              <button
+                type="button"
+                onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("netbanking"); }}
+                className={`flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "razorpay" && razorpayMethod === "netbanking" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+              >
+                <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" && razorpayMethod === "netbanking" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                  {paymentMethod === "razorpay" && razorpayMethod === "netbanking" && <Check className="h-3 w-3 text-primary-foreground" />}
+                </div>
+                <Wallet className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Net Banking</p>
+                  <p className="text-xs text-muted-foreground">All major banks supported</p>
+                </div>
+              </button>
+
+              {/* Wallets */}
+              <button
+                type="button"
+                onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("wallet"); }}
+                className={`flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "razorpay" && razorpayMethod === "wallet" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+              >
+                <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" && razorpayMethod === "wallet" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                  {paymentMethod === "razorpay" && razorpayMethod === "wallet" && <Check className="h-3 w-3 text-primary-foreground" />}
+                </div>
+                <Smartphone className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Wallets</p>
+                  <p className="text-xs text-muted-foreground">Paytm, Mobikwik, Freecharge</p>
+                </div>
+              </button>
+            </>
           )}
         </div>
       </div>
