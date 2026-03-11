@@ -304,6 +304,51 @@ const COLOR_COMBINATIONS = [
     background: "#0F172A",
     marquee: "linear-gradient(90deg, #8B5CF6, #EC4899, #F97316)",
   },
+  {
+    id: "pro-blue-white",
+    name: "Blue & White",
+    primary: "#2563EB",
+    accent: "#1e293b",
+    text: "#1e293b",
+    background: "#F8FAFC",
+    marquee: "linear-gradient(90deg, #2563EB, #60a5fa, #2563EB)",
+  },
+  {
+    id: "pro-black-white",
+    name: "Black & White",
+    primary: "#111111",
+    accent: "#111111",
+    text: "#111111",
+    background: "#FFFFFF",
+    marquee: "linear-gradient(90deg, #111111, #555555, #111111)",
+  },
+  {
+    id: "pro-purple-white",
+    name: "Purple & White",
+    primary: "#7C3AED",
+    accent: "#1e1b4b",
+    text: "#1e1b4b",
+    background: "#FAF5FF",
+    marquee: "linear-gradient(90deg, #7C3AED, #a78bfa, #7C3AED)",
+  },
+  {
+    id: "pro-green-white",
+    name: "Green & White",
+    primary: "#059669",
+    accent: "#064E3B",
+    text: "#064E3B",
+    background: "#F0FDF4",
+    marquee: "linear-gradient(90deg, #059669, #34d399, #059669)",
+  },
+  {
+    id: "pro-navy-gray",
+    name: "Navy & Light Gray",
+    primary: "#1E40AF",
+    accent: "#0F172A",
+    text: "#0F172A",
+    background: "#F1F5F9",
+    marquee: "linear-gradient(90deg, #1E40AF, #3b82f6, #1E40AF)",
+  },
 ];
 
 interface ThemeConfig {
@@ -368,6 +413,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #6366F1, #818cf8, #22C55E)",
   },
+  "theme-6": {
+    primary_color: "#2563EB",
+    accent_color: "#1e293b",
+    text_color: "#1e293b",
+    background_color: "#F8FAFC",
+    heading_font: "Poppins",
+    body_font: "Inter",
+    button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #2563EB, #60a5fa, #F97316)",
+  },
 };
 
 const THEMES = [
@@ -376,6 +431,7 @@ const THEMES = [
   { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
   { id: "theme-4", name: "Luxury", description: "Premium editorial layout with serif typography & elegant spacing", available: true },
   { id: "theme-5", name: "Startup", description: "Glassmorphism, gradient hero, dark mode with neon accents", available: true },
+  { id: "theme-6", name: "Pro Clean", description: "Modern startup-style with clean layout, structured grid & premium feel", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
@@ -1437,6 +1493,176 @@ function StartupPreview({ config, storeName }: { config: ThemeConfig; storeName:
   );
 }
 
+/* ── Pro Clean Preview (Theme 6) ── */
+function ProCleanPreview({ config, storeName }: { config: ThemeConfig; storeName: string }) {
+  const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
+  const btnRadius = config.button_style === "pill" ? "9999px" : config.button_style === "square" ? "0px" : "0.75rem";
+
+  return (
+    <div className="flex justify-center">
+      <div className="relative mx-auto" style={{ width: "375px" }}>
+        <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
+          <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
+            <div className="h-2 w-2 rounded-full bg-gray-600" />
+          </div>
+
+          <div className="relative" style={{ height: "680px", backgroundColor: config.background_color }}>
+            <div className="h-full overflow-y-auto">
+              {/* Sticky Header */}
+              <div className="sticky top-0 z-10 border-b px-3 flex items-center" style={{ height: "44px", backgroundColor: config.background_color, borderColor: config.text_color + "08" }}>
+                <div className="flex h-5 w-5 items-center justify-center rounded" style={{ backgroundColor: config.primary_color }}>
+                  <Store className="h-2.5 w-2.5" style={{ color: btnText }} />
+                </div>
+                <span className="ml-1.5 text-[9px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</span>
+                <div className="flex-1" />
+                <div className="hidden sm:flex items-center gap-3">
+                  <span className="text-[7px] font-medium" style={{ color: config.text_color + "80" }}>Home</span>
+                  <span className="text-[7px] font-medium" style={{ color: config.text_color + "80" }}>Shop</span>
+                  <span className="text-[7px] font-medium" style={{ color: config.text_color + "80" }}>About</span>
+                </div>
+                <div className="flex items-center gap-2 ml-3">
+                  <Search className="h-3 w-3" style={{ color: config.text_color + "60" }} />
+                  <ShoppingCart className="h-3 w-3" style={{ color: config.text_color }} />
+                  <User className="h-3 w-3" style={{ color: config.text_color + "60" }} />
+                </div>
+              </div>
+
+              {/* Two-column Hero */}
+              <div className="px-4 py-8">
+                <div className="grid grid-cols-2 gap-3 items-center">
+                  <div>
+                    <h1 className="text-sm font-bold leading-tight" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</h1>
+                    <p className="text-[7px] mt-1 leading-relaxed" style={{ color: config.text_color + "70" }}>Discover premium products crafted with care.</p>
+                    <div className="flex gap-1.5 mt-3">
+                      <button className="px-3 py-1.5 text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>
+                        Shop Now →
+                      </button>
+                      <button className="px-3 py-1.5 text-[6px] font-medium border" style={{ borderColor: config.text_color + "20", color: config.text_color, borderRadius: btnRadius }}>
+                        Learn More
+                      </button>
+                    </div>
+                  </div>
+                  <div className="rounded-xl overflow-hidden" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Package className="h-8 w-8" style={{ color: config.text_color + "15" }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Category Grid */}
+              <div className="px-4 pb-6">
+                <h3 className="text-[10px] font-bold mb-3" style={{ color: config.text_color, fontFamily: config.heading_font }}>Shop by Category</h3>
+                <div className="grid grid-cols-4 gap-2">
+                  {FAKE_CATEGORIES.map((cat) => (
+                    <div key={cat} className="rounded-xl border overflow-hidden" style={{ borderColor: config.text_color + "08" }}>
+                      <div className="flex items-center justify-center" style={{ aspectRatio: "1/1", backgroundColor: config.primary_color + "06" }}>
+                        <Tag className="h-3.5 w-3.5" style={{ color: config.primary_color + "40" }} />
+                      </div>
+                      <p className="text-center text-[6px] font-semibold py-1" style={{ color: config.text_color, fontFamily: config.heading_font }}>{cat}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Product Grid */}
+              <div className="px-4 pb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[10px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>Featured Products</h3>
+                  <span className="text-[7px] font-medium" style={{ color: config.primary_color }}>View All →</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {FAKE_PRODUCTS.map((product) => (
+                    <div key={product.id} className="rounded-xl border overflow-hidden" style={{ borderColor: config.text_color + "08" }}>
+                      <div className="relative" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Package className="h-5 w-5" style={{ color: config.text_color + "15" }} />
+                        </div>
+                      </div>
+                      <div className="p-2 space-y-1">
+                        <p className="text-[8px] font-semibold line-clamp-1" style={{ color: config.text_color, fontFamily: config.heading_font }}>{product.name}</p>
+                        <p className="text-[9px] font-bold" style={{ color: config.text_color }}>{product.price}</p>
+                        <button className="w-full py-1 text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Benefits */}
+              <div className="px-4 pb-6">
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { icon: Truck, label: "Fast Shipping" },
+                    { icon: Shield, label: "Secure Pay" },
+                    { icon: ArrowLeft, label: "Easy Returns" },
+                  ].map((b, i) => (
+                    <div key={i} className="rounded-xl border p-2.5 text-center" style={{ borderColor: config.text_color + "08" }}>
+                      <b.icon className="h-3.5 w-3.5 mx-auto mb-1" style={{ color: config.primary_color }} />
+                      <p className="text-[6px] font-semibold" style={{ color: config.text_color }}>{b.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Testimonial */}
+              <div className="px-4 pb-6">
+                <div className="rounded-xl border p-3" style={{ borderColor: config.text_color + "08" }}>
+                  <div className="flex gap-0.5 mb-1.5">
+                    {[...Array(5)].map((_, i) => <Star key={i} className="h-2 w-2 fill-current" style={{ color: config.primary_color }} />)}
+                  </div>
+                  <p className="text-[7px] leading-relaxed" style={{ color: config.text_color + "70" }}>"Amazing quality and fast delivery!"</p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <div className="h-4 w-4 rounded-full text-[5px] font-bold flex items-center justify-center" style={{ backgroundColor: config.primary_color, color: btnText }}>AK</div>
+                    <span className="text-[6px] font-medium" style={{ color: config.text_color }}>Ananya K.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Newsletter */}
+              <div className="mx-4 mb-4 rounded-xl p-4 text-center" style={{ backgroundColor: config.primary_color + "08", border: `1px solid ${config.primary_color}15` }}>
+                <h3 className="text-[9px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>Stay Updated</h3>
+                <p className="text-[6px] mt-0.5" style={{ color: config.text_color + "60" }}>Get special offers straight to your inbox.</p>
+                <div className="mt-2 flex gap-1">
+                  <div className="flex-1 rounded-lg border px-2 py-1 text-[6px] text-left" style={{ borderColor: config.text_color + "15", color: config.text_color + "40" }}>your@email.com</div>
+                  <div className="rounded-lg px-2 py-1 text-[6px] font-semibold" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>Subscribe</div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-4 py-4" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <span className="text-[8px] font-bold">{storeName}</span>
+                    <p className="text-[5px] opacity-50 mt-0.5">Premium products.</p>
+                  </div>
+                  <div>
+                    <h4 className="text-[6px] font-bold uppercase tracking-wider opacity-70 mb-1">Shop</h4>
+                    {["Home", "Best Sellers"].map((l) => <p key={l} className="text-[5px] opacity-40">{l}</p>)}
+                  </div>
+                  <div>
+                    <h4 className="text-[6px] font-bold uppercase tracking-wider opacity-70 mb-1">Support</h4>
+                    {["Contact", "Returns"].map((l) => <p key={l} className="text-[5px] opacity-40">{l}</p>)}
+                  </div>
+                </div>
+                <div className="mt-2 border-t pt-1.5 text-center" style={{ borderColor: config.background_color + "10" }}>
+                  <p className="text-[5px] opacity-30">© 2026 {storeName}. All rights reserved.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex h-5 items-center justify-center bg-gray-800">
+            <div className="h-1 w-24 rounded-full bg-gray-600" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function StoreThemeSettings() {
   const { storeId } = useParams<{ storeId: string }>();
   const queryClient = useQueryClient();
@@ -1589,6 +1815,8 @@ export default function StoreThemeSettings() {
                         ? "linear-gradient(135deg, #F8F5F0 0%, #C8A96A 50%, #1C1C1C 100%)"
                         : theme.id === "theme-5"
                         ? "linear-gradient(135deg, #0F172A 0%, #6366F1 50%, #22C55E 100%)"
+                        : theme.id === "theme-6"
+                        ? "linear-gradient(135deg, #F8FAFC 0%, #2563EB 50%, #1e293b 100%)"
                         : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
                   />
@@ -1737,7 +1965,9 @@ export default function StoreThemeSettings() {
           {/* Full Storefront Preview */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Full Storefront Preview</h4>
-            {currentTheme === "theme-5" ? (
+            {currentTheme === "theme-6" ? (
+              <ProCleanPreview config={config} storeName={store?.name || "My Store"} />
+            ) : currentTheme === "theme-5" ? (
               <StartupPreview config={config} storeName={store?.name || "My Store"} />
             ) : currentTheme === "theme-4" ? (
               <LuxuryPreview config={config} storeName={store?.name || "My Store"} />
