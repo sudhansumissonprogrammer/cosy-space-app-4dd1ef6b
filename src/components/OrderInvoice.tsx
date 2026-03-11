@@ -203,7 +203,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   <div class="totals">
     <table class="totals-tbl">
       <tr><td>Subtotal</td><td class="r">${currencySymbol}${subtotal.toFixed(2)}</td></tr>
-      ${Number(order.total) !== subtotal ? `<tr><td>Shipping/Tax</td><td class="r">${currencySymbol}${(Number(order.total) - subtotal).toFixed(2)}</td></tr>` : ""}
+      ${Number(order.total) !== subtotal ? `<tr><td>${(Number(order.total) - subtotal) < 0 ? 'Discount' : 'Shipping/Tax'}</td><td class="r">${currencySymbol}${(Number(order.total) - subtotal).toFixed(2)}</td></tr>` : ""}
       <tr class="grand"><td>Total</td><td class="r">${currencySymbol}${Number(order.total).toFixed(2)}</td></tr>
     </table>
   </div>
