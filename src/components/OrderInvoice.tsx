@@ -37,10 +37,10 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   @page { size: 100mm 150mm; margin: 3mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color: #000;
-    line-height: 1.3;
-    font-size: 8px;
+    line-height: 1.4;
+    font-size: 9px;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
