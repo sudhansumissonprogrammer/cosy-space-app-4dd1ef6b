@@ -134,7 +134,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
         borderColor: "var(--storefront-text, hsl(var(--foreground)))10",
       }}
     >
-      <div className="flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom)]">
+      <div className="flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom)]" style={{ minHeight: "56px" }}>
         {tabs.map((tab) => {
           const isActive = tab.match === basePath
             ? location.pathname === basePath || location.pathname === basePath + "/"
