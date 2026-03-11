@@ -590,6 +590,15 @@ export default function ProductDetail() {
               </div>
             </div>
             <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
+                <Clock className="h-4 w-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-foreground">Express Delivery</p>
+                <p className="text-[10px] text-muted-foreground">Get it in just 3 days! 🚀</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                 <RotateCcw className="h-4 w-4 text-primary" />
               </div>
