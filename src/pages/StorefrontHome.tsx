@@ -9,6 +9,7 @@ import StorefrontProductCard from "@/components/storefront/StorefrontProductCard
 import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
+import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 
 function ProductCardSkeleton() {
@@ -192,17 +193,35 @@ export default function StorefrontHome() {
               ))}
             </div>
           ) : nonBestSellingProducts.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {nonBestSellingProducts.map((product, idx) => (
-                <StorefrontProductCard
-                  key={product.id}
-                  product={product}
-                  slug={slug!}
-                  store={store}
-                  priority={idx < 4}
-                />
-              ))}
-            </div>
+            <>
+              {/* First 8 products render immediately for fast LCP */}
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {nonBestSellingProducts.slice(0, 8).map((product, idx) => (
+                  <StorefrontProductCard
+                    key={product.id}
+                    product={product}
+                    slug={slug!}
+                    store={store}
+                    priority={idx < 4}
+                  />
+                ))}
+              </div>
+              {/* Remaining products lazy-render when scrolled near */}
+              {nonBestSellingProducts.length > 8 && (
+                <LazyRender rootMargin="400px" minHeight={400}>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    {nonBestSellingProducts.slice(8).map((product) => (
+                      <StorefrontProductCard
+                        key={product.id}
+                        product={product}
+                        slug={slug!}
+                        store={store}
+                      />
+                    ))}
+                  </div>
+                </LazyRender>
+              )}
+            </>
           ) : (
             <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
               <p className="text-muted-foreground">No products available yet.</p>

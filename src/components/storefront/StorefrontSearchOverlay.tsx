@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Search, X, Package, ArrowUpDown, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 import type { Tables } from "@/integrations/supabase/types";
 
 type SortOption = "popular" | "price_asc" | "price_desc" | "newest";
@@ -225,9 +226,10 @@ export default function StorefrontSearchOverlay({
                     >
                       {p.image_url ? (
                         <img
-                          src={p.image_url}
+                          src={optimizeImageUrl(p.image_url, 96)}
                           alt={p.name}
                           className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary/40 flex-shrink-0">
