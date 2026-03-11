@@ -85,7 +85,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--storefront-primary, hsl(var(--foreground)))" }}>Contact</h3>
             <div className="space-y-2.5">
               {address && (
-                <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                <p className="flex items-start gap-2 text-sm opacity-70">
                   <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {address}
                 </p>
