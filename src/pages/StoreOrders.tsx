@@ -120,6 +120,7 @@ export default function StoreOrders() {
                     <TableHead>Status</TableHead>
                      <TableHead>Date</TableHead>
                      <TableHead className="w-12" />
+                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {webOrders.map((order: any) => (
