@@ -432,6 +432,7 @@ const THEMES = [
   { id: "theme-4", name: "Luxury", description: "Premium editorial layout with serif typography & elegant spacing", available: true },
   { id: "theme-5", name: "Startup", description: "Glassmorphism, gradient hero, dark mode with neon accents", available: true },
   { id: "theme-6", name: "Pro Clean", description: "Modern startup-style with clean layout, structured grid & premium feel", available: true },
+  { id: "theme-7", name: "Magazine", description: "Editorial storytelling with horizontal scrolls & cinematic imagery", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
