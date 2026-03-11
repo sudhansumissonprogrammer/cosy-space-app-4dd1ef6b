@@ -1043,6 +1043,23 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
             ))}
           </div>
         )}
+
+        {/* Dot indicators */}
+        {images.length > 1 && (
+          <div className="flex justify-center gap-1.5">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                className={`rounded-full transition-all duration-300 ${
+                  i === activeIndex
+                    ? "w-6 h-2 bg-primary"
+                    : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Fullscreen Lightbox */}
