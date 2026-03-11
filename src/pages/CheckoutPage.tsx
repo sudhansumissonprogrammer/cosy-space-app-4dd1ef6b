@@ -393,7 +393,12 @@ export default function CheckoutPage() {
       await (supabase as any)
         .from("coupons")
         .update({ used_count: (appliedCoupon.used_count || 0) + 1 })
-        .eq("id", appliedCoupon.id);
+      .eq("id", appliedCoupon.id);
+    }
+
+    // Mark abandoned cart as recovered
+    if (abandonedCartId) {
+      await (supabase as any).from("abandoned_carts").update({ recovered: true }).eq("id", abandonedCartId);
     }
 
     return order.id as string;
