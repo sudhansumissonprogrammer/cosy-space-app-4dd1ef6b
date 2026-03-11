@@ -299,6 +299,24 @@ export default function CheckoutPage() {
     });
   }, []);
 
+  // Save abandoned cart on checkout entry
+  const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
+  useEffect(() => {
+    if (checkoutItems.length === 0) return;
+    const saveAbandonedCart = async () => {
+      try {
+        const { data } = await (supabase as any).from("abandoned_carts").insert({
+          store_id: store.id,
+          customer_email: email || null,
+          customer_phone: phone || null,
+          cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
+        }).select("id").single();
+        if (data?.id) setAbandonedCartId(data.id);
+      } catch {}
+    };
+    saveAbandonedCart();
+  }, []);
+
   if (isLoading && isSingleMode) return <CheckoutSkeleton />;
 
   if (isSingleMode && !product) {
