@@ -296,11 +296,11 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
           <table className="w-full">
             <thead>
               <tr className="bg-foreground text-background">
-                <th className="px-1.5 py-1 text-left text-[7px] font-bold uppercase tracking-wider w-5">#</th>
-                <th className="px-1.5 py-1 text-left text-[7px] font-bold uppercase tracking-wider">Item</th>
-                <th className="px-1.5 py-1 text-center text-[7px] font-bold uppercase tracking-wider w-8">Qty</th>
-                <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider w-16">Price</th>
-                <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider w-16">Amt</th>
+                <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider w-5">#</th>
+                <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider">Item</th>
+                <th className="px-1.5 py-1 text-center text-[7px] font-medium uppercase tracking-wider w-8">Qty</th>
+                <th className="px-1.5 py-1 text-right text-[7px] font-medium uppercase tracking-wider w-16">Price</th>
+                <th className="px-1.5 py-1 text-right text-[7px] font-medium uppercase tracking-wider w-16">Amt</th>
               </tr>
             </thead>
             <tbody>
