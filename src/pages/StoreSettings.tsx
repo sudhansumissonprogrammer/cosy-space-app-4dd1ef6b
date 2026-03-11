@@ -113,6 +113,7 @@ export default function StoreSettings() {
       setMetaTitle((store as any).meta_title || "");
       setMetaDescription((store as any).meta_description || "");
       setOgImageUrl((store as any).og_image_url || "");
+      setOwnerEmail((store as any).owner_email || "");
     }
   }, [store]);
 
