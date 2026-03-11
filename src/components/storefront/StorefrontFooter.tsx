@@ -40,7 +40,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
 
           {/* Column 2: Quick Links */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Quick Links</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--storefront-primary, hsl(var(--foreground)))" }}>Quick Links</h3>
             <nav className="flex flex-col gap-2">
               {[
                 { to: storefrontPath(store.slug), label: "Home" },
