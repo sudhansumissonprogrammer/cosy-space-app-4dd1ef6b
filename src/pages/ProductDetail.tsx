@@ -1,17 +1,21 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, Link, useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Package, ChevronLeft, ChevronRight, Tag, ShoppingBag, ShoppingCart, Share2, Copy, Facebook, Twitter, X, ZoomIn } from "lucide-react";
+import {
+  ArrowLeft, Package, ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart,
+  Share2, Copy, Facebook, Twitter, X, ZoomIn, Star, Shield, Truck, RotateCcw,
+  Clock, Eye, Flame, Heart, Minus, Plus, Check, ChevronDown
+} from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
@@ -26,22 +30,47 @@ interface Variant {
   sku: string | null;
 }
 
+/* ── Fake but consistent social proof from product ID ── */
+function getProductStats(productId: string) {
+  let hash = 0;
+  for (let i = 0; i < productId.length; i++) {
+    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+    hash |= 0;
+  }
+  const abs = Math.abs(hash);
+  const ratings = [4.2, 4.3, 4.4, 4.5, 4.5, 4.6, 4.6, 4.7, 4.7, 4.8, 4.8, 4.9];
+  const rating = ratings[abs % ratings.length];
+  const reviewCount = 12 + (abs % 188);
+  const viewers = 3 + (abs % 18);
+  const soldRecently = 15 + (abs % 85);
+  return { rating, reviewCount, viewers, soldRecently };
+}
+
+function getDeliveryDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 3 + Math.floor(Math.random() * 3));
+  return d.toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" });
+}
+
 export default function ProductDetail() {
   const store = useOutletContext<StoreData>();
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, items } = useCart();
+  const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [justAdded, setJustAdded] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>("description");
 
-  // Try to get product instantly from cached storefront data
+  const deliveryDate = useMemo(() => getDeliveryDate(), []);
+
   const getCachedProduct = () => {
     const cached = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
     if (!cached) return undefined;
-    return cached.find(
-      (p: any) => p.slug === productSlug || p.id === productSlug
-    ) || undefined;
+    return cached.find((p: any) => p.slug === productSlug || p.id === productSlug) || undefined;
   };
 
   const { data: product, isLoading } = useQuery({
@@ -116,7 +145,6 @@ export default function ProductDetail() {
     canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
   });
 
-  // Facebook Pixel: ViewContent
   useEffect(() => {
     if (!product) return;
     fbPixelTrack("ViewContent", {
@@ -153,9 +181,7 @@ export default function ProductDetail() {
     return imgs;
   })();
 
-  if (isLoading) {
-    return <ProductDetailSkeleton />;
-  }
+  if (isLoading) return <ProductDetailSkeleton />;
 
   if (!product) {
     return (
@@ -185,6 +211,12 @@ export default function ProductDetail() {
   const orderMode = (store as any).order_mode || "whatsapp";
   const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
   const showBuyNow = orderMode === "website" || orderMode === "both";
+  const stats = getProductStats(product.id);
+  const wishlisted = isWishlisted(product.id);
+  const isLowStock = product.stock_quantity > 0 && product.stock_quantity <= 10;
+  const isOutOfStock = product.stock_quantity <= 0;
+
+  const cartItem = items.find((i) => i.productId === product.id && i.variantId === selectedVariant?.id);
 
   const handleAddToCart = () => {
     addToCart({
@@ -194,88 +226,166 @@ export default function ProductDetail() {
       variantName: selectedVariant?.name,
       price: variantPrice,
       image: product.image_url || undefined,
+      quantity,
     });
+    setJustAdded(true);
     toast.success(`${product.name} added to cart`);
+    setTimeout(() => setJustAdded(false), 1500);
   };
 
   const handleBuyNow = () => {
-    const params = new URLSearchParams({ product: product.id });
-    if (selectedVariant) params.set("variant", selectedVariant.id);
-    navigate(storefrontPath(store.slug, `checkout?${params.toString()}`));
+    // Add to cart first then go to checkout
+    addToCart({
+      productId: product.id,
+      variantId: selectedVariant?.id,
+      name: product.name,
+      variantName: selectedVariant?.name,
+      price: variantPrice,
+      image: product.image_url || undefined,
+      quantity,
+    });
+    navigate(storefrontPath(store.slug, "checkout"));
+  };
+
+  const handleWishlist = () => {
+    toggleWishlist({
+      productId: product.id,
+      name: product.name,
+      price: Number(product.price),
+      salePrice: product.sale_price ? Number(product.sale_price) : undefined,
+      image: product.image_url || undefined,
+      slug: product.slug || product.id,
+      category: product.category || undefined,
+    });
+    toast.success(wishlisted ? "Removed from wishlist" : "Added to wishlist");
+  };
+
+  const toggleAccordion = (key: string) => {
+    setOpenAccordion(openAccordion === key ? null : key);
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-6">
-        <Link
-          to={storefrontPath(store.slug)}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Back to {store.name}
+    <div className="mx-auto max-w-6xl px-4 py-4 sm:py-8">
+      {/* Breadcrumb */}
+      <nav className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Link to={storefrontPath(store.slug)} className="hover:text-primary transition-colors">
+          Home
         </Link>
-      </div>
+        <span>/</span>
+        {product.category && (
+          <>
+            <Link to={storefrontPath(store.slug, `category/${product.category}`)} className="hover:text-primary transition-colors">
+              {product.category}
+            </Link>
+            <span>/</span>
+          </>
+        )}
+        <span className="text-foreground font-medium line-clamp-1">{product.name}</span>
+      </nav>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <ImageGallery images={allImages} productName={product.name} />
+      <div className="grid gap-6 lg:grid-cols-2 lg:gap-10">
+        {/* Image Gallery */}
+        <ImageGallery images={allImages} productName={product.name} hasDiscount={hasDiscount} discountPct={discountPct} />
 
+        {/* Product Info */}
         <div className="flex flex-col">
+          {/* Category badge */}
           {product.category && (
-            <Badge variant="secondary" className="mb-3 w-fit text-xs uppercase tracking-wide">
+            <Badge variant="secondary" className="mb-2 w-fit text-[10px] uppercase tracking-wider font-bold">
               {product.category}
             </Badge>
           )}
 
-          <h1 className="text-3xl font-bold text-foreground">{product.name}</h1>
+          {/* Title */}
+          <h1 className="text-2xl font-bold text-foreground leading-tight sm:text-3xl">{product.name}</h1>
 
-          <div className="mt-4 flex items-baseline gap-3">
-            {hasDiscount ? (
-              <>
-                <span className="text-3xl font-bold text-foreground">
-                  {currency} {Number(product.sale_price).toFixed(2)}
-                </span>
-                <span className="text-lg text-muted-foreground line-through">
-                  {currency} {Number(product.price).toFixed(2)}
-                </span>
-                <Badge variant="destructive" className="text-xs">
-                  -{discountPct}%
-                </Badge>
-              </>
-            ) : (
-              <span className="text-3xl font-bold text-foreground">
-                {currency} {Number(product.price).toFixed(2)}
-              </span>
-            )}
+          {/* Rating & Social Proof */}
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-3.5 w-3.5 ${i < Math.floor(stats.rating) ? "fill-amber-400 text-amber-400" : i < stats.rating ? "fill-amber-400/50 text-amber-400" : "text-muted-foreground/30"}`}
+                />
+              ))}
+              <span className="ml-1 text-sm font-bold text-foreground">{stats.rating}</span>
+              <span className="text-xs text-muted-foreground">({stats.reviewCount} reviews)</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground">|</span>
+            <span className="text-xs text-success font-semibold flex items-center gap-1">
+              <Flame className="h-3 w-3" /> {stats.soldRecently}+ sold recently
+            </span>
           </div>
 
-          <p className="mt-3 text-sm text-muted-foreground">
-            {product.stock_quantity > 0
-              ? `${product.stock_quantity} in stock`
-              : "Out of stock"}
-          </p>
+          {/* Price Block */}
+          <div className="mt-4 rounded-xl bg-accent/50 p-3 sm:p-4">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-3xl font-extrabold text-foreground sm:text-4xl">
+                {currency} {Number(variantPrice).toFixed(2)}
+              </span>
+              {hasDiscount && (
+                <>
+                  <span className="text-base text-muted-foreground line-through">
+                    {currency} {Number(product.price).toFixed(2)}
+                  </span>
+                  <Badge className="bg-success text-success-foreground text-xs font-bold border-0">
+                    {discountPct}% OFF
+                  </Badge>
+                </>
+              )}
+            </div>
+            {hasDiscount && (
+              <p className="mt-1 text-xs font-semibold text-success">
+                You save {currency} {(product.price - product.sale_price!).toFixed(2)} on this order
+              </p>
+            )}
+            <p className="mt-1 text-[10px] text-muted-foreground">Inclusive of all taxes</p>
+          </div>
 
-          {product.description && (
-            <div className="mt-6">
-              <h2 className="mb-2 text-sm font-semibold text-foreground uppercase tracking-wide">Description</h2>
-              <p className="leading-relaxed text-muted-foreground whitespace-pre-line">
-                {product.description}
+          {/* Live viewers */}
+          <div className="mt-3 flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              <Eye className="inline h-3 w-3 mr-0.5" />
+              <strong className="text-foreground">{stats.viewers} people</strong> viewing this right now
+            </span>
+          </div>
+
+          {/* Stock Status */}
+          {isOutOfStock ? (
+            <div className="mt-3 rounded-lg bg-destructive/10 px-3 py-2">
+              <p className="text-sm font-bold text-destructive">Out of Stock</p>
+            </div>
+          ) : isLowStock ? (
+            <div className="mt-3 rounded-lg bg-warning/10 px-3 py-2 flex items-center gap-2">
+              <Clock className="h-4 w-4 text-warning" />
+              <p className="text-sm font-semibold text-warning">
+                Hurry! Only {product.stock_quantity} left in stock
               </p>
             </div>
-          )}
+          ) : null}
 
-          {/* Shared variant selector */}
+          {/* Variant Selector */}
           {(variants || []).length > 0 && (
-            <div className="mt-6 space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide">Variant</Label>
+            <div className="mt-5 space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Select Variant
+              </Label>
               <div className="flex flex-wrap gap-2">
                 {(variants || []).map((v) => (
-                  <Button
+                  <button
                     key={v.id}
                     type="button"
-                    variant={selectedVariant?.id === v.id ? "default" : "outline"}
-                    size="sm"
                     onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
                     disabled={v.stock_quantity <= 0}
+                    className={`rounded-lg border-2 px-4 py-2 text-sm font-semibold transition-all ${
+                      selectedVariant?.id === v.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-foreground hover:border-primary/50"
+                    } ${v.stock_quantity <= 0 ? "opacity-40 cursor-not-allowed line-through" : ""}`}
                   >
                     {v.name}
                     {v.price !== null && v.price !== basePrice && (
@@ -283,47 +393,165 @@ export default function ProductDetail() {
                         ({currency} {Number(v.price).toFixed(2)})
                       </span>
                     )}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Action buttons */}
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <button
-              className="btn-gold inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest"
-              onClick={handleAddToCart}
+          {/* Quantity Selector */}
+          {!isOutOfStock && (
+            <div className="mt-5 flex items-center gap-3">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Qty</Label>
+              <div className="flex items-center rounded-lg border border-border overflow-hidden">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="w-10 text-center text-sm font-bold text-foreground">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* CTA Buttons */}
+          {!isOutOfStock && (
+            <div className="mt-6 flex flex-col gap-3">
+              {/* Primary: Add to Cart */}
+              <button
+                className={`flex h-13 w-full items-center justify-center gap-2 rounded-xl text-sm font-extrabold uppercase tracking-widest transition-all duration-300 active:scale-[0.98] ${
+                  justAdded
+                    ? "bg-success text-success-foreground"
+                    : "btn-gold hover:brightness-110"
+                }`}
+                onClick={handleAddToCart}
+                style={{ minHeight: "52px" }}
+              >
+                {justAdded ? (
+                  <>
+                    <Check className="h-5 w-5" strokeWidth={3} />
+                    Added to Cart!
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="h-5 w-5" />
+                    Add to Cart — {currency} {(variantPrice * quantity).toFixed(2)}
+                  </>
+                )}
+              </button>
+
+              {/* Buy Now */}
+              {showBuyNow && (
+                <Button
+                  className="h-[52px] w-full rounded-xl text-sm font-extrabold uppercase tracking-widest"
+                  onClick={handleBuyNow}
+                >
+                  <ShoppingBag className="mr-2 h-5 w-5" />
+                  Buy Now
+                </Button>
+              )}
+
+              {/* WhatsApp */}
+              {showWhatsApp && store.whatsapp_number && (
+                <button
+                  className="flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-sm font-extrabold uppercase tracking-widest text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98]"
+                  onClick={() => {
+                    const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
+                    const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
+                    const productUrl = `${window.location.origin}${window.location.pathname}`;
+                    const text = `Hi ${store.name}! 👋\n\nI want to buy *${product.name}${variantInfo}* x${quantity}\n\n💰 Price: ${currency} ${(variantPrice * quantity).toFixed(0)}\n\n🔗 ${productUrl}\n\nPlease share availability, delivery time & payment options.`;
+                    window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
+                  }}
+                >
+                  <svg viewBox="0 0 32 32" fill="white" className="h-5 w-5"><path d="M16.004 3.2C9.056 3.2 3.406 8.848 3.404 15.8c-.001 2.222.58 4.392 1.683 6.303L3.2 28.8l6.867-1.802A12.56 12.56 0 0 0 16 28.398h.005C22.95 28.398 28.6 22.75 28.6 15.8 28.6 8.85 22.95 3.2 16.004 3.2Zm0 22.997h-.004a10.44 10.44 0 0 1-5.318-1.457l-.382-.226-3.955 1.038 1.055-3.858-.249-.395A10.42 10.42 0 0 1 5.54 15.8c.002-5.77 4.697-10.463 10.466-10.463 5.77 0 10.463 4.695 10.463 10.464 0 5.77-4.695 10.465-10.465 10.465v-.069Zm5.74-7.835c-.315-.158-1.863-.92-2.152-1.025-.289-.105-.499-.158-.71.158-.21.315-.815 1.025-.999 1.236-.184.21-.368.236-.683.079-.315-.158-1.33-.49-2.533-1.562-.937-.835-1.568-1.867-1.752-2.182-.184-.315-.02-.486.138-.643.142-.141.315-.368.473-.552.158-.184.21-.315.315-.526.106-.21.053-.394-.026-.552-.079-.158-.71-1.71-.973-2.341-.256-.615-.517-.532-.71-.542-.184-.008-.394-.01-.604-.01s-.552.079-.841.394c-.29.315-1.104 1.078-1.104 2.63 0 1.552 1.13 3.052 1.288 3.262.158.21 2.224 3.396 5.388 4.762.753.326 1.341.52 1.8.665.756.24 1.444.206 1.988.125.607-.09 1.863-.762 2.126-1.498.263-.736.263-1.367.184-1.498-.079-.132-.289-.21-.604-.369Z"/></svg>
+                  Order on WhatsApp
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Wishlist */}
+          <button
+            onClick={handleWishlist}
+            className="mt-3 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors self-start"
+          >
+            <Heart className={`h-4 w-4 ${wishlisted ? "fill-destructive text-destructive" : ""}`} />
+            {wishlisted ? "Saved to Wishlist" : "Add to Wishlist"}
+          </button>
+
+          {/* Delivery Estimate */}
+          <div className="mt-5 rounded-xl border border-border p-3 space-y-2.5">
+            <div className="flex items-center gap-2.5">
+              <Truck className="h-4 w-4 text-primary shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-foreground">Free Delivery</p>
+                <p className="text-[10px] text-muted-foreground">Get it by <strong className="text-foreground">{deliveryDate}</strong></p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <RotateCcw className="h-4 w-4 text-primary shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-foreground">Easy Returns</p>
+                <p className="text-[10px] text-muted-foreground">7-day hassle-free return policy</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Shield className="h-4 w-4 text-primary shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-foreground">Secure Checkout</p>
+                <p className="text-[10px] text-muted-foreground">100% secure payment processing</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Accordion Sections */}
+          <div className="mt-6 divide-y divide-border border border-border rounded-xl overflow-hidden">
+            {/* Description */}
+            {product.description && (
+              <AccordionItem
+                title="Product Description"
+                isOpen={openAccordion === "description"}
+                onToggle={() => toggleAccordion("description")}
+              >
+                <p className="leading-relaxed text-sm text-muted-foreground whitespace-pre-line">
+                  {product.description}
+                </p>
+              </AccordionItem>
+            )}
+
+            {/* Shipping */}
+            <AccordionItem
+              title="Shipping Information"
+              isOpen={openAccordion === "shipping"}
+              onToggle={() => toggleAccordion("shipping")}
             >
-              <ShoppingCart className="h-5 w-5" />
-              Add to Cart
-            </button>
+              <ul className="space-y-1.5 text-sm text-muted-foreground">
+                <li>• Standard delivery: 3-7 business days</li>
+                <li>• Express delivery available at checkout</li>
+                <li>• Free shipping on all orders</li>
+                <li>• Order tracking provided via SMS/email</li>
+              </ul>
+            </AccordionItem>
 
-            {showBuyNow && (
-              <button
-                className="btn-gold inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-extrabold uppercase tracking-widest"
-                onClick={handleBuyNow}
-              >
-                <ShoppingBag className="h-5 w-5" />
-                Buy Now — {currency} {Number(variantPrice).toFixed(2)}
-              </button>
-            )}
-
-            {showWhatsApp && store.whatsapp_number && (
-              <button
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-[#25D366] px-6 py-3 text-sm font-extrabold uppercase tracking-widest text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98]"
-                onClick={() => {
-                  const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
-                  const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
-                  const productUrl = `${window.location.origin}${window.location.pathname}`;
-                  const text = `Hi ${store.name}! 👋\n\nI want to buy *${product.name}${variantInfo}*\n\n💰 Price: ${currency} ${Number(variantPrice).toFixed(0)}\n\n🔗 ${productUrl}\n\nPlease share availability, delivery time & payment options.`;
-                  window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
-                }}
-              >
-                <svg viewBox="0 0 32 32" fill="white" className="h-5 w-5"><path d="M16.004 3.2C9.056 3.2 3.406 8.848 3.404 15.8c-.001 2.222.58 4.392 1.683 6.303L3.2 28.8l6.867-1.802A12.56 12.56 0 0 0 16 28.398h.005C22.95 28.398 28.6 22.75 28.6 15.8 28.6 8.85 22.95 3.2 16.004 3.2Zm0 22.997h-.004a10.44 10.44 0 0 1-5.318-1.457l-.382-.226-3.955 1.038 1.055-3.858-.249-.395A10.42 10.42 0 0 1 5.54 15.8c.002-5.77 4.697-10.463 10.466-10.463 5.77 0 10.463 4.695 10.463 10.464 0 5.77-4.695 10.465-10.465 10.465v-.069Zm5.74-7.835c-.315-.158-1.863-.92-2.152-1.025-.289-.105-.499-.158-.71.158-.21.315-.815 1.025-.999 1.236-.184.21-.368.236-.683.079-.315-.158-1.33-.49-2.533-1.562-.937-.835-1.568-1.867-1.752-2.182-.184-.315-.02-.486.138-.643.142-.141.315-.368.473-.552.158-.184.21-.315.315-.526.106-.21.053-.394-.026-.552-.079-.158-.71-1.71-.973-2.341-.256-.615-.517-.532-.71-.542-.184-.008-.394-.01-.604-.01s-.552.079-.841.394c-.29.315-1.104 1.078-1.104 2.63 0 1.552 1.13 3.052 1.288 3.262.158.21 2.224 3.396 5.388 4.762.753.326 1.341.52 1.8.665.756.24 1.444.206 1.988.125.607-.09 1.863-.762 2.126-1.498.263-.736.263-1.367.184-1.498-.079-.132-.289-.21-.604-.369Z"/></svg>
-                Order on WhatsApp
-              </button>
-            )}
+            {/* Returns */}
+            <AccordionItem
+              title="Returns & Exchange"
+              isOpen={openAccordion === "returns"}
+              onToggle={() => toggleAccordion("returns")}
+            >
+              <ul className="space-y-1.5 text-sm text-muted-foreground">
+                <li>• 7-day easy return policy</li>
+                <li>• Product must be unused and in original packaging</li>
+                <li>• Refund processed within 5-7 business days</li>
+              </ul>
+            </AccordionItem>
           </div>
 
           {/* Share Buttons */}
@@ -339,6 +567,78 @@ export default function ProductDetail() {
         currentCategory={product.category}
         store={store}
       />
+
+      {/* Sticky Mobile CTA */}
+      {!isOutOfStock && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md p-3 flex items-center gap-3 sm:hidden safe-area-bottom">
+          <div className="flex-1 min-w-0">
+            <p className="text-lg font-extrabold text-foreground leading-tight">
+              {currency} {(variantPrice * quantity).toFixed(2)}
+            </p>
+            {hasDiscount && (
+              <p className="text-[10px] text-success font-semibold">{discountPct}% OFF</p>
+            )}
+          </div>
+          <button
+            className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.98] ${
+              justAdded ? "bg-success text-success-foreground" : "btn-gold"
+            }`}
+            onClick={handleAddToCart}
+          >
+            {justAdded ? (
+              <>
+                <Check className="h-4 w-4" strokeWidth={3} />
+                Added!
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="h-4 w-4" />
+                Add to Cart
+              </>
+            )}
+          </button>
+          {showBuyNow && (
+            <Button
+              className="h-11 flex-1 rounded-xl text-xs font-extrabold uppercase tracking-wider"
+              onClick={handleBuyNow}
+            >
+              Buy Now
+            </Button>
+          )}
+        </div>
+      )}
+      {/* Spacer for sticky CTA on mobile */}
+      {!isOutOfStock && <div className="h-20 sm:hidden" />}
+    </div>
+  );
+}
+
+/* ── Accordion Item ── */
+function AccordionItem({
+  title,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-bold text-foreground hover:bg-accent/30 transition-colors"
+      >
+        {title}
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+      {isOpen && (
+        <div className="px-4 pb-3 animate-in slide-in-from-top-1 duration-200">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -366,7 +666,7 @@ function ShareButtons({ productName }: { productName: string }) {
       <Button variant="outline" size="icon" className="h-8 w-8" asChild title="Share on WhatsApp">
         <a href={`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`} target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.243-1.213l-.304-.181-2.868.852.852-2.868-.181-.304A8 8 0 1 1 12 20z"/></svg>
-        </a>
+          </a>
       </Button>
       <Button variant="outline" size="icon" className="h-8 w-8" asChild title="Share on Facebook">
         <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer">
@@ -383,7 +683,7 @@ function ShareButtons({ productName }: { productName: string }) {
 }
 
 /* ── Image Gallery with Fullscreen Lightbox (Shopify-style) ── */
-function ImageGallery({ images, productName }: { images: string[]; productName: string }) {
+function ImageGallery({ images, productName, hasDiscount, discountPct }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -399,12 +699,21 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="space-y-3 lg:sticky lg:top-4">
         {/* Main image — tap to open lightbox */}
         <div
           className="relative overflow-hidden rounded-2xl bg-accent cursor-zoom-in select-none"
           onClick={() => setLightboxOpen(true)}
         >
+          {/* Discount badge on image */}
+          {hasDiscount && discountPct > 0 && (
+            <div className="absolute left-3 top-3 z-10">
+              <Badge className="bg-destructive text-destructive-foreground text-xs font-bold border-0 shadow-lg">
+                -{discountPct}% OFF
+              </Badge>
+            </div>
+          )}
+
           <img
             src={images[activeIndex]}
             alt={productName}
@@ -433,15 +742,21 @@ function ImageGallery({ images, productName }: { images: string[]; productName: 
               </button>
             </>
           )}
+          {/* Image counter */}
+          {images.length > 1 && (
+            <div className="absolute bottom-3 left-3 rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-semibold text-foreground shadow backdrop-blur-sm">
+              {activeIndex + 1} / {images.length}
+            </div>
+          )}
         </div>
         {images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {images.map((img, i) => (
               <button
                 key={i}
                 onClick={() => setActiveIndex(i)}
-                className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
-                  i === activeIndex ? "border-primary" : "border-transparent"
+                className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                  i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
                 }`}
               >
                 <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
@@ -490,7 +805,6 @@ function FullscreenLightbox({
 
   useEffect(() => { resetZoom(); }, [activeIndex, resetZoom]);
 
-  // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
@@ -532,8 +846,7 @@ function FullscreenLightbox({
     if (scale <= 1) resetZoom();
   };
 
-  // Desktop: double-click to zoom
-  const handleDoubleClick = (e: React.MouseEvent) => {
+  const handleDoubleClick = () => {
     if (scale > 1) {
       resetZoom();
     } else {
@@ -542,7 +855,6 @@ function FullscreenLightbox({
     }
   };
 
-  // Swipe to change image (when not zoomed)
   const swipeStart = useRef<number | null>(null);
   const handleSwipeStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1 && scale <= 1) {
@@ -562,7 +874,6 @@ function FullscreenLightbox({
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-black/95 animate-in fade-in duration-200">
-      {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3 text-white">
         <span className="text-sm font-medium opacity-80">
           {images.length > 1 ? `${activeIndex + 1} / ${images.length}` : productName}
@@ -575,7 +886,6 @@ function FullscreenLightbox({
         </button>
       </div>
 
-      {/* Image area */}
       <div
         className="flex flex-1 items-center justify-center overflow-hidden touch-none select-none"
         onTouchStart={(e) => { handleTouchStart(e); handleSwipeStart(e); }}
@@ -593,7 +903,6 @@ function FullscreenLightbox({
         />
       </div>
 
-      {/* Desktop arrows */}
       {images.length > 1 && scale <= 1 && (
         <>
           <button
@@ -611,7 +920,6 @@ function FullscreenLightbox({
         </>
       )}
 
-      {/* Thumbnail strip */}
       {images.length > 1 && (
         <div className="flex justify-center gap-2 px-4 py-3 overflow-x-auto">
           {images.map((img, i) => (
@@ -630,8 +938,6 @@ function FullscreenLightbox({
     </div>
   );
 }
-
-
 
 /* ── Related Products ── */
 function RelatedProducts({
@@ -659,7 +965,6 @@ function RelatedProducts({
         .limit(8);
       if (error) throw error;
 
-      // Prioritize same category
       if (currentCategory && data.length > 4) {
         const sameCategory = data.filter((p) => p.category === currentCategory);
         const otherCategory = data.filter((p) => p.category !== currentCategory);
@@ -694,9 +999,8 @@ function RelatedProducts({
 function ProductDetailSkeleton() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <Skeleton className="mb-6 h-4 w-32" />
+      <Skeleton className="mb-4 h-4 w-48" />
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Image skeleton */}
         <div className="space-y-3">
           <Skeleton className="aspect-square w-full rounded-2xl" />
           <div className="flex gap-2">
@@ -705,20 +1009,20 @@ function ProductDetailSkeleton() {
             ))}
           </div>
         </div>
-        {/* Details skeleton */}
         <div className="flex flex-col gap-4">
           <Skeleton className="h-5 w-20 rounded-full" />
           <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-4 w-48" />
           <div className="mt-4 space-y-2">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
             <Skeleton className="h-4 w-4/6" />
           </div>
-          <div className="mt-6 flex gap-3">
-            <Skeleton className="h-12 w-40 rounded-md" />
-            <Skeleton className="h-12 w-52 rounded-md" />
+          <div className="mt-6 flex flex-col gap-3">
+            <Skeleton className="h-[52px] w-full rounded-xl" />
+            <Skeleton className="h-[52px] w-full rounded-xl" />
           </div>
         </div>
       </div>
