@@ -60,7 +60,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   .brand-row { display: flex; align-items: center; gap: 2mm; }
   .brand-logo { height: 40px; width: auto; object-fit: contain; }
   .brand-contact { font-size: 7.5px; color: #444; margin-top: 2px; }
-  .inv-tag { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .inv-tag { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
   .inv-id { font-size: 8px; color: #555; margin-top: 1px; text-align: right; }
 
   /* Sections */
