@@ -145,8 +145,8 @@
   }
 
   .btn-gold {
-    background: linear-gradient(135deg, hsl(40 70% 55%), hsl(43 80% 65%), hsl(40 70% 55%));
-    color: hsl(30 30% 15%);
+    background: linear-gradient(135deg, var(--storefront-primary, hsl(40 70% 55%)), var(--storefront-primary-light, hsl(43 80% 65%)), var(--storefront-primary, hsl(40 70% 55%)));
+    color: var(--storefront-btn-text, #ffffff);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;

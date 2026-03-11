@@ -125,8 +125,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 border-t pt-6 text-center">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-8 border-t border-white/10 pt-6 text-center">
+          <p className="text-xs opacity-60">
             © {year} {store.name}. All rights reserved.
           </p>
         </div>

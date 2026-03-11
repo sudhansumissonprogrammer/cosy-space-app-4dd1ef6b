@@ -65,7 +65,7 @@ function CartBadge() {
         <ShoppingCart className="h-5 w-5" />
       </div>
       {cartCount > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background">
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--foreground)))", color: "var(--storefront-btn-text, hsl(var(--background)))" }}>
           {cartCount > 99 ? "99+" : cartCount}
         </span>
       )}
