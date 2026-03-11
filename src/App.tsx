@@ -54,6 +54,10 @@ import UserSettings from "./pages/UserSettings";
 import CustomerLeads from "./pages/CustomerLeads";
 import CheckoutPage from "./pages/CheckoutPage";
 import StorePayments from "./pages/StorePayments";
+import StoreCoupons from "./pages/StoreCoupons";
+import StoreShipping from "./pages/StoreShipping";
+import StoreTaxSettings from "./pages/StoreTaxSettings";
+import StoreAbandonedCarts from "./pages/StoreAbandonedCarts";
 const CartPage = lazy(() => import("./pages/CartPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
