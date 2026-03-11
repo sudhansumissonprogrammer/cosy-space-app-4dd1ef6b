@@ -586,6 +586,43 @@ export default function CheckoutPage() {
     }
   };
 
+  // Payment processing screen
+  if (paymentProcessing) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+        <h1 className="text-xl font-bold text-foreground">Processing Payment</h1>
+        <p className="mt-2 text-muted-foreground">{paymentStatusText}</p>
+        <p className="mt-4 text-xs text-muted-foreground">Complete the payment in your UPI app.<br />Do not close this page.</p>
+        <div className="mt-6">
+          <div className="mx-auto h-1 w-48 overflow-hidden rounded-full bg-muted">
+            <div className="h-full w-1/2 animate-pulse rounded-full bg-primary" style={{ animation: "pulse 1.5s ease-in-out infinite" }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Payment failed screen
+  if (orderFailed) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+          <XCircle className="h-8 w-8 text-destructive" />
+        </div>
+        <h1 className="text-2xl font-bold text-foreground">Payment Failed</h1>
+        <p className="mt-2 text-muted-foreground">Your payment could not be completed. Please try again.</p>
+        {orderId && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span></p>}
+        <div className="mt-6 flex flex-col gap-2 items-center">
+          <Button onClick={() => { setOrderFailed(false); setOrderId(null); setPlacing(false); }}>Try Again</Button>
+          <Button asChild variant="outline"><Link to={storefrontPath(store.slug)}>Back to Store</Link></Button>
+        </div>
+      </div>
+    );
+  }
+
   if (orderPlaced) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
