@@ -277,6 +277,31 @@ export default function StoreSettings() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="currency">Currency</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger id="currency">
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INR">₹ INR – Indian Rupee</SelectItem>
+                  <SelectItem value="USD">$ USD – US Dollar</SelectItem>
+                  <SelectItem value="EUR">€ EUR – Euro</SelectItem>
+                  <SelectItem value="GBP">£ GBP – British Pound</SelectItem>
+                  <SelectItem value="AED">د.إ AED – UAE Dirham</SelectItem>
+                  <SelectItem value="SAR">﷼ SAR – Saudi Riyal</SelectItem>
+                  <SelectItem value="BDT">৳ BDT – Bangladeshi Taka</SelectItem>
+                  <SelectItem value="PKR">₨ PKR – Pakistani Rupee</SelectItem>
+                  <SelectItem value="LKR">₨ LKR – Sri Lankan Rupee</SelectItem>
+                  <SelectItem value="NPR">₨ NPR – Nepalese Rupee</SelectItem>
+                  <SelectItem value="CAD">$ CAD – Canadian Dollar</SelectItem>
+                  <SelectItem value="AUD">$ AUD – Australian Dollar</SelectItem>
+                  <SelectItem value="SGD">$ SGD – Singapore Dollar</SelectItem>
+                  <SelectItem value="MYR">RM MYR – Malaysian Ringgit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="location">Full Address</Label>
               <Input id="location" placeholder="123 Main St, City" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={500} />
             </div>
