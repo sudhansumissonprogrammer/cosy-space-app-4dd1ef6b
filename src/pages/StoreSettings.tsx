@@ -71,6 +71,7 @@ export default function StoreSettings() {
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [ogImageUrl, setOgImageUrl] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
