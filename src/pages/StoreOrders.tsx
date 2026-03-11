@@ -118,8 +118,8 @@ export default function StoreOrders() {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Payment</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
+                     <TableHead>Date</TableHead>
+                     <TableHead className="w-12" />
                 </TableHeader>
                 <TableBody>
                   {webOrders.map((order: any) => (
