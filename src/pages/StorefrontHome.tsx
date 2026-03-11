@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Search, ArrowUpDown, SlidersHorizontal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -48,40 +47,9 @@ export default function StorefrontHome() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  const prefetchedBulk = queryClient.getQueryData<any>(["storefront-bulk", store.id]);
-
-  const { data: products, isLoading } = useQuery({
-    queryKey: ["storefront-products", store.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("store_id", store.id)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!store.id,
-    staleTime: 5 * 60 * 1000,
-    initialData: prefetchedBulk?.products,
-  });
-
-  const { data: storeCategories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ["storefront-categories", store.id],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("categories")
-        .select("*")
-        .eq("store_id", store.id)
-        .order("name");
-      if (error) throw error;
-      return data as { id: string; name: string; slug: string; image_url: string | null }[];
-    },
-    enabled: !!store.id,
-    staleTime: 5 * 60 * 1000,
-    initialData: prefetchedBulk?.categories,
-  });
+  // Read directly from pre-seeded cache — zero fetch, instant render
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
 
   const bestSellingProducts = useMemo(() => {
     if (!products) return [];
@@ -139,7 +107,7 @@ export default function StorefrontHome() {
       <StorefrontCategories
         categories={storeCategories}
         storeSlug={slug!}
-        isLoading={categoriesLoading}
+        isLoading={!storeCategories}
       />
 
       <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
@@ -172,7 +140,6 @@ export default function StorefrontHome() {
             </section>
           )
         )}
-
 
         {/* Product Grid */}
         <section>
@@ -218,7 +185,7 @@ export default function StorefrontHome() {
               )}
             </div>
           </div>
-          {isLoading || !products ? (
+          {!products ? (
             <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
