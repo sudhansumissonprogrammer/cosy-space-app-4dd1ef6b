@@ -37,10 +37,10 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   @page { size: 100mm 150mm; margin: 3mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color: #000;
-    line-height: 1.3;
-    font-size: 8px;
+    line-height: 1.4;
+    font-size: 9px;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -56,17 +56,16 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     margin-bottom: 3mm;
   }
   .brand-row { display: flex; align-items: center; gap: 2mm; }
-  .brand-logo { height: 28px; width: auto; object-fit: contain; }
-  .brand-name { font-size: 11px; font-weight: 800; }
-  .brand-contact { font-size: 6.5px; color: #444; margin-top: 1px; }
-  .inv-tag { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-  .inv-id { font-size: 7px; color: #555; margin-top: 1px; text-align: right; }
+  .brand-logo { height: 40px; width: auto; object-fit: contain; }
+  .brand-contact { font-size: 7.5px; color: #444; margin-top: 2px; }
+  .inv-tag { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .inv-id { font-size: 8px; color: #555; margin-top: 1px; text-align: right; }
 
   /* Sections */
   .row { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
   .col { flex: 1; }
-  .sec-label { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 1mm; }
-  .sec-val { font-size: 8px; color: #111; line-height: 1.5; }
+  .sec-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 1mm; }
+  .sec-val { font-size: 9px; color: #111; line-height: 1.5; }
   .sec-val strong { font-weight: 700; }
   .sec-val-right { text-align: right; }
 
@@ -74,7 +73,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     display: inline-block;
     padding: 1px 5px;
     border-radius: 2px;
-    font-size: 6.5px;
+    font-size: 7.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -92,7 +91,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   /* Items Table */
   .items-tbl { width: 100%; border-collapse: collapse; }
   .items-tbl th {
-    font-size: 6.5px;
+    font-size: 7.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
@@ -104,7 +103,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   .items-tbl th.r { text-align: right; }
   .items-tbl th.c { text-align: center; }
   .items-tbl td {
-    font-size: 7.5px;
+    font-size: 8.5px;
     padding: 3px 4px;
     border-bottom: 0.5px solid #ddd;
     color: #222;
@@ -117,10 +116,10 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   /* Totals */
   .totals { display: flex; justify-content: flex-end; margin-top: 1.5mm; }
   .totals-tbl { width: 45mm; border-collapse: collapse; }
-  .totals-tbl td { padding: 2px 4px; font-size: 7.5px; color: #444; }
+  .totals-tbl td { padding: 2px 4px; font-size: 8.5px; color: #444; }
   .totals-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #111; }
   .totals-tbl .grand td {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
     color: #000;
     border-top: 1.5px solid #000;
@@ -134,8 +133,8 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     border-top: 1px solid #ccc;
     text-align: center;
   }
-  .footer-txt { font-size: 6.5px; color: #888; }
-  .footer-bold { font-size: 7.5px; font-weight: 700; color: #222; margin-bottom: 1px; }
+  .footer-txt { font-size: 7.5px; color: #888; }
+  .footer-bold { font-size: 8.5px; font-weight: 700; color: #222; margin-bottom: 1px; }
 </style>
 </head><body>
 <div class="label">
@@ -245,12 +244,12 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   return (
     <div className="space-y-4">
       {/* Compact Preview (matches 4x6 label feel) */}
-      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs">
+      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b-2 border-foreground">
           <div className="flex items-center gap-2">
             {store?.logo_url && (
-              <img src={store.logo_url} alt="Store logo" className="h-7 w-auto object-contain" />
+              <img src={store.logo_url} alt="Store logo" className="h-10 w-auto object-contain" />
             )}
             <div>
               <p className="text-[9px] text-muted-foreground leading-tight">
