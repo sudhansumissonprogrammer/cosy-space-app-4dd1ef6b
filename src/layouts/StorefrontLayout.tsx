@@ -352,7 +352,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     <CartProvider slug={store.slug}>
       <WishlistProvider slug={store.slug}>
         <StorefrontAuthProvider storeId={store.id}>
-          <div className="storefront-font min-h-screen bg-background font-sans" style={themeStyle}>
+          <div className="storefront-font min-h-screen font-sans" style={{ ...themeStyle, backgroundColor: "var(--storefront-bg, hsl(var(--background)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
             <StorefrontMarquee />
             
             <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
