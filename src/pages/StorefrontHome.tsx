@@ -130,9 +130,10 @@ export default function StorefrontHome() {
       {/* Full-screen search overlay */}
       <StorefrontSearchOverlay
         open={searchOpen}
-        onClose={() => setSearchOpen(false)}
+        onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
         products={products}
         slug={slug!}
+        initialFiltersOpen={openFilters}
       />
 
       <StorefrontCategories
