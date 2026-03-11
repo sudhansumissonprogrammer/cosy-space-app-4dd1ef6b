@@ -162,6 +162,7 @@ export default function StoreOrders() {
                        <TableCell>
                          <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
                        </TableCell>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
