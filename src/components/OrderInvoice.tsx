@@ -94,7 +94,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   .items-tbl { width: 100%; border-collapse: collapse; }
   .items-tbl th {
     font-size: 7.5px;
-    font-weight: 700;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     color: #fff;
