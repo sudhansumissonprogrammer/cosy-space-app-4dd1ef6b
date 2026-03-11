@@ -1054,7 +1054,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      store_payment_config_public: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          payment_methods: Json | null
+          razorpay_key_id: string | null
+          store_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          payment_methods?: Json | null
+          razorpay_key_id?: string | null
+          store_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          payment_methods?: Json | null
+          razorpay_key_id?: string | null
+          store_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
