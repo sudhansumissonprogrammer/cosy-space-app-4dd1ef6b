@@ -42,6 +42,8 @@ interface StorefrontProductCardProps {
   product: Tables<"products">;
   slug: string;
   store: Tables<"stores">;
+  /** Mark as high-priority for above-the-fold images (first 4 products) */
+  priority?: boolean;
 }
 
 const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
