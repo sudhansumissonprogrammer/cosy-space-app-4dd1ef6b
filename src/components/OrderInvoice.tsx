@@ -33,12 +33,12 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     doc.open();
     doc.write(`<!DOCTYPE html>
 <html><head><title>Label #${order.id.slice(0, 8).toUpperCase()}</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Changa+One:ital@0;1&display=swap" rel="stylesheet">
 <style>
   @page { size: 100mm 150mm; margin: 3mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Changa One', sans-serif;
     color: #000;
     line-height: 1.4;
     font-size: 9px;
@@ -245,7 +245,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   return (
     <div className="space-y-4">
       {/* Compact Preview (matches 4x6 label feel) */}
-      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Changa One', sans-serif" }}>
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b-2 border-foreground">
           <div className="flex items-center gap-2">
