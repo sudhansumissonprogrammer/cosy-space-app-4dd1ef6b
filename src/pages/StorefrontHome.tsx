@@ -1,18 +1,14 @@
 import { useState, useMemo } from "react";
-import { Link, useOutletContext, useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { SlidersHorizontal, ArrowUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, ArrowUpDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import StorefrontHero from "@/components/storefront/StorefrontHero";
 import StorefrontCategories from "@/components/storefront/StorefrontCategories";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
-
-import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
+import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 
@@ -38,11 +34,7 @@ export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
-  const [availability, setAvailability] = useState<"all" | "in_stock">("all");
-  const [bestSellingFilter, setBestSellingFilter] = useState<"all" | "best_selling">("all");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
   const [sortOpen, setSortOpen] = useState(false);
 
@@ -55,14 +47,6 @@ export default function StorefrontHome() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  const applyAndClose = (fn: () => void) => {
-    fn();
-    setFiltersOpen(false);
-  };
-
-  const activeFilterCount = [priceRange, availability !== "all", bestSellingFilter !== "all"].filter(Boolean).length;
-
-  // Use initialData from prefetched RPC to avoid redundant fetch
   const prefetchedBulk = queryClient.getQueryData<any>(["storefront-bulk", store.id]);
 
   const { data: products, isLoading } = useQuery({
@@ -98,30 +82,14 @@ export default function StorefrontHome() {
     initialData: prefetchedBulk?.categories,
   });
 
-  const priceRanges: { label: string; range: [number, number] }[] = [
-    { label: "Under ₹500", range: [0, 500] },
-    { label: "₹500 – ₹1000", range: [500, 1000] },
-    { label: "₹1000 – ₹2000", range: [1000, 2000] },
-    { label: "₹2000+", range: [2000, Infinity] },
-  ];
-
   const bestSellingProducts = useMemo(() => {
     if (!products) return [];
     return products.filter((p: any) => p.is_best_selling);
   }, [products]);
 
-  const filteredProducts = useMemo(() => {
+  const nonBestSellingProducts = useMemo(() => {
     if (!products) return [];
-    const filtered = products.filter((p) => {
-      if ((p as any).is_best_selling) return false;
-      const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const effectivePrice = p.sale_price ?? p.price;
-      const matchesPrice = !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
-      const matchesAvail = availability === "all" || p.stock_quantity > 0;
-      const matchesBestSelling = bestSellingFilter === "all" || (p as any).is_best_selling;
-      return matchesSearch && matchesPrice && matchesAvail && matchesBestSelling;
-    });
-
+    const filtered = products.filter((p) => !(p as any).is_best_selling);
     const sorted = [...filtered];
     switch (sortBy) {
       case "price_asc":
@@ -133,120 +101,32 @@ export default function StorefrontHome() {
       case "newest":
         sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
-      default:
-        break;
     }
     return sorted;
-  }, [products, searchQuery, priceRange, availability, bestSellingFilter, sortBy]);
+  }, [products, sortBy]);
 
   return (
     <>
-      {/* Search + Filters — seamless with nav */}
-      <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1 relative z-[60]">
+      {/* Search bar trigger */}
+      <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1">
         <div className="mx-auto max-w-6xl">
-          <div className="relative flex items-center gap-2">
-            <StorefrontSearchBar
-              products={products}
-              slug={slug!}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setFiltersOpen(true)}
-              className={`h-10 w-10 rounded-full shrink-0 transition-colors ${activeFilterCount > 0 ? "bg-foreground text-background hover:bg-foreground/90" : "bg-accent/60 hover:bg-accent"}`}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              {activeFilterCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-                  {activeFilterCount}
-                </span>
-              )}
-            </Button>
-          </div>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex w-full items-center gap-2.5 rounded-full bg-accent/60 px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <Search className="h-4 w-4 shrink-0" />
+            <span>Search products...</span>
+          </button>
         </div>
       </div>
 
-      {/* Filter Dialog */}
-      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Filters</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-5 pt-2">
-            {/* Best Selling Filter */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Best Selling</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => applyAndClose(() => setBestSellingFilter("all"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "all" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => applyAndClose(() => setBestSellingFilter("best_selling"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${bestSellingFilter === "best_selling" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
-                >
-                  Best Selling
-                </button>
-              </div>
-            </div>
-
-            {/* Price Range */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Price Range</p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => applyAndClose(() => setPriceRange(null))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${!priceRange ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
-                >
-                  Any
-                </button>
-                {priceRanges.map((pr) => (
-                  <button
-                    key={pr.label}
-                    onClick={() => applyAndClose(() => setPriceRange(pr.range))}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${priceRange?.[0] === pr.range[0] ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
-                  >
-                    {pr.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Availability */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => applyAndClose(() => setAvailability("all"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "all" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => applyAndClose(() => setAvailability("in_stock"))}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${availability === "in_stock" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"}`}
-                >
-                  In Stock
-                </button>
-              </div>
-            </div>
-
-            {/* Clear Filters */}
-            {activeFilterCount > 0 && (
-              <button
-                onClick={() => applyAndClose(() => { setPriceRange(null); setAvailability("all"); setBestSellingFilter("all"); })}
-                className="text-xs text-destructive hover:underline font-medium"
-              >
-                Clear all filters
-              </button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Full-screen search overlay */}
+      <StorefrontSearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        products={products}
+        slug={slug!}
+      />
 
       <StorefrontCategories
         categories={storeCategories}
@@ -257,7 +137,6 @@ export default function StorefrontHome() {
       <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
 
       <div className="mx-auto max-w-6xl px-4 pt-4 pb-8 space-y-6">
-
         {/* Best Selling Section */}
         {bestSellingProducts.length > 0 && (
           (store as any).best_selling_carousel ? (
@@ -283,14 +162,7 @@ export default function StorefrontHome() {
         {/* Product Grid */}
         <section>
           <div className="mb-5 flex items-center justify-between gap-3">
-            <h2 className="text-xl font-bold text-foreground">
-              Popular Products
-              {filteredProducts.length !== (products?.length || 0) && (
-                <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  ({filteredProducts.length} of {products?.length})
-                </span>
-              )}
-            </h2>
+            <h2 className="text-xl font-bold text-foreground">Popular Products</h2>
             <div className="relative">
               <button
                 onClick={() => setSortOpen(!sortOpen)}
@@ -334,9 +206,9 @@ export default function StorefrontHome() {
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
-          ) : filteredProducts.length > 0 ? (
+          ) : nonBestSellingProducts.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {filteredProducts.map((product, idx) => (
+              {nonBestSellingProducts.map((product, idx) => (
                 <StorefrontProductCard
                   key={product.id}
                   product={product}
@@ -348,13 +220,10 @@ export default function StorefrontHome() {
             </div>
           ) : (
             <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
-              <p className="text-muted-foreground">
-                {searchQuery ? "No products match your search." : "No products available yet."}
-              </p>
+              <p className="text-muted-foreground">No products available yet.</p>
             </div>
           )}
         </section>
-
       </div>
     </>
   );
