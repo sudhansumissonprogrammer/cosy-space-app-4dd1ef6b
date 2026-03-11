@@ -1237,7 +1237,7 @@ function LuxuryPreview({ config, storeName }: { config: ThemeConfig; storeName: 
   );
 }
 
-
+export default function StoreThemeSettings() {
   const { storeId } = useParams<{ storeId: string }>();
   const queryClient = useQueryClient();
 
