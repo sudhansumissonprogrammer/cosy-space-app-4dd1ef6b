@@ -222,7 +222,7 @@ function TestimonialsSlider() {
   const review = reviews[current];
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-12">
       <div className="text-center mb-10">
         <span
           className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[11px] font-medium mb-4"
