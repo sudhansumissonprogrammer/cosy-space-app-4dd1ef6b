@@ -12,6 +12,7 @@ interface StorefrontSearchOverlayProps {
   onClose: () => void;
   products: Tables<"products">[] | undefined;
   slug: string;
+  initialFiltersOpen?: boolean;
 }
 
 const PRICE_RANGES: { label: string; range: [number, number] }[] = [
