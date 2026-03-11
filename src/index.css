@@ -164,3 +164,14 @@
     transform: translateX(-50%);
   }
 }
+
+@keyframes bounce-once {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.08); }
+  50% { transform: scale(0.95); }
+  70% { transform: scale(1.03); }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.5s ease-out;
+}
