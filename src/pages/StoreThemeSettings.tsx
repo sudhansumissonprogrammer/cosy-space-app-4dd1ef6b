@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, Palette, RotateCcw, Save, Lock, ShoppingCart, Heart, User, Menu, Star, Package, MapPin, Clock, MessageCircle, Store, ShoppingBag, Truck, Shield, Tag, Search, Share2, ChevronRight, ArrowLeft, Minus, Plus, X, ChevronLeft, Eye, Flame, SlidersHorizontal } from "lucide-react";
+import { Check, Palette, RotateCcw, Save, Lock, ShoppingCart, Heart, User, Menu, Star, Package, MapPin, Clock, MessageCircle, Store, ShoppingBag, Truck, Shield, Tag, Search, Share2, ChevronRight, ArrowLeft, Minus, Plus, X, ChevronLeft, Eye, Flame, SlidersHorizontal, Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 const FONT_OPTIONS = [
@@ -259,6 +259,51 @@ const COLOR_COMBINATIONS = [
     background: "#F5F0EB",
     marquee: "linear-gradient(90deg, #800020, #c44569, #800020)",
   },
+  {
+    id: "startup-purple-black",
+    name: "Purple & Black",
+    primary: "#6366F1",
+    accent: "#22C55E",
+    text: "#e2e8f0",
+    background: "#0F172A",
+    marquee: "linear-gradient(90deg, #6366F1, #818cf8, #22C55E)",
+  },
+  {
+    id: "startup-neon-blue",
+    name: "Neon Blue & Dark",
+    primary: "#3B82F6",
+    accent: "#06B6D4",
+    text: "#e2e8f0",
+    background: "#0a0f1a",
+    marquee: "linear-gradient(90deg, #3B82F6, #60a5fa, #06B6D4)",
+  },
+  {
+    id: "startup-pink-purple",
+    name: "Pink & Purple",
+    primary: "#EC4899",
+    accent: "#8B5CF6",
+    text: "#f1e6f9",
+    background: "#1a0a2e",
+    marquee: "linear-gradient(90deg, #EC4899, #f472b6, #8B5CF6)",
+  },
+  {
+    id: "startup-cyan-navy",
+    name: "Cyan & Dark Navy",
+    primary: "#06B6D4",
+    accent: "#10B981",
+    text: "#e0f2fe",
+    background: "#0c1524",
+    marquee: "linear-gradient(90deg, #06B6D4, #22d3ee, #10B981)",
+  },
+  {
+    id: "startup-gradient-ui",
+    name: "Gradient Aurora",
+    primary: "#8B5CF6",
+    accent: "#F97316",
+    text: "#f1f5f9",
+    background: "#0F172A",
+    marquee: "linear-gradient(90deg, #8B5CF6, #EC4899, #F97316)",
+  },
 ];
 
 interface ThemeConfig {
@@ -313,6 +358,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #C8A96A, #e8d5a8, #C8A96A)",
   },
+  "theme-5": {
+    primary_color: "#6366F1",
+    accent_color: "#22C55E",
+    text_color: "#e2e8f0",
+    background_color: "#0F172A",
+    heading_font: "Space Grotesk",
+    body_font: "Inter",
+    button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #6366F1, #818cf8, #22C55E)",
+  },
 };
 
 const THEMES = [
@@ -320,6 +375,7 @@ const THEMES = [
   { id: "theme-2", name: "Bold Modern", description: "Transparent header, carousel hero, masonry grid", available: true },
   { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
   { id: "theme-4", name: "Luxury", description: "Premium editorial layout with serif typography & elegant spacing", available: true },
+  { id: "theme-5", name: "Startup", description: "Glassmorphism, gradient hero, dark mode with neon accents", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
@@ -1237,6 +1293,150 @@ function LuxuryPreview({ config, storeName }: { config: ThemeConfig; storeName: 
   );
 }
 
+/* ── Startup Preview (Theme 5) ── */
+function StartupPreview({ config, storeName }: { config: ThemeConfig; storeName: string }) {
+  const primaryLight = lightenColor(config.primary_color);
+  const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
+  const btnRadius = config.button_style === "pill" ? "9999px" : config.button_style === "square" ? "0px" : "0.75rem";
+
+  return (
+    <div className="flex justify-center">
+      <div className="relative mx-auto" style={{ width: "375px" }}>
+        <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
+          <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
+            <div className="h-2 w-2 rounded-full bg-gray-600" />
+          </div>
+
+          <div className="relative" style={{ height: "680px", backgroundColor: config.background_color }}>
+            <div className="h-full overflow-y-auto" style={{ color: config.text_color }}>
+              {/* Glass Nav */}
+              <div className="sticky top-0 z-10 px-3 py-2.5 flex items-center gap-2" style={{ backgroundColor: config.background_color + "e8", backdropFilter: "blur(12px)" }}>
+                <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <Menu className="h-3.5 w-3.5" style={{ color: config.text_color }} />
+                </div>
+                <span className="text-[10px] font-bold" style={{ fontFamily: config.heading_font }}>{storeName}</span>
+                <div className="flex-1" />
+                <div className="flex items-center gap-1.5">
+                  <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
+                    <Heart className="h-3 w-3" style={{ color: config.text_color }} />
+                  </div>
+                  <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
+                    <ShoppingCart className="h-3 w-3" style={{ color: config.text_color }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Gradient Hero */}
+              <div className="relative px-4 pt-6 pb-8" style={{
+                background: `radial-gradient(ellipse 80% 60% at 50% -20%, ${config.primary_color}40, transparent), radial-gradient(ellipse 60% 50% at 80% 80%, ${config.accent_color}25, transparent), ${config.background_color}`,
+              }}>
+                <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 mb-3 text-[6px] font-medium" style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: config.accent_color }}>
+                  <Sparkles className="h-2 w-2" /> New Collection
+                </div>
+                <h1 className="text-lg font-bold leading-tight" style={{ fontFamily: config.heading_font }}>{storeName}</h1>
+                <p className="mt-1 text-[8px] opacity-50">Discover premium products crafted for the modern generation.</p>
+                <button className="mt-3 px-4 py-1.5 text-[7px] font-semibold flex items-center gap-1" style={{
+                  background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`,
+                  color: "#fff",
+                  borderRadius: btnRadius,
+                  boxShadow: `0 4px 15px ${config.primary_color}40`,
+                }}>
+                  Shop Now <ArrowRight className="h-2 w-2" />
+                </button>
+              </div>
+
+              {/* Benefits */}
+              <div className="px-3 py-3 grid grid-cols-2 gap-1.5">
+                {[
+                  { icon: "⚡", label: "Fast Delivery" },
+                  { icon: "🛡️", label: "Secure Pay" },
+                  { icon: "🚚", label: "Free Ship" },
+                  { icon: "✨", label: "Premium" },
+                ].map((b) => (
+                  <div key={b.label} className="rounded-xl p-2 text-center" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <span className="text-[10px]">{b.icon}</span>
+                    <p className="text-[6px] font-medium mt-0.5" style={{ color: config.text_color }}>{b.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Category Tabs */}
+              <div className="px-3 flex gap-1.5 overflow-hidden">
+                {["All", ...FAKE_CATEGORIES.slice(0, 3)].map((cat, i) => (
+                  <div key={cat} className="flex-shrink-0 rounded-lg px-2.5 py-1 text-[6px] font-medium" style={{
+                    background: i === 0 ? `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` : "rgba(255,255,255,0.05)",
+                    color: i === 0 ? "#fff" : config.text_color,
+                    border: i === 0 ? "none" : "1px solid rgba(255,255,255,0.06)",
+                  }}>
+                    {cat}
+                  </div>
+                ))}
+              </div>
+
+              {/* Product Grid */}
+              <div className="px-3 py-3">
+                <h3 className="text-[9px] font-bold mb-2" style={{ fontFamily: config.heading_font }}>Our Products</h3>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {FAKE_PRODUCTS.map((p) => (
+                    <div key={p.id} className="overflow-hidden rounded-xl" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div className="relative flex items-center justify-center" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
+                        <Package className="h-5 w-5" style={{ color: config.text_color + "15" }} />
+                        {p.badge && <span className="absolute top-1 left-1 rounded-full px-1 py-px text-[5px] font-bold" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`, color: "#fff" }}>{p.badge}</span>}
+                      </div>
+                      <div className="p-1.5 space-y-0.5">
+                        <p className="text-[7px] font-semibold line-clamp-1">{p.name}</p>
+                        <span className="text-[7px] font-bold">{p.price}</span>
+                        <button className="w-full h-4 flex items-center justify-center text-[5px] font-bold" style={{
+                          background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`,
+                          color: "#fff",
+                          borderRadius: btnRadius,
+                        }}>Add to Cart</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Testimonial */}
+              <div className="px-3 py-3">
+                <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="flex justify-center gap-0.5 mb-1.5">
+                    {[...Array(5)].map((_, i) => <Star key={i} className="h-2 w-2 fill-current" style={{ color: config.accent_color }} />)}
+                  </div>
+                  <p className="text-[7px] italic opacity-60">"Best online shopping experience ever!"</p>
+                  <div className="mt-2 flex items-center justify-center gap-1.5">
+                    <div className="h-4 w-4 rounded-full text-[5px] font-bold flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})`, color: "#fff" }}>AK</div>
+                    <span className="text-[6px] font-medium">Ananya K.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Newsletter */}
+              <div className="mx-3 mb-3 rounded-xl p-4 text-center" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` }}>
+                <h3 className="text-[9px] font-bold text-white" style={{ fontFamily: config.heading_font }}>Stay in the Loop</h3>
+                <p className="text-[6px] text-white/60 mt-0.5">Get exclusive deals straight to your inbox.</p>
+                <div className="mt-2 flex gap-1">
+                  <div className="flex-1 rounded-lg bg-white/20 px-2 py-1 text-[6px] text-white/50 text-left">your@email.com</div>
+                  <div className="rounded-lg bg-white px-2 py-1 text-[6px] font-semibold" style={{ color: config.primary_color }}>Go</div>
+                </div>
+              </div>
+
+              {/* Dark footer */}
+              <div className="px-3 py-3 border-t text-center" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+                <p className="text-[6px] opacity-30">© 2026 {storeName}. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex h-5 items-center justify-center bg-gray-800">
+            <div className="h-1 w-24 rounded-full bg-gray-600" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function StoreThemeSettings() {
   const { storeId } = useParams<{ storeId: string }>();
   const queryClient = useQueryClient();
@@ -1387,6 +1587,8 @@ export default function StoreThemeSettings() {
                         ? "linear-gradient(135deg, #ffffff 0%, #2563eb 50%, #1e293b 100%)"
                         : theme.id === "theme-4"
                         ? "linear-gradient(135deg, #F8F5F0 0%, #C8A96A 50%, #1C1C1C 100%)"
+                        : theme.id === "theme-5"
+                        ? "linear-gradient(135deg, #0F172A 0%, #6366F1 50%, #22C55E 100%)"
                         : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
                   />
@@ -1535,7 +1737,9 @@ export default function StoreThemeSettings() {
           {/* Full Storefront Preview */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Full Storefront Preview</h4>
-            {currentTheme === "theme-4" ? (
+            {currentTheme === "theme-5" ? (
+              <StartupPreview config={config} storeName={store?.name || "My Store"} />
+            ) : currentTheme === "theme-4" ? (
               <LuxuryPreview config={config} storeName={store?.name || "My Store"} />
             ) : currentTheme === "theme-3" ? (
               <AppStylePreview config={config} storeName={store?.name || "My Store"} />
