@@ -246,7 +246,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   return (
     <div className="space-y-4">
       {/* Compact Preview (matches 4x6 label feel) */}
-      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Changa One', sans-serif" }}>
+      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b-2 border-foreground">
           <div className="flex items-center gap-2">
