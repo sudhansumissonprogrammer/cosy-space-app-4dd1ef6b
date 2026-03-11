@@ -406,7 +406,7 @@ export default function CheckoutPage() {
             try {
               const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", apikey: anonKey },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
@@ -419,13 +419,23 @@ export default function CheckoutPage() {
               if (!verifyRes.ok) throw new Error(verifyData.error);
               setOrderId(newOrderId);
               setOrderPlaced(true);
+              setPlacing(false);
               if (!isSingleMode) clearCart();
               fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
               if (!customer) createGuestAccount(newOrderId);
               else saveAddressToAccount();
-            } catch { toast.error("Payment verification failed. Contact the store."); }
+              // Notify store owner
+              fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", apikey: anonKey },
+                body: JSON.stringify({ order_id: newOrderId }),
+              }).catch(() => {});
+            } catch {
+              setPlacing(false);
+              toast.error("Payment verification failed. Contact the store.");
+            }
           },
-          prefill: { name: fullName, contact: phone },
+          prefill: { name: fullName, email, contact: phone },
           theme: { color: "#6366f1" },
           modal: { ondismiss: () => { toast.error("Payment cancelled."); setPlacing(false); } },
         };
