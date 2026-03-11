@@ -496,7 +496,7 @@ export default function CheckoutPage() {
             if (!isSingleMode) clearCart();
             fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
             if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
-            fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId }) }).catch(() => {});
+            fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId, customer_email: email.trim() }) }).catch(() => {});
           } catch { setPlacing(false); toast.error("Payment verification failed."); }
         };
 
@@ -552,7 +552,7 @@ export default function CheckoutPage() {
       fetch(`https://${projectId2}.supabase.co/functions/v1/notify-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: anonKey2 },
-        body: JSON.stringify({ order_id: newOrderId }),
+        body: JSON.stringify({ order_id: newOrderId, customer_email: email.trim() }),
       }).catch(() => {});
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
