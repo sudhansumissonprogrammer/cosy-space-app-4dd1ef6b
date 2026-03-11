@@ -42,12 +42,14 @@ interface StorefrontProductCardProps {
   product: Tables<"products">;
   slug: string;
   store: Tables<"stores">;
+  /** Mark as high-priority for above-the-fold images (first 4 products) */
+  priority?: boolean;
 }
 
 const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
-export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
+export default function StorefrontProductCard({ product, slug, store, priority = false }: StorefrontProductCardProps) {
   const { addToCart, items, updateQuantity } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const [isAdding, setIsAdding] = useState(false);
@@ -161,8 +163,9 @@ export default function StorefrontProductCard({ product, slug, store }: Storefro
               src={product.image_url}
               alt={product.name}
               className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-              loading="lazy"
-              decoding="async"
+              loading={priority ? "eager" : "lazy"}
+              decoding={priority ? "sync" : "async"}
+              fetchPriority={priority ? "high" : "auto"}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-secondary/40">

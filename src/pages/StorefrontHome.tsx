@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ function ProductCardSkeleton() {
 export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
@@ -61,6 +62,9 @@ export default function StorefrontHome() {
 
   const activeFilterCount = [priceRange, availability !== "all", bestSellingFilter !== "all"].filter(Boolean).length;
 
+  // Use initialData from prefetched RPC to avoid redundant fetch
+  const prefetchedBulk = queryClient.getQueryData<any>(["storefront-bulk", store.id]);
+
   const { data: products, isLoading } = useQuery({
     queryKey: ["storefront-products", store.id],
     queryFn: async () => {
@@ -75,6 +79,7 @@ export default function StorefrontHome() {
     },
     enabled: !!store.id,
     staleTime: 5 * 60 * 1000,
+    initialData: prefetchedBulk?.products,
   });
 
   const { data: storeCategories, isLoading: categoriesLoading } = useQuery({
@@ -90,6 +95,7 @@ export default function StorefrontHome() {
     },
     enabled: !!store.id,
     staleTime: 5 * 60 * 1000,
+    initialData: prefetchedBulk?.categories,
   });
 
   const priceRanges: { label: string; range: [number, number] }[] = [
@@ -260,12 +266,13 @@ export default function StorefrontHome() {
             <section>
               <h2 className="mb-4 text-xl font-bold text-foreground">🔥 Best Selling</h2>
               <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {bestSellingProducts.map((product) => (
+                {bestSellingProducts.map((product, idx) => (
                   <StorefrontProductCard
                     key={product.id}
                     product={product}
                     slug={slug!}
                     store={store}
+                    priority={idx < 4}
                   />
                 ))}
               </div>
@@ -329,12 +336,13 @@ export default function StorefrontHome() {
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product, idx) => (
                 <StorefrontProductCard
                   key={product.id}
                   product={product}
                   slug={slug!}
                   store={store}
+                  priority={idx < 4}
                 />
               ))}
             </div>
