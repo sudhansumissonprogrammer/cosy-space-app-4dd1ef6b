@@ -163,8 +163,9 @@ export default function StorefrontProductCard({ product, slug, store, priority =
               src={product.image_url}
               alt={product.name}
               className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-              loading="lazy"
-              decoding="async"
+              loading={priority ? "eager" : "lazy"}
+              decoding={priority ? "sync" : "async"}
+              fetchPriority={priority ? "high" : "auto"}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-secondary/40">
