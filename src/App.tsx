@@ -10,9 +10,11 @@ import { getSubdomainSlug } from "@/lib/subdomain";
 import StorefrontLayout from "./layouts/StorefrontLayout";
 import StorefrontLayoutV2 from "./layouts/StorefrontLayoutV2";
 import StorefrontLayoutV3 from "./layouts/StorefrontLayoutV3";
+import StorefrontLayoutV4 from "./layouts/StorefrontLayoutV4";
 import StorefrontHome from "./pages/StorefrontHome";
 import StorefrontHomeV2 from "./pages/StorefrontHomeV2";
 import StorefrontHomeV3 from "./pages/StorefrontHomeV3";
+const StorefrontHomeV4 = lazy(() => import("./pages/StorefrontHomeV4"));
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
 const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
@@ -49,7 +51,7 @@ const LoadingSpinner = () => (
 
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
-  const HomeComponent = theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+  const HomeComponent = theme === "theme-4" ? StorefrontHomeV4 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
   return (
     <>
       <Route index element={<HomeComponent />} />
@@ -83,7 +85,9 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   const theme = (store as any)?.theme || "theme-1";
   const basePath = slugOverride ? "/" : "/store/:slug";
 
-  const LayoutComponent = theme === "theme-3"
+  const LayoutComponent = theme === "theme-4"
+    ? StorefrontLayoutV4
+    : theme === "theme-3"
     ? StorefrontLayoutV3
     : theme === "theme-2"
     ? StorefrontLayoutV2
