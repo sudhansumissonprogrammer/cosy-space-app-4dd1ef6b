@@ -2,18 +2,17 @@ import { useState, useMemo } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { Search, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontHero from "@/components/storefront/StorefrontHero";
 import StorefrontCategories from "@/components/storefront/StorefrontCategories";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
-
-import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
+import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
+import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 
 function ProductCardSkeleton() {
