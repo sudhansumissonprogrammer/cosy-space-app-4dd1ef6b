@@ -361,7 +361,7 @@ export default function StoreSettings() {
                       className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
-                        if (f) { setBannerFile(f); setBannerPreview(URL.createObjectURL(f)); }
+                        if (f) { setBannerFile(f); setBannerPreview(URL.createObjectURL(f)); setBannerRemoved(false); }
                       }}
                     />
                   </label>
