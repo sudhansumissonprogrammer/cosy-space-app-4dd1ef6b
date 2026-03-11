@@ -180,6 +180,30 @@ export default function BulkUpload() {
     URL.revokeObjectURL(url);
   };
 
+  const exportProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("name, price, sale_price, description, category, stock_quantity, sku, image_url")
+        .eq("store_id", storeId!);
+      if (error) throw error;
+      if (!data?.length) { toast.error("No products to export"); return; }
+      const headers = "name,price,sale_price,description,category,stock_quantity,sku,image_url";
+      const rows = data.map((p: any) =>
+        [p.name, p.price, p.sale_price ?? "", p.description ?? "", p.category ?? "", p.stock_quantity, p.sku ?? "", p.image_url ?? ""]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(",")
+      );
+      const csv = [headers, ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "products-export.csv"; a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Products exported");
+    } catch (e: any) { toast.error(e.message); }
+  };
+
   const validCount = parsed.filter((p) => p.valid).length;
   const invalidCount = parsed.filter((p) => !p.valid).length;
 
