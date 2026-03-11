@@ -433,40 +433,44 @@ export default function CheckoutPage() {
       const newOrderId = await createOrder();
 
       if (paymentMethod === "razorpay") {
-        const loaded = await loadRazorpayScript();
-        if (!loaded) throw new Error("Failed to load payment gateway");
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-order`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: anonKey },
-          body: JSON.stringify({ store_id: store.id, amount: total, currency, order_id: newOrderId }),
-        });
-        const rzpData = await res.json();
-        if (!res.ok) throw new Error(rzpData.error || "Payment initiation failed");
 
-        const options = {
-          key: rzpData.key_id,
-          amount: rzpData.amount,
-          currency: rzpData.currency,
-          name: store.name,
-          description: `Order #${newOrderId.slice(0, 8)}`,
-          order_id: rzpData.razorpay_order_id,
-          handler: async (response: any) => {
-            try {
-              const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", apikey: anonKey },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  order_id: newOrderId,
-                  store_id: store.id,
-                }),
-              });
-              const verifyData = await verifyRes.json();
-              if (!verifyRes.ok) throw new Error(verifyData.error);
+        // For UPI: try direct intent flow (no Razorpay modal)
+        if (razorpayMethod === "upi") {
+          const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-upi-intent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: anonKey },
+            body: JSON.stringify({
+              store_id: store.id, amount: total, currency, order_id: newOrderId,
+              email: email.trim(), phone: phone.trim(), name: fullName.trim(), upi_app: upiApp,
+            }),
+          });
+          const data = await res.json();
+
+          if (data.success && data.intent_url) {
+            // Direct UPI intent — opens GPay/PhonePe/Paytm directly
+            setPaymentProcessing(true);
+            setPaymentStatusText("Opening payment app...");
+
+            // Open UPI intent URL
+            window.location.href = data.intent_url;
+
+            // Start polling for payment status
+            const result = await pollPaymentStatus(
+              data.razorpay_payment_id,
+              store.id,
+              newOrderId,
+              (status) => {
+                if (status === "created") setPaymentStatusText("Waiting for payment...");
+                else if (status === "authorized" || status === "captured") setPaymentStatusText("Payment received!");
+                else if (status === "failed") setPaymentStatusText("Payment failed");
+              }
+            );
+
+            setPaymentProcessing(false);
+
+            if (result === "success") {
               setOrderId(newOrderId);
               setOrderPlaced(true);
               setPlacing(false);
@@ -474,29 +478,89 @@ export default function CheckoutPage() {
               fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
               if (!customer) createGuestAccount(newOrderId);
               else saveAddressToAccount();
-              // Notify store owner
               fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", apikey: anonKey },
                 body: JSON.stringify({ order_id: newOrderId }),
               }).catch(() => {});
-            } catch {
+              return;
+            } else {
+              setOrderFailed(true);
+              setOrderId(newOrderId);
               setPlacing(false);
-              toast.error("Payment verification failed. Contact the store.");
+              return;
             }
+          }
+
+          // Fallback: if UPI intent not supported, use Razorpay modal
+          if (data.fallback && data.razorpay_order_id) {
+            const loaded = await loadRazorpayScript();
+            if (!loaded) throw new Error("Failed to load payment gateway");
+            const options = {
+              key: data.key_id, amount: data.amount, currency: data.currency,
+              name: store.name, description: `Order #${newOrderId.slice(0, 8)}`,
+              order_id: data.razorpay_order_id,
+              handler: async (response: any) => {
+                try {
+                  const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", apikey: anonKey },
+                    body: JSON.stringify({ ...response, order_id: newOrderId, store_id: store.id }),
+                  });
+                  if (!verifyRes.ok) throw new Error("Verification failed");
+                  setOrderId(newOrderId); setOrderPlaced(true); setPlacing(false);
+                  if (!isSingleMode) clearCart();
+                  fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+                  if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
+                  fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId }) }).catch(() => {});
+                } catch { setPlacing(false); toast.error("Payment verification failed."); }
+              },
+              prefill: { name: fullName, email, contact: phone, method: "upi" },
+              theme: { color: "#6366f1" },
+              modal: { ondismiss: () => { toast.error("Payment cancelled."); setPlacing(false); } },
+            };
+            const rzp = new window.Razorpay(options); rzp.open();
+            return;
+          }
+
+          throw new Error(data.error || "UPI payment failed");
+        }
+
+        // For Card/NetBanking/Wallet: use Razorpay modal (required for these methods)
+        const loaded = await loadRazorpayScript();
+        if (!loaded) throw new Error("Failed to load payment gateway");
+        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-order`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: anonKey },
+          body: JSON.stringify({ store_id: store.id, amount: total, currency, order_id: newOrderId }),
+        });
+        const rzpData = await res.json();
+        if (!res.ok) throw new Error(rzpData.error || "Payment initiation failed");
+        const options = {
+          key: rzpData.key_id, amount: rzpData.amount, currency: rzpData.currency,
+          name: store.name, description: `Order #${newOrderId.slice(0, 8)}`,
+          order_id: rzpData.razorpay_order_id,
+          handler: async (response: any) => {
+            try {
+              const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", apikey: anonKey },
+                body: JSON.stringify({ ...response, order_id: newOrderId, store_id: store.id }),
+              });
+              if (!verifyRes.ok) throw new Error("Verification failed");
+              setOrderId(newOrderId); setOrderPlaced(true); setPlacing(false);
+              if (!isSingleMode) clearCart();
+              fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+              if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
+              fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId }) }).catch(() => {});
+            } catch { setPlacing(false); toast.error("Payment verification failed."); }
           },
-          prefill: { name: fullName, email, contact: phone, method: razorpayMethod === "upi" ? "upi" : undefined },
+          prefill: { name: fullName, email, contact: phone },
           theme: { color: "#6366f1" },
-          config: { display: { blocks: { highlighted: { instruments: [
-            ...(razorpayMethod === "upi" ? [{ method: "upi" }] : []),
-            ...(razorpayMethod === "card" ? [{ method: "card" }] : []),
-            ...(razorpayMethod === "netbanking" ? [{ method: "netbanking" }] : []),
-            ...(razorpayMethod === "wallet" ? [{ method: "wallet" }] : []),
-          ] } }, sequence: ["block.highlighted", "block.other"], preferences: { show_default_blocks: true } } },
+          config: { display: { blocks: { highlighted: { instruments: [{ method: razorpayMethod }] } }, sequence: ["block.highlighted", "block.other"], preferences: { show_default_blocks: true } } },
           modal: { ondismiss: () => { toast.error("Payment cancelled."); setPlacing(false); } },
         };
-        const rzp = new window.Razorpay(options);
-        rzp.open();
+        const rzp = new window.Razorpay(options); rzp.open();
         return;
       }
 
