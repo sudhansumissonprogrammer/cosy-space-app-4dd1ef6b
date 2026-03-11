@@ -292,11 +292,44 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     );
   }
 
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+
+  // Build CSS variable style object from theme config
+  const themeStyle: React.CSSProperties = themeConfig
+    ? {
+        "--storefront-primary": themeConfig.primary_color,
+        "--storefront-accent": themeConfig.accent_color,
+        "--storefront-text": themeConfig.text_color,
+        "--storefront-bg": themeConfig.background_color,
+        "--storefront-heading-font": themeConfig.heading_font,
+        "--storefront-body-font": themeConfig.body_font,
+        "--storefront-button-radius":
+          themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : "0.5rem",
+        "--storefront-marquee-gradient": themeConfig.marquee_gradient,
+      } as any
+    : {};
+
+  // Load Google Font dynamically
+  useEffect(() => {
+    if (!themeConfig) return;
+    const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
+    const families = fonts.map((f: string) => f.replace(/ /g, "+")).join("&family=");
+    const linkId = "storefront-google-fonts";
+    let link = document.getElementById(linkId) as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+    }
+    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
+  }, [themeConfig?.heading_font, themeConfig?.body_font]);
+
   return (
     <CartProvider slug={store.slug}>
       <WishlistProvider slug={store.slug}>
         <StorefrontAuthProvider storeId={store.id}>
-          <div className="storefront-font min-h-screen bg-background font-sans">
+          <div className="storefront-font min-h-screen bg-background font-sans" style={themeStyle}>
             <StorefrontMarquee />
             
             <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">

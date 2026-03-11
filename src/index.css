@@ -52,6 +52,16 @@
 
     font-family: 'Inter', 'Segoe UI', sans-serif;
     --font-storefront: 'Alegreya SC', serif;
+
+    /* Storefront theme defaults (overridden by inline CSS vars) */
+    --storefront-primary: #b8873c;
+    --storefront-accent: #000000;
+    --storefront-text: #1a1a1a;
+    --storefront-bg: #f7f5f0;
+    --storefront-heading-font: 'Alegreya SC';
+    --storefront-body-font: 'Inter';
+    --storefront-button-radius: 0.5rem;
+    --storefront-marquee-gradient: linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a);
   }
 
   .dark {
