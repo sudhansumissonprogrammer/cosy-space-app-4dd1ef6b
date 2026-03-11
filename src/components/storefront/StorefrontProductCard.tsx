@@ -49,7 +49,7 @@ interface StorefrontProductCardProps {
 const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
-export default function StorefrontProductCard({ product, slug, store }: StorefrontProductCardProps) {
+export default function StorefrontProductCard({ product, slug, store, priority = false }: StorefrontProductCardProps) {
   const { addToCart, items, updateQuantity } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const [isAdding, setIsAdding] = useState(false);
