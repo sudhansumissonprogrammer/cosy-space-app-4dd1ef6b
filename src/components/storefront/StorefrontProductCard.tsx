@@ -161,7 +161,9 @@ export default function StorefrontProductCard({ product, slug, store, priority =
 
           {product.image_url ? (
             <img
-              src={product.image_url}
+              src={optimizeImageUrl(product.image_url, 400)}
+              srcSet={getImageSrcSet(product.image_url, [300, 400, 600])}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               alt={product.name}
               className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
               loading={priority ? "eager" : "lazy"}
