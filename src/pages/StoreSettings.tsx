@@ -58,10 +58,13 @@ export default function StoreSettings() {
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoRemoved, setLogoRemoved] = useState(false);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [bannerRemoved, setBannerRemoved] = useState(false);
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
+  const [heroRemoved, setHeroRemoved] = useState(false);
   const [theme, setTheme] = useState("theme-1");
   const [features, setFeatures] = useState<Feature[]>([]);
   const [returnPolicy, setReturnPolicy] = useState("");
@@ -138,6 +141,10 @@ export default function StoreSettings() {
       let logoUrl = store?.logo_url || null;
       let bannerUrl = store?.banner_url || null;
       let mobileHeroUrl = (store as any)?.mobile_hero_url || null;
+
+      if (logoRemoved) logoUrl = null;
+      if (bannerRemoved) bannerUrl = null;
+      if (heroRemoved) mobileHeroUrl = null;
 
       if (logoFile) logoUrl = await uploadFile(logoFile, "store-logos");
       if (bannerFile) bannerUrl = await uploadFile(bannerFile, "store-banners");
@@ -310,7 +317,7 @@ export default function StoreSettings() {
                     <img src={logoPreview} alt="Logo" className="h-20 w-20 rounded-lg border object-cover" />
                     <button
                       type="button"
-                      onClick={() => { setLogoFile(null); setLogoPreview(null); }}
+                      onClick={() => { setLogoFile(null); setLogoPreview(null); setLogoRemoved(true); }}
                       className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
                     >
                       <X className="h-3 w-3" />
@@ -325,7 +332,7 @@ export default function StoreSettings() {
                       className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
-                        if (f) { setLogoFile(f); setLogoPreview(URL.createObjectURL(f)); }
+                        if (f) { setLogoFile(f); setLogoPreview(URL.createObjectURL(f)); setLogoRemoved(false); }
                       }}
                     />
                   </label>
@@ -339,7 +346,7 @@ export default function StoreSettings() {
                     <img src={bannerPreview} alt="Banner" className="h-20 w-40 rounded-lg border object-cover" />
                     <button
                       type="button"
-                      onClick={() => { setBannerFile(null); setBannerPreview(null); }}
+                      onClick={() => { setBannerFile(null); setBannerPreview(null); setBannerRemoved(true); }}
                       className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
                     >
                       <X className="h-3 w-3" />
@@ -354,7 +361,7 @@ export default function StoreSettings() {
                       className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
-                        if (f) { setBannerFile(f); setBannerPreview(URL.createObjectURL(f)); }
+                        if (f) { setBannerFile(f); setBannerPreview(URL.createObjectURL(f)); setBannerRemoved(false); }
                       }}
                     />
                   </label>
@@ -369,7 +376,7 @@ export default function StoreSettings() {
                   <img src={heroPreview} alt="Mobile Hero" className="w-full max-h-32 rounded-lg border object-contain" />
                   <button
                     type="button"
-                    onClick={() => { setHeroFile(null); setHeroPreview(null); }}
+                    onClick={() => { setHeroFile(null); setHeroPreview(null); setHeroRemoved(true); }}
                     className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
                   >
                     <X className="h-3 w-3" />
@@ -385,7 +392,7 @@ export default function StoreSettings() {
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) { setHeroFile(f); setHeroPreview(URL.createObjectURL(f)); }
+                      if (f) { setHeroFile(f); setHeroPreview(URL.createObjectURL(f)); setHeroRemoved(false); }
                     }}
                   />
                 </label>
