@@ -880,6 +880,164 @@ function BoldModernPreview({ config, storeName }: { config: ThemeConfig; storeNa
   );
 }
 
+/* ── App Style Preview (Theme 3) ── */
+function AppStylePreview({ config, storeName }: { config: ThemeConfig; storeName: string }) {
+  const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
+  const btnRadius = config.button_style === "pill" ? "9999px" : config.button_style === "square" ? "0px" : "0.75rem";
+
+  const [currentBanner, setCurrentBanner] = useState(0);
+  const banners = ["New Arrivals", "Flash Sale", "Premium Quality"];
+
+  useEffect(() => {
+    const t = setInterval(() => setCurrentBanner((c) => (c + 1) % banners.length), 3000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="flex justify-center">
+      <div className="relative mx-auto" style={{ width: "375px" }}>
+        <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
+          <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
+            <div className="h-2 w-2 rounded-full bg-gray-600" />
+          </div>
+
+          <div className="relative" style={{ height: "680px", backgroundColor: config.background_color }}>
+            <div className="h-full overflow-y-auto">
+              {/* Sticky App Header */}
+              <div className="sticky top-0 z-10 px-3 py-2 border-b" style={{ backgroundColor: config.background_color, borderColor: config.text_color + "10" }}>
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-xl flex items-center justify-center" style={{ backgroundColor: config.primary_color + "15" }}>
+                    <Menu className="h-3.5 w-3.5" style={{ color: config.text_color }} />
+                  </div>
+                  <div className="flex-1 flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ backgroundColor: config.text_color + "08", border: `1px solid ${config.text_color}12` }}>
+                    <Search className="h-3 w-3" style={{ color: config.text_color + "40" }} />
+                    <span className="text-[8px]" style={{ color: config.text_color + "40" }}>Search products...</span>
+                  </div>
+                  <div className="h-7 w-7 rounded-xl flex items-center justify-center" style={{ backgroundColor: config.primary_color + "15" }}>
+                    <ShoppingCart className="h-3.5 w-3.5" style={{ color: config.text_color }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Banner */}
+              <div className="px-3 pt-2.5">
+                <div className="relative rounded-2xl overflow-hidden" style={{ height: "110px", background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` }}>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  <div className="absolute bottom-3 left-3">
+                    <h2 className="text-sm font-bold text-white" style={{ fontFamily: config.heading_font }}>{banners[currentBanner]}</h2>
+                    <p className="text-[7px] text-white/70 mt-0.5">Shop the latest trends</p>
+                  </div>
+                  <div className="absolute bottom-2 right-3 flex gap-1">
+                    {banners.map((_, i) => (
+                      <div key={i} className="h-1 rounded-full" style={{ width: i === currentBanner ? "12px" : "4px", backgroundColor: i === currentBanner ? config.primary_color : "rgba(255,255,255,0.4)" }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Category icons */}
+              <div className="px-3 py-2.5 flex gap-3">
+                {FAKE_CATEGORIES.map((cat) => (
+                  <div key={cat} className="flex flex-col items-center gap-1 flex-shrink-0">
+                    <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: config.primary_color + "12", border: `1px solid ${config.primary_color}20` }}>
+                      <Tag className="h-4 w-4" style={{ color: config.primary_color }} />
+                    </div>
+                    <span className="text-[7px] font-semibold" style={{ color: config.text_color }}>{cat}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Flash Deals */}
+              <div className="px-3 py-1">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-5 w-5 rounded flex items-center justify-center" style={{ backgroundColor: config.primary_color }}>
+                      <Flame className="h-3 w-3" style={{ color: btnText }} />
+                    </div>
+                    <span className="text-[9px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>Flash Deals</span>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {["05", "42", "18"].map((t, i) => (
+                      <span key={i} className="flex items-center">
+                        <span className="rounded px-0.5 py-px text-[6px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>{t}</span>
+                        {i < 2 && <span className="text-[6px] mx-0.5" style={{ color: config.primary_color }}>:</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-1.5 overflow-hidden">
+                  {FAKE_PRODUCTS.slice(0, 3).map((p) => (
+                    <div key={p.id} className="w-20 flex-shrink-0 overflow-hidden rounded-xl border" style={{ borderColor: config.text_color + "10" }}>
+                      <div className="h-16 relative flex items-center justify-center" style={{ backgroundColor: config.primary_color + "08" }}>
+                        <Package className="h-5 w-5" style={{ color: config.text_color + "15" }} />
+                        {p.discount && <span className="absolute top-1 left-1 rounded-full px-1 py-px text-[5px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>{p.discount}</span>}
+                      </div>
+                      <div className="p-1">
+                        <p className="text-[6px] font-semibold line-clamp-1" style={{ color: config.text_color }}>{p.name}</p>
+                        <span className="text-[7px] font-bold" style={{ color: config.text_color }}>{p.price}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Product Grid */}
+              <div className="px-3 py-2">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[9px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>All Products</h3>
+                  <span className="text-[6px] font-medium" style={{ color: config.text_color + "50" }}>Sort ↕</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {FAKE_PRODUCTS.map((product) => (
+                    <div key={product.id} className="overflow-hidden rounded-xl border" style={{ borderColor: config.text_color + "10" }}>
+                      <div className="relative" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Package className="h-6 w-6" style={{ color: config.text_color + "15" }} />
+                        </div>
+                        {product.badge && (
+                          <span className="absolute left-1 top-1 rounded-full px-1 py-0.5 text-[5px] font-bold" style={{ backgroundColor: config.accent_color, color: "#fff" }}>
+                            {product.badge}
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-1.5 space-y-0.5">
+                        <p className="text-[7px] font-bold line-clamp-1" style={{ color: config.text_color }}>{product.name}</p>
+                        <span className="text-[8px] font-extrabold" style={{ color: config.text_color }}>{product.price}</span>
+                        <button className="w-full h-4 flex items-center justify-center text-[5px] font-bold uppercase" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>Add to Cart</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Tab Bar */}
+            <div className="absolute bottom-0 left-0 right-0 border-t flex items-center justify-around px-2 py-1.5" style={{ backgroundColor: config.background_color, borderColor: config.text_color + "10" }}>
+              {[
+                { label: "Home", active: true },
+                { label: "Categories", active: false },
+                { label: "Search", active: false },
+                { label: "Wishlist", active: false },
+                { label: "Profile", active: false },
+              ].map((tab) => (
+                <div key={tab.label} className="flex flex-col items-center gap-0.5 relative">
+                  {tab.active && <div className="absolute -top-1.5 h-0.5 w-4 rounded-full" style={{ backgroundColor: config.primary_color }} />}
+                  <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: tab.active ? config.primary_color : config.text_color + "30" }} />
+                  <span className="text-[5px] font-medium" style={{ color: tab.active ? config.primary_color : config.text_color + "40" }}>{tab.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex h-5 items-center justify-center bg-gray-800">
+            <div className="h-1 w-24 rounded-full bg-gray-600" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function StoreThemeSettings() {
   const { storeId } = useParams<{ storeId: string }>();
   const queryClient = useQueryClient();
