@@ -303,6 +303,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #3B82F6, #60a5fa, #F97316)",
   },
+  "theme-4": {
+    primary_color: "#C8A96A",
+    accent_color: "#1C1C1C",
+    text_color: "#1C1C1C",
+    background_color: "#F8F5F0",
+    heading_font: "Playfair Display",
+    body_font: "Inter",
+    button_style: "square",
+    marquee_gradient: "linear-gradient(90deg, #C8A96A, #e8d5a8, #C8A96A)",
+  },
 };
 
 const THEMES = [
