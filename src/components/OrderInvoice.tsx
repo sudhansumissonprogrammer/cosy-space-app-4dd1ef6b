@@ -12,6 +12,11 @@ interface OrderInvoiceProps {
 export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
+  const items = order.order_items || [];
+  const currency = order.currency || store?.currency || "INR";
+  const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
+  const subtotal = items.reduce((sum: number, item: any) => sum + Number(item.total || 0), 0);
+
   const handlePrint = useCallback(() => {
     const content = printRef.current;
     if (!content) return;
