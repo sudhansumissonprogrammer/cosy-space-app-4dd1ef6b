@@ -42,7 +42,7 @@ function GradientHero({ store }: { store: StoreData }) {
       />
 
       {/* Content */}
-      <div className="relative mx-auto max-w-7xl px-6 pt-32 pb-20 lg:px-12 lg:pt-40">
+      <div className="relative mx-auto max-w-7xl px-4 pt-24 pb-16 sm:px-6 sm:pt-32 sm:pb-20 lg:px-12 lg:pt-40">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           {/* Left: Text */}
           <div className="animate-fade-in">
