@@ -195,30 +195,6 @@ export default function StorefrontSearchOverlay({
             </div>
           </div>
 
-          {/* Availability */}
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Availability
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setAvailability("all")}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  availability === "all" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setAvailability("in_stock")}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  availability === "in_stock" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"
-                }`}
-              >
-                In Stock
-              </button>
-            </div>
-          </div>
 
           {activeFilterCount > 0 && (
             <button
