@@ -85,7 +85,9 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   const theme = (store as any)?.theme || "theme-1";
   const basePath = slugOverride ? "/" : "/store/:slug";
 
-  const LayoutComponent = theme === "theme-3"
+  const LayoutComponent = theme === "theme-4"
+    ? StorefrontLayoutV4
+    : theme === "theme-3"
     ? StorefrontLayoutV3
     : theme === "theme-2"
     ? StorefrontLayoutV2
