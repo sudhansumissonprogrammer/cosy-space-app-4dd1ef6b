@@ -41,7 +41,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
                 to={storefrontPath(storeSlug, `category/${cat.slug}`)}
                 className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
               >
-                <div className="h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border hover:border-primary/50 hover:shadow-sm">
+                <div className="h-16 w-16 rounded-full border-[2.5px] overflow-hidden transition-all duration-300 sm:h-20 sm:w-20 border-transparent bg-gradient-to-br from-primary via-accent to-primary bg-origin-border bg-clip-border hover:shadow-md hover:scale-105" style={{ background: 'linear-gradient(white, white) padding-box, linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary))) border-box' }}>
                   {cat.image_url ? (
                     <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
                   ) : (
