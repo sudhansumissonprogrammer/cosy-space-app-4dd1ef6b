@@ -175,3 +175,40 @@
 .animate-bounce-once {
   animation: bounce-once 0.5s ease-out;
 }
+
+/* Category ring - animated gradient border */
+@keyframes ring-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.category-ring {
+  position: relative;
+  background: hsl(var(--border));
+}
+
+.category-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  padding: 2px;
+  background: conic-gradient(
+    hsl(var(--foreground)),
+    hsl(var(--muted-foreground) / 0.3),
+    hsl(var(--foreground)),
+    hsl(var(--muted-foreground) / 0.3),
+    hsl(var(--foreground))
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  transition: opacity 0.3s ease;
+  opacity: 0.5;
+}
+
+.group:hover .category-ring::before {
+  opacity: 1;
+  animation: ring-spin 3s linear infinite;
+}

@@ -39,12 +39,12 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
               <Link
                 key={cat.id}
                 to={storefrontPath(storeSlug, `category/${cat.slug}`)}
-                className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
+                className="group flex flex-col items-center gap-1.5 flex-shrink-0"
               >
-                <div className="relative h-16 w-16 rounded-full p-[2.5px] transition-all duration-300 sm:h-20 sm:w-20 hover:scale-105 hover:shadow-lg" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--muted-foreground) / 0.3), hsl(var(--primary)))' }}>
-                  <div className="h-full w-full rounded-full overflow-hidden bg-card">
+                <div className="relative h-16 w-16 rounded-full p-[2px] sm:h-20 sm:w-20 transition-transform duration-300 group-hover:scale-110 group-active:scale-95 category-ring">
+                  <div className="h-full w-full rounded-full overflow-hidden bg-card ring-1 ring-background">
                    {cat.image_url ? (
-                     <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+                     <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
                    ) : (
                      <div className="flex h-full w-full items-center justify-center bg-accent">
                        <Tag className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" />
@@ -52,7 +52,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
                    )}
                   </div>
                 </div>
-                <span className="text-[11px] font-semibold tracking-wide text-foreground text-center leading-tight" style={{ fontFamily: "'Alegreya SC', serif" }}>
+                <span className="text-[11px] font-semibold tracking-wide text-foreground text-center leading-tight transition-colors duration-200 group-hover:text-primary" style={{ fontFamily: "'Alegreya SC', serif" }}>
                   {cat.name.split(' ').map((word, i) => (
                     <span key={i}>
                       {i > 0 && ' '}
