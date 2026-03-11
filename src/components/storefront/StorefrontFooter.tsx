@@ -14,7 +14,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
 
   return (
-    <footer className="mt-16 border-t bg-card">
+    <footer className="mt-16 border-t" style={{ backgroundColor: "var(--storefront-accent, hsl(var(--card)))", color: "var(--storefront-bg, hsl(var(--card-foreground)))" }}>
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Column 1: Brand */}
