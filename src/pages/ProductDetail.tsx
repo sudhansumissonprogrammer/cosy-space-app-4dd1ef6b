@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft, Package, ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart,
   Share2, Copy, Facebook, Twitter, X, ZoomIn, Star, Shield, Truck, RotateCcw,
-  Clock, Eye, Flame, Heart, Minus, Plus, Check, ChevronDown, CreditCard, ThumbsUp
+  Clock, Eye, Flame, Heart, Minus, Plus, Check, ChevronDown, CreditCard, ThumbsUp,
+  Lock, Timer, Zap, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -52,6 +54,26 @@ function getDeliveryDate() {
   return d.toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" });
 }
 
+/* ── Countdown timer seed from product ID ── */
+function getCountdownSeed(productId: string) {
+  let hash = 0;
+  for (let i = 0; i < productId.length; i++) {
+    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+    hash |= 0;
+  }
+  const abs = Math.abs(hash);
+  return {
+    hours: 1 + (abs % 5),
+    minutes: 10 + (abs % 49),
+  };
+}
+
+/* ── Social proof names for toasts ── */
+const socialProofCities = [
+  "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Pune", "Kolkata",
+  "Jaipur", "Ahmedabad", "Lucknow", "Chandigarh", "Indore", "Nagpur", "Kochi",
+];
+
 /* ── Fake customer reviews ── */
 const reviewerNames = [
   "Priya S.", "Rahul M.", "Anita K.", "Vikram R.", "Sneha D.",
@@ -79,13 +101,13 @@ function getFakeReviews(productId: string) {
     hash |= 0;
   }
   const abs = Math.abs(hash);
-  const count = 3 + (abs % 3); // 3-5 reviews
+  const count = 3 + (abs % 3);
   const reviews = [];
   for (let i = 0; i < count; i++) {
     const idx = (abs + i * 7) % reviewerNames.length;
     const textIdx = (abs + i * 13) % reviewTexts.length;
     const daysIdx = (abs + i * 3) % reviewDaysAgo.length;
-    const rating = 4 + ((abs + i) % 2); // 4 or 5 stars
+    const rating = 4 + ((abs + i) % 2);
     reviews.push({
       id: `review-${i}`,
       name: reviewerNames[idx],
@@ -100,11 +122,13 @@ function getFakeReviews(productId: string) {
   return reviews;
 }
 
+const FREE_SHIPPING_THRESHOLD = 499;
+
 export default function ProductDetail() {
   const store = useOutletContext<StoreData>();
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
-  const { addToCart, items } = useCart();
+  const { addToCart, items, cartTotal } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
 
@@ -223,6 +247,21 @@ export default function ProductDetail() {
     storeName: store.name,
   });
 
+  /* ── CRO #7: Periodic social proof toasts ── */
+  useEffect(() => {
+    if (!product) return;
+    const timer = setInterval(() => {
+      const nameIdx = Math.floor(Math.random() * reviewerNames.length);
+      const cityIdx = Math.floor(Math.random() * socialProofCities.length);
+      toast(`${reviewerNames[nameIdx]} from ${socialProofCities[cityIdx]} just bought this! 🎉`, {
+        duration: 3000,
+        position: "bottom-left",
+        icon: "🛍️",
+      });
+    }, 25000 + Math.random() * 15000);
+    return () => clearInterval(timer);
+  }, [product?.id]);
+
   const allImages = (() => {
     const imgs: string[] = [];
     if (product?.image_url) imgs.push(product.image_url);
@@ -313,6 +352,10 @@ export default function ProductDetail() {
   const toggleAccordion = (key: string) => {
     setOpenAccordion(openAccordion === key ? null : key);
   };
+
+  // Free shipping progress
+  const shippingProgress = Math.min(100, (cartTotal / FREE_SHIPPING_THRESHOLD) * 100);
+  const shippingRemaining = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-4 sm:py-8">
@@ -411,6 +454,12 @@ export default function ProductDetail() {
                 You save {currency} {(product.price - product.sale_price!).toFixed(2)} on this order
               </p>
             )}
+
+            {/* CRO #5: Countdown Timer for sale items */}
+            {hasDiscount && (
+              <CountdownTimer productId={product.id} />
+            )}
+
             <p className="mt-1 text-[10px] text-muted-foreground">Inclusive of all taxes</p>
           </div>
 
@@ -459,7 +508,6 @@ export default function ProductDetail() {
                         : "border-border text-foreground hover:border-primary/40 hover:bg-accent/50"
                     } ${v.stock_quantity <= 0 ? "opacity-30 cursor-not-allowed" : "active:scale-95"}`}
                   >
-                    {/* Selected checkmark */}
                     {selectedVariant?.id === v.id && (
                       <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
                         <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />
@@ -559,6 +607,27 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* CRO #4: Guaranteed Safe Checkout */}
+          {!isOutOfStock && (
+            <div className="mt-4 rounded-xl border border-dashed border-success/40 bg-success/5 p-3">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Lock className="h-3.5 w-3.5 text-success" />
+                <span className="text-xs font-bold text-success uppercase tracking-wide">Guaranteed Safe Checkout</span>
+              </div>
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex items-center gap-1 rounded-md bg-card px-2 py-1 border border-border">
+                  <ShieldCheck className="h-3 w-3 text-success" />
+                  <span className="text-[9px] font-bold text-muted-foreground">SSL Secure</span>
+                </div>
+                <div className="flex items-center gap-1 rounded-md bg-card px-2 py-1 border border-border">
+                  <Shield className="h-3 w-3 text-primary" />
+                  <span className="text-[9px] font-bold text-muted-foreground">256-bit Encryption</span>
+                </div>
+                <PaymentIconsMini />
+              </div>
+            </div>
+          )}
+
           {/* Payment Icons + Wishlist row */}
           <div className="mt-4 flex items-center justify-between">
             <button
@@ -618,6 +687,17 @@ export default function ProductDetail() {
             </div>
           </div>
 
+          {/* CRO #2: Frequently Bought Together */}
+          <FrequentlyBoughtTogether
+            storeId={store.id}
+            storeSlug={store.slug}
+            currentProductId={product.id}
+            currentCategory={product.category}
+            currency={currency}
+            addToCart={addToCart}
+            productImage={product.image_url}
+          />
+
           {/* Accordion Sections */}
           <div className="mt-6 divide-y divide-border border border-border rounded-xl overflow-hidden">
             {product.description && (
@@ -659,61 +739,142 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Customer Reviews Section removed — only star rating shown inline */}
+      {/* CRO #1: Customer Reviews Section restored */}
+      <CustomerReviews
+        reviews={fakeReviews}
+        rating={stats.rating}
+        reviewCount={stats.reviewCount}
+      />
 
-      {/* Related Products */}
+      {/* CRO #6: "Complete the Look" (renamed from "You May Also Like") */}
       <RelatedProducts
         storeId={store.id}
         storeSlug={store.slug}
         currentProductId={product.id}
         currentCategory={product.category}
         store={store}
+        addToCart={addToCart}
+        currency={currency}
       />
 
       {/* Sticky Mobile CTA */}
       {!isOutOfStock && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md p-3 sm:hidden safe-area-bottom">
-          <div className="flex items-center gap-3">
-            <div className="shrink-0 min-w-0">
-              <p className="text-sm font-extrabold text-foreground leading-tight">
-                {currency} {(variantPrice * quantity).toFixed(2)}
-              </p>
-              {hasDiscount && (
-                <p className="text-[10px] text-success font-semibold">{discountPct}% OFF</p>
-              )}
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden safe-area-bottom">
+          {/* CRO #3: Free Shipping Progress Bar */}
+          {shippingRemaining > 0 ? (
+            <div className="px-3 pt-2 pb-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-semibold text-success flex items-center gap-1">
+                  <Truck className="h-3 w-3" />
+                  Add ₹{shippingRemaining.toFixed(0)} more for FREE shipping!
+                </span>
+                <span className="text-[9px] text-muted-foreground">{Math.round(shippingProgress)}%</span>
+              </div>
+              <Progress value={shippingProgress} className="h-1.5 bg-accent" />
             </div>
-            <div className="flex flex-1 gap-2">
-              <button
-                className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] ${
-                  justAdded ? "bg-success text-success-foreground" : "btn-gold"
-                }`}
-                onClick={handleAddToCart}
-              >
-                {justAdded ? (
-                  <span className="flex items-center gap-1 animate-fade-in">
-                    <Check className="h-4 w-4" strokeWidth={3} />
-                    Added!
-                  </span>
-                ) : (
-                  <>
-                    <ShoppingCart className="h-4 w-4" />
-                    Add to Cart
-                  </>
+          ) : (
+            <div className="px-3 pt-2 pb-1">
+              <span className="text-[10px] font-bold text-success flex items-center gap-1">
+                <Check className="h-3 w-3" /> 🎉 You qualify for FREE shipping!
+              </span>
+            </div>
+          )}
+          <div className="p-3 pt-1.5">
+            <div className="flex items-center gap-3">
+              <div className="shrink-0 min-w-0">
+                <p className="text-sm font-extrabold text-foreground leading-tight">
+                  {currency} {(variantPrice * quantity).toFixed(2)}
+                </p>
+                {hasDiscount && (
+                  <p className="text-[10px] text-success font-semibold">{discountPct}% OFF</p>
                 )}
-              </button>
-              {showBuyNow && (
-                <Button
-                  className="h-11 flex-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider"
-                  onClick={handleBuyNow}
+              </div>
+              <div className="flex flex-1 gap-2">
+                <button
+                  className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] ${
+                    justAdded ? "bg-success text-success-foreground" : "btn-gold"
+                  }`}
+                  onClick={handleAddToCart}
                 >
-                  Buy Now
-                </Button>
-              )}
+                  {justAdded ? (
+                    <span className="flex items-center gap-1 animate-fade-in">
+                      <Check className="h-4 w-4" strokeWidth={3} />
+                      Added!
+                    </span>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-4 w-4" />
+                      Add to Cart
+                    </>
+                  )}
+                </button>
+                {showBuyNow && (
+                  <Button
+                    className="h-11 flex-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider"
+                    onClick={handleBuyNow}
+                  >
+                    Buy Now
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
-      {!isOutOfStock && <div className="h-20 sm:hidden" />}
+      {!isOutOfStock && <div className="h-24 sm:hidden" />}
+    </div>
+  );
+}
+
+/* ── CRO #5: Countdown Timer Component ── */
+function CountdownTimer({ productId }: { productId: string }) {
+  const seed = useMemo(() => getCountdownSeed(productId), [productId]);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const now = new Date();
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    const remainMs = endOfDay.getTime() - now.getTime();
+    const totalSec = Math.floor(remainMs / 1000);
+    const h = Math.min(seed.hours, Math.floor(totalSec / 3600));
+    const m = Math.min(seed.minutes, Math.floor((totalSec % 3600) / 60));
+    const s = totalSec % 60;
+    return { hours: h, minutes: m, seconds: s };
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        const totalSec = prev.hours * 3600 + prev.minutes * 60 + prev.seconds - 1;
+        if (totalSec <= 0) return { hours: seed.hours, minutes: seed.minutes, seconds: 0 };
+        return {
+          hours: Math.floor(totalSec / 3600),
+          minutes: Math.floor((totalSec % 3600) / 60),
+          seconds: totalSec % 60,
+        };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [seed]);
+
+  return (
+    <div className="mt-2 flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-1.5">
+      <Timer className="h-3.5 w-3.5 text-destructive animate-pulse" />
+      <span className="text-xs font-bold text-destructive">
+        Offer ends in
+      </span>
+      <div className="flex items-center gap-1">
+        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-destructive px-1.5 py-0.5 text-[11px] font-extrabold text-destructive-foreground tabular-nums">
+          {String(timeLeft.hours).padStart(2, "0")}h
+        </span>
+        <span className="text-xs font-bold text-destructive">:</span>
+        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-destructive px-1.5 py-0.5 text-[11px] font-extrabold text-destructive-foreground tabular-nums">
+          {String(timeLeft.minutes).padStart(2, "0")}m
+        </span>
+        <span className="text-xs font-bold text-destructive">:</span>
+        <span className="inline-flex min-w-[28px] items-center justify-center rounded bg-destructive px-1.5 py-0.5 text-[11px] font-extrabold text-destructive-foreground tabular-nums">
+          {String(timeLeft.seconds).padStart(2, "0")}s
+        </span>
+      </div>
     </div>
   );
 }
@@ -722,14 +883,12 @@ export default function ProductDetail() {
 function PaymentIcons() {
   return (
     <div className="flex items-center gap-1">
-      {/* Visa */}
       <div className="flex h-6 w-9 items-center justify-center rounded border border-border bg-card">
         <svg viewBox="0 0 48 32" className="h-4 w-7">
           <rect width="48" height="32" rx="4" fill="#1A1F71"/>
           <text x="24" y="20" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="sans-serif">VISA</text>
         </svg>
       </div>
-      {/* Mastercard */}
       <div className="flex h-6 w-9 items-center justify-center rounded border border-border bg-card">
         <svg viewBox="0 0 48 32" className="h-4 w-7">
           <rect width="48" height="32" rx="4" fill="#252525"/>
@@ -738,19 +897,154 @@ function PaymentIcons() {
           <path d="M24 10.3a8 8 0 010 11.4 8 8 0 000-11.4z" fill="#FF5F00"/>
         </svg>
       </div>
-      {/* UPI */}
       <div className="flex h-6 w-9 items-center justify-center rounded border border-border bg-card">
         <svg viewBox="0 0 48 32" className="h-4 w-7">
           <rect width="48" height="32" rx="4" fill="#fff"/>
           <text x="24" y="20" textAnchor="middle" fill="#5f259f" fontSize="10" fontWeight="bold" fontFamily="sans-serif">UPI</text>
         </svg>
       </div>
-      {/* COD */}
       <div className="flex h-6 w-9 items-center justify-center rounded border border-border bg-card">
         <svg viewBox="0 0 48 32" className="h-4 w-7">
           <rect width="48" height="32" rx="4" fill="#f5f5f5"/>
           <text x="24" y="20" textAnchor="middle" fill="#333" fontSize="8" fontWeight="bold" fontFamily="sans-serif">COD</text>
         </svg>
+      </div>
+    </div>
+  );
+}
+
+/* ── Mini Payment Icons for Safe Checkout badge ── */
+function PaymentIconsMini() {
+  return (
+    <div className="flex items-center gap-1">
+      <div className="flex h-5 w-7 items-center justify-center rounded border border-border bg-card">
+        <svg viewBox="0 0 48 32" className="h-3 w-5">
+          <rect width="48" height="32" rx="4" fill="#1A1F71"/>
+          <text x="24" y="20" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="sans-serif">VISA</text>
+        </svg>
+      </div>
+      <div className="flex h-5 w-7 items-center justify-center rounded border border-border bg-card">
+        <svg viewBox="0 0 48 32" className="h-3 w-5">
+          <rect width="48" height="32" rx="4" fill="#252525"/>
+          <circle cx="19" cy="16" r="8" fill="#EB001B"/>
+          <circle cx="29" cy="16" r="8" fill="#F79E1B"/>
+          <path d="M24 10.3a8 8 0 010 11.4 8 8 0 000-11.4z" fill="#FF5F00"/>
+        </svg>
+      </div>
+      <div className="flex h-5 w-7 items-center justify-center rounded border border-border bg-card">
+        <svg viewBox="0 0 48 32" className="h-3 w-5">
+          <rect width="48" height="32" rx="4" fill="#fff"/>
+          <text x="24" y="20" textAnchor="middle" fill="#5f259f" fontSize="10" fontWeight="bold" fontFamily="sans-serif">UPI</text>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+/* ── CRO #2: Frequently Bought Together ── */
+function FrequentlyBoughtTogether({
+  storeId,
+  storeSlug,
+  currentProductId,
+  currentCategory,
+  currency,
+  addToCart,
+  productImage,
+}: {
+  storeId: string;
+  storeSlug: string;
+  currentProductId: string;
+  currentCategory: string | null;
+  currency: string;
+  addToCart: (item: any) => void;
+  productImage: string | null;
+}) {
+  const { data: bundleProducts } = useQuery({
+    queryKey: ["bundle-products", storeId, currentProductId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .neq("id", currentProductId)
+        .limit(6);
+      if (error) throw error;
+      if (currentCategory && data.length > 2) {
+        const same = data.filter((p) => p.category === currentCategory);
+        const other = data.filter((p) => p.category !== currentCategory);
+        return [...same, ...other].slice(0, 2);
+      }
+      return data.slice(0, 2);
+    },
+    enabled: !!storeId && !!currentProductId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (!bundleProducts || bundleProducts.length === 0) return null;
+
+  const bundleTotal = bundleProducts.reduce((sum, p) => {
+    const price = p.sale_price && p.sale_price < p.price ? p.sale_price : p.price;
+    return sum + price;
+  }, 0);
+  const bundleDiscount = bundleTotal * 0.05;
+  const bundleFinal = bundleTotal - bundleDiscount;
+
+  const handleAddBundle = () => {
+    bundleProducts.forEach((p) => {
+      addToCart({
+        productId: p.id,
+        name: p.name,
+        price: p.sale_price && p.sale_price < p.price ? p.sale_price : p.price,
+        image: p.image_url || undefined,
+        quantity: 1,
+      });
+    });
+    toast.success("Bundle added to cart! 🎉");
+  };
+
+  return (
+    <div className="mt-5 rounded-xl border border-border bg-accent/30 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Zap className="h-4 w-4 text-warning" />
+        <h3 className="text-sm font-bold text-foreground">Frequently Bought Together</h3>
+      </div>
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto">
+        {bundleProducts.map((p, idx) => (
+          <div key={p.id} className="flex items-center gap-2">
+            {idx > 0 && <Plus className="h-4 w-4 text-muted-foreground shrink-0" />}
+            <Link
+              to={storefrontPath(storeSlug, `product/${p.slug || p.id}`)}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card p-2 hover:border-primary/40 transition-colors shrink-0"
+            >
+              <img
+                src={p.image_url || "/placeholder.svg"}
+                alt={p.name}
+                className="h-12 w-12 rounded-md object-cover"
+                loading="lazy"
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground line-clamp-1">{p.name}</p>
+                <p className="text-xs font-bold text-primary">
+                  {currency} {(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price).toFixed(0)}
+                </p>
+              </div>
+            </Link>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground line-through">{currency} {bundleTotal.toFixed(0)}</p>
+          <p className="text-sm font-extrabold text-success">{currency} {bundleFinal.toFixed(0)} <span className="text-[10px] font-semibold">(-5% bundle)</span></p>
+        </div>
+        <button
+          onClick={handleAddBundle}
+          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors active:scale-95"
+        >
+          <ShoppingCart className="h-3.5 w-3.5" />
+          Add Bundle
+        </button>
       </div>
     </div>
   );
@@ -780,7 +1074,7 @@ function CustomerReviews({
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-4 w-4 ${i < Math.floor(rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"}`}
+                  className={`h-4 w-4 ${i < Math.floor(rating) ? "fill-success text-success" : "text-muted-foreground/20"}`}
                 />
               ))}
             </div>
@@ -797,10 +1091,10 @@ function CustomerReviews({
           return (
             <div key={stars} className="flex items-center gap-2">
               <span className="text-xs font-medium text-muted-foreground w-3">{stars}</span>
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+              <Star className="h-3 w-3 fill-success text-success" />
               <div className="flex-1 h-2 rounded-full bg-accent overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                  className="h-full rounded-full bg-success transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -818,7 +1112,6 @@ function CustomerReviews({
             className="rounded-xl border border-border p-4 transition-all hover:shadow-sm"
           >
             <div className="flex items-start gap-3">
-              {/* Avatar */}
               <img
                 src={review.avatar}
                 alt={review.name}
@@ -839,18 +1132,15 @@ function CustomerReviews({
                     {review.daysAgo === 1 ? "Yesterday" : `${review.daysAgo} days ago`}
                   </span>
                 </div>
-                {/* Stars */}
                 <div className="flex items-center gap-0.5 mt-0.5">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`h-3 w-3 ${i < review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"}`}
+                      className={`h-3 w-3 ${i < review.rating ? "fill-success text-success" : "text-muted-foreground/20"}`}
                     />
                   ))}
                 </div>
-                {/* Text */}
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{review.text}</p>
-                {/* Helpful */}
                 <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
                   <ThumbsUp className="h-3 w-3" />
                   <span>{review.helpful} people found this helpful</span>
@@ -926,7 +1216,7 @@ function ShareButtons({ productName }: { productName: string }) {
       <Button variant="outline" size="icon" className="h-8 w-8" asChild title="Share on WhatsApp">
         <a href={`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`} target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.243-1.213l-.304-.181-2.868.852.852-2.868-.181-.304A8 8 0 1 1 12 20z"/></svg>
-          </a>
+        </a>
       </Button>
       <Button variant="outline" size="icon" className="h-8 w-8" asChild title="Share on Facebook">
         <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer">
@@ -958,7 +1248,6 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
     if (touchStart.current === null || touchStartY.current === null) return;
     const dx = e.changedTouches[0].clientX - touchStart.current;
     const dy = e.changedTouches[0].clientY - touchStartY.current;
-    // Only swipe if horizontal movement > vertical
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
       if (dx < 0 && activeIndex < images.length - 1) setActiveIndex(i => i + 1);
       if (dx > 0 && activeIndex > 0) setActiveIndex(i => i - 1);
@@ -980,14 +1269,12 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
   return (
     <>
       <div className="space-y-3 lg:sticky lg:top-4">
-        {/* Main image */}
         <div
           className="relative overflow-hidden rounded-2xl bg-accent cursor-zoom-in select-none"
           onClick={() => setLightboxOpen(true)}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Discount badge on image */}
           {hasDiscount && discountPct > 0 && (
             <div className="absolute left-3 top-3 z-10">
               <Badge className="bg-destructive text-destructive-foreground text-xs font-bold border-0 shadow-lg">
@@ -996,7 +1283,6 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
             </div>
           )}
 
-          {/* Wishlist on image - mobile only */}
           <div className="absolute right-3 top-3 z-10 sm:hidden">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm shadow">
               <Heart className="h-4 w-4 text-muted-foreground" />
@@ -1012,12 +1298,10 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
             draggable={false}
           />
 
-          {/* Zoom hint */}
           <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow backdrop-blur-sm">
             <ZoomIn className="h-3.5 w-3.5" /> Tap to zoom
           </div>
 
-          {/* Desktop arrows */}
           {images.length > 1 && (
             <>
               <button
@@ -1036,7 +1320,6 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
           )}
         </div>
 
-        {/* Thumbnail strip */}
         {images.length > 1 && (
           <div className="flex gap-2 overflow-x-auto scrollbar-hide px-0.5 py-1">
             {images.map((img, i) => (
@@ -1053,7 +1336,6 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
           </div>
         )}
 
-        {/* Dot indicators */}
         {images.length > 1 && (
           <div className="flex justify-center gap-1.5">
             {images.map((_, i) => (
@@ -1071,7 +1353,6 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
         )}
       </div>
 
-      {/* Fullscreen Lightbox */}
       {lightboxOpen && (
         <FullscreenLightbox
           images={images}
@@ -1225,7 +1506,6 @@ function FullscreenLightbox({
         </>
       )}
 
-      {/* Dot indicators in lightbox */}
       {images.length > 1 && (
         <div className="flex justify-center gap-2 px-4 py-3">
           {images.map((_, i) => (
@@ -1245,19 +1525,23 @@ function FullscreenLightbox({
   );
 }
 
-/* ── Related Products ── */
+/* ── CRO #6: "Complete the Look" (renamed Related Products) ── */
 function RelatedProducts({
   storeId,
   storeSlug,
   currentProductId,
   currentCategory,
   store,
+  addToCart,
+  currency,
 }: {
   storeId: string;
   storeSlug: string;
   currentProductId: string;
   currentCategory: string | null;
   store: Tables<"stores">;
+  addToCart: (item: any) => void;
+  currency: string;
 }) {
   const { data: related } = useQuery({
     queryKey: ["related-products", storeId, currentProductId],
@@ -1284,9 +1568,31 @@ function RelatedProducts({
 
   if (!related || related.length === 0) return null;
 
+  const handleAddAll = () => {
+    related.forEach((p) => {
+      addToCart({
+        productId: p.id,
+        name: p.name,
+        price: p.sale_price && p.sale_price < p.price ? p.sale_price : p.price,
+        image: p.image_url || undefined,
+        quantity: 1,
+      });
+    });
+    toast.success(`${related.length} items added to cart! 🛍️`);
+  };
+
   return (
     <section className="mt-12 pt-8 border-t border-border">
-      <h2 className="mb-5 text-xl font-bold text-foreground">You May Also Like</h2>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-bold text-foreground">Complete the Look ✨</h2>
+        <button
+          onClick={handleAddAll}
+          className="flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/10 transition-colors active:scale-95"
+        >
+          <ShoppingCart className="h-3.5 w-3.5" />
+          Add All to Cart
+        </button>
+      </div>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
         {related.map((product) => (
           <StorefrontProductCard
