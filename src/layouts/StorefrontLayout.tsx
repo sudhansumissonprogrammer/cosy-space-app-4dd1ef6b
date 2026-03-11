@@ -310,10 +310,32 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     );
   }
 
+  // Compute a lighter tint of the primary color for gradients
+  const computePrimaryLight = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const lighten = (c: number) => Math.min(255, Math.round(c + (255 - c) * 0.35));
+    return `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
+  };
+
+  // Determine if primary color is light (for btn text contrast)
+  const isLightColor = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+  };
+
+  const primaryColor = themeConfig?.primary_color || "#b8873c";
+  const primaryLight = computePrimaryLight(primaryColor);
+  const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
+
   // Build CSS variable style object from theme config
   const themeStyle: React.CSSProperties = themeConfig
     ? {
         "--storefront-primary": themeConfig.primary_color,
+        "--storefront-primary-light": primaryLight,
         "--storefront-accent": themeConfig.accent_color,
         "--storefront-text": themeConfig.text_color,
         "--storefront-bg": themeConfig.background_color,
@@ -322,6 +344,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
         "--storefront-button-radius":
           themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : "0.5rem",
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,
+        "--storefront-btn-text": btnTextColor,
       } as any
     : {};
 
