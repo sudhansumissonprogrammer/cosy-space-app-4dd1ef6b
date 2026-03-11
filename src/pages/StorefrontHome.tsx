@@ -35,6 +35,7 @@ export default function StorefrontHome() {
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [openFilters, setOpenFilters] = useState(false);
   const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
   const [sortOpen, setSortOpen] = useState(false);
 
