@@ -38,7 +38,7 @@ export default function StorefrontSearchOverlay({
 }: StorefrontSearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
-  const [availability, setAvailability] = useState<"all" | "in_stock">("all");
+  
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [showFilters, setShowFilters] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
