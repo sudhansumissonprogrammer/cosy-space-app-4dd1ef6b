@@ -214,6 +214,13 @@ export default function StoreOrders() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Invoice Dialog */}
+      <Dialog open={!!invoiceOrder} onOpenChange={(v) => { if (!v) setInvoiceOrder(null); }}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          {invoiceOrder && <OrderInvoice order={invoiceOrder} store={store} onClose={() => setInvoiceOrder(null)} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
