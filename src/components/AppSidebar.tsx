@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
-  Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt, ShoppingCart,
+  Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt, ShoppingCart, Palette,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -56,6 +56,7 @@ export function AppSidebar() {
         { title: "Shipping", url: `/dashboard/stores/${storeId}/shipping`, icon: Truck },
         { title: "Tax / GST", url: `/dashboard/stores/${storeId}/tax`, icon: Receipt },
         { title: "Abandoned Carts", url: `/dashboard/stores/${storeId}/abandoned-carts`, icon: ShoppingCart },
+        { title: "Theme Settings", url: `/dashboard/stores/${storeId}/theme`, icon: Palette },
         { title: "Domain", url: `/dashboard/stores/${storeId}/domain`, icon: Globe },
         { title: "Store Settings", url: `/dashboard/stores/${storeId}/settings`, icon: Settings },
       ]

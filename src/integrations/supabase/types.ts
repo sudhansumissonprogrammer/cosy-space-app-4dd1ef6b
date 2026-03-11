@@ -796,6 +796,59 @@ export type Database = {
           },
         ]
       }
+      store_theme_config: {
+        Row: {
+          accent_color: string
+          background_color: string
+          body_font: string
+          button_style: string
+          created_at: string
+          heading_font: string
+          id: string
+          marquee_gradient: string
+          primary_color: string
+          store_id: string
+          text_color: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          background_color?: string
+          body_font?: string
+          button_style?: string
+          created_at?: string
+          heading_font?: string
+          id?: string
+          marquee_gradient?: string
+          primary_color?: string
+          store_id: string
+          text_color?: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          background_color?: string
+          body_font?: string
+          button_style?: string
+          created_at?: string
+          heading_font?: string
+          id?: string
+          marquee_gradient?: string
+          primary_color?: string
+          store_id?: string
+          text_color?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_theme_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       storefront_customers: {
         Row: {
           created_at: string

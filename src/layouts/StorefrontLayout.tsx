@@ -39,10 +39,12 @@ export function useStorefront(slugOverride?: string) {
       const result = data as any;
       const store = result?.store as StoreData | null;
       if (store) {
-        // Seed individual caches so children never refetch
         queryClient.setQueryData(["storefront", slug], store);
         queryClient.setQueryData(["storefront-products", store.id], result.products || []);
         queryClient.setQueryData(["storefront-categories", store.id], result.categories || []);
+        if (result.theme_config) {
+          queryClient.setQueryData(["storefront-theme-config", store.id], result.theme_config);
+        }
       }
       return result;
     },
@@ -247,6 +249,7 @@ function StorefrontSkeleton() {
 export default function StorefrontLayout({ slugOverride }: { slugOverride?: string } = {}) {
   const { store, isLoading, slug } = useStorefront(slugOverride);
   const viewTracked = useRef(false);
+  const queryClient = useQueryClient();
 
   useFacebookPixel((store as any)?.facebook_pixel_id);
 
@@ -263,7 +266,6 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     viewTracked.current = true;
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     if (!projectId) return;
-    // Delay to not block rendering
     setTimeout(() => {
       fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
         method: "POST",
@@ -272,6 +274,24 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
       }).catch(() => {});
     }, 3000);
   }, [store?.id]);
+
+  const themeConfig = store ? queryClient.getQueryData<any>(["storefront-theme-config", store.id]) : null;
+
+  // Load Google Font dynamically
+  useEffect(() => {
+    if (!themeConfig) return;
+    const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
+    const families = fonts.map((f: string) => f.replace(/ /g, "+")).join("&family=");
+    const linkId = "storefront-google-fonts";
+    let link = document.getElementById(linkId) as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+    }
+    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
+  }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
   if (isLoading) {
     return <StorefrontSkeleton />;
@@ -290,11 +310,26 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     );
   }
 
+  // Build CSS variable style object from theme config
+  const themeStyle: React.CSSProperties = themeConfig
+    ? {
+        "--storefront-primary": themeConfig.primary_color,
+        "--storefront-accent": themeConfig.accent_color,
+        "--storefront-text": themeConfig.text_color,
+        "--storefront-bg": themeConfig.background_color,
+        "--storefront-heading-font": themeConfig.heading_font,
+        "--storefront-body-font": themeConfig.body_font,
+        "--storefront-button-radius":
+          themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : "0.5rem",
+        "--storefront-marquee-gradient": themeConfig.marquee_gradient,
+      } as any
+    : {};
+
   return (
     <CartProvider slug={store.slug}>
       <WishlistProvider slug={store.slug}>
         <StorefrontAuthProvider storeId={store.id}>
-          <div className="storefront-font min-h-screen bg-background font-sans">
+          <div className="storefront-font min-h-screen bg-background font-sans" style={themeStyle}>
             <StorefrontMarquee />
             
             <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">

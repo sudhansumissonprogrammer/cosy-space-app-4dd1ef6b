@@ -25,9 +25,10 @@ export default function StorefrontMarquee() {
 
   return (
     <div
-      className="w-full overflow-hidden py-2.5 text-[13px] md:text-[15px] text-black font-medium font-sans"
+      className="w-full overflow-hidden py-2.5 text-[13px] md:text-[15px] font-medium font-sans"
       style={{
-        background: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+        background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a))",
+        color: "var(--storefront-text, #000000)",
         fontVariant: "small-caps",
       }}
     >
