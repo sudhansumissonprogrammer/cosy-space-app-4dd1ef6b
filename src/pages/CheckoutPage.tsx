@@ -334,11 +334,20 @@ export default function CheckoutPage() {
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      await fetch(`https://${projectId}.supabase.co/functions/v1/create-guest-account`, {
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/create-guest-account`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: anonKey },
         body: JSON.stringify({ email: email.trim(), phone: phone.trim(), name: fullName.trim(), store_id: store.id, order_id: ordId }),
       });
+      const result = await res.json();
+
+      // Auto-login with session tokens if returned
+      if (result?.session?.access_token && result?.session?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token,
+        });
+      }
     } catch (err) {
       console.error("Guest account creation failed:", err);
     }
