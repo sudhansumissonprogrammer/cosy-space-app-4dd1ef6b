@@ -42,8 +42,8 @@ function WishlistBadgeV2({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
     <Link to={storefrontPath(slug, "wishlist")} className="relative">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
-        <Heart className="h-5 w-5" />
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+        <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
       {wishlistCount > 0 && (
         <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
