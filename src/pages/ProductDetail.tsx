@@ -629,8 +629,7 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Customer Reviews Section */}
-      <CustomerReviews reviews={fakeReviews} rating={stats.rating} reviewCount={stats.reviewCount} />
+      {/* Customer Reviews Section removed — only star rating shown inline */}
 
       {/* Related Products */}
       <RelatedProducts
