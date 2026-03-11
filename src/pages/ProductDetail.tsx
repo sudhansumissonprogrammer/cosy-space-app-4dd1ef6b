@@ -128,6 +128,11 @@ export default function ProductDetail() {
   const store = useOutletContext<StoreData>();
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
+
+  // Scroll to top when navigating between product pages
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [productSlug]);
   const { addToCart, items, cartTotal } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
