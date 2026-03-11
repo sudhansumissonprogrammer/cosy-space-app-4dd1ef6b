@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, Link, Outlet } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Store, ShoppingCart, Home, Tag, Mail, Heart, RotateCcw, Truck, FileText, Shield, User } from "lucide-react";
+import { Store, ShoppingCart, Home, Tag, Mail, Heart, RotateCcw, User } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -18,28 +18,40 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import SideCart from "@/components/storefront/SideCart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
+import { useEffect, useRef } from "react";
 
 export type StoreData = Tables<"stores">;
 
+/**
+ * Single RPC call fetches store + products + categories in one roundtrip.
+ * Individual caches are seeded immediately so child pages render instantly.
+ */
 export function useStorefront(slugOverride?: string) {
   const { slug: paramSlug } = useParams<{ slug: string }>();
   const slug = slugOverride || paramSlug;
+  const queryClient = useQueryClient();
 
-  const { data: store, isLoading, error } = useQuery({
-    queryKey: ["storefront", slug],
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("*")
-        .eq("slug", slug!)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug! });
       if (error) throw error;
-      return data;
+      const result = data as any;
+      const store = result?.store as StoreData | null;
+      if (store) {
+        // Seed individual caches so children never refetch
+        queryClient.setQueryData(["storefront", slug], store);
+        queryClient.setQueryData(["storefront-products", store.id], result.products || []);
+        queryClient.setQueryData(["storefront-categories", store.id], result.categories || []);
+      }
+      return result;
     },
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
+  const store = data?.store as StoreData | null ?? null;
   return { store, isLoading, error, slug };
 }
 
@@ -89,20 +101,10 @@ function AccountBadge({ slug }: { slug: string }) {
 
 function HamburgerMenu({ store }: { store: StoreData }) {
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
 
-  const { data: categories } = useQuery({
-    queryKey: ["storefront-categories-menu", store.id],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("categories")
-        .select("*")
-        .eq("store_id", store.id)
-        .order("name");
-      if (error) throw error;
-      return data as { id: string; name: string; slug: string; image_url: string | null }[];
-    },
-    enabled: !!store.id,
-  });
+  // Read from pre-seeded cache — no extra fetch
+  const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -175,7 +177,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
                 <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Categories
                 </div>
-                {categories.map((cat) => (
+                {categories.map((cat: any) => (
                   <Link
                     key={cat.id}
                     to={storefrontPath(store.slug, `category/${cat.slug}`)}
@@ -199,9 +201,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
 function StorefrontSkeleton() {
   return (
     <div className="min-h-screen bg-background font-sans">
-      {/* Marquee placeholder */}
       <div className="h-8 bg-muted/50" />
-      {/* Nav skeleton */}
       <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
           <Skeleton className="h-10 w-10 rounded-lg" />
@@ -212,13 +212,11 @@ function StorefrontSkeleton() {
           <Skeleton className="h-9 w-9 rounded-full" />
         </div>
       </nav>
-      {/* Search bar skeleton */}
       <div className="border-b bg-card px-4 py-3">
         <div className="mx-auto max-w-6xl">
           <Skeleton className="h-10 w-full rounded-md" />
         </div>
       </div>
-      {/* Category pills skeleton */}
       <div className="border-b bg-card px-4 py-3">
         <div className="mx-auto flex max-w-6xl gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -226,7 +224,6 @@ function StorefrontSkeleton() {
           ))}
         </div>
       </div>
-      {/* Product grid skeleton */}
       <div className="mx-auto max-w-6xl px-4 py-6">
         <Skeleton className="mb-5 h-7 w-40" />
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
@@ -249,33 +246,7 @@ function StorefrontSkeleton() {
 
 export default function StorefrontLayout({ slugOverride }: { slugOverride?: string } = {}) {
   const { store, isLoading, slug } = useStorefront(slugOverride);
-  const queryClient = useQueryClient();
-
-  // Prefetch products & categories as soon as store.id is available
-  // so data is cached before StorefrontHome mounts
-  useEffect(() => {
-    if (!store?.id) return;
-    const storeId = store.id;
-
-    // Use RPC to fetch everything in one call, then seed individual caches
-    queryClient.prefetchQuery({
-      queryKey: ["storefront-bulk", storeId],
-      queryFn: async () => {
-        const { data, error } = await supabase.rpc("get_storefront_data", { _slug: store.slug });
-        if (error) throw error;
-        const result = data as any;
-        // Seed individual caches so StorefrontHome reads them instantly
-        if (result.products) {
-          queryClient.setQueryData(["storefront-products", storeId], result.products);
-        }
-        if (result.categories) {
-          queryClient.setQueryData(["storefront-categories", storeId], result.categories);
-        }
-        return result;
-      },
-      staleTime: 5 * 60 * 1000,
-    });
-  }, [store?.id, queryClient, store?.slug]);
+  const viewTracked = useRef(false);
 
   useFacebookPixel((store as any)?.facebook_pixel_id);
 
@@ -286,19 +257,20 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     storeSlug: store?.slug,
   });
 
-  // Track page view
+  // Track page view — fire once
   useEffect(() => {
-    if (!store?.id) return;
+    if (!store?.id || viewTracked.current) return;
+    viewTracked.current = true;
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     if (!projectId) return;
-    const timer = setTimeout(() => {
+    // Delay to not block rendering
+    setTimeout(() => {
       fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ store_id: store.id, path: window.location.pathname }),
       }).catch(() => {});
-    }, 2000);
-    return () => clearTimeout(timer);
+    }, 3000);
   }, [store?.id]);
 
   if (isLoading) {
@@ -323,10 +295,8 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
       <WishlistProvider slug={store.slug}>
         <StorefrontAuthProvider storeId={store.id}>
           <div className="storefront-font min-h-screen bg-background font-sans">
-            {/* Marquee Banner */}
             <StorefrontMarquee />
             
-            {/* Sticky Nav */}
             <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
               <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
                 <HamburgerMenu store={store} />
