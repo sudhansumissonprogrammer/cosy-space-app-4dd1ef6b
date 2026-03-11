@@ -56,11 +56,10 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     margin-bottom: 3mm;
   }
   .brand-row { display: flex; align-items: center; gap: 2mm; }
-  .brand-logo { height: 28px; width: auto; object-fit: contain; }
-  .brand-name { font-size: 11px; font-weight: 800; }
-  .brand-contact { font-size: 6.5px; color: #444; margin-top: 1px; }
-  .inv-tag { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-  .inv-id { font-size: 7px; color: #555; margin-top: 1px; text-align: right; }
+  .brand-logo { height: 40px; width: auto; object-fit: contain; }
+  .brand-contact { font-size: 7.5px; color: #444; margin-top: 2px; }
+  .inv-tag { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .inv-id { font-size: 8px; color: #555; margin-top: 1px; text-align: right; }
 
   /* Sections */
   .row { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
