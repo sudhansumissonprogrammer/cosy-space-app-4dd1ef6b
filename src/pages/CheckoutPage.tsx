@@ -692,11 +692,7 @@ export default function CheckoutPage() {
                   onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("upi"); setUpiApp("phonepe"); }}
                   className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-3 transition-all ${paymentMethod === "razorpay" && upiApp === "phonepe" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"}`}
                 >
-                  <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-                    <rect width="48" height="48" rx="10" fill="#5F259F"/>
-                    <path d="M19.5 12L22.5 13.5V22.5L30 30L27 33L19.5 25.5V36H16V14.5L19.5 12Z" fill="white"/>
-                    <circle cx="28" cy="16" r="3" fill="white"/>
-                  </svg>
+                  <img src="/icons/phonepe.svg" alt="PhonePe" className="h-7 w-7 object-contain" />
                   <span className="text-[10px] font-medium text-foreground">PhonePe</span>
                 </button>
 
