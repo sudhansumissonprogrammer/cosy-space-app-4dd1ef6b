@@ -1166,11 +1166,13 @@ function CustomerReviews({
 /* ── Accordion Item ── */
 function AccordionItem({
   title,
+  icon,
   isOpen,
   onToggle,
   children,
 }: {
   title: string;
+  icon?: React.ReactNode;
   isOpen: boolean;
   onToggle: () => void;
   children: React.ReactNode;
@@ -1181,7 +1183,11 @@ function AccordionItem({
         onClick={onToggle}
         className="flex w-full items-center justify-between px-4 py-3 text-sm font-bold text-foreground hover:bg-accent/30 transition-colors"
       >
-        {title}
+        <span className="flex items-center gap-2">
+          {icon}
+          {title}
+        </span>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen && (
