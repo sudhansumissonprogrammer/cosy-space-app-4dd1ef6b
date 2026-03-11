@@ -80,7 +80,11 @@ const storefrontChildRoutes = (theme: string) => {
 import { useStorefront } from "./layouts/StorefrontLayout";
 
 function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
-  const { store, isLoading } = useStorefront(slugOverride);
+  // Extract slug from URL path when not using subdomain
+  const location = useLocation();
+  const pathSlug = !slugOverride ? location.pathname.split("/store/")[1]?.split("/")[0] : undefined;
+  const effectiveSlug = slugOverride || pathSlug;
+  const { store, isLoading } = useStorefront(effectiveSlug);
 
   if (isLoading) {
     return <LoadingSpinner />;
