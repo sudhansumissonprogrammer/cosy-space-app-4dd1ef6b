@@ -643,41 +643,45 @@ export default function ProductDetail() {
 
       {/* Sticky Mobile CTA */}
       {!isOutOfStock && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md p-3 flex items-center gap-3 sm:hidden safe-area-bottom">
-          <div className="flex-1 min-w-0">
-            <p className="text-lg font-extrabold text-foreground leading-tight">
-              {currency} {(variantPrice * quantity).toFixed(2)}
-            </p>
-            {hasDiscount && (
-              <p className="text-[10px] text-success font-semibold">{discountPct}% OFF</p>
-            )}
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md p-3 sm:hidden safe-area-bottom">
+          <div className="flex items-center gap-3">
+            <div className="shrink-0 min-w-0">
+              <p className="text-lg font-extrabold text-foreground leading-tight">
+                {currency} {(variantPrice * quantity).toFixed(2)}
+              </p>
+              {hasDiscount && (
+                <p className="text-[10px] text-success font-semibold">{discountPct}% OFF</p>
+              )}
+            </div>
+            <div className="flex flex-1 gap-2">
+              <button
+                className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] ${
+                  justAdded ? "bg-success text-success-foreground" : "btn-gold"
+                }`}
+                onClick={handleAddToCart}
+              >
+                {justAdded ? (
+                  <span className="flex items-center gap-1 animate-fade-in">
+                    <Check className="h-4 w-4" strokeWidth={3} />
+                    Added!
+                  </span>
+                ) : (
+                  <>
+                    <ShoppingCart className="h-4 w-4" />
+                    Add to Cart
+                  </>
+                )}
+              </button>
+              {showBuyNow && (
+                <Button
+                  className="h-11 flex-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider"
+                  onClick={handleBuyNow}
+                >
+                  Buy Now
+                </Button>
+              )}
+            </div>
           </div>
-          <button
-            className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] ${
-              justAdded ? "bg-success text-success-foreground" : "btn-gold"
-            }`}
-            onClick={handleAddToCart}
-          >
-            {justAdded ? (
-              <span className="flex items-center gap-1 animate-fade-in">
-                <Check className="h-4 w-4" strokeWidth={3} />
-                Added!
-              </span>
-            ) : (
-              <>
-                <ShoppingCart className="h-4 w-4" />
-                Add to Cart
-              </>
-            )}
-          </button>
-          {showBuyNow && (
-            <Button
-              className="h-11 flex-1 rounded-xl text-xs font-extrabold uppercase tracking-wider"
-              onClick={handleBuyNow}
-            >
-              Buy Now
-            </Button>
-          )}
         </div>
       )}
       {!isOutOfStock && <div className="h-20 sm:hidden" />}
