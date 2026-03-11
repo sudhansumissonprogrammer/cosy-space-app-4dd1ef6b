@@ -14,7 +14,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
 
   return (
-    <footer className="mt-16 border-t bg-card">
+    <footer className="mt-16 border-t" style={{ backgroundColor: "var(--storefront-accent, hsl(var(--card)))", color: "var(--storefront-bg, hsl(var(--card-foreground)))" }}>
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Column 1: Brand */}
@@ -28,11 +28,11 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 </div>
               )}
               {!store.logo_url && (
-                <span className="text-lg font-bold text-foreground">{store.name}</span>
+                <span className="text-lg font-bold" style={{ color: "var(--storefront-bg, hsl(var(--foreground)))" }}>{store.name}</span>
               )}
             </div>
             {store.description && (
-              <p className="text-sm leading-relaxed text-muted-foreground line-clamp-3">
+              <p className="text-sm leading-relaxed opacity-80 line-clamp-3">
                 {store.description}
               </p>
             )}
@@ -40,7 +40,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
 
           {/* Column 2: Quick Links */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Quick Links</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--storefront-primary, hsl(var(--foreground)))" }}>Quick Links</h3>
             <nav className="flex flex-col gap-2">
               {[
                 { to: storefrontPath(store.slug), label: "Home" },
@@ -53,7 +53,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 <Link
                   key={link.label}
                   to={link.to}
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm opacity-70 transition-opacity hover:opacity-100"
                 >
                   {link.label}
                 </Link>
@@ -64,15 +64,15 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           {/* Column 3: Business Hours */}
           {hasHours && (
             <div className="space-y-3">
-              <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-foreground">
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--storefront-primary, hsl(var(--foreground)))" }}>
                 <Clock className="h-3.5 w-3.5" /> Business Hours
               </h3>
               <div className="space-y-1">
                 {Object.entries(hours!).map(([day, time]) =>
                   time?.trim() ? (
                     <div key={day} className="flex justify-between text-sm">
-                      <span className="capitalize text-muted-foreground">{day}</span>
-                      <span className="text-foreground">{time}</span>
+                      <span className="capitalize opacity-70">{day}</span>
+                      <span className="opacity-90">{time}</span>
                     </div>
                   ) : null
                 )}
@@ -82,10 +82,10 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
 
           {/* Column 4: Contact & Address */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Contact</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--storefront-primary, hsl(var(--foreground)))" }}>Contact</h3>
             <div className="space-y-2.5">
               {address && (
-                <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                <p className="flex items-start gap-2 text-sm opacity-70">
                   <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {address}
                 </p>
@@ -95,7 +95,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="flex items-center gap-2 text-sm opacity-70 transition-opacity hover:opacity-100"
                 >
                   <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                 </a>
@@ -105,7 +105,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="flex items-center gap-2 text-sm opacity-70 transition-opacity hover:opacity-100"
                 >
                   <Instagram className="h-3.5 w-3.5" /> Instagram
                 </a>
@@ -115,7 +115,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.facebook_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="flex items-center gap-2 text-sm opacity-70 transition-opacity hover:opacity-100"
                 >
                   <Facebook className="h-3.5 w-3.5" /> Facebook
                 </a>
@@ -125,8 +125,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 border-t pt-6 text-center">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-8 border-t border-white/10 pt-6 text-center">
+          <p className="text-xs opacity-60">
             © {year} {store.name}. All rights reserved.
           </p>
         </div>

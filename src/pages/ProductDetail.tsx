@@ -445,7 +445,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Price Block */}
-          <div className="mt-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 p-3 sm:p-4">
+          <div className="mt-4 rounded-xl border p-3 sm:p-4" style={{ background: `linear-gradient(135deg, var(--storefront-primary, #b8873c)11, var(--storefront-primary, #b8873c)22)`, borderColor: `var(--storefront-primary, #b8873c)33` }}>
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-3xl font-extrabold text-foreground sm:text-4xl">
                 {currency} {Number(variantPrice).toFixed(2)}
@@ -591,13 +591,14 @@ export default function ProductDetail() {
 
               {/* Buy Now */}
               {showBuyNow && (
-                <Button
-                  className="h-[46px] w-full rounded-xl text-xs font-extrabold uppercase tracking-wider"
+                <button
+                  className="flex h-[46px] w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
+                  style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                   onClick={handleBuyNow}
                 >
-                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  <ShoppingBag className="h-4 w-4" />
                   Buy Now
-                </Button>
+                </button>
               )}
 
               {/* WhatsApp */}

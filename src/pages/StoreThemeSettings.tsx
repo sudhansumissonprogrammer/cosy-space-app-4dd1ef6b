@@ -44,22 +44,67 @@ const COLOR_COMBINATIONS = [
     marquee: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
   },
   {
-    id: "midnight-rose",
-    name: "Midnight Rose",
-    primary: "#b76e79",
-    accent: "#2d2d2d",
+    id: "crimson-royale",
+    name: "Crimson Royale",
+    primary: "#A71D31",
+    accent: "#3F0D12",
     text: "#1a1a1a",
-    background: "#fdf8f8",
-    marquee: "linear-gradient(90deg, #b76e79, #f0c9cf, #b76e79)",
+    background: "#FBE4E3",
+    marquee: "linear-gradient(90deg, #A71D31, #e8616b, #A71D31)",
   },
   {
-    id: "ocean-luxe",
-    name: "Ocean Luxe",
-    primary: "#1e3a5f",
-    accent: "#c9a84c",
+    id: "emerald-luxe",
+    name: "Emerald Luxe",
+    primary: "#1C7C54",
+    accent: "#1B512D",
     text: "#1a1a1a",
-    background: "#f5f7fa",
-    marquee: "linear-gradient(90deg, #1e3a5f, #4a90d9, #1e3a5f)",
+    background: "#DEF4C6",
+    marquee: "linear-gradient(90deg, #1B512D, #3db87a, #1C7C54)",
+  },
+  {
+    id: "lilac-mist",
+    name: "Lilac Mist",
+    primary: "#663399",
+    accent: "#2E1A47",
+    text: "#1a1a1a",
+    background: "#E6C7E6",
+    marquee: "linear-gradient(90deg, #663399, #b088d4, #663399)",
+  },
+  {
+    id: "ocean-teal",
+    name: "Ocean Teal",
+    primary: "#114C5A",
+    accent: "#172B36",
+    text: "#1a1a1a",
+    background: "#F1F6F4",
+    marquee: "linear-gradient(90deg, #114C5A, #38a89d, #114C5A)",
+  },
+  {
+    id: "midnight-navy",
+    name: "Midnight Navy",
+    primary: "#17184B",
+    accent: "#001F3F",
+    text: "#1a1a1a",
+    background: "#F0EEE9",
+    marquee: "linear-gradient(90deg, #17184B, #4a5fb5, #17184B)",
+  },
+  {
+    id: "velvet-merlot",
+    name: "Velvet Merlot",
+    primary: "#3F0D12",
+    accent: "#A71D31",
+    text: "#1a1a1a",
+    background: "#F1F0CC",
+    marquee: "linear-gradient(90deg, #3F0D12, #8b3a42, #A71D31)",
+  },
+  {
+    id: "saffron-bloom",
+    name: "Saffron Bloom",
+    primary: "#FFC801",
+    accent: "#114C5A",
+    text: "#1a1a1a",
+    background: "#F1F6F4",
+    marquee: "linear-gradient(90deg, #FFC801, #ffe066, #FFC801)",
   },
 ];
 
@@ -292,7 +337,7 @@ export default function StoreThemeSettings() {
           {/* Color Combinations */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Color Combination</h4>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {COLOR_COMBINATIONS.map((combo) => {
                 const isSelected = selectedCombo?.id === combo.id;
                 return (

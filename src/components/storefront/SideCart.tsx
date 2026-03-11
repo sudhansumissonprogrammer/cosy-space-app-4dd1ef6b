@@ -138,16 +138,14 @@ export default function SideCart({ store }: SideCartProps) {
                   Order on WhatsApp
                 </button>
               ) : (
-                <Button
-                  className="h-12 w-full rounded-xl text-sm font-bold"
-                  asChild
+                <Link
+                  to={storefrontPath(store.slug, "checkout")}
                   onClick={closeCart}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-bold transition-all hover:brightness-110 active:scale-[0.98] btn-gold"
                 >
-                  <Link to={storefrontPath(store.slug, "checkout")}>
-                    <ShoppingBag className="mr-2 h-5 w-5" />
-                    Proceed to Checkout
-                  </Link>
-                </Button>
+                  <ShoppingBag className="h-5 w-5" />
+                  Proceed to Checkout
+                </Link>
               )}
               <Button
                 variant="ghost"

@@ -41,7 +41,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
                 to={storefrontPath(storeSlug, `category/${cat.slug}`)}
                 className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
               >
-                <div className="h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border hover:border-primary/50 hover:shadow-sm">
+                <div className="h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border" style={{ "--tw-border-opacity": 1 } as any} onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
                   {cat.image_url ? (
                     <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
                   ) : (
@@ -50,7 +50,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
                     </div>
                   )}
                 </div>
-                <span className="text-[11px] font-semibold tracking-wide text-foreground text-center leading-tight" style={{ fontFamily: "'Alegreya SC', serif" }}>
+                <span className="text-[11px] font-semibold tracking-wide text-foreground text-center leading-tight" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
                   {cat.name.split(' ').map((word, i) => (
                     <span key={i}>
                       {i > 0 && ' '}
