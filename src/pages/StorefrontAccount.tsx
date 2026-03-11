@@ -326,12 +326,10 @@ export default function StorefrontAccount() {
         <TabsList className="w-full">
           <TabsTrigger value="orders" className="flex-1"><Package className="mr-2 h-4 w-4" />Orders</TabsTrigger>
           <TabsTrigger value="addresses" className="flex-1"><MapPin className="mr-2 h-4 w-4" />Addresses</TabsTrigger>
-          <TabsTrigger value="wishlist" className="flex-1"><Heart className="mr-2 h-4 w-4" />Wishlist</TabsTrigger>
         </TabsList>
         <div className="mt-4">
           <TabsContent value="orders"><OrdersTab customerId={customer.id} store={store} /></TabsContent>
           <TabsContent value="addresses"><AddressesTab customerId={customer.id} /></TabsContent>
-          <TabsContent value="wishlist"><WishlistTab customerId={customer.id} store={store} /></TabsContent>
         </div>
       </Tabs>
     </div>
