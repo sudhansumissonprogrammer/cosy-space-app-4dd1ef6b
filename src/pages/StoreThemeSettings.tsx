@@ -974,43 +974,23 @@ function FullStorefrontPreview({ config, storeName, products: propProducts, cate
   );
 
   return (
-    <div className="flex justify-center">
-      <div className="relative mx-auto" style={{ width: "375px" }}>
-        <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
-          {/* Notch */}
-          <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
-            <div className="h-2 w-2 rounded-full bg-gray-600" />
-          </div>
-
-          {/* Screen */}
-          <div className="relative" style={{ height: "680px", backgroundColor: config.background_color }}>
-            {/* Main content area */}
-            <div className="h-full overflow-y-auto">
-              {/* Marquee */}
-              <div
-                className="px-3 py-1.5 text-center text-[9px] font-medium tracking-wide"
-                style={{ background: config.marquee_gradient, color: config.text_color, fontVariant: "small-caps" }}
-              >
-                🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payment
-              </div>
-
-              <Navbar showBack={screen === "product"} />
-
-              {screen === "home" && <HomeScreen />}
-              {screen === "product" && <ProductScreen />}
-            </div>
-
-            {/* Cart Overlay */}
-            {showCart && <CartOverlay />}
-          </div>
-
-          {/* Home indicator */}
-          <div className="flex h-5 items-center justify-center bg-gray-800">
-            <div className="h-1 w-24 rounded-full bg-gray-600" />
-          </div>
-        </div>
+    <PreviewFrame isDesktop={isDesktop} bgColor={config.background_color}>
+      {/* Marquee */}
+      <div
+        className="px-3 py-1.5 text-center text-[9px] font-medium tracking-wide"
+        style={{ background: config.marquee_gradient, color: config.text_color, fontVariant: "small-caps" }}
+      >
+        🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payment
       </div>
-    </div>
+
+      <Navbar showBack={screen === "product"} />
+
+      {screen === "home" && <HomeScreen />}
+      {screen === "product" && <ProductScreen />}
+
+      {/* Cart Overlay */}
+      {showCart && <CartOverlay />}
+    </PreviewFrame>
   );
 }
 
