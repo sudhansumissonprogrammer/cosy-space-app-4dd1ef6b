@@ -115,7 +115,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.facebook_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="flex items-center gap-2 text-sm opacity-70 transition-opacity hover:opacity-100"
                 >
                   <Facebook className="h-3.5 w-3.5" /> Facebook
                 </a>
