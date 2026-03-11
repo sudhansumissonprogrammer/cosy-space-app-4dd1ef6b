@@ -870,8 +870,18 @@ export default function CheckoutPage() {
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Shipping</span>
-          <span className="text-primary font-medium">Free</span>
+          {shippingCharge > 0 ? (
+            <span className="text-foreground">{currency} {shippingCharge.toFixed(2)}</span>
+          ) : (
+            <span className="text-primary font-medium">Free</span>
+          )}
         </div>
+        {taxActive && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{taxName} ({taxRate}%){taxInclusive ? " (incl.)" : ""}</span>
+            <span className="text-foreground">{currency} {taxAmount.toFixed(2)}</span>
+          </div>
+        )}
         {couponDiscount > 0 && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-primary">Coupon Discount</span>

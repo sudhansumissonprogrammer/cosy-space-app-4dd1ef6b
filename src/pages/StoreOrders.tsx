@@ -129,7 +129,16 @@ export default function StoreOrders() {
                       <TableCell className="text-right">{order.currency} {Number(order.total).toFixed(2)}</TableCell>
                       <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
                       <TableCell>
-                        <Select value={order.status} onValueChange={(v) => updateWebStatus.mutate({ orderId: order.id, status: v })}>
+                        <Select value={order.status} onValueChange={(v) => {
+                          if (v === "shipped" && !order.tracking_number) {
+                            setTrackingOrder(order);
+                            setTrackingNumber(order.tracking_number || "");
+                            setTrackingUrl(order.tracking_url || "");
+                            setPendingStatus(v);
+                            return;
+                          }
+                          updateWebStatus.mutate({ orderId: order.id, status: v });
+                        }}>
                           <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {STATUS_OPTIONS.map((s) => (
@@ -137,6 +146,12 @@ export default function StoreOrders() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {order.tracking_number && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Truck className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[10px] text-muted-foreground">{order.tracking_number}</span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "MMM d, HH:mm")}</TableCell>
                     </TableRow>
