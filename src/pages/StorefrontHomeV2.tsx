@@ -53,9 +53,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
   const slide = slides[current];
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ minHeight: "350px", maxHeight: "800px" }}>
-      <style>{`.hero-v2 { height: 60vh; } @media (min-width: 640px) { .hero-v2 { height: 85vh; } }`}</style>
-      <div className="hero-v2 absolute inset-0" />
+    <div className="relative w-full overflow-hidden h-[60vh] sm:h-[85vh]" style={{ minHeight: "350px", maxHeight: "800px" }}>
       {/* Slide image / gradient fallback */}
       {slide.image ? (
         <img
