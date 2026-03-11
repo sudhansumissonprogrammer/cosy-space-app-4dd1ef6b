@@ -50,7 +50,8 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    font-family: 'Alegreya SC', serif;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    --font-storefront: 'Alegreya SC', serif;
   }
 
   .dark {
@@ -96,6 +97,22 @@
 @layer base {
   * {
     @apply border-border;
+  }
+
+  /* Storefront display font — headings, labels, nav, badges, buttons (not inputs) */
+  .storefront-font,
+  .storefront-font h1, .storefront-font h2, .storefront-font h3, .storefront-font h4,
+  .storefront-font p, .storefront-font span, .storefront-font a, .storefront-font label,
+  .storefront-font button, .storefront-font th, .storefront-font td, .storefront-font li {
+    font-family: var(--font-storefront);
+  }
+
+  /* Inputs and textareas always use normal font */
+  .storefront-font input,
+  .storefront-font textarea,
+  .storefront-font select,
+  input, textarea, select {
+    font-family: 'Inter', 'Segoe UI', sans-serif !important;
   }
 
   body {
