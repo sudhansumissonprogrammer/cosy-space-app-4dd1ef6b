@@ -870,40 +870,6 @@ function CountdownTimer({ productId }: { productId: string }) {
   );
 }
 
-/* ── Payment Icons ── */
-function PaymentIcons() {
-  return (
-    <div className="flex items-center gap-1">
-      <div className="flex h-6 w-9 items-center justify-center rounded border border-border bg-card">
-        <svg viewBox="0 0 48 32" className="h-4 w-7">
-          <rect width="48" height="32" rx="4" fill="#1A1F71"/>
-          <text x="24" y="20" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="sans-serif">VISA</text>
-        </svg>
-      </div>
-      <div className="flex h-6 w-9 items-center justify-center rounded border border-border bg-card">
-        <svg viewBox="0 0 48 32" className="h-4 w-7">
-          <rect width="48" height="32" rx="4" fill="#252525"/>
-          <circle cx="19" cy="16" r="8" fill="#EB001B"/>
-          <circle cx="29" cy="16" r="8" fill="#F79E1B"/>
-          <path d="M24 10.3a8 8 0 010 11.4 8 8 0 000-11.4z" fill="#FF5F00"/>
-        </svg>
-      </div>
-      <div className="flex h-6 w-9 items-center justify-center rounded border border-border bg-card">
-        <svg viewBox="0 0 48 32" className="h-4 w-7">
-          <rect width="48" height="32" rx="4" fill="#fff"/>
-          <text x="24" y="20" textAnchor="middle" fill="#5f259f" fontSize="10" fontWeight="bold" fontFamily="sans-serif">UPI</text>
-        </svg>
-      </div>
-      <div className="flex h-6 w-9 items-center justify-center rounded border border-border bg-card">
-        <svg viewBox="0 0 48 32" className="h-4 w-7">
-          <rect width="48" height="32" rx="4" fill="#f5f5f5"/>
-          <text x="24" y="20" textAnchor="middle" fill="#333" fontSize="8" fontWeight="bold" fontFamily="sans-serif">COD</text>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 /* ── Real Payment Logos ── */
 function RealPaymentLogos({ size = "normal" }: { size?: "normal" | "mini" }) {
   const h = size === "mini" ? "h-5" : "h-6";
