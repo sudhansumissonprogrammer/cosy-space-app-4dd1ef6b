@@ -78,7 +78,7 @@ function HeroSection({ store }: { store: StoreData }) {
                 src={store.banner_url}
                 alt={store.name}
                 className="w-full object-cover"
-                style={{ aspectRatio: "4/5", maxHeight: "560px" }}
+                style={{ aspectRatio: window.innerWidth < 640 ? "1/1" : "4/5", maxHeight: window.innerWidth < 640 ? "350px" : "560px" }}
                 loading="eager"
               />
             </div>
