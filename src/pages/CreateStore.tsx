@@ -203,6 +203,7 @@ export default function CreateStore() {
         banner_url: bannerUrl,
         mobile_hero_url: mobileHeroUrl,
         theme,
+        owner_email: ownerEmail.trim() || null,
       });
 
       if (error) {
