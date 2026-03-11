@@ -158,6 +158,34 @@ export default function CheckoutPage() {
     },
   });
 
+  // Fetch shipping config
+  const { data: shippingConfig } = useQuery({
+    queryKey: ["store-shipping-config", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_shipping_config")
+        .select("*")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch tax config
+  const { data: taxConfig } = useQuery({
+    queryKey: ["store-tax-config", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_tax_config")
+        .select("*")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const availableMethods = paymentConfig?.payment_methods || ["cod"];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
@@ -188,7 +216,30 @@ export default function CheckoutPage() {
       }));
 
   const subtotal = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const total = Math.max(0, subtotal - couponDiscount);
+
+  // Shipping calculation
+  const shippingActive = shippingConfig?.is_active;
+  const shippingCharge = shippingActive
+    ? (shippingConfig.free_shipping_above && subtotal >= Number(shippingConfig.free_shipping_above)
+        ? 0
+        : Number(shippingConfig.flat_rate) || 0)
+    : 0;
+
+  // Tax calculation
+  const taxActive = taxConfig?.is_active && Number(taxConfig?.tax_rate) > 0;
+  const taxRate = taxActive ? Number(taxConfig.tax_rate) : 0;
+  const taxInclusive = taxConfig?.is_inclusive ?? false;
+  const taxName = taxConfig?.tax_name || "Tax";
+  let taxAmount = 0;
+  if (taxActive) {
+    if (taxInclusive) {
+      taxAmount = subtotal - (subtotal / (1 + taxRate / 100));
+    } else {
+      taxAmount = (subtotal * taxRate) / 100;
+    }
+  }
+
+  const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
   // Coupon logic
   const applyCoupon = async () => {
@@ -246,6 +297,24 @@ export default function CheckoutPage() {
       value: subtotal,
       currency,
     });
+  }, []);
+
+  // Save abandoned cart on checkout entry
+  const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
+  useEffect(() => {
+    if (checkoutItems.length === 0) return;
+    const saveAbandonedCart = async () => {
+      try {
+        const { data } = await (supabase as any).from("abandoned_carts").insert({
+          store_id: store.id,
+          customer_email: email || null,
+          customer_phone: phone || null,
+          cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
+        }).select("id").single();
+        if (data?.id) setAbandonedCartId(data.id);
+      } catch {}
+    };
+    saveAbandonedCart();
   }, []);
 
   if (isLoading && isSingleMode) return <CheckoutSkeleton />;
@@ -324,7 +393,12 @@ export default function CheckoutPage() {
       await (supabase as any)
         .from("coupons")
         .update({ used_count: (appliedCoupon.used_count || 0) + 1 })
-        .eq("id", appliedCoupon.id);
+      .eq("id", appliedCoupon.id);
+    }
+
+    // Mark abandoned cart as recovered
+    if (abandonedCartId) {
+      await (supabase as any).from("abandoned_carts").update({ recovered: true }).eq("id", abandonedCartId);
     }
 
     return order.id as string;
@@ -819,8 +893,18 @@ export default function CheckoutPage() {
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Shipping</span>
-          <span className="text-primary font-medium">Free</span>
+          {shippingCharge > 0 ? (
+            <span className="text-foreground">{currency} {shippingCharge.toFixed(2)}</span>
+          ) : (
+            <span className="text-primary font-medium">Free</span>
+          )}
         </div>
+        {taxActive && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{taxName} ({taxRate}%){taxInclusive ? " (incl.)" : ""}</span>
+            <span className="text-foreground">{currency} {taxAmount.toFixed(2)}</span>
+          </div>
+        )}
         {couponDiscount > 0 && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-primary">Coupon Discount</span>

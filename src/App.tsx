@@ -54,6 +54,10 @@ import UserSettings from "./pages/UserSettings";
 import CustomerLeads from "./pages/CustomerLeads";
 import CheckoutPage from "./pages/CheckoutPage";
 import StorePayments from "./pages/StorePayments";
+import StoreCoupons from "./pages/StoreCoupons";
+import StoreShipping from "./pages/StoreShipping";
+import StoreTaxSettings from "./pages/StoreTaxSettings";
+import StoreAbandonedCarts from "./pages/StoreAbandonedCarts";
 const CartPage = lazy(() => import("./pages/CartPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -124,6 +128,10 @@ function AuthRoutes() {
           <Route path="stores/:storeId/domain" element={<StoreDomain />} />
           <Route path="stores/:storeId/leads" element={<CustomerLeads />} />
           <Route path="stores/:storeId/payments" element={<StorePayments />} />
+          <Route path="stores/:storeId/coupons" element={<StoreCoupons />} />
+          <Route path="stores/:storeId/shipping" element={<StoreShipping />} />
+          <Route path="stores/:storeId/tax" element={<StoreTaxSettings />} />
+          <Route path="stores/:storeId/abandoned-carts" element={<StoreAbandonedCarts />} />
           <Route path="analytics" element={<StoreAnalytics />} />
           <Route path="settings" element={<UserSettings />} />
         </Route>

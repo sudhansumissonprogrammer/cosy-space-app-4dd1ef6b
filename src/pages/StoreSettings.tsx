@@ -68,6 +68,9 @@ export default function StoreSettings() {
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const [facebookPixelId, setFacebookPixelId] = useState("");
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [ogImageUrl, setOgImageUrl] = useState("");
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
@@ -106,6 +109,9 @@ export default function StoreSettings() {
       setShippingPolicy((store as any).shipping_policy || "");
       setBestSellingCarousel((store as any).best_selling_carousel || false);
       setFacebookPixelId((store as any).facebook_pixel_id || "");
+      setMetaTitle((store as any).meta_title || "");
+      setMetaDescription((store as any).meta_description || "");
+      setOgImageUrl((store as any).og_image_url || "");
     }
   }, [store]);
 
@@ -158,6 +164,9 @@ export default function StoreSettings() {
           shipping_policy: shippingPolicy.trim() || null,
           best_selling_carousel: bestSellingCarousel,
           facebook_pixel_id: facebookPixelId.trim() || null,
+          meta_title: metaTitle.trim() || null,
+          meta_description: metaDescription.trim() || null,
+          og_image_url: ogImageUrl.trim() || null,
         })
         .eq("id", storeId!);
       if (error) throw error;
@@ -581,6 +590,31 @@ export default function StoreSettings() {
                   <p className="text-xs text-muted-foreground">{t.desc}</p>
                 </button>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SEO Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> SEO Settings</CardTitle>
+            <CardDescription>Optimize your store for search engines.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Meta Title</Label>
+              <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="Your Store — Best Products Online" maxLength={60} />
+              <p className="text-xs text-muted-foreground">{metaTitle.length}/60 characters</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Meta Description</Label>
+              <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="Discover amazing products at great prices..." maxLength={160} rows={3} />
+              <p className="text-xs text-muted-foreground">{metaDescription.length}/160 characters</p>
+            </div>
+            <div className="space-y-2">
+              <Label>OG Image URL</Label>
+              <Input value={ogImageUrl} onChange={(e) => setOgImageUrl(e.target.value)} placeholder="https://..." maxLength={500} />
+              <p className="text-xs text-muted-foreground">Social sharing preview image (1200×630 recommended)</p>
             </div>
           </CardContent>
         </Card>

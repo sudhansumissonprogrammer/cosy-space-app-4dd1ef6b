@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import OrderInvoice from "@/components/OrderInvoice";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
@@ -22,6 +26,11 @@ export default function StoreOrders() {
   const { storeId } = useParams<{ storeId: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [trackingOrder, setTrackingOrder] = useState<any>(null);
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [trackingUrl, setTrackingUrl] = useState("");
+  const [pendingStatus, setPendingStatus] = useState("");
+  const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
 
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
@@ -60,13 +69,16 @@ export default function StoreOrders() {
   });
 
   const updateWebStatus = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
-      const { error } = await (supabase as any).from("orders").update({ status }).eq("id", orderId);
+    mutationFn: async ({ orderId, status, tracking_number, tracking_url }: { orderId: string; status: string; tracking_number?: string; tracking_url?: string }) => {
+      const update: any = { status };
+      if (tracking_number !== undefined) update.tracking_number = tracking_number;
+      if (tracking_url !== undefined) update.tracking_url = tracking_url;
+      const { error } = await (supabase as any).from("orders").update(update).eq("id", orderId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["website-orders", storeId] });
-      toast.success("Order status updated");
+      toast.success("Order updated");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -108,8 +120,9 @@ export default function StoreOrders() {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Payment</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
+                     <TableHead>Date</TableHead>
+                     <TableHead className="w-12" />
+                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {webOrders.map((order: any) => (
@@ -123,7 +136,16 @@ export default function StoreOrders() {
                       <TableCell className="text-right">{order.currency} {Number(order.total).toFixed(2)}</TableCell>
                       <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
                       <TableCell>
-                        <Select value={order.status} onValueChange={(v) => updateWebStatus.mutate({ orderId: order.id, status: v })}>
+                        <Select value={order.status} onValueChange={(v) => {
+                          if (v === "shipped" && !order.tracking_number) {
+                            setTrackingOrder(order);
+                            setTrackingNumber(order.tracking_number || "");
+                            setTrackingUrl(order.tracking_url || "");
+                            setPendingStatus(v);
+                            return;
+                          }
+                          updateWebStatus.mutate({ orderId: order.id, status: v });
+                        }}>
                           <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {STATUS_OPTIONS.map((s) => (
@@ -131,8 +153,17 @@ export default function StoreOrders() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {order.tracking_number && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Truck className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[10px] text-muted-foreground">{order.tracking_number}</span>
+                          </div>
+                        )}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "MMM d, HH:mm")}</TableCell>
+                       <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "MMM d, HH:mm")}</TableCell>
+                       <TableCell>
+                         <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
+                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -150,6 +181,46 @@ export default function StoreOrders() {
           </CardContent>
         </Card>
       )}
+
+      {/* Tracking Number Dialog */}
+      <Dialog open={!!trackingOrder} onOpenChange={(v) => { if (!v) setTrackingOrder(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add Tracking Info</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Tracking Number</label>
+              <Input value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="e.g. AWB123456789" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Tracking URL (optional)</label>
+              <Input value={trackingUrl} onChange={(e) => setTrackingUrl(e.target.value)} placeholder="https://track.delhivery.com/..." />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => {
+                updateWebStatus.mutate({
+                  orderId: trackingOrder.id,
+                  status: pendingStatus,
+                  tracking_number: trackingNumber.trim() || undefined,
+                  tracking_url: trackingUrl.trim() || undefined,
+                });
+                setTrackingOrder(null);
+              }}
+            >
+              Update to Shipped
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice Dialog */}
+      <Dialog open={!!invoiceOrder} onOpenChange={(v) => { if (!v) setInvoiceOrder(null); }}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          {invoiceOrder && <OrderInvoice order={invoiceOrder} store={store} onClose={() => setInvoiceOrder(null)} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

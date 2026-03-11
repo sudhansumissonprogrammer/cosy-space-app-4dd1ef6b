@@ -52,37 +52,77 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
     cancelled: "bg-red-100 text-red-800",
   };
 
+  const STATUSES = ["pending", "confirmed", "shipped", "delivered"];
+
   return (
     <div className="space-y-4">
-      {orders.map((order: any) => (
-        <Card key={order.id}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">
-                {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-              </span>
-              <Badge className={statusColor[order.status] || ""}>{order.status}</Badge>
-            </div>
-            <div className="space-y-1">
-              {order.order_items?.map((item: any) => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span>{item.product_name} × {item.quantity}</span>
-                  <span className="font-medium">{store.currency} {item.total}</span>
+      {orders.map((order: any) => {
+        const currentIdx = STATUSES.indexOf(order.status);
+        const isCancelled = order.status === "cancelled";
+        return (
+          <Card key={order.id}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">
+                  {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+                <Badge className={statusColor[order.status] || ""}>{order.status}</Badge>
+              </div>
+
+              {/* Status Timeline */}
+              {!isCancelled && (
+                <div className="flex items-center gap-1 my-3">
+                  {STATUSES.map((s, i) => (
+                    <div key={s} className="flex items-center flex-1">
+                      <div className={`h-2 w-2 rounded-full flex-shrink-0 ${i <= currentIdx ? "bg-primary" : "bg-muted"}`} />
+                      {i < STATUSES.length - 1 && (
+                        <div className={`h-0.5 flex-1 ${i < currentIdx ? "bg-primary" : "bg-muted"}`} />
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <Separator className="my-2" />
-            <div className="flex justify-between font-semibold text-sm">
-              <span>Total</span>
-              <span>{store.currency} {order.total}</span>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              )}
+              {!isCancelled && (
+                <div className="flex justify-between mb-2">
+                  {STATUSES.map((s, i) => (
+                    <span key={s} className={`text-[10px] capitalize ${i <= currentIdx ? "text-primary font-medium" : "text-muted-foreground"}`}>{s}</span>
+                  ))}
+                </div>
+              )}
+
+              {/* Tracking info */}
+              {order.tracking_number && (
+                <div className="mb-2 flex items-center gap-2 rounded-lg bg-accent/50 p-2 text-xs">
+                  <Package className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Tracking:</span>
+                  {order.tracking_url ? (
+                    <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">{order.tracking_number}</a>
+                  ) : (
+                    <span className="font-mono">{order.tracking_number}</span>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-1">
+                {order.order_items?.map((item: any) => (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <span>{item.product_name} × {item.quantity}</span>
+                    <span className="font-medium">{store.currency} {item.total}</span>
+                  </div>
+                ))}
+              </div>
+              <Separator className="my-2" />
+              <div className="flex justify-between font-semibold text-sm">
+                <span>Total</span>
+                <span>{store.currency} {order.total}</span>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
-
 function AddressesTab({ customerId }: { customerId: string }) {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);

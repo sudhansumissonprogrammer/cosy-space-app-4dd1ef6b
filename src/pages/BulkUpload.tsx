@@ -18,11 +18,13 @@ interface ParsedProduct {
   category: string;
   stock_quantity: number;
   sku: string;
+  image_url: string;
   valid: boolean;
   error?: string;
+  row: number;
 }
 
-const CSV_TEMPLATE = "name,price,sale_price,description,category,stock_quantity,sku\nExample Product,29.99,,A great product,Accessories,100,SKU-001";
+const CSV_TEMPLATE = "name,price,sale_price,description,category,stock_quantity,sku,image_url\nExample Product,29.99,,A great product,Accessories,100,SKU-001,https://example.com/image.jpg";
 
 function generateSlug(name: string): string {
   return name
@@ -65,12 +67,13 @@ function parseCSV(text: string): ParsedProduct[] {
   const catIdx = headers.indexOf("category");
   const stockIdx = headers.indexOf("stock_quantity");
   const skuIdx = headers.indexOf("sku");
+  const imageIdx = headers.indexOf("image_url");
 
   if (nameIdx === -1 || priceIdx === -1) {
-    return [{ name: "", price: 0, sale_price: null, description: "", category: "", stock_quantity: 0, sku: "", valid: false, error: "CSV must have 'name' and 'price' columns" }];
+    return [{ name: "", price: 0, sale_price: null, description: "", category: "", stock_quantity: 0, sku: "", image_url: "", valid: false, error: "CSV must have 'name' and 'price' columns", row: 2 }];
   }
 
-  return lines.slice(1).map((line) => {
+  return lines.slice(1).map((line, idx) => {
     const cols = parseCSVLine(line);
     const name = cols[nameIdx]?.trim() || "";
     const price = parseFloat(cols[priceIdx]) || 0;
@@ -79,13 +82,14 @@ function parseCSV(text: string): ParsedProduct[] {
     const category = catIdx >= 0 ? cols[catIdx]?.trim() || "" : "";
     const stock_quantity = stockIdx >= 0 ? parseInt(cols[stockIdx]) || 0 : 0;
     const sku = skuIdx >= 0 ? cols[skuIdx]?.trim() || "" : "";
+    const image_url = imageIdx >= 0 ? cols[imageIdx]?.trim() || "" : "";
 
     let valid = true;
     let error: string | undefined;
-    if (!name) { valid = false; error = "Name is required"; }
-    else if (price <= 0) { valid = false; error = "Price must be > 0"; }
+    if (!name) { valid = false; error = `Row ${idx + 2}: Name is required`; }
+    else if (price <= 0) { valid = false; error = `Row ${idx + 2}: Price must be > 0`; }
 
-    return { name, price, sale_price, description, category, stock_quantity, sku, valid, error };
+    return { name, price, sale_price, description, category, stock_quantity, sku, image_url, valid, error, row: idx + 2 };
   });
 }
 
@@ -147,6 +151,7 @@ export default function BulkUpload() {
         category: p.category || null,
         stock_quantity: p.stock_quantity,
         sku: p.sku || null,
+        image_url: p.image_url || null,
         is_active: true,
       }));
 
@@ -175,6 +180,30 @@ export default function BulkUpload() {
     URL.revokeObjectURL(url);
   };
 
+  const exportProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("name, price, sale_price, description, category, stock_quantity, sku, image_url")
+        .eq("store_id", storeId!);
+      if (error) throw error;
+      if (!data?.length) { toast.error("No products to export"); return; }
+      const headers = "name,price,sale_price,description,category,stock_quantity,sku,image_url";
+      const rows = data.map((p: any) =>
+        [p.name, p.price, p.sale_price ?? "", p.description ?? "", p.category ?? "", p.stock_quantity, p.sku ?? "", p.image_url ?? ""]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(",")
+      );
+      const csv = [headers, ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "products-export.csv"; a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Products exported");
+    } catch (e: any) { toast.error(e.message); }
+  };
+
   const validCount = parsed.filter((p) => p.valid).length;
   const invalidCount = parsed.filter((p) => !p.valid).length;
 
@@ -200,13 +229,16 @@ export default function BulkUpload() {
         <CardHeader>
           <CardTitle className="text-lg">Upload CSV</CardTitle>
           <CardDescription>
-            Your CSV should have columns: name, price, sale_price, description, category, stock_quantity, sku
+            Your CSV should have columns: name, price, sale_price, description, category, stock_quantity, sku, image_url
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" onClick={downloadTemplate}>
               <Download className="mr-2 h-4 w-4" /> Download Template
+            </Button>
+            <Button variant="outline" onClick={exportProducts}>
+              <Download className="mr-2 h-4 w-4" /> Export Products
             </Button>
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <Upload className="mr-2 h-4 w-4" /> Choose CSV File
