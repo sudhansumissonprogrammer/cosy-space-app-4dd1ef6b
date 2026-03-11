@@ -104,7 +104,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   .items-tbl th.r { text-align: right; }
   .items-tbl th.c { text-align: center; }
   .items-tbl td {
-    font-size: 7.5px;
+    font-size: 8.5px;
     padding: 3px 4px;
     border-bottom: 0.5px solid #ddd;
     color: #222;
