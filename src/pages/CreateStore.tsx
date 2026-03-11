@@ -97,6 +97,7 @@ export default function CreateStore() {
 
   // Step 3 - Contact
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
 
   // Step 4 - Social
   const [instagramUrl, setInstagramUrl] = useState("");
