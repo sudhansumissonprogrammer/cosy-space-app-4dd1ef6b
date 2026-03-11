@@ -68,6 +68,9 @@ export default function StoreSettings() {
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const [facebookPixelId, setFacebookPixelId] = useState("");
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [ogImageUrl, setOgImageUrl] = useState("");
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
