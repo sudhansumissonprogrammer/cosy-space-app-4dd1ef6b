@@ -266,12 +266,13 @@ export default function StorefrontHome() {
             <section>
               <h2 className="mb-4 text-xl font-bold text-foreground">🔥 Best Selling</h2>
               <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {bestSellingProducts.map((product) => (
+                {bestSellingProducts.map((product, idx) => (
                   <StorefrontProductCard
                     key={product.id}
                     product={product}
                     slug={slug!}
                     store={store}
+                    priority={idx < 4}
                   />
                 ))}
               </div>
