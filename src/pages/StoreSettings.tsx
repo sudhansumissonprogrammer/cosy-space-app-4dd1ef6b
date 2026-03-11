@@ -142,6 +142,10 @@ export default function StoreSettings() {
       let bannerUrl = store?.banner_url || null;
       let mobileHeroUrl = (store as any)?.mobile_hero_url || null;
 
+      if (logoRemoved) logoUrl = null;
+      if (bannerRemoved) bannerUrl = null;
+      if (heroRemoved) mobileHeroUrl = null;
+
       if (logoFile) logoUrl = await uploadFile(logoFile, "store-logos");
       if (bannerFile) bannerUrl = await uploadFile(bannerFile, "store-banners");
       if (heroFile) mobileHeroUrl = await uploadFile(heroFile, "store-banners");
