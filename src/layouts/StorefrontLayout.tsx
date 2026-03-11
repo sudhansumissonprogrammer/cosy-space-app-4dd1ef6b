@@ -310,8 +310,6 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     );
   }
 
-  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
-
   // Build CSS variable style object from theme config
   const themeStyle: React.CSSProperties = themeConfig
     ? {
@@ -326,22 +324,6 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,
       } as any
     : {};
-
-  // Load Google Font dynamically
-  useEffect(() => {
-    if (!themeConfig) return;
-    const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
-    const families = fonts.map((f: string) => f.replace(/ /g, "+")).join("&family=");
-    const linkId = "storefront-google-fonts";
-    let link = document.getElementById(linkId) as HTMLLinkElement;
-    if (!link) {
-      link = document.createElement("link");
-      link.id = linkId;
-      link.rel = "stylesheet";
-      document.head.appendChild(link);
-    }
-    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
-  }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
   return (
     <CartProvider slug={store.slug}>
