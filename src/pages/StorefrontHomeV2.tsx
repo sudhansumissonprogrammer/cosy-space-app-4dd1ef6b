@@ -78,7 +78,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
       <div className="absolute inset-0 flex items-end">
         <div className="w-full px-6 pb-20 sm:px-12 sm:pb-24 max-w-6xl mx-auto">
           <h1
-            className="text-3xl font-bold text-white sm:text-5xl lg:text-6xl leading-tight drop-shadow-lg"
+            className="text-2xl font-bold text-white sm:text-5xl lg:text-6xl leading-tight drop-shadow-lg"
             style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
           >
             {slide.title}
