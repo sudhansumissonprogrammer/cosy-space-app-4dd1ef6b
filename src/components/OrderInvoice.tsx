@@ -38,7 +38,8 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   @page { size: 100mm 150mm; margin: 3mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Changa One', sans-serif;
+    font-family: 'Changa', sans-serif;
+    font-weight: 400;
     color: #000;
     line-height: 1.4;
     font-size: 9px;
