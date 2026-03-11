@@ -25,6 +25,10 @@ export default function StoreOrders() {
   const { storeId } = useParams<{ storeId: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [trackingOrder, setTrackingOrder] = useState<any>(null);
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [trackingUrl, setTrackingUrl] = useState("");
+  const [pendingStatus, setPendingStatus] = useState("");
 
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
