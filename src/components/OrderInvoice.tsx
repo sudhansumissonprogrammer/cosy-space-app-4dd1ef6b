@@ -120,7 +120,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   .totals-tbl td { padding: 2px 4px; font-size: 8.5px; color: #444; }
   .totals-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #111; }
   .totals-tbl .grand td {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
     color: #000;
     border-top: 1.5px solid #000;
