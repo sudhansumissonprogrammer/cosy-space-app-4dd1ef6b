@@ -39,10 +39,12 @@ export function useStorefront(slugOverride?: string) {
       const result = data as any;
       const store = result?.store as StoreData | null;
       if (store) {
-        // Seed individual caches so children never refetch
         queryClient.setQueryData(["storefront", slug], store);
         queryClient.setQueryData(["storefront-products", store.id], result.products || []);
         queryClient.setQueryData(["storefront-categories", store.id], result.categories || []);
+        if (result.theme_config) {
+          queryClient.setQueryData(["storefront-theme-config", store.id], result.theme_config);
+        }
       }
       return result;
     },
