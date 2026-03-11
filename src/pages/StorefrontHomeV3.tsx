@@ -1,0 +1,376 @@
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useOutletContext, useParams, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { Search, ArrowUpDown, ChevronLeft, ChevronRight, Zap, Tag, Clock } from "lucide-react";
+import type { StoreData } from "@/layouts/StorefrontLayout";
+import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+import LazyRender from "@/components/storefront/LazyRender";
+import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import { Skeleton } from "@/components/ui/skeleton";
+import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
+
+/* ── Swipeable Banner Slider ── */
+function BannerSlider({ store }: { store: StoreData }) {
+  const queryClient = useQueryClient();
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const [current, setCurrent] = useState(0);
+  const touchStart = useRef(0);
+
+  const slides = useMemo(() => {
+    const s: { image: string; title: string; link?: string }[] = [];
+    if ((store as any).banner_url) {
+      s.push({ image: (store as any).banner_url, title: store.name });
+    }
+    if ((store as any).mobile_hero_url) {
+      s.push({ image: (store as any).mobile_hero_url, title: "New Arrivals" });
+    }
+    const bestSelling = products?.filter((p: any) => p.is_best_selling && p.image_url).slice(0, 3) || [];
+    bestSelling.forEach((p: any) => {
+      s.push({ image: p.image_url, title: p.name, link: storefrontPath(store.slug, `product/${p.slug || p.id}`) });
+    });
+    if (s.length === 0) {
+      s.push({ image: "", title: store.name });
+    }
+    return s;
+  }, [store, products]);
+
+  const count = slides.length;
+
+  useEffect(() => {
+    if (count <= 1) return;
+    const t = setInterval(() => setCurrent((c) => (c + 1) % count), 4000);
+    return () => clearInterval(t);
+  }, [count]);
+
+  const handleTouchStart = (e: React.TouchEvent) => { touchStart.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStart.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      setCurrent((c) => diff > 0 ? (c + 1) % count : (c - 1 + count) % count);
+    }
+  };
+
+  const slide = slides[current];
+
+  return (
+    <div className="px-3 pt-3 pb-1">
+      <div
+        className="relative overflow-hidden rounded-2xl"
+        style={{ height: "180px" }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {slide.image ? (
+          <img
+            src={optimizeImageUrl(slide.image, 800)}
+            alt={slide.title}
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+            loading="eager"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{ background: `linear-gradient(135deg, var(--storefront-primary, #3B82F6), var(--storefront-accent, #F97316))` }}
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4">
+          <h2 className="text-white text-lg font-bold drop-shadow-md" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>
+            {slide.title}
+          </h2>
+        </div>
+        {/* Dots */}
+        {count > 1 && (
+          <div className="absolute bottom-2 right-3 flex gap-1">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                className="h-1.5 rounded-full transition-all"
+                style={{
+                  width: i === current ? "16px" : "6px",
+                  backgroundColor: i === current ? "var(--storefront-primary, #fff)" : "rgba(255,255,255,0.5)",
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Category Icon Row ── */
+function CategoryIconRow({ categories, slug }: { categories: any[] | undefined; slug: string }) {
+  if (!categories || categories.length === 0) return null;
+  return (
+    <div className="px-3 py-3">
+      <div className="flex gap-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+        {categories.map((cat: any) => (
+          <Link
+            key={cat.id}
+            to={storefrontPath(slug, `category/${cat.slug}`)}
+            className="flex flex-col items-center gap-1.5 flex-shrink-0"
+          >
+            <div
+              className="h-14 w-14 rounded-2xl flex items-center justify-center overflow-hidden shadow-sm transition-transform active:scale-95"
+              style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))12", border: "1px solid var(--storefront-primary, hsl(var(--primary)))20" }}
+            >
+              {cat.image_url ? (
+                <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+              ) : (
+                <Tag className="h-6 w-6" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />
+              )}
+            </div>
+            <span className="text-[10px] font-semibold text-center leading-tight w-14 line-clamp-1">
+              {cat.name}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Flash Deals Section ── */
+function FlashDeals({ products, slug, store }: { products: any[]; slug: string; store: StoreData }) {
+  const deals = useMemo(() => {
+    return products.filter((p) => p.sale_price && p.sale_price < p.price).slice(0, 8);
+  }, [products]);
+
+  const [timeLeft, setTimeLeft] = useState({ h: 5, m: 42, s: 18 });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        let { h, m, s } = prev;
+        s--;
+        if (s < 0) { s = 59; m--; }
+        if (m < 0) { m = 59; h--; }
+        if (h < 0) { h = 23; m = 59; s = 59; }
+        return { h, m, s };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  if (deals.length === 0) return null;
+
+  return (
+    <div className="px-3 py-3">
+      {/* Section header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-lg"
+            style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }}
+          >
+            <Zap className="h-4 w-4" style={{ color: "var(--storefront-btn-text, #fff)" }} />
+          </div>
+          <h3 className="text-sm font-bold" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>Flash Deals</h3>
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />
+          <div className="flex gap-0.5">
+            {[
+              String(timeLeft.h).padStart(2, "0"),
+              String(timeLeft.m).padStart(2, "0"),
+              String(timeLeft.s).padStart(2, "0"),
+            ].map((t, i) => (
+              <span key={i} className="flex items-center">
+                <span
+                  className="rounded px-1 py-0.5 text-[10px] font-bold"
+                  style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}
+                >
+                  {t}
+                </span>
+                {i < 2 && <span className="text-[10px] font-bold mx-0.5" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>:</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Horizontal scroll */}
+      <div className="flex gap-2.5 overflow-x-auto pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+        {deals.map((product) => {
+          const discount = Math.round(((product.price - product.sale_price) / product.price) * 100);
+          return (
+            <Link
+              key={product.id}
+              to={storefrontPath(slug, `product/${product.slug || product.id}`)}
+              className="flex-shrink-0 w-32 overflow-hidden rounded-2xl border transition-transform active:scale-[0.97]"
+              style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))10" }}
+            >
+              <div className="relative" style={{ aspectRatio: "1/1" }}>
+                {product.image_url ? (
+                  <img
+                    src={optimizeImageUrl(product.image_url, 300)}
+                    alt={product.name}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))08" }}>
+                    <Tag className="h-6 w-6" style={{ color: "var(--storefront-text, hsl(var(--foreground)))20" }} />
+                  </div>
+                )}
+                <span
+                  className="absolute top-1.5 left-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+                  style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}
+                >
+                  {discount}% OFF
+                </span>
+              </div>
+              <div className="p-2 space-y-0.5">
+                <p className="text-[10px] font-semibold line-clamp-1">{product.name}</p>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-extrabold">₹{Number(product.sale_price).toFixed(0)}</span>
+                  <span className="text-[9px] line-through opacity-50">₹{Number(product.price).toFixed(0)}</span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function StorefrontHomeV3() {
+  const store = useOutletContext<StoreData>();
+  const { slug } = useParams<{ slug: string }>();
+  const queryClient = useQueryClient();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
+  const [sortOpen, setSortOpen] = useState(false);
+
+  useStoreJsonLd({
+    storeName: store.name,
+    storeSlug: store.slug,
+    description: store.description,
+    logo: store.logo_url,
+    location: store.location,
+    whatsappNumber: store.whatsapp_number,
+  });
+
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+
+  const allSorted = useMemo(() => {
+    if (!products) return [];
+    const sorted = [...products];
+    switch (sortBy) {
+      case "price_asc": sorted.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price)); break;
+      case "price_desc": sorted.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price)); break;
+      case "newest": sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
+    }
+    return sorted;
+  }, [products, sortBy]);
+
+  return (
+    <>
+      {/* Banner Slider */}
+      <BannerSlider store={store} />
+
+      {/* Category Icons */}
+      <CategoryIconRow categories={storeCategories} slug={slug!} />
+
+      {/* Flash Deals */}
+      {products && <FlashDeals products={products} slug={slug!} store={store} />}
+
+      {/* Search overlay */}
+      <StorefrontSearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        products={products}
+        slug={slug!}
+        initialFiltersOpen={false}
+      />
+
+      {/* Product Grid */}
+      <div className="px-3 pb-6 space-y-3">
+        {/* Sort header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>
+            All Products
+          </h2>
+          <div className="relative">
+            <button
+              onClick={() => setSortOpen(!sortOpen)}
+              className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium"
+              style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))15" }}
+            >
+              <ArrowUpDown className="h-3 w-3" />
+              {sortBy === "popular" && "Popular"}
+              {sortBy === "price_asc" && "Low"}
+              {sortBy === "price_desc" && "High"}
+              {sortBy === "newest" && "New"}
+            </button>
+            {sortOpen && (
+              <div className="absolute right-0 top-full z-40 mt-1 w-36 overflow-hidden rounded-xl border bg-popover shadow-lg">
+                {([
+                  { value: "popular", label: "Popular" },
+                  { value: "price_asc", label: "Price: Low → High" },
+                  { value: "price_desc", label: "Price: High → Low" },
+                  { value: "newest", label: "Newest First" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
+                    className={`block w-full px-3 py-2 text-left text-xs ${sortBy === opt.value ? "font-bold" : ""}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Grid */}
+        {!products ? (
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-56 rounded-2xl" />
+            ))}
+          </div>
+        ) : allSorted.length > 0 ? (
+          <>
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+              {allSorted.slice(0, 8).map((product, idx) => (
+                <StorefrontProductCard
+                  key={product.id}
+                  product={product}
+                  slug={slug!}
+                  store={store}
+                  priority={idx < 4}
+                />
+              ))}
+            </div>
+            {allSorted.length > 8 && (
+              <LazyRender rootMargin="400px" minHeight={400}>
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+                  {allSorted.slice(8).map((product) => (
+                    <StorefrontProductCard
+                      key={product.id}
+                      product={product}
+                      slug={slug!}
+                      store={store}
+                    />
+                  ))}
+                </div>
+              </LazyRender>
+            )}
+          </>
+        ) : (
+          <div className="flex min-h-[200px] items-center justify-center rounded-2xl border bg-card">
+            <p className="text-muted-foreground">No products available yet.</p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
