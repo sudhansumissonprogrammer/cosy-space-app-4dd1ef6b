@@ -392,7 +392,7 @@ export default function StoreSettings() {
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) { setHeroFile(f); setHeroPreview(URL.createObjectURL(f)); }
+                      if (f) { setHeroFile(f); setHeroPreview(URL.createObjectURL(f)); setHeroRemoved(false); }
                     }}
                   />
                 </label>
