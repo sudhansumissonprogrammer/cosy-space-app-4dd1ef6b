@@ -346,7 +346,7 @@ export default function StoreSettings() {
                     <img src={bannerPreview} alt="Banner" className="h-20 w-40 rounded-lg border object-cover" />
                     <button
                       type="button"
-                      onClick={() => { setBannerFile(null); setBannerPreview(null); }}
+                      onClick={() => { setBannerFile(null); setBannerPreview(null); setBannerRemoved(true); }}
                       className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
                     >
                       <X className="h-3 w-3" />
