@@ -514,6 +514,11 @@ interface PreviewProps {
   isDesktop?: boolean;
 }
 
+// Backward-compatible aliases
+type FakeProduct = PreviewProduct;
+const FAKE_PRODUCTS = DEFAULT_PRODUCTS;
+const FAKE_CATEGORIES = DEFAULT_CATEGORIES.map(c => c.name);
+
 type PreviewScreen = "home" | "product" | "cart";
 
 /* ── Full Storefront Preview Component ── */
