@@ -142,7 +142,7 @@ export default function StorefrontHome() {
   return (
     <>
       {/* Search + Filters — seamless with nav */}
-      <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1">
+      <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1 relative z-[60]">
         <div className="mx-auto max-w-6xl">
           <div className="relative flex items-center gap-2">
             <StorefrontSearchBar
