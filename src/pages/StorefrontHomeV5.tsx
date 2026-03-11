@@ -356,7 +356,7 @@ export default function StorefrontHomeV5() {
       <BenefitsSection />
 
       {/* Products with Category Tabs */}
-      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-12">
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-12">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <span

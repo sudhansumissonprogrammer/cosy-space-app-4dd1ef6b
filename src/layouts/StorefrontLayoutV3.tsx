@@ -312,10 +312,12 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
             }}
           >
             <AppHeader store={store} />
-            <div className="pb-16 md:pb-0">
+            <div className="pb-20 md:pb-0">
               <Outlet context={store} />
             </div>
-            <StorefrontFooter store={store} />
+            <div className="pb-20 md:pb-0">
+              <StorefrontFooter store={store} />
+            </div>
             <BottomTabBar store={store} />
             <SideCart store={store} />
             <FloatingWhatsApp store={store} />

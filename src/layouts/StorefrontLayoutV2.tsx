@@ -85,8 +85,8 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
         {/* Hamburger */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
-              <Menu className="h-5 w-5" />
+            <button className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+              <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="storefront-font w-[280px] p-0">

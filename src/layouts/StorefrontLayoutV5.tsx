@@ -85,7 +85,7 @@ function GlassNav({ store, scrolled }: { store: StoreData; scrolled: boolean }) 
         {/* Menu */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md border border-white/10 transition-all duration-300 hover:bg-white/20">
+            <button className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md border border-white/10 transition-all duration-300 hover:bg-white/20">
               <Menu className="h-5 w-5" />
             </button>
           </SheetTrigger>

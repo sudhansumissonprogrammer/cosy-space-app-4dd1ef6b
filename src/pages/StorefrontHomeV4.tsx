@@ -335,7 +335,7 @@ export default function StorefrontHomeV4() {
       {products && <FeaturedCollection products={allProducts} slug={slug!} store={store} />}
 
       {/* Product Grid */}
-      <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-12">
         <div className="text-center mb-12">
           <p className="text-[11px] font-medium tracking-[0.3em] uppercase mb-3" style={{ color: "var(--storefront-primary, #C8A96A)" }}>
             Shop

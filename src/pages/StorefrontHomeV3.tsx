@@ -58,7 +58,7 @@ function BannerSlider({ store }: { store: StoreData }) {
     <div className="px-3 pt-3 pb-1">
       <div
         className="relative overflow-hidden rounded-2xl"
-        style={{ height: "180px" }}
+        className="h-40 sm:h-48"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
