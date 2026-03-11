@@ -498,14 +498,12 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
         <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
         {orderId && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span></p>}
-        {!customer && (
-          <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <p className="text-sm text-foreground font-medium">Account created!</p>
-            <p className="text-xs text-muted-foreground mt-1">An account has been created with <strong>{email}</strong>. Use "Forgot Password" on the login page to set your password and track your orders.</p>
-          </div>
-        )}
+        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <p className="text-sm text-foreground font-medium">✅ You're signed in!</p>
+          <p className="text-xs text-muted-foreground mt-1">Your account is set up with <strong>{email}</strong>. You can track your orders and manage addresses from your account.</p>
+        </div>
         <div className="mt-6 flex flex-col gap-2 items-center">
-          {!customer && <Button asChild variant="outline"><Link to={storefrontPath(store.slug, "login")}>Sign In to Track Orders</Link></Button>}
+          <Button asChild variant="outline"><Link to={storefrontPath(store.slug, "account")}>View My Orders</Link></Button>
           <Button asChild><Link to={storefrontPath(store.slug)}>Continue Shopping</Link></Button>
         </div>
       </div>
