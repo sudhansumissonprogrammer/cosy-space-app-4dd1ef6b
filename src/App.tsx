@@ -9,8 +9,10 @@ import { getSubdomainSlug } from "@/lib/subdomain";
 // Storefront — eagerly loaded for fast storefront rendering
 import StorefrontLayout from "./layouts/StorefrontLayout";
 import StorefrontLayoutV2 from "./layouts/StorefrontLayoutV2";
+import StorefrontLayoutV3 from "./layouts/StorefrontLayoutV3";
 import StorefrontHome from "./pages/StorefrontHome";
 import StorefrontHomeV2 from "./pages/StorefrontHomeV2";
+import StorefrontHomeV3 from "./pages/StorefrontHomeV3";
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
 const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
@@ -45,66 +47,30 @@ const LoadingSpinner = () => (
   </div>
 );
 
-/** Shared child routes used by both layout themes */
-const storefrontChildRoutes = (isV2: boolean) => (
-  <>
-    <Route index element={isV2 ? <StorefrontHomeV2 /> : <StorefrontHome />} />
-    <Route path="best-sellers" element={<StorefrontBestSellers />} />
-    <Route path="contact" element={<StorefrontContact />} />
-    <Route path="return-policy" element={<StorefrontReturnPolicy />} />
-    <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
-    <Route path="terms" element={<StorefrontTerms />} />
-    <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
-    <Route path="category/:categorySlug" element={<CategoryDetail />} />
-    <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}><ProductDetail /></Suspense>} />
-    <Route path="cart" element={<CartPage />} />
-    <Route path="wishlist" element={<WishlistPage />} />
-    <Route path="checkout" element={<CheckoutPage />} />
-    <Route path="login" element={<StorefrontLogin />} />
-    <Route path="signup" element={<StorefrontSignup />} />
-    <Route path="account" element={<StorefrontAccount />} />
-  </>
-);
-
-function StorefrontRoutes({ slugOverride }: { slugOverride?: string }) {
-  const basePath = slugOverride ? "/" : "/store/:slug";
+/** Shared child routes for all layout themes */
+const storefrontChildRoutes = (theme: string) => {
+  const HomeComponent = theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
   return (
-    <Routes>
-      {/* Theme 1 — Classic */}
-      <Route path={basePath} element={<StorefrontLayout slugOverride={slugOverride} />}>
-        {storefrontChildRoutes(false)}
-      </Route>
-    </Routes>
+    <>
+      <Route index element={<HomeComponent />} />
+      <Route path="best-sellers" element={<StorefrontBestSellers />} />
+      <Route path="contact" element={<StorefrontContact />} />
+      <Route path="return-policy" element={<StorefrontReturnPolicy />} />
+      <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
+      <Route path="terms" element={<StorefrontTerms />} />
+      <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
+      <Route path="category/:categorySlug" element={<CategoryDetail />} />
+      <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}><ProductDetail /></Suspense>} />
+      <Route path="cart" element={<CartPage />} />
+      <Route path="wishlist" element={<WishlistPage />} />
+      <Route path="checkout" element={<CheckoutPage />} />
+      <Route path="login" element={<StorefrontLogin />} />
+      <Route path="signup" element={<StorefrontSignup />} />
+      <Route path="account" element={<StorefrontAccount />} />
+    </>
   );
-}
+};
 
-/**
- * Theme-aware storefront router.
- * Both layouts are registered; the store's `theme` field in DB determines which layout renders.
- * StorefrontLayout handles theme-1, StorefrontLayoutV2 handles theme-2.
- * Since we can't know the theme before fetching, both layouts internally check and redirect isn't needed —
- * instead we use a wrapper that picks the right layout.
- */
-function StorefrontRoutesV2({ slugOverride }: { slugOverride?: string }) {
-  const basePath = slugOverride ? "/" : "/store/:slug";
-  return (
-    <Routes>
-      <Route path={basePath} element={<StorefrontLayoutV2 slugOverride={slugOverride} />}>
-        {storefrontChildRoutes(true)}
-      </Route>
-    </Routes>
-  );
-}
-
-/**
- * Smart storefront router — renders both sets of routes.
- * The layout components internally check the store's theme and only render if matching.
- * We use a simpler approach: render both layouts at different paths and let StorefrontLayout
- * redirect to V2 if needed. But actually, the simplest approach is:
- * Both layouts are rendered — but only one matches since they share the same path.
- * 
- * Instead, we use a ThemeAwareStorefront that fetches store data first, then picks the layout.
- */
 import { useStorefront } from "./layouts/StorefrontLayout";
 
 function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
@@ -116,13 +82,17 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
 
   const theme = (store as any)?.theme || "theme-1";
   const basePath = slugOverride ? "/" : "/store/:slug";
-  const isV2 = theme === "theme-2";
-  const LayoutComponent = isV2 ? StorefrontLayoutV2 : StorefrontLayout;
+
+  const LayoutComponent = theme === "theme-3"
+    ? StorefrontLayoutV3
+    : theme === "theme-2"
+    ? StorefrontLayoutV2
+    : StorefrontLayout;
 
   return (
     <Routes>
       <Route path={basePath} element={<LayoutComponent slugOverride={slugOverride} />}>
-        {storefrontChildRoutes(isV2)}
+        {storefrontChildRoutes(theme)}
       </Route>
     </Routes>
   );
@@ -132,17 +102,14 @@ function AppRouter() {
   const location = useLocation();
   const subdomainSlug = getSubdomainSlug();
 
-  // Subdomain storefront — zero admin code downloaded
   if (subdomainSlug) {
     return <ThemeAwareStorefront slugOverride={subdomainSlug} />;
   }
 
-  // Path-based storefront — zero admin code downloaded
   if (location.pathname.startsWith("/store/")) {
     return <ThemeAwareStorefront />;
   }
 
-  // Everything else — lazy-load the entire auth/admin/dashboard bundle
   return <LazyAuthRoutes />;
 }
 
