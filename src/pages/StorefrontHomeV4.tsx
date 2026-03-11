@@ -269,7 +269,7 @@ function Newsletter() {
         <p className="mt-3 text-sm opacity-50" style={{ color: "var(--storefront-bg, #F8F5F0)" }}>
           Be the first to know about new collections and exclusive offers.
         </p>
-        <div className="mt-8 flex items-center gap-0">
+        <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0">
           <input
             type="email"
             placeholder="Your email address"
