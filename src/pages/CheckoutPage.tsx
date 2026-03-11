@@ -328,9 +328,10 @@ export default function CheckoutPage() {
   const createGuestAccount = async (ordId: string) => {
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       await fetch(`https://${projectId}.supabase.co/functions/v1/create-guest-account`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", apikey: anonKey },
         body: JSON.stringify({ email: email.trim(), phone: phone.trim(), name: fullName.trim(), store_id: store.id, order_id: ordId }),
       });
     } catch (err) {
