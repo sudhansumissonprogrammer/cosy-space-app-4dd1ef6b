@@ -93,7 +93,7 @@ export default function StorefrontSearchOverlay({
     }
 
     return filtered;
-  }, [products, query, priceRange, availability, sortBy]);
+  }, [products, query, priceRange, sortBy]);
 
   if (!open) return null;
 
