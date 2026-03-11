@@ -423,6 +423,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #2563EB, #60a5fa, #F97316)",
   },
+  "theme-7": {
+    primary_color: "#1a1a1a",
+    accent_color: "#1a1a1a",
+    text_color: "#1a1a1a",
+    background_color: "#ffffff",
+    heading_font: "Playfair Display",
+    body_font: "Inter",
+    button_style: "square",
+    marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555555, #1a1a1a)",
+  },
 };
 
 const THEMES = [
@@ -432,6 +442,7 @@ const THEMES = [
   { id: "theme-4", name: "Luxury", description: "Premium editorial layout with serif typography & elegant spacing", available: true },
   { id: "theme-5", name: "Startup", description: "Glassmorphism, gradient hero, dark mode with neon accents", available: true },
   { id: "theme-6", name: "Pro Clean", description: "Modern startup-style with clean layout, structured grid & premium feel", available: true },
+  { id: "theme-7", name: "Magazine", description: "Editorial storytelling with horizontal scrolls & cinematic imagery", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
@@ -1580,6 +1591,146 @@ function ProCleanPreview({ config, storeName, products: propProducts, categories
   );
 }
 
+/* ── Magazine Preview (Theme 7) ── */
+function MagazinePreview({ config, storeName, products: propProducts, categories: propCategories, isDesktop }: PreviewProps) {
+  const products = propProducts && propProducts.length > 0 ? propProducts : DEFAULT_PRODUCTS;
+  const categories = propCategories && propCategories.length > 0 ? propCategories : DEFAULT_CATEGORIES;
+  const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
+  const btnRadius = config.button_style === "pill" ? "9999px" : config.button_style === "square" ? "0px" : "0.5rem";
+
+  return (
+    <PreviewFrame isDesktop={isDesktop} bgColor={config.background_color}>
+      {/* Ultra-thin Header */}
+      <div className="sticky top-0 z-10 border-b px-3 py-1.5 flex items-center" style={{ backgroundColor: config.background_color, borderColor: config.text_color + "10" }}>
+        {!isDesktop && <Menu className="h-3.5 w-3.5 mr-2" style={{ color: config.text_color }} />}
+        {isDesktop && (
+          <div className="flex items-center gap-4 mr-auto">
+            <span className="text-[7px] font-semibold uppercase tracking-[0.15em]" style={{ color: config.text_color, opacity: 0.6 }}>Collection</span>
+            <span className="text-[7px] font-semibold uppercase tracking-[0.15em]" style={{ color: config.text_color, opacity: 0.6 }}>About</span>
+          </div>
+        )}
+        <span className={`text-xs font-bold uppercase tracking-[0.05em] ${isDesktop ? "mx-auto" : ""}`} style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</span>
+        <div className="flex items-center gap-1.5 ml-auto">
+          <User className="h-3 w-3" style={{ color: config.text_color + "80" }} />
+          <Heart className="h-3 w-3" style={{ color: config.text_color + "80" }} />
+          <ShoppingCart className="h-3 w-3" style={{ color: config.text_color }} />
+        </div>
+      </div>
+
+      {/* Category Ticker */}
+      <div className="border-b py-1 overflow-hidden flex gap-4 px-3" style={{ borderColor: config.text_color + "08" }}>
+        {categories.map((cat) => (
+          <span key={cat.name} className="text-[6px] font-semibold tracking-[0.2em] uppercase whitespace-nowrap" style={{ color: config.text_color, opacity: 0.4 }}>
+            {cat.name}
+          </span>
+        ))}
+      </div>
+
+      {/* Split Hero */}
+      <div className={`grid ${isDesktop ? "grid-cols-2" : "grid-cols-1"}`}>
+        <div style={{ aspectRatio: isDesktop ? "1/1" : "4/3", backgroundColor: config.primary_color + "08" }}>
+          {products[0]?.image_url ? (
+            <img src={products[0].image_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="text-3xl font-bold opacity-[0.04]" style={{ fontFamily: config.heading_font }}>{storeName.charAt(0)}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col justify-center px-4 py-6" style={{ backgroundColor: config.background_color }}>
+          <p className="text-[6px] font-bold tracking-[0.3em] uppercase mb-1" style={{ color: config.primary_color, opacity: 0.5 }}>New Collection</p>
+          <h2 className={`font-bold leading-tight ${isDesktop ? "text-2xl" : "text-xl"}`} style={{ fontFamily: config.heading_font, color: config.text_color }}>{storeName}</h2>
+          <p className="text-[8px] mt-1.5 opacity-50 leading-relaxed" style={{ color: config.text_color }}>Curated with intention. Every piece tells a story.</p>
+          <button className="mt-3 px-4 py-1.5 text-[7px] font-bold uppercase tracking-wider self-start" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>
+            Shop Collection →
+          </button>
+        </div>
+      </div>
+
+      {/* Horizontal Product Strip */}
+      <div className="px-3 py-4">
+        <p className="text-[6px] font-bold tracking-[0.3em] uppercase mb-0.5" style={{ color: config.primary_color, opacity: 0.5 }}>Curated Selection</p>
+        <h3 className="text-[10px] font-bold mb-2" style={{ fontFamily: config.heading_font, color: config.text_color }}>The Edit</h3>
+        <div className="flex gap-2.5 overflow-hidden">
+          {products.map((p) => (
+            <div key={p.id} className="flex-shrink-0" style={{ width: isDesktop ? "120px" : "100px" }}>
+              <div style={{ aspectRatio: "3/4", backgroundColor: config.primary_color + "06" }} className="overflow-hidden">
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : (
+                  <div className="flex h-full w-full items-center justify-center"><span className="text-lg font-bold opacity-[0.04]">{p.name.charAt(0)}</span></div>
+                )}
+              </div>
+              <p className="text-[7px] font-medium mt-1 truncate" style={{ color: config.text_color }}>{p.name}</p>
+              <p className="text-[7px] font-semibold" style={{ color: config.text_color }}>{p.price}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Editorial Split */}
+      <div className={`grid ${isDesktop ? "grid-cols-2" : "grid-cols-1"}`}>
+        <div className="px-4 py-6 flex flex-col justify-center">
+          <p className="text-[6px] font-bold tracking-[0.3em] uppercase mb-1" style={{ color: config.primary_color, opacity: 0.5 }}>The Beginning</p>
+          <h3 className="text-sm font-bold" style={{ fontFamily: config.heading_font, color: config.text_color }}>Our Story</h3>
+          <p className="text-[7px] mt-1 opacity-50 leading-relaxed" style={{ color: config.text_color }}>Every product is thoughtfully curated for quality.</p>
+          <span className="text-[7px] font-semibold mt-2 uppercase tracking-wider" style={{ color: config.primary_color }}>Learn More →</span>
+        </div>
+        <div style={{ aspectRatio: isDesktop ? "auto" : "16/9", minHeight: "100px", backgroundColor: config.primary_color + "06" }}>
+          {products[1]?.image_url ? <img src={products[1].image_url} alt="" className="h-full w-full object-cover" /> : null}
+        </div>
+      </div>
+
+      {/* Category Grid */}
+      <div className="px-3 py-4">
+        <h3 className="text-[10px] font-bold mb-2" style={{ fontFamily: config.heading_font, color: config.text_color }}>Shop by Category</h3>
+        <div className={`grid gap-1.5 ${isDesktop ? "grid-cols-3" : "grid-cols-2"}`}>
+          {categories.slice(0, isDesktop ? 3 : 4).map((cat) => (
+            <div key={cat.name} className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
+              {cat.image_url ? <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" /> : (
+                <div className="h-full w-full" style={{ backgroundColor: config.primary_color + "08" }} />
+              )}
+              <div className="absolute inset-0 bg-black/30 flex items-end p-2">
+                <span className="text-[7px] font-bold text-white uppercase tracking-wider" style={{ fontFamily: config.heading_font }}>{cat.name}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Testimonial */}
+      <div className="py-6 text-center" style={{ backgroundColor: config.primary_color + "06" }}>
+        <span className="text-lg" style={{ color: config.primary_color, opacity: 0.2 }}>"</span>
+        <p className="text-[8px] italic px-6 leading-relaxed" style={{ fontFamily: config.heading_font, color: config.text_color }}>"Absolutely stunning quality. This is my new favourite store."</p>
+        <p className="text-[6px] font-semibold mt-1 uppercase tracking-wider" style={{ color: config.text_color, opacity: 0.4 }}>— Ananya K.</p>
+      </div>
+
+      {/* Newsletter */}
+      <div className="py-5 px-4 text-center" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
+        <h3 className="text-[9px] font-bold" style={{ fontFamily: config.heading_font }}>Stay in the Loop</h3>
+        <p className="text-[6px] mt-0.5 opacity-50">Subscribe for exclusive previews.</p>
+        <div className="mt-2 flex gap-1.5 max-w-[200px] mx-auto">
+          <div className="flex-1 h-5 rounded-sm" style={{ backgroundColor: "rgba(255,255,255,0.1)", borderRadius: btnRadius }} />
+          <button className="px-3 h-5 text-[5px] font-bold uppercase" style={{ backgroundColor: config.primary_color, color: btnText, borderRadius: btnRadius }}>Subscribe</button>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-3" style={{ backgroundColor: config.accent_color, color: config.background_color }}>
+        <div className="flex justify-between">
+          <span className="text-[8px] font-bold uppercase tracking-[0.05em]" style={{ fontFamily: config.heading_font }}>{storeName}</span>
+          <div className="flex gap-3">
+            <span className="text-[5px] opacity-50">Home</span>
+            <span className="text-[5px] opacity-50">Collection</span>
+            <span className="text-[5px] opacity-50">Contact</span>
+          </div>
+        </div>
+        <div className="mt-2 border-t pt-1 text-center" style={{ borderColor: config.background_color + "08" }}>
+          <p className="text-[4px] opacity-30">© 2026 {storeName}. All rights reserved.</p>
+        </div>
+      </div>
+    </PreviewFrame>
+  );
+}
+
 export default function StoreThemeSettings() {
   const { storeId } = useParams<{ storeId: string }>();
   const queryClient = useQueryClient();
@@ -1782,6 +1933,8 @@ export default function StoreThemeSettings() {
                         ? "linear-gradient(135deg, #0F172A 0%, #6366F1 50%, #22C55E 100%)"
                         : theme.id === "theme-6"
                         ? "linear-gradient(135deg, #F8FAFC 0%, #2563EB 50%, #1e293b 100%)"
+                        : theme.id === "theme-7"
+                        ? "linear-gradient(135deg, #ffffff 0%, #1a1a1a 50%, #000000 100%)"
                         : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
                   />
@@ -1960,7 +2113,9 @@ export default function StoreThemeSettings() {
               <p className="mb-3 text-xs text-muted-foreground">Showing your actual products &amp; categories</p>
             )}
             <div className={previewMode === "desktop" ? "overflow-x-auto" : ""}>
-              {currentTheme === "theme-6" ? (
+              {currentTheme === "theme-7" ? (
+                <MagazinePreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
+              ) : currentTheme === "theme-6" ? (
                 <ProCleanPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
               ) : currentTheme === "theme-5" ? (
                 <StartupPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
