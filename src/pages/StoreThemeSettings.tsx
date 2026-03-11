@@ -182,22 +182,21 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
   },
+  "theme-2": {
+    primary_color: "#b8873c",
+    accent_color: "#000000",
+    text_color: "#1a1a1a",
+    background_color: "#f7f5f0",
+    heading_font: "Space Grotesk",
+    body_font: "DM Sans",
+    button_style: "pill",
+    marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+  },
 };
-
-interface ThemeConfig {
-  primary_color: string;
-  accent_color: string;
-  text_color: string;
-  background_color: string;
-  heading_font: string;
-  body_font: string;
-  button_style: string;
-  marquee_gradient: string;
-}
 
 const THEMES = [
   { id: "theme-1", name: "Classic", description: "Elegant gold & black with serif headings", available: true },
-  { id: "theme-2", name: "Bold Modern", description: "Clean minimalist with strong typography", available: false },
+  { id: "theme-2", name: "Bold Modern", description: "Transparent header, carousel hero, masonry grid", available: true },
   { id: "theme-3", name: "Pastel Soft", description: "Soft pastels with rounded elements", available: false },
 ];
 
