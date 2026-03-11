@@ -13,7 +13,7 @@ export default function StoreAnalytics() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, name")
+        .select("id, name, currency")
         .eq("owner_id", user!.id);
       if (error) throw error;
       return data;
@@ -22,14 +22,34 @@ export default function StoreAnalytics() {
   });
 
   const storeIds = stores?.map((s) => s.id) || [];
+  const currency = stores?.[0]?.currency || "USD";
+  const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
-  const { data: ordersData } = useQuery({
-    queryKey: ["store-analytics-orders", storeIds],
+  // Website orders
+  const { data: webOrdersData } = useQuery({
+    queryKey: ["store-analytics-web-orders", storeIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("created_at, total, status, order_items(product_name, quantity, total)")
+        .in("store_id", storeIds)
+        .neq("status", "cancelled")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: storeIds.length > 0,
+  });
+
+  // WhatsApp orders
+  const { data: whatsappOrdersData } = useQuery({
+    queryKey: ["store-analytics-whatsapp-orders", storeIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_orders")
-        .select("created_at, product_price, quantity, product_name")
+        .select("created_at, product_price, quantity, product_name, status")
         .in("store_id", storeIds)
+        .neq("status", "cancelled")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
@@ -37,34 +57,54 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // Aggregate orders by month
+  // Aggregate orders by month from both sources
   const ordersByMonth = (() => {
-    if (!ordersData) return [];
     const map: Record<string, { month: string; orders: number; revenue: number }> = {};
-    ordersData.forEach((o) => {
+
+    webOrdersData?.forEach((o: any) => {
+      const month = o.created_at.slice(0, 7);
+      if (!map[month]) map[month] = { month, orders: 0, revenue: 0 };
+      map[month].orders += 1;
+      map[month].revenue += Number(o.total || 0);
+    });
+
+    whatsappOrdersData?.forEach((o) => {
       const month = o.created_at.slice(0, 7);
       if (!map[month]) map[month] = { month, orders: 0, revenue: 0 };
       map[month].orders += 1;
       map[month].revenue += Number(o.product_price) * o.quantity;
     });
+
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
   })();
 
-  // Top products by order count
+  // Top products from both sources
   const topProducts = (() => {
-    if (!ordersData) return [];
     const map: Record<string, { name: string; count: number; revenue: number }> = {};
-    ordersData.forEach((o) => {
+
+    webOrdersData?.forEach((o: any) => {
+      o.order_items?.forEach((item: any) => {
+        const key = item.product_name;
+        if (!map[key]) map[key] = { name: key, count: 0, revenue: 0 };
+        map[key].count += item.quantity || 1;
+        map[key].revenue += Number(item.total || 0);
+      });
+    });
+
+    whatsappOrdersData?.forEach((o) => {
       const key = o.product_name;
       if (!map[key]) map[key] = { name: key, count: 0, revenue: 0 };
       map[key].count += o.quantity;
       map[key].revenue += Number(o.product_price) * o.quantity;
     });
+
     return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10);
   })();
 
-  const totalRevenue = ordersData?.reduce((sum, o) => sum + Number(o.product_price) * o.quantity, 0) || 0;
-  const totalOrders = ordersData?.length || 0;
+  const totalRevenue =
+    (webOrdersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0) +
+    (whatsappOrdersData?.reduce((sum, o) => sum + Number(o.product_price) * o.quantity, 0) || 0);
+  const totalOrders = (webOrdersData?.length || 0) + (whatsappOrdersData?.length || 0);
 
   return (
     <div className="space-y-6">
@@ -85,7 +125,7 @@ export default function StoreAnalytics() {
             <TrendingUp className="h-8 w-8 text-primary" />
             <div>
               <p className="text-sm text-muted-foreground">Total Revenue</p>
-              <p className="text-2xl font-bold text-foreground">${totalRevenue.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-foreground">{currencySymbol}{totalRevenue.toFixed(2)}</p>
             </div>
           </CardContent>
         </Card>
@@ -112,7 +152,7 @@ export default function StoreAnalytics() {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="month" className="text-xs" />
                 <YAxis className="text-xs" />
-                <Tooltip />
+                <Tooltip formatter={(value: number) => `${currencySymbol}${value.toFixed(2)}`} />
                 <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
