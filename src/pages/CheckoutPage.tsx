@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, XCircle, ArrowLeft, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, ChevronRight, Tag, X, Pencil, Smartphone, Wallet } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, ChevronRight, Tag, X, Pencil, Smartphone, Wallet } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -35,46 +35,7 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
-function usePaymentStatusPoller() {
-  const pollPaymentStatus = async (
-    razorpayPaymentId: string,
-    storeId: string,
-    orderId: string,
-    onStatusChange: (status: string) => void,
-    maxAttempts = 60
-  ) => {
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    let attempts = 0;
 
-    const poll = async (): Promise<string> => {
-      attempts++;
-      try {
-        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-payment-status`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: anonKey },
-          body: JSON.stringify({ razorpay_payment_id: razorpayPaymentId, store_id: storeId, order_id: orderId }),
-        });
-        const data = await res.json();
-        const status = data.status || "created";
-        onStatusChange(status);
-
-        if (status === "captured" || status === "authorized") return "success";
-        if (status === "failed") return "failed";
-        if (attempts >= maxAttempts) return "timeout";
-
-        await new Promise((r) => setTimeout(r, 3000));
-        return poll();
-      } catch {
-        if (attempts >= maxAttempts) return "timeout";
-        await new Promise((r) => setTimeout(r, 3000));
-        return poll();
-      }
-    };
-    return poll();
-  };
-  return { pollPaymentStatus };
-}
 
 export default function CheckoutPage() {
   const store = useOutletContext<StoreData>();
@@ -85,13 +46,8 @@ export default function CheckoutPage() {
   const { customer } = useStorefrontAuth();
   const qc = useQueryClient();
 
-  const { pollPaymentStatus } = usePaymentStatusPoller();
-
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [orderFailed, setOrderFailed] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [paymentStatusText, setPaymentStatusText] = useState("Waiting for payment...");
   const [orderId, setOrderId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
   const [razorpayMethod, setRazorpayMethod] = useState<"upi" | "card" | "netbanking" | "wallet">("upi");
@@ -433,102 +389,10 @@ export default function CheckoutPage() {
       const newOrderId = await createOrder();
 
       if (paymentMethod === "razorpay") {
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-        // For UPI: try direct intent flow (no Razorpay modal)
-        if (razorpayMethod === "upi") {
-          const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-upi-intent`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", apikey: anonKey },
-            body: JSON.stringify({
-              store_id: store.id, amount: total, currency, order_id: newOrderId,
-              email: email.trim(), phone: phone.trim(), name: fullName.trim(), upi_app: upiApp,
-            }),
-          });
-          const data = await res.json();
-
-          if (data.success && data.intent_url) {
-            // Direct UPI intent — opens GPay/PhonePe/Paytm directly
-            setPaymentProcessing(true);
-            setPaymentStatusText("Opening payment app...");
-
-            // Open UPI intent URL
-            window.location.href = data.intent_url;
-
-            // Start polling for payment status
-            const result = await pollPaymentStatus(
-              data.razorpay_payment_id,
-              store.id,
-              newOrderId,
-              (status) => {
-                if (status === "created") setPaymentStatusText("Waiting for payment...");
-                else if (status === "authorized" || status === "captured") setPaymentStatusText("Payment received!");
-                else if (status === "failed") setPaymentStatusText("Payment failed");
-              }
-            );
-
-            setPaymentProcessing(false);
-
-            if (result === "success") {
-              setOrderId(newOrderId);
-              setOrderPlaced(true);
-              setPlacing(false);
-              if (!isSingleMode) clearCart();
-              fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
-              if (!customer) createGuestAccount(newOrderId);
-              else saveAddressToAccount();
-              fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", apikey: anonKey },
-                body: JSON.stringify({ order_id: newOrderId }),
-              }).catch(() => {});
-              return;
-            } else {
-              setOrderFailed(true);
-              setOrderId(newOrderId);
-              setPlacing(false);
-              return;
-            }
-          }
-
-          // Fallback: if UPI intent not supported, use Razorpay modal
-          if (data.fallback && data.razorpay_order_id) {
-            const loaded = await loadRazorpayScript();
-            if (!loaded) throw new Error("Failed to load payment gateway");
-            const options = {
-              key: data.key_id, amount: data.amount, currency: data.currency,
-              name: store.name, description: `Order #${newOrderId.slice(0, 8)}`,
-              order_id: data.razorpay_order_id,
-              handler: async (response: any) => {
-                try {
-                  const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", apikey: anonKey },
-                    body: JSON.stringify({ ...response, order_id: newOrderId, store_id: store.id }),
-                  });
-                  if (!verifyRes.ok) throw new Error("Verification failed");
-                  setOrderId(newOrderId); setOrderPlaced(true); setPlacing(false);
-                  if (!isSingleMode) clearCart();
-                  fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
-                  if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
-                  fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId }) }).catch(() => {});
-                } catch { setPlacing(false); toast.error("Payment verification failed."); }
-              },
-              prefill: { name: fullName, email, contact: phone, method: "upi" },
-              theme: { color: "#6366f1" },
-              modal: { ondismiss: () => { toast.error("Payment cancelled."); setPlacing(false); } },
-            };
-            const rzp = new window.Razorpay(options); rzp.open();
-            return;
-          }
-
-          throw new Error(data.error || "UPI payment failed");
-        }
-
-        // For Card/NetBanking/Wallet: use Razorpay modal (required for these methods)
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Failed to load payment gateway");
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-order`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: anonKey },
@@ -536,31 +400,59 @@ export default function CheckoutPage() {
         });
         const rzpData = await res.json();
         if (!res.ok) throw new Error(rzpData.error || "Payment initiation failed");
-        const options = {
+
+        const handlePaymentSuccess = async (response: any) => {
+          try {
+            const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", apikey: anonKey },
+              body: JSON.stringify({ ...response, order_id: newOrderId, store_id: store.id }),
+            });
+            if (!verifyRes.ok) throw new Error("Verification failed");
+            setOrderId(newOrderId); setOrderPlaced(true); setPlacing(false);
+            if (!isSingleMode) clearCart();
+            fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+            if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
+            fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId }) }).catch(() => {});
+          } catch { setPlacing(false); toast.error("Payment verification failed."); }
+        };
+
+        const options: any = {
           key: rzpData.key_id, amount: rzpData.amount, currency: rzpData.currency,
           name: store.name, description: `Order #${newOrderId.slice(0, 8)}`,
           order_id: rzpData.razorpay_order_id,
-          handler: async (response: any) => {
-            try {
-              const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", apikey: anonKey },
-                body: JSON.stringify({ ...response, order_id: newOrderId, store_id: store.id }),
-              });
-              if (!verifyRes.ok) throw new Error("Verification failed");
-              setOrderId(newOrderId); setOrderPlaced(true); setPlacing(false);
-              if (!isSingleMode) clearCart();
-              fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
-              if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
-              fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId }) }).catch(() => {});
-            } catch { setPlacing(false); toast.error("Payment verification failed."); }
-          },
+          handler: handlePaymentSuccess,
           prefill: { name: fullName, email, contact: phone },
           theme: { color: "#6366f1" },
-          config: { display: { blocks: { highlighted: { instruments: [{ method: razorpayMethod }] } }, sequence: ["block.highlighted", "block.other"], preferences: { show_default_blocks: true } } },
           modal: { ondismiss: () => { toast.error("Payment cancelled."); setPlacing(false); } },
         };
-        const rzp = new window.Razorpay(options); rzp.open();
+
+        // When UPI is selected, show ONLY UPI payment option (no other tabs)
+        if (razorpayMethod === "upi") {
+          options.prefill.method = "upi";
+          options.config = {
+            display: {
+              blocks: {
+                utib: { name: "Pay using UPI", instruments: [{ method: "upi" }] }
+              },
+              sequence: ["block.utib"],
+              preferences: { show_default_blocks: false },
+            },
+          };
+        } else {
+          options.config = {
+            display: {
+              blocks: {
+                highlighted: { instruments: [{ method: razorpayMethod }] }
+              },
+              sequence: ["block.highlighted", "block.other"],
+              preferences: { show_default_blocks: true },
+            },
+          };
+        }
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
         return;
       }
 
@@ -586,42 +478,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // Payment processing screen
-  if (paymentProcessing) {
-    return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
-        <h1 className="text-xl font-bold text-foreground">Processing Payment</h1>
-        <p className="mt-2 text-muted-foreground">{paymentStatusText}</p>
-        <p className="mt-4 text-xs text-muted-foreground">Complete the payment in your UPI app.<br />Do not close this page.</p>
-        <div className="mt-6">
-          <div className="mx-auto h-1 w-48 overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-1/2 animate-pulse rounded-full bg-primary" style={{ animation: "pulse 1.5s ease-in-out infinite" }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  // Payment failed screen
-  if (orderFailed) {
-    return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-          <XCircle className="h-8 w-8 text-destructive" />
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">Payment Failed</h1>
-        <p className="mt-2 text-muted-foreground">Your payment could not be completed. Please try again.</p>
-        {orderId && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span></p>}
-        <div className="mt-6 flex flex-col gap-2 items-center">
-          <Button onClick={() => { setOrderFailed(false); setOrderId(null); setPlacing(false); }}>Try Again</Button>
-          <Button asChild variant="outline"><Link to={storefrontPath(store.slug)}>Back to Store</Link></Button>
-        </div>
-      </div>
-    );
-  }
 
   if (orderPlaced) {
     return (
