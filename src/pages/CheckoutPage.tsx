@@ -452,6 +452,14 @@ export default function CheckoutPage() {
       fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
       if (!customer) createGuestAccount(newOrderId);
       else saveAddressToAccount();
+      // Notify store owner
+      const projectId2 = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey2 = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      fetch(`https://${projectId2}.supabase.co/functions/v1/notify-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: anonKey2 },
+        body: JSON.stringify({ order_id: newOrderId }),
+      }).catch(() => {});
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
