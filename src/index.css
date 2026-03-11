@@ -115,6 +115,11 @@
     font-family: 'Inter', 'Segoe UI', sans-serif !important;
   }
 
+  /* Search placeholder uses storefront font */
+  .storefront-font input[placeholder="Search products..."]::placeholder {
+    font-family: var(--font-storefront) !important;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
   }
