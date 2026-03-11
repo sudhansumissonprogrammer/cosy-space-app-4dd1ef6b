@@ -12,6 +12,7 @@ import StorefrontLayoutV2 from "./layouts/StorefrontLayoutV2";
 import StorefrontLayoutV3 from "./layouts/StorefrontLayoutV3";
 import StorefrontLayoutV4 from "./layouts/StorefrontLayoutV4";
 import StorefrontLayoutV5 from "./layouts/StorefrontLayoutV5";
+import StorefrontLayoutV6 from "./layouts/StorefrontLayoutV6";
 import StorefrontHome from "./pages/StorefrontHome";
 import StorefrontHomeV2 from "./pages/StorefrontHomeV2";
 import StorefrontHomeV3 from "./pages/StorefrontHomeV3";
