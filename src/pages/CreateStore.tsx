@@ -537,6 +537,27 @@ export default function CreateStore() {
                   </p>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="owner-email">Your Email *</Label>
+                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
+                    <span className="flex-shrink-0 px-3 text-muted-foreground">
+                      <Globe className="h-4 w-4" />
+                    </span>
+                    <Input
+                      id="owner-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={ownerEmail}
+                      onChange={(e) => setOwnerEmail(e.target.value)}
+                      maxLength={200}
+                      className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    You'll receive order notification emails at this address
+                  </p>
+                </div>
+
                 <div className="rounded-xl border bg-accent/30 p-4">
                   <div className="flex items-start gap-3">
                     {orderMode === "whatsapp" ? (
