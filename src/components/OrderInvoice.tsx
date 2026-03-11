@@ -268,7 +268,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
         {/* Ship To + Info */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Ship To</p>
+            <p className="text-[8px] font-medium uppercase tracking-widest text-muted-foreground mb-0.5">Ship To</p>
             <p className="text-[11px] font-semibold text-foreground">{order.customer_name || "Customer"}</p>
             {order.customer_phone && <p className="text-[9px] text-muted-foreground">{order.customer_phone}</p>}
             {order.street_address && (
