@@ -53,7 +53,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 <Link
                   key={link.label}
                   to={link.to}
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm opacity-70 transition-opacity hover:opacity-100"
                 >
                   {link.label}
                 </Link>
