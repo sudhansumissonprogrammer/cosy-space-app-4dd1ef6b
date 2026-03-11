@@ -486,13 +486,12 @@ export default function ProductDetail() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               {/* Add to Cart */}
               <button
-                className={`relative flex items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
+                className={`relative flex h-[46px] items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
                   justAdded
                     ? "bg-success text-success-foreground"
                     : "btn-gold hover:brightness-110"
                 }`}
                 onClick={handleAddToCart}
-                style={{ minHeight: "46px" }}
               >
                 {justAdded ? (
                   <span className="flex items-center gap-2 animate-fade-in">
