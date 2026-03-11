@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Search, X, Package, ArrowUpDown, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 import type { Tables } from "@/integrations/supabase/types";
 
 type SortOption = "popular" | "price_asc" | "price_desc" | "newest";
