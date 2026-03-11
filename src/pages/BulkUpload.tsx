@@ -73,7 +73,7 @@ function parseCSV(text: string): ParsedProduct[] {
     return [{ name: "", price: 0, sale_price: null, description: "", category: "", stock_quantity: 0, sku: "", image_url: "", valid: false, error: "CSV must have 'name' and 'price' columns", row: 2 }];
   }
 
-  return lines.slice(1).map((line) => {
+  return lines.slice(1).map((line, idx) => {
     const cols = parseCSVLine(line);
     const name = cols[nameIdx]?.trim() || "";
     const price = parseFloat(cols[priceIdx]) || 0;
@@ -82,13 +82,14 @@ function parseCSV(text: string): ParsedProduct[] {
     const category = catIdx >= 0 ? cols[catIdx]?.trim() || "" : "";
     const stock_quantity = stockIdx >= 0 ? parseInt(cols[stockIdx]) || 0 : 0;
     const sku = skuIdx >= 0 ? cols[skuIdx]?.trim() || "" : "";
+    const image_url = imageIdx >= 0 ? cols[imageIdx]?.trim() || "" : "";
 
     let valid = true;
     let error: string | undefined;
-    if (!name) { valid = false; error = "Name is required"; }
-    else if (price <= 0) { valid = false; error = "Price must be > 0"; }
+    if (!name) { valid = false; error = `Row ${idx + 2}: Name is required`; }
+    else if (price <= 0) { valid = false; error = `Row ${idx + 2}: Price must be > 0`; }
 
-    return { name, price, sale_price, description, category, stock_quantity, sku, valid, error };
+    return { name, price, sale_price, description, category, stock_quantity, sku, image_url, valid, error, row: idx + 2 };
   });
 }
 
