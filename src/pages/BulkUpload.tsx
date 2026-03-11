@@ -18,11 +18,13 @@ interface ParsedProduct {
   category: string;
   stock_quantity: number;
   sku: string;
+  image_url: string;
   valid: boolean;
   error?: string;
+  row: number;
 }
 
-const CSV_TEMPLATE = "name,price,sale_price,description,category,stock_quantity,sku\nExample Product,29.99,,A great product,Accessories,100,SKU-001";
+const CSV_TEMPLATE = "name,price,sale_price,description,category,stock_quantity,sku,image_url\nExample Product,29.99,,A great product,Accessories,100,SKU-001,https://example.com/image.jpg";
 
 function generateSlug(name: string): string {
   return name
