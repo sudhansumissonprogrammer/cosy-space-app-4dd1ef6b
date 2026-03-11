@@ -38,7 +38,7 @@ export default function StorefrontSearchOverlay({
 }: StorefrontSearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
-  const [availability, setAvailability] = useState<"all" | "in_stock">("all");
+  
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [showFilters, setShowFilters] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +47,6 @@ export default function StorefrontSearchOverlay({
     if (open) {
       setQuery("");
       setPriceRange(null);
-      setAvailability("all");
       setSortBy("popular");
       setShowFilters(initialFiltersOpen);
       if (!initialFiltersOpen) {
@@ -64,7 +63,7 @@ export default function StorefrontSearchOverlay({
     }
   }, [open]);
 
-  const activeFilterCount = [priceRange, availability !== "all"].filter(Boolean).length;
+  const activeFilterCount = [priceRange].filter(Boolean).length;
 
   const results = useMemo(() => {
     if (!products) return [];
@@ -78,8 +77,7 @@ export default function StorefrontSearchOverlay({
       const effectivePrice = p.sale_price ?? p.price;
       const matchesPrice =
         !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
-      const matchesAvail = availability === "all" || p.stock_quantity > 0;
-      return matchesSearch && matchesPrice && matchesAvail;
+      return matchesSearch && matchesPrice;
     });
 
     switch (sortBy) {
@@ -95,7 +93,7 @@ export default function StorefrontSearchOverlay({
     }
 
     return filtered;
-  }, [products, query, priceRange, availability, sortBy]);
+  }, [products, query, priceRange, sortBy]);
 
   if (!open) return null;
 
@@ -197,34 +195,10 @@ export default function StorefrontSearchOverlay({
             </div>
           </div>
 
-          {/* Availability */}
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Availability
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setAvailability("all")}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  availability === "all" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setAvailability("in_stock")}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  availability === "in_stock" ? "bg-foreground text-background" : "bg-accent text-foreground hover:bg-accent/80"
-                }`}
-              >
-                In Stock
-              </button>
-            </div>
-          </div>
 
           {activeFilterCount > 0 && (
             <button
-              onClick={() => { setPriceRange(null); setAvailability("all"); }}
+              onClick={() => { setPriceRange(null); }}
               className="text-xs text-destructive hover:underline font-medium"
             >
               Clear all filters
