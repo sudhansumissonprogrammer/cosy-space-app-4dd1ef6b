@@ -647,8 +647,6 @@ export default function ProductDetail() {
             </AccordionItem>
           </div>
 
-          {/* Share Buttons */}
-          <ShareButtons productName={product.name} />
         </div>
       </div>
 
