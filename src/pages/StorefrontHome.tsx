@@ -144,7 +144,7 @@ export default function StorefrontHome() {
 
       <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
 
-      <div className="mx-auto max-w-6xl px-4 pt-6 pb-10 space-y-10">
+      <div className="mx-auto max-w-6xl px-4 pt-4 pb-8 space-y-5">
         {/* Best Selling Section */}
         {bestSellingProducts.length > 0 && (
           (store as any).best_selling_carousel ? (
@@ -173,8 +173,6 @@ export default function StorefrontHome() {
           )
         )}
 
-        {/* Divider between sections */}
-        {bestSellingProducts.length > 0 && <div className="h-px bg-border/60" />}
 
         {/* Product Grid */}
         <section>
