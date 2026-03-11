@@ -33,12 +33,13 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     doc.open();
     doc.write(`<!DOCTYPE html>
 <html><head><title>Label #${order.id.slice(0, 8).toUpperCase()}</title>
-<link href="https://fonts.googleapis.com/css2?family=Changa+One:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   @page { size: 100mm 150mm; margin: 3mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Changa One', sans-serif;
+    font-family: 'Changa', sans-serif;
+    font-weight: 400;
     color: #000;
     line-height: 1.4;
     font-size: 9px;
@@ -59,15 +60,15 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   .brand-row { display: flex; align-items: center; gap: 2mm; }
   .brand-logo { height: 40px; width: auto; object-fit: contain; }
   .brand-contact { font-size: 7.5px; color: #444; margin-top: 2px; }
-  .inv-tag { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .inv-tag { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
   .inv-id { font-size: 8px; color: #555; margin-top: 1px; text-align: right; }
 
   /* Sections */
   .row { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
   .col { flex: 1; }
-  .sec-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 1mm; }
+  .sec-label { font-size: 7px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 1mm; }
   .sec-val { font-size: 9px; color: #111; line-height: 1.5; }
-  .sec-val strong { font-weight: 700; }
+  .sec-val strong { font-weight: 600; }
   .sec-val-right { text-align: right; }
 
   .badge {
@@ -93,7 +94,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   .items-tbl { width: 100%; border-collapse: collapse; }
   .items-tbl th {
     font-size: 7.5px;
-    font-weight: 700;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     color: #fff;
@@ -118,10 +119,10 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   .totals { display: flex; justify-content: flex-end; margin-top: 1.5mm; }
   .totals-tbl { width: 45mm; border-collapse: collapse; }
   .totals-tbl td { padding: 2px 4px; font-size: 8.5px; color: #444; }
-  .totals-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #111; }
+  .totals-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; color: #111; }
   .totals-tbl .grand td {
     font-size: 10px;
-    font-weight: 800;
+    font-weight: 600;
     color: #000;
     border-top: 1.5px solid #000;
     padding-top: 2mm;
@@ -245,7 +246,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   return (
     <div className="space-y-4">
       {/* Compact Preview (matches 4x6 label feel) */}
-      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Changa One', sans-serif" }}>
+      <div ref={printRef} className="rounded-lg border border-border bg-card p-4 space-y-3 max-w-[380px] mx-auto text-xs" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b-2 border-foreground">
           <div className="flex items-center gap-2">
@@ -259,7 +260,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-extrabold tracking-widest text-foreground">INVOICE</p>
+            <p className="text-[10px] font-semibold tracking-widest text-foreground">INVOICE</p>
             <p className="text-[8px] text-muted-foreground">#{order.id.slice(0, 8).toUpperCase()}</p>
           </div>
         </div>
@@ -267,7 +268,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
         {/* Ship To + Info */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Ship To</p>
+            <p className="text-[8px] font-medium uppercase tracking-widest text-muted-foreground mb-0.5">Ship To</p>
             <p className="text-[11px] font-semibold text-foreground">{order.customer_name || "Customer"}</p>
             {order.customer_phone && <p className="text-[9px] text-muted-foreground">{order.customer_phone}</p>}
             {order.street_address && (
@@ -295,11 +296,11 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
           <table className="w-full">
             <thead>
               <tr className="bg-foreground text-background">
-                <th className="px-1.5 py-1 text-left text-[7px] font-bold uppercase tracking-wider w-5">#</th>
-                <th className="px-1.5 py-1 text-left text-[7px] font-bold uppercase tracking-wider">Item</th>
-                <th className="px-1.5 py-1 text-center text-[7px] font-bold uppercase tracking-wider w-8">Qty</th>
-                <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider w-16">Price</th>
-                <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider w-16">Amt</th>
+                <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider w-5">#</th>
+                <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider">Item</th>
+                <th className="px-1.5 py-1 text-center text-[7px] font-medium uppercase tracking-wider w-8">Qty</th>
+                <th className="px-1.5 py-1 text-right text-[7px] font-medium uppercase tracking-wider w-16">Price</th>
+                <th className="px-1.5 py-1 text-right text-[7px] font-medium uppercase tracking-wider w-16">Amt</th>
               </tr>
             </thead>
             <tbody>
@@ -333,7 +334,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
                 <span className="tabular-nums">{currencySymbol}{(Number(order.total) - subtotal).toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between border-t-2 border-foreground pt-1 text-[11px] font-extrabold text-foreground">
+            <div className="flex justify-between border-t-2 border-foreground pt-1 text-[11px] font-semibold text-foreground">
               <span>Total</span>
               <span className="tabular-nums">{currencySymbol}{Number(order.total).toFixed(2)}</span>
             </div>
@@ -350,7 +351,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
 
         {/* Footer */}
         <div className="border-t border-border pt-2 text-center">
-          <p className="text-[9px] font-bold text-foreground">Thank you!</p>
+          <p className="text-[9px] font-medium text-foreground">Thank you!</p>
           <p className="text-[7px] text-muted-foreground">Computer generated — no signature required</p>
         </div>
       </div>
