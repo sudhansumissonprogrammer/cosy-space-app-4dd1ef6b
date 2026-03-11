@@ -626,7 +626,7 @@ export default function ProductDetail() {
                   <Shield className="h-3 w-3 text-emerald-600" />
                   <span className="text-[9px] font-bold text-emerald-700">256-bit Encryption</span>
                 </div>
-                <PaymentIconsMini />
+                <RealPaymentLogos size="mini" />
               </div>
             </div>
           )}
