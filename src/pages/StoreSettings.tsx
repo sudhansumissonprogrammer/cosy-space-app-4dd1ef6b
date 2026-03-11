@@ -317,7 +317,7 @@ export default function StoreSettings() {
                     <img src={logoPreview} alt="Logo" className="h-20 w-20 rounded-lg border object-cover" />
                     <button
                       type="button"
-                      onClick={() => { setLogoFile(null); setLogoPreview(null); }}
+                      onClick={() => { setLogoFile(null); setLogoPreview(null); setLogoRemoved(true); }}
                       className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
                     >
                       <X className="h-3 w-3" />
