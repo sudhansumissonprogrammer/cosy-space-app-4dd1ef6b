@@ -20,7 +20,7 @@ function LuxuryHero({ store }: { store: StoreData }) {
   const bestProduct = products?.find((p: any) => p.is_best_selling && p.image_url);
 
   return (
-    <section className="relative w-full" style={{ height: "100vh", minHeight: "600px", maxHeight: "900px" }}>
+    <section className="relative w-full h-[70vh] sm:h-screen" style={{ minHeight: "400px", maxHeight: "900px" }}>
       {heroImage ? (
         <img
           src={optimizeImageUrl(heroImage, 1400)}
