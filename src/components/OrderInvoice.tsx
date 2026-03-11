@@ -92,7 +92,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   /* Items Table */
   .items-tbl { width: 100%; border-collapse: collapse; }
   .items-tbl th {
-    font-size: 6.5px;
+    font-size: 7.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
