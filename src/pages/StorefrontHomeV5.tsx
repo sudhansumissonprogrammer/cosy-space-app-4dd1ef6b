@@ -18,7 +18,7 @@ function GradientHero({ store }: { store: StoreData }) {
   const floatingProducts = products?.filter((p: any) => p.image_url).slice(0, 3) || [];
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ minHeight: "90vh" }}>
+    <section className="relative w-full overflow-hidden" style={{ minHeight: "70vh" }}>
       {/* Gradient background */}
       <div
         className="absolute inset-0"
