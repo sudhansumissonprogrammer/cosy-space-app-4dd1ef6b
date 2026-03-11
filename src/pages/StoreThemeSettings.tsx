@@ -1731,9 +1731,16 @@ export default function StoreThemeSettings() {
         .update({ theme: themeId })
         .eq("id", storeId!);
       if (error) throw error;
+      return themeId;
     },
-    onSuccess: () => {
+    onSuccess: (themeId) => {
+      // Optimistically update the cached store data so UI reflects immediately
+      queryClient.setQueryData(["store-detail", storeId], (old: any) =>
+        old ? { ...old, theme: themeId } : old
+      );
       queryClient.invalidateQueries({ queryKey: ["store-detail", storeId] });
+      // Also invalidate storefront caches so the live storefront picks up the change
+      queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
       toast.success("Theme applied!");
     },
     onError: () => toast.error("Failed to apply theme"),
