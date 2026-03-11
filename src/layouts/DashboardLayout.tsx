@@ -6,7 +6,7 @@ import OrderNotificationListener from "@/components/OrderNotificationListener";
 export default function DashboardLayout() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
         <AppSidebar />
         <OrderNotificationListener />
         <div className="flex-1 flex flex-col">
