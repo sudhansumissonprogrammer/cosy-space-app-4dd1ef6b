@@ -1077,6 +1077,7 @@ function CustomerReviews({
             <span className="text-sm font-bold text-foreground">{rating}</span>
             <span className="text-sm text-muted-foreground">based on {reviewCount} reviews</span>
           </div>
+          </div>
         </div>
       </div>
 
