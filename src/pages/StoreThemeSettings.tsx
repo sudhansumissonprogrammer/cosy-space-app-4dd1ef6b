@@ -1552,7 +1552,9 @@ function StartupPreview({ config, storeName, products: propProducts, categories:
 }
 
 /* ── Pro Clean Preview (Theme 6) ── */
-function ProCleanPreview({ config, storeName }: { config: ThemeConfig; storeName: string }) {
+function ProCleanPreview({ config, storeName, products: propProducts, categories: propCategories, isDesktop }: PreviewProps) {
+  const products = propProducts && propProducts.length > 0 ? propProducts : DEFAULT_PRODUCTS;
+  const categories = propCategories && propCategories.length > 0 ? propCategories : DEFAULT_CATEGORIES;
   const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
   const btnRadius = config.button_style === "pill" ? "9999px" : config.button_style === "square" ? "0px" : "0.75rem";
 
