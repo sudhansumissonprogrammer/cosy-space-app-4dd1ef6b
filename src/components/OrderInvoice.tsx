@@ -117,7 +117,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   /* Totals */
   .totals { display: flex; justify-content: flex-end; margin-top: 1.5mm; }
   .totals-tbl { width: 45mm; border-collapse: collapse; }
-  .totals-tbl td { padding: 2px 4px; font-size: 7.5px; color: #444; }
+  .totals-tbl td { padding: 2px 4px; font-size: 8.5px; color: #444; }
   .totals-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #111; }
   .totals-tbl .grand td {
     font-size: 9px;
