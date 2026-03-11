@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      abandoned_carts: {
+        Row: {
+          cart_items: Json
+          created_at: string
+          customer_email: string | null
+          customer_phone: string | null
+          id: string
+          recovered: boolean
+          store_id: string
+        }
+        Insert: {
+          cart_items?: Json
+          created_at?: string
+          customer_email?: string | null
+          customer_phone?: string | null
+          id?: string
+          recovered?: boolean
+          store_id: string
+        }
+        Update: {
+          cart_items?: Json
+          created_at?: string
+          customer_email?: string | null
+          customer_phone?: string | null
+          id?: string
+          recovered?: boolean
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abandoned_carts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -343,6 +381,8 @@ export type Database = {
           storefront_customer_id: string | null
           street_address: string | null
           total: number
+          tracking_number: string | null
+          tracking_url: string | null
           updated_at: string
         }
         Insert: {
@@ -362,6 +402,8 @@ export type Database = {
           storefront_customer_id?: string | null
           street_address?: string | null
           total?: number
+          tracking_number?: string | null
+          tracking_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -381,6 +423,8 @@ export type Database = {
           storefront_customer_id?: string | null
           street_address?: string | null
           total?: number
+          tracking_number?: string | null
+          tracking_url?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -673,6 +717,85 @@ export type Database = {
         }
         Relationships: []
       }
+      store_shipping_config: {
+        Row: {
+          created_at: string
+          flat_rate: number
+          free_shipping_above: number | null
+          id: string
+          is_active: boolean
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          flat_rate?: number
+          free_shipping_above?: number | null
+          id?: string
+          is_active?: boolean
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          flat_rate?: number
+          free_shipping_above?: number | null
+          id?: string
+          is_active?: boolean
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_shipping_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_tax_config: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_inclusive: boolean
+          store_id: string
+          tax_name: string
+          tax_rate: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_inclusive?: boolean
+          store_id: string
+          tax_name?: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_inclusive?: boolean
+          store_id?: string
+          tax_name?: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_tax_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       storefront_customers: {
         Row: {
           created_at: string
@@ -730,8 +853,11 @@ export type Database = {
           is_verified: boolean
           location: string | null
           logo_url: string | null
+          meta_description: string | null
+          meta_title: string | null
           mobile_hero_url: string | null
           name: string
+          og_image_url: string | null
           order_mode: string
           owner_id: string
           return_policy: string | null
@@ -760,8 +886,11 @@ export type Database = {
           is_verified?: boolean
           location?: string | null
           logo_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           mobile_hero_url?: string | null
           name: string
+          og_image_url?: string | null
           order_mode?: string
           owner_id: string
           return_policy?: string | null
@@ -790,8 +919,11 @@ export type Database = {
           is_verified?: boolean
           location?: string | null
           logo_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           mobile_hero_url?: string | null
           name?: string
+          og_image_url?: string | null
           order_mode?: string
           owner_id?: string
           return_policy?: string | null
