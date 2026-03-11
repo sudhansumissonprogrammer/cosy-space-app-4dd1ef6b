@@ -653,26 +653,17 @@ export default function ProductDetail() {
           {/* Delivery & Trust Badges */}
           <div className="mt-5 rounded-xl border border-border p-3 space-y-2.5">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <Truck className="h-4 w-4 text-primary" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+                <Truck className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs font-bold text-foreground">Free Delivery</p>
-                <p className="text-[10px] text-muted-foreground">Get it by <strong className="text-foreground">{deliveryDate}</strong></p>
+                <p className="text-xs font-bold text-foreground">Free & Express Delivery</p>
+                <p className="text-[10px] text-muted-foreground">Get it by <strong className="text-foreground">{deliveryDate}</strong> · As fast as 3 days 🚀</p>
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
-                <Clock className="h-4 w-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-foreground">Express Delivery</p>
-                <p className="text-[10px] text-muted-foreground">Get it in just 3 days! 🚀</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <RotateCcw className="h-4 w-4 text-primary" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                <RotateCcw className="h-4 w-4 text-orange-600" />
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">Easy Returns</p>
@@ -680,8 +671,8 @@ export default function ProductDetail() {
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <Shield className="h-4 w-4 text-primary" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
+                <Shield className="h-4 w-4 text-purple-600" />
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">Secure Checkout</p>
