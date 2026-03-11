@@ -91,7 +91,7 @@ function FeaturedCollection({ products, slug, store }: { products: any[]; slug: 
             key={product.id}
             to={storefrontPath(slug, `product/${product.slug || product.id}`)}
             className="group relative overflow-hidden"
-            style={{ aspectRatio: idx === 0 ? "3/4" : "4/3" }}
+            style={{ aspectRatio: idx === 0 ? (window.innerWidth < 640 ? "1/1" : "3/4") : "4/3" }}
           >
             {product.image_url ? (
               <img
