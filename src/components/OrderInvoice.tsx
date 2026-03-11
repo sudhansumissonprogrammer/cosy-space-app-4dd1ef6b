@@ -209,14 +209,21 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     </table>
   </div>
 
-  ${order.tracking_number ? `
+  <!-- QR + Tracking -->
   <hr class="divider"/>
-  <div class="row">
-    <div class="col">
-      <div class="sec-label">Tracking</div>
-      <div class="sec-val" style="font-family:monospace;font-size:8px;">${order.tracking_number}</div>
+  <div style="display:flex;align-items:center;gap:3mm;">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(order.tracking_url || order.tracking_number || order.id)}" style="width:20mm;height:20mm;" />
+    <div style="flex:1;">
+      ${order.tracking_number ? `
+        <div class="sec-label">Tracking</div>
+        <div class="sec-val" style="font-family:monospace;font-size:8px;">${order.tracking_number}</div>
+      ` : `
+        <div class="sec-label">Order ID</div>
+        <div class="sec-val" style="font-family:monospace;font-size:7px;">${order.id.toUpperCase()}</div>
+      `}
+      <div class="sec-label" style="margin-top:1mm;">Scan QR to track</div>
     </div>
-  </div>` : ""}
+  </div>
 
   <!-- Footer -->
   <div class="label-footer">
