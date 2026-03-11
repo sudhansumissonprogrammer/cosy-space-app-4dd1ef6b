@@ -12,6 +12,7 @@ interface StorefrontSearchOverlayProps {
   onClose: () => void;
   products: Tables<"products">[] | undefined;
   slug: string;
+  initialFiltersOpen?: boolean;
 }
 
 const PRICE_RANGES: { label: string; range: [number, number] }[] = [
@@ -33,6 +34,7 @@ export default function StorefrontSearchOverlay({
   onClose,
   products,
   slug,
+  initialFiltersOpen = false,
 }: StorefrontSearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
@@ -47,10 +49,12 @@ export default function StorefrontSearchOverlay({
       setPriceRange(null);
       setAvailability("all");
       setSortBy("popular");
-      setShowFilters(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setShowFilters(initialFiltersOpen);
+      if (!initialFiltersOpen) {
+        setTimeout(() => inputRef.current?.focus(), 100);
+      }
     }
-  }, [open]);
+  }, [open, initialFiltersOpen]);
 
   // Lock body scroll
   useEffect(() => {
