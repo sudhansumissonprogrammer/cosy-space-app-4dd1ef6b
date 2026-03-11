@@ -435,6 +435,7 @@ export default function StoreThemeSettings() {
           <div>
             <h4 className="mb-3 text-sm font-semibold">Full Storefront Preview</h4>
             <FullStorefrontPreview config={config} storeName={store?.name || "My Store"} />
+          </div>
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-2">
