@@ -445,7 +445,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Price Block */}
-          <div className="mt-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 p-3 sm:p-4">
+          <div className="mt-4 rounded-xl border p-3 sm:p-4" style={{ background: `linear-gradient(135deg, var(--storefront-primary, #b8873c)11, var(--storefront-primary, #b8873c)22)`, borderColor: `var(--storefront-primary, #b8873c)33` }}>
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-3xl font-extrabold text-foreground sm:text-4xl">
                 {currency} {Number(variantPrice).toFixed(2)}
