@@ -9,6 +9,7 @@ import StorefrontProductCard from "@/components/storefront/StorefrontProductCard
 import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
+import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 
 function ProductCardSkeleton() {
