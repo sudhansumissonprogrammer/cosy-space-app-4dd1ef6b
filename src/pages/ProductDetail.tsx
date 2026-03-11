@@ -609,19 +609,22 @@ export default function ProductDetail() {
 
           {/* CRO #4: Guaranteed Safe Checkout */}
           {!isOutOfStock && (
-            <div className="mt-4 rounded-xl border border-dashed border-success/40 bg-success/5 p-3">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Lock className="h-3.5 w-3.5 text-success" />
-                <span className="text-xs font-bold text-success uppercase tracking-wide">Guaranteed Safe Checkout</span>
+            <div className="mt-4 rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50 to-green-50 p-3 relative overflow-hidden">
+              <div className="absolute -right-3 -top-3 opacity-[0.06]">
+                <ShieldCheck className="h-20 w-20 text-emerald-600" />
               </div>
-              <div className="flex items-center justify-center gap-3">
-                <div className="flex items-center gap-1 rounded-md bg-card px-2 py-1 border border-border">
-                  <ShieldCheck className="h-3 w-3 text-success" />
-                  <span className="text-[9px] font-bold text-muted-foreground">SSL Secure</span>
+              <div className="flex items-center justify-center gap-2 mb-2 relative z-10">
+                <Lock className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Guaranteed Safe Checkout</span>
+              </div>
+              <div className="flex items-center justify-center gap-3 relative z-10">
+                <div className="flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 border border-emerald-200/50">
+                  <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                  <span className="text-[9px] font-bold text-emerald-700">SSL Secure</span>
                 </div>
-                <div className="flex items-center gap-1 rounded-md bg-card px-2 py-1 border border-border">
-                  <Shield className="h-3 w-3 text-primary" />
-                  <span className="text-[9px] font-bold text-muted-foreground">256-bit Encryption</span>
+                <div className="flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 border border-emerald-200/50">
+                  <Shield className="h-3 w-3 text-emerald-600" />
+                  <span className="text-[9px] font-bold text-emerald-700">256-bit Encryption</span>
                 </div>
                 <PaymentIconsMini />
               </div>
