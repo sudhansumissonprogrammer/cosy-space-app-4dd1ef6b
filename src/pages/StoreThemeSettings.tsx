@@ -2816,9 +2816,9 @@ export default function StoreThemeSettings() {
                           title="Store Preview"
                           style={{
                             width: "375px",
-                            height: "812px",
+                            height: "700px",
                             border: "none",
-                            transform: "scale(0.838)",
+                            transform: "scale(0.968)",
                             transformOrigin: "top left",
                           }}
                         />
