@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useParams, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Store, ShoppingCart, Heart, User, Search, Menu, Home, Grid3X3, X } from "lucide-react";
