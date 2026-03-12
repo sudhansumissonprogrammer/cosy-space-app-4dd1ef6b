@@ -1,0 +1,353 @@
+import { useState, useEffect, useRef } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { Store, ShoppingCart, Heart, User, Search, Menu, Home, LayoutGrid, Flame, SlidersHorizontal, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout";
+import { CartProvider, useCart } from "@/contexts/CartContext";
+import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
+import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
+import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
+import SideCart from "@/components/storefront/SideCart";
+import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+import { useMetaTags } from "@/hooks/useMetaTags";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { Skeleton } from "@/components/ui/skeleton";
+import { storefrontPath } from "@/lib/subdomain";
+
+/* ── Fashion Header ── */
+function FashionHeader({ store }: { store: StoreData }) {
+  const { cartCount, openCart } = useCart();
+  const { wishlistCount } = useWishlist();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+
+  return (
+    <>
+      <header
+        className="sticky top-0 z-40 flex items-center justify-between px-4 py-2.5"
+        style={{
+          backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+          boxShadow: "0 1px 8px var(--storefront-text, hsl(var(--foreground)))06",
+        }}
+      >
+        {/* Left: Menu */}
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetTrigger asChild>
+            <button className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90">
+              <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="storefront-font w-[280px] p-0">
+            <div className="flex flex-col">
+              <div className="border-b bg-card p-4">
+                {store.logo_url ? (
+                  <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[160px] object-contain" />
+                ) : (
+                  <span className="text-lg font-bold text-foreground">{store.name}</span>
+                )}
+              </div>
+              <nav className="flex flex-col gap-1 p-4">
+                {[
+                  { to: storefrontPath(store.slug), label: "Home" },
+                  { to: storefrontPath(store.slug, "best-sellers"), label: "Trending" },
+                  { to: storefrontPath(store.slug, "account"), label: "My Account" },
+                  { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
+                  { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
+                  { to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" },
+                ].map((link) => (
+                  <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="rounded-2xl px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                    {link.label}
+                  </Link>
+                ))}
+                {categories && categories.length > 0 && (
+                  <>
+                    <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categories</div>
+                    {categories.map((cat: any) => (
+                      <Link key={cat.id} to={storefrontPath(store.slug, `category/${cat.slug}`)} onClick={() => setMenuOpen(false)} className="rounded-2xl px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                        {cat.name}
+                      </Link>
+                    ))}
+                  </>
+                )}
+              </nav>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Center: Brand */}
+        <Link to={storefrontPath(store.slug)} className="absolute left-1/2 -translate-x-1/2">
+          {store.logo_url ? (
+            <img src={store.logo_url} alt={store.name} className="h-7 w-auto max-w-[120px] object-contain" />
+          ) : (
+            <span className="text-lg font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}>
+              {store.name}
+            </span>
+          )}
+        </Link>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1">
+          <button onClick={() => setSearchOpen(true)} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90">
+            <Search className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+          </button>
+          <Link to={storefrontPath(store.slug, "wishlist")} className="relative flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90">
+            <Heart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+            {wishlistCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
+                {wishlistCount > 9 ? "9+" : wishlistCount}
+              </span>
+            )}
+          </Link>
+          <button onClick={openCart} className="relative flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90">
+            <ShoppingCart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+            {cartCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
+                {cartCount > 9 ? "9+" : cartCount}
+              </span>
+            )}
+          </button>
+        </div>
+      </header>
+
+      <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
+    </>
+  );
+}
+
+/* ── Floating Filter Button ── */
+function FloatingFilterButton({ store }: { store: StoreData }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+
+  return (
+    <>
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="fixed bottom-24 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full shadow-xl transition-all active:scale-90 md:hidden"
+        style={{
+          background: `linear-gradient(135deg, var(--storefront-primary, #FF3F6C), var(--storefront-accent, #FF3F6C)90)`,
+          color: "var(--storefront-btn-text, #fff)",
+          boxShadow: "0 8px 24px -4px var(--storefront-primary, #FF3F6C)50",
+        }}
+      >
+        <SlidersHorizontal className="h-5 w-5" />
+      </button>
+      <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={true} />
+    </>
+  );
+}
+
+/* ── Bottom Tab Bar ── */
+function FashionTabBar({ store }: { store: StoreData }) {
+  const location = useLocation();
+  const { wishlistCount } = useWishlist();
+  const { user } = useStorefrontAuth();
+
+  const basePath = storefrontPath(store.slug);
+  const tabs = [
+    { icon: Home, label: "Home", to: basePath, matchExact: true },
+    { icon: LayoutGrid, label: "Categories", to: storefrontPath(store.slug, "best-sellers"), match: "best-sellers" },
+    { icon: Flame, label: "Trends", to: storefrontPath(store.slug, "best-sellers"), match: "__trend__" },
+    { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
+    { icon: User, label: "Profile", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
+  ];
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <div
+        className="flex items-center justify-around py-2 border-t"
+        style={{
+          backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+          borderColor: "var(--storefront-text, hsl(var(--foreground)))08",
+        }}
+      >
+        {tabs.map((tab) => {
+          const isActive = tab.matchExact
+            ? location.pathname === basePath || location.pathname === basePath + "/"
+            : location.pathname.includes(tab.match!);
+          const TabIcon = tab.icon;
+          return (
+            <Link key={tab.label} to={tab.to} className="flex flex-col items-center gap-0.5 py-1 px-3 transition-all relative">
+              <div className="relative">
+                <TabIcon
+                  className="h-5 w-5 transition-colors"
+                  style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))40" }}
+                />
+                {tab.badge && tab.badge > 0 && (
+                  <span
+                    className="absolute -right-1.5 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-bold"
+                    style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}
+                  >
+                    {tab.badge > 9 ? "9+" : tab.badge}
+                  </span>
+                )}
+              </div>
+              <span
+                className="text-[9px] font-semibold"
+                style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))40" }}
+              >
+                {tab.label}
+              </span>
+              {isActive && (
+                <div className="absolute -bottom-2 h-0.5 w-5 rounded-full" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }} />
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+function StorefrontV10Skeleton() {
+  return (
+    <div className="min-h-screen bg-background font-sans">
+      <div className="sticky top-0 z-30 px-4 py-2.5 flex items-center justify-between">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-7 w-24" />
+        <div className="flex gap-1">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+      </div>
+      <div className="px-4 space-y-4 mt-2">
+        <Skeleton className="h-48 w-full rounded-[20px]" />
+        <div className="flex gap-3">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-20 rounded-2xl flex-shrink-0" />)}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-64 rounded-[20px]" />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: string } = {}) {
+  const { store, isLoading, slug } = useStorefront(slugOverride);
+  const viewTracked = useRef(false);
+  const queryClient = useQueryClient();
+
+  useFacebookPixel((store as any)?.facebook_pixel_id);
+
+  useMetaTags({
+    title: (store as any)?.meta_title || (store ? `${store.name} — Store` : undefined),
+    description: (store as any)?.meta_description || store?.description || undefined,
+    ogImage: (store as any)?.og_image_url || store?.logo_url || undefined,
+    storeSlug: store?.slug,
+  });
+
+  useEffect(() => {
+    if (!store?.id || viewTracked.current) return;
+    viewTracked.current = true;
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    if (!projectId) return;
+    setTimeout(() => {
+      fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store_id: store.id, path: window.location.pathname }),
+      }).catch(() => {});
+    }, 3000);
+  }, [store?.id]);
+
+  const themeConfig = store ? queryClient.getQueryData<any>(["storefront-theme-config", store.id]) : null;
+
+  useEffect(() => {
+    if (!themeConfig) return;
+    const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
+    const families = fonts.map((f: string) => f.replace(/ /g, "+")).join("&family=");
+    const linkId = "storefront-google-fonts";
+    let link = document.getElementById(linkId) as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+    }
+    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
+  }, [themeConfig?.heading_font, themeConfig?.body_font]);
+
+  if (isLoading) return <StorefrontV10Skeleton />;
+
+  if (!store) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+        <Store className="h-12 w-12 text-muted-foreground" />
+        <h1 className="text-2xl font-semibold text-foreground">Store not found</h1>
+        <p className="text-muted-foreground">The store "{slug}" doesn't exist.</p>
+        <Button asChild variant="outline"><Link to="/">Go home</Link></Button>
+      </div>
+    );
+  }
+
+  const isLightColor = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+  };
+
+  const computePrimaryLight = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const lighten = (c: number) => Math.min(255, Math.round(c + (255 - c) * 0.35));
+    return `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
+  };
+
+  const primaryColor = themeConfig?.primary_color || "#FF3F6C";
+  const primaryLight = computePrimaryLight(primaryColor);
+  const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
+
+  const themeStyle: React.CSSProperties = themeConfig
+    ? {
+        "--storefront-primary": themeConfig.primary_color,
+        "--storefront-primary-light": primaryLight,
+        "--storefront-accent": themeConfig.accent_color,
+        "--storefront-text": themeConfig.text_color,
+        "--storefront-bg": themeConfig.background_color,
+        "--storefront-heading-font": themeConfig.heading_font,
+        "--storefront-body-font": themeConfig.body_font,
+        "--storefront-button-radius": "9999px",
+        "--storefront-marquee-gradient": themeConfig.marquee_gradient,
+        "--storefront-btn-text": btnTextColor,
+      } as any
+    : {};
+
+  return (
+    <CartProvider slug={store.slug}>
+      <WishlistProvider slug={store.slug}>
+        <StorefrontAuthProvider storeId={store.id}>
+          <div
+            className="storefront-font min-h-screen font-sans"
+            style={{
+              ...themeStyle,
+              backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+              color: "var(--storefront-text, hsl(var(--foreground)))",
+            }}
+          >
+            <FashionHeader store={store} />
+            <div className="pb-20 md:pb-0">
+              <Outlet context={store} />
+            </div>
+            <div className="hidden md:block">
+              <StorefrontFooter store={store} />
+            </div>
+            <FloatingFilterButton store={store} />
+            <FashionTabBar store={store} />
+            <SideCart store={store} />
+            <FloatingWhatsApp store={store} />
+          </div>
+        </StorefrontAuthProvider>
+      </WishlistProvider>
+    </CartProvider>
+  );
+}
