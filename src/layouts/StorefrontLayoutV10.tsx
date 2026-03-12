@@ -330,6 +330,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
             className="storefront-font min-h-screen font-sans"
             style={{
               ...themeStyle,
+              "--storefront-bottom-nav-height": "72px",
               backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
               color: "var(--storefront-text, hsl(var(--foreground)))",
             }}
