@@ -388,6 +388,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
             price: v.price ? parseFloat(v.price) : null,
             stock_quantity: parseInt(v.stock) || 0,
             display_order: i,
+            is_active: v.isActive,
           };
           if (v.isExisting && v.id) {
             await (supabase as any).from("product_variants").update(variantData).eq("id", v.id);
