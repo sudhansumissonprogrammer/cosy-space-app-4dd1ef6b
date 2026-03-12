@@ -42,26 +42,53 @@ function MobileMenu({
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
-  const menuItems = storeId
+  type MenuItem = { label: string; icon: React.ElementType; path: string; exact?: boolean; badge?: number };
+  type MenuSection = { title?: string; items: MenuItem[] };
+
+  const menuSections: MenuSection[] = storeId
     ? [
-        { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
-        { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, badge: pendingOrders },
-        { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products` },
-        { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
-        { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeId}/leads` },
-        { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
-        { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
-        { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
-        { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeId}/payments` },
-        { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeId}/shipping` },
-        { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeId}/tax` },
-        { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload` },
-        { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme` },
-        { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain` },
-        { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeId}/settings` },
+        {
+          items: [
+            { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
+            { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, badge: pendingOrders },
+            { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products` },
+          ],
+        },
+        {
+          title: "Customers",
+          items: [
+            { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
+            { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeId}/leads` },
+            { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
+          ],
+        },
+        {
+          title: "Marketing",
+          items: [
+            { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
+            { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
+          ],
+        },
+        {
+          title: "Payments & Shipping",
+          items: [
+            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeId}/payments` },
+            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeId}/shipping` },
+            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeId}/tax` },
+          ],
+        },
+        {
+          title: "Store",
+          items: [
+            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload` },
+            { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme` },
+            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain` },
+            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeId}/settings` },
+          ],
+        },
       ]
     : [
-        { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
+        { items: [{ label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true }] },
       ];
 
   if (!open) return null;
@@ -70,30 +97,41 @@ function MobileMenu({
     <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a1a]">
       {/* Scrollable menu items */}
       <div className="flex-1 overflow-auto px-4 pt-6 pb-4">
-        <div className="space-y-0.5">
-          {menuItems.map((item) => {
-            const active = isActive(item.path, item.exact);
-            return (
-              <button
-                key={item.path}
-                onClick={() => go(item.path)}
-                className={cn(
-                  "flex w-full items-center gap-3.5 rounded-xl px-4 py-3.5 text-[15px] transition-colors",
-                  active
-                    ? "bg-white/10 text-white font-medium"
-                    : "text-[#b0b0b0] active:bg-white/5"
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                <span className="flex-1 text-left">{item.label}</span>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
-                    {item.badge > 99 ? "99+" : item.badge}
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
+        <div className="space-y-4">
+          {menuSections.map((section, si) => (
+            <div key={si}>
+              {section.title && (
+                <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-[#666]">
+                  {section.title}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const active = isActive(item.path, item.exact);
+                  return (
+                    <button
+                      key={item.path}
+                      onClick={() => go(item.path)}
+                      className={cn(
+                        "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-[15px] transition-colors",
+                        active
+                          ? "bg-white/10 text-white font-medium"
+                          : "text-[#b0b0b0] active:bg-white/5"
+                      )}
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
+                          {item.badge > 99 ? "99+" : item.badge}
+                        </Badge>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
