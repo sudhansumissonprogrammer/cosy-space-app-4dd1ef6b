@@ -123,17 +123,21 @@ function BottomTabBar({ store }: { store: StoreData }) {
   const location = useLocation();
   const { wishlistCount } = useWishlist();
   const { user } = useStorefrontAuth();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
 
   const basePath = storefrontPath(store.slug);
   const tabs = [
     { icon: Home, label: "Home", to: basePath, match: basePath },
     { icon: Grid3X3, label: "Categories", to: storefrontPath(store.slug, "best-sellers"), match: "best-sellers" },
-    { icon: Search, label: "Search", to: basePath + "?search=1", match: "?search" },
+    { icon: Search, label: "Search", to: "__search__", match: "__never__" },
     { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
     { icon: User, label: "Profile", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
   ];
 
   return (
+    <>
     <nav
       className="fixed bottom-0 left-0 right-0 z-30 border-t md:hidden"
       style={{
@@ -143,11 +147,26 @@ function BottomTabBar({ store }: { store: StoreData }) {
     >
       <div className="flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom)]" style={{ minHeight: "56px" }}>
         {tabs.map((tab) => {
+          const isSearch = tab.to === "__search__";
           const isActive = tab.match === basePath
             ? location.pathname === basePath || location.pathname === basePath + "/"
             : location.pathname.includes(tab.match);
           const TabIcon = tab.icon;
-          return (
+          return isSearch ? (
+            <button
+              key={tab.label}
+              onClick={() => setSearchOpen(true)}
+              className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 transition-colors relative"
+              style={{ minWidth: "48px" }}
+            >
+              <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
+                <TabIcon className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))60" }} />
+              </div>
+              <span className="text-[10px] font-medium" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }}>
+                {tab.label}
+              </span>
+            </button>
+          ) : (
             <Link
               key={tab.label}
               to={tab.to}
@@ -185,6 +204,8 @@ function BottomTabBar({ store }: { store: StoreData }) {
         })}
       </div>
     </nav>
+    <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
+    </>
   );
 }
 
