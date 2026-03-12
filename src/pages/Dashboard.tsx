@@ -2,17 +2,19 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Users, Eye, TrendingUp, HelpCircle } from "lucide-react";
+import { Package, ShoppingBag, Users, Eye, TrendingUp, HelpCircle, Plus } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line,
 } from "recharts";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { data: store } = useQuery({
     queryKey: ["my-store", user?.id],
@@ -34,7 +36,6 @@ export default function Dashboard() {
   const currency = store?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
-  // Onboarding walkthrough
   const [showOnboarding, setShowOnboarding] = useState(false);
   useEffect(() => {
     if (storeId && !localStorage.getItem(`onboarding-done-${storeId}`)) {
@@ -53,11 +54,9 @@ export default function Dashboard() {
         supabase.from("customers").select("id", { count: "exact", head: true }).eq("store_id", storeId!),
         supabase.rpc("get_store_views", { _store_ids: [storeId!] }),
       ]);
-
       const totalViews = (viewsRes.data as any[])?.reduce(
         (sum: number, r: any) => sum + Number(r.view_count || 0), 0
       ) || 0;
-
       return {
         total_products: productsRes.count ?? 0,
         total_orders: ordersRes.count ?? 0,
@@ -97,32 +96,35 @@ export default function Dashboard() {
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
   })();
 
-  const topProducts = (() => {
-    if (!ordersData) return [];
-    const map: Record<string, { name: string; count: number; revenue: number }> = {};
-    ordersData.forEach((o: any) => {
-      o.order_items?.forEach((item: any) => {
-        const key = item.product_name;
-        if (!map[key]) map[key] = { name: key, count: 0, revenue: 0 };
-        map[key].count += item.quantity || 1;
-        map[key].revenue += Number(item.total || 0);
-      });
-    });
-    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10);
-  })();
-
   const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
 
-  const cards = [
-    { title: "Total Products", value: stats?.total_products ?? 0, icon: Package },
-    { title: "Total Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag },
-    { title: "Revenue", value: `${currencySymbol}${totalRevenue.toFixed(2)}`, icon: TrendingUp },
-    { title: "Customers", value: stats?.total_customers ?? 0, icon: Users },
-    { title: "Store Views", value: stats?.total_views ?? 0, icon: Eye },
+  // No store yet — show create CTA
+  if (!storeId && !isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+          <Plus className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-lg font-semibold text-foreground">Create Your Store</h2>
+        <p className="max-w-xs text-sm text-muted-foreground">
+          Set up your online store in minutes. Add products, customize your theme, and start selling.
+        </p>
+        <Button onClick={() => navigate("/dashboard/stores/create")} className="mt-2">
+          Create Store
+        </Button>
+      </div>
+    );
+  }
+
+  const statCards = [
+    { label: "Products", value: stats?.total_products ?? 0, icon: Package, color: "text-blue-600" },
+    { label: "Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
+    { label: "Revenue", value: `${currencySymbol}${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "text-amber-600" },
+    { label: "Views", value: stats?.total_views ?? 0, icon: Eye, color: "text-purple-600" },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {storeId && (
         <OnboardingWalkthrough
           storeId={storeId}
@@ -131,20 +133,18 @@ export default function Dashboard() {
         />
       )}
 
+      {/* Greeting + guide */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Your store overview at a glance.</p>
-        </div>
+        <h1 className="text-lg font-semibold text-foreground">Overview</h1>
         {storeId && (
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowOnboarding(true)}
-            className="gap-1.5 text-xs"
+            className="gap-1 text-xs h-8"
           >
             <HelpCircle className="w-3.5 h-3.5" />
-            Setup Guide
+            Guide
           </Button>
         )}
       </div>
@@ -155,79 +155,62 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {cards.map((card) => (
-              <Card key={card.title}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
-                  <card.icon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-foreground">{card.value}</div>
+          {/* Stat cards — 2x2 grid on mobile */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {statCards.map((card) => (
+              <Card key={card.label} className="border shadow-none">
+                <CardContent className="flex items-center gap-3 p-3">
+                  <div className={`shrink-0 ${card.color}`}>
+                    <card.icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">{card.label}</p>
+                    <p className="text-base font-bold text-foreground truncate">{card.value}</p>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Revenue Over Time</CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Revenue chart */}
+          <Card className="border shadow-none">
+            <CardContent className="p-3 pt-4">
+              <p className="mb-3 text-sm font-medium text-foreground">Revenue</p>
               {ordersByMonth.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={ordersByMonth}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="month" className="text-xs" />
-                    <YAxis className="text-xs" />
-                    <Tooltip formatter={(value: number) => `${currencySymbol}${value.toFixed(2)}`} />
-                    <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} />
+                    <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
+                    <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={40} />
+                    <Tooltip
+                      contentStyle={{ fontSize: 12 }}
+                      formatter={(value: number) => `${currencySymbol}${value.toFixed(0)}`}
+                    />
+                    <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="py-8 text-center text-muted-foreground">No order data yet</p>
+                <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
               )}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Orders Over Time</CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Orders chart */}
+          <Card className="border shadow-none">
+            <CardContent className="p-3 pt-4">
+              <p className="mb-3 text-sm font-medium text-foreground">Orders</p>
               {ordersByMonth.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={180}>
                   <BarChart data={ordersByMonth}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="month" className="text-xs" />
-                    <YAxis className="text-xs" />
-                    <Tooltip />
+                    <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
+                    <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={30} />
+                    <Tooltip contentStyle={{ fontSize: 12 }} />
                     <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="py-8 text-center text-muted-foreground">No order data yet</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Top Products by Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {topProducts.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={topProducts} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis type="number" className="text-xs" />
-                    <YAxis dataKey="name" type="category" width={120} className="text-xs" />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="py-8 text-center text-muted-foreground">No product data yet</p>
+                <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
               )}
             </CardContent>
           </Card>
