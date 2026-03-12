@@ -785,7 +785,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("upi"); setUpiApp("paytm"); }}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-4 transition-all ${paymentMethod === "razorpay" && upiApp === "paytm" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/30 hover:shadow-sm"}`}
+                  className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 p-3 sm:p-4 transition-all ${paymentMethod === "razorpay" && upiApp === "paytm" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/30 hover:shadow-sm"}`}
                 >
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted/60">
                     <img src="/icons/paytm.svg" alt="Paytm" className="h-7 w-7 object-contain" />
