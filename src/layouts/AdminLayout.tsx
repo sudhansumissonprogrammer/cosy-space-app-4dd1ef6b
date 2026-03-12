@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { title: "Overview", url: "/admin", icon: LayoutDashboard },
-  { title: "Users", url: "/admin/users", icon: Users },
-  { title: "Stores", url: "/admin/stores", icon: Store },
+  { title: "Users & Stores", url: "/admin/users-stores", icon: Users },
   { title: "Orders", url: "/admin/orders", icon: ShoppingBag },
   { title: "Subscriptions", url: "/admin/subscriptions", icon: CreditCard },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+  { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
 export default function AdminLayout() {

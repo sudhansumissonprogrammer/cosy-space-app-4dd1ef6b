@@ -66,11 +66,11 @@ export default function AuthRoutes() {
           }
         >
           <Route index element={<AdminOverview />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="stores" element={<AdminStores />} />
+          <Route path="users-stores" element={<AdminUsersStores />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="subscriptions" element={<AdminSubscriptions />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
 
         <Route
