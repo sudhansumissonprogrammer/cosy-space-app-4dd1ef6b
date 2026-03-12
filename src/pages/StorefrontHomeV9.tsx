@@ -51,7 +51,7 @@ function CategoryChips({ categories, slug }: { categories: any[] | undefined; sl
 /* ── Discovery Feed Card ── */
 function FeedCard({ product, slug, store, index }: { product: any; slug: string; store: StoreData; index: number }) {
   const [expanded, setExpanded] = useState(false);
-  const { addItem, cartItems, updateQuantity } = useCart();
+  const { addToCart, items: cartItems, updateQuantity } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const wishlisted = isWishlisted(product.id);
   const cartItem = cartItems.find((i) => i.productId === product.id);
