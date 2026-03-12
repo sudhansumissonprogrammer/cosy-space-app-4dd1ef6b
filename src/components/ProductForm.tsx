@@ -35,6 +35,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [salePrice, setSalePrice] = useState("");
   const [description, setDescription] = useState("");
   const [stockQuantity, setStockQuantity] = useState("0");
+  const [trackStock, setTrackStock] = useState(false);
   const [category, setCategory] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [isBestSelling, setIsBestSelling] = useState(false);
