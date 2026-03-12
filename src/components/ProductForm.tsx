@@ -325,7 +325,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       const productData = {
         store_id: storeId,
         name: name.trim(),
-        slug: slug.trim() || null,
+        slug: slug.trim() || generateSlug(name.trim()),
         price: parseFloat(price),
         sale_price: salePrice ? parseFloat(salePrice) : null,
         description: description.trim() || null,
