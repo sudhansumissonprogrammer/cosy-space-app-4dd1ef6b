@@ -300,11 +300,6 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "royal-gold", "velvet-merlot", "ocean-teal", "midnight-navy", "emerald-luxe",
     "saffron-bloom", "crimson-royale", "lilac-mist", "coral-sunset", "mint-fresh",
   ],
-  "theme-5": [
-    "elegant-black-white", "aurora-gradient", "sunset-fusion", "app-black-neon", "blaze-orange",
-    "neon-demonic", "electric-violet", "midnight-navy", "velvet-merlot", "ocean-teal",
-    "crimson-royale", "lux-black-gold", "royal-gold", "emerald-luxe", "lilac-mist",
-  ],
   "theme-6": [
     "elegant-black-white", "app-blue-orange", "app-teal-cyan", "mint-fresh", "electric-violet",
     "ocean-teal", "emerald-luxe", "coral-sunset", "royal-gold", "lux-black-gold",
