@@ -707,7 +707,7 @@ export default function ProductDetail() {
             )}
             <AccordionItem
               title="Shipping Information"
-              icon={<Truck className="h-3.5 w-3.5 text-amber-600" />}
+              icon={<Truck className="h-3.5 w-3.5" style={{ color: "var(--storefront-accent, hsl(var(--primary)))" }} />}
               isOpen={openAccordion === "shipping"}
               onToggle={() => toggleAccordion("shipping")}
             >
