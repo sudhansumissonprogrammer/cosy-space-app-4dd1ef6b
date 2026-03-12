@@ -2419,7 +2419,7 @@ export default function StoreThemeSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, name, theme")
+        .select("id, name, theme, slug")
         .eq("id", storeId!)
         .single();
       if (error) throw error;
