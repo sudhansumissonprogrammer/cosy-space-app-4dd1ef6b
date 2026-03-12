@@ -840,6 +840,19 @@ export default function ProductsList() {
           <Button onClick={() => setFilterOpen(false)} className="w-full mt-6">Apply Filters</Button>
         </SheetContent>
       </Sheet>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={(v) => { if (!v) setPreviewImage(null); }}>
+        <DialogContent className="sm:max-w-lg p-2 bg-background/95 backdrop-blur">
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Product preview"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-md"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
