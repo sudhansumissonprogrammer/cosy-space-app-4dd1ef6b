@@ -2488,6 +2488,7 @@ export default function StoreThemeSettings() {
   const [config, setConfig] = useState<ThemeConfig>(defaults);
   const [dirty, setDirty] = useState(false);
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
+  const [iframeKey, setIframeKey] = useState(0);
 
   useEffect(() => {
     if (themeConfig) {
@@ -2553,6 +2554,7 @@ export default function StoreThemeSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       setDirty(false);
+      setIframeKey((k) => k + 1);
       toast.success("Theme settings saved!");
     },
     onError: () => toast.error("Failed to save settings"),
@@ -2809,13 +2811,14 @@ export default function StoreThemeSettings() {
                       </div>
                       <div style={{ width: "363px", height: "680px", overflow: "hidden" }}>
                         <iframe
+                          key={`mobile-${iframeKey}`}
                           src={`/store/${store.slug}`}
                           title="Store Preview"
                           style={{
                             width: "375px",
-                            height: "812px",
+                            height: "700px",
                             border: "none",
-                            transform: "scale(0.838)",
+                            transform: "scale(0.968)",
                             transformOrigin: "top left",
                           }}
                         />
@@ -2837,6 +2840,7 @@ export default function StoreThemeSettings() {
                     </div>
                     <div style={{ width: "100%", height: "680px", overflow: "hidden" }}>
                       <iframe
+                        key={`desktop-${iframeKey}`}
                         src={`/store/${store.slug}`}
                         title="Store Preview Desktop"
                         style={{
