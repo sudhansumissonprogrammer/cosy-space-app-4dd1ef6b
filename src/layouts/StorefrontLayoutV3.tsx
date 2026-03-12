@@ -29,6 +29,7 @@ function AppHeader({ store }: { store: StoreData }) {
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
 
   return (
+    <>
     <header className="sticky top-0 z-30 border-b" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", borderColor: "var(--storefront-text, hsl(var(--foreground)))10" }}>
       <div className="flex items-center gap-2 px-3 py-2.5">
         {/* Menu */}
