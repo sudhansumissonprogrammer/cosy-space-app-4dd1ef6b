@@ -331,8 +331,37 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   const primaryLight = computePrimaryLight(primaryColor);
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
+  // Listen for live theme preview messages from admin dashboard iframe parent
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [previewOverride, setPreviewOverride] = useState<Record<string, string> | null>(null);
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "theme-preview" && e.data.config) {
+        const c = e.data.config;
+        const pLight = computePrimaryLight(c.primary_color);
+        const bText = isLightColor(c.primary_color) ? "#1a1a1a" : "#ffffff";
+        setPreviewOverride({
+          "--storefront-primary": c.primary_color,
+          "--storefront-primary-light": pLight,
+          "--storefront-accent": c.accent_color,
+          "--storefront-text": c.text_color,
+          "--storefront-bg": c.background_color,
+          "--storefront-heading-font": c.heading_font,
+          "--storefront-body-font": c.body_font,
+          "--storefront-button-radius":
+            c.button_style === "pill" ? "9999px" : c.button_style === "square" ? "0px" : "0.5rem",
+          "--storefront-marquee-gradient": c.marquee_gradient,
+          "--storefront-btn-text": bText,
+        });
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
   // Build CSS variable style object from theme config
-  const themeStyle: React.CSSProperties = themeConfig
+  const themeStyle: React.CSSProperties = (previewOverride || (themeConfig
     ? {
         "--storefront-primary": themeConfig.primary_color,
         "--storefront-primary-light": primaryLight,
@@ -345,8 +374,8 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
           themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : "0.5rem",
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,
         "--storefront-btn-text": btnTextColor,
-      } as any
-    : {};
+      }
+    : {})) as any;
 
   return (
     <CartProvider slug={store.slug}>
