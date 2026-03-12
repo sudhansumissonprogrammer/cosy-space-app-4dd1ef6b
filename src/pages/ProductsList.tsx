@@ -523,7 +523,13 @@ export default function ProductsList() {
           {isMobile ? (
             <div className={cn("divide-y rounded-lg border bg-card", bulkMode && "pb-20")}>
               {paginatedProducts.map((product) => (
-                <div key={product.id} className="flex items-center gap-3 px-3 py-3">
+                <div
+                  key={product.id}
+                  className="flex items-center gap-3 px-3 py-3"
+                  onTouchStart={() => handleTouchStart(product.id)}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchMove={handleTouchMove}
+                >
                   {bulkMode && (
                     <Checkbox
                       checked={bulkSelected.has(product.id)}
@@ -531,18 +537,28 @@ export default function ProductsList() {
                       className="shrink-0"
                     />
                   )}
+                  {/* Image - tap to preview */}
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt=""
+                      className="h-12 w-12 rounded-lg border object-cover shrink-0 cursor-pointer"
+                      loading="lazy"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!longPressTriggered.current) setPreviewImage(product.image_url); }}
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
                   <Link
                     to={bulkMode ? "#" : `/dashboard/stores/${storeId}/products/${product.id}/edit`}
-                    onClick={bulkMode ? (e) => { e.preventDefault(); toggleBulkSelect(product.id); } : undefined}
+                    onClick={(e) => {
+                      if (longPressTriggered.current) { e.preventDefault(); return; }
+                      if (bulkMode) { e.preventDefault(); toggleBulkSelect(product.id); }
+                    }}
                     className="flex items-center gap-3 flex-1 min-w-0 active:bg-accent/50 transition-colors"
                   >
-                    {product.image_url ? (
-                      <img src={product.image_url} alt="" className="h-12 w-12 rounded-lg border object-cover shrink-0" loading="lazy" />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
                       <p className="text-xs text-muted-foreground">
