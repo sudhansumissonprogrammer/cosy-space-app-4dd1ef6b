@@ -2420,6 +2420,8 @@ export default function StoreThemeSettings() {
                         ? "linear-gradient(135deg, #1a1a1a 0%, #7C3AED 50%, #22C55E 100%)"
                         : theme.id === "theme-10"
                         ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
+                        : theme.id === "theme-11"
+                        ? "linear-gradient(135deg, #F5F5F5 0%, #1a1a1a 50%, #EF4444 100%)"
                         : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
                   />
