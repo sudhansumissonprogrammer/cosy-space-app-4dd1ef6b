@@ -35,6 +35,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [salePrice, setSalePrice] = useState("");
   const [description, setDescription] = useState("");
   const [stockQuantity, setStockQuantity] = useState("0");
+  const [trackStock, setTrackStock] = useState(false);
   const [category, setCategory] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [isBestSelling, setIsBestSelling] = useState(false);
@@ -228,6 +229,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       setSalePrice(existingProduct.sale_price ? String(existingProduct.sale_price) : "");
       setDescription(existingProduct.description || "");
       setStockQuantity(String(existingProduct.stock_quantity));
+      setTrackStock(existingProduct.stock_quantity > 0);
       setCategory(existingProduct.category || "");
       setIsActive(existingProduct.is_active);
       setIsBestSelling((existingProduct as any).is_best_selling ?? false);
@@ -329,7 +331,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         price: parseFloat(price),
         sale_price: salePrice ? parseFloat(salePrice) : null,
         description: description.trim() || null,
-        stock_quantity: parseInt(stockQuantity) || 0,
+        stock_quantity: trackStock ? (parseInt(stockQuantity) || 0) : 0,
         category: category || null,
         is_active: isActive,
         is_best_selling: isBestSelling,
@@ -564,15 +566,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="stock">Stock Quantity</Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  min="0"
-                  value={stockQuantity}
-                  onChange={(e) => setStockQuantity(e.target.value)}
-                />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="track-stock">Track stock quantity</Label>
+                  <Switch checked={trackStock} onCheckedChange={setTrackStock} id="track-stock" />
+                </div>
+                {trackStock && (
+                  <Input
+                    id="stock"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(e.target.value)}
+                  />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
