@@ -381,6 +381,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
               </div>
             </nav>
 
+            <PwaInstallBanner storeName={store.name} />
             <Outlet context={store} />
             <StorefrontFooter store={store} />
             <SideCart store={store} />
