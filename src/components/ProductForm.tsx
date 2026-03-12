@@ -359,6 +359,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         } else {
           savedProductId = data.id;
         }
+      }
 
       // Upload additional images
       if (additionalFiles.length > 0 && savedProductId) {
