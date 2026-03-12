@@ -2265,19 +2265,52 @@ export default function StoreThemeSettings() {
         .update({ theme: themeId })
         .eq("id", storeId!);
       if (error) throw error;
-      return themeId;
+
+      // Auto-select top recommended color combination for this theme
+      const topRecommendations = THEME_RECOMMENDATIONS[themeId] || [];
+      const topComboId = topRecommendations[0];
+      const topCombo = topComboId
+        ? COLOR_COMBINATIONS.find((c) => c.id === topComboId)
+        : null;
+      const themeDef = THEME_DEFAULTS[themeId] || THEME_DEFAULTS["theme-1"];
+
+      const newConfig: ThemeConfig = topCombo
+        ? {
+            ...themeDef,
+            primary_color: topCombo.primary,
+            accent_color: topCombo.accent,
+            text_color: topCombo.text,
+            background_color: topCombo.background,
+            marquee_gradient: topCombo.marquee,
+          }
+        : themeDef;
+
+      // Upsert the theme config so colors are persisted
+      const configPayload = { store_id: storeId!, ...newConfig };
+      if (themeConfig?.id) {
+        await supabase
+          .from("store_theme_config")
+          .update(newConfig)
+          .eq("id", themeConfig.id);
+      } else {
+        await supabase
+          .from("store_theme_config")
+          .insert(configPayload);
+      }
+
+      return { themeId, newConfig };
     },
-    onSuccess: (themeId) => {
-      // Optimistically update the cached store data so UI reflects immediately
+    onSuccess: ({ themeId, newConfig }) => {
       queryClient.setQueryData(["store-detail", storeId], (old: any) =>
         old ? { ...old, theme: themeId } : old
       );
       queryClient.invalidateQueries({ queryKey: ["store-detail", storeId] });
-      // Also invalidate storefront caches so the live storefront picks up the change
+      queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
-      // Reload iframe to show the new theme layout
+      setConfig(newConfig);
+      setDirty(false);
       setIframeKey((k) => k + 1);
-      toast.success("Theme applied!");
+      toast.success("Theme applied with best color combination!");
     },
     onError: () => toast.error("Failed to apply theme"),
   });
