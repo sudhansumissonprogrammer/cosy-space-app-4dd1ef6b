@@ -85,18 +85,17 @@ function AppHeader({ store }: { store: StoreData }) {
         </Sheet>
 
         {/* Search pill */}
-        <div className="flex-1">
-          <div
-            className="flex items-center gap-2 rounded-full px-3.5 py-2 text-sm"
-            style={{
-              backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08",
-              border: "1px solid var(--storefront-text, hsl(var(--foreground)))12",
-            }}
-          >
-            <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} />
-            <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
-          </div>
-        </div>
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="flex flex-1 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-all active:scale-[0.98]"
+          style={{
+            backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08",
+            border: "1px solid var(--storefront-text, hsl(var(--foreground)))12",
+          }}
+        >
+          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} />
+          <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
+        </button>
 
         {/* Cart */}
         <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }}>
