@@ -44,7 +44,7 @@ export default function AdminUsersStores() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_admin_users_stores");
       if (error) throw error;
-      return data as UserStoreRow[];
+      return data as unknown as UserStoreRow[];
     },
   });
 
