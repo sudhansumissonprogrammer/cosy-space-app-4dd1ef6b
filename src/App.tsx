@@ -14,6 +14,7 @@ import StorefrontLayoutV4 from "./layouts/StorefrontLayoutV4";
 import StorefrontLayoutV5 from "./layouts/StorefrontLayoutV5";
 import StorefrontLayoutV6 from "./layouts/StorefrontLayoutV6";
 import StorefrontLayoutV7 from "./layouts/StorefrontLayoutV7";
+const StorefrontLayoutV8 = lazy(() => import("./layouts/StorefrontLayoutV8"));
 import StorefrontHome from "./pages/StorefrontHome";
 import StorefrontHomeV2 from "./pages/StorefrontHomeV2";
 import StorefrontHomeV3 from "./pages/StorefrontHomeV3";
@@ -21,6 +22,7 @@ const StorefrontHomeV4 = lazy(() => import("./pages/StorefrontHomeV4"));
 const StorefrontHomeV5 = lazy(() => import("./pages/StorefrontHomeV5"));
 const StorefrontHomeV6 = lazy(() => import("./pages/StorefrontHomeV6"));
 const StorefrontHomeV7 = lazy(() => import("./pages/StorefrontHomeV7"));
+const StorefrontHomeV8 = lazy(() => import("./pages/StorefrontHomeV8"));
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
 const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
@@ -57,7 +59,7 @@ const LoadingSpinner = () => (
 
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
-  const HomeComponent = theme === "theme-7" ? StorefrontHomeV7 : theme === "theme-6" ? StorefrontHomeV6 : theme === "theme-5" ? StorefrontHomeV5 : theme === "theme-4" ? StorefrontHomeV4 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+  const HomeComponent = theme === "theme-8" ? StorefrontHomeV8 : theme === "theme-7" ? StorefrontHomeV7 : theme === "theme-6" ? StorefrontHomeV6 : theme === "theme-5" ? StorefrontHomeV5 : theme === "theme-4" ? StorefrontHomeV4 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
   return (
     <>
       <Route index element={<HomeComponent />} />
@@ -95,7 +97,9 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   const theme = (store as any)?.theme || "theme-1";
   const basePath = slugOverride ? "/" : "/store/:slug";
 
-  const LayoutComponent = theme === "theme-7"
+  const LayoutComponent = theme === "theme-8"
+    ? StorefrontLayoutV8
+    : theme === "theme-7"
     ? StorefrontLayoutV7
     : theme === "theme-6"
     ? StorefrontLayoutV6

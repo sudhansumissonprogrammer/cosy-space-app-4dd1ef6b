@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, Palette, RotateCcw, Save, Lock, ShoppingCart, Heart, User, Menu, Star, Package, MapPin, Clock, MessageCircle, Store, ShoppingBag, Truck, Shield, Tag, Search, Share2, ChevronRight, ArrowLeft, Minus, Plus, X, ChevronLeft, Eye, Flame, SlidersHorizontal, Sparkles, ArrowRight, Monitor, Smartphone } from "lucide-react";
+import { Check, Palette, RotateCcw, Save, Lock, ShoppingCart, Heart, User, Menu, Star, Package, MapPin, Clock, MessageCircle, Store, ShoppingBag, Truck, Shield, Tag, Search, Share2, ChevronRight, ArrowLeft, Minus, Plus, X, ChevronLeft, Eye, Flame, SlidersHorizontal, Sparkles, ArrowRight, Monitor, Smartphone, Zap, Home, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 
 const FONT_OPTIONS = [
@@ -422,6 +422,70 @@ const COLOR_COMBINATIONS = [
     background: "#FDF5F7",
     marquee: "linear-gradient(90deg, #9E4B5E, #d4899a, #9E4B5E)",
   },
+  // Mobile App color presets
+  {
+    id: "mob-purple-pink",
+    name: "Purple & Pink",
+    primary: "#6C5CE7",
+    accent: "#FD79A8",
+    text: "#1e293b",
+    background: "#FFFFFF",
+    marquee: "linear-gradient(90deg, #6C5CE7, #a29bfe, #FD79A8)",
+  },
+  {
+    id: "mob-blue-orange",
+    name: "Blue & Orange",
+    primary: "#0984E3",
+    accent: "#E17055",
+    text: "#2d3436",
+    background: "#F8F9FA",
+    marquee: "linear-gradient(90deg, #0984E3, #74b9ff, #E17055)",
+  },
+  {
+    id: "mob-black-neon",
+    name: "Black & Neon Green",
+    primary: "#00B894",
+    accent: "#00B894",
+    text: "#dfe6e9",
+    background: "#0a0a0a",
+    marquee: "linear-gradient(90deg, #00B894, #0a0a0a, #00B894)",
+  },
+  {
+    id: "mob-navy-cyan",
+    name: "Navy & Cyan",
+    primary: "#00CEC9",
+    accent: "#6C5CE7",
+    text: "#dfe6e9",
+    background: "#0c1524",
+    marquee: "linear-gradient(90deg, #00CEC9, #81ecec, #6C5CE7)",
+  },
+  {
+    id: "mob-teal-white",
+    name: "Teal & White",
+    primary: "#00B894",
+    accent: "#55EFC4",
+    text: "#2d3436",
+    background: "#FFFFFF",
+    marquee: "linear-gradient(90deg, #00B894, #55EFC4, #00B894)",
+  },
+  {
+    id: "mob-gradient-purple",
+    name: "Gradient Purple",
+    primary: "#A855F7",
+    accent: "#EC4899",
+    text: "#f0e6ff",
+    background: "#1a0533",
+    marquee: "linear-gradient(90deg, #A855F7, #EC4899, #A855F7)",
+  },
+  {
+    id: "mob-beige-brown",
+    name: "Beige & Brown",
+    primary: "#8D6E63",
+    accent: "#5D4037",
+    text: "#3E2723",
+    background: "#FAF5F0",
+    marquee: "linear-gradient(90deg, #8D6E63, #bcaaa4, #8D6E63)",
+  },
 ];
 
 interface ThemeConfig {
@@ -506,6 +570,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555555, #1a1a1a)",
   },
+  "theme-8": {
+    primary_color: "#6C5CE7",
+    accent_color: "#FD79A8",
+    text_color: "#1e293b",
+    background_color: "#FFFFFF",
+    heading_font: "DM Sans",
+    body_font: "Inter",
+    button_style: "pill",
+    marquee_gradient: "linear-gradient(90deg, #6C5CE7, #a29bfe, #FD79A8)",
+  },
 };
 
 const THEMES = [
@@ -516,6 +590,7 @@ const THEMES = [
   { id: "theme-5", name: "Startup", description: "Glassmorphism, gradient hero, dark mode with neon accents", available: true },
   { id: "theme-6", name: "Pro Clean", description: "Modern startup-style with clean layout, structured grid & premium feel", available: true },
   { id: "theme-7", name: "Magazine", description: "Editorial storytelling with horizontal scrolls & cinematic imagery", available: true },
+  { id: "theme-8", name: "Mobile App", description: "Native app-style with bottom tabs, flash deals & pill UI", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
@@ -1804,6 +1879,141 @@ function MagazinePreview({ config, storeName, products: propProducts, categories
   );
 }
 
+/* ── Mobile App Preview (Theme 8) ── */
+function MobileAppPreview({ config, storeName, products: propProducts, categories: propCategories, isDesktop }: PreviewProps) {
+  const products = propProducts && propProducts.length > 0 ? propProducts : DEFAULT_PRODUCTS;
+  const categories = propCategories && propCategories.length > 0 ? propCategories : DEFAULT_CATEGORIES;
+  const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
+
+  return (
+    <PreviewFrame isDesktop={isDesktop} bgColor={config.background_color}>
+      {/* Compact Header */}
+      <div className="sticky top-0 z-10 border-b px-3 py-1.5 flex items-center gap-2" style={{ backgroundColor: config.background_color + "ee", borderColor: config.text_color + "08" }}>
+        <Menu className="h-4 w-4" style={{ color: config.text_color }} />
+        <div className="flex-1 flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ backgroundColor: config.text_color + "06", border: "1px solid " + config.text_color + "10" }}>
+          <Search className="h-3 w-3" style={{ color: config.text_color + "40" }} />
+          <span className="text-[7px]" style={{ color: config.text_color + "35" }}>Search products...</span>
+        </div>
+        <div className="relative">
+          <ShoppingCart className="h-4 w-4" style={{ color: config.text_color }} />
+          <span className="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full text-[5px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>2</span>
+        </div>
+      </div>
+
+      {/* Hero Banner */}
+      <div className="px-3 pt-2 pb-1">
+        <div className="relative overflow-hidden rounded-2xl" style={{ aspectRatio: "16/8" }}>
+          {products[0]?.image_url ? (
+            <img src={products[0].image_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` }} />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute bottom-2 left-3">
+            <p className="text-white text-[9px] font-bold" style={{ fontFamily: config.heading_font }}>{storeName}</p>
+            <p className="text-white/70 text-[6px]">Shop the collection</p>
+          </div>
+          <div className="absolute bottom-1.5 right-2 flex gap-0.5">
+            <div className="h-1 rounded-full" style={{ width: "12px", backgroundColor: config.primary_color }} />
+            <div className="h-1 w-1 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.4)" }} />
+            <div className="h-1 w-1 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.4)" }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Category Strip */}
+      <div className="px-3 py-2 flex gap-3 overflow-hidden">
+        {categories.slice(0, 5).map((cat) => (
+          <div key={cat.name} className="flex flex-col items-center gap-1 flex-shrink-0">
+            <div className="h-8 w-8 rounded-full overflow-hidden" style={{ border: `1.5px solid ${config.primary_color}30`, backgroundColor: config.primary_color + "08" }}>
+              {cat.image_url ? <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" /> : (
+                <div className="flex h-full w-full items-center justify-center"><Tag className="h-3 w-3" style={{ color: config.primary_color }} /></div>
+              )}
+            </div>
+            <span className="text-[5px] font-semibold" style={{ color: config.text_color }}>{cat.name}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Flash Deals */}
+      <div className="px-3 py-2">
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1">
+            <div className="h-4 w-4 rounded-md flex items-center justify-center" style={{ backgroundColor: config.primary_color }}>
+              <Zap className="h-2.5 w-2.5" style={{ color: btnText }} />
+            </div>
+            <span className="text-[8px] font-bold" style={{ fontFamily: config.heading_font, color: config.text_color }}>Flash Deals</span>
+          </div>
+          <div className="flex gap-0.5">
+            {["05", "42", "18"].map((t, i) => (
+              <span key={i} className="flex items-center">
+                <span className="rounded px-0.5 py-0.5 text-[5px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>{t}</span>
+                {i < 2 && <span className="text-[5px] font-bold mx-0.5" style={{ color: config.primary_color }}>:</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-1.5 overflow-hidden">
+          {products.filter(p => p.discount).slice(0, 3).map((p) => (
+            <div key={p.id} className="flex-shrink-0 w-20 overflow-hidden rounded-xl" style={{ border: "1px solid " + config.text_color + "08" }}>
+              <div className="relative" style={{ aspectRatio: "1/1", backgroundColor: config.primary_color + "06" }}>
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : null}
+                <span className="absolute top-0.5 left-0.5 rounded-full px-1 py-0.5 text-[4px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>{p.discount}</span>
+              </div>
+              <div className="p-1">
+                <p className="text-[5px] font-semibold truncate" style={{ color: config.text_color }}>{p.name}</p>
+                <p className="text-[6px] font-bold" style={{ color: config.primary_color }}>{p.price}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Product Grid */}
+      <div className="px-3 py-2">
+        <p className="text-[8px] font-bold mb-1.5" style={{ fontFamily: config.heading_font, color: config.text_color }}>All Products</p>
+        <div className={`grid gap-1.5 ${isDesktop ? "grid-cols-4" : "grid-cols-2"}`}>
+          {products.map((p) => (
+            <div key={p.id} className="overflow-hidden rounded-xl shadow-sm" style={{ backgroundColor: config.background_color, border: "1px solid " + config.text_color + "06" }}>
+              <div style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : (
+                  <div className="flex h-full w-full items-center justify-center"><Tag className="h-4 w-4" style={{ color: config.text_color + "15" }} /></div>
+                )}
+              </div>
+              <div className="p-1.5">
+                <p className="text-[6px] font-semibold truncate" style={{ color: config.text_color }}>{p.name}</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="text-[7px] font-bold" style={{ color: config.primary_color }}>{p.price}</span>
+                  {p.oldPrice && <span className="text-[5px] line-through opacity-40" style={{ color: config.text_color }}>{p.oldPrice}</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom Tab Bar */}
+      <div className="sticky bottom-0 border-t flex justify-around py-1.5" style={{ backgroundColor: config.background_color + "f8", borderColor: config.text_color + "08" }}>
+        {[
+          { icon: Home, label: "Home", active: true },
+          { icon: LayoutGrid, label: "Categories", active: false },
+          { icon: Search, label: "Search", active: false },
+          { icon: Heart, label: "Wishlist", active: false },
+          { icon: User, label: "Profile", active: false },
+        ].map((tab) => (
+          <div key={tab.label} className="flex flex-col items-center gap-0.5 relative">
+            {tab.active && <div className="absolute -top-1.5 h-0.5 w-4 rounded-full" style={{ backgroundColor: config.primary_color }} />}
+            <div className="flex items-center justify-center rounded-lg" style={{ width: "20px", height: "14px", backgroundColor: tab.active ? config.primary_color + "15" : "transparent" }}>
+              <tab.icon className="h-2.5 w-2.5" style={{ color: tab.active ? config.primary_color : config.text_color + "50" }} />
+            </div>
+            <span className="text-[4px] font-semibold" style={{ color: tab.active ? config.primary_color : config.text_color + "45" }}>{tab.label}</span>
+          </div>
+        ))}
+      </div>
+    </PreviewFrame>
+  );
+}
+
 export default function StoreThemeSettings() {
   const { storeId } = useParams<{ storeId: string }>();
   const queryClient = useQueryClient();
@@ -2186,7 +2396,9 @@ export default function StoreThemeSettings() {
               <p className="mb-3 text-xs text-muted-foreground">Showing your actual products &amp; categories</p>
             )}
             <div className={previewMode === "desktop" ? "overflow-x-auto" : ""}>
-              {currentTheme === "theme-7" ? (
+              {currentTheme === "theme-8" ? (
+                <MobileAppPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
+              ) : currentTheme === "theme-7" ? (
                 <MagazinePreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
               ) : currentTheme === "theme-6" ? (
                 <ProCleanPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
