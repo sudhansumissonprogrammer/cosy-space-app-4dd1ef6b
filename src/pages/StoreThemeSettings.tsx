@@ -330,6 +330,11 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "lilac-mist", "app-blue-orange", "mint-fresh", "app-teal-cyan", "royal-gold",
     "lux-black-gold", "lux-cream-brown", "ocean-teal", "emerald-luxe", "saffron-bloom",
   ],
+  "theme-11": [
+    "elegant-black-white", "app-blue-orange", "app-teal-cyan", "app-purple-pink", "coral-sunset",
+    "mint-fresh", "electric-violet", "royal-gold", "lux-black-gold", "lux-cream-brown",
+    "ocean-teal", "emerald-luxe", "crimson-royale", "lilac-mist", "saffron-bloom",
+  ],
 };
 
 /* ── Get sorted color combinations for a given theme ── */
@@ -461,6 +466,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
   },
+  "theme-11": {
+    primary_color: "#1a1a1a",
+    accent_color: "#EF4444",
+    text_color: "#1a1a1a",
+    background_color: "#F5F5F5",
+    heading_font: "DM Sans",
+    body_font: "Inter",
+    button_style: "pill",
+    marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555, #1a1a1a)",
+  },
 };
 
 const THEMES = [
@@ -474,6 +489,7 @@ const THEMES = [
   { id: "theme-8", name: "Mobile App", description: "Native app-style with bottom tabs, flash deals & pill UI", available: true },
   { id: "theme-9", name: "Discovery Feed", description: "Scroll-first mobile discovery with immersive feed cards", available: true },
   { id: "theme-10", name: "Fashion Runway", description: "Myntra-style fashion shopping with editorial collections", available: true },
+  { id: "theme-11", name: "Shopping App", description: "Minimal nav with separated cart emphasis for faster conversions", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
@@ -2404,6 +2420,8 @@ export default function StoreThemeSettings() {
                         ? "linear-gradient(135deg, #1a1a1a 0%, #7C3AED 50%, #22C55E 100%)"
                         : theme.id === "theme-10"
                         ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
+                        : theme.id === "theme-11"
+                        ? "linear-gradient(135deg, #F5F5F5 0%, #1a1a1a 50%, #EF4444 100%)"
                         : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
                   />
