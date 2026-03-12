@@ -16,6 +16,7 @@ import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import SideCart from "@/components/storefront/SideCart";
+import PwaInstallBanner from "@/components/storefront/PwaInstallBanner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
@@ -380,6 +381,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
               </div>
             </nav>
 
+            <PwaInstallBanner storeName={store.name} />
             <Outlet context={store} />
             <StorefrontFooter store={store} />
             <SideCart store={store} />
