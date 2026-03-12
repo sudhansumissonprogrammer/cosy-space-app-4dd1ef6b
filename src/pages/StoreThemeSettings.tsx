@@ -2826,6 +2826,7 @@ export default function StoreThemeSettings() {
                           ref={iframeRef}
                           src={`/store/${store.slug}`}
                           title="Store Preview"
+                          onLoad={() => sendToIframe(config)}
                           style={{
                             width: "375px",
                             height: "700px",
