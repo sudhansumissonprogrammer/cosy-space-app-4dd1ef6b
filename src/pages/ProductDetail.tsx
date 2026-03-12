@@ -622,13 +622,13 @@ export default function ProductDetail() {
 
           {/* CRO #4: Guaranteed Safe Checkout */}
           {!isOutOfStock && (
-            <div className="mt-4 rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50 to-green-50 p-3 relative overflow-hidden">
+            <div className="mt-4 rounded-xl border border-success/20 bg-success/5 p-3 relative overflow-hidden">
               <div className="absolute -right-3 -top-3 opacity-[0.06]">
-                <ShieldCheck className="h-20 w-20 text-emerald-600" />
+                <ShieldCheck className="h-20 w-20 text-success" />
               </div>
               <div className="flex items-center justify-center gap-2 mb-2.5 relative z-10">
-                <Lock className="h-3.5 w-3.5 text-emerald-600" />
-                <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Guaranteed Safe Checkout</span>
+                <Lock className="h-3.5 w-3.5 text-success" />
+                <span className="text-xs font-bold text-success uppercase tracking-wide">Guaranteed Safe Checkout</span>
               </div>
               <div className="flex items-center justify-center relative z-10">
                 <RealPaymentLogos />
@@ -749,7 +749,7 @@ export default function ProductDetail() {
 
       {/* Sticky Mobile CTA */}
       {!isOutOfStock && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden safe-area-bottom">
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           {/* CRO #3: Free Shipping Progress Bar */}
           {shippingRemaining > 0 ? (
             <div className="px-3 pt-2 pb-1">
@@ -811,7 +811,7 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
-      {!isOutOfStock && <div className="h-24 sm:hidden" />}
+      {!isOutOfStock && <div className="h-28 sm:hidden" />}
     </div>
   );
 }
@@ -970,9 +970,9 @@ function FrequentlyBoughtTogether({
   };
 
   return (
-    <div className="mt-5 rounded-xl border border-violet-200/50 bg-gradient-to-br from-violet-50 to-indigo-50 p-4">
+    <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Zap className="h-4 w-4 text-violet-600" />
+        <Zap className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-bold text-foreground">Frequently Bought Together</h3>
       </div>
       <div className="flex items-center gap-2 mb-3 overflow-x-auto">
@@ -1156,7 +1156,6 @@ function AccordionItem({
           {icon}
           {title}
         </span>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen && (
