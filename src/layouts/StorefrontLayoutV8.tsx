@@ -151,8 +151,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
               : location.pathname.includes(tab.match!);
             const TabIcon = tab.icon;
             const isSearch = tab.to === "__search__";
-            return (
-              {isSearch ? (
+            return isSearch ? (
                 <button
                   key={tab.label}
                   onClick={() => setSearchOpen(true)}
@@ -162,11 +161,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
                   <div className="relative">
                     <div
                       className="flex items-center justify-center rounded-2xl transition-all"
-                      style={{
-                        width: "36px",
-                        height: "28px",
-                        backgroundColor: "transparent",
-                      }}
+                      style={{ width: "36px", height: "28px" }}
                     >
                       <TabIcon
                         className="h-[18px] w-[18px] transition-colors"
