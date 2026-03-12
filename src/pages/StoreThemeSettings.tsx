@@ -281,7 +281,7 @@ const COLOR_COMBINATIONS = [
 /* ── Per-theme recommended color combinations (curated for best visual result) ── */
 const THEME_RECOMMENDATIONS: Record<string, string[]> = {
   "theme-1": [
-    "elegant-black-white", "royal-gold", "lux-black-gold", "lux-cream-brown", "velvet-merlot",
+    "royal-gold", "elegant-black-white", "lux-black-gold", "lux-cream-brown", "velvet-merlot",
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
