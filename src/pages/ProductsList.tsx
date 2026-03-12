@@ -502,7 +502,7 @@ export default function ProductsList() {
       <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl pb-8 max-h-[80vh] overflow-auto">
           <SheetHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pr-8">
               <SheetTitle className="text-left">Filters</SheetTitle>
               {activeFilterCount > 0 && (
                 <button onClick={clearFilters} className="text-xs text-primary font-medium">
