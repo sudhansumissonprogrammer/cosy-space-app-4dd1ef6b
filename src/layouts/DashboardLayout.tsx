@@ -5,21 +5,25 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import OrderNotificationListener from "@/components/OrderNotificationListener";
 import {
-  LayoutDashboard, Package, ShoppingBag, Palette, Menu, X, LogOut,
+  LayoutDashboard, Package, ShoppingBag, Palette, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
-  Receipt, ShoppingCart, Store, ChevronRight, BarChart3, ExternalLink,
+  Receipt, ShoppingCart, Store, ChevronRight, ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function DashboardLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const isMobile = useIsMobile();
 
   const { data: store, isLoading: storeLoading } = useQuery({
     queryKey: ["my-store", user?.id],
@@ -48,7 +52,6 @@ export default function DashboardLayout() {
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
-  // Bottom nav items — the 4 most-used actions + menu
   const bottomNav = storeId
     ? [
         { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
@@ -60,7 +63,6 @@ export default function DashboardLayout() {
         { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
       ];
 
-  // Full menu items grouped
   const menuSections = storeId
     ? [
         {
@@ -99,6 +101,45 @@ export default function DashboardLayout() {
         },
       ];
 
+  // Desktop layout with sidebar
+  if (!isMobile) {
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
+          <AppSidebar />
+          <div className="flex-1 flex flex-col min-w-0">
+            <OrderNotificationListener />
+            <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger />
+                <span className="text-sm font-semibold text-foreground">
+                  {store?.name || "Dashboard"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                {store?.slug && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => window.open(`/store/${store.slug}`, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+                {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />}
+              </div>
+            </header>
+            <main className="flex-1 overflow-auto p-6">
+              <Outlet />
+            </main>
+          </div>
+        </div>
+      </SidebarProvider>
+    );
+  }
+
+  // Mobile layout with bottom nav
   return (
     <div
       className="min-h-screen flex flex-col bg-background"
@@ -106,7 +147,6 @@ export default function DashboardLayout() {
     >
       <OrderNotificationListener />
 
-      {/* Top header */}
       <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-3">
         <div className="flex items-center gap-2 min-w-0">
           {store?.logo_url ? (
@@ -135,12 +175,10 @@ export default function DashboardLayout() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="flex-1 overflow-auto px-3 py-4 pb-20">
         <Outlet />
       </main>
 
-      {/* Bottom navigation */}
       <nav className="fixed bottom-0 inset-x-0 z-30 border-t bg-card/95 backdrop-blur-md safe-area-pb">
         <div className="flex items-center justify-around h-14">
           {bottomNav.map((item) => {
@@ -151,9 +189,7 @@ export default function DashboardLayout() {
                 onClick={() => go(item.path)}
                 className={cn(
                   "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-0",
-                  active
-                    ? "text-primary"
-                    : "text-muted-foreground"
+                  active ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <item.icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
@@ -171,13 +207,11 @@ export default function DashboardLayout() {
         </div>
       </nav>
 
-      {/* Full menu sheet */}
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent side="right" className="w-[280px] p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-2">
             <SheetTitle className="text-left text-sm">Menu</SheetTitle>
           </SheetHeader>
-
           <div className="flex-1 overflow-auto px-2 pb-4">
             {menuSections.map((section) => (
               <div key={section.title} className="mb-3">
@@ -206,7 +240,6 @@ export default function DashboardLayout() {
               </div>
             ))}
           </div>
-
           <Separator />
           <div className="p-3">
             <p className="mb-2 truncate px-1 text-xs text-muted-foreground">{user?.email}</p>
