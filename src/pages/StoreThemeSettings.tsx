@@ -2509,9 +2509,18 @@ export default function StoreThemeSettings() {
     setDirty(false);
   }, [themeConfig, currentTheme]);
 
+  // Send config to iframe for live preview
+  const sendToIframe = useCallback((cfg: ThemeConfig) => {
+    const msg = { type: "theme-preview", config: cfg };
+    iframeRef.current?.contentWindow?.postMessage(msg, "*");
+    iframeDesktopRef.current?.contentWindow?.postMessage(msg, "*");
+  }, []);
+
   const updateField = (key: keyof ThemeConfig, value: string) => {
-    setConfig((prev) => ({ ...prev, [key]: value }));
+    const newConfig = { ...config, [key]: value };
+    setConfig(newConfig);
     setDirty(true);
+    sendToIframe(newConfig);
   };
 
   const applyThemeMutation = useMutation({
