@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
-        name: "StoreHub — Online Store",
-        short_name: "StoreHub",
+        name: "Storivo — Online Store",
+        short_name: "Storivo",
         description: "Create your online store with WhatsApp ordering",
         theme_color: "#4361ee",
         background_color: "#f5f6fa",
