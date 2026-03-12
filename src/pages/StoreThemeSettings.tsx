@@ -33,6 +33,23 @@ const BUTTON_STYLES = [
   { value: "square", label: "Square" },
 ];
 
+/* ── WCAG Contrast Ratio Calculator ── */
+function hexToRelativeLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+function contrastRatio(hex1: string, hex2: string): number {
+  const l1 = hexToRelativeLuminance(hex1);
+  const l2 = hexToRelativeLuminance(hex2);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 const COLOR_COMBINATIONS = [
   {
     id: "royal-gold",
@@ -58,7 +75,7 @@ const COLOR_COMBINATIONS = [
     primary: "#1C7C54",
     accent: "#1B512D",
     text: "#1a1a1a",
-    background: "#DEF4C6",
+    background: "#F0F8F0",
     marquee: "linear-gradient(90deg, #1B512D, #3db87a, #1C7C54)",
   },
   {
@@ -67,7 +84,7 @@ const COLOR_COMBINATIONS = [
     primary: "#663399",
     accent: "#2E1A47",
     text: "#1a1a1a",
-    background: "#E6C7E6",
+    background: "#F3EAF8",
     marquee: "linear-gradient(90deg, #663399, #b088d4, #663399)",
   },
   {
@@ -94,26 +111,26 @@ const COLOR_COMBINATIONS = [
     primary: "#3F0D12",
     accent: "#A71D31",
     text: "#1a1a1a",
-    background: "#F1F0CC",
+    background: "#F8F4EE",
     marquee: "linear-gradient(90deg, #3F0D12, #8b3a42, #A71D31)",
   },
   {
     id: "saffron-bloom",
     name: "Saffron Bloom",
-    primary: "#FFC801",
+    primary: "#D4A017",
     accent: "#114C5A",
     text: "#1a1a1a",
-    background: "#F1F6F4",
-    marquee: "linear-gradient(90deg, #FFC801, #ffe066, #FFC801)",
+    background: "#F9F7F2",
+    marquee: "linear-gradient(90deg, #D4A017, #ffe066, #D4A017)",
   },
   {
     id: "neon-demonic",
     name: "Neon Demonic",
-    primary: "#e6ff2a",
+    primary: "#ADFF2F",
     accent: "#0c4651",
-    text: "#e6ff2a",
+    text: "#E8FFE8",
     background: "#0c4651",
-    marquee: "linear-gradient(90deg, #e6ff2a, #0c4651, #e6ff2a)",
+    marquee: "linear-gradient(90deg, #ADFF2F, #0c4651, #ADFF2F)",
   },
   {
     id: "blaze-orange",
@@ -127,20 +144,20 @@ const COLOR_COMBINATIONS = [
   {
     id: "coral-sunset",
     name: "Coral Sunset",
-    primary: "#FF6B6B",
+    primary: "#E05252",
     accent: "#2D1B69",
     text: "#1a1a1a",
     background: "#FFF5F5",
-    marquee: "linear-gradient(90deg, #FF6B6B, #ffb4a2, #e5989b)",
+    marquee: "linear-gradient(90deg, #E05252, #ffb4a2, #e5989b)",
   },
   {
     id: "electric-violet",
     name: "Electric Violet",
-    primary: "#8B5CF6",
+    primary: "#7C3AED",
     accent: "#1E1B4B",
     text: "#1a1a1a",
     background: "#F5F3FF",
-    marquee: "linear-gradient(90deg, #8B5CF6, #c4b5fd, #7c3aed)",
+    marquee: "linear-gradient(90deg, #7C3AED, #c4b5fd, #7C3AED)",
   },
   {
     id: "aurora-gradient",
@@ -163,11 +180,11 @@ const COLOR_COMBINATIONS = [
   {
     id: "mint-fresh",
     name: "Mint Fresh",
-    primary: "#10B981",
+    primary: "#059669",
     accent: "#064E3B",
     text: "#1a1a1a",
     background: "#ECFDF5",
-    marquee: "linear-gradient(90deg, #10B981, #6ee7b7, #059669)",
+    marquee: "linear-gradient(90deg, #059669, #6ee7b7, #059669)",
   },
   {
     id: "app-blue-orange",
@@ -201,18 +218,18 @@ const COLOR_COMBINATIONS = [
     name: "Black & Neon",
     primary: "#22C55E",
     accent: "#22C55E",
-    text: "#f0fdf4",
+    text: "#E8F5E8",
     background: "#0a0a0a",
     marquee: "linear-gradient(90deg, #22C55E, #0a0a0a, #22C55E)",
   },
   {
     id: "app-red-yellow",
     name: "Red & Yellow",
-    primary: "#EF4444",
-    accent: "#EAB308",
+    primary: "#DC2626",
+    accent: "#D97706",
     text: "#1e293b",
     background: "#FFFBEB",
-    marquee: "linear-gradient(90deg, #EF4444, #fca5a5, #EAB308)",
+    marquee: "linear-gradient(90deg, #DC2626, #fca5a5, #D97706)",
   },
   {
     id: "lux-black-gold",
@@ -226,20 +243,20 @@ const COLOR_COMBINATIONS = [
   {
     id: "lux-cream-brown",
     name: "Cream & Brown",
-    primary: "#8B6F47",
+    primary: "#7A5C3A",
     accent: "#3E2723",
     text: "#3E2723",
     background: "#FAF7F2",
-    marquee: "linear-gradient(90deg, #8B6F47, #c4a77d, #8B6F47)",
+    marquee: "linear-gradient(90deg, #7A5C3A, #c4a77d, #7A5C3A)",
   },
   {
     id: "lux-white-champagne",
     name: "White & Champagne",
-    primary: "#D4AF37",
+    primary: "#B8962E",
     accent: "#2C2C2C",
     text: "#2C2C2C",
     background: "#FFFFFF",
-    marquee: "linear-gradient(90deg, #D4AF37, #f0d98c, #D4AF37)",
+    marquee: "linear-gradient(90deg, #B8962E, #f0d98c, #B8962E)",
   },
   {
     id: "lux-emerald-gold",
@@ -349,7 +366,6 @@ const COLOR_COMBINATIONS = [
     background: "#F1F5F9",
     marquee: "linear-gradient(90deg, #1E40AF, #3b82f6, #1E40AF)",
   },
-  // Magazine / Editorial combos
   {
     id: "mag-ink-paper",
     name: "Ink & Paper",
@@ -398,11 +414,11 @@ const COLOR_COMBINATIONS = [
   {
     id: "mag-terracotta",
     name: "Terracotta Edit",
-    primary: "#C2703E",
+    primary: "#B05E2C",
     accent: "#3D1E0C",
     text: "#3D1E0C",
     background: "#FBF7F4",
-    marquee: "linear-gradient(90deg, #C2703E, #e8a87c, #C2703E)",
+    marquee: "linear-gradient(90deg, #B05E2C, #e8a87c, #B05E2C)",
   },
   {
     id: "mag-midnight-ivory",
@@ -422,7 +438,6 @@ const COLOR_COMBINATIONS = [
     background: "#FDF5F7",
     marquee: "linear-gradient(90deg, #9E4B5E, #d4899a, #9E4B5E)",
   },
-  // Mobile App color presets
   {
     id: "mob-purple-pink",
     name: "Purple & Pink",
@@ -446,7 +461,7 @@ const COLOR_COMBINATIONS = [
     name: "Black & Neon Green",
     primary: "#00B894",
     accent: "#00B894",
-    text: "#dfe6e9",
+    text: "#E8F5E8",
     background: "#0a0a0a",
     marquee: "linear-gradient(90deg, #00B894, #0a0a0a, #00B894)",
   },
@@ -455,7 +470,7 @@ const COLOR_COMBINATIONS = [
     name: "Navy & Cyan",
     primary: "#00CEC9",
     accent: "#6C5CE7",
-    text: "#dfe6e9",
+    text: "#E0F2FE",
     background: "#0c1524",
     marquee: "linear-gradient(90deg, #00CEC9, #81ecec, #6C5CE7)",
   },
@@ -473,20 +488,19 @@ const COLOR_COMBINATIONS = [
     name: "Gradient Purple",
     primary: "#A855F7",
     accent: "#EC4899",
-    text: "#f0e6ff",
+    text: "#F0E6FF",
     background: "#1a0533",
     marquee: "linear-gradient(90deg, #A855F7, #EC4899, #A855F7)",
   },
   {
     id: "mob-beige-brown",
     name: "Beige & Brown",
-    primary: "#8D6E63",
+    primary: "#7A5C3A",
     accent: "#5D4037",
     text: "#3E2723",
     background: "#FAF5F0",
-    marquee: "linear-gradient(90deg, #8D6E63, #bcaaa4, #8D6E63)",
+    marquee: "linear-gradient(90deg, #7A5C3A, #bcaaa4, #7A5C3A)",
   },
-  // Discovery Feed color presets
   {
     id: "feed-purple-pink",
     name: "Feed Purple & Pink",
@@ -517,11 +531,11 @@ const COLOR_COMBINATIONS = [
   {
     id: "feed-red-orange",
     name: "Feed Red & Orange",
-    primary: "#EF4444",
-    accent: "#F97316",
+    primary: "#DC2626",
+    accent: "#EA580C",
     text: "#1e293b",
     background: "#FFFBEB",
-    marquee: "linear-gradient(90deg, #EF4444, #fca5a5, #F97316)",
+    marquee: "linear-gradient(90deg, #DC2626, #fca5a5, #EA580C)",
   },
   {
     id: "feed-teal-white",
@@ -537,20 +551,19 @@ const COLOR_COMBINATIONS = [
     name: "Feed Gradient Violet",
     primary: "#8B5CF6",
     accent: "#C026D3",
-    text: "#f0e6ff",
+    text: "#F0E6FF",
     background: "#13062e",
     marquee: "linear-gradient(90deg, #8B5CF6, #C026D3, #8B5CF6)",
   },
   {
     id: "feed-beige-modern",
     name: "Feed Beige Modern",
-    primary: "#92734E",
+    primary: "#7A5C3A",
     accent: "#5D4037",
     text: "#3E2723",
     background: "#FAF6F1",
-    marquee: "linear-gradient(90deg, #92734E, #c4a67d, #92734E)",
+    marquee: "linear-gradient(90deg, #7A5C3A, #c4a67d, #7A5C3A)",
   },
-  // Fashion Runway color presets
   {
     id: "fashion-pink-black",
     name: "Fashion Pink & Black",
@@ -574,25 +587,25 @@ const COLOR_COMBINATIONS = [
     name: "Fashion Purple & Black",
     primary: "#7B1FA2",
     accent: "#1A1A2E",
-    text: "#f0e6ff",
+    text: "#F0E6FF",
     background: "#0F0F1A",
     marquee: "linear-gradient(90deg, #7B1FA2, #BA68C8, #7B1FA2)",
   },
   {
     id: "fashion-beige-brown",
     name: "Fashion Beige & Brown",
-    primary: "#8D6E63",
+    primary: "#7A5C3A",
     accent: "#4E342E",
     text: "#3E2723",
     background: "#FFF8E1",
-    marquee: "linear-gradient(90deg, #8D6E63, #BCAAA4, #8D6E63)",
+    marquee: "linear-gradient(90deg, #7A5C3A, #BCAAA4, #7A5C3A)",
   },
   {
     id: "fashion-neon-pink",
     name: "Fashion Neon Pink",
     primary: "#FF006E",
     accent: "#FF006E",
-    text: "#e0e0e0",
+    text: "#F0E0E8",
     background: "#0a0a0a",
     marquee: "linear-gradient(90deg, #FF006E, #0a0a0a, #FF006E)",
   },
@@ -615,6 +628,88 @@ const COLOR_COMBINATIONS = [
     marquee: "linear-gradient(90deg, #E91E63, #F48FB1, #E91E63)",
   },
 ];
+
+/* ── Per-theme recommended color combinations (curated for best visual result) ── */
+const THEME_RECOMMENDATIONS: Record<string, string[]> = {
+  "theme-1": [
+    "royal-gold", "lux-black-gold", "lux-cream-brown", "velvet-merlot", "lux-emerald-gold",
+    "lux-burgundy-beige", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
+    "mag-espresso-cream", "lux-white-champagne", "mag-terracotta", "mag-rose-editorial",
+    "lilac-mist", "coral-sunset", "pro-black-white", "saffron-bloom", "mint-fresh",
+  ],
+  "theme-2": [
+    "pro-blue-white", "pro-black-white", "app-blue-orange", "electric-violet", "app-teal-cyan",
+    "coral-sunset", "mint-fresh", "app-purple-pink", "pro-green-white", "pro-navy-gray",
+    "pro-purple-white", "royal-gold", "lux-black-gold", "crimson-royale", "ocean-teal",
+    "mag-slate-charcoal", "saffron-bloom", "emerald-luxe", "lilac-mist",
+  ],
+  "theme-3": [
+    "app-blue-orange", "app-teal-cyan", "app-purple-pink", "coral-sunset", "mint-fresh",
+    "electric-violet", "pro-blue-white", "mob-purple-pink", "mob-blue-orange", "mob-teal-white",
+    "app-red-yellow", "feed-teal-white", "feed-purple-pink", "pro-green-white", "pro-purple-white",
+    "feed-red-orange", "pro-navy-gray", "pro-black-white", "feed-beige-modern",
+  ],
+  "theme-4": [
+    "lux-black-gold", "lux-cream-brown", "lux-white-champagne", "lux-emerald-gold", "lux-burgundy-beige",
+    "royal-gold", "mag-espresso-cream", "velvet-merlot", "mag-terracotta", "mag-rose-editorial",
+    "pro-black-white", "mag-ink-paper", "mag-olive-linen", "ocean-teal", "midnight-navy",
+    "mag-slate-charcoal", "emerald-luxe", "saffron-bloom", "mob-beige-brown",
+  ],
+  "theme-5": [
+    "startup-purple-black", "startup-neon-blue", "startup-pink-purple", "startup-cyan-navy",
+    "startup-gradient-ui", "aurora-gradient", "sunset-fusion", "app-black-neon", "blaze-orange",
+    "neon-demonic", "mob-black-neon", "mob-navy-cyan", "mob-gradient-purple", "feed-black-neon",
+    "feed-blue-cyan", "feed-gradient-violet", "fashion-purple-black", "fashion-neon-pink",
+    "fashion-gold-black",
+  ],
+  "theme-6": [
+    "pro-blue-white", "pro-black-white", "pro-green-white", "pro-purple-white", "pro-navy-gray",
+    "mag-slate-charcoal", "app-blue-orange", "app-teal-cyan", "mint-fresh", "electric-violet",
+    "ocean-teal", "emerald-luxe", "coral-sunset", "royal-gold", "lux-black-gold",
+    "mag-ink-paper", "crimson-royale", "midnight-navy", "lilac-mist",
+  ],
+  "theme-7": [
+    "mag-ink-paper", "mag-espresso-cream", "mag-olive-linen", "mag-slate-charcoal", "mag-noir-gold",
+    "mag-terracotta", "mag-midnight-ivory", "mag-rose-editorial", "pro-black-white", "lux-black-gold",
+    "lux-cream-brown", "lux-burgundy-beige", "velvet-merlot", "royal-gold", "ocean-teal",
+    "lux-white-champagne", "midnight-navy", "lux-emerald-gold",
+  ],
+  "theme-8": [
+    "mob-purple-pink", "mob-blue-orange", "mob-teal-white", "mob-beige-brown", "app-blue-orange",
+    "app-teal-cyan", "app-purple-pink", "coral-sunset", "mint-fresh", "electric-violet",
+    "pro-blue-white", "pro-green-white", "pro-purple-white", "feed-teal-white", "feed-purple-pink",
+    "app-red-yellow", "pro-black-white", "royal-gold", "fashion-pink-black",
+  ],
+  "theme-9": [
+    "feed-purple-pink", "feed-teal-white", "feed-beige-modern", "feed-red-orange",
+    "app-blue-orange", "app-teal-cyan", "app-purple-pink", "coral-sunset", "mint-fresh",
+    "electric-violet", "pro-blue-white", "mob-purple-pink", "mob-blue-orange", "mob-teal-white",
+    "pro-green-white", "pro-purple-white", "pro-black-white", "royal-gold", "crimson-royale",
+  ],
+  "theme-10": [
+    "fashion-pink-black", "fashion-red-white", "fashion-rose-white", "fashion-beige-brown",
+    "coral-sunset", "crimson-royale", "app-purple-pink", "electric-violet", "lux-burgundy-beige",
+    "mag-rose-editorial", "lilac-mist", "pro-black-white", "app-blue-orange", "mint-fresh",
+    "app-teal-cyan", "royal-gold", "lux-black-gold", "pro-blue-white", "mob-purple-pink",
+  ],
+};
+
+/* ── Get sorted color combinations for a given theme ── */
+function getSortedCombinations(themeId: string) {
+  const recommended = new Set(THEME_RECOMMENDATIONS[themeId] || []);
+  const scored = COLOR_COMBINATIONS.map((combo) => {
+    const textBgContrast = contrastRatio(combo.text, combo.background);
+    const primaryBgContrast = contrastRatio(combo.primary, combo.background);
+    const isRecommended = recommended.has(combo.id);
+    // Score: recommended gets huge boost, then contrast quality
+    const score = (isRecommended ? 1000 : 0) + textBgContrast * 10 + primaryBgContrast * 5;
+    return { ...combo, isRecommended, score, textBgContrast, primaryBgContrast };
+  });
+  // Sort: recommended first (in original order), then non-recommended by score
+  const rec = scored.filter((c) => c.isRecommended);
+  const rest = scored.filter((c) => !c.isRecommended).sort((a, b) => b.score - a.score);
+  return [...rec, ...rest];
+}
 
 interface ThemeConfig {
   primary_color: string;
