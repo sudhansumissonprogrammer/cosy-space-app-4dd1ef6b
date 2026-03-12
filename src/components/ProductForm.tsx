@@ -664,64 +664,113 @@ export default function ProductForm({ productId }: ProductFormProps) {
             {/* Variants */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Variants (Size/Color)</Label>
+                <div>
+                  <Label>Variants</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">Add sizes, colors, or other options</p>
+                </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setVariants((prev) => [...prev, { name: "", sku: "", price: "", stock: "0" }])}
+                  onClick={() => {
+                    setVariants((prev) => [...prev, { name: "", sku: "", price: "", stock: "0", isActive: true }]);
+                    setExpandedVariant(variants.length);
+                  }}
                 >
                   <Plus className="mr-1 h-3 w-3" /> Add Variant
                 </Button>
               </div>
+
               {variants.length > 0 && (
                 <div className="space-y-2">
-                  {variants.map((v, i) => (
-                    <div key={i} className="flex items-center gap-2 rounded-lg border p-2">
-                      <Input
-                        placeholder="Name (e.g. Red / L)"
-                        value={v.name}
-                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, name: e.target.value } : vr))}
-                        className="flex-1"
-                        maxLength={100}
-                      />
-                      <Input
-                        placeholder="SKU"
-                        value={v.sku}
-                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, sku: e.target.value } : vr))}
-                        className="w-24"
-                        maxLength={50}
-                      />
-                      <Input
-                        type="number"
-                        placeholder="Price"
-                        value={v.price}
-                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, price: e.target.value } : vr))}
-                        className="w-24"
-                        step="0.01"
-                        min="0"
-                      />
-                      <Input
-                        type="number"
-                        placeholder="Stock"
-                        value={v.stock}
-                        onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, stock: e.target.value } : vr))}
-                        className="w-20"
-                        min="0"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setVariants((prev) => prev.filter((_, idx) => idx !== i))}
-                      >
-                        <X className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
+                  {variants.map((v, i) => {
+                    const isExpanded = expandedVariant === i;
+                    return (
+                      <div key={i} className="rounded-lg border bg-card overflow-hidden">
+                        {/* Collapsed header row */}
+                        <div
+                          className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setExpandedVariant(isExpanded ? null : i)}
+                        >
+                          <GripVertical className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm font-medium truncate block ${!v.name ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                              {v.name || `Variant ${i + 1}`}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {v.price ? `₹${v.price}` : 'Base price'} · Stock: {v.stock}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <Switch
+                              checked={v.isActive}
+                              onCheckedChange={(checked) =>
+                                setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, isActive: checked } : vr))
+                              }
+                              className="scale-75"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setVariants((prev) => prev.filter((_, idx) => idx !== i))}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Expanded form */}
+                        {isExpanded && (
+                          <div className="border-t px-3 py-3 space-y-3 bg-muted/20">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Variant Name *</Label>
+                              <Input
+                                placeholder="e.g. Red, Large, 500ml"
+                                value={v.name}
+                                onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, name: e.target.value } : vr))}
+                                maxLength={100}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1.5">
+                                <Label className="text-xs">Price Override</Label>
+                                <Input
+                                  type="number"
+                                  placeholder="Use base price"
+                                  value={v.price}
+                                  onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, price: e.target.value } : vr))}
+                                  step="0.01"
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-xs">Stock</Label>
+                                <Input
+                                  type="number"
+                                  value={v.stock}
+                                  onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, stock: e.target.value } : vr))}
+                                  min="0"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">SKU (optional)</Label>
+                              <Input
+                                placeholder="e.g. PROD-RED-L"
+                                value={v.sku}
+                                onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, sku: e.target.value } : vr))}
+                                maxLength={50}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">Leave price empty to use the product's base price.</p>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
