@@ -2811,7 +2811,7 @@ export default function StoreThemeSettings() {
               </div>
             </div>
             {dirty && (
-              <p className="mb-3 text-xs text-warning">⚠ Save your changes first to see them in the preview</p>
+              <p className="mb-3 text-xs text-muted-foreground">💡 Preview updates live. Click "Save Changes" to apply to your store.</p>
             )}
             {store?.slug ? (
               <div className="flex justify-center">
