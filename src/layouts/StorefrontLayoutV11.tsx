@@ -84,6 +84,16 @@ function AppHeader({ store }: { store: StoreData }) {
           </SheetContent>
         </Sheet>
 
+        {/* Store Logo / Name */}
+        <Link to={storefrontPath(store.slug)} className="flex items-center shrink-0">
+          {store.logo_url ? (
+            <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[120px] object-contain" />
+          ) : (
+            <span className="text-base font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}>{store.name}</span>
+          )}
+        </Link>
+
+        {/* Search pill */}
         <button
           onClick={() => setSearchOpen(true)}
           className="flex flex-1 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-all active:scale-[0.98]"
@@ -94,18 +104,6 @@ function AppHeader({ store }: { store: StoreData }) {
         >
           <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} />
           <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
-        </button>
-
-        <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }}>
-          <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
-          {cartCount > 0 && (
-            <span
-              className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
-              style={{ backgroundColor: "var(--storefront-primary, hsl(var(--foreground)))", color: "var(--storefront-btn-text, hsl(var(--background)))" }}
-            >
-              {cartCount > 99 ? "99+" : cartCount}
-            </span>
-          )}
         </button>
       </div>
     </header>
