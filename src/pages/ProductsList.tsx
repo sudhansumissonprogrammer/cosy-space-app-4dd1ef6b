@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -59,6 +60,15 @@ export default function ProductsList() {
   const categoryBtnRef = useRef<HTMLButtonElement>(null);
   const categoryPopupRef = useRef<HTMLDivElement>(null);
 
+  // Bulk edit inline state
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+  const [bulkActionOpen, setBulkActionOpen] = useState(false);
+  const [bulkPriceChange, setBulkPriceChange] = useState("");
+  const [bulkStockChange, setBulkStockChange] = useState("");
+  const [bulkPriceMode, setBulkPriceMode] = useState<"set" | "adjust">("set");
+  const [bulkStockMode, setBulkStockMode] = useState<"set" | "adjust">("set");
+
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
@@ -80,7 +90,6 @@ export default function ProductsList() {
     enabled: !!user,
   });
 
-  // Fetch all products for client-side filtering (up to 1000)
   const { data: allProducts, isLoading } = useQuery({
     queryKey: ["products-all", storeId],
     queryFn: async () => {
@@ -94,7 +103,6 @@ export default function ProductsList() {
     enabled: !!storeId,
   });
 
-  // Extract unique categories
   const categories = useMemo(() => {
     if (!allProducts) return [];
     const cats = new Set<string>();
@@ -102,12 +110,9 @@ export default function ProductsList() {
     return Array.from(cats).sort();
   }, [allProducts]);
 
-  // Apply filters + search + sort
   const filteredProducts = useMemo(() => {
     if (!allProducts) return [];
     let result = [...allProducts];
-
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase().trim();
       result = result.filter(p =>
@@ -116,34 +121,17 @@ export default function ProductsList() {
         p.sku?.toLowerCase().includes(q)
       );
     }
-
-    // Status filter
     if (statusFilter === "active") result = result.filter(p => p.is_active);
     if (statusFilter === "draft") result = result.filter(p => !p.is_active);
-
-    // Stock filter
     if (stockFilter === "in-stock") result = result.filter(p => p.stock_quantity > 0);
     if (stockFilter === "out-of-stock") result = result.filter(p => p.stock_quantity <= 0);
-
-    // Category filter
     if (categoryFilter.length > 0) result = result.filter(p => p.category && categoryFilter.includes(p.category));
-
-    // Sort
     switch (sort) {
-      case "title-asc":
-        result.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "title-desc":
-        result.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case "date-new":
-        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        break;
-      case "date-old":
-        result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        break;
+      case "title-asc": result.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case "title-desc": result.sort((a, b) => b.name.localeCompare(a.name)); break;
+      case "date-new": result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
+      case "date-old": result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); break;
     }
-
     return result;
   }, [allProducts, search, statusFilter, stockFilter, categoryFilter, sort]);
 
@@ -162,6 +150,38 @@ export default function ProductsList() {
     onError: (err: any) => toast.error(err.message || "Failed to delete product"),
   });
 
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async () => {
+      const ids = Array.from(bulkSelected);
+      if (ids.length === 0) throw new Error("No products selected");
+      for (const id of ids) {
+        const product = allProducts?.find((p) => p.id === id);
+        if (!product) continue;
+        const updates: Record<string, number> = {};
+        if (bulkPriceChange !== "") {
+          const val = parseFloat(bulkPriceChange);
+          if (isNaN(val)) throw new Error("Invalid price value");
+          updates.price = bulkPriceMode === "set" ? val : Math.max(0, product.price + val);
+        }
+        if (bulkStockChange !== "") {
+          const val = parseInt(bulkStockChange);
+          if (isNaN(val)) throw new Error("Invalid stock value");
+          updates.stock_quantity = bulkStockMode === "set" ? val : Math.max(0, product.stock_quantity + val);
+        }
+        if (Object.keys(updates).length > 0) {
+          const { error } = await supabase.from("products").update(updates).eq("id", id);
+          if (error) throw error;
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
+      toast.success(`${bulkSelected.size} products updated`);
+      exitBulkMode();
+    },
+    onError: (err: any) => toast.error(err.message || "Bulk update failed"),
+  });
+
   const activeFilterCount =
     (stockFilter !== "all" ? 1 : 0) +
     (categoryFilter.length > 0 ? 1 : 0);
@@ -173,7 +193,6 @@ export default function ProductsList() {
     setFilterOpen(false);
   };
 
-  // Close category popup on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
@@ -194,6 +213,30 @@ export default function ProductsList() {
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
     );
     pagination.setPage(1);
+  };
+
+  const toggleBulkSelect = (id: string) => {
+    setBulkSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (bulkSelected.size === paginatedProducts.length) {
+      setBulkSelected(new Set());
+    } else {
+      setBulkSelected(new Set(paginatedProducts.map(p => p.id)));
+    }
+  };
+
+  const exitBulkMode = () => {
+    setBulkMode(false);
+    setBulkSelected(new Set());
+    setBulkActionOpen(false);
+    setBulkPriceChange("");
+    setBulkStockChange("");
   };
 
   if (!store && !isLoading) {
@@ -266,10 +309,34 @@ export default function ProductsList() {
         </div>
       )}
 
-      {/* Search + Filter + Sort bar (Shopify style) */}
+      {/* Bulk mode header bar */}
+      {bulkMode && (
+        <div className="flex items-center justify-between rounded-lg border bg-accent/50 p-2.5">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={bulkSelected.size === paginatedProducts.length && paginatedProducts.length > 0}
+              onCheckedChange={toggleSelectAll}
+            />
+            <span className="text-sm font-medium text-foreground">
+              {bulkSelected.size} selected
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={exitBulkMode}>Cancel</Button>
+            <Button
+              size="sm"
+              disabled={bulkSelected.size === 0}
+              onClick={() => setBulkActionOpen(true)}
+            >
+              Edit Selected
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Search + Filter + Sort bar */}
       <Card className="border shadow-none">
         <CardContent className="p-2.5 space-y-2.5">
-          {/* Search row */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -288,19 +355,11 @@ export default function ProductsList() {
                 </button>
               )}
             </div>
-            {/* Sort button */}
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 shrink-0"
-              onClick={() => setSortOpen(true)}
-            >
+            <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => setSortOpen(true)}>
               <ArrowUpDown className="h-4 w-4" />
             </Button>
-            {/* Filter button */}
             <Button
-              variant="outline"
-              size="icon"
+              variant="outline" size="icon"
               className="h-9 w-9 shrink-0 relative"
               onClick={() => setFilterOpen(true)}
             >
@@ -313,9 +372,8 @@ export default function ProductsList() {
             </Button>
           </div>
 
-          {/* Inline filter buttons: Active / Inactive / Category / Bulk Edit */}
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide items-center">
-            {/* Active button */}
+          {/* Inline filter buttons */}
+          <div className="flex gap-1.5 items-center">
             <button
               onClick={() => { setStatusFilter(statusFilter === "active" ? "all" : "active"); pagination.setPage(1); }}
               className={cn(
@@ -327,7 +385,6 @@ export default function ProductsList() {
             >
               Active
             </button>
-            {/* Inactive button */}
             <button
               onClick={() => { setStatusFilter(statusFilter === "draft" ? "all" : "draft"); pagination.setPage(1); }}
               className={cn(
@@ -339,7 +396,7 @@ export default function ProductsList() {
             >
               Inactive
             </button>
-            {/* Category button with popup */}
+            {/* Category button */}
             <div className="relative">
               <button
                 ref={categoryBtnRef}
@@ -361,7 +418,8 @@ export default function ProductsList() {
               {categoryPopupOpen && categories.length > 0 && (
                 <div
                   ref={categoryPopupRef}
-                  className="absolute top-full left-0 mt-1 z-50 min-w-[200px] max-h-[250px] overflow-y-auto rounded-lg border bg-popover p-2 shadow-lg"
+                  className="absolute top-full left-0 mt-1 z-[60] min-w-[200px] max-h-[250px] overflow-y-auto rounded-lg border bg-popover p-2 shadow-lg"
+                  style={{ position: "fixed", top: categoryBtnRef.current ? categoryBtnRef.current.getBoundingClientRect().bottom + 4 : 0, left: categoryBtnRef.current ? categoryBtnRef.current.getBoundingClientRect().left : 0 }}
                 >
                   {categories.map(cat => (
                     <label
@@ -386,11 +444,14 @@ export default function ProductsList() {
                 </div>
               )}
             </div>
-            {/* Bulk Edit inline */}
-            {allProducts && allProducts.length > 0 && (
-              <div className="ml-auto shrink-0">
-                <BulkEditDialog products={allProducts} storeId={storeId!} />
-              </div>
+            {/* Bulk Edit toggle */}
+            {allProducts && allProducts.length > 0 && !bulkMode && (
+              <button
+                onClick={() => setBulkMode(true)}
+                className="ml-auto px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border bg-background text-muted-foreground border-input hover:bg-accent flex items-center gap-1"
+              >
+                <Pencil className="h-3 w-3" /> Bulk Edit
+              </button>
             )}
           </div>
 
@@ -425,48 +486,56 @@ export default function ProductsList() {
       ) : paginatedProducts.length > 0 ? (
         <>
           {isMobile ? (
-            /* Mobile: Card-based list like Shopify */
-            <div className="divide-y rounded-lg border bg-card">
+            <div className={cn("divide-y rounded-lg border bg-card", bulkMode && "pb-20")}>
               {paginatedProducts.map((product) => (
-                <Link
-                  key={product.id}
-                  to={`/dashboard/stores/${storeId}/products/${product.id}/edit`}
-                  className="flex items-center gap-3 px-3 py-3 active:bg-accent/50 transition-colors"
-                >
-                  {product.image_url ? (
-                    <img src={product.image_url} alt="" className="h-12 w-12 rounded-lg border object-cover shrink-0" loading="lazy" />
-                  ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                    </div>
+                <div key={product.id} className="flex items-center gap-3 px-3 py-3">
+                  {bulkMode && (
+                    <Checkbox
+                      checked={bulkSelected.has(product.id)}
+                      onCheckedChange={() => toggleBulkSelect(product.id)}
+                      className="shrink-0"
+                    />
                   )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {product.stock_quantity > 0
-                        ? `${product.stock_quantity} available`
-                        : "Out of stock"}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={product.is_active ? "default" : "secondary"}
-                    className={cn(
-                      "shrink-0 text-[11px]",
-                      product.is_active && "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0"
-                    )}
+                  <Link
+                    to={bulkMode ? "#" : `/dashboard/stores/${storeId}/products/${product.id}/edit`}
+                    onClick={bulkMode ? (e) => { e.preventDefault(); toggleBulkSelect(product.id); } : undefined}
+                    className="flex items-center gap-3 flex-1 min-w-0 active:bg-accent/50 transition-colors"
                   >
-                    {product.is_active ? "Active" : "Draft"}
-                  </Badge>
-                </Link>
+                    {product.image_url ? (
+                      <img src={product.image_url} alt="" className="h-12 w-12 rounded-lg border object-cover shrink-0" loading="lazy" />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
+                        <Package className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {product.stock_quantity > 0
+                          ? `${product.stock_quantity} available`
+                          : "Out of stock"}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={product.is_active ? "default" : "secondary"}
+                      className={cn(
+                        "shrink-0 text-[11px]",
+                        product.is_active && "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0"
+                      )}
+                    >
+                      {product.is_active ? "Active" : "Draft"}
+                    </Badge>
+                  </Link>
+                </div>
               ))}
             </div>
           ) : (
-            /* Desktop: Table view */
             <Card>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      {bulkMode && <TableHead className="w-10"><Checkbox checked={bulkSelected.size === paginatedProducts.length && paginatedProducts.length > 0} onCheckedChange={toggleSelectAll} /></TableHead>}
                       <TableHead className="w-16"></TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Category</TableHead>
@@ -478,7 +547,12 @@ export default function ProductsList() {
                   </TableHeader>
                   <TableBody>
                     {paginatedProducts.map((product) => (
-                      <TableRow key={product.id}>
+                      <TableRow key={product.id} className={cn(bulkSelected.has(product.id) && "bg-accent/30")}>
+                        {bulkMode && (
+                          <TableCell>
+                            <Checkbox checked={bulkSelected.has(product.id)} onCheckedChange={() => toggleBulkSelect(product.id)} />
+                          </TableCell>
+                        )}
                         <TableCell>
                           {product.image_url ? (
                             <img src={product.image_url} alt="" className="h-10 w-10 rounded-md border object-cover" loading="lazy" />
@@ -557,6 +631,77 @@ export default function ProductsList() {
         </Card>
       )}
 
+      {/* Bulk edit floating action bar */}
+      {bulkMode && bulkSelected.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background p-3 shadow-lg safe-area-pb">
+          <div className="flex items-center justify-between max-w-lg mx-auto">
+            <span className="text-sm font-medium text-foreground">{bulkSelected.size} selected</span>
+            <Button size="sm" onClick={() => setBulkActionOpen(true)}>
+              Update Selected
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk edit action sheet */}
+      <Sheet open={bulkActionOpen} onOpenChange={setBulkActionOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl pb-8 max-h-[80vh] overflow-auto">
+          <SheetHeader>
+            <SheetTitle className="text-left">Update {bulkSelected.size} Products</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label>Price</Label>
+              <div className="flex gap-2">
+                <select
+                  value={bulkPriceMode}
+                  onChange={(e) => setBulkPriceMode(e.target.value as "set" | "adjust")}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="set">Set to</option>
+                  <option value="adjust">Adjust by (+/-)</option>
+                </select>
+                <Input
+                  type="number"
+                  placeholder={bulkPriceMode === "set" ? "New price" : "+10 or -5"}
+                  value={bulkPriceChange}
+                  onChange={(e) => setBulkPriceChange(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Stock Quantity</Label>
+              <div className="flex gap-2">
+                <select
+                  value={bulkStockMode}
+                  onChange={(e) => setBulkStockMode(e.target.value as "set" | "adjust")}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="set">Set to</option>
+                  <option value="adjust">Adjust by (+/-)</option>
+                </select>
+                <Input
+                  type="number"
+                  placeholder={bulkStockMode === "set" ? "New stock" : "+10 or -5"}
+                  value={bulkStockChange}
+                  onChange={(e) => setBulkStockChange(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-6">
+            <Button variant="outline" className="flex-1" onClick={() => setBulkActionOpen(false)}>Cancel</Button>
+            <Button
+              className="flex-1"
+              onClick={() => bulkUpdateMutation.mutate()}
+              disabled={(bulkPriceChange === "" && bulkStockChange === "") || bulkUpdateMutation.isPending}
+            >
+              {bulkUpdateMutation.isPending ? "Updating..." : `Update ${bulkSelected.size} Products`}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Sort Sheet */}
       <Sheet open={sortOpen} onOpenChange={setSortOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl pb-8">
@@ -597,11 +742,8 @@ export default function ProductsList() {
             </div>
           </SheetHeader>
           <div className="mt-4 space-y-5">
-            {/* Stock filter */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                Stock status
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Stock status</p>
               <div className="space-y-1">
                 {([
                   { value: "all" as StockFilter, label: "All" },
@@ -624,23 +766,13 @@ export default function ProductsList() {
                 ))}
               </div>
             </div>
-
-            {/* Category filter */}
             {categories.length > 0 && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                  Category
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Category</p>
                 <div className="space-y-1">
                   {categories.map(cat => (
-                    <label
-                      key={cat}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm hover:bg-accent/50 cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={categoryFilter.includes(cat)}
-                        onCheckedChange={() => toggleCategory(cat)}
-                      />
+                    <label key={cat} className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm hover:bg-accent/50 cursor-pointer">
+                      <Checkbox checked={categoryFilter.includes(cat)} onCheckedChange={() => toggleCategory(cat)} />
                       <span className="text-foreground">{cat}</span>
                     </label>
                   ))}
@@ -648,10 +780,7 @@ export default function ProductsList() {
               </div>
             )}
           </div>
-
-          <Button onClick={() => setFilterOpen(false)} className="w-full mt-6">
-            Apply Filters
-          </Button>
+          <Button onClick={() => setFilterOpen(false)} className="w-full mt-6">Apply Filters</Button>
         </SheetContent>
       </Sheet>
     </div>
