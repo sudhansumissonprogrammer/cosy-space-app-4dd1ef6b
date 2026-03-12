@@ -1142,6 +1142,7 @@ export type Database = {
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
+      get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
       get_store_views: {
         Args: { _store_ids: string[] }
         Returns: {
