@@ -354,10 +354,11 @@ export default function ProductForm({ productId }: ProductFormProps) {
             if (retryError) throw retryError;
             savedProductId = retryData.id;
           } else {
-          throw error;
+            throw error;
+          }
+        } else {
+          savedProductId = data.id;
         }
-        savedProductId = data.id;
-      }
 
       // Upload additional images
       if (additionalFiles.length > 0 && savedProductId) {
