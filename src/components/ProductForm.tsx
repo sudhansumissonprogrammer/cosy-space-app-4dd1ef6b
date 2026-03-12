@@ -229,6 +229,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       setSalePrice(existingProduct.sale_price ? String(existingProduct.sale_price) : "");
       setDescription(existingProduct.description || "");
       setStockQuantity(String(existingProduct.stock_quantity));
+      setTrackStock(existingProduct.stock_quantity > 0);
       setCategory(existingProduct.category || "");
       setIsActive(existingProduct.is_active);
       setIsBestSelling((existingProduct as any).is_best_selling ?? false);
