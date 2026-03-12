@@ -16,6 +16,7 @@ import StorefrontLayoutV6 from "./layouts/StorefrontLayoutV6";
 import StorefrontLayoutV7 from "./layouts/StorefrontLayoutV7";
 const StorefrontLayoutV8 = lazy(() => import("./layouts/StorefrontLayoutV8"));
 const StorefrontLayoutV9 = lazy(() => import("./layouts/StorefrontLayoutV9"));
+const StorefrontLayoutV10 = lazy(() => import("./layouts/StorefrontLayoutV10"));
 import StorefrontHome from "./pages/StorefrontHome";
 import StorefrontHomeV2 from "./pages/StorefrontHomeV2";
 import StorefrontHomeV3 from "./pages/StorefrontHomeV3";
