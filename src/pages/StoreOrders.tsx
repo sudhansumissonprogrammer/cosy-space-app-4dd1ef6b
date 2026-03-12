@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -12,13 +13,16 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingBag, Truck } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import OrderInvoice from "@/components/OrderInvoice";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { cn } from "@/lib/utils";
 
 const STATUS_OPTIONS = ["pending", "confirmed", "shipped", "delivered", "cancelled"] as const;
 
@@ -32,6 +36,12 @@ export default function StoreOrders() {
   const [pendingStatus, setPendingStatus] = useState("");
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
 
+  // Search & filter state
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
     staleTime: 5 * 60 * 1000,
@@ -43,31 +53,60 @@ export default function StoreOrders() {
     enabled: !!storeId && !!user,
   });
 
-  // Website orders
-  const { data: webCountData } = useQuery({
-    queryKey: ["website-orders-count", storeId],
-    queryFn: async () => {
-      const { count, error } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("store_id", storeId!);
-      if (error) throw error;
-      return count;
-    },
-    enabled: !!storeId,
-  });
-  const webPagination = usePagination(webCountData ?? undefined);
-  const { data: webOrders, isLoading: webLoading } = useQuery({
-    queryKey: ["website-orders", storeId, webPagination.page],
+  // Fetch all orders (up to 1000) for client-side filtering
+  const { data: allOrders, isLoading } = useQuery({
+    queryKey: ["website-orders-all", storeId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("orders")
         .select("*, order_items(*)")
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
-        .range(webPagination.from, webPagination.to);
+        .limit(1000);
       if (error) throw error;
       return data as any[];
     },
     enabled: !!storeId,
   });
+
+  const filteredOrders = useMemo(() => {
+    if (!allOrders) return [];
+    let result = [...allOrders];
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      result = result.filter(o =>
+        o.id.slice(0, 8).toLowerCase().includes(q) ||
+        (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
+        (o.customer_phone && o.customer_phone.includes(q))
+      );
+    }
+    if (statusFilter) {
+      result = result.filter(o => o.status === statusFilter);
+    }
+    if (dateFrom) {
+      const fromStart = new Date(dateFrom);
+      fromStart.setHours(0, 0, 0, 0);
+      result = result.filter(o => new Date(o.created_at) >= fromStart);
+    }
+    if (dateTo) {
+      const toEnd = new Date(dateTo);
+      toEnd.setHours(23, 59, 59, 999);
+      result = result.filter(o => new Date(o.created_at) <= toEnd);
+    }
+    return result;
+  }, [allOrders, search, statusFilter, dateFrom, dateTo]);
+
+  const pagination = usePagination(filteredOrders.length);
+  const paginatedOrders = filteredOrders.slice(pagination.from, pagination.to + 1);
+
+  const hasActiveFilters = !!search || !!statusFilter || !!dateFrom || !!dateTo;
+  const clearAllFilters = () => {
+    setSearch("");
+    setStatusFilter(null);
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    pagination.setPage(1);
+  };
 
   const updateWebStatus = useMutation({
     mutationFn: async ({ orderId, status, tracking_number, tracking_url }: { orderId: string; status: string; tracking_number?: string; tracking_url?: string }) => {
@@ -78,13 +117,13 @@ export default function StoreOrders() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["website-orders", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
       toast.success("Order updated");
     },
     onError: (err: any) => toast.error(err.message),
   });
 
-  if (!store && !webLoading) {
+  if (!store && !isLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <p className="text-muted-foreground">Store not found</p>
@@ -94,7 +133,7 @@ export default function StoreOrders() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div>
@@ -103,11 +142,100 @@ export default function StoreOrders() {
         </div>
       </div>
 
-      {webLoading ? (
+      {/* Search & Filter Bar */}
+      <Card className="border shadow-none">
+        <CardContent className="p-2.5 space-y-2.5">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, phone or order ID"
+                value={search}
+                onChange={e => { setSearch(e.target.value); pagination.setPage(1); }}
+                className="pl-8 h-9 text-sm"
+              />
+              {search && (
+                <button onClick={() => { setSearch(""); pagination.setPage(1); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            {/* Date range */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-9 shrink-0 text-xs gap-1.5", (dateFrom || dateTo) && "border-primary text-primary")}>
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {dateFrom && dateTo ? `${format(dateFrom, "MMM d")} – ${format(dateTo, "MMM d")}` : dateFrom ? `From ${format(dateFrom, "MMM d")}` : dateTo ? `Until ${format(dateTo, "MMM d")}` : "Date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3 space-y-3" align="end">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">From</p>
+                  <Calendar mode="single" selected={dateFrom} onSelect={(d) => { setDateFrom(d); pagination.setPage(1); }} className="p-0 pointer-events-auto" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">To</p>
+                  <Calendar mode="single" selected={dateTo} onSelect={(d) => { setDateTo(d); pagination.setPage(1); }} className="p-0 pointer-events-auto" />
+                </div>
+                {(dateFrom || dateTo) && (
+                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => { setDateFrom(undefined); setDateTo(undefined); pagination.setPage(1); }}>
+                    Clear dates
+                  </Button>
+                )}
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Status pills */}
+          <div className="flex gap-1.5 items-center overflow-x-auto">
+            {STATUS_OPTIONS.map(s => (
+              <button
+                key={s}
+                onClick={() => { setStatusFilter(statusFilter === s ? null : s); pagination.setPage(1); }}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border",
+                  statusFilter === s
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-background text-muted-foreground border-input hover:bg-accent"
+                )}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* Active filter chips */}
+          {hasActiveFilters && (
+            <div className="flex gap-1.5 flex-wrap items-center">
+              {statusFilter && (
+                <Badge variant="secondary" className="gap-1 text-xs pr-1">
+                  {statusFilter}
+                  <button onClick={() => { setStatusFilter(null); pagination.setPage(1); }}><X className="h-3 w-3" /></button>
+                </Badge>
+              )}
+              {dateFrom && (
+                <Badge variant="secondary" className="gap-1 text-xs pr-1">
+                  From {format(dateFrom, "MMM d")}
+                  <button onClick={() => { setDateFrom(undefined); pagination.setPage(1); }}><X className="h-3 w-3" /></button>
+                </Badge>
+              )}
+              {dateTo && (
+                <Badge variant="secondary" className="gap-1 text-xs pr-1">
+                  Until {format(dateTo, "MMM d")}
+                  <button onClick={() => { setDateTo(undefined); pagination.setPage(1); }}><X className="h-3 w-3" /></button>
+                </Badge>
+              )}
+              <button onClick={clearAllFilters} className="text-xs text-primary font-medium">Clear all</button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
-      ) : webOrders && webOrders.length > 0 ? (
+      ) : paginatedOrders.length > 0 ? (
         <>
           <Card>
             <CardContent className="p-0">
@@ -121,12 +249,12 @@ export default function StoreOrders() {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Payment</TableHead>
                     <TableHead>Status</TableHead>
-                     <TableHead>Date</TableHead>
-                     <TableHead className="w-12" />
-                   </TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="w-12" />
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {webOrders.map((order: any) => (
+                  {paginatedOrders.map((order: any) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-mono text-xs text-muted-foreground">{order.id.slice(0, 8)}</TableCell>
                       <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
@@ -161,24 +289,27 @@ export default function StoreOrders() {
                           </div>
                         )}
                       </TableCell>
-                       <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "MMM d, HH:mm")}</TableCell>
-                       <TableCell>
-                         <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
-                       </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "MMM d, HH:mm")}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
-          <PaginationControls page={webPagination.page} totalPages={webPagination.totalPages} onPageChange={webPagination.setPage} />
+          <PaginationControls page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} />
+          <p className="text-center text-xs text-muted-foreground">
+            Showing {pagination.from + 1}–{Math.min(pagination.from + paginatedOrders.length, filteredOrders.length)} of {filteredOrders.length} orders
+          </p>
         </>
       ) : (
         <Card>
           <CardContent className="flex min-h-[200px] flex-col items-center justify-center gap-3">
             <ShoppingBag className="h-10 w-10 text-muted-foreground" />
-            <p className="text-muted-foreground">No orders yet</p>
-            <p className="text-sm text-muted-foreground">Orders will appear here when customers place them through your store</p>
+            <p className="text-muted-foreground">{hasActiveFilters ? "No orders match your filters" : "No orders yet"}</p>
+            {!hasActiveFilters && <p className="text-sm text-muted-foreground">Orders will appear here when customers place them through your store</p>}
           </CardContent>
         </Card>
       )}
