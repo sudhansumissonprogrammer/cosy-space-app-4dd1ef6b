@@ -19,6 +19,7 @@ import SideCart from "@/components/storefront/SideCart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
+import { useThemePreview } from "@/hooks/useThemePreview";
 
 export type StoreData = Tables<"stores">;
 
