@@ -2396,7 +2396,9 @@ export default function StoreThemeSettings() {
               <p className="mb-3 text-xs text-muted-foreground">Showing your actual products &amp; categories</p>
             )}
             <div className={previewMode === "desktop" ? "overflow-x-auto" : ""}>
-              {currentTheme === "theme-7" ? (
+              {currentTheme === "theme-8" ? (
+                <MobileAppPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
+              ) : currentTheme === "theme-7" ? (
                 <MagazinePreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
               ) : currentTheme === "theme-6" ? (
                 <ProCleanPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
