@@ -185,3 +185,7 @@
 .animate-bounce-once {
   animation: bounce-once 0.5s ease-out;
 }
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
