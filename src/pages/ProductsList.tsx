@@ -632,32 +632,17 @@ export default function ProductsList() {
                   Category
                 </p>
                 <div className="space-y-1">
-                  <button
-                    onClick={() => { setCategoryFilter("all"); pagination.setPage(1); }}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors",
-                      categoryFilter === "all"
-                        ? "bg-accent text-accent-foreground font-medium"
-                        : "text-foreground hover:bg-accent/50"
-                    )}
-                  >
-                    All categories
-                    {categoryFilter === "all" && <Check className="h-4 w-4 text-primary" />}
-                  </button>
                   {categories.map(cat => (
-                    <button
+                    <label
                       key={cat}
-                      onClick={() => { setCategoryFilter(cat); pagination.setPage(1); }}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors",
-                        categoryFilter === cat
-                          ? "bg-accent text-accent-foreground font-medium"
-                          : "text-foreground hover:bg-accent/50"
-                      )}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm hover:bg-accent/50 cursor-pointer"
                     >
-                      {cat}
-                      {categoryFilter === cat && <Check className="h-4 w-4 text-primary" />}
-                    </button>
+                      <Checkbox
+                        checked={categoryFilter.includes(cat)}
+                        onCheckedChange={() => toggleCategory(cat)}
+                      />
+                      <span className="text-foreground">{cat}</span>
+                    </label>
                   ))}
                 </div>
               </div>
