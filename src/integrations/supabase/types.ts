@@ -568,6 +568,30 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_config: {
+        Row: {
+          created_at: string
+          default_currency: string
+          id: string
+          platform_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_currency?: string
+          id?: string
+          platform_name?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_currency?: string
+          id?: string
+          platform_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           created_at: string
@@ -1332,6 +1356,7 @@ export type Database = {
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
+      get_admin_users_stores: { Args: never; Returns: Json }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
       get_store_views: {
         Args: { _store_ids: string[] }
