@@ -517,16 +517,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
                   maxLength={200}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="product-slug">Slug</Label>
-                <Input
-                  id="product-slug"
-                  placeholder="product-name"
-                  value={slug}
-                  onChange={(e) => setSlug(generateSlug(e.target.value))}
-                  maxLength={200}
-                />
-              </div>
             </div>
 
             <div className="space-y-2">
