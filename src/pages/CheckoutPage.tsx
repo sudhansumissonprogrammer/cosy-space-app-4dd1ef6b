@@ -148,11 +148,7 @@ export default function CheckoutPage() {
   const { data: paymentConfig } = useQuery({
     queryKey: ["store-payment-config", store.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("store_payment_config_public")
-        .select("payment_methods, razorpay_key_id")
-        .eq("store_id", store.id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_store_payment_config", { _store_id: store.id });
       if (error) throw error;
       return data as { payment_methods: string[]; razorpay_key_id: string | null } | null;
     },
