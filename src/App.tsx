@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { getSubdomainSlug } from "@/lib/subdomain";
+import { getSubdomainSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 
 // Storefront — eagerly loaded for fast storefront rendering
 import StorefrontLayout from "./layouts/StorefrontLayout";
@@ -139,6 +139,20 @@ function AppRouter() {
   }
 
   if (location.pathname.startsWith("/store/")) {
+    const hostname = window.location.hostname;
+    const isProduction = hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`;
+
+    if (isProduction) {
+      // Redirect /store/{slug}/... → {slug}.storivo.in/...
+      const rest = location.pathname.replace(/^\/store\//, "");
+      const slug = rest.split("/")[0];
+      const remainingPath = rest.slice(slug.length); // e.g. "/product/xyz"
+      const search = window.location.search;
+      const hash = window.location.hash;
+      window.location.replace(`https://${slug}.${ROOT_DOMAIN}${remainingPath}${search}${hash}`);
+      return <LoadingSpinner />;
+    }
+
     return <ThemeAwareStorefront />;
   }
 
