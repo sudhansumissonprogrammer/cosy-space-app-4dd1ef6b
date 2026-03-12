@@ -15,11 +15,11 @@ const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
 // Admin
 const AdminLayout = lazy(() => import("@/layouts/AdminLayout"));
 const AdminOverview = lazy(() => import("@/pages/admin/AdminOverview"));
-const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
-const AdminStores = lazy(() => import("@/pages/admin/AdminStores"));
+const AdminUsersStores = lazy(() => import("@/pages/admin/AdminUsersStores"));
 const AdminOrders = lazy(() => import("@/pages/admin/AdminOrders"));
 const AdminSubscriptions = lazy(() => import("@/pages/admin/AdminSubscriptions"));
 const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics"));
+const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 
 // Dashboard
 const DashboardLayout = lazy(() => import("@/layouts/DashboardLayout"));
