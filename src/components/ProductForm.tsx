@@ -438,6 +438,74 @@ export default function ProductForm({ productId }: ProductFormProps) {
             <CardDescription>Fill in the product information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
+            {/* Media Section - Top */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Media</Label>
+              <div className="flex flex-wrap gap-3">
+                {/* Main image */}
+                {imagePreview ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="h-28 w-28 rounded-lg border object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview(null);
+                      }}
+                      className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input transition-colors hover:border-primary/50">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground">Main</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                )}
+                {/* Additional images */}
+                {additionalPreviews.map((preview, i) => (
+                  <div key={i} className="relative inline-block">
+                    <img
+                      src={preview.url}
+                      alt={`Extra ${i + 1}`}
+                      className="h-28 w-28 rounded-lg border object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeAdditionalImage(i)}
+                      className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {/* Add more button */}
+                <label className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input transition-colors hover:border-primary/50">
+                  <Plus className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Add</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleAdditionalFiles(e.target.files)}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">Max 5MB per image</p>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="product-name">Name *</Label>
@@ -461,9 +529,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe your product..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={2000}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="price">Price *</Label>
+                <Label htmlFor="price">Regular Price *</Label>
                 <Input
                   id="price"
                   type="number"
@@ -486,18 +566,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
                   onChange={(e) => setSalePrice(e.target.value)}
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe your product..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                maxLength={2000}
-                rows={3}
-              />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -592,74 +660,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
                 <Switch id="is-best-selling" checked={isBestSelling} onCheckedChange={setIsBestSelling} />
                 <Label htmlFor="is-best-selling">Best Selling</Label>
               </div>
-            </div>
-
-            {/* Main Image */}
-            <div className="space-y-2">
-              <Label>Main Image</Label>
-              {imagePreview ? (
-                <div className="relative inline-block">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="h-32 w-32 rounded-lg border object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImageFile(null);
-                      setImagePreview(null);
-                    }}
-                    className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : (
-                <label className="flex h-32 w-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-input transition-colors hover:border-primary/50">
-                  <Upload className="h-5 w-5 text-muted-foreground" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
-                  />
-                </label>
-              )}
-            </div>
-
-            {/* Additional Images */}
-            <div className="space-y-2">
-              <Label>Additional Images</Label>
-              <div className="flex flex-wrap gap-3">
-                {additionalPreviews.map((preview, i) => (
-                  <div key={i} className="relative inline-block">
-                    <img
-                      src={preview.url}
-                      alt={`Extra ${i + 1}`}
-                      className="h-24 w-24 rounded-lg border object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeAdditionalImage(i)}
-                      className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-                <label className="flex h-24 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-input transition-colors hover:border-primary/50">
-                  <Plus className="h-5 w-5 text-muted-foreground" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleAdditionalFiles(e.target.files)}
-                  />
-                </label>
-              </div>
-              <p className="text-xs text-muted-foreground">Max 5MB per image. These appear in the product gallery.</p>
             </div>
 
             {/* Variants */}
