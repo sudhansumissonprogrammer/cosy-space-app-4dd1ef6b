@@ -164,12 +164,36 @@ export default function ProductsList() {
 
   const activeFilterCount =
     (stockFilter !== "all" ? 1 : 0) +
-    (categoryFilter !== "all" ? 1 : 0);
+    (categoryFilter.length > 0 ? 1 : 0);
 
   const clearFilters = () => {
     setStockFilter("all");
-    setCategoryFilter("all");
+    setCategoryFilter([]);
+    setStatusFilter("all");
     setFilterOpen(false);
+  };
+
+  // Close category popup on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        categoryPopupRef.current &&
+        !categoryPopupRef.current.contains(e.target as Node) &&
+        categoryBtnRef.current &&
+        !categoryBtnRef.current.contains(e.target as Node)
+      ) {
+        setCategoryPopupOpen(false);
+      }
+    };
+    if (categoryPopupOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [categoryPopupOpen]);
+
+  const toggleCategory = (cat: string) => {
+    setCategoryFilter(prev =>
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+    pagination.setPage(1);
   };
 
   if (!store && !isLoading) {
