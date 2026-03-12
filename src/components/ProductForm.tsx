@@ -246,7 +246,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   const handleNameChange = (value: string) => {
     setName(value);
-    if (!isEditing) setSlug(generateSlug(value));
+    setSlug(generateSlug(value));
   };
 
   const handleFileSelect = (file: File | null) => {
