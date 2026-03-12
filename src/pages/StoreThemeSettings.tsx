@@ -2488,6 +2488,7 @@ export default function StoreThemeSettings() {
   const [config, setConfig] = useState<ThemeConfig>(defaults);
   const [dirty, setDirty] = useState(false);
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
+  const [iframeKey, setIframeKey] = useState(0);
 
   useEffect(() => {
     if (themeConfig) {
