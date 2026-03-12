@@ -2618,6 +2618,8 @@ export default function StoreThemeSettings() {
     sendToIframe(newConfig);
   };
 
+  const [iframeKey, setIframeKey] = useState(0);
+
   const applyThemeMutation = useMutation({
     mutationFn: async (themeId: string) => {
       const { error } = await supabase
@@ -2635,6 +2637,8 @@ export default function StoreThemeSettings() {
       queryClient.invalidateQueries({ queryKey: ["store-detail", storeId] });
       // Also invalidate storefront caches so the live storefront picks up the change
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+      // Reload iframe to show the new theme layout
+      setIframeKey((k) => k + 1);
       toast.success("Theme applied!");
     },
     onError: () => toast.error("Failed to apply theme"),
@@ -2926,6 +2930,7 @@ export default function StoreThemeSettings() {
                       </div>
                       <div style={{ width: "363px", height: "680px", overflow: "hidden" }}>
                         <iframe
+                          key={`mobile-${iframeKey}`}
                           ref={iframeRef}
                           src={`/store/${store.slug}`}
                           title="Store Preview"
@@ -2956,6 +2961,7 @@ export default function StoreThemeSettings() {
                     </div>
                     <div style={{ width: "100%", height: "680px", overflow: "hidden" }}>
                       <iframe
+                        key={`desktop-${iframeKey}`}
                         ref={iframeDesktopRef}
                         src={`/store/${store.slug}`}
                         title="Store Preview Desktop"
