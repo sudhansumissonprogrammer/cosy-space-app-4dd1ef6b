@@ -151,11 +151,35 @@ function BottomTabBar({ store }: { store: StoreData }) {
               : location.pathname.includes(tab.match!);
             const TabIcon = tab.icon;
             const isSearch = tab.to === "__search__";
-            return (
+            return isSearch ? (
+                <button
+                  key={tab.label}
+                  onClick={() => setSearchOpen(true)}
+                  className="flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 transition-all relative"
+                  style={{ minWidth: "48px" }}
+                >
+                  <div className="relative">
+                    <div
+                      className="flex items-center justify-center rounded-2xl transition-all"
+                      style={{ width: "36px", height: "28px" }}
+                    >
+                      <TabIcon
+                        className="h-[18px] w-[18px] transition-colors"
+                        style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }}
+                      />
+                    </div>
+                  </div>
+                  <span
+                    className="text-[10px] font-semibold"
+                    style={{ color: "var(--storefront-text, hsl(var(--foreground)))45" }}
+                  >
+                    {tab.label}
+                  </span>
+                </button>
+              ) : (
               <Link
                 key={tab.label}
-                to={isSearch ? "#" : tab.to}
-                onClick={isSearch ? (e) => { e.preventDefault(); setSearchOpen(true); } : undefined}
+                to={tab.to}
                 className="flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 transition-all relative"
                 style={{ minWidth: "48px" }}
               >

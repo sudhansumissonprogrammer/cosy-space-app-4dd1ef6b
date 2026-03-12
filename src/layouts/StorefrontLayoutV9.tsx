@@ -172,11 +172,35 @@ function DiscoveryTabBar({ store }: { store: StoreData }) {
               : location.pathname.includes(tab.match!);
             const TabIcon = tab.icon;
             const isSearch = tab.to === "__search__";
-            return (
+            return isSearch ? (
+              <button
+                key={tab.label}
+                onClick={() => setSearchOpen(true)}
+                className="flex flex-col items-center justify-center gap-0.5 py-1 px-3 transition-all relative"
+                style={{ minWidth: "48px" }}
+              >
+                <div className="relative">
+                  <div
+                    className="flex items-center justify-center transition-all"
+                    style={{ width: "32px", height: "32px", borderRadius: "12px" }}
+                  >
+                    <TabIcon
+                      className="h-[18px] w-[18px] transition-colors"
+                      style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}
+                    />
+                  </div>
+                </div>
+                <span
+                  className="text-[9px] font-semibold"
+                  style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}
+                >
+                  {tab.label}
+                </span>
+              </button>
+            ) : (
               <Link
                 key={tab.label}
-                to={isSearch ? "#" : tab.to}
-                onClick={isSearch ? (e) => { e.preventDefault(); setSearchOpen(true); } : undefined}
+                to={tab.to}
                 className="flex flex-col items-center justify-center gap-0.5 py-1 px-3 transition-all relative"
                 style={{ minWidth: "48px" }}
               >
