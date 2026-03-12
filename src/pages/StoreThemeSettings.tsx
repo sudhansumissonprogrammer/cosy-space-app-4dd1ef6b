@@ -2692,15 +2692,17 @@ export default function StoreThemeSettings() {
                   <div
                     key={combo.id}
                     onClick={() => {
-                      setConfig((prev) => ({
-                        ...prev,
+                      const newConfig = {
+                        ...config,
                         primary_color: combo.primary,
                         accent_color: combo.accent,
                         text_color: combo.text,
                         background_color: combo.background,
                         marquee_gradient: combo.marquee,
-                      }));
+                      };
+                      setConfig(newConfig);
                       setDirty(true);
+                      sendToIframe(newConfig);
                     }}
                     className={`cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${
                       isSelected
