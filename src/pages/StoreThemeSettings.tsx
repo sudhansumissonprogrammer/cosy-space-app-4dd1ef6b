@@ -2850,7 +2850,7 @@ export default function StoreThemeSettings() {
                     </div>
                     <div style={{ width: "100%", height: "680px", overflow: "hidden" }}>
                       <iframe
-                        key={`desktop-${iframeKey}`}
+                        ref={iframeDesktopRef}
                         src={`/store/${store.slug}`}
                         title="Store Preview Desktop"
                         style={{
