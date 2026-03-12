@@ -1,25 +1,125 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import OrderNotificationListener from "@/components/OrderNotificationListener";
 import {
-  LayoutDashboard, Package, ShoppingBag, Palette, Menu, LogOut,
+  LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
-  Receipt, ShoppingCart, Store, ChevronRight, ExternalLink,
+  Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
+  Search, User, Bell, X, BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
+
+function MobileMenu({
+  open,
+  onClose,
+  storeId,
+  pendingOrders,
+}: {
+  open: boolean;
+  onClose: () => void;
+  storeId: string | undefined;
+  pendingOrders: number;
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { signOut, user } = useAuth();
+
+  const go = (path: string) => {
+    navigate(path);
+    onClose();
+  };
+
+  const isActive = (path: string, exact?: boolean) =>
+    exact ? location.pathname === path : location.pathname.startsWith(path);
+
+  const menuItems = storeId
+    ? [
+        { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
+        { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, badge: pendingOrders },
+        { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products` },
+        { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
+        { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeId}/leads` },
+        { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
+        { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
+        { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
+        { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeId}/payments` },
+        { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeId}/shipping` },
+        { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeId}/tax` },
+        { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload` },
+        { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme` },
+        { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain` },
+        { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeId}/settings` },
+      ]
+    : [
+        { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
+      ];
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a1a]">
+      {/* Scrollable menu items */}
+      <div className="flex-1 overflow-auto px-4 pt-6 pb-4">
+        <div className="space-y-0.5">
+          {menuItems.map((item) => {
+            const active = isActive(item.path, item.exact);
+            return (
+              <button
+                key={item.path}
+                onClick={() => go(item.path)}
+                className={cn(
+                  "flex w-full items-center gap-3.5 rounded-xl px-4 py-3.5 text-[15px] transition-colors",
+                  active
+                    ? "bg-white/10 text-white font-medium"
+                    : "text-[#b0b0b0] active:bg-white/5"
+                )}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
+                    {item.badge > 99 ? "99+" : item.badge}
+                  </Badge>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom bar with Settings + Close */}
+      <div className="safe-area-pb px-4 pb-4 pt-2 flex items-center gap-3 justify-center">
+        <button
+          onClick={() => go("/dashboard/settings")}
+          className="flex items-center gap-2.5 rounded-full bg-[#2a2a2a] px-6 py-3"
+        >
+          <Settings className="h-5 w-5 text-white" />
+          <span className="text-sm font-medium text-white">Settings</span>
+        </button>
+        <button
+          onClick={onClose}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2a2a2a]"
+        >
+          <X className="h-5 w-5 text-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingOrders, setPendingOrders] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -44,6 +144,30 @@ export default function DashboardLayout() {
 
   const storeId = store?.id;
 
+  // Pending orders count + realtime
+  useEffect(() => {
+    if (!storeId) return;
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("store_id", storeId)
+        .eq("status", "pending");
+      setPendingOrders(count ?? 0);
+    };
+    fetchCount();
+
+    const channel = supabase
+      .channel("mobile-nav-orders")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
+        () => fetchCount()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [storeId]);
+
   const go = (path: string) => {
     navigate(path);
     setMenuOpen(false);
@@ -51,55 +175,6 @@ export default function DashboardLayout() {
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
-
-  const bottomNav = storeId
-    ? [
-        { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
-        { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products`, exact: false },
-        { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, exact: false },
-        { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme`, exact: true },
-      ]
-    : [
-        { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
-      ];
-
-  const menuSections = storeId
-    ? [
-        {
-          title: "Store Management",
-          items: [
-            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload` },
-            { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
-            { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeId}/leads` },
-            { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
-          ],
-        },
-        {
-          title: "Payments & Shipping",
-          items: [
-            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeId}/payments` },
-            { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
-            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeId}/shipping` },
-            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeId}/tax` },
-          ],
-        },
-        {
-          title: "Settings",
-          items: [
-            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain` },
-            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeId}/settings` },
-            { label: "Account", icon: Settings, path: "/dashboard/settings" },
-          ],
-        },
-      ]
-    : [
-        {
-          title: "Settings",
-          items: [
-            { label: "Account", icon: Settings, path: "/dashboard/settings" },
-          ],
-        },
-      ];
 
   // Desktop layout with sidebar
   if (!isMobile) {
@@ -139,7 +214,23 @@ export default function DashboardLayout() {
     );
   }
 
-  // Mobile layout with bottom nav
+  // Mobile bottom nav items (Shopify style - 6 tabs)
+  const bottomNav = storeId
+    ? [
+        { label: "Search", icon: Search, path: "__search__", exact: false },
+        { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
+        { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, exact: false, badge: pendingOrders },
+        { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products`, exact: false },
+        { label: "More", icon: Menu, path: "__menu__", exact: false },
+        { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
+      ]
+    : [
+        { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
+        { label: "More", icon: Menu, path: "__menu__", exact: false },
+        { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
+      ];
+
+  // Mobile layout
   return (
     <div
       className="min-h-screen flex flex-col bg-background"
@@ -147,114 +238,108 @@ export default function DashboardLayout() {
     >
       <OrderNotificationListener />
 
-      <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-3">
-        <div className="flex items-center gap-2 min-w-0">
+      {/* Shopify-style header */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-[#1a1a1a] px-3">
+        <div className="flex items-center gap-2.5 min-w-0">
           {store?.logo_url ? (
-            <img src={store.logo_url} alt="" className="h-7 w-7 shrink-0 rounded-md border object-cover" />
+            <img src={store.logo_url} alt="" className="h-8 w-8 shrink-0 rounded-lg border border-white/10 object-cover" />
           ) : (
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary">
-              <Store className="h-3.5 w-3.5 text-primary-foreground" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500">
+              <span className="text-xs font-bold text-white">
+                {store?.name?.slice(0, 3)?.toLowerCase() || "str"}
+              </span>
             </div>
           )}
-          <span className="truncate text-sm font-semibold text-foreground">
+          <span className="truncate text-sm font-semibold text-white">
             {store?.name || "Dashboard"}
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {store?.slug && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => window.open(`/store/${store.slug}`, "_blank")}
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          )}
-          {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+            onClick={() => {/* notification bell */}}
+          >
+            <Bell className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            onClick={() => go("/dashboard/settings")}
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500">
+              <User className="h-4 w-4 text-white" />
+            </div>
+          </Button>
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto px-3 py-4 pb-20">
+      <main className="flex-1 overflow-auto px-3 py-4 pb-24">
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 inset-x-0 z-30 border-t bg-card/95 backdrop-blur-md safe-area-pb">
-        <div className="flex items-center justify-around h-14">
+      {/* Shopify-style bottom nav */}
+      <nav className="fixed bottom-0 inset-x-0 z-30 bg-card border-t safe-area-pb">
+        <div className="flex items-center justify-around h-16 px-1">
           {bottomNav.map((item) => {
-            const active = isActive(item.path, item.exact);
+            const isMenu = item.path === "__menu__";
+            const isSearch = item.path === "__search__";
+            const active = !isMenu && !isSearch && isActive(item.path, item.exact);
+
             return (
               <button
                 key={item.label}
-                onClick={() => go(item.path)}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-0",
-                  active ? "text-primary" : "text-muted-foreground"
-                )}
+                onClick={() => {
+                  if (isMenu) {
+                    setMenuOpen(true);
+                  } else if (isSearch) {
+                    // Could open a search overlay in the future
+                  } else {
+                    go(item.path);
+                  }
+                }}
+                className="relative flex flex-col items-center gap-0.5 px-2 py-1.5 min-w-0"
               >
-                <item.icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
-                <span className="text-[10px] font-medium leading-tight">{item.label}</span>
+                {/* Active pill indicator */}
+                {active && (
+                  <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-full bg-foreground" />
+                )}
+                <div className="relative">
+                  <item.icon
+                    className={cn(
+                      "h-[22px] w-[22px] transition-colors",
+                      active ? "text-foreground stroke-[2.5]" : "text-muted-foreground"
+                    )}
+                  />
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] leading-tight",
+                    active ? "font-semibold text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  {item.label}
+                </span>
               </button>
             );
           })}
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground"
-          >
-            <Menu className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-tight">More</span>
-          </button>
         </div>
       </nav>
 
-      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-        <SheetContent side="right" className="w-[280px] p-0 flex flex-col">
-          <SheetHeader className="px-4 pt-4 pb-2">
-            <SheetTitle className="text-left text-sm">Menu</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-auto px-2 pb-4">
-            {menuSections.map((section) => (
-              <div key={section.title} className="mb-3">
-                <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {section.title}
-                </p>
-                {section.items.map((item) => {
-                  const active = isActive(item.path);
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => go(item.path)}
-                      className={cn(
-                        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors",
-                        active
-                          ? "bg-accent text-accent-foreground font-medium"
-                          : "text-foreground hover:bg-accent/50"
-                      )}
-                    >
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      <span className="flex-1 text-left">{item.label}</span>
-                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-          <Separator />
-          <div className="p-3">
-            <p className="mb-2 truncate px-1 text-xs text-muted-foreground">{user?.email}</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-muted-foreground hover:text-foreground"
-              onClick={() => { signOut(); setMenuOpen(false); }}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign out
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Full-screen dark menu (Shopify style) */}
+      <MobileMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        storeId={storeId}
+        pendingOrders={pendingOrders}
+      />
     </div>
   );
 }
