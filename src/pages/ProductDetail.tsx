@@ -696,7 +696,7 @@ export default function ProductDetail() {
             {product.description && (
               <AccordionItem
                 title="Product Description"
-                icon={<Package className="h-3.5 w-3.5 text-blue-600" />}
+                icon={<Package className="h-3.5 w-3.5" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />}
                 isOpen={openAccordion === "description"}
                 onToggle={() => toggleAccordion("description")}
               >
