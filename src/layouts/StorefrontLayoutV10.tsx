@@ -333,7 +333,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
               "--storefront-bottom-nav-height": "72px",
               backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
               color: "var(--storefront-text, hsl(var(--foreground)))",
-            }}
+            } as React.CSSProperties}
           >
             <FashionHeader store={store} />
             <div className="pb-20 md:pb-0">

@@ -309,6 +309,7 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
               ...themeStyle,
               "--storefront-bottom-nav-height": "72px",
               backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+            } as React.CSSProperties}
               color: "var(--storefront-text, hsl(var(--foreground)))",
             }}
           >
