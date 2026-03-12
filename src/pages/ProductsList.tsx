@@ -313,22 +313,85 @@ export default function ProductsList() {
             </Button>
           </div>
 
-          {/* Status tabs (Shopify style) */}
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-            {STATUS_TABS.map(tab => (
+          {/* Inline filter buttons: Active / Inactive / Category / Bulk Edit */}
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide items-center">
+            {/* Active button */}
+            <button
+              onClick={() => { setStatusFilter(statusFilter === "active" ? "all" : "active"); pagination.setPage(1); }}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border",
+                statusFilter === "active"
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-background text-muted-foreground border-input hover:bg-accent"
+              )}
+            >
+              Active
+            </button>
+            {/* Inactive button */}
+            <button
+              onClick={() => { setStatusFilter(statusFilter === "draft" ? "all" : "draft"); pagination.setPage(1); }}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border",
+                statusFilter === "draft"
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-background text-muted-foreground border-input hover:bg-accent"
+              )}
+            >
+              Inactive
+            </button>
+            {/* Category button with popup */}
+            <div className="relative">
               <button
-                key={tab.value}
-                onClick={() => { setStatusFilter(tab.value); pagination.setPage(1); }}
+                ref={categoryBtnRef}
+                onClick={() => setCategoryPopupOpen(!categoryPopupOpen)}
                 className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors",
-                  statusFilter === tab.value
-                    ? "bg-foreground text-background"
-                    : "bg-muted text-muted-foreground hover:bg-accent"
+                  "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border flex items-center gap-1",
+                  categoryFilter.length > 0
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-background text-muted-foreground border-input hover:bg-accent"
                 )}
               >
-                {tab.label}
+                Category
+                {categoryFilter.length > 0 && (
+                  <span className="bg-background text-foreground rounded-full h-4 min-w-[16px] flex items-center justify-center text-[10px] font-bold px-1">
+                    {categoryFilter.length}
+                  </span>
+                )}
               </button>
-            ))}
+              {categoryPopupOpen && categories.length > 0 && (
+                <div
+                  ref={categoryPopupRef}
+                  className="absolute top-full left-0 mt-1 z-50 min-w-[200px] max-h-[250px] overflow-y-auto rounded-lg border bg-popover p-2 shadow-lg"
+                >
+                  {categories.map(cat => (
+                    <label
+                      key={cat}
+                      className="flex items-center gap-2 rounded-md px-2 py-2 hover:bg-accent cursor-pointer text-sm"
+                    >
+                      <Checkbox
+                        checked={categoryFilter.includes(cat)}
+                        onCheckedChange={() => toggleCategory(cat)}
+                      />
+                      <span className="truncate text-foreground">{cat}</span>
+                    </label>
+                  ))}
+                  {categoryFilter.length > 0 && (
+                    <button
+                      onClick={() => { setCategoryFilter([]); pagination.setPage(1); }}
+                      className="w-full text-xs text-primary font-medium mt-1 py-1"
+                    >
+                      Clear categories
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Bulk Edit inline */}
+            {allProducts && allProducts.length > 0 && (
+              <div className="ml-auto shrink-0">
+                <BulkEditDialog products={allProducts} storeId={storeId!} />
+              </div>
+            )}
           </div>
 
           {/* Active filter chips */}
@@ -340,12 +403,12 @@ export default function ProductsList() {
                   <button onClick={() => setStockFilter("all")}><X className="h-3 w-3" /></button>
                 </Badge>
               )}
-              {categoryFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1 text-xs pr-1">
-                  {categoryFilter}
-                  <button onClick={() => setCategoryFilter("all")}><X className="h-3 w-3" /></button>
+              {categoryFilter.map(cat => (
+                <Badge key={cat} variant="secondary" className="gap-1 text-xs pr-1">
+                  {cat}
+                  <button onClick={() => toggleCategory(cat)}><X className="h-3 w-3" /></button>
                 </Badge>
-              )}
+              ))}
               <button onClick={clearFilters} className="text-xs text-primary font-medium">
                 Clear all
               </button>
