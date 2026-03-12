@@ -580,6 +580,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #6C5CE7, #a29bfe, #FD79A8)",
   },
+  "theme-9": {
+    primary_color: "#7C3AED",
+    accent_color: "#22C55E",
+    text_color: "#1e293b",
+    background_color: "#F8FAFC",
+    heading_font: "Poppins",
+    body_font: "Inter",
+    button_style: "pill",
+    marquee_gradient: "linear-gradient(90deg, #7C3AED, #a78bfa, #22C55E)",
+  },
 };
 
 const THEMES = [
