@@ -1,12 +1,15 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, ShoppingBag, Users, Eye, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Package, ShoppingBag, Users, Eye, TrendingUp, HelpCircle } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line,
 } from "recharts";
+import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -30,6 +33,15 @@ export default function Dashboard() {
   const storeId = store?.id;
   const currency = store?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
+
+  // Onboarding walkthrough
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    if (storeId && !localStorage.getItem(`onboarding-done-${storeId}`)) {
+      const timer = setTimeout(() => setShowOnboarding(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [storeId]);
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", storeId],
@@ -111,9 +123,30 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Your store overview at a glance.</p>
+      {storeId && (
+        <OnboardingWalkthrough
+          storeId={storeId}
+          open={showOnboarding}
+          onOpenChange={setShowOnboarding}
+        />
+      )}
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Your store overview at a glance.</p>
+        </div>
+        {storeId && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowOnboarding(true)}
+            className="gap-1.5 text-xs"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            Setup Guide
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
