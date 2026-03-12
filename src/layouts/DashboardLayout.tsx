@@ -66,18 +66,10 @@ export default function DashboardLayout() {
         {
           title: "Store Management",
           items: [
-            { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products` },
             { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload` },
-            { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders` },
             { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
             { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeId}/leads` },
             { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
-          ],
-        },
-        {
-          title: "Design & Branding",
-          items: [
-            { label: "Theme Settings", icon: Palette, path: `/dashboard/stores/${storeId}/theme` },
           ],
         },
         {
