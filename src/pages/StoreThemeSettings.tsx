@@ -2930,6 +2930,7 @@ export default function StoreThemeSettings() {
                       </div>
                       <div style={{ width: "363px", height: "680px", overflow: "hidden" }}>
                         <iframe
+                          key={`mobile-${iframeKey}`}
                           ref={iframeRef}
                           src={`/store/${store.slug}`}
                           title="Store Preview"
