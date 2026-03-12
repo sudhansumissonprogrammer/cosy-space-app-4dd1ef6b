@@ -720,7 +720,7 @@ export default function ProductDetail() {
             </AccordionItem>
             <AccordionItem
               title="Returns & Exchange"
-              icon={<RotateCcw className="h-3.5 w-3.5 text-orange-600" />}
+              icon={<RotateCcw className="h-3.5 w-3.5" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />}
               isOpen={openAccordion === "returns"}
               onToggle={() => toggleAccordion("returns")}
             >
