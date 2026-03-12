@@ -811,7 +811,7 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
-      {!isOutOfStock && <div className="h-28 sm:hidden" />}
+      {!isOutOfStock && <div className="sm:hidden" style={{ height: "calc(7rem + var(--storefront-bottom-nav-height, 0px))" }} />}
     </div>
   );
 }
