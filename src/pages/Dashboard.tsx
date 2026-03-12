@@ -12,6 +12,44 @@ import {
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import { useNavigate } from "react-router-dom";
 
+function ShimmerBlock({ className }: { className?: string }) {
+  return (
+    <div className={cn("relative overflow-hidden rounded-lg bg-muted", className)}>
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-2.5">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-lg border p-3 flex items-center gap-3">
+            <ShimmerBlock className="h-5 w-5 rounded-md" />
+            <div className="flex-1 space-y-1.5">
+              <ShimmerBlock className="h-3 w-12" />
+              <ShimmerBlock className="h-5 w-16" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border p-3 pt-4 space-y-3">
+        <ShimmerBlock className="h-4 w-16" />
+        <ShimmerBlock className="h-[180px] w-full" />
+      </div>
+      <div className="rounded-lg border p-3 pt-4 space-y-3">
+        <ShimmerBlock className="h-4 w-14" />
+        <ShimmerBlock className="h-[180px] w-full" />
+      </div>
+    </div>
+  );
+}
+
+function cn(...classes: (string | undefined | false)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
