@@ -21,8 +21,9 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
 
-  const { data: store } = useQuery({
+  const { data: store, isLoading: storeLoading } = useQuery({
     queryKey: ["my-store", user?.id],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")

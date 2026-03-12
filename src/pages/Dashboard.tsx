@@ -150,9 +150,7 @@ export default function Dashboard() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+        <DashboardSkeleton />
       ) : (
         <>
           {/* Stat cards — 2x2 grid on mobile */}
