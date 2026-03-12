@@ -474,6 +474,7 @@ const THEMES = [
   { id: "theme-8", name: "Mobile App", description: "Native app-style with bottom tabs, flash deals & pill UI", available: true },
   { id: "theme-9", name: "Discovery Feed", description: "Scroll-first mobile discovery with immersive feed cards", available: true },
   { id: "theme-10", name: "Fashion Runway", description: "Myntra-style fashion shopping with editorial collections", available: true },
+  { id: "theme-11", name: "Shopping App", description: "Minimal nav with separated cart emphasis for faster conversions", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
