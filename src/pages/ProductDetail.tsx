@@ -749,7 +749,7 @@ export default function ProductDetail() {
 
       {/* Sticky Mobile CTA */}
       {!isOutOfStock && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden safe-area-bottom">
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           {/* CRO #3: Free Shipping Progress Bar */}
           {shippingRemaining > 0 ? (
             <div className="px-3 pt-2 pb-1">
