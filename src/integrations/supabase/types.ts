@@ -22,6 +22,7 @@ export type Database = {
           customer_phone: string | null
           id: string
           recovered: boolean
+          session_token: string | null
           store_id: string
         }
         Insert: {
@@ -31,6 +32,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           recovered?: boolean
+          session_token?: string | null
           store_id: string
         }
         Update: {
@@ -40,6 +42,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           recovered?: boolean
+          session_token?: string | null
           store_id?: string
         }
         Relationships: [
