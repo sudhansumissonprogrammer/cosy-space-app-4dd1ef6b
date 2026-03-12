@@ -165,7 +165,7 @@ function TrendingStrip({ products, slug }: { products: any[]; slug: string }) {
               </div>
               <div className="p-2.5 space-y-0.5">
                 <p className="text-[10px] font-semibold uppercase tracking-wide opacity-50" style={{ fontFamily: "var(--storefront-body-font, inherit)" }}>
-                  {product.category || store?.name}
+                  {product.category || "Brand"}
                 </p>
                 <p className="text-xs font-semibold line-clamp-1">{product.name}</p>
                 <div className="flex items-center gap-1.5">
