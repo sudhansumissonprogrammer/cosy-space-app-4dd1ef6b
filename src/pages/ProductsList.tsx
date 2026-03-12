@@ -41,12 +41,6 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "date-old", label: "Created (oldest first)" },
 ];
 
-const STATUS_TABS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-  { value: "draft", label: "Draft" },
-];
-
 export default function ProductsList() {
   const { storeId } = useParams<{ storeId: string }>();
   const { user } = useAuth();
