@@ -2554,6 +2554,7 @@ export default function StoreThemeSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       setDirty(false);
+      setIframeKey((k) => k + 1);
       toast.success("Theme settings saved!");
     },
     onError: () => toast.error("Failed to save settings"),
