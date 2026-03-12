@@ -72,6 +72,38 @@ export default function ProductsList() {
   const [bulkPriceMode, setBulkPriceMode] = useState<"set" | "adjust">("set");
   const [bulkStockMode, setBulkStockMode] = useState<"set" | "adjust">("set");
 
+  // Image preview state
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Long-press state
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
+
+  const handleTouchStart = useCallback((productId: string) => {
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      if (!bulkMode) setBulkMode(true);
+      setBulkSelected(prev => new Set(prev).add(productId));
+      // Haptic feedback if available
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 600);
+  }, [bulkMode]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
