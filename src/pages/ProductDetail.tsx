@@ -811,7 +811,7 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
-      {!isOutOfStock && <div className="h-24 sm:hidden" />}
+      {!isOutOfStock && <div className="h-28 sm:hidden" />}
     </div>
   );
 }
