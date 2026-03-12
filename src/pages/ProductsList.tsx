@@ -51,10 +51,13 @@ export default function ProductsList() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOption>("date-new");
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [categoryPopupOpen, setCategoryPopupOpen] = useState(false);
+  const categoryBtnRef = useRef<HTMLButtonElement>(null);
+  const categoryPopupRef = useRef<HTMLDivElement>(null);
 
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
