@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Shield, Users, Store, ShoppingBag, LogOut, LayoutDashboard, CreditCard, BarChart3 } from "lucide-react";
+import { Shield, Users, ShoppingBag, LogOut, LayoutDashboard, CreditCard, BarChart3, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
