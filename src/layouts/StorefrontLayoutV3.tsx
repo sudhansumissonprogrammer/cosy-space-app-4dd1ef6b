@@ -148,7 +148,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
               className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 transition-colors relative"
               style={{ minWidth: "48px" }}
             >
-              <div className="relative">
+              <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
                 <TabIcon
                   className="h-5 w-5 transition-colors"
                   style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))60" }}
