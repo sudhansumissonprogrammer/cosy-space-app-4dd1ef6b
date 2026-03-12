@@ -63,7 +63,7 @@ function FeedCard({ product, slug, store, index }: { product: any; slug: string;
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem({
+    addToCart({
       productId: product.id,
       name: product.name,
       price: effectivePrice,
