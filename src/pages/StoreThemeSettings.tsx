@@ -2606,6 +2606,8 @@ export default function StoreThemeSettings() {
                         ? "linear-gradient(135deg, #f7f5f0 0%, #b8873c 50%, #000000 100%)"
                         : theme.id === "theme-2"
                         ? "linear-gradient(135deg, #ffffff 0%, #2563eb 50%, #1e293b 100%)"
+                        : theme.id === "theme-3"
+                        ? "linear-gradient(135deg, #F97316 0%, #3B82F6 50%, #1e293b 100%)"
                         : theme.id === "theme-4"
                         ? "linear-gradient(135deg, #F8F5F0 0%, #C8A96A 50%, #1C1C1C 100%)"
                         : theme.id === "theme-5"
@@ -2614,6 +2616,12 @@ export default function StoreThemeSettings() {
                         ? "linear-gradient(135deg, #F8FAFC 0%, #2563EB 50%, #1e293b 100%)"
                         : theme.id === "theme-7"
                         ? "linear-gradient(135deg, #ffffff 0%, #1a1a1a 50%, #000000 100%)"
+                        : theme.id === "theme-8"
+                        ? "linear-gradient(135deg, #F8FAFC 0%, #6C5CE7 50%, #FD79A8 100%)"
+                        : theme.id === "theme-9"
+                        ? "linear-gradient(135deg, #1a1a1a 0%, #7C3AED 50%, #22C55E 100%)"
+                        : theme.id === "theme-10"
+                        ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
                         : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
                   />

@@ -232,7 +232,7 @@ function FeedCard({ product, slug, store, index }: { product: any; slug: string;
         <button
           onClick={() => setExpanded(!expanded)}
           className="w-full flex items-center justify-center py-1.5 transition-all"
-          style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))04" }}
+          style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))10" }}
         >
           {expanded ? (
             <ChevronUp className="h-4 w-4" style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }} />
