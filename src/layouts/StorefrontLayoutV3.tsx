@@ -23,8 +23,10 @@ import { storefrontPath } from "@/lib/subdomain";
 function AppHeader({ store }: { store: StoreData }) {
   const { cartCount, openCart } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const queryClient = useQueryClient();
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
 
   return (
     <header className="sticky top-0 z-30 border-b" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", borderColor: "var(--storefront-text, hsl(var(--foreground)))10" }}>
