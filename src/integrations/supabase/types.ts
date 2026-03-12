@@ -53,6 +53,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "abandoned_carts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       categories: {
@@ -86,6 +93,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -139,6 +153,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupons_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -239,6 +260,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "customer_leads_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       customer_wishlists: {
@@ -317,6 +345,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -446,6 +481,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_storefront_customer_id_fkey"
             columns: ["storefront_customer_id"]
             isOneToOne: false
@@ -482,6 +524,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_views_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -658,6 +707,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -756,6 +812,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "store_shipping_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       store_tax_config: {
@@ -795,6 +858,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_tax_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -850,6 +920,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "store_theme_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       storefront_customers: {
@@ -886,6 +963,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storefront_customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1106,6 +1190,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "whatsapp_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -1134,6 +1225,105 @@ export type Database = {
           razorpay_key_id?: string | null
           store_id?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      stores_public: {
+        Row: {
+          banner_url: string | null
+          best_selling_carousel: boolean | null
+          business_hours: Json | null
+          city: string | null
+          created_at: string | null
+          currency: string | null
+          custom_domain: string | null
+          description: string | null
+          facebook_pixel_id: string | null
+          facebook_url: string | null
+          features: Json | null
+          id: string | null
+          instagram_url: string | null
+          is_suspended: boolean | null
+          is_verified: boolean | null
+          location: string | null
+          logo_url: string | null
+          meta_description: string | null
+          meta_title: string | null
+          mobile_hero_url: string | null
+          name: string | null
+          og_image_url: string | null
+          order_mode: string | null
+          return_policy: string | null
+          shipping_policy: string | null
+          slug: string | null
+          state: string | null
+          theme: string | null
+          updated_at: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          best_selling_carousel?: boolean | null
+          business_hours?: Json | null
+          city?: string | null
+          created_at?: string | null
+          currency?: string | null
+          custom_domain?: string | null
+          description?: string | null
+          facebook_pixel_id?: string | null
+          facebook_url?: string | null
+          features?: Json | null
+          id?: string | null
+          instagram_url?: string | null
+          is_suspended?: boolean | null
+          is_verified?: boolean | null
+          location?: string | null
+          logo_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          mobile_hero_url?: string | null
+          name?: string | null
+          og_image_url?: string | null
+          order_mode?: string | null
+          return_policy?: string | null
+          shipping_policy?: string | null
+          slug?: string | null
+          state?: string | null
+          theme?: string | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          best_selling_carousel?: boolean | null
+          business_hours?: Json | null
+          city?: string | null
+          created_at?: string | null
+          currency?: string | null
+          custom_domain?: string | null
+          description?: string | null
+          facebook_pixel_id?: string | null
+          facebook_url?: string | null
+          features?: Json | null
+          id?: string | null
+          instagram_url?: string | null
+          is_suspended?: boolean | null
+          is_verified?: boolean | null
+          location?: string | null
+          logo_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          mobile_hero_url?: string | null
+          name?: string | null
+          og_image_url?: string | null
+          order_mode?: string | null
+          return_policy?: string | null
+          shipping_policy?: string | null
+          slug?: string | null
+          state?: string | null
+          theme?: string | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
