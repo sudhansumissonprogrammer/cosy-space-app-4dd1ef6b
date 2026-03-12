@@ -109,8 +109,6 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
     ? StorefrontLayoutV7
     : theme === "theme-6"
     ? StorefrontLayoutV6
-    : theme === "theme-5"
-    ? StorefrontLayoutV5
     : theme === "theme-4"
     ? StorefrontLayoutV4
     : theme === "theme-3"
