@@ -150,11 +150,11 @@ export default function StorefrontProductCard({ product, slug, store, priority =
           {/* Wishlist Heart */}
           <button
             onClick={handleWishlist}
-            className="absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm shadow-sm transition-all duration-200 hover:scale-110 hover:bg-card"
+            className="absolute right-2.5 top-2.5 z-10 p-1 transition-all duration-200 hover:scale-110 active:scale-95"
           >
             <Heart
-              className={`h-3 w-3 transition-colors duration-200 ${
-                wishlisted ? "fill-destructive text-destructive" : "text-muted-foreground"
+              className={`h-4 w-4 drop-shadow-md transition-colors duration-200 ${
+                wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"
               }`}
             />
           </button>
