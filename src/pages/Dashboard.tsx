@@ -34,6 +34,15 @@ export default function Dashboard() {
   const currency = store?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
+  // Onboarding walkthrough
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    if (storeId && !localStorage.getItem(`onboarding-done-${storeId}`)) {
+      const timer = setTimeout(() => setShowOnboarding(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [storeId]);
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", storeId],
     staleTime: 5 * 60 * 1000,
