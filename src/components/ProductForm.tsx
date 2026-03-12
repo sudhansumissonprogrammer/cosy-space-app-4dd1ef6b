@@ -13,6 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -430,12 +434,50 @@ export default function ProductForm({ productId }: ProductFormProps) {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-semibold text-foreground">
             {isEditing ? "Edit Product" : "Add Product"}
           </h1>
           <p className="text-sm text-muted-foreground">{store.name}</p>
         </div>
+        {isEditing && productId && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete this product and all its images/variants. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={async () => {
+                    try {
+                      await supabase.from("product_images").delete().eq("product_id", productId);
+                      await supabase.from("product_variants").delete().eq("product_id", productId);
+                      const { error } = await supabase.from("products").delete().eq("id", productId);
+                      if (error) throw error;
+                      queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+                      toast.success("Product deleted");
+                      navigate(`/dashboard/stores/${storeId}/products`);
+                    } catch (err: any) {
+                      toast.error(err.message || "Failed to delete product");
+                    }
+                  }}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>

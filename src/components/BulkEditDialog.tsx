@@ -7,9 +7,14 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent as AlertContent,
+  AlertDialogDescription as AlertDesc, AlertDialogFooter as AlertFoot,
+  AlertDialogHeader as AlertHead, AlertDialogTitle as AlertTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface Product {
   id: string;
@@ -89,6 +94,28 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
     onError: (err: any) => toast.error(err.message || "Bulk update failed"),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const ids = Array.from(selected);
+      if (ids.length === 0) throw new Error("No products selected");
+
+      for (const id of ids) {
+        await supabase.from("product_images").delete().eq("product_id", id);
+        await supabase.from("product_variants").delete().eq("product_id", id);
+        const { error } = await supabase.from("products").delete().eq("id", id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["product-limit"] });
+      toast.success(`${selected.size} products deleted`);
+      setOpen(false);
+      setSelected(new Set());
+    },
+    onError: (err: any) => toast.error(err.message || "Bulk delete failed"),
+  });
+
   return (
     <>
       <Button variant="outline" onClick={() => setOpen(true)} disabled={products.length === 0}>
@@ -98,7 +125,7 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Bulk Edit Products</DialogTitle>
-            <DialogDescription>Select products and set new price/stock values.</DialogDescription>
+            <DialogDescription>Select products and set new price/stock values or delete them.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -165,14 +192,46 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button
-              onClick={() => bulkMutation.mutate()}
-              disabled={selected.size === 0 || (priceChange === "" && stockChange === "") || bulkMutation.isPending}
-            >
-              {bulkMutation.isPending ? "Updating..." : `Update ${selected.size} Products`}
-            </Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  disabled={selected.size === 0 || deleteMutation.isPending}
+                  className="w-full sm:w-auto"
+                >
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  {deleteMutation.isPending ? "Deleting..." : `Delete ${selected.size}`}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertContent>
+                <AlertHead>
+                  <AlertTitle>Delete {selected.size} Products</AlertTitle>
+                  <AlertDesc>
+                    This will permanently delete the selected products and all their images/variants. This cannot be undone.
+                  </AlertDesc>
+                </AlertHead>
+                <AlertFoot>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => deleteMutation.mutate()}
+                  >
+                    Delete All
+                  </AlertDialogAction>
+                </AlertFoot>
+              </AlertContent>
+            </AlertDialog>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={() => setOpen(false)} className="flex-1 sm:flex-none">Cancel</Button>
+              <Button
+                onClick={() => bulkMutation.mutate()}
+                disabled={selected.size === 0 || (priceChange === "" && stockChange === "") || bulkMutation.isPending}
+                className="flex-1 sm:flex-none"
+              >
+                {bulkMutation.isPending ? "Updating..." : `Update ${selected.size}`}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
