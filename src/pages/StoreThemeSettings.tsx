@@ -2280,6 +2280,136 @@ function DiscoveryFeedPreview({ config, storeName, products: propProducts, categ
   );
 }
 
+/* ── Fashion Runway Preview (Theme 10) ── */
+function FashionRunwayPreview({ config, storeName, products: propProducts, categories: propCategories, isDesktop }: PreviewProps) {
+  const products = propProducts && propProducts.length > 0 ? propProducts : DEFAULT_PRODUCTS;
+  const categories = propCategories && propCategories.length > 0 ? propCategories : DEFAULT_CATEGORIES;
+  const btnText = isLightColor(config.primary_color) ? "#1a1a1a" : "#ffffff";
+
+  return (
+    <PreviewFrame isDesktop={isDesktop} bgColor={config.background_color}>
+      {/* Fashion Header */}
+      <div className="sticky top-0 z-10 px-3 py-1.5 flex items-center justify-between" style={{ backgroundColor: config.background_color, boxShadow: `0 1px 4px ${config.text_color}06` }}>
+        <Menu className="h-3.5 w-3.5" style={{ color: config.text_color }} />
+        <span className="text-[9px] font-bold" style={{ color: config.text_color, fontFamily: config.heading_font }}>{storeName}</span>
+        <div className="flex items-center gap-1">
+          <Search className="h-3 w-3" style={{ color: config.text_color }} />
+          <Heart className="h-3 w-3" style={{ color: config.text_color }} />
+          <div className="relative">
+            <ShoppingCart className="h-3 w-3" style={{ color: config.text_color }} />
+            <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5 items-center justify-center rounded-full text-[3px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>2</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Hero Campaign */}
+      <div className="px-3 pt-1.5">
+        <div className="relative overflow-hidden flex items-center justify-center" style={{ borderRadius: "12px", height: isDesktop ? "80px" : "65px", background: `linear-gradient(135deg, ${config.primary_color}15, ${config.accent_color}08)` }}>
+          <div className="text-center">
+            <p className="text-[7px] font-bold" style={{ fontFamily: config.heading_font, color: config.text_color }}>{storeName}</p>
+            <p className="text-[5px] opacity-60" style={{ color: config.text_color }}>Discover the latest</p>
+            <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[4px] font-semibold" style={{ backgroundColor: config.primary_color, color: btnText }}>
+              Shop Now
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Style Categories */}
+      <div className="px-3 py-2 flex gap-1.5 overflow-hidden">
+        {categories.slice(0, 4).map((cat) => (
+          <div key={cat.name} className="flex-shrink-0 relative overflow-hidden" style={{ width: "36px", borderRadius: "8px" }}>
+            <div style={{ aspectRatio: "3/4", backgroundColor: config.primary_color + "10" }}>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" style={{ borderRadius: "8px" }} />
+              <span className="absolute bottom-1 left-0 right-0 text-center text-[3.5px] font-bold text-white">{cat.name}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Trending */}
+      <div className="px-3 py-1">
+        <div className="flex items-center gap-1 mb-1">
+          <Flame className="h-2.5 w-2.5" style={{ color: config.primary_color }} />
+          <span className="text-[6px] font-bold" style={{ fontFamily: config.heading_font, color: config.text_color }}>Trending Now</span>
+        </div>
+        <div className="flex gap-1.5 overflow-hidden">
+          {products.slice(0, 3).map((p) => (
+            <div key={p.id} className="flex-shrink-0 w-16 overflow-hidden" style={{ borderRadius: "8px", border: `1px solid ${config.text_color}06` }}>
+              <div style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : null}
+              </div>
+              <div className="p-1">
+                <p className="text-[3px] font-bold uppercase opacity-40">Brand</p>
+                <p className="text-[4px] font-semibold truncate" style={{ color: config.text_color }}>{p.name}</p>
+                <p className="text-[5px] font-bold" style={{ color: config.primary_color }}>{p.price}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Fashion Deals */}
+      <div className="px-3 py-1.5">
+        <div className="p-2 text-center" style={{ borderRadius: "10px", background: `linear-gradient(135deg, ${config.primary_color}, ${config.primary_color}cc)` }}>
+          <span className="text-[4px] font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.7)" }}>Limited Time</span>
+          <p className="text-[8px] font-extrabold text-white" style={{ fontFamily: config.heading_font }}>Fashion Sale</p>
+        </div>
+      </div>
+
+      {/* Product Grid */}
+      <div className="px-3 py-1">
+        <p className="text-[6px] font-bold mb-1" style={{ fontFamily: config.heading_font, color: config.text_color }}>Just For You</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          {products.slice(0, 4).map((p) => (
+            <div key={p.id} className="overflow-hidden" style={{ borderRadius: "10px", border: `1px solid ${config.text_color}06` }}>
+              <div style={{ aspectRatio: "3/4", backgroundColor: config.primary_color + "06" }}>
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : null}
+                {p.discount && (
+                  <div className="absolute top-1 left-1 rounded-full px-1 py-0.5 text-[3px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>{p.discount}</div>
+                )}
+              </div>
+              <div className="p-1.5">
+                <p className="text-[3px] font-bold uppercase opacity-40">Brand</p>
+                <p className="text-[4px] font-semibold truncate" style={{ color: config.text_color }}>{p.name}</p>
+                <div className="flex items-center gap-0.5">
+                  <span className="text-[5px] font-bold">{p.price}</span>
+                  {p.oldPrice && <span className="text-[3px] line-through opacity-40">{p.oldPrice}</span>}
+                </div>
+                <div className="mt-0.5 w-full text-center py-0.5 rounded-full text-[3.5px] font-semibold" style={{ border: `1px solid ${config.primary_color}`, color: config.primary_color }}>
+                  Add to Bag
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom Tab Bar */}
+      <div className="flex justify-around py-1.5 border-t" style={{ borderColor: config.text_color + "08" }}>
+        {[
+          { icon: Home, label: "Home", active: true },
+          { icon: LayoutGrid, label: "Categories", active: false },
+          { icon: Flame, label: "Trends", active: false },
+          { icon: Heart, label: "Wishlist", active: false },
+          { icon: User, label: "Profile", active: false },
+        ].map((tab) => (
+          <div key={tab.label} className="flex flex-col items-center gap-0.5 relative">
+            <tab.icon className="h-2.5 w-2.5" style={{ color: tab.active ? config.primary_color : config.text_color + "40" }} />
+            <span className="text-[4px] font-semibold" style={{ color: tab.active ? config.primary_color : config.text_color + "40" }}>{tab.label}</span>
+            {tab.active && <div className="absolute -bottom-1.5 h-0.5 w-4 rounded-full" style={{ backgroundColor: config.primary_color }} />}
+          </div>
+        ))}
+      </div>
+
+      {/* Floating Filter */}
+      <div className="absolute bottom-8 right-3 h-6 w-6 rounded-full flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color}90)`, boxShadow: `0 4px 12px ${config.primary_color}50` }}>
+        <SlidersHorizontal className="h-3 w-3" style={{ color: btnText }} />
+      </div>
+    </PreviewFrame>
+  );
+}
+
 export default function StoreThemeSettings() {
   const { storeId } = useParams<{ storeId: string }>();
   const queryClient = useQueryClient();
