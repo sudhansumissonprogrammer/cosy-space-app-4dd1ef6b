@@ -145,7 +145,8 @@ function BottomTabBar({ store }: { store: StoreData }) {
             <Link
               key={tab.label}
               to={tab.to}
-              className="flex flex-col items-center gap-0.5 py-2 px-3 transition-colors relative"
+              className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 transition-colors relative"
+              style={{ minWidth: "48px" }}
             >
               <div className="relative">
                 <TabIcon

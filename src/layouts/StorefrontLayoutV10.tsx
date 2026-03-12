@@ -175,7 +175,7 @@ function FashionTabBar({ store }: { store: StoreData }) {
             : location.pathname.includes(tab.match!);
           const TabIcon = tab.icon;
           return (
-            <Link key={tab.label} to={tab.to} className="flex flex-col items-center gap-0.5 py-1 px-3 transition-all relative">
+            <Link key={tab.label} to={tab.to} className="flex flex-col items-center justify-center gap-0.5 py-1 px-3 transition-all relative" style={{ minWidth: "48px" }}>
               <div className="relative">
                 <TabIcon
                   className="h-5 w-5 transition-colors"

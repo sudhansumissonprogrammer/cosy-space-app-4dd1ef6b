@@ -156,7 +156,8 @@ function BottomTabBar({ store }: { store: StoreData }) {
                 key={tab.label}
                 to={isSearch ? "#" : tab.to}
                 onClick={isSearch ? (e) => { e.preventDefault(); setSearchOpen(true); } : undefined}
-                className="flex flex-col items-center gap-0.5 py-1.5 px-3 transition-all relative"
+                className="flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 transition-all relative"
+                style={{ minWidth: "48px" }}
               >
                 {isActive && (
                   <div
