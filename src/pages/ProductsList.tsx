@@ -126,7 +126,7 @@ export default function ProductsList() {
     if (stockFilter === "out-of-stock") result = result.filter(p => p.stock_quantity <= 0);
 
     // Category filter
-    if (categoryFilter !== "all") result = result.filter(p => p.category === categoryFilter);
+    if (categoryFilter.length > 0) result = result.filter(p => p.category && categoryFilter.includes(p.category));
 
     // Sort
     switch (sort) {
