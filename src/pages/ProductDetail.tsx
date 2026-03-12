@@ -1157,7 +1157,6 @@ function AccordionItem({
           {title}
         </span>
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen && (
         <div className="px-4 pb-3 animate-in slide-in-from-top-1 duration-200">
