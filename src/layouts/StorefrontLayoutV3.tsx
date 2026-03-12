@@ -112,6 +112,9 @@ function AppHeader({ store }: { store: StoreData }) {
         </button>
       </div>
     </header>
+
+    <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
+    </>
   );
 }
 
