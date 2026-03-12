@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Store, ShoppingCart, Heart, User, Search, Menu, X } from "lucide-react";
@@ -332,6 +333,8 @@ export default function StorefrontLayoutV6({ slugOverride }: { slugOverride?: st
     link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
   }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
+  const previewOverride = useThemePreview();
+
   if (isLoading) return <StorefrontV6Skeleton />;
 
   if (!store) {
@@ -366,7 +369,7 @@ export default function StorefrontLayoutV6({ slugOverride }: { slugOverride?: st
   const primaryLight = computePrimaryLight(primaryColor);
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
-  const themeStyle: React.CSSProperties = themeConfig
+  const themeStyle: React.CSSProperties = (previewOverride || (themeConfig
     ? {
         "--storefront-primary": themeConfig.primary_color,
         "--storefront-primary-light": primaryLight,
@@ -380,7 +383,7 @@ export default function StorefrontLayoutV6({ slugOverride }: { slugOverride?: st
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,
         "--storefront-btn-text": btnTextColor,
       } as any
-    : {};
+    : {})) as any;
 
   return (
     <CartProvider slug={store.slug}>

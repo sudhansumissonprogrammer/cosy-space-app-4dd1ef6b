@@ -19,6 +19,7 @@ import SideCart from "@/components/storefront/SideCart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
+import { useThemePreview } from "@/hooks/useThemePreview";
 
 export type StoreData = Tables<"stores">;
 
@@ -293,6 +294,9 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
   }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
+  // Listen for live theme preview messages from admin dashboard iframe parent
+  const previewOverride = useThemePreview();
+
   if (isLoading) {
     return <StorefrontSkeleton />;
   }
@@ -319,7 +323,6 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     return `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
   };
 
-  // Determine if primary color is light (for btn text contrast)
   const isLightColor = (hex: string) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -332,7 +335,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
   // Build CSS variable style object from theme config
-  const themeStyle: React.CSSProperties = themeConfig
+  const themeStyle: React.CSSProperties = (previewOverride || (themeConfig
     ? {
         "--storefront-primary": themeConfig.primary_color,
         "--storefront-primary-light": primaryLight,
@@ -345,8 +348,8 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
           themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : "0.5rem",
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,
         "--storefront-btn-text": btnTextColor,
-      } as any
-    : {};
+      }
+    : {})) as any;
 
   return (
     <CartProvider slug={store.slug}>

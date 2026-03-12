@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -2488,7 +2488,8 @@ export default function StoreThemeSettings() {
   const [config, setConfig] = useState<ThemeConfig>(defaults);
   const [dirty, setDirty] = useState(false);
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
-  const [iframeKey, setIframeKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const iframeDesktopRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (themeConfig) {
@@ -2508,9 +2509,18 @@ export default function StoreThemeSettings() {
     setDirty(false);
   }, [themeConfig, currentTheme]);
 
+  // Send config to iframe for live preview
+  const sendToIframe = useCallback((cfg: ThemeConfig) => {
+    const msg = { type: "theme-preview", config: cfg };
+    iframeRef.current?.contentWindow?.postMessage(msg, "*");
+    iframeDesktopRef.current?.contentWindow?.postMessage(msg, "*");
+  }, []);
+
   const updateField = (key: keyof ThemeConfig, value: string) => {
-    setConfig((prev) => ({ ...prev, [key]: value }));
+    const newConfig = { ...config, [key]: value };
+    setConfig(newConfig);
     setDirty(true);
+    sendToIframe(newConfig);
   };
 
   const applyThemeMutation = useMutation({
@@ -2554,7 +2564,7 @@ export default function StoreThemeSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       setDirty(false);
-      setIframeKey((k) => k + 1);
+      // Preview already reflects saved state via postMessage
       toast.success("Theme settings saved!");
     },
     onError: () => toast.error("Failed to save settings"),
@@ -2682,15 +2692,17 @@ export default function StoreThemeSettings() {
                   <div
                     key={combo.id}
                     onClick={() => {
-                      setConfig((prev) => ({
-                        ...prev,
+                      const newConfig = {
+                        ...config,
                         primary_color: combo.primary,
                         accent_color: combo.accent,
                         text_color: combo.text,
                         background_color: combo.background,
                         marquee_gradient: combo.marquee,
-                      }));
+                      };
+                      setConfig(newConfig);
                       setDirty(true);
+                      sendToIframe(newConfig);
                     }}
                     className={`cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${
                       isSelected
@@ -2799,7 +2811,7 @@ export default function StoreThemeSettings() {
               </div>
             </div>
             {dirty && (
-              <p className="mb-3 text-xs text-warning">⚠ Save your changes first to see them in the preview</p>
+              <p className="mb-3 text-xs text-muted-foreground">💡 Preview updates live. Click "Save Changes" to apply to your store.</p>
             )}
             {store?.slug ? (
               <div className="flex justify-center">
@@ -2811,9 +2823,10 @@ export default function StoreThemeSettings() {
                       </div>
                       <div style={{ width: "363px", height: "680px", overflow: "hidden" }}>
                         <iframe
-                          key={`mobile-${iframeKey}`}
+                          ref={iframeRef}
                           src={`/store/${store.slug}`}
                           title="Store Preview"
+                          onLoad={() => sendToIframe(config)}
                           style={{
                             width: "375px",
                             height: "700px",
@@ -2840,9 +2853,10 @@ export default function StoreThemeSettings() {
                     </div>
                     <div style={{ width: "100%", height: "680px", overflow: "hidden" }}>
                       <iframe
-                        key={`desktop-${iframeKey}`}
+                        ref={iframeDesktopRef}
                         src={`/store/${store.slug}`}
                         title="Store Preview Desktop"
+                        onLoad={() => sendToIframe(config)}
                         style={{
                           width: "1440px",
                           height: "900px",
