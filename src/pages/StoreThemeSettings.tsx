@@ -396,16 +396,6 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #C8A96A, #e8d5a8, #C8A96A)",
   },
-  "theme-5": {
-    primary_color: "#6366F1",
-    accent_color: "#22C55E",
-    text_color: "#e2e8f0",
-    background_color: "#0F172A",
-    heading_font: "Space Grotesk",
-    body_font: "Inter",
-    button_style: "rounded",
-    marquee_gradient: "linear-gradient(90deg, #6366F1, #818cf8, #22C55E)",
-  },
   "theme-6": {
     primary_color: "#2563EB",
     accent_color: "#1e293b",
