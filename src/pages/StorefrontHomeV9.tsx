@@ -69,7 +69,6 @@ function FeedCard({ product, slug, store, index }: { product: any; slug: string;
       price: effectivePrice,
       image: product.image_url,
       quantity: 1,
-      slug: product.slug,
     });
   };
 
