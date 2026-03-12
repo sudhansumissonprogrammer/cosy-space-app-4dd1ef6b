@@ -348,9 +348,12 @@ export default function ProductForm({ productId }: ProductFormProps) {
         const { data, error } = await supabase.from("products").insert(productData).select("id").single();
         if (error) {
           if (error.code === "23505") {
-            toast.error("A product with this slug already exists in this store");
-            return;
-          }
+            // Slug conflict — retry with random suffix
+            productData.slug = generateSlug(name.trim()) + "-" + Math.random().toString(36).substring(2, 6);
+            const { data: retryData, error: retryError } = await supabase.from("products").insert(productData).select("id").single();
+            if (retryError) throw retryError;
+            savedProductId = retryData.id;
+          } else {
           throw error;
         }
         savedProductId = data.id;
