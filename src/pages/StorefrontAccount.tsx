@@ -347,17 +347,17 @@ export default function StorefrontAccount() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <User className="h-5 w-5" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold">{customer.name || user.email}</h1>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-semibold truncate">{customer.name || user.email}</h1>
+            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={signOut}>
+        <Button variant="outline" size="sm" onClick={signOut} className="mt-3 w-full sm:w-auto">
           <LogOut className="mr-2 h-4 w-4" /> Sign Out
         </Button>
       </div>
