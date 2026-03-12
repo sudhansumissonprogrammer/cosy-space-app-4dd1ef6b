@@ -139,6 +139,20 @@ function AppRouter() {
   }
 
   if (location.pathname.startsWith("/store/")) {
+    const hostname = window.location.hostname;
+    const isProduction = hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`;
+
+    if (isProduction) {
+      // Redirect /store/{slug}/... → {slug}.storivo.in/...
+      const rest = location.pathname.replace(/^\/store\//, "");
+      const slug = rest.split("/")[0];
+      const remainingPath = rest.slice(slug.length); // e.g. "/product/xyz"
+      const search = window.location.search;
+      const hash = window.location.hash;
+      window.location.replace(`https://${slug}.${ROOT_DOMAIN}${remainingPath}${search}${hash}`);
+      return <LoadingSpinner />;
+    }
+
     return <ThemeAwareStorefront />;
   }
 
