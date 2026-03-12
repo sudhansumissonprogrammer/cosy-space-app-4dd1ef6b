@@ -246,7 +246,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   const handleNameChange = (value: string) => {
     setName(value);
-    if (!isEditing) setSlug(generateSlug(value));
+    setSlug(generateSlug(value));
   };
 
   const handleFileSelect = (file: File | null) => {
@@ -325,7 +325,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       const productData = {
         store_id: storeId,
         name: name.trim(),
-        slug: slug.trim() || null,
+        slug: slug.trim() || generateSlug(name.trim()),
         price: parseFloat(price),
         sale_price: salePrice ? parseFloat(salePrice) : null,
         description: description.trim() || null,
@@ -348,12 +348,17 @@ export default function ProductForm({ productId }: ProductFormProps) {
         const { data, error } = await supabase.from("products").insert(productData).select("id").single();
         if (error) {
           if (error.code === "23505") {
-            toast.error("A product with this slug already exists in this store");
-            return;
+            // Slug conflict — retry with random suffix
+            productData.slug = generateSlug(name.trim()) + "-" + Math.random().toString(36).substring(2, 6);
+            const { data: retryData, error: retryError } = await supabase.from("products").insert(productData).select("id").single();
+            if (retryError) throw retryError;
+            savedProductId = retryData.id;
+          } else {
+            throw error;
           }
-          throw error;
+        } else {
+          savedProductId = data.id;
         }
-        savedProductId = data.id;
       }
 
       // Upload additional images
@@ -514,16 +519,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
                   placeholder="Product name"
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  maxLength={200}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="product-slug">Slug</Label>
-                <Input
-                  id="product-slug"
-                  placeholder="product-name"
-                  value={slug}
-                  onChange={(e) => setSlug(generateSlug(e.target.value))}
                   maxLength={200}
                 />
               </div>
