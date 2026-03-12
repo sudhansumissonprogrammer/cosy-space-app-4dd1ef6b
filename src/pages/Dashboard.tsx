@@ -1,12 +1,15 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, ShoppingBag, Users, Eye, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Package, ShoppingBag, Users, Eye, TrendingUp, HelpCircle } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line,
 } from "recharts";
+import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 
 export default function Dashboard() {
   const { user } = useAuth();
