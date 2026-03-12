@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +19,9 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Dialog, DialogContent,
+} from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
@@ -68,6 +71,38 @@ export default function ProductsList() {
   const [bulkStockChange, setBulkStockChange] = useState("");
   const [bulkPriceMode, setBulkPriceMode] = useState<"set" | "adjust">("set");
   const [bulkStockMode, setBulkStockMode] = useState<"set" | "adjust">("set");
+
+  // Image preview state
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Long-press state
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
+
+  const handleTouchStart = useCallback((productId: string) => {
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      if (!bulkMode) setBulkMode(true);
+      setBulkSelected(prev => new Set(prev).add(productId));
+      // Haptic feedback if available
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 600);
+  }, [bulkMode]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   const { data: store } = useQuery({
     queryKey: ["store", storeId],
@@ -488,7 +523,13 @@ export default function ProductsList() {
           {isMobile ? (
             <div className={cn("divide-y rounded-lg border bg-card", bulkMode && "pb-20")}>
               {paginatedProducts.map((product) => (
-                <div key={product.id} className="flex items-center gap-3 px-3 py-3">
+                <div
+                  key={product.id}
+                  className="flex items-center gap-3 px-3 py-3"
+                  onTouchStart={() => handleTouchStart(product.id)}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchMove={handleTouchMove}
+                >
                   {bulkMode && (
                     <Checkbox
                       checked={bulkSelected.has(product.id)}
@@ -496,18 +537,28 @@ export default function ProductsList() {
                       className="shrink-0"
                     />
                   )}
+                  {/* Image - tap to preview */}
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt=""
+                      className="h-12 w-12 rounded-lg border object-cover shrink-0 cursor-pointer"
+                      loading="lazy"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!longPressTriggered.current) setPreviewImage(product.image_url); }}
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
                   <Link
                     to={bulkMode ? "#" : `/dashboard/stores/${storeId}/products/${product.id}/edit`}
-                    onClick={bulkMode ? (e) => { e.preventDefault(); toggleBulkSelect(product.id); } : undefined}
+                    onClick={(e) => {
+                      if (longPressTriggered.current) { e.preventDefault(); return; }
+                      if (bulkMode) { e.preventDefault(); toggleBulkSelect(product.id); }
+                    }}
                     className="flex items-center gap-3 flex-1 min-w-0 active:bg-accent/50 transition-colors"
                   >
-                    {product.image_url ? (
-                      <img src={product.image_url} alt="" className="h-12 w-12 rounded-lg border object-cover shrink-0" loading="lazy" />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -555,7 +606,13 @@ export default function ProductsList() {
                         )}
                         <TableCell>
                           {product.image_url ? (
-                            <img src={product.image_url} alt="" className="h-10 w-10 rounded-md border object-cover" loading="lazy" />
+                            <img
+                              src={product.image_url}
+                              alt=""
+                              className="h-10 w-10 rounded-md border object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                              loading="lazy"
+                              onClick={() => setPreviewImage(product.image_url)}
+                            />
                           ) : (
                             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent"><Package className="h-4 w-4 text-muted-foreground" /></div>
                           )}
@@ -783,6 +840,19 @@ export default function ProductsList() {
           <Button onClick={() => setFilterOpen(false)} className="w-full mt-6">Apply Filters</Button>
         </SheetContent>
       </Sheet>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={(v) => { if (!v) setPreviewImage(null); }}>
+        <DialogContent className="sm:max-w-lg p-2 bg-background/95 backdrop-blur">
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Product preview"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-md"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
