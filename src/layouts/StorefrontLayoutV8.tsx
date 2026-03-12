@@ -329,7 +329,7 @@ export default function StorefrontLayoutV8({ slugOverride }: { slugOverride?: st
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,
         "--storefront-btn-text": btnTextColor,
       } as any
-    : {};
+    : {})) as any;
 
   return (
     <CartProvider slug={store.slug}>
