@@ -48,13 +48,6 @@ function MobileMenu({
   const menuSections: MenuSection[] = storeId
     ? [
         {
-          items: [
-            { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
-            { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, badge: pendingOrders },
-            { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products` },
-          ],
-        },
-        {
           title: "Customers",
           items: [
             { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
