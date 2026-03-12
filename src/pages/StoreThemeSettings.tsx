@@ -453,7 +453,7 @@ const THEMES = [
   { id: "theme-2", name: "Bold Modern", description: "Transparent header, carousel hero, masonry grid", available: true },
   { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
   { id: "theme-4", name: "Luxury", description: "Premium editorial layout with serif typography & elegant spacing", available: true },
-  { id: "theme-5", name: "Startup", description: "Glassmorphism, gradient hero, dark mode with neon accents", available: true },
+  
   { id: "theme-6", name: "Pro Clean", description: "Modern startup-style with clean layout, structured grid & premium feel", available: true },
   { id: "theme-7", name: "Magazine", description: "Editorial storytelling with horizontal scrolls & cinematic imagery", available: true },
   { id: "theme-8", name: "Mobile App", description: "Native app-style with bottom tabs, flash deals & pill UI", available: true },
