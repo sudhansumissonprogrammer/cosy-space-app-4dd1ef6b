@@ -972,7 +972,7 @@ function FrequentlyBoughtTogether({
   return (
     <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Zap className="h-4 w-4 text-violet-600" />
+        <Zap className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-bold text-foreground">Frequently Bought Together</h3>
       </div>
       <div className="flex items-center gap-2 mb-3 overflow-x-auto">
