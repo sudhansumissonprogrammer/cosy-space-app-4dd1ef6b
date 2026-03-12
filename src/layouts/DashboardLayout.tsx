@@ -138,7 +138,7 @@ export default function DashboardLayout() {
               <ExternalLink className="h-4 w-4" />
             </Button>
           )}
-          {store && <ShareStoreDialog store={store as any} />}
+          {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />}
         </div>
       </header>
 
