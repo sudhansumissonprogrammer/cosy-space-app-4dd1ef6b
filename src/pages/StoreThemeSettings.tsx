@@ -2781,7 +2781,7 @@ export default function StoreThemeSettings() {
           <div>
             <h4 className="mb-3 text-sm font-semibold">Color Combination</h4>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {COLOR_COMBINATIONS.map((combo) => {
+              {getSortedCombinations(currentTheme).map((combo) => {
                 const isSelected = selectedCombo?.id === combo.id;
                 return (
                   <div
@@ -2811,12 +2811,20 @@ export default function StoreThemeSettings() {
                       <div className="flex-1" style={{ backgroundColor: combo.background }} />
                       <div className="flex-1" style={{ backgroundColor: combo.text }} />
                     </div>
-                    <div className="flex items-center justify-between p-3">
-                      <span className="text-sm font-medium">{combo.name}</span>
-                      {isSelected && (
-                        <Badge variant="secondary" className="gap-1">
-                          <Check className="h-3 w-3" /> Selected
-                        </Badge>
+                    <div className="flex flex-col gap-0.5 p-2.5">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-sm font-medium truncate">{combo.name}</span>
+                        {isSelected && (
+                          <Badge variant="secondary" className="gap-1 flex-shrink-0 text-[10px] px-1.5 py-0.5">
+                            <Check className="h-3 w-3" /> Selected
+                          </Badge>
+                        )}
+                      </div>
+                      {combo.isRecommended && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                          <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                          Recommended
+                        </span>
                       )}
                     </div>
                   </div>
