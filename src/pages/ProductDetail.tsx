@@ -652,8 +652,8 @@ export default function ProductDetail() {
           {/* Delivery & Trust Badges */}
           <div className="mt-5 rounded-xl border border-border p-3 space-y-2.5">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-                <Truck className="h-4 w-4 text-blue-600" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }}>
+                <Truck className="h-4 w-4" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">Free & Express Delivery</p>
@@ -661,8 +661,8 @@ export default function ProductDetail() {
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                <RotateCcw className="h-4 w-4 text-orange-600" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))10" }}>
+                <RotateCcw className="h-4 w-4" style={{ color: "var(--storefront-accent, hsl(var(--primary)))" }} />
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">Easy Returns</p>
@@ -670,8 +670,8 @@ export default function ProductDetail() {
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
-                <Shield className="h-4 w-4 text-purple-600" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))08" }}>
+                <Shield className="h-4 w-4" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">Secure Checkout</p>
@@ -696,7 +696,7 @@ export default function ProductDetail() {
             {product.description && (
               <AccordionItem
                 title="Product Description"
-                icon={<Package className="h-3.5 w-3.5 text-blue-600" />}
+                icon={<Package className="h-3.5 w-3.5" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />}
                 isOpen={openAccordion === "description"}
                 onToggle={() => toggleAccordion("description")}
               >
@@ -707,7 +707,7 @@ export default function ProductDetail() {
             )}
             <AccordionItem
               title="Shipping Information"
-              icon={<Truck className="h-3.5 w-3.5 text-amber-600" />}
+              icon={<Truck className="h-3.5 w-3.5" style={{ color: "var(--storefront-accent, hsl(var(--primary)))" }} />}
               isOpen={openAccordion === "shipping"}
               onToggle={() => toggleAccordion("shipping")}
             >
@@ -720,7 +720,7 @@ export default function ProductDetail() {
             </AccordionItem>
             <AccordionItem
               title="Returns & Exchange"
-              icon={<RotateCcw className="h-3.5 w-3.5 text-orange-600" />}
+              icon={<RotateCcw className="h-3.5 w-3.5" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />}
               isOpen={openAccordion === "returns"}
               onToggle={() => toggleAccordion("returns")}
             >
@@ -749,7 +749,7 @@ export default function ProductDetail() {
 
       {/* Sticky Mobile CTA */}
       {!isOutOfStock && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="fixed left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ bottom: "var(--storefront-bottom-nav-height, 0px)", paddingBottom: "env(safe-area-inset-bottom)" }}>
           {/* CRO #3: Free Shipping Progress Bar */}
           {shippingRemaining > 0 ? (
             <div className="px-3 pt-2 pb-1">
@@ -811,7 +811,7 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
-      {!isOutOfStock && <div className="h-28 sm:hidden" />}
+      {!isOutOfStock && <div className="sm:hidden" style={{ height: "calc(7rem + var(--storefront-bottom-nav-height, 0px))" }} />}
     </div>
   );
 }
