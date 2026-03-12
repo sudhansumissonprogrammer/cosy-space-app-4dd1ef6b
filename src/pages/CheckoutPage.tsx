@@ -756,7 +756,7 @@ export default function CheckoutPage() {
             {/* UPI App Grid */}
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">UPI</p>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-4 gap-2 sm:gap-3">
                 {/* Google Pay */}
                 <button
                   type="button"
