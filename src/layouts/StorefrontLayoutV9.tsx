@@ -317,7 +317,7 @@ export default function StorefrontLayoutV9({ slugOverride }: { slugOverride?: st
   const primaryLight = computePrimaryLight(primaryColor);
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
-  const themeStyle: React.CSSProperties = themeConfig
+  const themeStyle: React.CSSProperties = (previewOverride || (themeConfig
     ? {
         "--storefront-primary": themeConfig.primary_color,
         "--storefront-primary-light": primaryLight,
