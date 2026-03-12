@@ -2796,32 +2796,64 @@ export default function StoreThemeSettings() {
                 </button>
               </div>
             </div>
-            {storeProducts && storeProducts.length > 0 && (
-              <p className="mb-3 text-xs text-muted-foreground">Showing your actual products &amp; categories</p>
+            {dirty && (
+              <p className="mb-3 text-xs text-warning">⚠ Save your changes first to see them in the preview</p>
             )}
-            <div className={previewMode === "desktop" ? "overflow-x-auto" : ""}>
-              {currentTheme === "theme-10" ? (
-                <FashionRunwayPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              ) : currentTheme === "theme-9" ? (
-                <DiscoveryFeedPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              ) : currentTheme === "theme-8" ? (
-                <MobileAppPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              ) : currentTheme === "theme-7" ? (
-                <MagazinePreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              ) : currentTheme === "theme-6" ? (
-                <ProCleanPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              ) : currentTheme === "theme-5" ? (
-                <StartupPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              ) : currentTheme === "theme-4" ? (
-                <LuxuryPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              ) : currentTheme === "theme-3" ? (
-                <AppStylePreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              ) : currentTheme === "theme-2" ? (
-                <BoldModernPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              ) : (
-                <FullStorefrontPreview config={config} storeName={store?.name || "My Store"} products={previewProducts} categories={previewCategories} isDesktop={previewMode === "desktop"} />
-              )}
-            </div>
+            {store?.slug ? (
+              <div className="flex justify-center">
+                {previewMode === "mobile" ? (
+                  <div className="relative mx-auto" style={{ width: "375px" }}>
+                    <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
+                      <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
+                        <div className="h-2 w-2 rounded-full bg-gray-600" />
+                      </div>
+                      <div style={{ width: "363px", height: "680px", overflow: "hidden" }}>
+                        <iframe
+                          src={`/store/${store.slug}`}
+                          title="Store Preview"
+                          style={{
+                            width: "375px",
+                            height: "812px",
+                            border: "none",
+                            transform: "scale(0.838)",
+                            transformOrigin: "top left",
+                          }}
+                        />
+                      </div>
+                      <div className="flex h-5 items-center justify-center bg-gray-800">
+                        <div className="h-1 w-24 rounded-full bg-gray-600" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full max-w-4xl rounded-xl border-2 border-border overflow-hidden shadow-lg">
+                    <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 border-b border-border">
+                      <div className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-warning/60" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-success/60" />
+                      <div className="flex-1 mx-8 rounded-full bg-background/80 border border-border px-3 py-0.5">
+                        <span className="text-[9px] text-muted-foreground">{store.slug}.storivo.in</span>
+                      </div>
+                    </div>
+                    <div style={{ width: "100%", height: "680px", overflow: "hidden" }}>
+                      <iframe
+                        src={`/store/${store.slug}`}
+                        title="Store Preview Desktop"
+                        style={{
+                          width: "1440px",
+                          height: "900px",
+                          border: "none",
+                          transform: `scale(${Math.min(1, 896 / 1440)})`,
+                          transformOrigin: "top left",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">Loading preview...</p>
+            )}
           </div>
 
           {/* Actions */}
