@@ -126,12 +126,13 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
   const basePath = storefrontPath(store.slug);
   const isHome = location.pathname === basePath || location.pathname === basePath + "/";
   const isWishlist = location.pathname.includes("wishlist");
+  const isAccount = location.pathname.includes("account");
 
   const navItems = [
-    { icon: Home, label: "Home", to: basePath, isActive: isHome, type: "link" as const },
-    { icon: Search, label: "Search", to: "__search__", isActive: false, type: "search" as const },
-    { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), isActive: isWishlist, type: "link" as const, badge: wishlistCount },
-    { icon: Bell, label: "Alerts", to: storefrontPath(store.slug, user ? "account" : "login"), isActive: location.pathname.includes("account"), type: "link" as const },
+    { icon: Home, label: "Home", isActive: isHome && !searchOpen, type: "link" as const, to: basePath },
+    { icon: Search, label: "Search", isActive: searchOpen, type: "search" as const, to: "" },
+    { icon: Heart, label: "Wishlist", isActive: isWishlist && !searchOpen, type: "link" as const, to: storefrontPath(store.slug, "wishlist"), badge: wishlistCount },
+    { icon: Bell, label: "Alerts", isActive: isAccount && !searchOpen, type: "link" as const, to: storefrontPath(store.slug, user ? "account" : "login") },
   ];
 
   return (
@@ -143,7 +144,7 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
         <div className="mx-3 mb-2 flex items-center gap-2">
           {/* Left pill with nav items */}
           <div
-            className="flex flex-1 items-center justify-around rounded-[28px] px-2 py-2"
+            className="flex flex-1 items-center justify-around rounded-[28px] px-1.5 py-2"
             style={{
               backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
               boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)",
@@ -151,14 +152,58 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
           >
             {navItems.map((item) => {
               const Icon = item.icon;
+              const handleClick = item.type === "search"
+                ? () => setSearchOpen((prev) => !prev)
+                : undefined;
+
+              const content = (
+                <>
+                  <div
+                    className="absolute inset-0 rounded-full transition-all duration-300 ease-out"
+                    style={{
+                      backgroundColor: item.isActive ? "var(--storefront-text, hsl(var(--foreground)))" : "transparent",
+                      transform: item.isActive ? "scale(1)" : "scale(0.8)",
+                      opacity: item.isActive ? 1 : 0,
+                    }}
+                  />
+                  <Icon
+                    className="relative z-10 h-[22px] w-[22px] transition-all duration-300"
+                    style={{
+                      color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "var(--storefront-text, hsl(var(--foreground)))45",
+                    }}
+                    strokeWidth={1.8}
+                    fill={item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "none"}
+                  />
+                  <span
+                    className="relative z-10 text-xs font-semibold overflow-hidden transition-all duration-300 ease-out"
+                    style={{
+                      color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "transparent",
+                      maxWidth: item.isActive ? "80px" : "0px",
+                      opacity: item.isActive ? 1 : 0,
+                      marginLeft: item.isActive ? "6px" : "0px",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                  {!item.isActive && item.badge && item.badge > 0 && (
+                    <span
+                      className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold z-20"
+                      style={{ backgroundColor: "#EF4444", color: "#fff" }}
+                    >
+                      {item.badge > 9 ? "9+" : item.badge}
+                    </span>
+                  )}
+                </>
+              );
+
               if (item.type === "search") {
                 return (
                   <button
                     key={item.label}
-                    onClick={() => setSearchOpen(true)}
-                    className="relative flex items-center justify-center rounded-full p-2.5 transition-all"
+                    onClick={handleClick}
+                    className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-all duration-300 active:scale-95"
                   >
-                    <Icon className="h-[22px] w-[22px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))45" }} strokeWidth={1.8} />
+                    {content}
                   </button>
                 );
               }
@@ -167,35 +212,10 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
                 <Link
                   key={item.label}
                   to={item.to}
-                  className="relative flex items-center gap-2 rounded-full px-3 py-2.5 transition-all"
-                  style={item.isActive ? {
-                    backgroundColor: "var(--storefront-text, hsl(var(--foreground)))",
-                  } : {}}
+                  onClick={() => setSearchOpen(false)}
+                  className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-all duration-300 active:scale-95"
                 >
-                  <Icon
-                    className="h-[22px] w-[22px] transition-colors"
-                    style={{
-                      color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "var(--storefront-text, hsl(var(--foreground)))45",
-                    }}
-                    strokeWidth={1.8}
-                    fill={item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "none"}
-                  />
-                  {item.isActive && (
-                    <span
-                      className="text-xs font-semibold"
-                      style={{ color: "var(--storefront-bg, hsl(var(--background)))" }}
-                    >
-                      {item.label}
-                    </span>
-                  )}
-                  {!item.isActive && item.badge && item.badge > 0 && (
-                    <span
-                      className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold"
-                      style={{ backgroundColor: "#EF4444", color: "#fff" }}
-                    >
-                      {item.badge > 9 ? "9+" : item.badge}
-                    </span>
-                  )}
+                  {content}
                 </Link>
               );
             })}
