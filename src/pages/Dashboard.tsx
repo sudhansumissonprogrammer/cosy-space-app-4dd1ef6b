@@ -123,9 +123,30 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Your store overview at a glance.</p>
+      {storeId && (
+        <OnboardingWalkthrough
+          storeId={storeId}
+          open={showOnboarding}
+          onOpenChange={setShowOnboarding}
+        />
+      )}
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Your store overview at a glance.</p>
+        </div>
+        {storeId && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowOnboarding(true)}
+            className="gap-1.5 text-xs"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            Setup Guide
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
