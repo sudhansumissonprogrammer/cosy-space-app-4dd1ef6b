@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Shield, Loader2 } from "lucide-react";
+import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,9 +23,13 @@ export default function AdminLogin() {
       return;
     }
 
+    if (!checkCanAttempt()) {
+      toast.error(`Too many login attempts. Please wait ${remainingSeconds}s.`);
+      return;
+    }
+
     setLoading(true);
 
-    // Sign in
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -31,11 +37,11 @@ export default function AdminLogin() {
 
     if (authError) {
       setLoading(false);
+      recordFailedAttempt();
       toast.error(authError.message);
       return;
     }
 
-    // Verify admin role server-side
     const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
       _user_id: authData.user.id,
       _role: "admin",
@@ -44,10 +50,12 @@ export default function AdminLogin() {
     if (roleError || !isAdmin) {
       await supabase.auth.signOut();
       setLoading(false);
+      recordFailedAttempt();
       toast.error("Access denied. Admin privileges required.");
       return;
     }
 
+    resetAttempts();
     setLoading(false);
     navigate("/admin");
   };
@@ -89,11 +97,14 @@ export default function AdminLogin() {
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full" disabled={loading}>
+            <CardFooter className="flex flex-col gap-2">
+              <Button type="submit" className="w-full" disabled={loading || isLocked}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign in as Admin
+                {isLocked ? `Locked (${remainingSeconds}s)` : "Sign in as Admin"}
               </Button>
+              {attemptsLeft < 5 && !isLocked && (
+                <p className="text-xs text-destructive text-center">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
+              )}
             </CardFooter>
           </form>
         </Card>

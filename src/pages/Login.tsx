@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { LayoutDashboard, Loader2 } from "lucide-react";
+import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -79,6 +81,11 @@ export default function Login() {
       return;
     }
 
+    if (!checkCanAttempt()) {
+      toast.error(`Too many login attempts. Please wait ${remainingSeconds}s.`);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -87,14 +94,17 @@ export default function Login() {
       if (error) {
         if (isFetchFailure(error.message)) {
           await signInWithProxy(normalizedEmail, password);
+          resetAttempts();
           navigate("/dashboard");
           return;
         }
 
+        recordFailedAttempt();
         toast.error(error.message);
         return;
       }
 
+      resetAttempts();
       navigate("/dashboard");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Authentication failed";
@@ -102,9 +112,11 @@ export default function Login() {
       if (isFetchFailure(message)) {
         try {
           await signInWithProxy(normalizedEmail, password);
+          resetAttempts();
           navigate("/dashboard");
           return;
         } catch (proxyErr) {
+          recordFailedAttempt();
           const proxyMessage =
             proxyErr instanceof Error ? proxyErr.message : "Unable to sign in. Please try again.";
           toast.error(proxyMessage);
@@ -112,6 +124,7 @@ export default function Login() {
         }
       }
 
+      recordFailedAttempt();
       toast.error(message);
     } finally {
       setLoading(false);
@@ -162,10 +175,13 @@ export default function Login() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
-              <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+              <Button type="submit" className="w-full" disabled={loading || googleLoading || isLocked}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign in
+                {isLocked ? `Locked (${remainingSeconds}s)` : "Sign in"}
               </Button>
+              {attemptsLeft < 5 && !isLocked && (
+                <p className="text-xs text-destructive text-center">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
+              )}
 
               <div className="flex w-full items-center gap-3">
                 <Separator className="flex-1" />
