@@ -60,7 +60,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, currency, slug, name")
+        .select("id, currency, slug, name, order_mode")
         .eq("owner_id", user!.id)
         .order("created_at", { ascending: true })
         .limit(1)
