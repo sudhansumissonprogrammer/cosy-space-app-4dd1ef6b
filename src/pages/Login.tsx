@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { LayoutDashboard, Loader2 } from "lucide-react";
+import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 export default function Login() {
   const navigate = useNavigate();
