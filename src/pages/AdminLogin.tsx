@@ -14,6 +14,7 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,9 +23,13 @@ export default function AdminLogin() {
       return;
     }
 
+    if (!checkCanAttempt()) {
+      toast.error(`Too many login attempts. Please wait ${remainingSeconds}s.`);
+      return;
+    }
+
     setLoading(true);
 
-    // Sign in
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -32,11 +37,11 @@ export default function AdminLogin() {
 
     if (authError) {
       setLoading(false);
+      recordFailedAttempt();
       toast.error(authError.message);
       return;
     }
 
-    // Verify admin role server-side
     const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
       _user_id: authData.user.id,
       _role: "admin",
@@ -45,10 +50,12 @@ export default function AdminLogin() {
     if (roleError || !isAdmin) {
       await supabase.auth.signOut();
       setLoading(false);
+      recordFailedAttempt();
       toast.error("Access denied. Admin privileges required.");
       return;
     }
 
+    resetAttempts();
     setLoading(false);
     navigate("/admin");
   };

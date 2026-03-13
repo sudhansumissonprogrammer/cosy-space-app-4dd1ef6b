@@ -81,6 +81,11 @@ export default function Login() {
       return;
     }
 
+    if (!checkCanAttempt()) {
+      toast.error(`Too many login attempts. Please wait ${remainingSeconds}s.`);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -89,14 +94,17 @@ export default function Login() {
       if (error) {
         if (isFetchFailure(error.message)) {
           await signInWithProxy(normalizedEmail, password);
+          resetAttempts();
           navigate("/dashboard");
           return;
         }
 
+        recordFailedAttempt();
         toast.error(error.message);
         return;
       }
 
+      resetAttempts();
       navigate("/dashboard");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Authentication failed";
@@ -104,9 +112,11 @@ export default function Login() {
       if (isFetchFailure(message)) {
         try {
           await signInWithProxy(normalizedEmail, password);
+          resetAttempts();
           navigate("/dashboard");
           return;
         } catch (proxyErr) {
+          recordFailedAttempt();
           const proxyMessage =
             proxyErr instanceof Error ? proxyErr.message : "Unable to sign in. Please try again.";
           toast.error(proxyMessage);
@@ -114,6 +124,7 @@ export default function Login() {
         }
       }
 
+      recordFailedAttempt();
       toast.error(message);
     } finally {
       setLoading(false);

@@ -18,15 +18,24 @@ export default function StorefrontLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!checkCanAttempt()) {
+      toast.error(`Too many login attempts. Please wait ${remainingSeconds}s.`);
+      return;
+    }
+
     setLoading(true);
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) {
+      recordFailedAttempt();
       toast.error(error.message || "Login failed");
     } else {
+      resetAttempts();
       toast.success("Logged in!");
       navigate(storefrontPath(store.slug, "account"));
     }
