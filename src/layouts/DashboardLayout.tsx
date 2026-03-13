@@ -375,6 +375,7 @@ export default function DashboardLayout() {
         onClose={() => setMenuOpen(false)}
         storeId={storeId}
         pendingOrders={pendingOrders}
+        isWhatsAppOnly={isWhatsAppOnly}
       />
     </div>
   );
