@@ -233,47 +233,51 @@ export default function Dashboard() {
           {storeId && !isWhatsAppOnly && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Revenue chart */}
-          <Card className="border shadow-none">
-            <CardContent className="p-3 pt-4">
-              <p className="mb-3 text-sm font-medium text-foreground">Revenue</p>
-              {ordersByMonth.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={ordersByMonth}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
-                    <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={40} />
-                    <Tooltip
-                      contentStyle={{ fontSize: 12 }}
-                      formatter={(value: number) => `${currencySymbol}${value.toFixed(0)}`}
-                    />
-                    <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
-              )}
-            </CardContent>
-          </Card>
+          {!isWhatsAppOnly && (
+            <Card className="border shadow-none">
+              <CardContent className="p-3 pt-4">
+                <p className="mb-3 text-sm font-medium text-foreground">Revenue</p>
+                {ordersByMonth.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={ordersByMonth}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
+                      <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={40} />
+                      <Tooltip
+                        contentStyle={{ fontSize: 12 }}
+                        formatter={(value: number) => `${currencySymbol}${value.toFixed(0)}`}
+                      />
+                      <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Orders chart */}
-          <Card className="border shadow-none">
-            <CardContent className="p-3 pt-4">
-              <p className="mb-3 text-sm font-medium text-foreground">Orders</p>
-              {ordersByMonth.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={ordersByMonth}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
-                    <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={30} />
-                    <Tooltip contentStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
-              )}
-            </CardContent>
-          </Card>
+          {!isWhatsAppOnly && (
+            <Card className="border shadow-none">
+              <CardContent className="p-3 pt-4">
+                <p className="mb-3 text-sm font-medium text-foreground">Orders</p>
+                {ordersByMonth.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={ordersByMonth}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
+                      <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={30} />
+                      <Tooltip contentStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>
