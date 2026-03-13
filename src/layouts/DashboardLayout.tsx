@@ -246,12 +246,11 @@ export default function DashboardLayout() {
     );
   }
 
-  // Mobile bottom nav items (Shopify style - 6 tabs)
+  // Mobile bottom nav items
   const bottomNav = storeId
     ? [
-        { label: "Search", icon: Search, path: "__search__", exact: false },
         { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
-        { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, exact: false, badge: pendingOrders },
+        ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, exact: false, badge: pendingOrders }] : []),
         { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products`, exact: false },
         { label: "More", icon: Menu, path: "__menu__", exact: false },
         { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
