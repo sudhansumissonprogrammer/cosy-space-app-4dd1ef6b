@@ -216,19 +216,19 @@ export default function Dashboard() {
           </div>
 
           {/* Today's Summary */}
-          {storeId && <TodaySummary storeId={storeId} currencySymbol={currencySymbol} />}
+          {storeId && !isWhatsAppOnly && <TodaySummary storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Pending Actions */}
-          {storeId && <PendingActions storeId={storeId} />}
+          {storeId && !isWhatsAppOnly && <PendingActions storeId={storeId} />}
 
           {/* Store Checklist */}
           {storeId && <StoreChecklist storeId={storeId} />}
 
           {/* Recent Orders */}
-          {storeId && <RecentOrders storeId={storeId} currencySymbol={currencySymbol} />}
+          {storeId && !isWhatsAppOnly && <RecentOrders storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Top Products */}
-          {storeId && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
+          {storeId && !isWhatsAppOnly && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Revenue chart */}
           <Card className="border shadow-none">
