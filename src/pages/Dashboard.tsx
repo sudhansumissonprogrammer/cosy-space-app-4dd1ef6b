@@ -193,7 +193,7 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       {storeId && (
-        <QuickActions storeId={storeId} storeSlug={store?.slug} storeName={store?.name} />
+        <QuickActions storeId={storeId} storeSlug={store?.slug} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} />
       )}
 
       {isLoading ? (
