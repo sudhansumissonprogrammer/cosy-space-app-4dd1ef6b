@@ -43,6 +43,7 @@ export function AppSidebar() {
   });
 
   const storeId = store?.id;
+  const isWhatsAppOnly = store?.order_mode === "whatsapp";
 
   // Fetch initial pending order count
   useEffect(() => {
