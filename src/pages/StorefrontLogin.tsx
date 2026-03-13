@@ -58,10 +58,13 @@ export default function StorefrontLogin() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || isLocked}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign In
+              {isLocked ? `Locked (${remainingSeconds}s)` : "Sign In"}
             </Button>
+            {attemptsLeft < 5 && !isLocked && (
+              <p className="text-xs text-destructive text-center">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
+            )}
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
