@@ -49,21 +49,24 @@ function MobileMenu({
 
   const menuSections: MenuSection[] = storeId
     ? [
-        {
-          title: "Customers",
-          items: [
-            { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
-            { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeId}/leads` },
-            { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
-          ],
-        },
-        {
-          title: "Marketing",
-          items: [
-            { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
-            { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
-          ],
-        },
+        ...(!isWhatsAppOnly
+          ? [
+              {
+                title: "Customers",
+                items: [
+                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
+                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
+                ],
+              },
+              {
+                title: "Marketing",
+                items: [
+                  { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
+                  { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
+                ],
+              },
+            ]
+          : []),
         {
           title: "Payments & Shipping",
           items: [
