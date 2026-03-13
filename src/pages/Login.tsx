@@ -175,10 +175,13 @@ export default function Login() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
-              <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+              <Button type="submit" className="w-full" disabled={loading || googleLoading || isLocked}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign in
+                {isLocked ? `Locked (${remainingSeconds}s)` : "Sign in"}
               </Button>
+              {attemptsLeft < 5 && !isLocked && (
+                <p className="text-xs text-destructive text-center">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
+              )}
 
               <div className="flex w-full items-center gap-3">
                 <Separator className="flex-1" />

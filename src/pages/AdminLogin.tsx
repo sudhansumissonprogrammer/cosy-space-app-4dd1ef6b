@@ -97,11 +97,14 @@ export default function AdminLogin() {
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full" disabled={loading}>
+            <CardFooter className="flex flex-col gap-2">
+              <Button type="submit" className="w-full" disabled={loading || isLocked}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign in as Admin
+                {isLocked ? `Locked (${remainingSeconds}s)` : "Sign in as Admin"}
               </Button>
+              {attemptsLeft < 5 && !isLocked && (
+                <p className="text-xs text-destructive text-center">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
+              )}
             </CardFooter>
           </form>
         </Card>
