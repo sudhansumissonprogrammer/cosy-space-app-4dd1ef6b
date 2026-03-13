@@ -121,7 +121,7 @@ export default function Dashboard() {
       if (error) throw error;
       return data as any[];
     },
-    enabled: !!storeId,
+    enabled: !!storeId && !isWhatsAppOnly,
   });
 
   const ordersByMonth = (() => {

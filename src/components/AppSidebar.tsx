@@ -47,7 +47,7 @@ export function AppSidebar() {
 
   // Fetch initial pending order count
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId || isWhatsAppOnly) return;
     const fetchCount = async () => {
       const { count } = await supabase
         .from("orders")
@@ -61,7 +61,7 @@ export function AppSidebar() {
 
   // Real-time subscription for order changes
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId || isWhatsAppOnly) return;
     const channel = supabase
       .channel("sidebar-orders")
       .on(
