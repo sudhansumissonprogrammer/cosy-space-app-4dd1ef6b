@@ -158,8 +158,10 @@ export default function Dashboard() {
 
   const statCards = [
     { label: "Products", value: stats?.total_products ?? 0, icon: Package, color: "text-blue-600" },
-    { label: "Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
-    { label: "Revenue", value: `${currencySymbol}${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "text-amber-600" },
+    ...(!isWhatsAppOnly ? [
+      { label: "Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
+      { label: "Revenue", value: `${currencySymbol}${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "text-amber-600" },
+    ] : []),
     { label: "Views", value: stats?.total_views ?? 0, icon: Eye, color: "text-purple-600" },
   ];
 
