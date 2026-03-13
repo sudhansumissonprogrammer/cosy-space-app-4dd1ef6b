@@ -23,7 +23,7 @@ export default function StoreChecklist({ storeId }: StoreChecklistProps) {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const [storeRes, productsRes, paymentsRes, shippingRes, themeRes] = await Promise.all([
-        supabase.from("stores").select("logo_url, banner_url, whatsapp_number, description").eq("id", storeId).single(),
+        supabase.from("stores").select("logo_url, banner_url, whatsapp_number, description, order_mode").eq("id", storeId).single(),
         supabase.from("products").select("id", { count: "exact", head: true }).eq("store_id", storeId),
         supabase.from("store_payment_config").select("id").eq("store_id", storeId).maybeSingle(),
         supabase.from("store_shipping_config").select("id").eq("store_id", storeId).maybeSingle(),
@@ -31,12 +31,17 @@ export default function StoreChecklist({ storeId }: StoreChecklistProps) {
       ]);
 
       const store = storeRes.data;
+      const isWhatsAppOnly = store?.order_mode === "whatsapp";
+
       const items: CheckItem[] = [
         { label: "Add store logo", done: !!store?.logo_url, url: `/dashboard/stores/${storeId}/settings` },
         { label: "Add store description", done: !!store?.description, url: `/dashboard/stores/${storeId}/settings` },
         { label: "Add your first product", done: (productsRes.count ?? 0) > 0, url: `/dashboard/stores/${storeId}/products/create` },
-        { label: "Set up payments", done: !!paymentsRes.data, url: `/dashboard/stores/${storeId}/payments` },
-        { label: "Set up shipping", done: !!shippingRes.data, url: `/dashboard/stores/${storeId}/shipping` },
+        // Only show payment/shipping setup for website orders
+        ...(!isWhatsAppOnly ? [
+          { label: "Set up payments", done: !!paymentsRes.data, url: `/dashboard/stores/${storeId}/payments` },
+          { label: "Set up shipping", done: !!shippingRes.data, url: `/dashboard/stores/${storeId}/shipping` },
+        ] : []),
         { label: "Customize theme", done: !!themeRes.data, url: `/dashboard/stores/${storeId}/theme` },
         { label: "Add WhatsApp number", done: !!store?.whatsapp_number, url: `/dashboard/stores/${storeId}/settings` },
       ];

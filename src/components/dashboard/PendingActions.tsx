@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShoppingBag, UserCheck, ShoppingCart } from "lucide-react";
+import { ShoppingBag, ShoppingCart } from "lucide-react";
 
 interface PendingActionsProps {
   storeId: string;
@@ -15,14 +15,12 @@ export default function PendingActions({ storeId }: PendingActionsProps) {
     queryKey: ["pending-actions", storeId],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
-      const [pendingOrders, leads, carts] = await Promise.all([
+      const [pendingOrders, carts] = await Promise.all([
         supabase.from("orders").select("id", { count: "exact", head: true }).eq("store_id", storeId).eq("status", "pending"),
-        supabase.from("customer_leads").select("id", { count: "exact", head: true }).eq("store_id", storeId),
         supabase.from("abandoned_carts").select("id", { count: "exact", head: true }).eq("store_id", storeId).eq("recovered", false),
       ]);
       return {
         pendingOrders: pendingOrders.count ?? 0,
-        leads: leads.count ?? 0,
         abandonedCarts: carts.count ?? 0,
       };
     },
@@ -31,7 +29,6 @@ export default function PendingActions({ storeId }: PendingActionsProps) {
 
   const items = [
     { label: "Pending Orders", count: data?.pendingOrders ?? 0, icon: ShoppingBag, color: "bg-amber-100 text-amber-700", url: `/dashboard/stores/${storeId}/orders` },
-    { label: "New Leads", count: data?.leads ?? 0, icon: UserCheck, color: "bg-blue-100 text-blue-700", url: `/dashboard/stores/${storeId}/leads` },
     { label: "Abandoned Carts", count: data?.abandonedCarts ?? 0, icon: ShoppingCart, color: "bg-red-100 text-red-700", url: `/dashboard/stores/${storeId}/abandoned-carts` },
   ];
 
