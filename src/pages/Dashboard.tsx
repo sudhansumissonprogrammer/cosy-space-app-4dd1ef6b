@@ -4,13 +4,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Users, Eye, TrendingUp, HelpCircle, Plus } from "lucide-react";
+import { Package, ShoppingBag, Eye, TrendingUp, HelpCircle, Plus } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line,
 } from "recharts";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import { useNavigate } from "react-router-dom";
+import QuickActions from "@/components/dashboard/QuickActions";
+import TodaySummary from "@/components/dashboard/TodaySummary";
+import PendingActions from "@/components/dashboard/PendingActions";
+import RecentOrders from "@/components/dashboard/RecentOrders";
+import TopProducts from "@/components/dashboard/TopProducts";
+import StoreChecklist from "@/components/dashboard/StoreChecklist";
 
 function ShimmerBlock({ className }: { className?: string }) {
   return (
@@ -34,14 +40,8 @@ function DashboardSkeleton() {
           </div>
         ))}
       </div>
-      <div className="rounded-lg border p-3 pt-4 space-y-3">
-        <ShimmerBlock className="h-4 w-16" />
-        <ShimmerBlock className="h-[180px] w-full" />
-      </div>
-      <div className="rounded-lg border p-3 pt-4 space-y-3">
-        <ShimmerBlock className="h-4 w-14" />
-        <ShimmerBlock className="h-[180px] w-full" />
-      </div>
+      <ShimmerBlock className="h-20 w-full" />
+      <ShimmerBlock className="h-[180px] w-full" />
     </div>
   );
 }
@@ -60,8 +60,9 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, currency")
+        .select("id, currency, slug, name")
         .eq("owner_id", user!.id)
+        .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
@@ -187,6 +188,11 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* Quick Actions */}
+      {storeId && (
+        <QuickActions storeId={storeId} storeSlug={store?.slug} storeName={store?.name} />
+      )}
+
       {isLoading ? (
         <DashboardSkeleton />
       ) : (
@@ -207,6 +213,21 @@ export default function Dashboard() {
               </Card>
             ))}
           </div>
+
+          {/* Today's Summary */}
+          {storeId && <TodaySummary storeId={storeId} currencySymbol={currencySymbol} />}
+
+          {/* Pending Actions */}
+          {storeId && <PendingActions storeId={storeId} />}
+
+          {/* Store Checklist */}
+          {storeId && <StoreChecklist storeId={storeId} />}
+
+          {/* Recent Orders */}
+          {storeId && <RecentOrders storeId={storeId} currencySymbol={currencySymbol} />}
+
+          {/* Top Products */}
+          {storeId && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Revenue chart */}
           <Card className="border shadow-none">
