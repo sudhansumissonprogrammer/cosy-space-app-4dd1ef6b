@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 export default function StorefrontLogin() {
   const store = useOutletContext<StoreData>();
