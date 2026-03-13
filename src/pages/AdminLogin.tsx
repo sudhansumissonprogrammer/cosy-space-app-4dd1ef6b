@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Shield, Loader2 } from "lucide-react";
+import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
