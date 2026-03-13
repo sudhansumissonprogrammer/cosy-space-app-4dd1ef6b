@@ -174,8 +174,9 @@ export default function DashboardLayout() {
   });
 
   const storeId = store?.id;
+  const isWhatsAppOnly = store?.order_mode === "whatsapp";
 
-  // Pending orders count + realtime
+  // Pending orders count + realtime (skip for WhatsApp-only stores)
   useEffect(() => {
     if (!storeId) return;
     const fetchCount = async () => {
