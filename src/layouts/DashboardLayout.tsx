@@ -162,7 +162,7 @@ export default function DashboardLayout() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, name, logo_url, slug")
+        .select("id, name, logo_url, slug, order_mode")
         .eq("owner_id", user!.id)
         .order("created_at", { ascending: true })
         .limit(1)
