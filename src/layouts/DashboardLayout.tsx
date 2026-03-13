@@ -24,11 +24,13 @@ function MobileMenu({
   onClose,
   storeId,
   pendingOrders,
+  isWhatsAppOnly,
 }: {
   open: boolean;
   onClose: () => void;
   storeId: string | undefined;
   pendingOrders: number;
+  isWhatsAppOnly: boolean;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,21 +49,24 @@ function MobileMenu({
 
   const menuSections: MenuSection[] = storeId
     ? [
-        {
-          title: "Customers",
-          items: [
-            { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
-            { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeId}/leads` },
-            { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
-          ],
-        },
-        {
-          title: "Marketing",
-          items: [
-            { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
-            { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
-          ],
-        },
+        ...(!isWhatsAppOnly
+          ? [
+              {
+                title: "Customers",
+                items: [
+                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
+                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
+                ],
+              },
+              {
+                title: "Marketing",
+                items: [
+                  { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
+                  { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
+                ],
+              },
+            ]
+          : []),
         {
           title: "Payments & Shipping",
           items: [
@@ -162,7 +167,7 @@ export default function DashboardLayout() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, name, logo_url, slug")
+        .select("id, name, logo_url, slug, order_mode")
         .eq("owner_id", user!.id)
         .order("created_at", { ascending: true })
         .limit(1)
@@ -174,8 +179,9 @@ export default function DashboardLayout() {
   });
 
   const storeId = store?.id;
+  const isWhatsAppOnly = store?.order_mode === "whatsapp";
 
-  // Pending orders count + realtime
+  // Pending orders count + realtime (skip for WhatsApp-only stores)
   useEffect(() => {
     if (!storeId) return;
     const fetchCount = async () => {
@@ -245,12 +251,11 @@ export default function DashboardLayout() {
     );
   }
 
-  // Mobile bottom nav items (Shopify style - 6 tabs)
+  // Mobile bottom nav items
   const bottomNav = storeId
     ? [
-        { label: "Search", icon: Search, path: "__search__", exact: false },
         { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
-        { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, exact: false, badge: pendingOrders },
+        ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, exact: false, badge: pendingOrders }] : []),
         { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products`, exact: false },
         { label: "More", icon: Menu, path: "__menu__", exact: false },
         { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
@@ -370,6 +375,7 @@ export default function DashboardLayout() {
         onClose={() => setMenuOpen(false)}
         storeId={storeId}
         pendingOrders={pendingOrders}
+        isWhatsAppOnly={isWhatsAppOnly}
       />
     </div>
   );

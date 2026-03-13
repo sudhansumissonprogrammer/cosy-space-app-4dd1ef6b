@@ -60,7 +60,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, currency, slug, name")
+        .select("id, currency, slug, name, order_mode")
         .eq("owner_id", user!.id)
         .order("created_at", { ascending: true })
         .limit(1)
@@ -72,6 +72,7 @@ export default function Dashboard() {
   });
 
   const storeId = store?.id;
+  const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const currency = store?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
@@ -157,8 +158,10 @@ export default function Dashboard() {
 
   const statCards = [
     { label: "Products", value: stats?.total_products ?? 0, icon: Package, color: "text-blue-600" },
-    { label: "Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
-    { label: "Revenue", value: `${currencySymbol}${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "text-amber-600" },
+    ...(!isWhatsAppOnly ? [
+      { label: "Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
+      { label: "Revenue", value: `${currencySymbol}${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "text-amber-600" },
+    ] : []),
     { label: "Views", value: stats?.total_views ?? 0, icon: Eye, color: "text-purple-600" },
   ];
 
@@ -190,7 +193,7 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       {storeId && (
-        <QuickActions storeId={storeId} storeSlug={store?.slug} storeName={store?.name} />
+        <QuickActions storeId={storeId} storeSlug={store?.slug} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} />
       )}
 
       {isLoading ? (
@@ -215,62 +218,66 @@ export default function Dashboard() {
           </div>
 
           {/* Today's Summary */}
-          {storeId && <TodaySummary storeId={storeId} currencySymbol={currencySymbol} />}
+          {storeId && !isWhatsAppOnly && <TodaySummary storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Pending Actions */}
-          {storeId && <PendingActions storeId={storeId} />}
+          {storeId && !isWhatsAppOnly && <PendingActions storeId={storeId} />}
 
           {/* Store Checklist */}
           {storeId && <StoreChecklist storeId={storeId} />}
 
           {/* Recent Orders */}
-          {storeId && <RecentOrders storeId={storeId} currencySymbol={currencySymbol} />}
+          {storeId && !isWhatsAppOnly && <RecentOrders storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Top Products */}
-          {storeId && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
+          {storeId && !isWhatsAppOnly && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Revenue chart */}
-          <Card className="border shadow-none">
-            <CardContent className="p-3 pt-4">
-              <p className="mb-3 text-sm font-medium text-foreground">Revenue</p>
-              {ordersByMonth.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={ordersByMonth}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
-                    <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={40} />
-                    <Tooltip
-                      contentStyle={{ fontSize: 12 }}
-                      formatter={(value: number) => `${currencySymbol}${value.toFixed(0)}`}
-                    />
-                    <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
-              )}
-            </CardContent>
-          </Card>
+          {!isWhatsAppOnly && (
+            <Card className="border shadow-none">
+              <CardContent className="p-3 pt-4">
+                <p className="mb-3 text-sm font-medium text-foreground">Revenue</p>
+                {ordersByMonth.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={ordersByMonth}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
+                      <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={40} />
+                      <Tooltip
+                        contentStyle={{ fontSize: 12 }}
+                        formatter={(value: number) => `${currencySymbol}${value.toFixed(0)}`}
+                      />
+                      <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Orders chart */}
-          <Card className="border shadow-none">
-            <CardContent className="p-3 pt-4">
-              <p className="mb-3 text-sm font-medium text-foreground">Orders</p>
-              {ordersByMonth.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={ordersByMonth}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
-                    <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={30} />
-                    <Tooltip contentStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
-              )}
-            </CardContent>
-          </Card>
+          {!isWhatsAppOnly && (
+            <Card className="border shadow-none">
+              <CardContent className="p-3 pt-4">
+                <p className="mb-3 text-sm font-medium text-foreground">Orders</p>
+                {ordersByMonth.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={ordersByMonth}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="month" className="text-[10px]" tick={{ fontSize: 10 }} />
+                      <YAxis className="text-[10px]" tick={{ fontSize: 10 }} width={30} />
+                      <Tooltip contentStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>

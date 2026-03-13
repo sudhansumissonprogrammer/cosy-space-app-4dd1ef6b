@@ -31,7 +31,7 @@ export function AppSidebar() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, name, logo_url, slug")
+        .select("id, name, logo_url, slug, order_mode")
         .eq("owner_id", user!.id)
         .order("created_at", { ascending: true })
         .limit(1)
@@ -43,6 +43,7 @@ export function AppSidebar() {
   });
 
   const storeId = store?.id;
+  const isWhatsAppOnly = store?.order_mode === "whatsapp";
 
   // Fetch initial pending order count
   useEffect(() => {
@@ -90,11 +91,10 @@ export function AppSidebar() {
       ]
     : [];
 
-  const salesItems = storeId
+  const salesItems = storeId && !isWhatsAppOnly
     ? [
         { title: "Orders", url: `/dashboard/stores/${storeId}/orders`, icon: ShoppingBag, badge: pendingOrders },
         { title: "Customers", url: `/dashboard/stores/${storeId}/customers`, icon: Users },
-        { title: "Leads", url: `/dashboard/stores/${storeId}/leads`, icon: UserCheck },
         { title: "Abandoned Carts", url: `/dashboard/stores/${storeId}/abandoned-carts`, icon: ShoppingCart },
       ]
     : [];
@@ -102,7 +102,7 @@ export function AppSidebar() {
   const paymentItems = storeId
     ? [
         { title: "Payments", url: `/dashboard/stores/${storeId}/payments`, icon: CreditCard },
-        { title: "Coupons", url: `/dashboard/stores/${storeId}/coupons`, icon: Tag },
+        ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeId}/coupons`, icon: Tag }] : []),
         { title: "Shipping", url: `/dashboard/stores/${storeId}/shipping`, icon: Truck },
         { title: "Tax / GST", url: `/dashboard/stores/${storeId}/tax`, icon: Receipt },
       ]

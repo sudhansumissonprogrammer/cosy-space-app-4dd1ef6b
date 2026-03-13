@@ -7,14 +7,15 @@ interface QuickActionsProps {
   storeId: string;
   storeSlug?: string;
   storeName?: string;
+  isWhatsAppOnly?: boolean;
 }
 
-export default function QuickActions({ storeId, storeSlug, storeName }: QuickActionsProps) {
+export default function QuickActions({ storeId, storeSlug, storeName, isWhatsAppOnly }: QuickActionsProps) {
   const navigate = useNavigate();
 
   const actions = [
     { label: "Add Product", icon: Plus, onClick: () => navigate(`/dashboard/stores/${storeId}/products/create`) },
-    { label: "Orders", icon: ShoppingBag, onClick: () => navigate(`/dashboard/stores/${storeId}/orders`) },
+    ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, onClick: () => navigate(`/dashboard/stores/${storeId}/orders`) }] : []),
     { label: "Theme", icon: Palette, onClick: () => navigate(`/dashboard/stores/${storeId}/theme`) },
   ];
 
