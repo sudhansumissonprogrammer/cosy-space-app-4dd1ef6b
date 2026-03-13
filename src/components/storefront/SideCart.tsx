@@ -15,7 +15,9 @@ interface SideCartProps {
 export default function SideCart({ store }: SideCartProps) {
   const { items, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount, isCartOpen, closeCart } = useCart();
   const currency = store.currency || "USD";
-  const isWhatsApp = (store as any).order_mode === "whatsapp";
+  const orderMode = (store as any).order_mode || "whatsapp";
+  const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
+  const showCheckout = orderMode === "website" || orderMode === "both";
 
   const handleWhatsAppOrder = () => {
     if (!store.whatsapp_number) return;
