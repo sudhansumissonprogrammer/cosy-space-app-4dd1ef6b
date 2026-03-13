@@ -24,11 +24,13 @@ function MobileMenu({
   onClose,
   storeId,
   pendingOrders,
+  isWhatsAppOnly,
 }: {
   open: boolean;
   onClose: () => void;
   storeId: string | undefined;
   pendingOrders: number;
+  isWhatsAppOnly: boolean;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
