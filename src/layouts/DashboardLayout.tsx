@@ -183,7 +183,7 @@ export default function DashboardLayout() {
 
   // Pending orders count + realtime (skip for WhatsApp-only stores)
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId || isWhatsAppOnly) return;
     const fetchCount = async () => {
       const { count } = await supabase
         .from("orders")
