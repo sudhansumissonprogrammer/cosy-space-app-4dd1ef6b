@@ -594,7 +594,7 @@ export default function CheckoutPage() {
       }
 
       // COD flow
-      finalizeOrder(newOrderId);
+      finalizeOrder(newOrder.id, newOrder.number);
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
