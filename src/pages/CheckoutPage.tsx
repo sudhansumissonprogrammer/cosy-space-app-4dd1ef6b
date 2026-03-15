@@ -458,10 +458,37 @@ export default function CheckoutPage() {
     }
   };
 
+  // Pincode auto-fill for Indian pincodes
+  const handlePincodeChange = async (val: string) => {
+    setPincode(val);
+    if (val.length === 6 && /^\d{6}$/.test(val)) {
+      setPincodeLoading(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${val}`);
+        const data = await res.json();
+        if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
+          const po = data[0].PostOffice[0];
+          if (!city) setCity(po.District || "");
+          if (!state) setState(po.State || "");
+        }
+      } catch {} finally { setPincodeLoading(false); }
+    }
+  };
+
+  // Save checkout info to localStorage for express checkout
+  const saveExpressInfo = () => {
+    try {
+      localStorage.setItem(`express_checkout_${store.id}`, JSON.stringify({
+        fullName: fullName.trim(), phone: phone.trim(),
+        streetAddress: streetAddress.trim(), city: city.trim(),
+        state: state.trim(), pincode: pincode.trim(),
+      }));
+    } catch {}
+  };
+
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { toast.error("Please enter a valid email"); return; }
-    if (!phone.trim()) { toast.error("Please enter your phone number"); return; }
+    if (!phone.trim() || phone.trim().length < 10) { toast.error("Please enter a valid phone number"); return; }
     if (!streetAddress.trim()) { toast.error("Please enter your street address"); return; }
     if (!city.trim()) { toast.error("Please enter your city"); return; }
     if (!state.trim()) { toast.error("Please enter your state"); return; }
