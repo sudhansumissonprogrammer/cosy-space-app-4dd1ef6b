@@ -299,7 +299,13 @@ export default function StoreOrders() {
                 </TableHeader>
                 <TableBody>
                   {paginatedOrders.map((order: any) => (
-                    <TableRow key={order.id}>
+                    <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-primary/5" : ""}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedOrders.has(order.id)}
+                          onCheckedChange={() => toggleOrderSelection(order.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">{order.id.slice(0, 8)}</TableCell>
                       <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>

@@ -254,6 +254,7 @@ export default function ProductDetail() {
       category: product.category,
       stock_quantity: product.stock_quantity,
       sku: product.sku,
+      extraImages: extraImages?.map(i => i.image_url) || [],
     } : { name: "", price: 0, id: "", currency: "INR" },
     storeSlug: store.slug,
     storeName: store.name,
