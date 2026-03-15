@@ -1337,9 +1337,9 @@ function AnalyticsTab({ storeId }: { storeId: string }) {
 }
 
 // ─── Bulk Messaging Tab ─────────────────────────────────────────────
-function BulkMessagingTab({ storeId }: { storeId: string }) {
+function BulkMessagingTab({ storeId, initialNumbers }: { storeId: string; initialNumbers?: string[] }) {
   const queryClient = useQueryClient();
-  const [numbers, setNumbers] = useState<string[]>([]);
+  const [numbers, setNumbers] = useState<string[]>(initialNumbers || []);
   const [manualInput, setManualInput] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -1348,6 +1348,28 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
   const [sendMode, setSendMode] = useState<"text" | "template">("text");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [templateParams, setTemplateParams] = useState<string[]>([]);
+
+  // Update numbers when initialNumbers changes
+  React.useEffect(() => {
+    if (initialNumbers?.length) {
+      setNumbers(prev => [...new Set([...prev, ...initialNumbers])]);
+    }
+  }, [initialNumbers]);
+
+  // Fetch campaign history
+  const { data: campaigns } = useQuery({
+    queryKey: ["bulk-campaigns", storeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("whatsapp_bulk_campaigns")
+        .select("*")
+        .eq("store_id", storeId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
 
   // Fetch approved Meta templates
   const { data: approvedTemplates } = useQuery({
@@ -1425,7 +1447,6 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
     toast({ title: "All numbers cleared" });
   };
 
-  // Count template variable placeholders like {{1}}, {{2}}
   const getTemplateParamCount = (bodyText: string): number => {
     const matches = bodyText.match(/\{\{\d+\}\}/g);
     if (!matches) return 0;
@@ -1449,6 +1470,22 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
 
     setSending(true);
     setProgress({ sent: 0, failed: 0, total: numbers.length });
+
+    // Create campaign record
+    const campaignBody: any = {
+      store_id: storeId,
+      recipient_count: numbers.length,
+      status: "sending",
+      message_body: sendMode === "text" ? message.trim() : null,
+      template_name: sendMode === "template" ? selectedTemplate : null,
+      template_params: sendMode === "template" ? templateParams.filter((p) => p.trim()) : null,
+    };
+    const { data: campaign } = await (supabase as any)
+      .from("whatsapp_bulk_campaigns")
+      .insert(campaignBody)
+      .select("id")
+      .single();
+    const campaignId = campaign?.id;
 
     let sent = 0;
     let failed = 0;
@@ -1481,9 +1518,18 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
       await new Promise((r) => setTimeout(r, 500));
     }
 
+    // Update campaign record
+    if (campaignId) {
+      await (supabase as any)
+        .from("whatsapp_bulk_campaigns")
+        .update({ sent_count: sent, failed_count: failed, status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", campaignId);
+    }
+
     setSending(false);
     queryClient.invalidateQueries({ queryKey: ["whatsapp-messages", storeId] });
     queryClient.invalidateQueries({ queryKey: ["whatsapp-analytics", storeId] });
+    queryClient.invalidateQueries({ queryKey: ["bulk-campaigns", storeId] });
     toast({
       title: "Bulk send complete!",
       description: `✅ ${sent} sent, ❌ ${failed} failed out of ${numbers.length}`,
