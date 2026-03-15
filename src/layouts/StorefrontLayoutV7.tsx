@@ -10,6 +10,7 @@ import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import SideCart from "@/components/storefront/SideCart";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
@@ -420,6 +421,7 @@ export default function StorefrontLayoutV7({ slugOverride }: { slugOverride?: st
             <StorefrontOrderNotification storeName={store.name} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <Outlet context={store} />
+            <StorefrontInstagramSection store={store} />
             <EditorialFooter store={store} />
             <SideCart store={store} />
             <FloatingWhatsApp store={store} />

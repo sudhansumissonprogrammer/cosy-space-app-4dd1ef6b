@@ -11,6 +11,7 @@ import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import SideCart from "@/components/storefront/SideCart";
@@ -396,6 +397,7 @@ export default function StorefrontLayoutV11({ slugOverride }: { slugOverride?: s
             <div className="pb-24 md:pb-0">
               <Outlet context={store} />
             </div>
+            <StorefrontInstagramSection store={store} />
             <div className="pb-24 md:pb-0">
               <StorefrontFooter store={store} />
             </div>

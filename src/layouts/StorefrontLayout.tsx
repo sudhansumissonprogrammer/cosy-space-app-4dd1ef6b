@@ -14,6 +14,7 @@ import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import SideCart from "@/components/storefront/SideCart";
@@ -422,6 +423,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor }: 
       <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
       <StorefrontOrderNotification storeName={store.name} />
       <Outlet context={store} />
+      <StorefrontInstagramSection store={store} />
       <StorefrontFooter store={store} />
       <SideCart store={store} />
       <FloatingWhatsApp store={store} />
