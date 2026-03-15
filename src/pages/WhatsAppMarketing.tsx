@@ -1803,6 +1803,54 @@ function BulkMessagingTab({ storeId, initialNumbers }: { storeId: string; initia
           </Button>
         </CardContent>
       </Card>
+
+      {/* Campaign History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BarChart3 className="h-5 w-5" />
+            Campaign History
+          </CardTitle>
+          <CardDescription>Track status of your bulk messaging campaigns</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!campaigns?.length ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No campaigns yet. Send your first bulk message above.</p>
+          ) : (
+            <div className="space-y-3">
+              {campaigns.map((c: any) => (
+                <div key={c.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      {c.template_name || (c.message_body ? c.message_body.slice(0, 40) + "..." : "Campaign")}
+                    </span>
+                    <Badge className={cn(
+                      "text-[10px]",
+                      c.status === "completed" ? "bg-green-100 text-green-700 border-green-200" :
+                      c.status === "sending" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
+                      c.status === "failed" ? "bg-red-100 text-red-700 border-red-200" :
+                      "bg-muted text-muted-foreground"
+                    )}>
+                      {c.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{c.recipient_count} recipients</span>
+                    <span>✅ {c.sent_count} sent · ❌ {c.failed_count} failed</span>
+                  </div>
+                  {c.recipient_count > 0 && (
+                    <Progress value={((c.sent_count + c.failed_count) / c.recipient_count) * 100} className="h-1.5" />
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    {format(new Date(c.created_at), "dd MMM yyyy, hh:mm a")}
+                    {c.completed_at && ` — completed ${format(new Date(c.completed_at), "hh:mm a")}`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
