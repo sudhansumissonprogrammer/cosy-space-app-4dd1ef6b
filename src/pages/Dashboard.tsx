@@ -54,7 +54,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { data: store } = useQuery({
+  const { data: store, isLoading: storeLoading } = useQuery({
     queryKey: ["my-store", user?.id],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
@@ -138,8 +138,13 @@ export default function Dashboard() {
 
   const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
 
+  // Show skeleton while store query is loading
+  if (storeLoading) {
+    return <DashboardSkeleton />;
+  }
+
   // No store yet — show create CTA
-  if (!storeId && !isLoading) {
+  if (!storeId) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">

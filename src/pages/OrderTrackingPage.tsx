@@ -14,7 +14,6 @@ import {
 import { format } from "date-fns";
 
 const STATUS_STEPS = [
-  { key: "pending", label: "Order Placed", icon: Package },
   { key: "confirmed", label: "Confirmed", icon: CheckCircle2 },
   { key: "shipped", label: "Shipped", icon: Truck },
   { key: "delivered", label: "Delivered", icon: CheckCircle2 },
@@ -89,7 +88,7 @@ export default function OrderTrackingPage() {
       // Try searching by order ID (partial match on first 8 chars)
       let { data, error: err } = await supabase
         .from("orders")
-        .select("id, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
+          .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
         .or(`id.eq.${q},customer_phone.eq.${q}`)
         .order("created_at", { ascending: false })
         .limit(1);
@@ -100,7 +99,7 @@ export default function OrderTrackingPage() {
         // Try partial ID match
         const { data: partialData } = await supabase
           .from("orders")
-          .select("id, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
+          .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
           .ilike("id", `${q}%`)
           .order("created_at", { ascending: false })
           .limit(1);
@@ -187,7 +186,7 @@ export default function OrderTrackingPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base">
-                      Order #{order.id.slice(0, 8).toUpperCase()}
+                      Order {order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`}
                     </CardTitle>
                     <CardDescription className="text-xs">
                       {format(new Date(order.created_at), "dd MMM yyyy, hh:mm a")}

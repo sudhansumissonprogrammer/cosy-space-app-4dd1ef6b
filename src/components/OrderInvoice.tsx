@@ -32,7 +32,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
 
     doc.open();
     doc.write(`<!DOCTYPE html>
-<html><head><title>Label #${order.id.slice(0, 8).toUpperCase()}</title>
+<html><head><title>Label ${order.order_number ? '#' + (1000 + order.order_number) : '#' + order.id.slice(0, 8).toUpperCase()}</title>
 <link href="https://fonts.googleapis.com/css2?family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   @page { size: 100mm 150mm; margin: 3mm; }
@@ -150,7 +150,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     </div>
     <div>
       <div class="inv-tag">Invoice</div>
-      <div class="inv-id">#${order.id.slice(0, 8).toUpperCase()}</div>
+      <div class="inv-id">${order.order_number ? '#' + (1000 + order.order_number) : '#' + order.id.slice(0, 8).toUpperCase()}</div>
     </div>
   </div>
 
@@ -261,7 +261,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
           </div>
           <div className="text-right">
             <p className="text-[10px] font-semibold tracking-widest text-foreground">INVOICE</p>
-            <p className="text-[8px] text-muted-foreground">#{order.id.slice(0, 8).toUpperCase()}</p>
+            <p className="text-[8px] text-muted-foreground">{order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`}</p>
           </div>
         </div>
 

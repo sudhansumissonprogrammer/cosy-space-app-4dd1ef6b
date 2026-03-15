@@ -50,6 +50,7 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
   const [razorpayMethod, setRazorpayMethod] = useState<"upi" | "card" | "netbanking" | "wallet">("upi");
   const [upiApp, setUpiApp] = useState<"google_pay" | "phonepe" | "paytm" | "other" | null>(null);
@@ -388,12 +389,12 @@ export default function CheckoutPage() {
       throw new Error(error.message || "Failed to place order");
     }
 
-    const result = data as { order_id?: string; error?: string } | null;
+    const result = data as { order_id?: string; order_number?: string; error?: string } | null;
     if (!result?.order_id) {
       throw new Error(result?.error || "Failed to place order");
     }
 
-    return result.order_id;
+    return { id: result.order_id, number: result.order_number || null };
   };
 
   const createGuestAccount = async (ordId: string) => {
@@ -500,8 +501,9 @@ export default function CheckoutPage() {
     } catch {}
   };
 
-  const finalizeOrder = (newOrderId: string) => {
+  const finalizeOrder = (newOrderId: string, newOrderNumber: string | null) => {
     setOrderId(newOrderId);
+    setOrderNumber(newOrderNumber);
     setOrderPlaced(true);
     if (!isSingleMode) clearCart();
     saveExpressInfo();
@@ -528,13 +530,13 @@ export default function CheckoutPage() {
 
     setPlacing(true);
     try {
-      const newOrderId = await createOrder();
+      const newOrder = await createOrder();
 
       if (paymentMethod === "razorpay") {
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Failed to load payment gateway");
         const { data: rzpData, error: rzpError } = await supabase.functions.invoke("razorpay-order", {
-          body: { store_id: store.id, amount: total, currency, order_id: newOrderId },
+          body: { store_id: store.id, amount: total, currency, order_id: newOrder.id },
         });
 
         if (rzpError || !rzpData) {
@@ -543,18 +545,18 @@ export default function CheckoutPage() {
 
         const handlePaymentSuccess = async (response: any) => {
           try {
-            const { error: verifyError } = await supabase.functions.invoke("razorpay-verify", {
-              body: { ...response, order_id: newOrderId, store_id: store.id },
-            });
-            if (verifyError) throw new Error("Verification failed");
-            setPlacing(false);
-            finalizeOrder(newOrderId);
+              const { error: verifyError } = await supabase.functions.invoke("razorpay-verify", {
+                body: { ...response, order_id: newOrder.id, store_id: store.id },
+              });
+              if (verifyError) throw new Error("Verification failed");
+              setPlacing(false);
+              finalizeOrder(newOrder.id, newOrder.number);
           } catch { setPlacing(false); toast.error("Payment verification failed."); }
         };
 
         const options: any = {
           key: rzpData.key_id, amount: rzpData.amount, currency: rzpData.currency,
-          name: store.name, description: `Order #${newOrderId.slice(0, 8)}`,
+          name: store.name, description: `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
           order_id: rzpData.razorpay_order_id,
           handler: handlePaymentSuccess,
           prefill: { name: fullName, email, contact: phone },
@@ -592,7 +594,7 @@ export default function CheckoutPage() {
       }
 
       // COD flow
-      finalizeOrder(newOrderId);
+      finalizeOrder(newOrder.id, newOrder.number);
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
@@ -610,7 +612,7 @@ export default function CheckoutPage() {
         </div>
         <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
         <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
-        {orderId && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span></p>}
+        {(orderNumber || orderId) && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span></p>}
         <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
           <p className="text-sm text-foreground font-medium">✅ Order confirmed!</p>
           <p className="text-xs text-muted-foreground mt-1">We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.</p>

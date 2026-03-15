@@ -26,7 +26,7 @@ import PaginationControls from "@/components/PaginationControls";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const STATUS_OPTIONS = ["pending", "confirmed", "shipped", "delivered", "cancelled"] as const;
+const STATUS_OPTIONS = ["confirmed", "shipped", "delivered", "cancelled"] as const;
 
 export default function StoreOrders() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -63,7 +63,7 @@ export default function StoreOrders() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("orders")
-        .select("*, order_items(*)")
+        .select("*, order_items(*), order_number")
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
         .limit(1000);
@@ -78,11 +78,12 @@ export default function StoreOrders() {
     let result = [...allOrders];
     if (search.trim()) {
       const q = search.toLowerCase().trim();
-      result = result.filter(o =>
-        o.id.slice(0, 8).toLowerCase().includes(q) ||
-        (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
-        (o.customer_phone && o.customer_phone.includes(q))
-      );
+      result = result.filter(o => {
+        const displayId = o.order_number ? `#${1000 + o.order_number}` : o.id.slice(0, 8);
+        return displayId.toLowerCase().includes(q) ||
+          (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
+          (o.customer_phone && o.customer_phone.includes(q));
+      });
     }
     if (statusFilter) {
       result = result.filter(o => o.status === statusFilter);
@@ -375,7 +376,7 @@ export default function StoreOrders() {
                           onCheckedChange={() => toggleOrderSelection(order.id)}
                         />
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">{order.id.slice(0, 8)}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{order.order_number ? `#${1000 + order.order_number}` : order.id.slice(0, 8)}</TableCell>
                       <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">

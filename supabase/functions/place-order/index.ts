@@ -160,7 +160,18 @@ Deno.serve(async (req) => {
         .eq("id", abandoned_cart_id);
     }
 
-    return new Response(JSON.stringify({ success: true, order_id: createdOrder.id }), {
+    // Fetch the auto-generated order_number
+    const { data: orderRow } = await supabase
+      .from("orders")
+      .select("order_number")
+      .eq("id", createdOrder.id)
+      .single();
+
+    const orderNumber = orderRow?.order_number
+      ? `#${1000 + orderRow.order_number}`
+      : `#${createdOrder.id.slice(0, 8).toUpperCase()}`;
+
+    return new Response(JSON.stringify({ success: true, order_id: createdOrder.id, order_number: orderNumber }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
