@@ -256,8 +256,13 @@ function ChatTab({ storeId }: { storeId: string }) {
   const [showEmoji, setShowEmoji] = useState(false);
   const [newChatPhone, setNewChatPhone] = useState("");
   const [showNewChat, setShowNewChat] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [mediaPreview, setMediaPreview] = useState<{ file: File; url: string; type: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get all conversations (grouped by phone number)
   const { data: allMessages } = useQuery({
@@ -311,7 +316,14 @@ function ChatTab({ storeId }: { storeId: string }) {
   // Group messages by phone number to create conversations
   const conversations = useMemo(() => {
     if (!allMessages) return [];
-    const map = new Map<string, { phone: string; name: string | null; messages: any[]; lastMessage: any; unread: number }>();
+    const map = new Map<string, {
+      phone: string;
+      name: string | null;
+      messages: any[];
+      lastMessage: any;
+      unread: number;
+      lastIncomingAt: string | null;
+    }>();
 
     for (const msg of allMessages) {
       const m = msg as any;
@@ -327,12 +339,16 @@ function ChatTab({ storeId }: { storeId: string }) {
           messages: [],
           lastMessage: msg,
           unread: 0,
+          lastIncomingAt: null,
         });
       }
       const conv = map.get(phone)!;
       conv.messages.push(msg);
-      if (m.direction === "incoming" && msg.status === "received") {
-        conv.unread++;
+      if (m.direction === "incoming") {
+        if (msg.status === "received") conv.unread++;
+        if (!conv.lastIncomingAt || new Date(msg.created_at) > new Date(conv.lastIncomingAt)) {
+          conv.lastIncomingAt = msg.created_at;
+        }
       }
       if (!conv.name && msg.recipient_name) {
         conv.name = msg.recipient_name;
@@ -360,33 +376,101 @@ function ChatTab({ storeId }: { storeId: string }) {
     return conv ? [...conv.messages].reverse() : [];
   }, [selectedPhone, conversations]);
 
+  // Current conv for header info
+  const currentConv = useMemo(() =>
+    conversations.find((c) => c.phone === selectedPhone),
+    [selectedPhone, conversations]
+  );
+
   // Scroll to bottom when messages change
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [selectedConversation]);
 
+  // Typing indicator logic
+  const handleTyping = useCallback(() => {
+    setIsTyping(true);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
+  }, []);
+
   const sendMessage = async () => {
-    if (!selectedPhone || !message.trim()) return;
+    if (!selectedPhone || (!message.trim() && !mediaPreview)) return;
     setSending(true);
     try {
+      let mediaUrl: string | null = null;
+      let mediaType: string | null = null;
+
+      // Upload media if present
+      if (mediaPreview) {
+        setUploadingMedia(true);
+        const ext = mediaPreview.file.name.split(".").pop() || "file";
+        const filePath = `${storeId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("whatsapp-media")
+          .upload(filePath, mediaPreview.file);
+        if (uploadErr) throw uploadErr;
+
+        const { data: urlData } = supabase.storage
+          .from("whatsapp-media")
+          .getPublicUrl(filePath);
+        mediaUrl = urlData.publicUrl;
+        mediaType = mediaPreview.type;
+        setUploadingMedia(false);
+      }
+
       const res = await supabase.functions.invoke("whatsapp-send", {
         body: {
           store_id: storeId,
           recipient_phone: selectedPhone,
-          message_body: message.trim(),
+          message_body: message.trim() || (mediaType ? `[${mediaType}]` : ""),
           message_type: "manual",
+          ...(mediaUrl ? { media_url: mediaUrl, media_type: mediaType } : {}),
         },
       });
       if (res.error) throw res.error;
       if ((res.data as any)?.error) throw new Error((res.data as any).error);
       setMessage("");
       setShowEmoji(false);
+      setMediaPreview(null);
+      setIsTyping(false);
       queryClient.invalidateQueries({ queryKey: ["whatsapp-all-messages", storeId] });
       inputRef.current?.focus();
     } catch (e: any) {
       toast({ title: "Failed to send", description: e.message, variant: "destructive" });
     } finally {
       setSending(false);
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Determine media type
+    let type = "document";
+    if (file.type.startsWith("image/")) type = "image";
+    else if (file.type.startsWith("video/")) type = "video";
+
+    // 16MB limit for WhatsApp
+    if (file.size > 16 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Maximum 16MB allowed", variant: "destructive" });
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setMediaPreview({ file, url, type });
+    inputRef.current?.focus();
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeMediaPreview = () => {
+    if (mediaPreview) {
+      URL.revokeObjectURL(mediaPreview.url);
+      setMediaPreview(null);
     }
   };
 
@@ -426,6 +510,31 @@ function ChatTab({ storeId }: { storeId: string }) {
     return d.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
+  const formatLastSeen = (dateStr: string | null) => {
+    if (!dateStr) return "offline";
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+
+    if (diffMin < 2) return "online";
+    if (diffMin < 60) return `last seen ${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `last seen ${diffHr}h ago`;
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === today.toDateString()) return `last seen today at ${formatTime(dateStr)}`;
+    if (d.toDateString() === yesterday.toDateString()) return `last seen yesterday at ${formatTime(dateStr)}`;
+    return `last seen ${d.toLocaleDateString([], { month: "short", day: "numeric" })} at ${formatTime(dateStr)}`;
+  };
+
+  const isOnline = (dateStr: string | null) => {
+    if (!dateStr) return false;
+    const diffMin = (Date.now() - new Date(dateStr).getTime()) / 60000;
+    return diffMin < 2;
+  };
+
   const statusIcon = (status: string) => {
     switch (status) {
       case "sent": return <Check className="h-3 w-3 text-[hsl(var(--muted-foreground))]" />;
@@ -458,10 +567,72 @@ function ChatTab({ storeId }: { storeId: string }) {
     inputRef.current?.focus();
   };
 
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
+  // Render media in message bubble
+  const renderMedia = (msg: any) => {
+    const mUrl = msg.media_url;
+    const mType = msg.media_type;
+    if (!mUrl) return null;
+
+    if (mType === "image") {
+      return (
+        <a href={mUrl} target="_blank" rel="noopener noreferrer" className="block mb-1">
+          <img
+            src={mUrl}
+            alt="Shared image"
+            className="rounded-md max-w-full max-h-[200px] object-cover cursor-pointer"
+            loading="lazy"
+          />
+        </a>
+      );
+    }
+    if (mType === "video") {
+      return (
+        <video
+          src={mUrl}
+          controls
+          className="rounded-md max-w-full max-h-[200px] mb-1"
+          preload="metadata"
+        />
+      );
+    }
+    // Document
+    const fileName = mUrl.split("/").pop() || "Document";
+    return (
+      <a
+        href={mUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 bg-[hsl(var(--muted))] rounded-md p-2 mb-1 hover:bg-[hsl(var(--accent))] transition-colors"
+      >
+        <FileText className="h-8 w-8 text-muted-foreground shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium truncate">{decodeURIComponent(fileName)}</p>
+          <p className="text-[10px] text-muted-foreground">Document</p>
+        </div>
+      </a>
+    );
+  };
+
+  // Preview summary for conversation list
+  const getLastMessagePreview = (conv: any) => {
+    const lm = conv.lastMessage;
+    if (lm.media_type === "image") return "📷 Photo";
+    if (lm.media_type === "video") return "🎥 Video";
+    if (lm.media_type === "document") return "📄 Document";
+    return lm.message_body;
+  };
 
   return (
     <div className="border rounded-xl overflow-hidden bg-background shadow-sm" style={{ height: "calc(100vh - 280px)", minHeight: 450 }}>
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
       <div className="flex h-full">
         {/* ── Conversation List (left panel) ── */}
         <div className={`${selectedPhone ? "hidden md:flex" : "flex"} flex-col w-full md:w-[340px] md:min-w-[300px] border-r`}>
@@ -543,6 +714,7 @@ function ChatTab({ storeId }: { storeId: string }) {
             ) : (
               filteredConversations.map((conv) => {
                 const isActive = selectedPhone === conv.phone;
+                const online = isOnline(conv.lastIncomingAt);
                 return (
                   <button
                     key={conv.phone}
@@ -552,12 +724,17 @@ function ChatTab({ storeId }: { storeId: string }) {
                       isActive ? "bg-[hsl(var(--accent))]" : "hover:bg-[hsl(var(--muted)/0.5)]"
                     )}
                   >
-                    {/* Avatar */}
-                    <div className={cn(
-                      "h-11 w-11 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-sm",
-                      getAvatarColor(conv.phone)
-                    )}>
-                      {getInitials(conv.name, conv.phone)}
+                    {/* Avatar with online dot */}
+                    <div className="relative shrink-0">
+                      <div className={cn(
+                        "h-11 w-11 rounded-full flex items-center justify-center text-white font-semibold text-sm",
+                        getAvatarColor(conv.phone)
+                      )}>
+                        {getInitials(conv.name, conv.phone)}
+                      </div>
+                      {online && (
+                        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[hsl(142,72%,40%)] border-2 border-background" />
+                      )}
                     </div>
                     {/* Info */}
                     <div className="flex-1 min-w-0">
@@ -578,7 +755,7 @@ function ChatTab({ storeId }: { storeId: string }) {
                             statusIcon(conv.lastMessage.status)
                           )}
                           <span className="truncate">
-                            {conv.lastMessage.message_body}
+                            {getLastMessagePreview(conv)}
                           </span>
                         </p>
                         {conv.unread > 0 && (
@@ -626,18 +803,26 @@ function ChatTab({ storeId }: { storeId: string }) {
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <div className={cn(
-                  "h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-sm",
-                  getAvatarColor(selectedPhone)
-                )}>
-                  {getInitials(conversations.find((c) => c.phone === selectedPhone)?.name || null, selectedPhone)}
+                <div className="relative shrink-0">
+                  <div className={cn(
+                    "h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold text-sm",
+                    getAvatarColor(selectedPhone)
+                  )}>
+                    {getInitials(currentConv?.name || null, selectedPhone)}
+                  </div>
+                  {isOnline(currentConv?.lastIncomingAt || null) && (
+                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-[hsl(142,72%,40%)] border-2 border-[hsl(var(--muted))]" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-medium truncate">
-                    {conversations.find((c) => c.phone === selectedPhone)?.name || selectedPhone}
+                    {currentConv?.name || selectedPhone}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    {conversations.find((c) => c.phone === selectedPhone)?.name ? selectedPhone : "tap for contact info"}
+                    {isOnline(currentConv?.lastIncomingAt || null)
+                      ? <span className="text-[hsl(142,72%,40%)]">online</span>
+                      : formatLastSeen(currentConv?.lastIncomingAt || null)
+                    }
                   </p>
                 </div>
                 <DropdownMenu>
@@ -679,14 +864,14 @@ function ChatTab({ storeId }: { storeId: string }) {
                 ) : (
                   selectedConversation.map((msg: any, idx: number) => {
                     const isOutgoing = msg.direction !== "incoming";
-                    const showDate =
+                    const showDateSeparator =
                       idx === 0 ||
                       new Date(msg.created_at).toDateString() !==
                         new Date(selectedConversation[idx - 1].created_at).toDateString();
 
                     return (
                       <React.Fragment key={msg.id}>
-                        {showDate && (
+                        {showDateSeparator && (
                           <div className="flex justify-center my-3">
                             <span className="text-[11px] bg-[hsl(var(--muted))] shadow-sm px-3 py-1 rounded-md text-muted-foreground font-medium">
                               {formatDate(msg.created_at)}
@@ -696,22 +881,29 @@ function ChatTab({ storeId }: { storeId: string }) {
                         <div className={`flex ${isOutgoing ? "justify-end" : "justify-start"} mb-0.5`}>
                           <div
                             className={cn(
-                              "relative max-w-[85%] sm:max-w-[70%] rounded-lg px-3 py-1.5 text-[13.5px] shadow-sm",
+                              "relative max-w-[85%] sm:max-w-[70%] rounded-lg text-[13.5px] shadow-sm overflow-hidden",
                               isOutgoing
                                 ? "bg-[hsl(142,70%,90%)] dark:bg-[hsl(142,40%,25%)] text-foreground rounded-tr-none"
-                                : "bg-card text-foreground rounded-tl-none"
+                                : "bg-card text-foreground rounded-tl-none",
+                              msg.media_url ? "p-1" : "px-3 py-1.5"
                             )}
                           >
+                            {/* Media content */}
+                            {renderMedia(msg)}
                             {/* Message body */}
-                            <p className="whitespace-pre-wrap break-words leading-[1.35]">{msg.message_body}</p>
-                            {/* Time + status */}
-                            <div className="flex items-center justify-end gap-1 -mb-0.5 mt-0.5">
-                              <span className="text-[10px] text-muted-foreground">{formatTime(msg.created_at)}</span>
-                              {isOutgoing && statusIcon(msg.status)}
+                            <div className={msg.media_url ? "px-2 py-1" : ""}>
+                              {msg.message_body && !msg.message_body.startsWith("[") && (
+                                <p className="whitespace-pre-wrap break-words leading-[1.35]">{msg.message_body}</p>
+                              )}
+                              {/* Time + status */}
+                              <div className="flex items-center justify-end gap-1 -mb-0.5 mt-0.5">
+                                <span className="text-[10px] text-muted-foreground">{formatTime(msg.created_at)}</span>
+                                {isOutgoing && statusIcon(msg.status)}
+                              </div>
                             </div>
                             {/* Error indicator */}
                             {msg.status === "failed" && msg.error_message && (
-                              <p className="text-[10px] text-[hsl(var(--destructive))] mt-1 flex items-center gap-1">
+                              <p className="text-[10px] text-[hsl(var(--destructive))] px-2 pb-1 flex items-center gap-1">
                                 <AlertCircle className="h-2.5 w-2.5" /> {msg.error_message.slice(0, 60)}
                               </p>
                             )}
@@ -721,8 +913,55 @@ function ChatTab({ storeId }: { storeId: string }) {
                     );
                   })
                 )}
+
+                {/* Typing indicator */}
+                {isTyping && (
+                  <div className="flex justify-end mb-0.5">
+                    <div className="bg-[hsl(142,70%,90%)] dark:bg-[hsl(142,40%,25%)] rounded-lg rounded-tr-none px-3 py-2 shadow-sm">
+                      <div className="flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Media Preview */}
+              {mediaPreview && (
+                <div className="border-t px-3 py-2 bg-[hsl(var(--muted)/0.5)]">
+                  <div className="flex items-start gap-2">
+                    <div className="relative">
+                      {mediaPreview.type === "image" ? (
+                        <img src={mediaPreview.url} alt="Preview" className="h-16 w-16 rounded-md object-cover" />
+                      ) : mediaPreview.type === "video" ? (
+                        <div className="h-16 w-16 rounded-md bg-[hsl(var(--muted))] flex items-center justify-center">
+                          <Eye className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      ) : (
+                        <div className="h-16 w-16 rounded-md bg-[hsl(var(--muted))] flex items-center justify-center">
+                          <FileText className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <button
+                        onClick={removeMediaPreview}
+                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-[hsl(var(--destructive))] text-white flex items-center justify-center"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium truncate">{mediaPreview.file.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {(mediaPreview.file.size / 1024).toFixed(0)} KB · {mediaPreview.type}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Emoji Picker */}
               {showEmoji && (
@@ -751,11 +990,26 @@ function ChatTab({ storeId }: { storeId: string }) {
                 >
                   <Smile className="h-5 w-5 text-muted-foreground" />
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 rounded-full"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingMedia}
+                >
+                  {uploadingMedia
+                    ? <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+                    : <Plus className="h-5 w-5 text-muted-foreground" />
+                  }
+                </Button>
                 <div className="flex-1 relative">
                   <Textarea
                     ref={inputRef}
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                      setMessage(e.target.value);
+                      handleTyping();
+                    }}
                     placeholder="Type a message"
                     rows={1}
                     className="text-[14px] resize-none min-h-[38px] max-h-[120px] rounded-xl bg-background border-border pr-3"
@@ -768,7 +1022,7 @@ function ChatTab({ storeId }: { storeId: string }) {
                     onFocus={() => setShowEmoji(false)}
                   />
                 </div>
-                {message.trim() ? (
+                {(message.trim() || mediaPreview) ? (
                   <Button
                     size="icon"
                     className="h-9 w-9 shrink-0 rounded-full bg-[hsl(142,72%,40%)] hover:bg-[hsl(142,72%,35%)] text-white"
