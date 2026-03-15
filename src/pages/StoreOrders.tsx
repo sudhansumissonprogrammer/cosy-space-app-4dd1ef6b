@@ -63,7 +63,7 @@ export default function StoreOrders() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("orders")
-        .select("*, order_items(*)")
+        .select("*, order_items(*), order_number")
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
         .limit(1000);
