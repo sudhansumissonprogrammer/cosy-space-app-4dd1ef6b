@@ -199,13 +199,13 @@ function buildInvoiceHtml(order: any, items: any[], store: any, isOwner: boolean
 </html>`;
 }
 
-async function enqueueEmail(supabase: any, queueName: string, messageId: string, templateName: string, recipientEmail: string, subject: string, htmlBody: string, ttlMinutes: number) {
+async function enqueueEmail(supabase: any, queueName: string, messageId: string, templateName: string, recipientEmail: string, subject: string, htmlBody: string, ttlMinutes: number, storeName: string) {
   const payload = {
     message_id: messageId,
     idempotency_key: messageId,
     label: templateName,
     to: recipientEmail,
-    from: EMAIL_FROM,
+    from: getEmailFrom(storeName),
     sender_domain: EMAIL_SENDER_DOMAIN,
     subject,
     html: htmlBody,
