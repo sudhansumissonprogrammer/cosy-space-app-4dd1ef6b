@@ -671,9 +671,37 @@ export default function StoreSettings() {
               <p className="text-xs text-muted-foreground">{metaDescription.length}/160 characters</p>
             </div>
             <div className="space-y-2">
-              <Label>OG Image URL</Label>
-              <Input value={ogImageUrl} onChange={(e) => setOgImageUrl(e.target.value)} placeholder="https://..." maxLength={500} />
-              <p className="text-xs text-muted-foreground">Social sharing preview image (1200×630 recommended)</p>
+              <Label>OG Image <span className="text-xs text-muted-foreground font-normal">(1200×630 recommended)</span></Label>
+              {ogImagePreview ? (
+                <div className="relative inline-block">
+                  <img src={ogImagePreview} alt="OG Image" className="h-24 w-48 rounded-lg border object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => { setOgImageFile(null); setOgImagePreview(null); setOgImageUrl(""); setOgImageRemoved(true); }}
+                    className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-24 w-48 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-input hover:border-primary/50">
+                  <div className="flex flex-col items-center gap-1">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Upload image</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) { setOgImageFile(f); setOgImagePreview(URL.createObjectURL(f)); setOgImageRemoved(false); }
+                    }}
+                  />
+                </label>
+              )}
+              <p className="text-xs text-muted-foreground">Or paste a URL:</p>
+              <Input value={ogImageUrl} onChange={(e) => { setOgImageUrl(e.target.value); if (e.target.value) { setOgImagePreview(e.target.value); setOgImageFile(null); setOgImageRemoved(false); } }} placeholder="https://..." maxLength={500} />
             </div>
           </CardContent>
         </Card>
