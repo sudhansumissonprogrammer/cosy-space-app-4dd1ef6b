@@ -16,6 +16,29 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
+function normalizeOgImageUrl(imageUrl: string): string {
+  if (!imageUrl) return "";
+
+  try {
+    const parsed = new URL(imageUrl);
+    const isShopifyCdnAsset = parsed.pathname.includes("/cdn/shop/files/");
+
+    // WhatsApp preview is unreliable with .webp OG images.
+    // Shopify supports forcing JPEG output via format=pjpg.
+    if (isShopifyCdnAsset && parsed.pathname.toLowerCase().endsWith(".webp")) {
+      parsed.searchParams.set("format", "pjpg");
+      if (!parsed.searchParams.has("width")) {
+        parsed.searchParams.set("width", "1200");
+      }
+      return parsed.toString();
+    }
+
+    return parsed.toString();
+  } catch {
+    return imageUrl;
+  }
+}
+
 function buildHtml(title: string, description: string, image: string, canonicalUrl: string, redirectUrl: string, siteName: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
