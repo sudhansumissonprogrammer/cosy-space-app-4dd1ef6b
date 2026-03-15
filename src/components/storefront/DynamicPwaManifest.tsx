@@ -12,7 +12,7 @@ interface DynamicPwaManifestProps {
  * Dynamically generates and injects a per-store PWA manifest
  * so each store gets its own installable app with its own name/logo.
  */
-export default function DynamicPwaManifest({ storeName, logoUrl, themeColor = "#4361ee" }: DynamicPwaManifestProps) {
+export default function DynamicPwaManifest({ storeName, logoUrl, themeColor = "#4361ee", startUrl }: DynamicPwaManifestProps) {
   useEffect(() => {
     // Build icons array — use store logo if available, else fallback to default PWA icons
     const icons = logoUrl
