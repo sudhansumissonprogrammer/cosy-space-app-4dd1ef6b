@@ -221,6 +221,7 @@ export default function DashboardLayout() {
         <div className="min-h-screen flex w-full" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
           <AppSidebar />
           <div className="flex-1 flex flex-col min-w-0">
+            <DynamicPwaManifest storeName={store?.name ? `${store.name} Admin` : "Dashboard"} logoUrl={store?.logo_url} themeColor="#1a1a1a" />
             <OrderNotificationListener />
             <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
               <div className="flex items-center gap-2">
