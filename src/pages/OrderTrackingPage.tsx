@@ -99,7 +99,7 @@ export default function OrderTrackingPage() {
         // Try partial ID match
         const { data: partialData } = await supabase
           .from("orders")
-          .select("id, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
+          .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
           .ilike("id", `${q}%`)
           .order("created_at", { ascending: false })
           .limit(1);
