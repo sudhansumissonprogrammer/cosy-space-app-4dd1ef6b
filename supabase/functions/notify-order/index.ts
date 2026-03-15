@@ -205,6 +205,7 @@ async function enqueueEmail(supabase: any, queueName: string, messageId: string,
     sender_domain: EMAIL_SENDER_DOMAIN,
     subject,
     html: htmlBody,
+    text: subject,
     purpose: "transactional",
     queued_at: new Date().toISOString(),
   };

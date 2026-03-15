@@ -96,6 +96,7 @@ function normalizeQueuedPayload(rawPayload: any, queue: string, queueMessageId: 
     sender_domain,
     subject,
     html,
+    text,
     label,
     purpose,
     queued_at,
