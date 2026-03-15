@@ -561,13 +561,13 @@ export default function ProductsList() {
                       <Package className="h-5 w-5 text-muted-foreground" />
                     </div>
                   )}
-                  <Link
-                    to={bulkMode ? "#" : `/dashboard/stores/${storeId}/products/${product.id}/edit`}
+                  <button
                     onClick={(e) => {
-                      if (longPressTriggered.current) { e.preventDefault(); return; }
-                      if (bulkMode) { e.preventDefault(); toggleBulkSelect(product.id); }
+                      if (longPressTriggered.current) return;
+                      if (bulkMode) { toggleBulkSelect(product.id); return; }
+                      setMobileProductId(product.id);
                     }}
-                    className="flex items-center gap-3 flex-1 min-w-0 active:bg-accent/50 transition-colors"
+                    className="flex items-center gap-3 flex-1 min-w-0 active:bg-accent/50 transition-colors text-left"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
@@ -586,7 +586,7 @@ export default function ProductsList() {
                     >
                       {product.is_active ? "Active" : "Draft"}
                     </Badge>
-                  </Link>
+                  </button>
                 </div>
               ))}
             </div>
