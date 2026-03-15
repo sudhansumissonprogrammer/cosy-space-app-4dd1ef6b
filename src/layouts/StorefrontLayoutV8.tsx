@@ -14,6 +14,7 @@ import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import SideCart from "@/components/storefront/SideCart";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
+import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
