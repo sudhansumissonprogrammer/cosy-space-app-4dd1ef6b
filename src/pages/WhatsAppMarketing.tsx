@@ -1705,7 +1705,7 @@ export default function WhatsAppMarketing() {
 
       <Tabs value={defaultTab} onValueChange={setActiveTab}>
         {/* Row 1: Core tabs */}
-        <TabsList className="w-full grid grid-cols-4 mb-1">
+        <TabsList className="w-full grid grid-cols-5 mb-1">
           <TabsTrigger value="setup" className="text-[11px]">
             <Settings className="h-3 w-3 mr-1" /> Setup
           </TabsTrigger>
@@ -1717,6 +1717,9 @@ export default function WhatsAppMarketing() {
           </TabsTrigger>
           <TabsTrigger value="automations" disabled={!isConnected} className="text-[11px]">
             <Zap className="h-3 w-3 mr-1" /> Auto
+          </TabsTrigger>
+          <TabsTrigger value="templates" disabled={!isConnected} className="text-[11px]">
+            <FileCheck className="h-3 w-3 mr-1" /> Templates
           </TabsTrigger>
         </TabsList>
         {/* Row 2: Advanced tabs */}
@@ -1746,6 +1749,9 @@ export default function WhatsAppMarketing() {
         </TabsContent>
         <TabsContent value="automations" className="mt-4">
           <AutomationsTab storeId={storeId!} />
+        </TabsContent>
+        <TabsContent value="templates" className="mt-4">
+          <MetaTemplatesTab storeId={storeId!} />
         </TabsContent>
         <TabsContent value="segments" className="mt-4">
           <SegmentationTab storeId={storeId!} />
