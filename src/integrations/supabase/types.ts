@@ -1454,6 +1454,10 @@ export type Database = {
           id: string
           is_active: boolean
           language_code: string
+          meta_category: string
+          meta_rejected_reason: string | null
+          meta_status: string
+          meta_template_id: string | null
           store_id: string
           template_name: string
           template_type: string
@@ -1465,6 +1469,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           language_code?: string
+          meta_category?: string
+          meta_rejected_reason?: string | null
+          meta_status?: string
+          meta_template_id?: string | null
           store_id: string
           template_name: string
           template_type?: string
@@ -1476,6 +1484,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           language_code?: string
+          meta_category?: string
+          meta_rejected_reason?: string | null
+          meta_status?: string
+          meta_template_id?: string | null
           store_id?: string
           template_name?: string
           template_type?: string
