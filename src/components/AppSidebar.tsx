@@ -108,6 +108,12 @@ export function AppSidebar() {
       ]
     : [];
 
+  const marketingItems = storeId
+    ? [
+        { title: "WhatsApp Marketing", url: `/dashboard/stores/${storeId}/whatsapp`, icon: MessageSquare },
+      ]
+    : [];
+
   const settingsItems = storeId
     ? [
         { title: "Theme", url: `/dashboard/stores/${storeId}/theme`, icon: Palette },
