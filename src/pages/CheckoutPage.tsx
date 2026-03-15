@@ -556,7 +556,7 @@ export default function CheckoutPage() {
 
         const options: any = {
           key: rzpData.key_id, amount: rzpData.amount, currency: rzpData.currency,
-          name: store.name, description: `Order #${newOrderId.slice(0, 8)}`,
+          name: store.name, description: `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
           order_id: rzpData.razorpay_order_id,
           handler: handlePaymentSuccess,
           prefill: { name: fullName, email, contact: phone },
