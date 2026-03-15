@@ -529,6 +529,8 @@ export default function CheckoutPage() {
             sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
               customer_phone: phone.trim(), customer_name: fullName.trim(),
               total, currency,
+              product_names: checkoutItems.map((i) => i.name).join(", "),
+              store_name: store.name,
             });
           } catch { setPlacing(false); toast.error("Payment verification failed."); }
         };
