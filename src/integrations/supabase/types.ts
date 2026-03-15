@@ -1290,6 +1290,45 @@ export type Database = {
           },
         ]
       }
+      whatsapp_optouts: {
+        Row: {
+          id: string
+          opted_out_at: string
+          phone: string
+          reason: string | null
+          store_id: string
+        }
+        Insert: {
+          id?: string
+          opted_out_at?: string
+          phone: string
+          reason?: string | null
+          store_id: string
+        }
+        Update: {
+          id?: string
+          opted_out_at?: string
+          phone?: string
+          reason?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_optouts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_optouts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_orders: {
         Row: {
           created_at: string
@@ -1344,6 +1383,63 @@ export type Database = {
           },
           {
             foreignKeyName: "whatsapp_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_scheduled: {
+        Row: {
+          created_at: string
+          failed_count: number | null
+          id: string
+          message_body: string
+          recipient_phones: Json
+          scheduled_at: string
+          segment_filter: Json | null
+          sent_count: number | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          failed_count?: number | null
+          id?: string
+          message_body: string
+          recipient_phones?: Json
+          scheduled_at: string
+          segment_filter?: Json | null
+          sent_count?: number | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          failed_count?: number | null
+          id?: string
+          message_body?: string
+          recipient_phones?: Json
+          scheduled_at?: string
+          segment_filter?: Json | null
+          sent_count?: number | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_scheduled_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_scheduled_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores_public"

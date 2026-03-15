@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,13 +12,18 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
 import {
   MessageSquare, Settings, BarChart3, Send, Phone, CheckCircle2,
   XCircle, Clock, AlertCircle, Zap, ShoppingCart, Package, Users,
   TrendingUp, Eye, EyeOff, Upload, Megaphone, Trash2, FileText, Plus,
+  Ban, CalendarIcon, Target, UserX, Timer,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // ─── Setup Tab ───────────────────────────────────────────────────────
 function SetupTab({ storeId }: { storeId: string }) {
@@ -909,9 +914,464 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
   );
 }
 
+// ─── Opt-Out Management Tab ─────────────────────────────────────────
+function OptOutTab({ storeId }: { storeId: string }) {
+  const queryClient = useQueryClient();
+  const [manualPhone, setManualPhone] = useState("");
+
+  const { data: optouts, isLoading } = useQuery({
+    queryKey: ["whatsapp-optouts", storeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("whatsapp_optouts")
+        .select("*")
+        .eq("store_id", storeId)
+        .order("opted_out_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const addOptout = async () => {
+    if (!manualPhone.trim()) return;
+    const phone = manualPhone.replace(/[\s\-()]/g, "");
+    const { error } = await (supabase as any)
+      .from("whatsapp_optouts")
+      .upsert({ store_id: storeId, phone, reason: "manual_add" }, { onConflict: "store_id,phone" });
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: "Number added to opt-out list" });
+      setManualPhone("");
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-optouts", storeId] });
+    }
+  };
+
+  const removeOptout = async (id: string) => {
+    await (supabase as any).from("whatsapp_optouts").delete().eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["whatsapp-optouts", storeId] });
+    toast({ title: "Number removed from opt-out list" });
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Ban className="h-5 w-5" />
+            Opt-Out / Unsubscribe List
+          </CardTitle>
+          <CardDescription>
+            Customers who reply STOP are automatically added here. These numbers are excluded from all bulk messages.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              value={manualPhone}
+              onChange={(e) => setManualPhone(e.target.value)}
+              placeholder="Manually add phone number..."
+              className="flex-1"
+            />
+            <Button variant="outline" size="sm" onClick={addOptout} disabled={!manualPhone.trim()}>
+              <Plus className="mr-1 h-3.5 w-3.5" /> Add
+            </Button>
+          </div>
+
+          <div className="rounded-md border p-1">
+            <div className="px-3 py-2 bg-muted/50 rounded text-xs font-medium text-muted-foreground flex items-center justify-between">
+              <span>{optouts?.length || 0} opted-out numbers</span>
+              <span>Auto-excluded from bulk sends</span>
+            </div>
+            {isLoading ? (
+              <p className="text-center py-4 text-sm text-muted-foreground">Loading...</p>
+            ) : !optouts?.length ? (
+              <p className="text-center py-6 text-sm text-muted-foreground">No opt-outs yet</p>
+            ) : (
+              <div className="max-h-60 overflow-y-auto divide-y">
+                {optouts.map((o: any) => (
+                  <div key={o.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                    <div>
+                      <span className="font-mono">{o.phone}</span>
+                      <span className="text-[11px] text-muted-foreground ml-2">
+                        {o.reason === "customer_reply_stop" ? "Replied STOP" : "Manual"}
+                      </span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeOptout(o.id)}>
+                      <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Webhook Setup</CardTitle>
+          <CardDescription className="text-xs">
+            To auto-detect STOP replies, configure this webhook URL in your Meta App Dashboard:
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="rounded bg-muted p-3 text-xs font-mono break-all select-all">
+            {`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/whatsapp-webhook`}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Verify Token: <code className="bg-muted px-1 rounded">storivo_webhook_verify</code>
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Subscribe to: <strong>messages</strong> and <strong>message_deliveries</strong>
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Customer Segmentation Tab ──────────────────────────────────────
+function SegmentationTab({ storeId }: { storeId: string }) {
+  const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
+  const [segmentPhones, setSegmentPhones] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const segments = [
+    { id: "all_customers", label: "All Customers", icon: Users, desc: "Every customer with a phone number", color: "text-blue-500" },
+    { id: "repeat_buyers", label: "Repeat Buyers", icon: TrendingUp, desc: "Customers with 2+ orders", color: "text-green-500" },
+    { id: "high_value", label: "High Value", icon: Package, desc: "Orders above ₹1000 total", color: "text-purple-500" },
+    { id: "recent_buyers", label: "Recent Buyers", icon: Clock, desc: "Ordered in last 7 days", color: "text-orange-500" },
+    { id: "inactive", label: "Inactive Customers", icon: UserX, desc: "No orders in last 30 days", color: "text-red-500" },
+  ];
+
+  const loadSegment = async (segmentId: string) => {
+    setLoading(true);
+    setSelectedSegment(segmentId);
+
+    try {
+      let query = (supabase as any).from("orders")
+        .select("customer_phone, customer_name, total, created_at")
+        .eq("store_id", storeId)
+        .not("customer_phone", "is", null);
+
+      if (segmentId === "recent_buyers") {
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        query = query.gte("created_at", weekAgo);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let phones: string[] = [];
+      const orders = data || [];
+
+      if (segmentId === "all_customers") {
+        phones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))] as string[];
+      } else if (segmentId === "repeat_buyers") {
+        const counts: Record<string, number> = {};
+        orders.forEach((o: any) => { counts[o.customer_phone] = (counts[o.customer_phone] || 0) + 1; });
+        phones = Object.entries(counts).filter(([_, c]) => c >= 2).map(([p]) => p);
+      } else if (segmentId === "high_value") {
+        const totals: Record<string, number> = {};
+        orders.forEach((o: any) => { totals[o.customer_phone] = (totals[o.customer_phone] || 0) + Number(o.total); });
+        phones = Object.entries(totals).filter(([_, t]) => t >= 1000).map(([p]) => p);
+      } else if (segmentId === "recent_buyers") {
+        phones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))] as string[];
+      } else if (segmentId === "inactive") {
+        const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const recentPhones = new Set(
+          orders.filter((o: any) => o.created_at >= monthAgo).map((o: any) => o.customer_phone)
+        );
+        const allPhones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))] as string[];
+        phones = allPhones.filter((p) => !recentPhones.has(p));
+      }
+
+      // Filter out opted-out numbers
+      const { data: optouts } = await (supabase as any)
+        .from("whatsapp_optouts")
+        .select("phone")
+        .eq("store_id", storeId);
+      const optedOut = new Set((optouts || []).map((o: any) => o.phone));
+      phones = phones.filter((p) => !optedOut.has(p.replace(/[\s\-()]/g, "")));
+
+      setSegmentPhones(phones);
+    } catch (e: any) {
+      toast({ title: "Error loading segment", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(segmentPhones.join("\n"));
+    toast({ title: `${segmentPhones.length} numbers copied!`, description: "Paste them in the Bulk tab to send messages" });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold">Customer Segments</h3>
+        <p className="text-sm text-muted-foreground">Target specific customer groups for your campaigns. Opted-out numbers are auto-excluded.</p>
+      </div>
+
+      <div className="grid gap-3">
+        {segments.map((seg) => (
+          <Card
+            key={seg.id}
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-sm",
+              selectedSegment === seg.id && "ring-2 ring-primary"
+            )}
+            onClick={() => loadSegment(seg.id)}
+          >
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <seg.icon className={cn("h-5 w-5", seg.color)} />
+                <div>
+                  <p className="text-sm font-medium">{seg.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{seg.desc}</p>
+                </div>
+              </div>
+              {selectedSegment === seg.id && (
+                <Badge variant="outline">
+                  {loading ? "Loading..." : `${segmentPhones.length} contacts`}
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {selectedSegment && segmentPhones.length > 0 && !loading && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">{segmentPhones.length} numbers ready</span>
+              <Button size="sm" onClick={copyToClipboard}>
+                Copy All → Use in Bulk Tab
+              </Button>
+            </div>
+            <div className="max-h-32 overflow-y-auto bg-muted/50 rounded p-2 space-y-0.5">
+              {segmentPhones.slice(0, 20).map((p, i) => (
+                <p key={i} className="text-xs font-mono">{p}</p>
+              ))}
+              {segmentPhones.length > 20 && (
+                <p className="text-xs text-muted-foreground">...and {segmentPhones.length - 20} more</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ─── Scheduling Tab ──────────────────────────────────────────────────
+function ScheduleTab({ storeId }: { storeId: string }) {
+  const queryClient = useQueryClient();
+  const [message, setMessage] = useState("");
+  const [phones, setPhones] = useState("");
+  const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
+  const [scheduleTime, setScheduleTime] = useState("10:00");
+
+  const { data: scheduled } = useQuery({
+    queryKey: ["whatsapp-scheduled", storeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("whatsapp_scheduled")
+        .select("*")
+        .eq("store_id", storeId)
+        .order("scheduled_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const createSchedule = async () => {
+    if (!message.trim() || !phones.trim() || !scheduleDate) return;
+
+    const phoneList = phones.split(/[\n,;]+/).map((p) => p.trim()).filter(Boolean);
+    const [h, m] = scheduleTime.split(":").map(Number);
+    const scheduledAt = new Date(scheduleDate);
+    scheduledAt.setHours(h, m, 0, 0);
+
+    if (scheduledAt <= new Date()) {
+      toast({ title: "Schedule must be in the future", variant: "destructive" });
+      return;
+    }
+
+    const { error } = await (supabase as any).from("whatsapp_scheduled").insert({
+      store_id: storeId,
+      message_body: message.trim(),
+      recipient_phones: phoneList,
+      scheduled_at: scheduledAt.toISOString(),
+      status: "scheduled",
+    });
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Message scheduled!", description: `Will be sent at ${format(scheduledAt, "dd MMM yyyy, hh:mm a")}` });
+      setMessage("");
+      setPhones("");
+      setScheduleDate(undefined);
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-scheduled", storeId] });
+    }
+  };
+
+  const cancelSchedule = async (id: string) => {
+    await (supabase as any).from("whatsapp_scheduled").update({ status: "cancelled" }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["whatsapp-scheduled", storeId] });
+    toast({ title: "Schedule cancelled" });
+  };
+
+  const sendNow = async (item: any) => {
+    const phoneList = item.recipient_phones || [];
+    if (!phoneList.length) return;
+
+    // Update status to sending
+    await (supabase as any).from("whatsapp_scheduled").update({ status: "sending" }).eq("id", item.id);
+    queryClient.invalidateQueries({ queryKey: ["whatsapp-scheduled", storeId] });
+
+    let sent = 0, failed = 0;
+    for (const phone of phoneList) {
+      try {
+        const res = await supabase.functions.invoke("whatsapp-send", {
+          body: { store_id: storeId, recipient_phone: phone, message_body: item.message_body, message_type: "manual" },
+        });
+        if (res.error || (res.data as any)?.error) failed++;
+        else sent++;
+      } catch { failed++; }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
+    await (supabase as any).from("whatsapp_scheduled")
+      .update({ status: "completed", sent_count: sent, failed_count: failed })
+      .eq("id", item.id);
+    queryClient.invalidateQueries({ queryKey: ["whatsapp-scheduled", storeId] });
+    toast({ title: "Scheduled send complete!", description: `✅ ${sent} sent, ❌ ${failed} failed` });
+  };
+
+  const statusBadge = (s: string) => {
+    const map: Record<string, string> = {
+      scheduled: "bg-blue-100 text-blue-700 border-blue-200",
+      sending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      completed: "bg-green-100 text-green-700 border-green-200",
+      cancelled: "bg-muted text-muted-foreground",
+    };
+    return map[s] || "";
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Timer className="h-5 w-5" />
+            Schedule New Message
+          </CardTitle>
+          <CardDescription>Schedule a bulk message for a specific date and time</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Phone Numbers (one per line or comma-separated)</Label>
+            <Textarea
+              value={phones}
+              onChange={(e) => setPhones(e.target.value)}
+              placeholder={"+919876543210\n+918765432109"}
+              rows={3}
+              className="text-sm font-mono"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Message</Label>
+            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Your scheduled message..." rows={3} className="text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left text-sm", !scheduleDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {scheduleDate ? format(scheduleDate, "dd MMM yyyy") : "Pick date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={scheduleDate}
+                    onSelect={setScheduleDate}
+                    disabled={(d) => d < new Date()}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label>Time</Label>
+              <Input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} />
+            </div>
+          </div>
+          <Button onClick={createSchedule} disabled={!message.trim() || !phones.trim() || !scheduleDate} className="w-full">
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            Schedule Message
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Scheduled Messages List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Scheduled Messages</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!scheduled?.length ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No scheduled messages</p>
+          ) : (
+            <div className="space-y-3">
+              {scheduled.map((item: any) => (
+                <div key={item.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">
+                        {format(new Date(item.scheduled_at), "dd MMM yyyy, hh:mm a")}
+                      </span>
+                    </div>
+                    <Badge className={statusBadge(item.status)}>{item.status}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{item.message_body}</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{(item.recipient_phones || []).length} recipients</span>
+                    {item.status === "completed" && (
+                      <span>✅ {item.sent_count} sent, ❌ {item.failed_count} failed</span>
+                    )}
+                  </div>
+                  {item.status === "scheduled" && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="text-xs flex-1" onClick={() => sendNow(item)}>
+                        <Send className="mr-1 h-3 w-3" /> Send Now
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => cancelSchedule(item.id)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function WhatsAppMarketing() {
   const { storeId } = useParams();
+  const [activeTab, setActiveTab] = useState<string | undefined>();
 
   const { data: config } = useQuery({
     queryKey: ["whatsapp-config", storeId],
@@ -928,6 +1388,7 @@ export default function WhatsAppMarketing() {
   });
 
   const isConnected = !!config;
+  const defaultTab = activeTab || (isConnected ? "chat" : "setup");
 
   return (
     <div className="space-y-6">
@@ -952,22 +1413,35 @@ export default function WhatsAppMarketing() {
         )}
       </div>
 
-      <Tabs defaultValue={isConnected ? "chat" : "setup"}>
-        <TabsList className="w-full grid grid-cols-5">
-          <TabsTrigger value="setup" className="text-xs">
-            <Settings className="h-3.5 w-3.5 mr-1" /> Setup
+      <Tabs value={defaultTab} onValueChange={setActiveTab}>
+        {/* Row 1: Core tabs */}
+        <TabsList className="w-full grid grid-cols-4 mb-1">
+          <TabsTrigger value="setup" className="text-[11px]">
+            <Settings className="h-3 w-3 mr-1" /> Setup
           </TabsTrigger>
-          <TabsTrigger value="chat" disabled={!isConnected} className="text-xs">
-            <Send className="h-3.5 w-3.5 mr-1" /> Chat
+          <TabsTrigger value="chat" disabled={!isConnected} className="text-[11px]">
+            <Send className="h-3 w-3 mr-1" /> Chat
           </TabsTrigger>
-          <TabsTrigger value="bulk" disabled={!isConnected} className="text-xs">
-            <Megaphone className="h-3.5 w-3.5 mr-1" /> Bulk
+          <TabsTrigger value="bulk" disabled={!isConnected} className="text-[11px]">
+            <Megaphone className="h-3 w-3 mr-1" /> Bulk
           </TabsTrigger>
-          <TabsTrigger value="automations" disabled={!isConnected} className="text-xs">
-            <Zap className="h-3.5 w-3.5 mr-1" /> Auto
+          <TabsTrigger value="automations" disabled={!isConnected} className="text-[11px]">
+            <Zap className="h-3 w-3 mr-1" /> Auto
           </TabsTrigger>
-          <TabsTrigger value="analytics" disabled={!isConnected} className="text-xs">
-            <BarChart3 className="h-3.5 w-3.5 mr-1" /> Stats
+        </TabsList>
+        {/* Row 2: Advanced tabs */}
+        <TabsList className="w-full grid grid-cols-4">
+          <TabsTrigger value="segments" disabled={!isConnected} className="text-[11px]">
+            <Target className="h-3 w-3 mr-1" /> Segments
+          </TabsTrigger>
+          <TabsTrigger value="schedule" disabled={!isConnected} className="text-[11px]">
+            <Timer className="h-3 w-3 mr-1" /> Schedule
+          </TabsTrigger>
+          <TabsTrigger value="optout" disabled={!isConnected} className="text-[11px]">
+            <Ban className="h-3 w-3 mr-1" /> Opt-Out
+          </TabsTrigger>
+          <TabsTrigger value="analytics" disabled={!isConnected} className="text-[11px]">
+            <BarChart3 className="h-3 w-3 mr-1" /> Stats
           </TabsTrigger>
         </TabsList>
 
@@ -982,6 +1456,15 @@ export default function WhatsAppMarketing() {
         </TabsContent>
         <TabsContent value="automations" className="mt-4">
           <AutomationsTab storeId={storeId!} />
+        </TabsContent>
+        <TabsContent value="segments" className="mt-4">
+          <SegmentationTab storeId={storeId!} />
+        </TabsContent>
+        <TabsContent value="schedule" className="mt-4">
+          <ScheduleTab storeId={storeId!} />
+        </TabsContent>
+        <TabsContent value="optout" className="mt-4">
+          <OptOutTab storeId={storeId!} />
         </TabsContent>
         <TabsContent value="analytics" className="mt-4">
           <AnalyticsTab storeId={storeId!} />
