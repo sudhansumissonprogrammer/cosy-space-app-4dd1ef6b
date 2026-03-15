@@ -76,6 +76,9 @@ export default function ProductsList() {
   // Image preview state
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // Mobile product sheet state
+  const [mobileProductId, setMobileProductId] = useState<string | null | undefined>(undefined); // undefined = closed, null = create, string = edit
+
   // Long-press state
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggered = useRef(false);
