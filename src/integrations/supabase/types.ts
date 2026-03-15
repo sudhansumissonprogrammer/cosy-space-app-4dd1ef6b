@@ -498,6 +498,7 @@ export type Database = {
           customer_phone: string | null
           id: string
           notes: string | null
+          order_number: number
           payment_method: string
           pincode: string | null
           state: string | null
@@ -519,6 +520,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           notes?: string | null
+          order_number?: number
           payment_method?: string
           pincode?: string | null
           state?: string | null
@@ -540,6 +542,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           notes?: string | null
+          order_number?: number
           payment_method?: string
           pincode?: string | null
           state?: string | null
