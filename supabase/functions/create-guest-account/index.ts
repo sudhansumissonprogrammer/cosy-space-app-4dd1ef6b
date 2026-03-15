@@ -14,9 +14,17 @@ Deno.serve(async (req) => {
   try {
     const { email, phone, name, store_id, order_id } = await req.json();
 
-    if (!email || !store_id || !order_id) {
+    if (!store_id || !order_id) {
       return new Response(
-        JSON.stringify({ error: "email, store_id and order_id are required" }),
+        JSON.stringify({ error: "store_id and order_id are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Phone is required for phone-only checkout
+    if (!email && !phone) {
+      return new Response(
+        JSON.stringify({ error: "Either email or phone is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -27,7 +35,10 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const normalizedEmail = email.toLowerCase().trim();
+    // Generate a pseudo-email from phone if no email provided
+    const normalizedEmail = email
+      ? email.toLowerCase().trim()
+      : `${phone.replace(/[^0-9]/g, "")}@phone.guest`;
 
     // Check if user already exists with this email
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
@@ -48,7 +59,7 @@ Deno.serve(async (req) => {
         email: normalizedEmail,
         password: generatedPassword,
         email_confirm: true,
-        user_metadata: { full_name: name || null },
+        user_metadata: { full_name: name || null, phone: phone || null },
       });
 
       if (createErr) {
@@ -79,7 +90,7 @@ Deno.serve(async (req) => {
         .update({
           name: name || undefined,
           phone: phone || undefined,
-          email: normalizedEmail,
+          email: email ? normalizedEmail : undefined,
         })
         .eq("id", customerId);
     } else {
@@ -88,7 +99,7 @@ Deno.serve(async (req) => {
         .insert({
           user_id: userId,
           store_id,
-          email: normalizedEmail,
+          email: email ? normalizedEmail : null,
           name: name || null,
           phone: phone || null,
         })
@@ -144,15 +155,12 @@ Deno.serve(async (req) => {
     // Generate a session for auto-login (only for new users since we know the password)
     let session = null;
     if (isNewUser && generatedPassword) {
-      // Use admin API to generate a magic link token pair
       const { data: tokenData, error: tokenErr } = await supabase.auth.admin.generateLink({
         type: "magiclink",
         email: normalizedEmail,
       });
 
       if (!tokenErr && tokenData) {
-        // Sign in with the generated password to get real session tokens
-        // Create a separate anon client for sign-in
         const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
         const anonClient = createClient(supabaseUrl, anonKey, {
           auth: { autoRefreshToken: false, persistSession: false },

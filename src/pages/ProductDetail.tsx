@@ -813,6 +813,39 @@ export default function ProductDetail() {
         </div>
       )}
       {!isOutOfStock && <div className="sm:hidden" style={{ height: "calc(7rem + var(--storefront-bottom-nav-height, 0px))" }} />}
+
+      {/* Express Checkout Sticky Bar for returning users */}
+      {!isOutOfStock && showBuyNow && (() => {
+        try {
+          const saved = JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}");
+          if (saved.fullName && saved.phone && saved.streetAddress && saved.pincode) {
+            return (
+              <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-card/95 backdrop-blur-lg border-t border-border px-4 py-3 safe-area-bottom" style={{ marginBottom: "var(--storefront-bottom-nav-height, 0px)" }}>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      <Zap className="inline h-3 w-3 text-warning mr-0.5" />
+                      Deliver to <strong className="text-foreground">{saved.fullName}</strong> · {saved.pincode}
+                    </p>
+                    <p className="text-lg font-extrabold text-foreground">{currency} {(variantPrice * quantity).toFixed(2)}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigate(storefrontPath(store.slug, `checkout?product=${product.id}${selectedVariant ? `&variant=${selectedVariant.id}` : ""}`));
+                    }}
+                    className="flex h-12 items-center gap-2 rounded-xl px-5 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
+                    style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
+                  >
+                    <Zap className="h-4 w-4" />
+                    Express Buy
+                  </button>
+                </div>
+              </div>
+            );
+          }
+        } catch {}
+        return null;
+      })()}
     </div>
   );
 }

@@ -55,17 +55,21 @@ export default function CheckoutPage() {
   const [morePaymentOpen, setMorePaymentOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
 
-  // Form
-  const [fullName, setFullName] = useState("");
+  // Form — pre-fill from localStorage for returning users
+  const savedInfo = (() => {
+    try { return JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}"); } catch { return {}; }
+  })();
+  const [fullName, setFullName] = useState(savedInfo.fullName || "");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [streetAddress, setStreetAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [pincode, setPincode] = useState("");
+  const [phone, setPhone] = useState(savedInfo.phone || "");
+  const [streetAddress, setStreetAddress] = useState(savedInfo.streetAddress || "");
+  const [city, setCity] = useState(savedInfo.city || "");
+  const [state, setState] = useState(savedInfo.state || "");
+  const [pincode, setPincode] = useState(savedInfo.pincode || "");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
+  const [pincodeLoading, setPincodeLoading] = useState(false);
 
   // Coupon
   const [couponCode, setCouponCode] = useState("");
@@ -454,10 +458,37 @@ export default function CheckoutPage() {
     }
   };
 
+  // Pincode auto-fill for Indian pincodes
+  const handlePincodeChange = async (val: string) => {
+    setPincode(val);
+    if (val.length === 6 && /^\d{6}$/.test(val)) {
+      setPincodeLoading(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${val}`);
+        const data = await res.json();
+        if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
+          const po = data[0].PostOffice[0];
+          if (!city) setCity(po.District || "");
+          if (!state) setState(po.State || "");
+        }
+      } catch {} finally { setPincodeLoading(false); }
+    }
+  };
+
+  // Save checkout info to localStorage for express checkout
+  const saveExpressInfo = () => {
+    try {
+      localStorage.setItem(`express_checkout_${store.id}`, JSON.stringify({
+        fullName: fullName.trim(), phone: phone.trim(),
+        streetAddress: streetAddress.trim(), city: city.trim(),
+        state: state.trim(), pincode: pincode.trim(),
+      }));
+    } catch {}
+  };
+
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { toast.error("Please enter a valid email"); return; }
-    if (!phone.trim()) { toast.error("Please enter your phone number"); return; }
+    if (!phone.trim() || phone.trim().length < 10) { toast.error("Please enter a valid phone number"); return; }
     if (!streetAddress.trim()) { toast.error("Please enter your street address"); return; }
     if (!city.trim()) { toast.error("Please enter your city"); return; }
     if (!state.trim()) { toast.error("Please enter your state"); return; }
@@ -489,7 +520,7 @@ export default function CheckoutPage() {
             });
             if (!verifyRes.ok) throw new Error("Verification failed");
             setOrderId(newOrderId); setOrderPlaced(true); setPlacing(false);
-            if (!isSingleMode) clearCart();
+            if (!isSingleMode) clearCart(); saveExpressInfo();
             fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
             if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
             fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId, customer_email: email.trim() }) }).then(r => { if (!r.ok) r.text().then(t => console.error("notify-order error:", t)); }).catch(e => console.error("notify-order fetch error:", e));
@@ -539,6 +570,7 @@ export default function CheckoutPage() {
       setOrderId(newOrderId);
       setOrderPlaced(true);
       if (!isSingleMode) clearCart();
+      saveExpressInfo();
       fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
       if (!customer) createGuestAccount(newOrderId);
       else saveAddressToAccount();
@@ -569,8 +601,8 @@ export default function CheckoutPage() {
         <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
         {orderId && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span></p>}
         <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
-          <p className="text-sm text-foreground font-medium">✅ You're signed in!</p>
-          <p className="text-xs text-muted-foreground mt-1">Your account is set up with <strong>{email}</strong>. You can track your orders and manage addresses from your account.</p>
+          <p className="text-sm text-foreground font-medium">✅ Order confirmed!</p>
+          <p className="text-xs text-muted-foreground mt-1">We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.</p>
         </div>
         <div className="mt-6 flex flex-col gap-2 items-center">
           <Button asChild variant="outline"><Link to={storefrontPath(store.slug, "account")}>View My Orders</Link></Button>
@@ -672,13 +704,6 @@ export default function CheckoutPage() {
           <span className="text-sm font-medium text-foreground">Delivery Details</span>
         </div>
 
-        {/* Email always visible */}
-        <div className="space-y-1.5">
-          <Label htmlFor="email" className="text-xs">Email *</Label>
-          <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
-          {!customer && <p className="text-[11px] text-muted-foreground">An account will be created to track your orders</p>}
-        </div>
-
         {/* Saved address summary or inline form */}
         {savedAddresses && savedAddresses.length > 0 && selectedAddr ? (
           <div className="rounded-lg border border-border bg-accent/30 p-3">
@@ -698,23 +723,27 @@ export default function CheckoutPage() {
             </div>
           </div>
         ) : (
-          /* No saved addresses — inline form */
+          /* Phone-first express form */
           <>
             <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="phone" className="text-xs">Phone Number *</Label>
+                <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} autoFocus />
+              </div>
               <div className="space-y-1">
                 <Label htmlFor="fullName" className="text-xs">Full Name *</Label>
                 <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="phone" className="text-xs">Phone *</Label>
-                <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
-              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pincode" className="text-xs">Pincode * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
+              <Input id="pincode" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="street" className="text-xs">Street Address *</Label>
-              <Input id="street" placeholder="123 Main Street, Apt 4B" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+              <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="city" className="text-xs">City *</Label>
                 <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
@@ -723,11 +752,16 @@ export default function CheckoutPage() {
                 <Label htmlFor="state" className="text-xs">State *</Label>
                 <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="pincode" className="text-xs">Pincode *</Label>
-                <Input id="pincode" placeholder="400001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} />
-              </div>
             </div>
+            {/* Email optional — collapsible */}
+            <Collapsible>
+              <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <Plus className="h-3 w-3" /> Add email for order updates (optional)
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2">
+                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
+              </CollapsibleContent>
+            </Collapsible>
           </>
         )}
       </div>
