@@ -6,6 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const EMAIL_SENDER_DOMAIN = "notify.storivo.in";
+const EMAIL_FROM = "Storivo Orders <noreply@storivo.in>";
+
 function formatCurrency(amount: number, currency: string) {
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency + " ";
   return `${sym}${Number(amount).toFixed(2)}`;
