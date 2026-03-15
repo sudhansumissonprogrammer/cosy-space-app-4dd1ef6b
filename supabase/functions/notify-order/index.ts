@@ -196,7 +196,6 @@ function buildInvoiceHtml(order: any, items: any[], store: any, isOwner: boolean
 
 async function enqueueEmail(supabase: any, queueName: string, messageId: string, templateName: string, recipientEmail: string, subject: string, htmlBody: string, ttlMinutes: number) {
   const payload = {
-    run_id: crypto.randomUUID(),
     message_id: messageId,
     idempotency_key: messageId,
     label: templateName,

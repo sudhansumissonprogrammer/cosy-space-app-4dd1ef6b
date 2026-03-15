@@ -36,7 +36,7 @@ function normalizeQueuedPayload(rawPayload: any, queue: string, queueMessageId: 
   const run_id =
     typeof payload.run_id === 'string' && payload.run_id.trim().length > 0
       ? payload.run_id.trim()
-      : message_id
+      : null
 
   const to =
     typeof payload.to === 'string' && payload.to.trim().length > 0
@@ -238,6 +238,47 @@ Deno.serve(async (req) => {
       const payload = normalizeQueuedPayload(msg.message, queue, msg.msg_id)
       const failedAttempts = failedAttemptsByMessageId.get(payload.message_id) ?? 0
 
+      if (queue === 'transactional_emails' && !payload.unsubscribe_token && payload.to) {
+        const { data: tokenRow, error: tokenLookupError } = await supabase
+          .from('email_unsubscribe_tokens')
+          .select('token')
+          .eq('email', payload.to)
+          .is('used_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (tokenLookupError) {
+          console.error('Failed to lookup unsubscribe token', {
+            queue,
+            msg_id: msg.msg_id,
+            error: tokenLookupError,
+          })
+        } else {
+          let unsubscribeToken = tokenRow?.token ?? null
+
+          if (!unsubscribeToken) {
+            unsubscribeToken = crypto.randomUUID()
+            const { error: tokenInsertError } = await supabase
+              .from('email_unsubscribe_tokens')
+              .insert({ email: payload.to, token: unsubscribeToken })
+
+            if (tokenInsertError) {
+              console.error('Failed to create unsubscribe token', {
+                queue,
+                msg_id: msg.msg_id,
+                error: tokenInsertError,
+              })
+              unsubscribeToken = null
+            }
+          }
+
+          if (unsubscribeToken) {
+            payload.unsubscribe_token = unsubscribeToken
+          }
+        }
+      }
+
       // Drop expired messages (TTL exceeded)
       if (payload.queued_at) {
         const ageMs = Date.now() - new Date(payload.queued_at).getTime()
@@ -351,7 +392,7 @@ Deno.serve(async (req) => {
       try {
         await sendLovableEmail(
           {
-            run_id: payload.run_id,
+            ...(queue === 'auth_emails' && payload.run_id ? { run_id: payload.run_id } : {}),
             to: payload.to,
             from: payload.from,
             sender_domain: payload.sender_domain,

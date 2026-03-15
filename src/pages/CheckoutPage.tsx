@@ -349,16 +349,8 @@ export default function CheckoutPage() {
       ? `Coupon: ${appliedCoupon.code} (-${currency} ${couponDiscount.toFixed(2)})`
       : undefined;
 
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-    const res = await fetch(`https://${projectId}.supabase.co/functions/v1/place-order`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: anonKey,
-      },
-      body: JSON.stringify({
+    const { data, error } = await supabase.functions.invoke("place-order", {
+      body: {
         store_id: store.id,
         order: {
           total,
@@ -389,27 +381,40 @@ export default function CheckoutPage() {
         },
         coupon_id: appliedCoupon?.id ?? null,
         abandoned_cart_id: abandonedCartId ?? null,
-      }),
+      },
     });
 
-    const result = await res.json();
-    if (!res.ok || !result?.order_id) {
+    if (error) {
+      throw new Error(error.message || "Failed to place order");
+    }
+
+    const result = data as { order_id?: string; error?: string } | null;
+    if (!result?.order_id) {
       throw new Error(result?.error || "Failed to place order");
     }
 
-    return result.order_id as string;
+    return result.order_id;
   };
 
   const createGuestAccount = async (ordId: string) => {
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/create-guest-account`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: anonKey },
-        body: JSON.stringify({ email: email.trim(), phone: phone.trim(), name: fullName.trim(), store_id: store.id, order_id: ordId }),
+      const { data, error } = await supabase.functions.invoke("create-guest-account", {
+        body: {
+          email: email.trim(),
+          phone: phone.trim(),
+          name: fullName.trim(),
+          store_id: store.id,
+          order_id: ordId,
+        },
       });
-      const result = await res.json();
+
+      if (error) {
+        throw new Error(error.message || "Failed to create guest account");
+      }
+
+      const result = data as {
+        session?: { access_token?: string; refresh_token?: string };
+      } | null;
 
       // Auto-login with session tokens if returned
       if (result?.session?.access_token && result?.session?.refresh_token) {
@@ -421,6 +426,19 @@ export default function CheckoutPage() {
     } catch (err) {
       console.error("Guest account creation failed:", err);
     }
+  };
+
+  const notifyOrderEmail = (ordId: string) => {
+    void supabase.functions
+      .invoke("notify-order", {
+        body: { order_id: ordId, customer_email: email.trim() },
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error("notify-order error:", error.message);
+        }
+      })
+      .catch((err) => console.error("notify-order invoke error:", err));
   };
 
   const saveAddressToAccount = async () => {
@@ -497,29 +515,25 @@ export default function CheckoutPage() {
       if (paymentMethod === "razorpay") {
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Failed to load payment gateway");
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-order`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: anonKey },
-          body: JSON.stringify({ store_id: store.id, amount: total, currency, order_id: newOrderId }),
+        const { data: rzpData, error: rzpError } = await supabase.functions.invoke("razorpay-order", {
+          body: { store_id: store.id, amount: total, currency, order_id: newOrderId },
         });
-        const rzpData = await res.json();
-        if (!res.ok) throw new Error(rzpData.error || "Payment initiation failed");
+
+        if (rzpError || !rzpData) {
+          throw new Error(rzpError?.message || "Payment initiation failed");
+        }
 
         const handlePaymentSuccess = async (response: any) => {
           try {
-            const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", apikey: anonKey },
-              body: JSON.stringify({ ...response, order_id: newOrderId, store_id: store.id }),
+            const { error: verifyError } = await supabase.functions.invoke("razorpay-verify", {
+              body: { ...response, order_id: newOrderId, store_id: store.id },
             });
-            if (!verifyRes.ok) throw new Error("Verification failed");
+            if (verifyError) throw new Error("Verification failed");
             setOrderId(newOrderId); setOrderPlaced(true); setPlacing(false);
             if (!isSingleMode) clearCart(); saveExpressInfo();
             fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
             if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
-            fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId, customer_email: email.trim() }) }).then(r => { if (!r.ok) r.text().then(t => console.error("notify-order error:", t)); }).catch(e => console.error("notify-order fetch error:", e));
+            notifyOrderEmail(newOrderId);
             // Auto-send WhatsApp order confirmation
             sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
               customer_phone: phone.trim(), customer_name: fullName.trim(),
@@ -577,14 +591,7 @@ export default function CheckoutPage() {
       fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
       if (!customer) createGuestAccount(newOrderId);
       else saveAddressToAccount();
-      // Notify store owner
-      const projectId2 = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const anonKey2 = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      fetch(`https://${projectId2}.supabase.co/functions/v1/notify-order`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: anonKey2 },
-        body: JSON.stringify({ order_id: newOrderId, customer_email: email.trim() }),
-      }).then(r => { if (!r.ok) r.text().then(t => console.error("notify-order error:", t)); }).catch(e => console.error("notify-order fetch error:", e));
+      notifyOrderEmail(newOrderId);
       // Auto-send WhatsApp order confirmation
       sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
         customer_phone: phone.trim(), customer_name: fullName.trim(),
