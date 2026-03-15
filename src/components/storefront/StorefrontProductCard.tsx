@@ -281,6 +281,13 @@ export default function StorefrontProductCard({ product, slug, store, priority =
           </button>
         )}
       </div>
+
+      <ProductQuickView
+        product={product}
+        store={store}
+        open={quickViewOpen}
+        onOpenChange={setQuickViewOpen}
+      />
     </div>
   );
 }
