@@ -1162,6 +1162,134 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_config: {
+        Row: {
+          access_token: string
+          business_phone: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          phone_number_id: string
+          store_id: string
+          updated_at: string
+          waba_id: string | null
+        }
+        Insert: {
+          access_token: string
+          business_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          phone_number_id: string
+          store_id: string
+          updated_at?: string
+          waba_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          business_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          phone_number_id?: string
+          store_id?: string
+          updated_at?: string
+          waba_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_messages: {
+        Row: {
+          abandoned_cart_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          message_body: string
+          message_type: string
+          meta_message_id: string | null
+          order_id: string | null
+          recipient_name: string | null
+          recipient_phone: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          abandoned_cart_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_body: string
+          message_type?: string
+          meta_message_id?: string | null
+          order_id?: string | null
+          recipient_name?: string | null
+          recipient_phone: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          abandoned_cart_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_body?: string
+          message_type?: string
+          meta_message_id?: string | null
+          order_id?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_abandoned_cart_id_fkey"
+            columns: ["abandoned_cart_id"]
+            isOneToOne: false
+            referencedRelation: "abandoned_carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_orders: {
         Row: {
           created_at: string
@@ -1216,6 +1344,57 @@ export type Database = {
           },
           {
             foreignKeyName: "whatsapp_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_templates: {
+        Row: {
+          body_text: string
+          created_at: string
+          id: string
+          is_active: boolean
+          language_code: string
+          store_id: string
+          template_name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          body_text: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          language_code?: string
+          store_id: string
+          template_name: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          body_text?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          language_code?: string
+          store_id?: string
+          template_name?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_templates_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_templates_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores_public"
