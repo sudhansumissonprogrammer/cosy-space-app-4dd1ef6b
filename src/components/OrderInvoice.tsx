@@ -261,7 +261,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
           </div>
           <div className="text-right">
             <p className="text-[10px] font-semibold tracking-widest text-foreground">INVOICE</p>
-            <p className="text-[8px] text-muted-foreground">#{order.id.slice(0, 8).toUpperCase()}</p>
+            <p className="text-[8px] text-muted-foreground">{order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`}</p>
           </div>
         </div>
 
