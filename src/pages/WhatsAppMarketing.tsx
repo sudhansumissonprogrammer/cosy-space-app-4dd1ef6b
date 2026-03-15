@@ -16,8 +16,9 @@ import { toast } from "@/hooks/use-toast";
 import {
   MessageSquare, Settings, BarChart3, Send, Phone, CheckCircle2,
   XCircle, Clock, AlertCircle, Zap, ShoppingCart, Package, Users,
-  TrendingUp, Eye, EyeOff,
+  TrendingUp, Eye, EyeOff, Upload, Megaphone, Trash2, FileText, Plus,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 // ─── Setup Tab ───────────────────────────────────────────────────────
 function SetupTab({ storeId }: { storeId: string }) {
