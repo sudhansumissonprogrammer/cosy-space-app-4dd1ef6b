@@ -2701,8 +2701,9 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
     },
   });
 
-  const isConnected = !!(config?.access_token && config?.phone_number_id && config?.is_active);
-  const defaultTab = activeTab || (isConnected ? "chat" : "setup");
+  // TEMP: Force unlock all tabs for preview
+  const isConnected = true;
+  const defaultTab = activeTab || "setup";
 
   return (
     <div className="space-y-6">
