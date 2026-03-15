@@ -78,11 +78,12 @@ export default function StoreOrders() {
     let result = [...allOrders];
     if (search.trim()) {
       const q = search.toLowerCase().trim();
-      result = result.filter(o =>
-        o.id.slice(0, 8).toLowerCase().includes(q) ||
-        (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
-        (o.customer_phone && o.customer_phone.includes(q))
-      );
+      result = result.filter(o => {
+        const displayId = o.order_number ? `#${1000 + o.order_number}` : o.id.slice(0, 8);
+        return displayId.toLowerCase().includes(q) ||
+          (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
+          (o.customer_phone && o.customer_phone.includes(q));
+      });
     }
     if (statusFilter) {
       result = result.filter(o => o.status === statusFilter);
