@@ -389,12 +389,12 @@ export default function CheckoutPage() {
       throw new Error(error.message || "Failed to place order");
     }
 
-    const result = data as { order_id?: string; error?: string } | null;
+    const result = data as { order_id?: string; order_number?: string; error?: string } | null;
     if (!result?.order_id) {
       throw new Error(result?.error || "Failed to place order");
     }
 
-    return result.order_id;
+    return { id: result.order_id, number: result.order_number || null };
   };
 
   const createGuestAccount = async (ordId: string) => {
