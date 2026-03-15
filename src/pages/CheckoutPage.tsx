@@ -398,14 +398,23 @@ export default function CheckoutPage() {
 
   const createGuestAccount = async (ordId: string) => {
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/create-guest-account`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: anonKey },
-        body: JSON.stringify({ email: email.trim(), phone: phone.trim(), name: fullName.trim(), store_id: store.id, order_id: ordId }),
+      const { data, error } = await supabase.functions.invoke("create-guest-account", {
+        body: {
+          email: email.trim(),
+          phone: phone.trim(),
+          name: fullName.trim(),
+          store_id: store.id,
+          order_id: ordId,
+        },
       });
-      const result = await res.json();
+
+      if (error) {
+        throw new Error(error.message || "Failed to create guest account");
+      }
+
+      const result = data as {
+        session?: { access_token?: string; refresh_token?: string };
+      } | null;
 
       // Auto-login with session tokens if returned
       if (result?.session?.access_token && result?.session?.refresh_token) {
