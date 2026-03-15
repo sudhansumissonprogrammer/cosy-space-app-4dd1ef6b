@@ -500,6 +500,24 @@ export default function CheckoutPage() {
     } catch {}
   };
 
+  const finalizeOrder = (newOrderId: string) => {
+    setOrderId(newOrderId);
+    setOrderPlaced(true);
+    if (!isSingleMode) clearCart();
+    saveExpressInfo();
+    window.dispatchEvent(new CustomEvent("order-placed"));
+    fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+    // Fire all post-order tasks in parallel (non-blocking)
+    if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
+    notifyOrderEmail(newOrderId);
+    sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
+      customer_phone: phone.trim(), customer_name: fullName.trim(),
+      total, currency,
+      product_names: checkoutItems.map((i) => i.name).join(", "),
+      store_name: store.name,
+    });
+  };
+
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
     if (!phone.trim() || phone.trim().length < 10) { toast.error("Please enter a valid phone number"); return; }
@@ -529,18 +547,8 @@ export default function CheckoutPage() {
               body: { ...response, order_id: newOrderId, store_id: store.id },
             });
             if (verifyError) throw new Error("Verification failed");
-            setOrderId(newOrderId); setOrderPlaced(true); setPlacing(false);
-            if (!isSingleMode) clearCart(); saveExpressInfo();
-            fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
-            if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
-            notifyOrderEmail(newOrderId);
-            // Auto-send WhatsApp order confirmation
-            sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
-              customer_phone: phone.trim(), customer_name: fullName.trim(),
-              total, currency,
-              product_names: checkoutItems.map((i) => i.name).join(", "),
-              store_name: store.name,
-            });
+            setPlacing(false);
+            finalizeOrder(newOrderId);
           } catch { setPlacing(false); toast.error("Payment verification failed."); }
         };
 
@@ -584,21 +592,7 @@ export default function CheckoutPage() {
       }
 
       // COD flow
-      setOrderId(newOrderId);
-      setOrderPlaced(true);
-      if (!isSingleMode) clearCart();
-      saveExpressInfo();
-      fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
-      if (!customer) createGuestAccount(newOrderId);
-      else saveAddressToAccount();
-      notifyOrderEmail(newOrderId);
-      // Auto-send WhatsApp order confirmation
-      sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
-        customer_phone: phone.trim(), customer_name: fullName.trim(),
-        total, currency,
-        product_names: checkoutItems.map((i) => i.name).join(", "),
-        store_name: store.name,
-      });
+      finalizeOrder(newOrderId);
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {

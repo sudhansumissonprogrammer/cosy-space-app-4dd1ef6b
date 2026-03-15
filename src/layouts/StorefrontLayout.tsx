@@ -372,8 +372,24 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor }: 
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setOrderPlaced(true);
+    window.addEventListener("order-placed", handler);
+    return () => window.removeEventListener("order-placed", handler);
+  }, []);
+
+  // Reset orderPlaced when leaving checkout
+  useEffect(() => {
+    if (!isCheckout) setOrderPlaced(false);
+  }, [isCheckout]);
 
   const handleBackClick = () => {
+    if (orderPlaced) {
+      navigate(storefrontPath(store.slug));
+      return;
+    }
     setShowExitDialog(true);
   };
 
