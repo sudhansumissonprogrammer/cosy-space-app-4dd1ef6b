@@ -23,6 +23,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 interface ProductFormProps {
   productId?: string;
+  /** When provided, form is in "sheet mode" — no header/back, calls onClose instead of navigate */
+  onClose?: () => void;
 }
 
 export default function ProductForm({ productId }: ProductFormProps) {
