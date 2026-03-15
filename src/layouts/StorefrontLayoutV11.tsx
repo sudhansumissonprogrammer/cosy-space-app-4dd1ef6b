@@ -389,6 +389,8 @@ export default function StorefrontLayoutV11({ slugOverride }: { slugOverride?: s
             } as React.CSSProperties}
           >
             <AppHeader store={store} />
+            <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+            <StorefrontOrderNotification storeName={store.name} />
             <div className="pb-24 md:pb-0">
               <Outlet context={store} />
             </div>

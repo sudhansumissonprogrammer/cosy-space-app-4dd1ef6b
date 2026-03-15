@@ -301,6 +301,8 @@ export default function StorefrontLayoutV4({ slugOverride }: { slugOverride?: st
             }}
           >
             <LuxuryNav store={store} scrolled={scrolled} />
+            <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+            <StorefrontOrderNotification storeName={store.name} />
             <Outlet context={store} />
             <StorefrontFooter store={store} />
             <SideCart store={store} />
