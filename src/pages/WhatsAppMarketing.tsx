@@ -853,12 +853,15 @@ export default function WhatsAppMarketing() {
       </div>
 
       <Tabs defaultValue={isConnected ? "chat" : "setup"}>
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="setup" className="text-xs">
             <Settings className="h-3.5 w-3.5 mr-1" /> Setup
           </TabsTrigger>
           <TabsTrigger value="chat" disabled={!isConnected} className="text-xs">
             <Send className="h-3.5 w-3.5 mr-1" /> Chat
+          </TabsTrigger>
+          <TabsTrigger value="bulk" disabled={!isConnected} className="text-xs">
+            <Megaphone className="h-3.5 w-3.5 mr-1" /> Bulk
           </TabsTrigger>
           <TabsTrigger value="automations" disabled={!isConnected} className="text-xs">
             <Zap className="h-3.5 w-3.5 mr-1" /> Auto
@@ -873,6 +876,9 @@ export default function WhatsAppMarketing() {
         </TabsContent>
         <TabsContent value="chat" className="mt-4">
           <ChatTab storeId={storeId!} />
+        </TabsContent>
+        <TabsContent value="bulk" className="mt-4">
+          <BulkMessagingTab storeId={storeId!} />
         </TabsContent>
         <TabsContent value="automations" className="mt-4">
           <AutomationsTab storeId={storeId!} />
