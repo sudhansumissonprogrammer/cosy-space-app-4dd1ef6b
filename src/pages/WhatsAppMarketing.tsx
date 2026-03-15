@@ -1976,8 +1976,8 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
   const [segmentPhones, setSegmentPhones] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [productFilter, setProductFilter] = useState<string>("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [productFilter, setProductFilter] = useState<string>("__all__");
+  const [categoryFilter, setCategoryFilter] = useState<string>("__all__");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [customDateFrom, setCustomDateFrom] = useState<Date | undefined>();
   const [customDateTo, setCustomDateTo] = useState<Date | undefined>();
@@ -2049,12 +2049,12 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
           for (const order of orderData as any[]) {
             if (!order.customer_phone) continue;
             const items = order.order_items || [];
-            let matchesProduct = !productFilter;
-            let matchesCategory = !categoryFilter;
+            let matchesProduct = productFilter === "__all__";
+            let matchesCategory = categoryFilter === "__all__";
 
             for (const item of items) {
-              if (productFilter && item.product_id === productFilter) matchesProduct = true;
-              if (categoryFilter) {
+              if (productFilter !== "__all__" && item.product_id === productFilter) matchesProduct = true;
+              if (categoryFilter !== "__all__") {
                 const prod = products?.find((p: any) => p.id === item.product_id);
                 if (prod && (prod as any).category === categoryFilter) matchesCategory = true;
               }
@@ -2108,7 +2108,7 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
                   <SelectValue placeholder="Any product" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any product</SelectItem>
+                  <SelectItem value="__all__">Any product</SelectItem>
                   {products?.map((p: any) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
@@ -2122,7 +2122,7 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
                   <SelectValue placeholder="Any category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any category</SelectItem>
+                  <SelectItem value="__all__">Any category</SelectItem>
                   {categories.map((c: string) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
