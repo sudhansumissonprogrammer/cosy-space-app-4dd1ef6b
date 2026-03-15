@@ -295,7 +295,7 @@ Deno.serve(async (req) => {
       const subject = `🛍️ New Order #${order_id.slice(0, 8).toUpperCase()} - ${storeName}`;
 
       try {
-        await enqueueEmail(supabase, "transactional_emails", `order-confirm-owner-${order_id}`, "order_notification_owner", ownerEmail, subject, ownerHtml, 60);
+        await enqueueEmail(supabase, "transactional_emails", `order-confirm-owner-${order_id}`, "order_notification_owner", ownerEmail, subject, ownerHtml, 60, storeName);
       } catch {
         console.log("Queue unavailable for owner email, falling back to direct send");
         await sendEmailDirect(ownerEmail, subject, ownerHtml);
