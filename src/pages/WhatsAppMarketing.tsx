@@ -19,8 +19,9 @@ import {
   MessageSquare, Settings, BarChart3, Send, Phone, CheckCircle2,
   XCircle, Clock, AlertCircle, Zap, ShoppingCart, Package, Users,
   TrendingUp, Eye, EyeOff, Upload, Megaphone, Trash2, FileText, Plus,
-  Ban, CalendarIcon, Target, UserX, Timer,
+  Ban, CalendarIcon, Target, UserX, Timer, FileCheck, RefreshCw, Loader2,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
