@@ -601,8 +601,8 @@ export default function CheckoutPage() {
         <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
         {orderId && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span></p>}
         <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
-          <p className="text-sm text-foreground font-medium">✅ You're signed in!</p>
-          <p className="text-xs text-muted-foreground mt-1">Your account is set up with <strong>{email}</strong>. You can track your orders and manage addresses from your account.</p>
+          <p className="text-sm text-foreground font-medium">✅ Order confirmed!</p>
+          <p className="text-xs text-muted-foreground mt-1">We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.</p>
         </div>
         <div className="mt-6 flex flex-col gap-2 items-center">
           <Button asChild variant="outline"><Link to={storefrontPath(store.slug, "account")}>View My Orders</Link></Button>
