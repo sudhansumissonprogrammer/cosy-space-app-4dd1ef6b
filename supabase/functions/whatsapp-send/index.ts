@@ -47,6 +47,8 @@ Deno.serve(async (req) => {
       abandoned_cart_id,
       template_name,
       template_params,
+      media_url,
+      media_type,
     } = body;
 
     if (!store_id || !recipient_phone) {
@@ -98,6 +100,21 @@ Deno.serve(async (req) => {
             : [],
         },
       };
+    } else if (media_url && media_type) {
+      // Send media message (image, video, document)
+      const metaMediaType = media_type === "image" ? "image" :
+                            media_type === "video" ? "video" : "document";
+
+      metaPayload = {
+        messaging_product: "whatsapp",
+        to: phone,
+        type: metaMediaType,
+        [metaMediaType]: {
+          link: media_url,
+          ...(message_body ? { caption: message_body } : {}),
+          ...(metaMediaType === "document" ? { filename: media_url.split("/").pop() || "file" } : {}),
+        },
+      };
     } else {
       // Send plain text message
       metaPayload = {
@@ -110,11 +127,11 @@ Deno.serve(async (req) => {
 
     // Call Meta WhatsApp Cloud API
     const metaResponse = await fetch(
-      `https://graph.facebook.com/v21.0/${config.phone_number_id}/messages`,
+      `https://graph.facebook.com/v21.0/${(config as any).phone_number_id}/messages`,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${config.access_token}`,
+          Authorization: `Bearer ${(config as any).access_token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(metaPayload),
@@ -140,12 +157,15 @@ Deno.serve(async (req) => {
       message_type: message_type || "manual",
       recipient_phone: phone,
       recipient_name: recipient_name || null,
-      message_body: message_body || template_name || "",
+      message_body: message_body || template_name || (media_type ? `[${media_type}]` : ""),
       meta_message_id: metaMessageId,
       status: messageStatus,
       error_message: errorMessage,
       order_id: order_id || null,
       abandoned_cart_id: abandoned_cart_id || null,
+      media_url: media_url || null,
+      media_type: media_type || null,
+      direction: "outgoing",
     });
 
     if (!metaResponse.ok) {

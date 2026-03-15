@@ -1219,6 +1219,8 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          media_type: string | null
+          media_url: string | null
           message_body: string
           message_type: string
           meta_message_id: string | null
@@ -1234,6 +1236,8 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           message_body: string
           message_type?: string
           meta_message_id?: string | null
@@ -1249,6 +1253,8 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           message_body?: string
           message_type?: string
           meta_message_id?: string | null

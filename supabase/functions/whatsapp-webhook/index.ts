@@ -71,9 +71,44 @@ Deno.serve(async (req) => {
           const msgType = msg?.type || "text";
           const timestamp = msg?.timestamp;
 
+          // Handle media messages
+          let mediaUrl: string | null = null;
+          let mediaType: string | null = null;
+          const mediaTypes = ["image", "video", "document", "audio"];
+          if (mediaTypes.includes(msgType) && msg[msgType]) {
+            const mediaId = msg[msgType]?.id;
+            mediaType = msgType;
+
+            // Download media URL from Meta
+            if (mediaId && phoneNumberId) {
+              try {
+                const { data: configData } = await adminClient
+                  .from("whatsapp_config")
+                  .select("access_token")
+                  .eq("phone_number_id", phoneNumberId)
+                  .maybeSingle();
+
+                if (configData?.access_token) {
+                  const mediaResp = await fetch(
+                    `https://graph.facebook.com/v21.0/${mediaId}`,
+                    { headers: { Authorization: `Bearer ${configData.access_token}` } }
+                  );
+                  const mediaData = await mediaResp.json();
+                  mediaUrl = mediaData?.url || null;
+                }
+              } catch (e) {
+                console.error("Failed to fetch media URL:", e);
+              }
+            }
+          }
+
+          // Get caption for media messages
+          const caption = msg[msgType]?.caption || "";
+          const finalBody = msgBody || caption || (mediaType ? `[${mediaType}]` : "");
+
           // Check for opt-out keywords
           const optOutKeywords = ["stop", "unsubscribe", "opt out", "optout", "cancel"];
-          const isOptOut = optOutKeywords.some((kw) => msgBody.toLowerCase() === kw);
+          const isOptOut = optOutKeywords.some((kw) => finalBody.toLowerCase() === kw);
 
           // Find the store by phone_number_id
           let storeId: string | null = null;
@@ -88,16 +123,18 @@ Deno.serve(async (req) => {
 
           if (storeId && from) {
             // Save incoming message to DB
-            if (msgBody && msgType === "text") {
+            if (finalBody || mediaUrl) {
               await adminClient.from("whatsapp_messages").insert({
                 store_id: storeId,
                 message_type: "incoming",
                 recipient_phone: from,
                 sender_phone: from,
-                message_body: msgBody,
+                message_body: finalBody,
                 status: "received",
                 direction: "incoming",
                 meta_message_id: msg?.id || null,
+                media_url: mediaUrl,
+                media_type: mediaType,
               });
             }
 
