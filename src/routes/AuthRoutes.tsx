@@ -44,6 +44,7 @@ const StoreTaxSettings = lazy(() => import("@/pages/StoreTaxSettings"));
 const StoreAbandonedCarts = lazy(() => import("@/pages/StoreAbandonedCarts"));
 const StoreThemeSettings = lazy(() => import("@/pages/StoreThemeSettings"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const InstallApp = lazy(() => import("@/pages/InstallApp"));
 
 export default function AuthRoutes() {
   return (
@@ -55,6 +56,7 @@ export default function AuthRoutes() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/install" element={<InstallApp />} />
 
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route

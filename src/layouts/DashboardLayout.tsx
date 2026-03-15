@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import OrderNotificationListener from "@/components/OrderNotificationListener";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
+import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
@@ -222,6 +223,7 @@ export default function DashboardLayout() {
           <AppSidebar />
           <div className="flex-1 flex flex-col min-w-0">
             <DynamicPwaManifest storeName={store?.name ? `${store.name} Admin` : "Dashboard"} logoUrl={store?.logo_url} themeColor="#1a1a1a" />
+            <SmartInstallPrompt appName={store?.name ? `${store.name} Admin` : "Dashboard"} primaryColor="#1a1a1a" textColor="#ffffff" />
             <OrderNotificationListener />
             <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
               <div className="flex items-center gap-2">
@@ -275,6 +277,7 @@ export default function DashboardLayout() {
       style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}
     >
       <DynamicPwaManifest storeName={store?.name ? `${store.name} Admin` : "Dashboard"} logoUrl={store?.logo_url} themeColor="#1a1a1a" />
+      <SmartInstallPrompt appName={store?.name ? `${store.name} Admin` : "Dashboard"} primaryColor="#1a1a1a" textColor="#ffffff" />
       <OrderNotificationListener />
 
       {/* Shopify-style header */}
