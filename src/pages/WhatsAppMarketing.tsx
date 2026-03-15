@@ -2967,6 +2967,12 @@ function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSw
 // ─── Own Mode Dashboard (Full 8-tab) ────────────────────────────────
 function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitchMode: () => void }) {
   const [activeTab, setActiveTab] = useState<string | undefined>();
+  const [bulkNumbers, setBulkNumbers] = useState<string[]>([]);
+
+  const handleSendToBulk = (phones: string[]) => {
+    setBulkNumbers(phones);
+    setActiveTab("bulk");
+  };
 
   const { data: config } = useQuery({
     queryKey: ["whatsapp-config-own", storeId],
@@ -3052,7 +3058,7 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
           <ChatTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="bulk" className="mt-4">
-          <BulkMessagingTab storeId={storeId} />
+          <BulkMessagingTab storeId={storeId} initialNumbers={bulkNumbers} />
         </TabsContent>
         <TabsContent value="automations" className="mt-4">
           <AutomationsTab storeId={storeId} />
@@ -3061,7 +3067,7 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
           <MetaTemplatesTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="segments" className="mt-4">
-          <SegmentationTab storeId={storeId} />
+          <SegmentationTab storeId={storeId} onSendToBulk={handleSendToBulk} />
         </TabsContent>
         <TabsContent value="schedule" className="mt-4">
           <ScheduleTab storeId={storeId} />
