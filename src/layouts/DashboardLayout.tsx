@@ -277,6 +277,7 @@ export default function DashboardLayout() {
       style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}
     >
       <DynamicPwaManifest storeName={store?.name ? `${store.name} Admin` : "Dashboard"} logoUrl={store?.logo_url} themeColor="#1a1a1a" />
+      <SmartInstallPrompt appName={store?.name ? `${store.name} Admin` : "Dashboard"} primaryColor="#1a1a1a" textColor="#ffffff" />
       <OrderNotificationListener />
 
       {/* Shopify-style header */}
