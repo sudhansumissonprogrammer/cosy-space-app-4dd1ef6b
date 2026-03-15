@@ -588,6 +588,11 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json", apikey: anonKey2 },
         body: JSON.stringify({ order_id: newOrderId, customer_email: email.trim() }),
       }).then(r => { if (!r.ok) r.text().then(t => console.error("notify-order error:", t)); }).catch(e => console.error("notify-order fetch error:", e));
+      // Auto-send WhatsApp order confirmation
+      sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
+        customer_phone: phone.trim(), customer_name: fullName.trim(),
+        total, currency,
+      });
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
