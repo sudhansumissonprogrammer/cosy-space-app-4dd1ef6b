@@ -418,6 +418,7 @@ export default function StorefrontLayoutV7({ slugOverride }: { slugOverride?: st
             <EditorialHeader store={store} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <StorefrontOrderNotification storeName={store.name} />
+            <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <Outlet context={store} />
             <EditorialFooter store={store} />
             <SideCart store={store} />
