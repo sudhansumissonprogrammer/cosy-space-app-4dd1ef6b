@@ -649,6 +649,24 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState({ sent: 0, failed: 0, total: 0 });
   const [csvFileName, setCsvFileName] = useState("");
+  const [sendMode, setSendMode] = useState<"text" | "template">("text");
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [templateParams, setTemplateParams] = useState<string[]>([]);
+
+  // Fetch approved Meta templates
+  const { data: approvedTemplates } = useQuery({
+    queryKey: ["approved-meta-templates", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_templates")
+        .select("*")
+        .eq("store_id", storeId)
+        .eq("meta_status", "APPROVED")
+        .order("template_name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const addManualNumbers = () => {
     if (!manualInput.trim()) return;
@@ -711,8 +729,28 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
     toast({ title: "All numbers cleared" });
   };
 
+  // Count template variable placeholders like {{1}}, {{2}}
+  const getTemplateParamCount = (bodyText: string): number => {
+    const matches = bodyText.match(/\{\{\d+\}\}/g);
+    if (!matches) return 0;
+    const nums = matches.map((m) => parseInt(m.replace(/[{}]/g, "")));
+    return Math.max(...nums);
+  };
+
+  const handleTemplateSelect = (templateName: string) => {
+    setSelectedTemplate(templateName);
+    const tpl = approvedTemplates?.find((t: any) => t.template_name === templateName);
+    if (tpl) {
+      const paramCount = getTemplateParamCount((tpl as any).body_text || "");
+      setTemplateParams(new Array(paramCount).fill(""));
+    }
+  };
+
   const sendBulk = async () => {
-    if (!message.trim() || numbers.length === 0) return;
+    if (sendMode === "text" && !message.trim()) return;
+    if (sendMode === "template" && !selectedTemplate) return;
+    if (numbers.length === 0) return;
+
     setSending(true);
     setProgress({ sent: 0, failed: 0, total: numbers.length });
 
@@ -721,14 +759,20 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
 
     for (const phone of numbers) {
       try {
-        const res = await supabase.functions.invoke("whatsapp-send", {
-          body: {
-            store_id: storeId,
-            recipient_phone: phone,
-            message_body: message.trim(),
-            message_type: "manual",
-          },
-        });
+        const body: any = {
+          store_id: storeId,
+          recipient_phone: phone,
+          message_type: sendMode === "template" ? "bulk_template" : "manual",
+        };
+
+        if (sendMode === "template") {
+          body.template_name = selectedTemplate;
+          body.template_params = templateParams.filter((p) => p.trim());
+        } else {
+          body.message_body = message.trim();
+        }
+
+        const res = await supabase.functions.invoke("whatsapp-send", { body });
         if (res.error || (res.data as any)?.error) {
           failed++;
         } else {
@@ -738,7 +782,6 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
         failed++;
       }
       setProgress({ sent, failed, total: numbers.length });
-      // Small delay to avoid rate limiting
       await new Promise((r) => setTimeout(r, 500));
     }
 
@@ -752,6 +795,8 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
   };
 
   const progressPercent = progress.total > 0 ? ((progress.sent + progress.failed) / progress.total) * 100 : 0;
+  const selectedTpl = approvedTemplates?.find((t: any) => t.template_name === selectedTemplate);
+  const canSend = sendMode === "text" ? message.trim() : selectedTemplate;
 
   return (
     <div className="space-y-6">
@@ -840,53 +885,156 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
             <Megaphone className="h-5 w-5" />
             Compose Bulk Message
           </CardTitle>
-          <CardDescription>This message will be sent to all {numbers.length} recipients. Use variables to personalize.</CardDescription>
+          <CardDescription>This message will be sent to all {numbers.length} recipients</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Quick Templates */}
+          {/* Send Mode Toggle */}
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Quick Templates</Label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "🎉 New Arrival", body: "Hi! 🎉 Check out our latest arrivals at {{store_name}}! Shop now before they're gone." },
-                { label: "🏷️ Sale Alert", body: "Hi! 🏷️ Exciting sale at {{store_name}}! Get amazing discounts on {{product_names}}. Shop now!" },
-                { label: "📦 Restock", body: "Hi! 📦 Great news! Popular items are back in stock at {{store_name}}. Grab yours before they sell out!" },
-                { label: "💌 Thank You", body: "Hi {{name}}! 💌 Thank you for being a valued customer of {{store_name}}. Here's a special offer just for you!" },
-              ].map((t) => (
-                <Button
-                  key={t.label}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-7"
-                  onClick={() => setMessage(t.body)}
-                >
-                  {t.label}
-                </Button>
-              ))}
+            <Label className="text-xs text-muted-foreground">Send Mode</Label>
+            <div className="flex gap-2">
+              <Button
+                variant={sendMode === "text" ? "default" : "outline"}
+                size="sm"
+                className="text-xs flex-1"
+                onClick={() => setSendMode("text")}
+              >
+                <MessageSquare className="h-3 w-3 mr-1" />
+                Plain Text
+              </Button>
+              <Button
+                variant={sendMode === "template" ? "default" : "outline"}
+                size="sm"
+                className="text-xs flex-1"
+                onClick={() => setSendMode("template")}
+              >
+                <FileCheck className="h-3 w-3 mr-1" />
+                Meta Template
+              </Button>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Message</Label>
-            <Textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type your broadcast message here... Use variables like {{name}} to personalize"
-              rows={4}
-              className="text-sm"
-            />
-            <VariableChips
-              variables={[
-                { var: "{{name}}", label: "Customer Name" },
-                { var: "{{store_name}}", label: "Store Name" },
-                { var: "{{product_names}}", label: "Product Names" },
-              ]}
-              onInsert={(v) => setMessage((prev) => prev + v)}
-            />
-            <p className="text-[11px] text-muted-foreground mt-1">
-              ⚠️ Meta WhatsApp API has rate limits. Messages are sent with a 0.5s delay between each.
-            </p>
-          </div>
+          {sendMode === "template" ? (
+            <div className="space-y-4">
+              {/* Template info banner */}
+              <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+                <p className="text-xs text-blue-800">
+                  <strong>Recommended for bulk sends.</strong> Meta-approved templates have higher delivery rates and are required for business-initiated messages outside the 24hr window.
+                </p>
+              </div>
+
+              {/* Template selector */}
+              <div className="space-y-2">
+                <Label>Select Approved Template</Label>
+                {!approvedTemplates?.length ? (
+                  <div className="text-center py-4 border rounded-lg">
+                    <FileCheck className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                    <p className="text-sm text-muted-foreground">No approved templates</p>
+                    <p className="text-xs text-muted-foreground mt-1">Go to the Templates tab to submit templates for Meta approval</p>
+                  </div>
+                ) : (
+                  <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder="Choose a template..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {approvedTemplates.map((t: any) => (
+                        <SelectItem key={t.template_name} value={t.template_name}>
+                          <div className="flex items-center gap-2">
+                            <span>{t.template_name}</span>
+                            <Badge variant="outline" className="text-[9px] ml-1">{t.meta_category}</Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* Template preview */}
+              {selectedTpl && (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Template Preview</Label>
+                    <div className="bg-muted/50 rounded-lg p-3 text-sm whitespace-pre-wrap border">
+                      {(selectedTpl as any).body_text}
+                    </div>
+                  </div>
+
+                  {/* Template parameters */}
+                  {templateParams.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Template Parameters</Label>
+                      <p className="text-[10px] text-muted-foreground">
+                        Fill in the values for each variable in the template
+                      </p>
+                      {templateParams.map((param, i) => (
+                        <div key={i} className="space-y-1">
+                          <Label className="text-xs">{`{{${i + 1}}}`} — Parameter {i + 1}</Label>
+                          <Input
+                            value={param}
+                            onChange={(e) => {
+                              const updated = [...templateParams];
+                              updated[i] = e.target.value;
+                              setTemplateParams(updated);
+                            }}
+                            placeholder={`Value for {{${i + 1}}}`}
+                            className="text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Quick Templates */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Quick Templates</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "🎉 New Arrival", body: "Hi! 🎉 Check out our latest arrivals at {{store_name}}! Shop now before they're gone." },
+                    { label: "🏷️ Sale Alert", body: "Hi! 🏷️ Exciting sale at {{store_name}}! Get amazing discounts on {{product_names}}. Shop now!" },
+                    { label: "📦 Restock", body: "Hi! 📦 Great news! Popular items are back in stock at {{store_name}}. Grab yours before they sell out!" },
+                    { label: "💌 Thank You", body: "Hi {{name}}! 💌 Thank you for being a valued customer of {{store_name}}. Here's a special offer just for you!" },
+                  ].map((t) => (
+                    <Button
+                      key={t.label}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setMessage(t.body)}
+                    >
+                      {t.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Message</Label>
+                <Textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Type your broadcast message here... Use variables like {{name}} to personalize"
+                  rows={4}
+                  className="text-sm"
+                />
+                <VariableChips
+                  variables={[
+                    { var: "{{name}}", label: "Customer Name" },
+                    { var: "{{store_name}}", label: "Store Name" },
+                    { var: "{{product_names}}", label: "Product Names" },
+                  ]}
+                  onInsert={(v) => setMessage((prev) => prev + v)}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  ⚠️ Plain text only works for replies within 24hrs. Use Meta Templates for marketing messages.
+                </p>
+              </div>
+            </>
+          )}
 
           {sending && (
             <div className="space-y-2">
@@ -901,13 +1049,15 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
 
           <Button
             onClick={sendBulk}
-            disabled={sending || numbers.length === 0 || !message.trim()}
+            disabled={sending || numbers.length === 0 || !canSend}
             className="w-full"
           >
             <Send className="mr-2 h-4 w-4" />
             {sending
               ? `Sending... (${progress.sent + progress.failed}/${progress.total})`
-              : `Send to ${numbers.length} Recipients`}
+              : sendMode === "template"
+                ? `Send Template to ${numbers.length} Recipients`
+                : `Send to ${numbers.length} Recipients`}
           </Button>
         </CardContent>
       </Card>
