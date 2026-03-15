@@ -32,12 +32,26 @@ export default function SmartInstallPrompt({
   const [showStrip, setShowStrip] = useState(false);
 
   useEffect(() => {
-    // Already installed or running as PWA
-    if (window.matchMedia("(display-mode: standalone)").matches) return;
+    // Already installed — standalone mode or iOS standalone
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as any).standalone === true;
+    if (isStandalone) return;
+
+    // Listen for install event (user installs while on page)
+    const onInstalled = () => {
+      setShowPopup(false);
+      setShowStrip(false);
+      setDeferredPrompt(null);
+    };
+    window.addEventListener("appinstalled", onInstalled);
 
     // Check if strip was dismissed within 3 days
     const stripDismissed = localStorage.getItem(STRIP_DISMISSED_KEY);
-    if (stripDismissed && Date.now() - Number(stripDismissed) < 3 * 24 * 60 * 60 * 1000) return;
+    if (stripDismissed && Date.now() - Number(stripDismissed) < 3 * 24 * 60 * 60 * 1000) {
+      window.removeEventListener("appinstalled", onInstalled);
+      return;
+    }
 
     const handler = (e: Event) => {
       e.preventDefault();
@@ -57,7 +71,10 @@ export default function SmartInstallPrompt({
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
   }, [delay]);
 
   const handleInstall = useCallback(async () => {
