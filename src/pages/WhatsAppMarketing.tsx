@@ -82,12 +82,13 @@ function SetupTab({ storeId }: { storeId: string }) {
           .eq("id", (config as any).id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("whatsapp_config").insert({
+        const { error } = await (supabase as any).from("whatsapp_config").insert({
           store_id: storeId,
           access_token: form.access_token,
           phone_number_id: form.phone_number_id,
           waba_id: form.waba_id,
           business_phone: form.business_phone,
+          marketing_mode: "own",
         });
         if (error) throw error;
       }
