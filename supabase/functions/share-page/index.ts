@@ -16,6 +16,29 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
+function normalizeOgImageUrl(imageUrl: string): string {
+  if (!imageUrl) return "";
+
+  try {
+    const parsed = new URL(imageUrl);
+    const isShopifyCdnAsset = parsed.pathname.includes("/cdn/shop/files/");
+
+    // WhatsApp preview is unreliable with .webp OG images.
+    // Shopify supports forcing JPEG output via format=pjpg.
+    if (isShopifyCdnAsset && parsed.pathname.toLowerCase().endsWith(".webp")) {
+      parsed.searchParams.set("format", "pjpg");
+      if (!parsed.searchParams.has("width")) {
+        parsed.searchParams.set("width", "1200");
+      }
+      return parsed.toString();
+    }
+
+    return parsed.toString();
+  } catch {
+    return imageUrl;
+  }
+}
+
 function buildHtml(title: string, description: string, image: string, canonicalUrl: string, redirectUrl: string, siteName: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -94,13 +117,25 @@ Deno.serve(async (req) => {
 
   // ── Product share ──
   if (productSlug) {
-    const { data: product } = await supabase
+    let { data: product } = await supabase
       .from("products")
-      .select("name, description, image_url, price, sale_price, slug, currency")
+      .select("name, description, image_url, price, sale_price, slug, currency, id")
       .eq("store_id", store.id)
       .eq("slug", productSlug)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
+
+    // Fallback: allow sharing by product ID when slug is unavailable
+    if (!product) {
+      const { data: byId } = await supabase
+        .from("products")
+        .select("name, description, image_url, price, sale_price, slug, currency, id")
+        .eq("store_id", store.id)
+        .eq("id", productSlug)
+        .eq("is_active", true)
+        .maybeSingle();
+      product = byId;
+    }
 
     if (product) {
       const price = product.sale_price || product.price;
@@ -110,8 +145,10 @@ Deno.serve(async (req) => {
       
       const productTitle = escapeHtml(`${product.name} - ${priceText}`);
       const productDesc = escapeHtml(product.description || `Shop ${product.name} at ${store.name}`);
-      const productImage = product.image_url || store.og_image_url || store.banner_url || "";
-      const productUrl = `${storeUrl}/product/${product.slug}`;
+      const rawProductImage = product.image_url || store.og_image_url || store.banner_url || "";
+      const productImage = normalizeOgImageUrl(rawProductImage);
+      const productPath = product.slug || product.id;
+      const productUrl = `${storeUrl}/product/${productPath}`;
 
       const html = buildHtml(productTitle, productDesc, productImage, productUrl, productUrl, escapeHtml(store.name));
       return new Response(html, {
@@ -126,7 +163,8 @@ Deno.serve(async (req) => {
   // ── Store share (default) ──
   const title = escapeHtml(store.meta_title || store.name);
   const description = escapeHtml(store.meta_description || store.description || `Shop at ${store.name}`);
-  const image = store.og_image_url || store.banner_url || store.logo_url || "";
+  const rawStoreImage = store.og_image_url || store.banner_url || store.logo_url || "";
+  const image = normalizeOgImageUrl(rawStoreImage);
 
   const html = buildHtml(title, description, image, storeUrl, storeUrl, escapeHtml(store.name));
 
