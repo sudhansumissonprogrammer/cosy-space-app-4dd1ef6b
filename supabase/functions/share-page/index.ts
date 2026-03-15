@@ -21,16 +21,16 @@ function normalizeOgImageUrl(imageUrl: string): string {
 
   try {
     const parsed = new URL(imageUrl);
-    const isShopifyCdnAsset = parsed.pathname.includes("/cdn/shop/files/");
+    const pathname = parsed.pathname.toLowerCase();
+    const isShopifyCdnAsset =
+      parsed.hostname.includes("shopify.com") ||
+      parsed.pathname.includes("/cdn/shop/files/");
 
-    // WhatsApp preview is unreliable with .webp OG images.
-    // Shopify supports forcing JPEG output via format=pjpg.
-    if (isShopifyCdnAsset && parsed.pathname.toLowerCase().endsWith(".webp")) {
+    // WhatsApp can fail to render Shopify images when they are served as WebP
+    // (even when URL extension is .png/.jpg). Force crawler-safe JPEG output.
+    if (isShopifyCdnAsset && !pathname.endsWith(".gif")) {
       parsed.searchParams.set("format", "pjpg");
-      if (!parsed.searchParams.has("width")) {
-        parsed.searchParams.set("width", "1200");
-      }
-      return parsed.toString();
+      parsed.searchParams.set("width", "1200");
     }
 
     return parsed.toString();
