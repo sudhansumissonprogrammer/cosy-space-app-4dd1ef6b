@@ -501,8 +501,9 @@ export default function CheckoutPage() {
     } catch {}
   };
 
-  const finalizeOrder = (newOrderId: string) => {
+  const finalizeOrder = (newOrderId: string, newOrderNumber: string | null) => {
     setOrderId(newOrderId);
+    setOrderNumber(newOrderNumber);
     setOrderPlaced(true);
     if (!isSingleMode) clearCart();
     saveExpressInfo();
