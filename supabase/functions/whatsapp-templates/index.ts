@@ -51,22 +51,37 @@ Deno.serve(async (req) => {
       .from("whatsapp_config")
       .select("*")
       .eq("store_id", store_id)
-      .eq("is_active", true)
       .maybeSingle();
 
-    if (configErr || !config) {
+    const marketingMode = (config as any)?.marketing_mode || "storivo";
+    let waba_id = (config as any)?.waba_id;
+    let access_token = (config as any)?.access_token;
+
+    // For storivo mode or missing own credentials, fall back to platform config
+    if (!waba_id || !access_token || marketingMode === "storivo") {
+      const { data: platformConfig } = await supabase
+        .from("platform_config")
+        .select("*")
+        .limit(1)
+        .maybeSingle();
+
+      if (platformConfig) {
+        // platform_config doesn't have waba_id column, so we check if store has it
+        // For storivo mode, use platform access_token but still need waba_id somewhere
+        access_token = (platformConfig as any).wa_access_token || access_token;
+      }
+    }
+
+    if (!waba_id) {
       return new Response(
-        JSON.stringify({ error: "WhatsApp not configured for this store" }),
+        JSON.stringify({ error: "WABA ID is required for template management. Please add it in your WhatsApp Setup tab." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const waba_id = (config as any).waba_id;
-    const access_token = (config as any).access_token;
-
-    if (!waba_id) {
+    if (!access_token) {
       return new Response(
-        JSON.stringify({ error: "WABA ID is required for template management. Please add it in Setup." }),
+        JSON.stringify({ error: "Access token is missing. Please configure WhatsApp in Setup." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
