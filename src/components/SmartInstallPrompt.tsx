@@ -125,11 +125,18 @@ export default function SmartInstallPrompt({
 
           {/* Benefits */}
           <div className="px-5 py-4 space-y-2.5">
-            {[
-              { emoji: "⚡", text: "Lightning fast loading" },
-              { emoji: "🔔", text: "Instant order notifications" },
-              { emoji: "📱", text: "Full-screen native experience" },
-            ].map((b) => (
+            {(appName.toLowerCase().includes("admin")
+              ? [
+                  { emoji: "⚡", text: "Manage orders on the go" },
+                  { emoji: "🔔", text: "Instant order notifications" },
+                  { emoji: "📱", text: "Full-screen Shopify-like experience" },
+                ]
+              : [
+                  { emoji: "⚡", text: "Lightning fast loading" },
+                  { emoji: "🔔", text: "Instant order notifications" },
+                  { emoji: "📱", text: "Full-screen native experience" },
+                ]
+            ).map((b) => (
               <div key={b.text} className="flex items-center gap-2.5">
                 <span className="text-base">{b.emoji}</span>
                 <span className="text-sm text-foreground">{b.text}</span>

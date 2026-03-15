@@ -4,13 +4,15 @@ interface DynamicPwaManifestProps {
   storeName: string;
   logoUrl?: string | null;
   themeColor?: string;
+  /** Custom start URL — e.g. "/dashboard" for admin PWA */
+  startUrl?: string;
 }
 
 /**
  * Dynamically generates and injects a per-store PWA manifest
  * so each store gets its own installable app with its own name/logo.
  */
-export default function DynamicPwaManifest({ storeName, logoUrl, themeColor = "#4361ee" }: DynamicPwaManifestProps) {
+export default function DynamicPwaManifest({ storeName, logoUrl, themeColor = "#4361ee", startUrl }: DynamicPwaManifestProps) {
   useEffect(() => {
     // Build icons array — use store logo if available, else fallback to default PWA icons
     const icons = logoUrl
@@ -31,8 +33,9 @@ export default function DynamicPwaManifest({ storeName, logoUrl, themeColor = "#
       description: `Shop at ${storeName}`,
       theme_color: themeColor,
       background_color: "#ffffff",
-      display: "standalone",
-      start_url: window.location.origin + "/",
+      display: "standalone" as const,
+      start_url: startUrl || (window.location.origin + "/"),
+      scope: startUrl ? window.location.origin + startUrl : window.location.origin + "/",
       icons,
     };
 
