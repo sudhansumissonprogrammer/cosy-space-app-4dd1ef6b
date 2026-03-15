@@ -154,6 +154,13 @@ export default function StoreSettings() {
       if (bannerFile) bannerUrl = await uploadFile(bannerFile, "store-banners");
       if (heroFile) mobileHeroUrl = await uploadFile(heroFile, "store-banners");
 
+      // Handle OG image upload
+      let finalOgImageUrl = ogImageUrl;
+      if (ogImageRemoved) finalOgImageUrl = "";
+      if (ogImageFile) {
+        finalOgImageUrl = await uploadFile(ogImageFile, "store-banners");
+      }
+
       const hasHours = Object.values(businessHours).some((v) => v.trim());
       const { error } = await (supabase as any)
         .from("stores")
