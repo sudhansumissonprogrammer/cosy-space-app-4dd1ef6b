@@ -390,7 +390,7 @@ export default function StoreAbandonedCarts() {
                               className="text-xs"
                               disabled={sending}
                               onClick={() => {
-                                sendAbandonedCartWhatsApp(storeId, c.id, c.customer_phone);
+                                sendAbandonedCartWhatsApp(storeId, c.id, c.customer_phone, c.customer_name, getCartData(c));
                                 toast.success("Recovery message sent!");
                               }}
                             >
