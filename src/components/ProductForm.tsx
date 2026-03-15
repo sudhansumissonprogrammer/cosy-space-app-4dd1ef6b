@@ -412,7 +412,11 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       }
 
       toast.success(isEditing ? "Product updated!" : "Product created!");
-      navigate(`/dashboard/stores/${storeId}/products`);
+      if (onClose) {
+        onClose();
+      } else {
+        navigate(`/dashboard/stores/${storeId}/products`);
+      }
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
     } finally {
