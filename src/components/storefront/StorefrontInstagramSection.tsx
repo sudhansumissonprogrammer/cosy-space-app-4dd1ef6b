@@ -118,15 +118,15 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
             href={store.instagram_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="inline-flex items-center gap-2 rounded-lg px-5 py-[7px] text-[14px] font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
             style={{
-              backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
-              color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))",
-              borderRadius: "var(--storefront-button-radius, 9999px)",
+              background: "linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
+              color: "#ffffff",
+              borderRadius: "8px",
+              letterSpacing: "0.01em",
             }}
           >
-            <Instagram className="h-4 w-4" />
-            Follow {handle || "Us"} on Instagram
+            Follow
           </a>
         </div>
       </div>
