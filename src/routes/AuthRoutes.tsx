@@ -44,6 +44,7 @@ const StoreTaxSettings = lazy(() => import("@/pages/StoreTaxSettings"));
 const StoreAbandonedCarts = lazy(() => import("@/pages/StoreAbandonedCarts"));
 const StoreThemeSettings = lazy(() => import("@/pages/StoreThemeSettings"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const InstallApp = lazy(() => import("@/pages/InstallApp"));
 
 export default function AuthRoutes() {
   return (
