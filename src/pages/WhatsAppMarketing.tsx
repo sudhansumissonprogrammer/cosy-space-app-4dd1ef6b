@@ -298,9 +298,10 @@ function ChatTab({ storeId }: { storeId: string }) {
     const map = new Map<string, { phone: string; name: string | null; messages: any[]; lastMessage: any; unread: number }>();
 
     for (const msg of allMessages) {
-      const phone = msg.direction === "incoming"
-        ? (msg.sender_phone || msg.recipient_phone)
-        : msg.recipient_phone;
+      const m = msg as any;
+      const phone = m.direction === "incoming"
+        ? (m.sender_phone || m.recipient_phone)
+        : m.recipient_phone;
       if (!phone) continue;
 
       if (!map.has(phone)) {
