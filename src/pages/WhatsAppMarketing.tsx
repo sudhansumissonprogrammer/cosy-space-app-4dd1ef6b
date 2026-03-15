@@ -158,9 +158,52 @@ function SetupTab({ storeId }: { storeId: string }) {
             {saveMutation.isPending ? "Saving..." : config ? "Update Configuration" : "Save & Connect"}
           </Button>
           {config && (
-            <div className="flex items-center gap-2 text-sm text-green-600">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>WhatsApp API Connected</span>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>WhatsApp API Connected</span>
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <Label>Test Connection</Label>
+                <p className="text-xs text-muted-foreground">Send a test message to verify your API is working</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={!testPhone.trim() || testing}
+                    onClick={async () => {
+                      setTesting(true);
+                      try {
+                        const res = await supabase.functions.invoke("whatsapp-send", {
+                          body: {
+                            store_id: storeId,
+                            recipient_phone: testPhone.trim(),
+                            message_body: "✅ This is a test message from your store dashboard. WhatsApp API is working!",
+                            message_type: "manual",
+                          },
+                        });
+                        if (res.error) throw res.error;
+                        const data = res.data as any;
+                        if (data?.error) throw new Error(data.error);
+                        toast({ title: "✅ Test message sent!", description: "Check your WhatsApp for the message" });
+                      } catch (e: any) {
+                        toast({ title: "❌ Test failed", description: e.message || "Check your credentials", variant: "destructive" });
+                      } finally {
+                        setTesting(false);
+                      }
+                    }}
+                  >
+                    <Send className="mr-1.5 h-4 w-4" />
+                    {testing ? "Sending..." : "Send Test"}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
