@@ -315,7 +315,7 @@ function ChatTab({ storeId }: { storeId: string }) {
       }
       const conv = map.get(phone)!;
       conv.messages.push(msg);
-      if (msg.direction === "incoming" && msg.status === "received") {
+      if (m.direction === "incoming" && msg.status === "received") {
         conv.unread++;
       }
       if (!conv.name && msg.recipient_name) {
