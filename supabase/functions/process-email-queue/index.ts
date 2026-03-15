@@ -220,11 +220,8 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i]
-      const payload = msg.message
-      const failedAttempts =
-        payload?.message_id && typeof payload.message_id === 'string'
-          ? (failedAttemptsByMessageId.get(payload.message_id) ?? 0)
-          : 0
+      const payload = normalizeQueuedPayload(msg.message, queue, msg.msg_id)
+      const failedAttempts = failedAttemptsByMessageId.get(payload.message_id) ?? 0
 
       // Drop expired messages (TTL exceeded)
       if (payload.queued_at) {
