@@ -16,8 +16,9 @@ import { toast } from "@/hooks/use-toast";
 import {
   MessageSquare, Settings, BarChart3, Send, Phone, CheckCircle2,
   XCircle, Clock, AlertCircle, Zap, ShoppingCart, Package, Users,
-  TrendingUp, Eye, EyeOff,
+  TrendingUp, Eye, EyeOff, Upload, Megaphone, Trash2, FileText, Plus,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 // ─── Setup Tab ───────────────────────────────────────────────────────
 function SetupTab({ storeId }: { storeId: string }) {
@@ -564,6 +565,250 @@ function AnalyticsTab({ storeId }: { storeId: string }) {
   );
 }
 
+// ─── Bulk Messaging Tab ─────────────────────────────────────────────
+function BulkMessagingTab({ storeId }: { storeId: string }) {
+  const queryClient = useQueryClient();
+  const [numbers, setNumbers] = useState<string[]>([]);
+  const [manualInput, setManualInput] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [progress, setProgress] = useState({ sent: 0, failed: 0, total: 0 });
+  const [csvFileName, setCsvFileName] = useState("");
+
+  const addManualNumbers = () => {
+    if (!manualInput.trim()) return;
+    const newNumbers = manualInput
+      .split(/[\n,;]+/)
+      .map((n) => n.replace(/[\s\-()]/g, "").trim())
+      .filter((n) => n.length >= 10 && /^\+?\d+$/.test(n));
+
+    const unique = [...new Set([...numbers, ...newNumbers])];
+    setNumbers(unique);
+    setManualInput("");
+    if (newNumbers.length > 0) {
+      toast({ title: `Added ${newNumbers.length} numbers`, description: `Total: ${unique.length} recipients` });
+    } else {
+      toast({ title: "No valid numbers found", description: "Enter phone numbers with country code (e.g. +919876543210)", variant: "destructive" });
+    }
+  };
+
+  const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split("\n");
+      const extracted: string[] = [];
+
+      for (const line of lines) {
+        const cells = line.split(",");
+        for (const cell of cells) {
+          const cleaned = cell.replace(/[\s\-()\"']/g, "").trim();
+          if (cleaned.length >= 10 && /^\+?\d{10,15}$/.test(cleaned)) {
+            extracted.push(cleaned);
+          }
+        }
+      }
+
+      const unique = [...new Set([...numbers, ...extracted])];
+      setNumbers(unique);
+      toast({
+        title: `Imported ${extracted.length} numbers from CSV`,
+        description: `Total: ${unique.length} recipients`,
+      });
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const removeNumber = (index: number) => {
+    setNumbers(numbers.filter((_, i) => i !== index));
+  };
+
+  const clearAll = () => {
+    setNumbers([]);
+    setCsvFileName("");
+    toast({ title: "All numbers cleared" });
+  };
+
+  const sendBulk = async () => {
+    if (!message.trim() || numbers.length === 0) return;
+    setSending(true);
+    setProgress({ sent: 0, failed: 0, total: numbers.length });
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const phone of numbers) {
+      try {
+        const res = await supabase.functions.invoke("whatsapp-send", {
+          body: {
+            store_id: storeId,
+            recipient_phone: phone,
+            message_body: message.trim(),
+            message_type: "manual",
+          },
+        });
+        if (res.error || (res.data as any)?.error) {
+          failed++;
+        } else {
+          sent++;
+        }
+      } catch {
+        failed++;
+      }
+      setProgress({ sent, failed, total: numbers.length });
+      // Small delay to avoid rate limiting
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
+    setSending(false);
+    queryClient.invalidateQueries({ queryKey: ["whatsapp-messages", storeId] });
+    queryClient.invalidateQueries({ queryKey: ["whatsapp-analytics", storeId] });
+    toast({
+      title: "Bulk send complete!",
+      description: `✅ ${sent} sent, ❌ ${failed} failed out of ${numbers.length}`,
+    });
+  };
+
+  const progressPercent = progress.total > 0 ? ((progress.sent + progress.failed) / progress.total) * 100 : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Add Numbers Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Users className="h-5 w-5" />
+            Recipients ({numbers.length})
+          </CardTitle>
+          <CardDescription>Add phone numbers manually or import from a CSV file</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Manual Entry */}
+          <div className="space-y-2">
+            <Label>Add Numbers Manually</Label>
+            <Textarea
+              value={manualInput}
+              onChange={(e) => setManualInput(e.target.value)}
+              placeholder={"Enter phone numbers (one per line or comma-separated)\ne.g.\n+919876543210\n+918765432109, +917654321098"}
+              rows={3}
+              className="text-sm"
+            />
+            <Button variant="outline" size="sm" onClick={addManualNumbers} disabled={!manualInput.trim()}>
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Add Numbers
+            </Button>
+          </div>
+
+          <div className="relative flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground">OR</span>
+            <Separator className="flex-1" />
+          </div>
+
+          {/* CSV Upload */}
+          <div className="space-y-2">
+            <Label>Import from CSV</Label>
+            <p className="text-xs text-muted-foreground">
+              Upload a CSV file with phone numbers. Any column containing valid phone numbers will be detected automatically.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <label className="cursor-pointer">
+                  <Upload className="mr-1.5 h-3.5 w-3.5" />
+                  {csvFileName || "Choose CSV File"}
+                  <input type="file" accept=".csv,.txt" className="hidden" onChange={handleCsvUpload} />
+                </label>
+              </Button>
+              {csvFileName && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <FileText className="h-3 w-3" /> {csvFileName}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Numbers List */}
+          {numbers.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">{numbers.length} Recipients</Label>
+                <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs text-destructive hover:text-destructive">
+                  <Trash2 className="mr-1 h-3 w-3" /> Clear All
+                </Button>
+              </div>
+              <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                {numbers.map((num, i) => (
+                  <div key={i} className="flex items-center justify-between bg-muted/50 rounded px-2 py-1 text-sm">
+                    <span className="font-mono text-xs">{num}</span>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeNumber(i)}>
+                      <XCircle className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Compose & Send */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Megaphone className="h-5 w-5" />
+            Compose Bulk Message
+          </CardTitle>
+          <CardDescription>This message will be sent to all {numbers.length} recipients</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Message</Label>
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type your broadcast message here..."
+              rows={4}
+              className="text-sm"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              ⚠️ Meta WhatsApp API has rate limits. Messages are sent with a 0.5s delay between each.
+            </p>
+          </div>
+
+          {sending && (
+            <div className="space-y-2">
+              <Progress value={progressPercent} className="h-2" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>✅ {progress.sent} sent</span>
+                <span>❌ {progress.failed} failed</span>
+                <span>{progress.sent + progress.failed}/{progress.total}</span>
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={sendBulk}
+            disabled={sending || numbers.length === 0 || !message.trim()}
+            className="w-full"
+          >
+            <Send className="mr-2 h-4 w-4" />
+            {sending
+              ? `Sending... (${progress.sent + progress.failed}/${progress.total})`
+              : `Send to ${numbers.length} Recipients`}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function WhatsAppMarketing() {
   const { storeId } = useParams();
@@ -608,12 +853,15 @@ export default function WhatsAppMarketing() {
       </div>
 
       <Tabs defaultValue={isConnected ? "chat" : "setup"}>
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="setup" className="text-xs">
             <Settings className="h-3.5 w-3.5 mr-1" /> Setup
           </TabsTrigger>
           <TabsTrigger value="chat" disabled={!isConnected} className="text-xs">
             <Send className="h-3.5 w-3.5 mr-1" /> Chat
+          </TabsTrigger>
+          <TabsTrigger value="bulk" disabled={!isConnected} className="text-xs">
+            <Megaphone className="h-3.5 w-3.5 mr-1" /> Bulk
           </TabsTrigger>
           <TabsTrigger value="automations" disabled={!isConnected} className="text-xs">
             <Zap className="h-3.5 w-3.5 mr-1" /> Auto
@@ -628,6 +876,9 @@ export default function WhatsAppMarketing() {
         </TabsContent>
         <TabsContent value="chat" className="mt-4">
           <ChatTab storeId={storeId!} />
+        </TabsContent>
+        <TabsContent value="bulk" className="mt-4">
+          <BulkMessagingTab storeId={storeId!} />
         </TabsContent>
         <TabsContent value="automations" className="mt-4">
           <AutomationsTab storeId={storeId!} />
