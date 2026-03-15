@@ -33,6 +33,7 @@ import PaginationControls from "@/components/PaginationControls";
 import BulkEditDialog from "@/components/BulkEditDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import ProductForm from "@/components/ProductForm";
 
 type SortOption = "title-asc" | "title-desc" | "date-new" | "date-old";
 type StatusFilter = "all" | "active" | "draft";
