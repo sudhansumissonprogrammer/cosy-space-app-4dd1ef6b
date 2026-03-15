@@ -530,7 +530,7 @@ export default function CheckoutPage() {
 
     setPlacing(true);
     try {
-      const newOrderId = await createOrder();
+      const newOrder = await createOrder();
 
       if (paymentMethod === "razorpay") {
         const loaded = await loadRazorpayScript();
