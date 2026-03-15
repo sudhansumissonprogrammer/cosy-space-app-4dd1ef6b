@@ -359,41 +359,110 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     <CartProvider slug={store.slug}>
       <WishlistProvider slug={store.slug}>
         <StorefrontAuthProvider storeId={store.id}>
-          <div className="storefront-font min-h-screen font-sans" style={{ ...themeStyle, backgroundColor: "var(--storefront-bg, hsl(var(--background)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-            <StorefrontMarquee />
-            
-            <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
-              <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
-                <HamburgerMenu store={store} />
-                <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0">
-                  {store.logo_url ? (
-                    <img src={store.logo_url} alt={store.name} className="h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[160px] object-contain" />
-                  ) : (
-                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
-                      <Store className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
-                    </div>
-                  )}
-                </Link>
-                <div className="flex-1" />
-                <div className="flex items-center gap-0 sm:gap-1">
-                  <AccountBadge slug={store.slug} />
-                  <WishlistBadge slug={store.slug} />
-                  <CartBadge />
-                  <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
-                </div>
-              </div>
-            </nav>
-
-            <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-            <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-            <StorefrontOrderNotification storeName={store.name} />
-            <Outlet context={store} />
-            <StorefrontFooter store={store} />
-            <SideCart store={store} />
-            <FloatingWhatsApp store={store} />
-          </div>
+          <CheckoutAwareLayout store={store} themeStyle={themeStyle} primaryColor={primaryColor} btnTextColor={btnTextColor} />
         </StorefrontAuthProvider>
       </WishlistProvider>
     </CartProvider>
+  );
+}
+
+function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor }: { store: StoreData; themeStyle: React.CSSProperties; primaryColor: string; btnTextColor: string }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isCheckout = location.pathname.includes("/checkout");
+  const [showExitDialog, setShowExitDialog] = useState(false);
+
+  const handleBackClick = () => {
+    setShowExitDialog(true);
+  };
+
+  const handleExitConfirm = () => {
+    setShowExitDialog(false);
+    navigate(storefrontPath(store.slug, "cart"));
+  };
+
+  return (
+    <div className="storefront-font min-h-screen font-sans" style={{ ...themeStyle, backgroundColor: "var(--storefront-bg, hsl(var(--background)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+      <StorefrontMarquee />
+      
+      <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
+          {isCheckout ? (
+            <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick}>
+              <ArrowLeft className="h-5 w-5 text-foreground" strokeWidth={2.5} />
+            </Button>
+          ) : (
+            <HamburgerMenu store={store} />
+          )}
+          <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0">
+            {store.logo_url ? (
+              <img src={store.logo_url} alt={store.name} className="h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[160px] object-contain" />
+            ) : (
+              <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
+                <Store className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+              </div>
+            )}
+          </Link>
+          {isCheckout && (
+            <span className="text-sm font-semibold text-foreground" style={{ fontFamily: "'Montserrat', sans-serif" }}>Checkout</span>
+          )}
+          <div className="flex-1" />
+          {!isCheckout && (
+            <div className="flex items-center gap-0 sm:gap-1">
+              <AccountBadge slug={store.slug} />
+              <WishlistBadge slug={store.slug} />
+              <CartBadge />
+              <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+      <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
+      <StorefrontOrderNotification storeName={store.name} />
+      <Outlet context={store} />
+      <StorefrontFooter store={store} />
+      <SideCart store={store} />
+      <FloatingWhatsApp store={store} />
+
+      {/* Exit Checkout Confirmation Dialog */}
+      <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <DialogContent className="max-w-[320px] rounded-2xl p-0 overflow-hidden">
+          <button
+            onClick={() => setShowExitDialog(false)}
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-accent/80 text-muted-foreground hover:text-foreground hover:scale-110 active:scale-95 transition-all"
+          >
+            <X className="h-4 w-4" strokeWidth={2.5} />
+          </button>
+          <div className="p-6 pt-8 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
+              <ArrowLeft className="h-5 w-5 text-warning" />
+            </div>
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-base font-bold text-foreground">Exit checkout?</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Are you sure you want to leave? Your order details won't be saved.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-5 flex flex-col gap-2">
+              <Button
+                variant="outline"
+                className="w-full border-destructive/30 text-destructive hover:bg-destructive/5 font-semibold text-xs"
+                onClick={handleExitConfirm}
+              >
+                Yes, exit checkout
+              </Button>
+              <Button
+                className="w-full font-semibold text-xs"
+                onClick={() => setShowExitDialog(false)}
+              >
+                No, continue checkout
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
