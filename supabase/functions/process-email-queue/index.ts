@@ -61,10 +61,7 @@ function normalizeQueuedPayload(rawPayload: any, queue: string, queueMessageId: 
         ? payload.template_name
         : queue
 
-  const purpose =
-    typeof payload.purpose === 'string' && payload.purpose.trim().length > 0
-      ? payload.purpose
-      : 'transactional'
+  const purpose = 'transactional'
 
   const queued_at =
     typeof payload.queued_at === 'string' && payload.queued_at.trim().length > 0
