@@ -2049,8 +2049,8 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
           for (const order of orderData as any[]) {
             if (!order.customer_phone) continue;
             const items = order.order_items || [];
-            let matchesProduct = !productFilter;
-            let matchesCategory = !categoryFilter;
+            let matchesProduct = productFilter === "__all__";
+            let matchesCategory = categoryFilter === "__all__";
 
             for (const item of items) {
               if (productFilter && item.product_id === productFilter) matchesProduct = true;
