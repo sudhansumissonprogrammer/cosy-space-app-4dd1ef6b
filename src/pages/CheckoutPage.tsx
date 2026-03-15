@@ -55,17 +55,21 @@ export default function CheckoutPage() {
   const [morePaymentOpen, setMorePaymentOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
 
-  // Form
-  const [fullName, setFullName] = useState("");
+  // Form — pre-fill from localStorage for returning users
+  const savedInfo = (() => {
+    try { return JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}"); } catch { return {}; }
+  })();
+  const [fullName, setFullName] = useState(savedInfo.fullName || "");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [streetAddress, setStreetAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [pincode, setPincode] = useState("");
+  const [phone, setPhone] = useState(savedInfo.phone || "");
+  const [streetAddress, setStreetAddress] = useState(savedInfo.streetAddress || "");
+  const [city, setCity] = useState(savedInfo.city || "");
+  const [state, setState] = useState(savedInfo.state || "");
+  const [pincode, setPincode] = useState(savedInfo.pincode || "");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
+  const [pincodeLoading, setPincodeLoading] = useState(false);
 
   // Coupon
   const [couponCode, setCouponCode] = useState("");
