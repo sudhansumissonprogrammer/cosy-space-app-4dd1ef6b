@@ -351,7 +351,7 @@ Deno.serve(async (req) => {
       try {
         await sendLovableEmail(
           {
-            run_id: payload.run_id,
+            ...(queue === 'auth_emails' && payload.run_id ? { run_id: payload.run_id } : {}),
             to: payload.to,
             from: payload.from,
             sender_domain: payload.sender_domain,
