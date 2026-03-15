@@ -277,8 +277,8 @@ export default function DashboardLayout() {
       className="min-h-screen flex flex-col bg-background"
       style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}
     >
-      <DynamicPwaManifest storeName={store?.name ? `${store.name} Admin` : "Storivo Admin"} logoUrl={store?.logo_url} themeColor="#1a1a1a" startUrl="/dashboard" />
-      <SmartInstallPrompt appName={store?.name ? `${store.name} Admin` : "Storivo Admin"} primaryColor="#1a1a1a" textColor="#ffffff" />
+      <DynamicPwaManifest storeName="Storivo" logoUrl="/pwa-192x192.png" themeColor="#1a1a1a" startUrl="/dashboard" />
+      <SmartInstallPrompt appName="Storivo" primaryColor="#1a1a1a" textColor="#ffffff" />
       <OrderNotificationListener />
 
       {/* Shopify-style header */}
