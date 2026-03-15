@@ -407,14 +407,14 @@ export default function ProductDetail() {
             <h1 className="text-2xl font-bold text-foreground leading-tight sm:text-3xl">{product.name}</h1>
             <button
               onClick={async () => {
-                const url = window.location.href;
+                const shareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
                 if (navigator.share) {
                   try {
-                    await navigator.share({ title: product.name, url });
+                    await navigator.share({ title: product.name, url: shareUrl });
                   } catch {}
                 } else {
                   try {
-                    await navigator.clipboard.writeText(url);
+                    await navigator.clipboard.writeText(shareUrl);
                     toast.success("Link copied!");
                   } catch {
                     toast.error("Failed to copy");
