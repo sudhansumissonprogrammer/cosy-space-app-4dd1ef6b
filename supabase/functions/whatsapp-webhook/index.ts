@@ -18,7 +18,6 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    // Use a simple verify token - store owners configure this in Meta dashboard
     if (mode === "subscribe" && token === "storivo_webhook_verify") {
       return new Response(challenge, { status: 200, headers: corsHeaders });
     }
@@ -32,7 +31,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Process webhook entries
     const entries = body?.entry || [];
     for (const entry of entries) {
       const changes = entry?.changes || [];
@@ -40,11 +38,13 @@ Deno.serve(async (req) => {
         const value = change?.value;
         if (!value) continue;
 
+        const phoneNumberId = value?.metadata?.phone_number_id;
+
         // Process message status updates (sent, delivered, read, failed)
         const statuses = value?.statuses || [];
         for (const status of statuses) {
           const metaMessageId = status?.id;
-          const statusValue = status?.status; // sent, delivered, read, failed
+          const statusValue = status?.status;
           const errorInfo = status?.errors?.[0];
 
           if (metaMessageId && statusValue) {
@@ -63,33 +63,51 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Process incoming messages - check for STOP/opt-out
+        // Process incoming messages
         const messages = value?.messages || [];
-        const phoneNumberId = value?.metadata?.phone_number_id;
-
         for (const msg of messages) {
-          const from = msg?.from; // customer phone
-          const msgBody = (msg?.text?.body || "").trim().toLowerCase();
+          const from = msg?.from; // customer phone number
+          const msgBody = (msg?.text?.body || "").trim();
+          const msgType = msg?.type || "text";
+          const timestamp = msg?.timestamp;
 
           // Check for opt-out keywords
           const optOutKeywords = ["stop", "unsubscribe", "opt out", "optout", "cancel"];
-          const isOptOut = optOutKeywords.some((kw) => msgBody === kw);
+          const isOptOut = optOutKeywords.some((kw) => msgBody.toLowerCase() === kw);
 
-          if (isOptOut && from && phoneNumberId) {
-            // Find the store by phone_number_id
+          // Find the store by phone_number_id
+          let storeId: string | null = null;
+          if (phoneNumberId) {
             const { data: config } = await adminClient
               .from("whatsapp_config")
               .select("store_id")
               .eq("phone_number_id", phoneNumberId)
               .maybeSingle();
+            storeId = config?.store_id || null;
+          }
 
-            if (config?.store_id) {
-              // Insert opt-out record
+          if (storeId && from) {
+            // Save incoming message to DB
+            if (msgBody && msgType === "text") {
+              await adminClient.from("whatsapp_messages").insert({
+                store_id: storeId,
+                message_type: "incoming",
+                recipient_phone: from,
+                sender_phone: from,
+                message_body: msgBody,
+                status: "received",
+                direction: "incoming",
+                meta_message_id: msg?.id || null,
+              });
+            }
+
+            // Handle opt-out
+            if (isOptOut) {
               await adminClient
                 .from("whatsapp_optouts")
                 .upsert(
                   {
-                    store_id: config.store_id,
+                    store_id: storeId,
                     phone: from,
                     reason: "customer_reply_stop",
                   },
