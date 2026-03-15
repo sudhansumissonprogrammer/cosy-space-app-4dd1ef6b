@@ -34,7 +34,7 @@ export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOn
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: storeName, url: storeUrl });
+        await navigator.share({ title: storeName, url: shareUrl });
       } catch { /* cancelled */ }
     }
   };
