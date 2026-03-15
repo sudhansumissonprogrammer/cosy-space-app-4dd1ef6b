@@ -301,6 +301,38 @@ Deno.serve(async (req) => {
         }
       }
 
+      if (!payload.to || !payload.subject || !payload.html) {
+        const payloadError = 'Invalid email payload: missing to, subject, or html'
+        console.error(payloadError, {
+          queue,
+          msg_id: msg.msg_id,
+          message_id: payload.message_id,
+        })
+
+        await supabase.from('email_send_log').insert({
+          message_id: payload.message_id,
+          template_name: payload.label || queue,
+          recipient_email: payload.to || 'unknown@example.invalid',
+          status: 'dlq',
+          error_message: payloadError,
+        })
+
+        const { error: invalidDlqError } = await supabase.rpc('move_to_dlq', {
+          source_queue: queue,
+          dlq_name: dlq,
+          message_id: msg.msg_id,
+          payload,
+        })
+        if (invalidDlqError) {
+          console.error('Failed to move invalid payload message to DLQ', {
+            queue,
+            msg_id: msg.msg_id,
+            error: invalidDlqError,
+          })
+        }
+        continue
+      }
+
       try {
         await sendLovableEmail(
           {
