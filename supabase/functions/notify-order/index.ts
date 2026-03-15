@@ -6,6 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const EMAIL_SENDER_DOMAIN = "notify.storivo.in";
+const EMAIL_FROM = "Storivo Orders <noreply@storivo.in>";
+
 function formatCurrency(amount: number, currency: string) {
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency + " ";
   return `${sym}${Number(amount).toFixed(2)}`;
@@ -193,11 +196,16 @@ function buildInvoiceHtml(order: any, items: any[], store: any, isOwner: boolean
 
 async function enqueueEmail(supabase: any, queueName: string, messageId: string, templateName: string, recipientEmail: string, subject: string, htmlBody: string, ttlMinutes: number) {
   const payload = {
+    run_id: crypto.randomUUID(),
     message_id: messageId,
+    idempotency_key: messageId,
     label: templateName,
     to: recipientEmail,
-    subject: subject,
+    from: EMAIL_FROM,
+    sender_domain: EMAIL_SENDER_DOMAIN,
+    subject,
     html: htmlBody,
+    text: subject,
     purpose: "transactional",
     queued_at: new Date().toISOString(),
   };
