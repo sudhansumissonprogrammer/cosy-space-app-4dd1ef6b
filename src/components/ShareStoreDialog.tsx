@@ -22,7 +22,7 @@ export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOn
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(storeUrl);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success("Link copied!");
       setTimeout(() => setCopied(false), 2000);
