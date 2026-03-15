@@ -33,8 +33,9 @@ export default function DynamicPwaManifest({ storeName, logoUrl, themeColor = "#
       description: `Shop at ${storeName}`,
       theme_color: themeColor,
       background_color: "#ffffff",
-      display: "standalone",
-      start_url: window.location.origin + "/",
+      display: "standalone" as const,
+      start_url: startUrl || (window.location.origin + "/"),
+      scope: startUrl ? window.location.origin + startUrl : window.location.origin + "/",
       icons,
     };
 
