@@ -223,7 +223,7 @@ export default function DashboardLayout() {
           <AppSidebar />
           <div className="flex-1 flex flex-col min-w-0">
             <DynamicPwaManifest storeName={store?.name ? `${store.name} Admin` : "Dashboard"} logoUrl={store?.logo_url} themeColor="#1a1a1a" />
-            <SmartInstallPrompt appName={store?.name ? `${store.name} Admin` : "Dashboard"} primaryColor="#1a1a1a" textColor="#ffffff" />
+            {/* Install prompt intentionally excluded from admin panel */}
             <OrderNotificationListener />
             <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
               <div className="flex items-center gap-2">
