@@ -150,7 +150,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     </div>
     <div>
       <div class="inv-tag">Invoice</div>
-      <div class="inv-id">#${order.id.slice(0, 8).toUpperCase()}</div>
+      <div class="inv-id">${order.order_number ? '#' + (1000 + order.order_number) : '#' + order.id.slice(0, 8).toUpperCase()}</div>
     </div>
   </div>
 
