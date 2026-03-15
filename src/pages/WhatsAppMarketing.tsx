@@ -19,8 +19,9 @@ import {
   MessageSquare, Settings, BarChart3, Send, Phone, CheckCircle2,
   XCircle, Clock, AlertCircle, Zap, ShoppingCart, Package, Users,
   TrendingUp, Eye, EyeOff, Upload, Megaphone, Trash2, FileText, Plus,
-  Ban, CalendarIcon, Target, UserX, Timer,
+  Ban, CalendarIcon, Target, UserX, Timer, FileCheck, RefreshCw, Loader2,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -1368,6 +1369,295 @@ function ScheduleTab({ storeId }: { storeId: string }) {
   );
 }
 
+// ─── Meta Templates Tab ─────────────────────────────────────────────
+function MetaTemplatesTab({ storeId }: { storeId: string }) {
+  const queryClient = useQueryClient();
+  const [syncing, setSyncing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({
+    name: "",
+    category: "MARKETING",
+    language: "en",
+    body: "",
+  });
+
+  const { data: templates, isLoading } = useQuery({
+    queryKey: ["meta-templates", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_templates")
+        .select("*")
+        .eq("store_id", storeId)
+        .neq("meta_status", "draft")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const syncFromMeta = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-templates", {
+        body: { action: "sync", store_id: storeId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({ title: "Templates synced!", description: `${(data as any)?.count || 0} templates found from Meta` });
+      queryClient.invalidateQueries({ queryKey: ["meta-templates", storeId] });
+    } catch (e: any) {
+      toast({ title: "Sync failed", description: e.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const submitTemplate = async () => {
+    if (!newTemplate.name || !newTemplate.body) {
+      toast({ title: "Fill all fields", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-templates", {
+        body: {
+          action: "submit",
+          store_id: storeId,
+          template_name: newTemplate.name,
+          template_category: newTemplate.category,
+          template_body: newTemplate.body,
+          template_language: newTemplate.language,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error + (((data as any)?.details?.error?.message) ? `: ${(data as any).details.error.message}` : ""));
+      toast({ title: "Template submitted!", description: `Status: ${(data as any)?.status || "PENDING"}. Meta will review it.` });
+      setShowCreate(false);
+      setNewTemplate({ name: "", category: "MARKETING", language: "en", body: "" });
+      queryClient.invalidateQueries({ queryKey: ["meta-templates", storeId] });
+    } catch (e: any) {
+      toast({ title: "Submit failed", description: e.message, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deleteTemplate = async (templateName: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-templates", {
+        body: { action: "delete", store_id: storeId, template_name: templateName },
+      });
+      if (error) throw error;
+      toast({ title: "Template deleted" });
+      queryClient.invalidateQueries({ queryKey: ["meta-templates", storeId] });
+    } catch (e: any) {
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case "APPROVED":
+        return <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px]"><CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />Approved</Badge>;
+      case "PENDING":
+        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-[10px]"><Clock className="h-2.5 w-2.5 mr-0.5" />Pending</Badge>;
+      case "REJECTED":
+        return <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]"><XCircle className="h-2.5 w-2.5 mr-0.5" />Rejected</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
+    }
+  };
+
+  const categoryBadge = (cat: string) => {
+    const colors: Record<string, string> = {
+      MARKETING: "bg-purple-100 text-purple-700 border-purple-200",
+      UTILITY: "bg-blue-100 text-blue-700 border-blue-200",
+      AUTHENTICATION: "bg-orange-100 text-orange-700 border-orange-200",
+    };
+    return <Badge variant="outline" className={`text-[10px] ${colors[cat] || ""}`}>{cat}</Badge>;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Meta Message Templates</h3>
+          <p className="text-sm text-muted-foreground">
+            Required for sending business-initiated messages (bulk, abandoned cart, etc.)
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={syncFromMeta} disabled={syncing}>
+            {syncing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+            Sync
+          </Button>
+          <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Create
+          </Button>
+        </div>
+      </div>
+
+      {/* Info Card */}
+      <Card className="border-blue-200 bg-blue-50/50">
+        <CardContent className="p-4">
+          <div className="flex gap-2">
+            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+            <div className="text-sm text-blue-800 space-y-1">
+              <p className="font-medium">Why do I need Meta-approved templates?</p>
+              <ul className="text-xs space-y-0.5 list-disc pl-4">
+                <li><strong>Bulk messages</strong> & <strong>marketing campaigns</strong> require approved templates</li>
+                <li><strong>Order notifications</strong> (confirmation, shipping) use UTILITY templates</li>
+                <li><strong>Abandoned cart recovery</strong> uses MARKETING templates</li>
+                <li>Templates are reviewed by Meta in <strong>~24-48 hours</strong></li>
+                <li>Use <strong>{'{{1}}'}, {'{{2}}'}</strong> etc. for dynamic variables in the body text</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Create Template Form */}
+      {showCreate && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Submit New Template to Meta</CardTitle>
+            <CardDescription>Templates must follow Meta's guidelines to get approved</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Template Name</Label>
+                <Input
+                  value={newTemplate.name}
+                  onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                  placeholder="e.g. order_confirmation_v1"
+                  className="text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">Lowercase, letters, numbers, underscores only</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select
+                  value={newTemplate.category}
+                  onValueChange={(v) => setNewTemplate({ ...newTemplate, category: v })}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MARKETING">Marketing (promotions, offers)</SelectItem>
+                    <SelectItem value="UTILITY">Utility (order updates, alerts)</SelectItem>
+                    <SelectItem value="AUTHENTICATION">Authentication (OTPs)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Language</Label>
+              <Select
+                value={newTemplate.language}
+                onValueChange={(v) => setNewTemplate({ ...newTemplate, language: v })}
+              >
+                <SelectTrigger className="text-sm w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="en_US">English (US)</SelectItem>
+                  <SelectItem value="hi">Hindi</SelectItem>
+                  <SelectItem value="ta">Tamil</SelectItem>
+                  <SelectItem value="te">Telugu</SelectItem>
+                  <SelectItem value="mr">Marathi</SelectItem>
+                  <SelectItem value="bn">Bengali</SelectItem>
+                  <SelectItem value="gu">Gujarati</SelectItem>
+                  <SelectItem value="kn">Kannada</SelectItem>
+                  <SelectItem value="ml">Malayalam</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Body Text</Label>
+              <Textarea
+                value={newTemplate.body}
+                onChange={(e) => setNewTemplate({ ...newTemplate, body: e.target.value })}
+                placeholder={"Hi {{1}}, your order #{{2}} has been confirmed! 🛍️\n\nTotal: {{3}}\nWe'll update you when it ships.\n\nThank you for shopping with us!"}
+                rows={5}
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Use {'{{1}}'}, {'{{2}}'}, {'{{3}}'} etc. for dynamic variables. Meta requires numbered placeholders.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={submitTemplate} disabled={submitting}>
+                {submitting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Send className="h-3.5 w-3.5 mr-1" />}
+                Submit to Meta
+              </Button>
+              <Button variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Templates List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Your Templates</CardTitle>
+          <CardDescription>Click "Sync" to fetch latest statuses from Meta</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">Loading templates...</p>
+          ) : !templates?.length ? (
+            <div className="text-center py-8 space-y-2">
+              <FileCheck className="h-10 w-10 mx-auto text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">No Meta templates found</p>
+              <p className="text-xs text-muted-foreground">Click "Sync" to fetch existing templates or "Create" to submit a new one</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {templates.map((t: any) => (
+                <div key={t.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium font-mono">{t.template_name}</span>
+                        {statusBadge(t.meta_status)}
+                        {categoryBadge(t.meta_category || "MARKETING")}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t.language_code}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => deleteTemplate(t.template_name)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <p className="text-sm bg-muted/50 rounded p-2 whitespace-pre-wrap">{t.body_text}</p>
+                  {t.meta_rejected_reason && (
+                    <p className="text-xs text-red-600 flex items-center gap-1">
+                      <XCircle className="h-3 w-3" /> Rejection reason: {t.meta_rejected_reason}
+                    </p>
+                  )}
+                  {t.meta_template_id && (
+                    <p className="text-[10px] text-muted-foreground">Template ID: {t.meta_template_id}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function WhatsAppMarketing() {
   const { storeId } = useParams();
@@ -1415,7 +1705,7 @@ export default function WhatsAppMarketing() {
 
       <Tabs value={defaultTab} onValueChange={setActiveTab}>
         {/* Row 1: Core tabs */}
-        <TabsList className="w-full grid grid-cols-4 mb-1">
+        <TabsList className="w-full grid grid-cols-5 mb-1">
           <TabsTrigger value="setup" className="text-[11px]">
             <Settings className="h-3 w-3 mr-1" /> Setup
           </TabsTrigger>
@@ -1427,6 +1717,9 @@ export default function WhatsAppMarketing() {
           </TabsTrigger>
           <TabsTrigger value="automations" disabled={!isConnected} className="text-[11px]">
             <Zap className="h-3 w-3 mr-1" /> Auto
+          </TabsTrigger>
+          <TabsTrigger value="templates" disabled={!isConnected} className="text-[11px]">
+            <FileCheck className="h-3 w-3 mr-1" /> Templates
           </TabsTrigger>
         </TabsList>
         {/* Row 2: Advanced tabs */}
@@ -1456,6 +1749,9 @@ export default function WhatsAppMarketing() {
         </TabsContent>
         <TabsContent value="automations" className="mt-4">
           <AutomationsTab storeId={storeId!} />
+        </TabsContent>
+        <TabsContent value="templates" className="mt-4">
+          <MetaTemplatesTab storeId={storeId!} />
         </TabsContent>
         <TabsContent value="segments" className="mt-4">
           <SegmentationTab storeId={storeId!} />
