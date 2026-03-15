@@ -1976,8 +1976,8 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
   const [segmentPhones, setSegmentPhones] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [productFilter, setProductFilter] = useState<string>("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [productFilter, setProductFilter] = useState<string>("__all__");
+  const [categoryFilter, setCategoryFilter] = useState<string>("__all__");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [customDateFrom, setCustomDateFrom] = useState<Date | undefined>();
   const [customDateTo, setCustomDateTo] = useState<Date | undefined>();
