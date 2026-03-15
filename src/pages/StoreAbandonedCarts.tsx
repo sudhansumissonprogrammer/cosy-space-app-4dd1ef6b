@@ -115,6 +115,13 @@ export default function StoreAbandonedCarts() {
     setSelected(next);
   };
 
+  const getCartData = (cart: any) => {
+    const items = Array.isArray(cart.cart_items) ? cart.cart_items : [];
+    const productNames = items.map((i: any) => i.name || i.product_name).filter(Boolean).join(", ");
+    const cartTotal = items.reduce((sum: number, i: any) => sum + ((i.price || i.unit_price || 0) * (i.quantity || 1)), 0);
+    return { product_names: productNames || "your items", cart_total: cartTotal, currency: "₹" };
+  };
+
   const sendBulkRecovery = async (targets: any[]) => {
     if (!storeId || targets.length === 0) return;
     setSending(true);
@@ -123,7 +130,7 @@ export default function StoreAbandonedCarts() {
     let sent = 0, failed = 0;
     for (const cart of targets) {
       try {
-        await sendAbandonedCartWhatsApp(storeId, cart.id, cart.customer_phone, cart.customer_name);
+        await sendAbandonedCartWhatsApp(storeId, cart.id, cart.customer_phone, cart.customer_name, getCartData(cart));
         sent++;
       } catch {
         failed++;
@@ -383,7 +390,7 @@ export default function StoreAbandonedCarts() {
                               className="text-xs"
                               disabled={sending}
                               onClick={() => {
-                                sendAbandonedCartWhatsApp(storeId, c.id, c.customer_phone);
+                                sendAbandonedCartWhatsApp(storeId, c.id, c.customer_phone, c.customer_name, getCartData(c));
                                 toast.success("Recovery message sent!");
                               }}
                             >

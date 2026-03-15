@@ -134,6 +134,8 @@ export default function StoreOrders() {
             : result.status === "delivered" ? "delivery_confirmation"
             : null;
           if (msgType) {
+            const orderItems = (order as any).order_items || [];
+            const productNames = orderItems.map((i: any) => i.product_name).filter(Boolean).join(", ");
             sendOrderWhatsApp(storeId, result.orderId, msgType as any, {
               customer_phone: (order as any).customer_phone,
               customer_name: (order as any).customer_name,
@@ -141,6 +143,8 @@ export default function StoreOrders() {
               currency: (order as any).currency,
               tracking_url: result.tracking_url || (order as any).tracking_url,
               tracking_number: result.tracking_number || (order as any).tracking_number,
+              product_names: productNames,
+              store_name: (store as any)?.name,
             });
           }
         }
