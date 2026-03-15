@@ -512,17 +512,15 @@ export default function CheckoutPage() {
 
         const handlePaymentSuccess = async (response: any) => {
           try {
-            const verifyRes = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-verify`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", apikey: anonKey },
-              body: JSON.stringify({ ...response, order_id: newOrderId, store_id: store.id }),
+            const { error: verifyError } = await supabase.functions.invoke("razorpay-verify", {
+              body: { ...response, order_id: newOrderId, store_id: store.id },
             });
-            if (!verifyRes.ok) throw new Error("Verification failed");
+            if (verifyError) throw new Error("Verification failed");
             setOrderId(newOrderId); setOrderPlaced(true); setPlacing(false);
             if (!isSingleMode) clearCart(); saveExpressInfo();
             fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
             if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
-            fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId, customer_email: email.trim() }) }).then(r => { if (!r.ok) r.text().then(t => console.error("notify-order error:", t)); }).catch(e => console.error("notify-order fetch error:", e));
+            notifyOrderEmail(newOrderId);
             // Auto-send WhatsApp order confirmation
             sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
               customer_phone: phone.trim(), customer_name: fullName.trim(),
