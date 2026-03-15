@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useOutletContext, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -524,6 +525,11 @@ export default function CheckoutPage() {
             fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
             if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
             fetch(`https://${projectId}.supabase.co/functions/v1/notify-order`, { method: "POST", headers: { "Content-Type": "application/json", apikey: anonKey }, body: JSON.stringify({ order_id: newOrderId, customer_email: email.trim() }) }).then(r => { if (!r.ok) r.text().then(t => console.error("notify-order error:", t)); }).catch(e => console.error("notify-order fetch error:", e));
+            // Auto-send WhatsApp order confirmation
+            sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
+              customer_phone: phone.trim(), customer_name: fullName.trim(),
+              total, currency,
+            });
           } catch { setPlacing(false); toast.error("Payment verification failed."); }
         };
 
@@ -582,6 +588,11 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json", apikey: anonKey2 },
         body: JSON.stringify({ order_id: newOrderId, customer_email: email.trim() }),
       }).then(r => { if (!r.ok) r.text().then(t => console.error("notify-order error:", t)); }).catch(e => console.error("notify-order fetch error:", e));
+      // Auto-send WhatsApp order confirmation
+      sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
+        customer_phone: phone.trim(), customer_name: fullName.trim(),
+        total, currency,
+      });
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
