@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useOutletContext, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
