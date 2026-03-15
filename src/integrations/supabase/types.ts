@@ -1786,6 +1786,7 @@ export type Database = {
         Returns: boolean
       }
       is_order_owner: { Args: { _order_id: string }; Returns: boolean }
+      is_store_active: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
       is_storefront_customer: {
         Args: { _customer_id: string }
