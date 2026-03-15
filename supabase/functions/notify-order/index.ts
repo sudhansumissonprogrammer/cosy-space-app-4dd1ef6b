@@ -7,7 +7,12 @@ const corsHeaders = {
 };
 
 const EMAIL_SENDER_DOMAIN = "notify.storivo.in";
-const EMAIL_FROM = "Storivo Orders <noreply@storivo.in>";
+
+function getEmailFrom(storeName: string) {
+  // Sanitize store name for email FROM field (remove special chars)
+  const safeName = storeName.replace(/[<>"]/g, "").trim() || "Store";
+  return `${safeName} <noreply@storivo.in>`;
+}
 
 function formatCurrency(amount: number, currency: string) {
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency + " ";
