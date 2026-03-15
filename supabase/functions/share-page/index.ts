@@ -117,13 +117,25 @@ Deno.serve(async (req) => {
 
   // ── Product share ──
   if (productSlug) {
-    const { data: product } = await supabase
+    let { data: product } = await supabase
       .from("products")
-      .select("name, description, image_url, price, sale_price, slug, currency")
+      .select("name, description, image_url, price, sale_price, slug, currency, id")
       .eq("store_id", store.id)
       .eq("slug", productSlug)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
+
+    // Fallback: allow sharing by product ID when slug is unavailable
+    if (!product) {
+      const { data: byId } = await supabase
+        .from("products")
+        .select("name, description, image_url, price, sale_price, slug, currency, id")
+        .eq("store_id", store.id)
+        .eq("id", productSlug)
+        .eq("is_active", true)
+        .maybeSingle();
+      product = byId;
+    }
 
     if (product) {
       const price = product.sale_price || product.price;
