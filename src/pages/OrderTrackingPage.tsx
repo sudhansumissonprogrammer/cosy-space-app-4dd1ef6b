@@ -88,7 +88,7 @@ export default function OrderTrackingPage() {
       // Try searching by order ID (partial match on first 8 chars)
       let { data, error: err } = await supabase
         .from("orders")
-        .select("id, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
+        .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
         .or(`id.eq.${q},customer_phone.eq.${q}`)
         .order("created_at", { ascending: false })
         .limit(1);
