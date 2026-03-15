@@ -126,6 +126,41 @@ export default function StoreOrders() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const bulkUpdateStatus = useMutation({
+    mutationFn: async ({ orderIds, status }: { orderIds: string[]; status: string }) => {
+      const promises = orderIds.map(id =>
+        (supabase as any).from("orders").update({ status }).eq("id", id)
+      );
+      const results = await Promise.all(promises);
+      const failed = results.filter((r: any) => r.error);
+      if (failed.length > 0) throw new Error(`${failed.length} orders failed to update`);
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      toast.success(`${vars.orderIds.length} orders updated to ${vars.status}`);
+      setSelectedOrders(new Set());
+      setBulkStatus("");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrders(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrders.size === paginatedOrders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(paginatedOrders.map((o: any) => o.id)));
+    }
+  };
+
   if (!store && !isLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
