@@ -14,7 +14,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -163,6 +164,21 @@ export default function StoreOrders() {
           }
         }
       }
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteOrder = useMutation({
+    mutationFn: async (orderId: string) => {
+      // Delete order items first, then the order
+      await (supabase as any).from("order_items").delete().eq("order_id", orderId);
+      const { error } = await (supabase as any).from("orders").delete().eq("id", orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      toast.success("Order deleted");
+      setMobileDetailOrder(null);
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -498,10 +514,11 @@ export default function StoreOrders() {
               store={store}
               onStatusChange={(v) => {
                 handleStatusChange(mobileDetailOrder, v);
-                // Update local state so UI reflects change immediately
                 setMobileDetailOrder((prev: any) => prev ? { ...prev, status: v } : null);
               }}
               onInvoice={() => { setInvoiceOrder(mobileDetailOrder); }}
+              onDelete={() => deleteOrder.mutate(mobileDetailOrder.id)}
+              isDeleting={deleteOrder.isPending}
               onClose={() => setMobileDetailOrder(null)}
             />
           )}
@@ -554,11 +571,13 @@ export default function StoreOrders() {
 /* ══════════════════════════════════════════════
    Mobile Order Detail — Shopify-style bottom sheet
    ══════════════════════════════════════════════ */
-function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onClose }: {
+function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onDelete, isDeleting, onClose }: {
   order: any;
   store: any;
   onStatusChange: (status: string) => void;
   onInvoice: () => void;
+  onDelete: () => void;
+  isDeleting?: boolean;
   onClose: () => void;
 }) {
   const items = order.order_items || [];
@@ -715,6 +734,31 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onClose }:
           <Button variant="outline" size="icon" className="h-11 w-11 shrink-0" onClick={onInvoice}>
             <FileText className="h-4 w-4" />
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 text-destructive hover:bg-destructive/10">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Order?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete this order and all its items. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onDelete}
+                  disabled={isDeleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </>
