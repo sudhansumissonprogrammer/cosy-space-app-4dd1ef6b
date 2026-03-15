@@ -191,6 +191,27 @@ function buildInvoiceHtml(order: any, items: any[], store: any, isOwner: boolean
 </html>`;
 }
 
+async function enqueueEmail(supabase: any, queueName: string, messageId: string, templateName: string, recipientEmail: string, subject: string, htmlBody: string, ttlMinutes: number) {
+  const payload = {
+    message_id: messageId,
+    template_name: templateName,
+    recipient_email: recipientEmail,
+    subject: subject,
+    html_body: htmlBody,
+    ttl_minutes: ttlMinutes,
+  };
+  const { data, error } = await supabase.rpc("enqueue_email", {
+    queue_name: queueName,
+    payload: payload,
+  });
+  if (error) {
+    console.error(`enqueue_email error for ${recipientEmail}:`, JSON.stringify(error));
+    throw error;
+  }
+  console.log(`Email enqueued for ${recipientEmail}, msg_id: ${data}`);
+  return data;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -205,6 +226,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Normalize email to lowercase
+    const normalizedEmail = customer_email?.trim().toLowerCase() || "";
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -217,6 +241,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (orderErr || !order) {
+      console.error("Order not found:", orderErr);
       return new Response(JSON.stringify({ error: "Order not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -232,72 +257,45 @@ Deno.serve(async (req) => {
     const items = orderItems || [];
     const storeData = (order as any).stores;
     const storeName = storeData?.name || "Store";
-    const ownerEmail = storeData?.owner_email;
+    const ownerEmail = storeData?.owner_email?.trim().toLowerCase() || "";
 
-    // Try to enqueue via pgmq (new infrastructure), fall back to direct Resend
-    let useQueue = false;
-    try {
-      // Check if enqueue_email RPC exists
-      const { error: rpcCheck } = await supabase.rpc("enqueue_email", {
-        p_queue_name: "transactional_emails",
-        p_message_id: `order-confirm-check-${order_id}`,
-        p_template_name: "order_confirmation",
-        p_recipient_email: "test@test.com",
-        p_subject: "test",
-        p_html_body: "<p>test</p>",
-        p_ttl_minutes: 60,
-      });
-      // If no error about function not existing, queue is available
-      // But we sent a test - let's not do that. Instead just check differently.
-      useQueue = true;
-    } catch {
-      useQueue = false;
-    }
+    // Try queue first, fall back to direct Resend
+    let queueWorked = false;
 
     // Send customer confirmation with invoice
-    if (customer_email) {
-      const customerHtml = buildInvoiceHtml(order, items, storeData, false, customer_email);
+    if (normalizedEmail) {
+      const customerHtml = buildInvoiceHtml(order, items, storeData, false, normalizedEmail);
       const subject = `Order Confirmed - ${storeName} #${order_id.slice(0, 8).toUpperCase()}`;
 
-      if (useQueue) {
-        await supabase.rpc("enqueue_email", {
-          p_queue_name: "transactional_emails",
-          p_message_id: `order-confirm-customer-${order_id}`,
-          p_template_name: "order_confirmation",
-          p_recipient_email: customer_email,
-          p_subject: subject,
-          p_html_body: customerHtml,
-          p_ttl_minutes: 60,
-        });
-      } else {
-        await sendEmailDirect(customer_email, subject, customerHtml);
+      try {
+        await enqueueEmail(supabase, "transactional_emails", `order-confirm-customer-${order_id}`, "order_confirmation", normalizedEmail, subject, customerHtml, 60);
+        queueWorked = true;
+      } catch {
+        console.log("Queue unavailable for customer email, falling back to direct send");
+        await sendEmailDirect(normalizedEmail, subject, customerHtml);
       }
     }
 
     // Send owner notification with invoice
     if (ownerEmail) {
-      const ownerHtml = buildInvoiceHtml(order, items, storeData, true, customer_email || "");
+      const ownerHtml = buildInvoiceHtml(order, items, storeData, true, normalizedEmail);
       const subject = `🛍️ New Order #${order_id.slice(0, 8).toUpperCase()} - ${storeName}`;
 
-      if (useQueue) {
-        await supabase.rpc("enqueue_email", {
-          p_queue_name: "transactional_emails",
-          p_message_id: `order-confirm-owner-${order_id}`,
-          p_template_name: "order_notification_owner",
-          p_recipient_email: ownerEmail,
-          p_subject: subject,
-          p_html_body: ownerHtml,
-          p_ttl_minutes: 60,
-        });
-      } else {
+      try {
+        await enqueueEmail(supabase, "transactional_emails", `order-confirm-owner-${order_id}`, "order_notification_owner", ownerEmail, subject, ownerHtml, 60);
+      } catch {
+        console.log("Queue unavailable for owner email, falling back to direct send");
         await sendEmailDirect(ownerEmail, subject, ownerHtml);
       }
     }
+
+    console.log(`notify-order completed for ${order_id}, customer: ${normalizedEmail}, owner: ${ownerEmail}, queue: ${queueWorked}`);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("notify-order error:", (err as Error).message);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -331,6 +329,6 @@ async function sendEmailDirect(to: string, subject: string, html: string) {
     const err = await res.text();
     console.error(`Resend error for ${to}:`, err);
   } else {
-    console.log(`Email sent to ${to}`);
+    console.log(`Email sent directly to ${to}`);
   }
 }
