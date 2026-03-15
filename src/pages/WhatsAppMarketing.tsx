@@ -82,12 +82,13 @@ function SetupTab({ storeId }: { storeId: string }) {
           .eq("id", (config as any).id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("whatsapp_config").insert({
+        const { error } = await (supabase as any).from("whatsapp_config").insert({
           store_id: storeId,
           access_token: form.access_token,
           phone_number_id: form.phone_number_id,
           waba_id: form.waba_id,
           business_phone: form.business_phone,
+          marketing_mode: "own",
         });
         if (error) throw error;
       }
@@ -2503,26 +2504,204 @@ function MetaTemplatesTab({ storeId }: { storeId: string }) {
   );
 }
 
-// ─── Main Page ──────────────────────────────────────────────────────
-export default function WhatsAppMarketing() {
-  const { storeId } = useParams();
+// ─── Mode Selection Screen ──────────────────────────────────────────
+function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect: (mode: "storivo" | "own") => void }) {
+  const queryClient = useQueryClient();
+  const [selecting, setSelecting] = useState<string | null>(null);
+
+  const selectMutation = useMutation({
+    mutationFn: async (mode: "storivo" | "own") => {
+      // Check if config exists
+      const { data: existing } = await supabase
+        .from("whatsapp_config")
+        .select("id")
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await (supabase as any)
+          .from("whatsapp_config")
+          .update({ marketing_mode: mode })
+          .eq("id", (existing as any).id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("whatsapp_config").insert({
+          store_id: storeId,
+          marketing_mode: mode,
+          access_token: "",
+          phone_number_id: "",
+          is_active: mode === "storivo",
+        });
+        if (error) throw error;
+      }
+      return mode;
+    },
+    onSuccess: (mode) => {
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-config", storeId] });
+      onSelect(mode);
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+      setSelecting(null);
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <h1 className="text-xl font-bold flex items-center justify-center gap-2">
+          <MessageSquare className="h-6 w-6 text-green-600" />
+          WhatsApp Marketing
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Choose how you want to send WhatsApp messages to your customers
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+        {/* Storivo Marketing Card */}
+        <Card
+          className={cn(
+            "cursor-pointer transition-all hover:shadow-md border-2",
+            selecting === "storivo" ? "border-green-500 bg-green-50/50" : "border-border hover:border-green-300"
+          )}
+          onClick={() => {
+            setSelecting("storivo");
+            selectMutation.mutate("storivo");
+          }}
+        >
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
+              <Zap className="h-6 w-6 text-green-600" />
+            </div>
+            <CardTitle className="text-base">Storivo Marketing</CardTitle>
+            <CardDescription className="text-xs">Recommended • No setup needed</CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Messages sent from Storivo's WhatsApp number. Order confirmations, shipping updates, abandoned cart recovery — all automated instantly.
+            </p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-green-500" /> Zero setup required</li>
+              <li className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-green-500" /> All automations included</li>
+              <li className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-green-500" /> Start sending immediately</li>
+            </ul>
+            <Button
+              className="w-full"
+              disabled={selectMutation.isPending}
+              variant={selecting === "storivo" ? "default" : "outline"}
+            >
+              {selecting === "storivo" && selectMutation.isPending ? "Setting up..." : "Use Storivo Marketing"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Own Business API Card */}
+        <Card
+          className={cn(
+            "cursor-pointer transition-all hover:shadow-md border-2",
+            selecting === "own" ? "border-blue-500 bg-blue-50/50" : "border-border hover:border-blue-300"
+          )}
+          onClick={() => {
+            setSelecting("own");
+            selectMutation.mutate("own");
+          }}
+        >
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+              <Settings className="h-6 w-6 text-blue-600" />
+            </div>
+            <CardTitle className="text-base">Your Own WhatsApp API</CardTitle>
+            <CardDescription className="text-xs">Full control • Requires Meta setup</CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Use your own Meta WhatsApp Business API number. Full control over messaging, branding, and conversations from your number.
+            </p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-blue-500" /> Messages from your number</li>
+              <li className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-blue-500" /> Full chat & bulk messaging</li>
+              <li className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-blue-500" /> Complete control</li>
+            </ul>
+            <Button
+              className="w-full"
+              disabled={selectMutation.isPending}
+              variant={selecting === "own" ? "default" : "outline"}
+            >
+              {selecting === "own" && selectMutation.isPending ? "Setting up..." : "Use Own Business API"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ─── Storivo Mode Dashboard ─────────────────────────────────────────
+function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitchMode: () => void }) {
+  const [activeTab, setActiveTab] = useState("automations");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <MessageSquare className="h-6 w-6 text-green-600" />
+            Storivo Marketing
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Automated WhatsApp messages via Storivo's number
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge className="bg-green-100 text-green-700 border-green-200">
+            <Zap className="h-3 w-3 mr-1" /> Storivo Mode
+          </Badge>
+          <Button variant="ghost" size="sm" onClick={onSwitchMode} className="text-xs">
+            Switch to Own API
+          </Button>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full grid grid-cols-2">
+          <TabsTrigger value="automations" className="text-[11px]">
+            <Zap className="h-3 w-3 mr-1" /> Automations
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="text-[11px]">
+            <BarChart3 className="h-3 w-3 mr-1" /> Stats
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="automations" className="mt-4">
+          <AutomationsTab storeId={storeId} />
+        </TabsContent>
+        <TabsContent value="analytics" className="mt-4">
+          <AnalyticsTab storeId={storeId} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ─── Own Mode Dashboard (Full 8-tab) ────────────────────────────────
+function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitchMode: () => void }) {
   const [activeTab, setActiveTab] = useState<string | undefined>();
 
   const { data: config } = useQuery({
-    queryKey: ["whatsapp-config", storeId],
+    queryKey: ["whatsapp-config-own", storeId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_config")
-        .select("id, is_active")
-        .eq("store_id", storeId!)
+        .select("id, is_active, access_token, phone_number_id" as any)
+        .eq("store_id", storeId)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data as any;
     },
-    enabled: !!storeId,
   });
 
-  const isConnected = !!config;
+  const isConnected = !!(config?.access_token && config?.phone_number_id && config?.is_active);
   const defaultTab = activeTab || (isConnected ? "chat" : "setup");
 
   return (
@@ -2537,19 +2716,23 @@ export default function WhatsAppMarketing() {
             Send automated messages & manage conversations
           </p>
         </div>
-        {isConnected ? (
-          <Badge className="bg-green-100 text-green-700 border-green-200">
-            <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="text-muted-foreground">
-            <AlertCircle className="h-3 w-3 mr-1" /> Not Connected
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {isConnected ? (
+            <Badge className="bg-green-100 text-green-700 border-green-200">
+              <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-muted-foreground">
+              <AlertCircle className="h-3 w-3 mr-1" /> Not Connected
+            </Badge>
+          )}
+          <Button variant="ghost" size="sm" onClick={onSwitchMode} className="text-xs">
+            Switch to Storivo
+          </Button>
+        </div>
       </div>
 
       <Tabs value={defaultTab} onValueChange={setActiveTab}>
-        {/* Row 1: Core tabs */}
         <TabsList className="w-full grid grid-cols-5 mb-1">
           <TabsTrigger value="setup" className="text-[11px]">
             <Settings className="h-3 w-3 mr-1" /> Setup
@@ -2567,7 +2750,6 @@ export default function WhatsAppMarketing() {
             <FileCheck className="h-3 w-3 mr-1" /> Templates
           </TabsTrigger>
         </TabsList>
-        {/* Row 2: Advanced tabs */}
         <TabsList className="w-full grid grid-cols-4">
           <TabsTrigger value="segments" disabled={!isConnected} className="text-[11px]">
             <Target className="h-3 w-3 mr-1" /> Segments
@@ -2584,33 +2766,106 @@ export default function WhatsAppMarketing() {
         </TabsList>
 
         <TabsContent value="setup" className="mt-4">
-          <SetupTab storeId={storeId!} />
+          <SetupTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="chat" className="mt-4">
-          <ChatTab storeId={storeId!} />
+          <ChatTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="bulk" className="mt-4">
-          <BulkMessagingTab storeId={storeId!} />
+          <BulkMessagingTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="automations" className="mt-4">
-          <AutomationsTab storeId={storeId!} />
+          <AutomationsTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="templates" className="mt-4">
-          <MetaTemplatesTab storeId={storeId!} />
+          <MetaTemplatesTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="segments" className="mt-4">
-          <SegmentationTab storeId={storeId!} />
+          <SegmentationTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="schedule" className="mt-4">
-          <ScheduleTab storeId={storeId!} />
+          <ScheduleTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="optout" className="mt-4">
-          <OptOutTab storeId={storeId!} />
+          <OptOutTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="analytics" className="mt-4">
-          <AnalyticsTab storeId={storeId!} />
+          <AnalyticsTab storeId={storeId} />
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// ─── Main Page ──────────────────────────────────────────────────────
+export default function WhatsAppMarketing() {
+  const { storeId } = useParams();
+  const queryClient = useQueryClient();
+  const [mode, setMode] = useState<"loading" | "select" | "storivo" | "own">("loading");
+
+  const { data: config } = useQuery({
+    queryKey: ["whatsapp-config", storeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("whatsapp_config")
+        .select("id, is_active, marketing_mode")
+        .eq("store_id", storeId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; is_active: boolean; marketing_mode: string } | null;
+    },
+    enabled: !!storeId,
+  });
+
+  React.useEffect(() => {
+    if (config === undefined) return; // still loading
+    if (config === null) {
+      setMode("select");
+    } else {
+      setMode((config.marketing_mode || "storivo") as "storivo" | "own");
+    }
+  }, [config]);
+
+  const switchMode = async (newMode: "storivo" | "own") => {
+    if (!config?.id) return;
+    await (supabase as any)
+      .from("whatsapp_config")
+      .update({ marketing_mode: newMode, is_active: newMode === "storivo" ? true : config.is_active })
+      .eq("id", config.id);
+    queryClient.invalidateQueries({ queryKey: ["whatsapp-config", storeId] });
+    setMode(newMode);
+  };
+
+  if (mode === "loading") {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (mode === "select") {
+    return (
+      <ModeSelectionScreen
+        storeId={storeId!}
+        onSelect={(m) => setMode(m)}
+      />
+    );
+  }
+
+  if (mode === "storivo") {
+    return (
+      <StorivoModeDashboard
+        storeId={storeId!}
+        onSwitchMode={() => switchMode("own")}
+      />
+    );
+  }
+
+  return (
+    <OwnModeDashboard
+      storeId={storeId!}
+      onSwitchMode={() => switchMode("storivo")}
+    />
   );
 }

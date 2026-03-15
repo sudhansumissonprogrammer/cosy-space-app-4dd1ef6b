@@ -665,6 +665,9 @@ export type Database = {
           id: string
           platform_name: string
           updated_at: string
+          wa_access_token: string | null
+          wa_business_phone: string | null
+          wa_phone_number_id: string | null
         }
         Insert: {
           created_at?: string
@@ -672,6 +675,9 @@ export type Database = {
           id?: string
           platform_name?: string
           updated_at?: string
+          wa_access_token?: string | null
+          wa_business_phone?: string | null
+          wa_phone_number_id?: string | null
         }
         Update: {
           created_at?: string
@@ -679,6 +685,9 @@ export type Database = {
           id?: string
           platform_name?: string
           updated_at?: string
+          wa_access_token?: string | null
+          wa_business_phone?: string | null
+          wa_phone_number_id?: string | null
         }
         Relationships: []
       }
@@ -1278,34 +1287,37 @@ export type Database = {
       }
       whatsapp_config: {
         Row: {
-          access_token: string
+          access_token: string | null
           business_phone: string | null
           created_at: string
           id: string
           is_active: boolean
-          phone_number_id: string
+          marketing_mode: string
+          phone_number_id: string | null
           store_id: string
           updated_at: string
           waba_id: string | null
         }
         Insert: {
-          access_token: string
+          access_token?: string | null
           business_phone?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
-          phone_number_id: string
+          marketing_mode?: string
+          phone_number_id?: string | null
           store_id: string
           updated_at?: string
           waba_id?: string | null
         }
         Update: {
-          access_token?: string
+          access_token?: string | null
           business_phone?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
-          phone_number_id?: string
+          marketing_mode?: string
+          phone_number_id?: string | null
           store_id?: string
           updated_at?: string
           waba_id?: string | null

@@ -58,19 +58,50 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Admin client for reading platform config and logging
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     // Get store's WhatsApp config
-    const { data: config, error: configErr } = await supabase
+    const { data: config, error: configErr } = await adminClient
       .from("whatsapp_config")
       .select("*")
       .eq("store_id", store_id)
-      .eq("is_active", true)
       .maybeSingle();
 
-    if (configErr || !config) {
-      return new Response(
-        JSON.stringify({ error: "WhatsApp not configured for this store" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Determine marketing mode and credentials
+    const marketingMode = config?.marketing_mode || "storivo";
+    let phoneNumberId: string;
+    let accessToken: string;
+
+    if (marketingMode === "own") {
+      // Use store's own credentials
+      if (!config?.is_active || !config?.access_token || !config?.phone_number_id) {
+        return new Response(
+          JSON.stringify({ error: "WhatsApp not configured for this store" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      phoneNumberId = config.phone_number_id;
+      accessToken = config.access_token;
+    } else {
+      // Storivo mode: use platform credentials
+      const { data: platformConfig } = await adminClient
+        .from("platform_config")
+        .select("wa_phone_number_id, wa_access_token")
+        .limit(1)
+        .single();
+
+      if (!platformConfig?.wa_phone_number_id || !platformConfig?.wa_access_token) {
+        return new Response(
+          JSON.stringify({ error: "Platform WhatsApp not configured" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      phoneNumberId = platformConfig.wa_phone_number_id;
+      accessToken = platformConfig.wa_access_token;
     }
 
     // Format phone number (remove + and spaces)
@@ -79,7 +110,6 @@ Deno.serve(async (req) => {
     let metaPayload: any;
 
     if (template_name) {
-      // Send template message
       metaPayload = {
         messaging_product: "whatsapp",
         to: phone,
@@ -101,7 +131,6 @@ Deno.serve(async (req) => {
         },
       };
     } else if (media_url && media_type) {
-      // Send media message (image, video, document)
       const metaMediaType = media_type === "image" ? "image" :
                             media_type === "video" ? "video" : "document";
 
@@ -116,7 +145,6 @@ Deno.serve(async (req) => {
         },
       };
     } else {
-      // Send plain text message
       metaPayload = {
         messaging_product: "whatsapp",
         to: phone,
@@ -127,11 +155,11 @@ Deno.serve(async (req) => {
 
     // Call Meta WhatsApp Cloud API
     const metaResponse = await fetch(
-      `https://graph.facebook.com/v21.0/${(config as any).phone_number_id}/messages`,
+      `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${(config as any).access_token}`,
+          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(metaPayload),
@@ -147,11 +175,6 @@ Deno.serve(async (req) => {
       : null;
 
     // Log message
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     await adminClient.from("whatsapp_messages").insert({
       store_id,
       message_type: message_type || "manual",

@@ -2,7 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Attempts to send an automated WhatsApp message for an order event.
- * Silently fails if WhatsApp is not configured for the store.
+ * Works with both Storivo mode (platform credentials) and Own mode (store credentials).
+ * Silently fails if WhatsApp is not configured at all.
  */
 export async function sendOrderWhatsApp(
   storeId: string,
@@ -22,15 +23,17 @@ export async function sendOrderWhatsApp(
   try {
     if (!orderData.customer_phone) return;
 
-    // Check if WhatsApp is configured
+    // Check if store has any whatsapp config (storivo or own)
     const { data: config } = await supabase
       .from("whatsapp_config")
-      .select("id, is_active")
+      .select("id, is_active, marketing_mode" as any)
       .eq("store_id", storeId)
-      .eq("is_active", true)
       .maybeSingle();
 
-    if (!config) return;
+    const marketingMode = (config as any)?.marketing_mode || "storivo";
+
+    // For 'own' mode, require active config
+    if (marketingMode === "own" && (!config || !(config as any).is_active)) return;
 
     // Get the template for this message type
     const { data: template } = await supabase
@@ -41,10 +44,23 @@ export async function sendOrderWhatsApp(
       .eq("is_active", true)
       .maybeSingle();
 
-    if (!template) return;
+    // For storivo mode without a template, use a default message
+    let body = "";
+    if (template) {
+      body = (template as any).body_text || "";
+    } else if (marketingMode === "storivo") {
+      // Default templates for storivo mode
+      const defaults: Record<string, string> = {
+        order_confirmation: "Hi {{name}}! 🎉 Your order #{{order_id}} for {{product_names}} has been confirmed. Total: {{total}}. Thank you for shopping with {{store_name}}!",
+        shipping_update: "Hi {{name}}! 📦 Your order #{{order_id}} has been shipped. Track here: {{tracking_url}}",
+        delivery_confirmation: "Hi {{name}}! ✅ Your order #{{order_id}} has been delivered. Thank you for shopping with {{store_name}}!",
+      };
+      body = defaults[messageType] || "";
+    } else {
+      return; // No template and not storivo mode
+    }
 
     // Replace template variables
-    let body = (template as any).body_text || "";
     body = body.replace(/\{\{name\}\}/g, orderData.customer_name || "Customer");
     body = body.replace(/\{\{order_id\}\}/g, orderId.slice(0, 8).toUpperCase());
     body = body.replace(/\{\{total\}\}/g, `${orderData.currency || "₹"}${orderData.total || 0}`);
@@ -54,7 +70,7 @@ export async function sendOrderWhatsApp(
     body = body.replace(/\{\{store_name\}\}/g, orderData.store_name || "our store");
     body = body.replace(/\{\{currency\}\}/g, orderData.currency || "₹");
 
-    // Send via edge function (fire and forget)
+    // Send via edge function (fire and forget) - edge function handles credential resolution
     supabase.functions.invoke("whatsapp-send", {
       body: {
         store_id: storeId,
@@ -89,12 +105,13 @@ export async function sendAbandonedCartWhatsApp(
   try {
     const { data: config } = await supabase
       .from("whatsapp_config")
-      .select("id, is_active")
+      .select("id, is_active, marketing_mode" as any)
       .eq("store_id", storeId)
-      .eq("is_active", true)
       .maybeSingle();
 
-    if (!config) return;
+    const marketingMode = (config as any)?.marketing_mode || "storivo";
+
+    if (marketingMode === "own" && (!config || !(config as any).is_active)) return;
 
     const { data: template } = await supabase
       .from("whatsapp_templates")
@@ -104,9 +121,15 @@ export async function sendAbandonedCartWhatsApp(
       .eq("is_active", true)
       .maybeSingle();
 
-    if (!template) return;
+    let body = "";
+    if (template) {
+      body = (template as any).body_text || "";
+    } else if (marketingMode === "storivo") {
+      body = "Hi {{name}}! 👋 You left {{product_names}} in your cart. Complete your purchase now! Total: {{cart_total}}. Shop at {{store_name}}";
+    } else {
+      return;
+    }
 
-    let body = (template as any).body_text || "";
     body = body.replace(/\{\{name\}\}/g, customerName || "Customer");
     body = body.replace(/\{\{product_names\}\}/g, cartData?.product_names || "your items");
     body = body.replace(/\{\{cart_total\}\}/g, cartData?.cart_total ? `${cartData.currency || "₹"}${cartData.cart_total}` : "");
