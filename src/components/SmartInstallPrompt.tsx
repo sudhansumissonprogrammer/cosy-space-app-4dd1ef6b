@@ -71,7 +71,10 @@ export default function SmartInstallPrompt({
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
   }, [delay]);
 
   const handleInstall = useCallback(async () => {
