@@ -16,6 +16,8 @@ interface ShareStoreDialogProps {
 export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOnly }: ShareStoreDialogProps) {
   const [copied, setCopied] = useState(false);
   const storeUrl = `https://${storeSlug}.${ROOT_DOMAIN}`;
+  // Share URL goes through edge function so social crawlers can read OG tags without Cloudflare blocking
+  const shareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(storeSlug)}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(storeUrl)}`;
 
   const handleCopy = async () => {
