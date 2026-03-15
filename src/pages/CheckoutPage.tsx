@@ -545,12 +545,12 @@ export default function CheckoutPage() {
 
         const handlePaymentSuccess = async (response: any) => {
           try {
-            const { error: verifyError } = await supabase.functions.invoke("razorpay-verify", {
-              body: { ...response, order_id: newOrderId, store_id: store.id },
-            });
-            if (verifyError) throw new Error("Verification failed");
-            setPlacing(false);
-            finalizeOrder(newOrderId);
+              const { error: verifyError } = await supabase.functions.invoke("razorpay-verify", {
+                body: { ...response, order_id: newOrder.id, store_id: store.id },
+              });
+              if (verifyError) throw new Error("Verification failed");
+              setPlacing(false);
+              finalizeOrder(newOrder.id, newOrder.number);
           } catch { setPlacing(false); toast.error("Payment verification failed."); }
         };
 
