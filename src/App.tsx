@@ -80,6 +80,7 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="login" element={<StorefrontLogin />} />
       <Route path="signup" element={<StorefrontSignup />} />
       <Route path="account" element={<StorefrontAccount />} />
+      <Route path="install" element={<InstallApp />} />
     </>
   );
 };
