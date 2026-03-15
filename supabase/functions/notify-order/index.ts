@@ -7,7 +7,12 @@ const corsHeaders = {
 };
 
 const EMAIL_SENDER_DOMAIN = "notify.storivo.in";
-const EMAIL_FROM = "Storivo Orders <noreply@storivo.in>";
+
+function getEmailFrom(storeName: string) {
+  // Sanitize store name for email FROM field (remove special chars)
+  const safeName = storeName.replace(/[<>"]/g, "").trim() || "Store";
+  return `${safeName} <noreply@storivo.in>`;
+}
 
 function formatCurrency(amount: number, currency: string) {
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency + " ";
@@ -194,13 +199,13 @@ function buildInvoiceHtml(order: any, items: any[], store: any, isOwner: boolean
 </html>`;
 }
 
-async function enqueueEmail(supabase: any, queueName: string, messageId: string, templateName: string, recipientEmail: string, subject: string, htmlBody: string, ttlMinutes: number) {
+async function enqueueEmail(supabase: any, queueName: string, messageId: string, templateName: string, recipientEmail: string, subject: string, htmlBody: string, ttlMinutes: number, storeName: string) {
   const payload = {
     message_id: messageId,
     idempotency_key: messageId,
     label: templateName,
     to: recipientEmail,
-    from: EMAIL_FROM,
+    from: getEmailFrom(storeName),
     sender_domain: EMAIL_SENDER_DOMAIN,
     subject,
     html: htmlBody,
@@ -276,7 +281,7 @@ Deno.serve(async (req) => {
       const subject = `Order Confirmed - ${storeName} #${order_id.slice(0, 8).toUpperCase()}`;
 
       try {
-        await enqueueEmail(supabase, "transactional_emails", `order-confirm-customer-${order_id}`, "order_confirmation", normalizedEmail, subject, customerHtml, 60);
+        await enqueueEmail(supabase, "transactional_emails", `order-confirm-customer-${order_id}`, "order_confirmation", normalizedEmail, subject, customerHtml, 60, storeName);
         queueWorked = true;
       } catch {
         console.log("Queue unavailable for customer email, falling back to direct send");
@@ -290,7 +295,7 @@ Deno.serve(async (req) => {
       const subject = `🛍️ New Order #${order_id.slice(0, 8).toUpperCase()} - ${storeName}`;
 
       try {
-        await enqueueEmail(supabase, "transactional_emails", `order-confirm-owner-${order_id}`, "order_notification_owner", ownerEmail, subject, ownerHtml, 60);
+        await enqueueEmail(supabase, "transactional_emails", `order-confirm-owner-${order_id}`, "order_notification_owner", ownerEmail, subject, ownerHtml, 60, storeName);
       } catch {
         console.log("Queue unavailable for owner email, falling back to direct send");
         await sendEmailDirect(ownerEmail, subject, ownerHtml);
@@ -326,7 +331,7 @@ async function sendEmailDirect(to: string, subject: string, html: string) {
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "Orders <onboarding@resend.dev>",
+      from: getEmailFrom("Store"),
       to: [to],
       subject,
       html,
