@@ -2108,7 +2108,7 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
                   <SelectValue placeholder="Any product" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any product</SelectItem>
+                  <SelectItem value="__all__">Any product</SelectItem>
                   {products?.map((p: any) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
