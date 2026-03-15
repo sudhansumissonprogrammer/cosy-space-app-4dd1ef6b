@@ -834,19 +834,50 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
             <Megaphone className="h-5 w-5" />
             Compose Bulk Message
           </CardTitle>
-          <CardDescription>This message will be sent to all {numbers.length} recipients</CardDescription>
+          <CardDescription>This message will be sent to all {numbers.length} recipients. Use variables to personalize.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Quick Templates */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Quick Templates</Label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "🎉 New Arrival", body: "Hi! 🎉 Check out our latest arrivals at {{store_name}}! Shop now before they're gone." },
+                { label: "🏷️ Sale Alert", body: "Hi! 🏷️ Exciting sale at {{store_name}}! Get amazing discounts on {{product_names}}. Shop now!" },
+                { label: "📦 Restock", body: "Hi! 📦 Great news! Popular items are back in stock at {{store_name}}. Grab yours before they sell out!" },
+                { label: "💌 Thank You", body: "Hi {{name}}! 💌 Thank you for being a valued customer of {{store_name}}. Here's a special offer just for you!" },
+              ].map((t) => (
+                <Button
+                  key={t.label}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7"
+                  onClick={() => setMessage(t.body)}
+                >
+                  {t.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Message</Label>
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type your broadcast message here..."
+              placeholder="Type your broadcast message here... Use variables like {{name}} to personalize"
               rows={4}
               className="text-sm"
             />
-            <p className="text-[11px] text-muted-foreground">
+            <VariableChips
+              variables={[
+                { var: "{{name}}", label: "Customer Name" },
+                { var: "{{store_name}}", label: "Store Name" },
+                { var: "{{product_names}}", label: "Product Names" },
+              ]}
+              onInsert={(v) => setMessage((prev) => prev + v)}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
               ⚠️ Meta WhatsApp API has rate limits. Messages are sent with a 0.5s delay between each.
             </p>
           </div>
