@@ -375,7 +375,7 @@ export default function StoreOrders() {
                           onCheckedChange={() => toggleOrderSelection(order.id)}
                         />
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">{order.id.slice(0, 8)}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{order.order_number ? `#${1000 + order.order_number}` : order.id.slice(0, 8)}</TableCell>
                       <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">

@@ -52,7 +52,7 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
     cancelled: "bg-red-100 text-red-800",
   };
 
-  const STATUSES = ["pending", "confirmed", "shipped", "delivered"];
+  const STATUSES = ["confirmed", "shipped", "delivered"];
 
   return (
     <div className="space-y-4">

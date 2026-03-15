@@ -186,7 +186,7 @@ export default function OrderTrackingPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base">
-                      Order #{order.id.slice(0, 8).toUpperCase()}
+                      Order {order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`}
                     </CardTitle>
                     <CardDescription className="text-xs">
                       {format(new Date(order.created_at), "dd MMM yyyy, hh:mm a")}
