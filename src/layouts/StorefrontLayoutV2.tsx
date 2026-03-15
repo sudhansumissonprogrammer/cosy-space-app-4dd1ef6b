@@ -14,6 +14,8 @@ import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import SideCart from "@/components/storefront/SideCart";
+import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
+import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
@@ -291,6 +293,8 @@ export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: st
             }}
           >
             <TransparentNav store={store} scrolled={scrolled} />
+            <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+            <StorefrontOrderNotification storeName={store.name} />
             <Outlet context={store} />
             <StorefrontFooter store={store} />
             <SideCart store={store} />

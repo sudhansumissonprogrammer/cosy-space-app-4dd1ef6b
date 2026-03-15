@@ -12,6 +12,8 @@ import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/Storefront
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import SideCart from "@/components/storefront/SideCart";
+import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
+import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
@@ -370,6 +372,8 @@ export default function StorefrontLayoutV8({ slugOverride }: { slugOverride?: st
             } as React.CSSProperties}
           >
             <MobileAppHeader store={store} />
+            <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+            <StorefrontOrderNotification storeName={store.name} />
             <div className="pb-20 md:pb-0">
               <Outlet context={store} />
             </div>
