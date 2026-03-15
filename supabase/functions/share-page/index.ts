@@ -55,6 +55,7 @@ function buildHtml(title: string, description: string, image: string, canonicalU
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="${siteName}">
   ${image ? `<meta property="og:image" content="${escapeHtml(image)}">
+  <meta property="og:image:secure_url" content="${escapeHtml(image)}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">` : ""}
   
