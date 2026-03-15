@@ -15,6 +15,8 @@ export async function sendOrderWhatsApp(
     currency?: string;
     tracking_url?: string | null;
     tracking_number?: string | null;
+    product_names?: string;
+    store_name?: string;
   }
 ) {
   try {
@@ -48,6 +50,9 @@ export async function sendOrderWhatsApp(
     body = body.replace(/\{\{total\}\}/g, `${orderData.currency || "₹"}${orderData.total || 0}`);
     body = body.replace(/\{\{tracking_url\}\}/g, orderData.tracking_url || "");
     body = body.replace(/\{\{tracking_number\}\}/g, orderData.tracking_number || "");
+    body = body.replace(/\{\{product_names\}\}/g, orderData.product_names || "your items");
+    body = body.replace(/\{\{store_name\}\}/g, orderData.store_name || "our store");
+    body = body.replace(/\{\{currency\}\}/g, orderData.currency || "₹");
 
     // Send via edge function (fire and forget)
     supabase.functions.invoke("whatsapp-send", {
@@ -73,7 +78,13 @@ export async function sendAbandonedCartWhatsApp(
   storeId: string,
   abandonedCartId: string,
   customerPhone: string,
-  customerName?: string
+  customerName?: string,
+  cartData?: {
+    product_names?: string;
+    cart_total?: number;
+    currency?: string;
+    store_name?: string;
+  }
 ) {
   try {
     const { data: config } = await supabase
@@ -97,6 +108,10 @@ export async function sendAbandonedCartWhatsApp(
 
     let body = (template as any).body_text || "";
     body = body.replace(/\{\{name\}\}/g, customerName || "Customer");
+    body = body.replace(/\{\{product_names\}\}/g, cartData?.product_names || "your items");
+    body = body.replace(/\{\{cart_total\}\}/g, cartData?.cart_total ? `${cartData.currency || "₹"}${cartData.cart_total}` : "");
+    body = body.replace(/\{\{store_name\}\}/g, cartData?.store_name || "our store");
+    body = body.replace(/\{\{currency\}\}/g, cartData?.currency || "₹");
 
     supabase.functions.invoke("whatsapp-send", {
       body: {
