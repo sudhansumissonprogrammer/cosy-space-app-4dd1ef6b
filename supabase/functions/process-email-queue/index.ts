@@ -36,7 +36,7 @@ function normalizeQueuedPayload(rawPayload: any, queue: string, queueMessageId: 
   const run_id =
     typeof payload.run_id === 'string' && payload.run_id.trim().length > 0
       ? payload.run_id.trim()
-      : message_id
+      : null
 
   const to =
     typeof payload.to === 'string' && payload.to.trim().length > 0
