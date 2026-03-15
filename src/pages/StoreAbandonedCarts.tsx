@@ -55,6 +55,7 @@ export default function StoreAbandonedCarts() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
