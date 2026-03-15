@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,13 +12,18 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
 import {
   MessageSquare, Settings, BarChart3, Send, Phone, CheckCircle2,
   XCircle, Clock, AlertCircle, Zap, ShoppingCart, Package, Users,
   TrendingUp, Eye, EyeOff, Upload, Megaphone, Trash2, FileText, Plus,
+  Ban, CalendarIcon, Target, UserX, Timer,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // ─── Setup Tab ───────────────────────────────────────────────────────
 function SetupTab({ storeId }: { storeId: string }) {
