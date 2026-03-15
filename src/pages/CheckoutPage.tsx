@@ -570,6 +570,7 @@ export default function CheckoutPage() {
       setOrderId(newOrderId);
       setOrderPlaced(true);
       if (!isSingleMode) clearCart();
+      saveExpressInfo();
       fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
       if (!customer) createGuestAccount(newOrderId);
       else saveAddressToAccount();
