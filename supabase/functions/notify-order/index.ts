@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
       const subject = `Order Confirmed - ${storeName} #${order_id.slice(0, 8).toUpperCase()}`;
 
       try {
-        await enqueueEmail(supabase, "transactional_emails", `order-confirm-customer-${order_id}`, "order_confirmation", normalizedEmail, subject, customerHtml, 60);
+        await enqueueEmail(supabase, "transactional_emails", `order-confirm-customer-${order_id}`, "order_confirmation", normalizedEmail, subject, customerHtml, 60, storeName);
         queueWorked = true;
       } catch {
         console.log("Queue unavailable for customer email, falling back to direct send");
