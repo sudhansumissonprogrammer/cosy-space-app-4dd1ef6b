@@ -863,6 +863,31 @@ export default function ProductsList() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Product Edit/Create Sheet */}
+      <Sheet open={mobileProductId !== undefined} onOpenChange={(v) => { if (!v) setMobileProductId(undefined); }}>
+        <SheetContent side="bottom" className="h-[95vh] rounded-t-2xl px-0 overflow-hidden flex flex-col">
+          <SheetHeader className="px-4 pb-3 border-b">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-lg font-bold">
+                {mobileProductId ? "Edit Product" : "Add Product"}
+              </SheetTitle>
+            </div>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {mobileProductId !== undefined && (
+              <ProductForm
+                key={mobileProductId || "create"}
+                productId={mobileProductId || undefined}
+                onClose={() => {
+                  setMobileProductId(undefined);
+                  queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
+                }}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
