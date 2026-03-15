@@ -102,6 +102,7 @@ export default function AuthRoutes() {
           <Route path="stores/:storeId/tax" element={<StoreTaxSettings />} />
           <Route path="stores/:storeId/abandoned-carts" element={<StoreAbandonedCarts />} />
           <Route path="stores/:storeId/theme" element={<StoreThemeSettings />} />
+          <Route path="stores/:storeId/whatsapp" element={<WhatsAppMarketing />} />
           <Route path="analytics" element={<StoreAnalytics />} />
           <Route path="settings" element={<UserSettings />} />
         </Route>

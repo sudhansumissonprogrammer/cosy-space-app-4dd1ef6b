@@ -209,6 +209,7 @@ export function AppSidebar() {
             {renderGroup("Catalog", catalogItems)}
             {renderGroup("Sales & Customers", salesItems)}
             {renderGroup("Payments & Shipping", paymentItems)}
+            {renderGroup("Marketing", marketingItems)}
             {renderGroup("Appearance & Settings", settingsItems)}
           </>
         ) : (
