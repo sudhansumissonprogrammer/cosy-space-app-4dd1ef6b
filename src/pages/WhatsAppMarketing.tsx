@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -234,42 +234,138 @@ function SetupTab({ storeId }: { storeId: string }) {
   );
 }
 
-// ─── Chat Tab ───────────────────────────────────────────────────────
+// ─── Chat Tab (WhatsApp-style) ──────────────────────────────────────
 function ChatTab({ storeId }: { storeId: string }) {
-  const [phone, setPhone] = useState("");
+  const queryClient = useQueryClient();
+  const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
-  const { data: recentMessages } = useQuery({
-    queryKey: ["whatsapp-messages", storeId],
+  // Get all conversations (grouped by phone number)
+  const { data: allMessages } = useQuery({
+    queryKey: ["whatsapp-all-messages", storeId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_messages")
         .select("*")
         .eq("store_id", storeId)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(500);
       if (error) throw error;
-      return data;
+      return data || [];
     },
+    refetchInterval: 5000,
   });
 
+  // Subscribe to realtime updates
+  React.useEffect(() => {
+    const channel = supabase
+      .channel(`whatsapp-chat-${storeId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "whatsapp_messages",
+          filter: `store_id=eq.${storeId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["whatsapp-all-messages", storeId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "whatsapp_messages",
+          filter: `store_id=eq.${storeId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["whatsapp-all-messages", storeId] });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [storeId, queryClient]);
+
+  // Group messages by phone number to create conversations
+  const conversations = useMemo(() => {
+    if (!allMessages) return [];
+    const map = new Map<string, { phone: string; name: string | null; messages: any[]; lastMessage: any; unread: number }>();
+
+    for (const msg of allMessages) {
+      const m = msg as any;
+      const phone = m.direction === "incoming"
+        ? (m.sender_phone || m.recipient_phone)
+        : m.recipient_phone;
+      if (!phone) continue;
+
+      if (!map.has(phone)) {
+        map.set(phone, {
+          phone,
+          name: msg.recipient_name,
+          messages: [],
+          lastMessage: msg,
+          unread: 0,
+        });
+      }
+      const conv = map.get(phone)!;
+      conv.messages.push(msg);
+      if (m.direction === "incoming" && msg.status === "received") {
+        conv.unread++;
+      }
+      if (!conv.name && msg.recipient_name) {
+        conv.name = msg.recipient_name;
+      }
+    }
+
+    // Sort by latest message
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime()
+    );
+  }, [allMessages]);
+
+  // Filter conversations
+  const filteredConversations = useMemo(() => {
+    if (!searchQuery.trim()) return conversations;
+    const q = searchQuery.toLowerCase();
+    return conversations.filter(
+      (c) => c.phone.includes(q) || (c.name && c.name.toLowerCase().includes(q))
+    );
+  }, [conversations, searchQuery]);
+
+  // Get messages for selected conversation (chronological)
+  const selectedConversation = useMemo(() => {
+    if (!selectedPhone) return [];
+    const conv = conversations.find((c) => c.phone === selectedPhone);
+    return conv ? [...conv.messages].reverse() : [];
+  }, [selectedPhone, conversations]);
+
+  // Scroll to bottom when messages change
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [selectedConversation]);
+
   const sendMessage = async () => {
-    if (!phone || !message) return;
+    if (!selectedPhone || !message.trim()) return;
     setSending(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke("whatsapp-send", {
         body: {
           store_id: storeId,
-          recipient_phone: phone,
-          message_body: message,
+          recipient_phone: selectedPhone,
+          message_body: message.trim(),
           message_type: "manual",
         },
       });
       if (res.error) throw res.error;
-      toast({ title: "Message sent!" });
+      if ((res.data as any)?.error) throw new Error((res.data as any).error);
       setMessage("");
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-all-messages", storeId] });
     } catch (e: any) {
       toast({ title: "Failed to send", description: e.message, variant: "destructive" });
     } finally {
@@ -277,78 +373,217 @@ function ChatTab({ storeId }: { storeId: string }) {
     }
   };
 
-  const statusIcon = (status: string) => {
-    switch (status) {
-      case "sent": return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
-      case "failed": return <XCircle className="h-3.5 w-3.5 text-red-500" />;
-      case "delivered": return <CheckCircle2 className="h-3.5 w-3.5 text-blue-500" />;
-      default: return <Clock className="h-3.5 w-3.5 text-muted-foreground" />;
+  const startNewChat = () => {
+    const phone = prompt("Enter customer phone number (with country code, e.g. +919876543210):");
+    if (phone && phone.trim()) {
+      const cleaned = phone.replace(/[\s\-()]/g, "").trim();
+      setSelectedPhone(cleaned);
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Send className="h-5 w-5" />
-            Send Message
-          </CardTitle>
-          <CardDescription>Send a direct WhatsApp message to any customer</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Recipient Phone Number</Label>
-            <Input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 98765 43210"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Message</Label>
-            <Textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type your message here..."
-              rows={4}
-            />
-          </div>
-          <Button onClick={sendMessage} disabled={sending || !phone || !message}>
-            <Send className="mr-2 h-4 w-4" />
-            {sending ? "Sending..." : "Send WhatsApp Message"}
-          </Button>
-        </CardContent>
-      </Card>
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Messages</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!recentMessages?.length ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No messages sent yet</p>
-          ) : (
-            <div className="space-y-3">
-              {recentMessages.map((msg: any) => (
-                <div key={msg.id} className="flex items-start gap-3 rounded-lg border p-3">
-                  <div className="mt-0.5">{statusIcon(msg.status)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium">{msg.recipient_phone}</span>
-                      <Badge variant="outline" className="text-[10px]">{msg.message_type}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate mt-0.5">{msg.message_body}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      {new Date(msg.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return "Today";
+    if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
+
+  const statusIcon = (status: string) => {
+    switch (status) {
+      case "sent": return <CheckCircle2 className="h-3 w-3 text-muted-foreground" />;
+      case "delivered": return <span className="flex"><CheckCircle2 className="h-3 w-3 text-muted-foreground" /><CheckCircle2 className="h-3 w-3 -ml-1.5 text-muted-foreground" /></span>;
+      case "read": return <span className="flex"><CheckCircle2 className="h-3 w-3 text-blue-500" /><CheckCircle2 className="h-3 w-3 -ml-1.5 text-blue-500" /></span>;
+      case "failed": return <XCircle className="h-3 w-3 text-red-500" />;
+      case "received": return null;
+      default: return <Clock className="h-3 w-3 text-muted-foreground" />;
+    }
+  };
+
+  // Mobile: show conversation list or chat, not both
+  const showConversationList = !selectedPhone;
+
+  return (
+    <div className="border rounded-lg overflow-hidden bg-background" style={{ height: "calc(100vh - 280px)", minHeight: 400 }}>
+      <div className="flex h-full">
+        {/* Conversation List (left panel) */}
+        <div className={`${selectedPhone ? "hidden sm:flex" : "flex"} flex-col w-full sm:w-80 sm:min-w-[280px] border-r`}>
+          {/* Search + New Chat */}
+          <div className="p-2 border-b space-y-2">
+            <div className="flex items-center gap-2">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search conversations..."
+                className="text-sm h-8"
+              />
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={startNewChat}>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
+          </div>
+
+          {/* Conversations */}
+          <div className="flex-1 overflow-y-auto">
+            {!filteredConversations.length ? (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4">
+                <MessageSquare className="h-10 w-10 mb-2 opacity-50" />
+                <p className="text-sm">No conversations yet</p>
+                <p className="text-xs mt-1">Start a new chat with the + button</p>
+              </div>
+            ) : (
+              filteredConversations.map((conv) => (
+                <button
+                  key={conv.phone}
+                  onClick={() => setSelectedPhone(conv.phone)}
+                  className={`w-full text-left p-3 border-b hover:bg-muted/50 transition-colors ${
+                    selectedPhone === conv.phone ? "bg-muted" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Phone className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium truncate">
+                          {conv.name || conv.phone}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {formatDate(conv.lastMessage.created_at)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <p className="text-xs text-muted-foreground truncate flex-1">
+                          {conv.lastMessage.direction === "incoming" ? "" : "You: "}
+                          {conv.lastMessage.message_body}
+                        </p>
+                        {conv.unread > 0 && (
+                          <span className="ml-2 h-5 min-w-[20px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                            {conv.unread}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Chat Area (right panel) */}
+        <div className={`${!selectedPhone ? "hidden sm:flex" : "flex"} flex-col flex-1`}>
+          {!selectedPhone ? (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <MessageSquare className="h-16 w-16 mb-4 opacity-30" />
+              <p className="text-lg font-medium">WhatsApp Business Chat</p>
+              <p className="text-sm mt-1">Select a conversation or start a new chat</p>
+            </div>
+          ) : (
+            <>
+              {/* Chat Header */}
+              <div className="flex items-center gap-3 px-3 py-2 border-b bg-muted/30">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 sm:hidden"
+                  onClick={() => setSelectedPhone(null)}
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Phone className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {conversations.find((c) => c.phone === selectedPhone)?.name || selectedPhone}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">{selectedPhone}</p>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-1" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }}>
+                {selectedConversation.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-sm text-muted-foreground">No messages yet. Send the first message!</p>
+                  </div>
+                ) : (
+                  selectedConversation.map((msg: any, idx: number) => {
+                    const isOutgoing = msg.direction !== "incoming";
+                    const showDate =
+                      idx === 0 ||
+                      new Date(msg.created_at).toDateString() !==
+                        new Date(selectedConversation[idx - 1].created_at).toDateString();
+
+                    return (
+                      <React.Fragment key={msg.id}>
+                        {showDate && (
+                          <div className="flex justify-center my-2">
+                            <span className="text-[10px] bg-muted px-3 py-1 rounded-full text-muted-foreground">
+                              {formatDate(msg.created_at)}
+                            </span>
+                          </div>
+                        )}
+                        <div className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
+                          <div
+                            className={`max-w-[80%] rounded-lg px-3 py-1.5 text-sm ${
+                              isOutgoing
+                                ? "bg-primary text-primary-foreground rounded-br-none"
+                                : "bg-muted rounded-bl-none"
+                            }`}
+                          >
+                            <p className="whitespace-pre-wrap break-words">{msg.message_body}</p>
+                            <div className={`flex items-center justify-end gap-1 mt-0.5 ${isOutgoing ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                              <span className="text-[10px]">{formatTime(msg.created_at)}</span>
+                              {isOutgoing && statusIcon(msg.status)}
+                            </div>
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message Input */}
+              <div className="border-t p-2 flex items-end gap-2">
+                <Textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  rows={1}
+                  className="text-sm resize-none min-h-[36px] max-h-[100px]"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                />
+                <Button
+                  size="icon"
+                  className="h-9 w-9 shrink-0 rounded-full"
+                  onClick={sendMessage}
+                  disabled={sending || !message.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
