@@ -536,7 +536,7 @@ export default function CheckoutPage() {
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Failed to load payment gateway");
         const { data: rzpData, error: rzpError } = await supabase.functions.invoke("razorpay-order", {
-          body: { store_id: store.id, amount: total, currency, order_id: newOrderId },
+          body: { store_id: store.id, amount: total, currency, order_id: newOrder.id },
         });
 
         if (rzpError || !rzpData) {
