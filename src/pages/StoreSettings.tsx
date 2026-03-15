@@ -186,7 +186,7 @@ export default function StoreSettings() {
           facebook_pixel_id: facebookPixelId.trim() || null,
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
-          og_image_url: ogImageUrl.trim() || null,
+          og_image_url: finalOgImageUrl.trim() || null,
           owner_email: ownerEmail.trim() || null,
         })
         .eq("id", storeId!);
