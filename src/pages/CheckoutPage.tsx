@@ -616,19 +616,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 text-[13px] [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-      {/* Header */}
-      <div className="mb-5 flex items-center gap-3">
-        <Link
-          to={isSingleMode ? storefrontPath(store.slug) : storefrontPath(store.slug, "cart")}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-border hover:bg-accent transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4 text-foreground" />
-        </Link>
-        <div className="flex items-center gap-2">
-          {store.logo_url && <img src={store.logo_url} alt={store.name} className="h-7 w-7 rounded-full object-cover" />}
-          <span className="text-base font-semibold text-foreground">{store.name}</span>
-        </div>
-      </div>
 
       {/* 1. Order Summary — Collapsible */}
       <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} className="mb-4 rounded-xl border border-border bg-card">
