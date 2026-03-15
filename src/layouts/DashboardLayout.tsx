@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
   Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
-  Search, User, Bell, X, BarChart3,
+  Search, User, Bell, X, BarChart3, MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,7 @@ function MobileMenu({
               {
                 title: "Marketing",
                 items: [
+                  { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeId}/whatsapp` },
                   { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
                   { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
                 ],

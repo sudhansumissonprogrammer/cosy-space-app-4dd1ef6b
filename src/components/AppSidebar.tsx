@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
-  ShoppingCart, Palette, BarChart3,
+  ShoppingCart, Palette, BarChart3, MessageSquare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -108,6 +108,12 @@ export function AppSidebar() {
       ]
     : [];
 
+  const marketingItems = storeId
+    ? [
+        { title: "WhatsApp Marketing", url: `/dashboard/stores/${storeId}/whatsapp`, icon: MessageSquare },
+      ]
+    : [];
+
   const settingsItems = storeId
     ? [
         { title: "Theme", url: `/dashboard/stores/${storeId}/theme`, icon: Palette },
@@ -203,6 +209,7 @@ export function AppSidebar() {
             {renderGroup("Catalog", catalogItems)}
             {renderGroup("Sales & Customers", salesItems)}
             {renderGroup("Payments & Shipping", paymentItems)}
+            {renderGroup("Marketing", marketingItems)}
             {renderGroup("Appearance & Settings", settingsItems)}
           </>
         ) : (

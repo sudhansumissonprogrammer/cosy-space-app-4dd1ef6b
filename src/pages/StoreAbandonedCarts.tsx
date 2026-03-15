@@ -2,10 +2,13 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { sendAbandonedCartWhatsApp } from "@/lib/whatsappAutomation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, ShoppingCart } from "lucide-react";
+import { Loader2, ShoppingCart, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function StoreAbandonedCarts() {
@@ -52,6 +55,7 @@ export default function StoreAbandonedCarts() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -73,6 +77,21 @@ export default function StoreAbandonedCarts() {
                         <Badge variant={c.recovered ? "default" : "secondary"}>
                           {c.recovered ? "Recovered" : "Abandoned"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {!c.recovered && c.customer_phone && storeId && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              sendAbandonedCartWhatsApp(storeId, c.id, c.customer_phone);
+                              toast.success("Recovery message sent!");
+                            }}
+                          >
+                            <MessageSquare className="mr-1 h-3.5 w-3.5" />
+                            Recover
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -118,10 +119,32 @@ export default function StoreOrders() {
       if (tracking_url !== undefined) update.tracking_url = tracking_url;
       const { error } = await (supabase as any).from("orders").update(update).eq("id", orderId);
       if (error) throw error;
+      return { orderId, status, tracking_number, tracking_url };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
       toast.success("Order updated");
+
+      // Auto-send WhatsApp based on new status
+      if (storeId && result) {
+        const order = allOrders?.find((o: any) => o.id === result.orderId);
+        if (order) {
+          const msgType = result.status === "confirmed" ? "order_confirmation"
+            : result.status === "shipped" ? "shipping_update"
+            : result.status === "delivered" ? "delivery_confirmation"
+            : null;
+          if (msgType) {
+            sendOrderWhatsApp(storeId, result.orderId, msgType as any, {
+              customer_phone: (order as any).customer_phone,
+              customer_name: (order as any).customer_name,
+              total: (order as any).total,
+              currency: (order as any).currency,
+              tracking_url: result.tracking_url || (order as any).tracking_url,
+              tracking_number: result.tracking_number || (order as any).tracking_number,
+            });
+          }
+        }
+      }
     },
     onError: (err: any) => toast.error(err.message),
   });

@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.razorpay-payment-status]
 verify_jwt = false
+
+[functions.whatsapp-send]
+verify_jwt = false
