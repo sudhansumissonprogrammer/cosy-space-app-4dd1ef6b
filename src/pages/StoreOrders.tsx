@@ -26,7 +26,7 @@ import PaginationControls from "@/components/PaginationControls";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const STATUS_OPTIONS = ["pending", "confirmed", "shipped", "delivered", "cancelled"] as const;
+const STATUS_OPTIONS = ["confirmed", "shipped", "delivered", "cancelled"] as const;
 
 export default function StoreOrders() {
   const { storeId } = useParams<{ storeId: string }>();
