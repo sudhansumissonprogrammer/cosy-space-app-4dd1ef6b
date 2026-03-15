@@ -328,9 +328,15 @@ export default function ProductsList() {
               </Button>
             </>
           )}
-          <Button size="sm" asChild disabled={limitInfo && !limitInfo.can_create}>
-            <Link to={`/dashboard/stores/${storeId}/products/create`}><Plus className="mr-1 h-4 w-4" />{isMobile ? "" : "Add Product"}</Link>
-          </Button>
+          {isMobile ? (
+            <Button size="sm" disabled={limitInfo && !limitInfo.can_create} onClick={() => setMobileProductId(null)}>
+              <Plus className="mr-1 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button size="sm" asChild disabled={limitInfo && !limitInfo.can_create}>
+              <Link to={`/dashboard/stores/${storeId}/products/create`}><Plus className="mr-1 h-4 w-4" />Add Product</Link>
+            </Button>
+          )}
         </div>
       </div>
 
