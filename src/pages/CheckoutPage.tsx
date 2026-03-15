@@ -502,15 +502,13 @@ export default function CheckoutPage() {
       if (paymentMethod === "razorpay") {
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Failed to load payment gateway");
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/razorpay-order`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: anonKey },
-          body: JSON.stringify({ store_id: store.id, amount: total, currency, order_id: newOrderId }),
+        const { data: rzpData, error: rzpError } = await supabase.functions.invoke("razorpay-order", {
+          body: { store_id: store.id, amount: total, currency, order_id: newOrderId },
         });
-        const rzpData = await res.json();
-        if (!res.ok) throw new Error(rzpData.error || "Payment initiation failed");
+
+        if (rzpError || !rzpData) {
+          throw new Error(rzpError?.message || "Payment initiation failed");
+        }
 
         const handlePaymentSuccess = async (response: any) => {
           try {
