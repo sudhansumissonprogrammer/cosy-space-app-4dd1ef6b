@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Package, ShoppingCart, Star, Zap, Heart, Check, Plus, Minus, Loader2, Flame, Sparkles } from "lucide-react";
+import { Package, ShoppingCart, Star, Zap, Heart, Check, Plus, Minus, Loader2, Flame, Sparkles, Eye } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet } from "@/lib/imageOptimize";
+import ProductQuickView from "./ProductQuickView";
 
 function getProductRating(productId: string): number {
   let hash = 0;
@@ -55,6 +56,7 @@ export default function StorefrontProductCard({ product, slug, store, priority =
   const { isWishlisted, toggleWishlist } = useWishlist();
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   const wishlisted = isWishlisted(product.id);
 
@@ -157,6 +159,15 @@ export default function StorefrontProductCard({ product, slug, store, priority =
                 wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"
               }`}
             />
+          </button>
+
+          {/* Quick View */}
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuickViewOpen(true); }}
+            className="absolute right-2.5 bottom-2.5 z-10 flex items-center gap-1 rounded-full bg-card/80 backdrop-blur-sm px-2 py-1 text-[9px] font-bold text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-card shadow-sm"
+          >
+            <Eye className="h-3 w-3" />
+            Quick View
           </button>
 
           {product.image_url ? (
@@ -270,6 +281,13 @@ export default function StorefrontProductCard({ product, slug, store, priority =
           </button>
         )}
       </div>
+
+      <ProductQuickView
+        product={product}
+        store={store}
+        open={quickViewOpen}
+        onOpenChange={setQuickViewOpen}
+      />
     </div>
   );
 }

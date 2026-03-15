@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const STATUS_OPTIONS = ["pending", "confirmed", "shipped", "delivered", "cancelled"] as const;
 
@@ -35,6 +36,8 @@ export default function StoreOrders() {
   const [trackingUrl, setTrackingUrl] = useState("");
   const [pendingStatus, setPendingStatus] = useState("");
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>("");
 
   // Search & filter state
   const [search, setSearch] = useState("");
@@ -122,6 +125,41 @@ export default function StoreOrders() {
     },
     onError: (err: any) => toast.error(err.message),
   });
+
+  const bulkUpdateStatus = useMutation({
+    mutationFn: async ({ orderIds, status }: { orderIds: string[]; status: string }) => {
+      const promises = orderIds.map(id =>
+        (supabase as any).from("orders").update({ status }).eq("id", id)
+      );
+      const results = await Promise.all(promises);
+      const failed = results.filter((r: any) => r.error);
+      if (failed.length > 0) throw new Error(`${failed.length} orders failed to update`);
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      toast.success(`${vars.orderIds.length} orders updated to ${vars.status}`);
+      setSelectedOrders(new Set());
+      setBulkStatus("");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrders(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrders.size === paginatedOrders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(paginatedOrders.map((o: any) => o.id)));
+    }
+  };
 
   if (!store && !isLoading) {
     return (
@@ -237,11 +275,59 @@ export default function StoreOrders() {
         </div>
       ) : paginatedOrders.length > 0 ? (
         <>
+          {/* Bulk Action Bar */}
+          {selectedOrders.size > 0 && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-3 flex items-center gap-3 flex-wrap">
+                <CheckSquare className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">
+                  {selectedOrders.size} order{selectedOrders.size > 1 ? "s" : ""} selected
+                </span>
+                <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                  <SelectTrigger className="h-8 w-36 text-xs">
+                    <SelectValue placeholder="Set status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(s => (
+                      <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={!bulkStatus || bulkUpdateStatus.isPending}
+                  onClick={() => {
+                    if (bulkStatus) {
+                      bulkUpdateStatus.mutate({
+                        orderIds: Array.from(selectedOrders),
+                        status: bulkStatus,
+                      });
+                    }
+                  }}
+                >
+                  {bulkUpdateStatus.isPending ? "Updating..." : "Apply"}
+                </Button>
+                <button
+                  onClick={() => setSelectedOrders(new Set())}
+                  className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Clear selection
+                </button>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                 <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={paginatedOrders.length > 0 && selectedOrders.size === paginatedOrders.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
                     <TableHead>Order ID</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Phone</TableHead>
@@ -255,7 +341,13 @@ export default function StoreOrders() {
                 </TableHeader>
                 <TableBody>
                   {paginatedOrders.map((order: any) => (
-                    <TableRow key={order.id}>
+                    <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-primary/5" : ""}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedOrders.has(order.id)}
+                          onCheckedChange={() => toggleOrderSelection(order.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">{order.id.slice(0, 8)}</TableCell>
                       <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>
