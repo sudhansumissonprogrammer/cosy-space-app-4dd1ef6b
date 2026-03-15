@@ -77,6 +77,21 @@ export default function StoreAbandonedCarts() {
                           {c.recovered ? "Recovered" : "Abandoned"}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        {!c.recovered && c.customer_phone && storeId && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              sendAbandonedCartWhatsApp(storeId, c.id, c.customer_phone);
+                              toast.success("Recovery message sent!");
+                            }}
+                          >
+                            <MessageSquare className="mr-1 h-3.5 w-3.5" />
+                            Recover
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
