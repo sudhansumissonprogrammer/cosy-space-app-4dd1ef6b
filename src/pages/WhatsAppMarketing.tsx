@@ -2053,8 +2053,8 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
             let matchesCategory = categoryFilter === "__all__";
 
             for (const item of items) {
-              if (productFilter && item.product_id === productFilter) matchesProduct = true;
-              if (categoryFilter) {
+              if (productFilter !== "__all__" && item.product_id === productFilter) matchesProduct = true;
+              if (categoryFilter !== "__all__") {
                 const prod = products?.find((p: any) => p.id === item.product_id);
                 if (prod && (prod as any).category === categoryFilter) matchesCategory = true;
               }
