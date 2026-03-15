@@ -145,8 +145,10 @@ Deno.serve(async (req) => {
       
       const productTitle = escapeHtml(`${product.name} - ${priceText}`);
       const productDesc = escapeHtml(product.description || `Shop ${product.name} at ${store.name}`);
-      const productImage = product.image_url || store.og_image_url || store.banner_url || "";
-      const productUrl = `${storeUrl}/product/${product.slug}`;
+      const rawProductImage = product.image_url || store.og_image_url || store.banner_url || "";
+      const productImage = normalizeOgImageUrl(rawProductImage);
+      const productPath = product.slug || product.id;
+      const productUrl = `${storeUrl}/product/${productPath}`;
 
       const html = buildHtml(productTitle, productDesc, productImage, productUrl, productUrl, escapeHtml(store.name));
       return new Response(html, {
