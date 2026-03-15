@@ -275,6 +275,48 @@ export default function StoreOrders() {
         </div>
       ) : paginatedOrders.length > 0 ? (
         <>
+          {/* Bulk Action Bar */}
+          {selectedOrders.size > 0 && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-3 flex items-center gap-3 flex-wrap">
+                <CheckSquare className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">
+                  {selectedOrders.size} order{selectedOrders.size > 1 ? "s" : ""} selected
+                </span>
+                <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                  <SelectTrigger className="h-8 w-36 text-xs">
+                    <SelectValue placeholder="Set status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(s => (
+                      <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={!bulkStatus || bulkUpdateStatus.isPending}
+                  onClick={() => {
+                    if (bulkStatus) {
+                      bulkUpdateStatus.mutate({
+                        orderIds: Array.from(selectedOrders),
+                        status: bulkStatus,
+                      });
+                    }
+                  }}
+                >
+                  {bulkUpdateStatus.isPending ? "Updating..." : "Apply"}
+                </Button>
+                <button
+                  onClick={() => setSelectedOrders(new Set())}
+                  className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Clear selection
+                </button>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardContent className="p-0">
               <Table>
