@@ -1403,6 +1403,7 @@ export type Database = {
         Row: {
           abandoned_cart_id: string | null
           created_at: string
+          direction: string
           error_message: string | null
           id: string
           media_type: string | null
@@ -1413,6 +1414,7 @@ export type Database = {
           order_id: string | null
           recipient_name: string | null
           recipient_phone: string
+          sender_phone: string | null
           status: string
           store_id: string
           updated_at: string
@@ -1420,6 +1422,7 @@ export type Database = {
         Insert: {
           abandoned_cart_id?: string | null
           created_at?: string
+          direction?: string
           error_message?: string | null
           id?: string
           media_type?: string | null
@@ -1430,6 +1433,7 @@ export type Database = {
           order_id?: string | null
           recipient_name?: string | null
           recipient_phone: string
+          sender_phone?: string | null
           status?: string
           store_id: string
           updated_at?: string
@@ -1437,6 +1441,7 @@ export type Database = {
         Update: {
           abandoned_cart_id?: string | null
           created_at?: string
+          direction?: string
           error_message?: string | null
           id?: string
           media_type?: string | null
@@ -1447,6 +1452,7 @@ export type Database = {
           order_id?: string | null
           recipient_name?: string | null
           recipient_phone?: string
+          sender_phone?: string | null
           status?: string
           store_id?: string
           updated_at?: string
