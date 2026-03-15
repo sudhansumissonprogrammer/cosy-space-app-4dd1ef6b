@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import OrderNotificationListener from "@/components/OrderNotificationListener";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
+import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
