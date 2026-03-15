@@ -27,7 +27,7 @@ interface ProductFormProps {
   onClose?: () => void;
 }
 
-export default function ProductForm({ productId }: ProductFormProps) {
+export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const { storeId } = useParams<{ storeId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
