@@ -615,7 +615,7 @@ export default function CheckoutPage() {
   const itemCount = checkoutItems.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 text-[13px]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {/* Header */}
       <div className="mb-5 flex items-center gap-3">
         <Link
