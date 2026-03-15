@@ -384,7 +384,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
             </nav>
 
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-            <PwaInstallBanner storeName={store.name} />
+            <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <StorefrontOrderNotification storeName={store.name} />
             <Outlet context={store} />
             <StorefrontFooter store={store} />
