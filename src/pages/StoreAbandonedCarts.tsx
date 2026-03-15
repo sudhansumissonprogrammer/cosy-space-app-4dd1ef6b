@@ -2,10 +2,13 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { sendAbandonedCartWhatsApp } from "@/lib/whatsappAutomation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, ShoppingCart } from "lucide-react";
+import { Loader2, ShoppingCart, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function StoreAbandonedCarts() {
