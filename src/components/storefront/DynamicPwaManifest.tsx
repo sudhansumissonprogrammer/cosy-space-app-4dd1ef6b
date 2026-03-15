@@ -4,6 +4,8 @@ interface DynamicPwaManifestProps {
   storeName: string;
   logoUrl?: string | null;
   themeColor?: string;
+  /** Custom start URL — e.g. "/dashboard" for admin PWA */
+  startUrl?: string;
 }
 
 /**
