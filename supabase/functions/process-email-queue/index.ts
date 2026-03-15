@@ -63,6 +63,16 @@ function normalizeQueuedPayload(rawPayload: any, queue: string, queueMessageId: 
 
   const purpose = 'transactional'
 
+  const from =
+    typeof payload.from === 'string' && payload.from.trim().length > 0
+      ? payload.from
+      : 'Storivo Orders <noreply@storivo.in>'
+
+  const sender_domain =
+    typeof payload.sender_domain === 'string' && payload.sender_domain.trim().length > 0
+      ? payload.sender_domain
+      : 'notify.storivo.in'
+
   const queued_at =
     typeof payload.queued_at === 'string' && payload.queued_at.trim().length > 0
       ? payload.queued_at
