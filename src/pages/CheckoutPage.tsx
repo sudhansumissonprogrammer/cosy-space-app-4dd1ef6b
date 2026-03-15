@@ -349,16 +349,8 @@ export default function CheckoutPage() {
       ? `Coupon: ${appliedCoupon.code} (-${currency} ${couponDiscount.toFixed(2)})`
       : undefined;
 
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-    const res = await fetch(`https://${projectId}.supabase.co/functions/v1/place-order`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: anonKey,
-      },
-      body: JSON.stringify({
+    const { data, error } = await supabase.functions.invoke("place-order", {
+      body: {
         store_id: store.id,
         order: {
           total,
@@ -389,15 +381,19 @@ export default function CheckoutPage() {
         },
         coupon_id: appliedCoupon?.id ?? null,
         abandoned_cart_id: abandonedCartId ?? null,
-      }),
+      },
     });
 
-    const result = await res.json();
-    if (!res.ok || !result?.order_id) {
+    if (error) {
+      throw new Error(error.message || "Failed to place order");
+    }
+
+    const result = data as { order_id?: string; error?: string } | null;
+    if (!result?.order_id) {
       throw new Error(result?.error || "Failed to place order");
     }
 
-    return result.order_id as string;
+    return result.order_id;
   };
 
   const createGuestAccount = async (ordId: string) => {
