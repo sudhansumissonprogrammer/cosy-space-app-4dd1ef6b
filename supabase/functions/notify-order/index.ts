@@ -194,11 +194,12 @@ function buildInvoiceHtml(order: any, items: any[], store: any, isOwner: boolean
 async function enqueueEmail(supabase: any, queueName: string, messageId: string, templateName: string, recipientEmail: string, subject: string, htmlBody: string, ttlMinutes: number) {
   const payload = {
     message_id: messageId,
-    template_name: templateName,
-    recipient_email: recipientEmail,
+    label: templateName,
+    to: recipientEmail,
     subject: subject,
-    html_body: htmlBody,
-    ttl_minutes: ttlMinutes,
+    html: htmlBody,
+    purpose: "transactional",
+    queued_at: new Date().toISOString(),
   };
   const { data, error } = await supabase.rpc("enqueue_email", {
     queue_name: queueName,
