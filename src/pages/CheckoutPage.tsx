@@ -349,60 +349,55 @@ export default function CheckoutPage() {
       ? `Coupon: ${appliedCoupon.code} (-${currency} ${couponDiscount.toFixed(2)})`
       : undefined;
 
-    const { data: order, error: orderErr } = await (supabase as any)
-      .from("orders")
-      .insert({
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    const res = await fetch(`https://${projectId}.supabase.co/functions/v1/place-order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: anonKey,
+      },
+      body: JSON.stringify({
         store_id: store.id,
-        total,
-        currency,
-        status: "pending",
-        customer_name: fullName.trim(),
-        customer_phone: phone.trim(),
-        street_address: streetAddress.trim(),
-        city: city.trim(),
-        state: state.trim(),
-        pincode: pincode.trim(),
-        payment_method: paymentMethod,
-        notes: orderNotes,
-        ...(customer?.id ? { storefront_customer_id: customer.id } : {}),
-      })
-      .select("id")
-      .single();
-    if (orderErr) throw orderErr;
-
-    const orderItemsData = checkoutItems.map((item) => ({
-      order_id: order.id,
-      product_id: item.productId,
-      product_name: item.name,
-      quantity: item.quantity,
-      unit_price: item.price,
-      total: item.price * item.quantity,
-    }));
-    await (supabase as any).from("order_items").insert(orderItemsData);
-
-    await (supabase as any).from("customer_leads").insert({
-      store_id: store.id,
-      name: fullName.trim(),
-      phone: phone.trim(),
-      product_name: checkoutItems.map((i) => i.name).join(", "),
-      product_id: checkoutItems.length === 1 ? checkoutItems[0].productId : null,
-      source: "website_order",
+        order: {
+          total,
+          currency,
+          status: "pending",
+          customer_name: fullName.trim(),
+          customer_phone: phone.trim(),
+          street_address: streetAddress.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          pincode: pincode.trim(),
+          payment_method: paymentMethod,
+          notes: orderNotes,
+          storefront_customer_id: customer?.id ?? null,
+        },
+        items: checkoutItems.map((item) => ({
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        lead: {
+          name: fullName.trim(),
+          phone: phone.trim(),
+          product_name: checkoutItems.map((i) => i.name).join(", "),
+          product_id: checkoutItems.length === 1 ? checkoutItems[0].productId : null,
+          source: "website_order",
+        },
+        coupon_id: appliedCoupon?.id ?? null,
+        abandoned_cart_id: abandonedCartId ?? null,
+      }),
     });
 
-    // Update coupon used_count
-    if (appliedCoupon) {
-      await (supabase as any)
-        .from("coupons")
-        .update({ used_count: (appliedCoupon.used_count || 0) + 1 })
-      .eq("id", appliedCoupon.id);
+    const result = await res.json();
+    if (!res.ok || !result?.order_id) {
+      throw new Error(result?.error || "Failed to place order");
     }
 
-    // Mark abandoned cart as recovered
-    if (abandonedCartId) {
-      await (supabase as any).from("abandoned_carts").update({ recovered: true }).eq("id", abandonedCartId);
-    }
-
-    return order.id as string;
+    return result.order_id as string;
   };
 
   const createGuestAccount = async (ordId: string) => {
