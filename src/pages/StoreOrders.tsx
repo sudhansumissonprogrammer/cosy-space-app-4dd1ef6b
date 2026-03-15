@@ -36,6 +36,8 @@ export default function StoreOrders() {
   const [trackingUrl, setTrackingUrl] = useState("");
   const [pendingStatus, setPendingStatus] = useState("");
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>("");
 
   // Search & filter state
   const [search, setSearch] = useState("");
