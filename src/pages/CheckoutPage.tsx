@@ -612,7 +612,7 @@ export default function CheckoutPage() {
         </div>
         <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
         <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
-        {orderId && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono">{orderId.slice(0, 8)}</span></p>}
+        {(orderNumber || orderId) && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span></p>}
         <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
           <p className="text-sm text-foreground font-medium">✅ Order confirmed!</p>
           <p className="text-xs text-muted-foreground mt-1">We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.</p>
