@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,11 +20,19 @@ import {
   XCircle, Clock, AlertCircle, Zap, ShoppingCart, Package, Users,
   TrendingUp, Eye, EyeOff, Upload, Megaphone, Trash2, FileText, Plus,
   Ban, CalendarIcon, Target, UserX, Timer, FileCheck, RefreshCw, Loader2,
+  ArrowLeft, Search, Smile, MoreVertical, Check, CheckCheck, Mic,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ─── Setup Tab ───────────────────────────────────────────────────────
 function SetupTab({ storeId }: { storeId: string }) {
