@@ -66,7 +66,7 @@ export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOn
             loading="lazy"
           />
           <div className="flex w-full gap-2">
-            <Input value={storeUrl} readOnly className="text-sm" />
+            <Input value={shareUrl} readOnly className="text-sm" />
             <Button size="icon" variant="outline" onClick={handleCopy}>
               {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
             </Button>
