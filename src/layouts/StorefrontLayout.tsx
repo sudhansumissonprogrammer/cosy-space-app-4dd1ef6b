@@ -423,6 +423,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor }: 
       <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
       <StorefrontOrderNotification storeName={store.name} />
       <Outlet context={store} />
+      <StorefrontInstagramSection store={store} />
       <StorefrontFooter store={store} />
       <SideCart store={store} />
       <FloatingWhatsApp store={store} />

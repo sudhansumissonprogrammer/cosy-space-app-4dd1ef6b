@@ -407,6 +407,7 @@ export default function StorefrontLayoutV6({ slugOverride }: { slugOverride?: st
             <StorefrontOrderNotification storeName={store.name} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <Outlet context={store} />
+            <StorefrontInstagramSection store={store} />
             <CleanFooter store={store} />
             <SideCart store={store} />
             <FloatingWhatsApp store={store} />
