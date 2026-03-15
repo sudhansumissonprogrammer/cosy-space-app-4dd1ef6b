@@ -163,7 +163,8 @@ Deno.serve(async (req) => {
   // ── Store share (default) ──
   const title = escapeHtml(store.meta_title || store.name);
   const description = escapeHtml(store.meta_description || store.description || `Shop at ${store.name}`);
-  const image = store.og_image_url || store.banner_url || store.logo_url || "";
+  const rawStoreImage = store.og_image_url || store.banner_url || store.logo_url || "";
+  const image = normalizeOgImageUrl(rawStoreImage);
 
   const html = buildHtml(title, description, image, storeUrl, storeUrl, escapeHtml(store.name));
 
