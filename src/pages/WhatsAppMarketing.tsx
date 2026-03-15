@@ -2896,6 +2896,12 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
 // ─── Storivo Mode Dashboard ─────────────────────────────────────────
 function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitchMode: () => void }) {
   const [activeTab, setActiveTab] = useState("automations");
+  const [bulkNumbers, setBulkNumbers] = useState<string[]>([]);
+
+  const handleSendToBulk = (phones: string[]) => {
+    setBulkNumbers(phones);
+    setActiveTab("bulk");
+  };
 
   return (
     <div className="space-y-6">
@@ -2920,9 +2926,18 @@ function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSw
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-2">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="automations" className="text-[11px]">
-            <Zap className="h-3 w-3 mr-1" /> Automations
+            <Zap className="h-3 w-3 mr-1" /> Auto
+          </TabsTrigger>
+          <TabsTrigger value="segments" className="text-[11px]">
+            <Target className="h-3 w-3 mr-1" /> Segments
+          </TabsTrigger>
+          <TabsTrigger value="bulk" className="text-[11px]">
+            <Megaphone className="h-3 w-3 mr-1" /> Bulk
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="text-[11px]">
+            <FileCheck className="h-3 w-3 mr-1" /> Templates
           </TabsTrigger>
           <TabsTrigger value="analytics" className="text-[11px]">
             <BarChart3 className="h-3 w-3 mr-1" /> Stats
@@ -2931,6 +2946,15 @@ function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSw
 
         <TabsContent value="automations" className="mt-4">
           <AutomationsTab storeId={storeId} />
+        </TabsContent>
+        <TabsContent value="segments" className="mt-4">
+          <SegmentationTab storeId={storeId} onSendToBulk={handleSendToBulk} />
+        </TabsContent>
+        <TabsContent value="bulk" className="mt-4">
+          <BulkMessagingTab storeId={storeId} initialNumbers={bulkNumbers} />
+        </TabsContent>
+        <TabsContent value="templates" className="mt-4">
+          <MetaTemplatesTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="analytics" className="mt-4">
           <AnalyticsTab storeId={storeId} />
