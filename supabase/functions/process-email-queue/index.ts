@@ -87,6 +87,8 @@ function normalizeQueuedPayload(rawPayload: any, queue: string, queueMessageId: 
         ? payload.idempotency_key
         : message_id,
     to,
+    from,
+    sender_domain,
     subject,
     html,
     label,
