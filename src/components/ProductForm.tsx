@@ -472,7 +472,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                       if (error) throw error;
                       queryClient.invalidateQueries({ queryKey: ["products", storeId] });
                       toast.success("Product deleted");
-                      navigate(`/dashboard/stores/${storeId}/products`);
+                      if (onClose) { onClose(); } else { navigate(`/dashboard/stores/${storeId}/products`); }
                     } catch (err: any) {
                       toast.error(err.message || "Failed to delete product");
                     }
