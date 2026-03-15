@@ -1757,6 +1757,14 @@ export type Database = {
       }
     }
     Functions: {
+      can_create_website_order: {
+        Args: { _store_id: string }
+        Returns: boolean
+      }
+      can_create_website_order_item: {
+        Args: { _order_id: string }
+        Returns: boolean
+      }
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
