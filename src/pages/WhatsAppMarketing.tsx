@@ -1066,7 +1066,7 @@ function SegmentationTab({ storeId }: { storeId: string }) {
       const orders = data || [];
 
       if (segmentId === "all_customers") {
-        phones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))];
+        phones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))] as string[];
       } else if (segmentId === "repeat_buyers") {
         const counts: Record<string, number> = {};
         orders.forEach((o: any) => { counts[o.customer_phone] = (counts[o.customer_phone] || 0) + 1; });
@@ -1076,13 +1076,13 @@ function SegmentationTab({ storeId }: { storeId: string }) {
         orders.forEach((o: any) => { totals[o.customer_phone] = (totals[o.customer_phone] || 0) + Number(o.total); });
         phones = Object.entries(totals).filter(([_, t]) => t >= 1000).map(([p]) => p);
       } else if (segmentId === "recent_buyers") {
-        phones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))];
+        phones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))] as string[];
       } else if (segmentId === "inactive") {
         const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
         const recentPhones = new Set(
           orders.filter((o: any) => o.created_at >= monthAgo).map((o: any) => o.customer_phone)
         );
-        const allPhones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))];
+        const allPhones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))] as string[];
         phones = allPhones.filter((p) => !recentPhones.has(p));
       }
 
