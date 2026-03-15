@@ -11,6 +11,7 @@ import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import SideCart from "@/components/storefront/SideCart";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
