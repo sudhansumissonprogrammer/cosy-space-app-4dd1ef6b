@@ -54,6 +54,11 @@ function normalizeQueuedPayload(rawPayload: any, queue: string, queueMessageId: 
 
   const subject = typeof payload.subject === 'string' ? payload.subject : ''
 
+  const text =
+    typeof payload.text === 'string' && payload.text.trim().length > 0
+      ? payload.text
+      : html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || subject
+
   const label =
     typeof payload.label === 'string' && payload.label.trim().length > 0
       ? payload.label
