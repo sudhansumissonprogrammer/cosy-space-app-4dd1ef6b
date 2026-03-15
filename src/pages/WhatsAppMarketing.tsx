@@ -23,6 +23,8 @@ import {
 function SetupTab({ storeId }: { storeId: string }) {
   const queryClient = useQueryClient();
   const [showToken, setShowToken] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testing, setTesting] = useState(false);
   const [form, setForm] = useState({
     access_token: "",
     phone_number_id: "",
