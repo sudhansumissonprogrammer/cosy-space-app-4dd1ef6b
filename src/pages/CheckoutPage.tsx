@@ -704,13 +704,6 @@ export default function CheckoutPage() {
           <span className="text-sm font-medium text-foreground">Delivery Details</span>
         </div>
 
-        {/* Email always visible */}
-        <div className="space-y-1.5">
-          <Label htmlFor="email" className="text-xs">Email *</Label>
-          <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
-          {!customer && <p className="text-[11px] text-muted-foreground">An account will be created to track your orders</p>}
-        </div>
-
         {/* Saved address summary or inline form */}
         {savedAddresses && savedAddresses.length > 0 && selectedAddr ? (
           <div className="rounded-lg border border-border bg-accent/30 p-3">
@@ -730,23 +723,27 @@ export default function CheckoutPage() {
             </div>
           </div>
         ) : (
-          /* No saved addresses — inline form */
+          /* Phone-first express form */
           <>
             <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="phone" className="text-xs">Phone Number *</Label>
+                <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} autoFocus />
+              </div>
               <div className="space-y-1">
                 <Label htmlFor="fullName" className="text-xs">Full Name *</Label>
                 <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="phone" className="text-xs">Phone *</Label>
-                <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
-              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pincode" className="text-xs">Pincode * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
+              <Input id="pincode" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="street" className="text-xs">Street Address *</Label>
-              <Input id="street" placeholder="123 Main Street, Apt 4B" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+              <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="city" className="text-xs">City *</Label>
                 <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
@@ -755,11 +752,16 @@ export default function CheckoutPage() {
                 <Label htmlFor="state" className="text-xs">State *</Label>
                 <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="pincode" className="text-xs">Pincode *</Label>
-                <Input id="pincode" placeholder="400001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} />
-              </div>
             </div>
+            {/* Email optional — collapsible */}
+            <Collapsible>
+              <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <Plus className="h-3 w-3" /> Add email for order updates (optional)
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2">
+                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
+              </CollapsibleContent>
+            </Collapsible>
           </>
         )}
       </div>
