@@ -127,7 +127,7 @@ export default function StoreOrders() {
 
       // Auto-send WhatsApp based on new status
       if (storeId && result) {
-        const order = orders?.find((o: any) => o.id === result.orderId);
+        const order = allOrders?.find((o: any) => o.id === result.orderId);
         if (order) {
           const msgType = result.status === "confirmed" ? "order_confirmation"
             : result.status === "shipped" ? "shipping_update"
