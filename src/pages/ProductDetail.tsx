@@ -407,7 +407,8 @@ export default function ProductDetail() {
             <h1 className="text-2xl font-bold text-foreground leading-tight sm:text-3xl">{product.name}</h1>
             <button
               onClick={async () => {
-                const shareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
+                const baseShareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
+                const shareUrl = `${baseShareUrl}&v=${Date.now()}`;
                 if (navigator.share) {
                   try {
                     await navigator.share({ title: product.name, url: shareUrl });
