@@ -331,7 +331,7 @@ async function sendEmailDirect(to: string, subject: string, html: string) {
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "Orders <onboarding@resend.dev>",
+      from: getEmailFrom("Store"),
       to: [to],
       subject,
       html,
