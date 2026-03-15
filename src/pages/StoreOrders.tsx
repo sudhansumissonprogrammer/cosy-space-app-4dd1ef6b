@@ -278,8 +278,14 @@ export default function StoreOrders() {
           <Card>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                 <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={paginatedOrders.length > 0 && selectedOrders.size === paginatedOrders.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
                     <TableHead>Order ID</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Phone</TableHead>
