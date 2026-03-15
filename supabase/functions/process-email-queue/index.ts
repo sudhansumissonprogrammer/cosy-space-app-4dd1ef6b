@@ -25,6 +25,69 @@ function getRetryAfterSeconds(error: unknown): number {
   return 60
 }
 
+function normalizeQueuedPayload(rawPayload: any, queue: string, queueMessageId: number) {
+  const payload = rawPayload && typeof rawPayload === 'object' ? rawPayload : {}
+
+  const message_id =
+    typeof payload.message_id === 'string' && payload.message_id.trim().length > 0
+      ? payload.message_id.trim()
+      : `${queue}-${queueMessageId}`
+
+  const run_id =
+    typeof payload.run_id === 'string' && payload.run_id.trim().length > 0
+      ? payload.run_id.trim()
+      : message_id
+
+  const to =
+    typeof payload.to === 'string' && payload.to.trim().length > 0
+      ? payload.to.trim().toLowerCase()
+      : typeof payload.recipient_email === 'string' && payload.recipient_email.trim().length > 0
+        ? payload.recipient_email.trim().toLowerCase()
+        : ''
+
+  const html =
+    typeof payload.html === 'string' && payload.html.trim().length > 0
+      ? payload.html
+      : typeof payload.html_body === 'string'
+        ? payload.html_body
+        : ''
+
+  const subject = typeof payload.subject === 'string' ? payload.subject : ''
+
+  const label =
+    typeof payload.label === 'string' && payload.label.trim().length > 0
+      ? payload.label
+      : typeof payload.template_name === 'string' && payload.template_name.trim().length > 0
+        ? payload.template_name
+        : queue
+
+  const purpose =
+    typeof payload.purpose === 'string' && payload.purpose.trim().length > 0
+      ? payload.purpose
+      : 'transactional'
+
+  const queued_at =
+    typeof payload.queued_at === 'string' && payload.queued_at.trim().length > 0
+      ? payload.queued_at
+      : new Date().toISOString()
+
+  return {
+    ...payload,
+    run_id,
+    message_id,
+    idempotency_key:
+      typeof payload.idempotency_key === 'string' && payload.idempotency_key.trim().length > 0
+        ? payload.idempotency_key
+        : message_id,
+    to,
+    subject,
+    html,
+    label,
+    purpose,
+    queued_at,
+  }
+}
+
 function parseJwtClaims(token: string): Record<string, unknown> | null {
   const parts = token.split('.')
   if (parts.length < 2) {
