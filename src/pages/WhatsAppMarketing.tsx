@@ -2122,7 +2122,7 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
                   <SelectValue placeholder="Any category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any category</SelectItem>
+                  <SelectItem value="__all__">Any category</SelectItem>
                   {categories.map((c: string) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
