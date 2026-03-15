@@ -20,6 +20,7 @@ const AdminOrders = lazy(() => import("@/pages/admin/AdminOrders"));
 const AdminSubscriptions = lazy(() => import("@/pages/admin/AdminSubscriptions"));
 const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
+const AdminWhatsApp = lazy(() => import("@/pages/admin/AdminWhatsApp"));
 
 // Dashboard
 const DashboardLayout = lazy(() => import("@/layouts/DashboardLayout"));
@@ -71,6 +72,7 @@ export default function AuthRoutes() {
           <Route index element={<AdminOverview />} />
           <Route path="users-stores" element={<AdminUsersStores />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="whatsapp" element={<AdminWhatsApp />} />
           <Route path="subscriptions" element={<AdminSubscriptions />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="settings" element={<AdminSettings />} />

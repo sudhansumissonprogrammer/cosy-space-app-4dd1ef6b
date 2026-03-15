@@ -1337,9 +1337,9 @@ function AnalyticsTab({ storeId }: { storeId: string }) {
 }
 
 // ─── Bulk Messaging Tab ─────────────────────────────────────────────
-function BulkMessagingTab({ storeId }: { storeId: string }) {
+function BulkMessagingTab({ storeId, initialNumbers }: { storeId: string; initialNumbers?: string[] }) {
   const queryClient = useQueryClient();
-  const [numbers, setNumbers] = useState<string[]>([]);
+  const [numbers, setNumbers] = useState<string[]>(initialNumbers || []);
   const [manualInput, setManualInput] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -1348,6 +1348,28 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
   const [sendMode, setSendMode] = useState<"text" | "template">("text");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [templateParams, setTemplateParams] = useState<string[]>([]);
+
+  // Update numbers when initialNumbers changes
+  React.useEffect(() => {
+    if (initialNumbers?.length) {
+      setNumbers(prev => [...new Set([...prev, ...initialNumbers])]);
+    }
+  }, [initialNumbers]);
+
+  // Fetch campaign history
+  const { data: campaigns } = useQuery({
+    queryKey: ["bulk-campaigns", storeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("whatsapp_bulk_campaigns")
+        .select("*")
+        .eq("store_id", storeId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
 
   // Fetch approved Meta templates
   const { data: approvedTemplates } = useQuery({
@@ -1425,7 +1447,6 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
     toast({ title: "All numbers cleared" });
   };
 
-  // Count template variable placeholders like {{1}}, {{2}}
   const getTemplateParamCount = (bodyText: string): number => {
     const matches = bodyText.match(/\{\{\d+\}\}/g);
     if (!matches) return 0;
@@ -1449,6 +1470,22 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
 
     setSending(true);
     setProgress({ sent: 0, failed: 0, total: numbers.length });
+
+    // Create campaign record
+    const campaignBody: any = {
+      store_id: storeId,
+      recipient_count: numbers.length,
+      status: "sending",
+      message_body: sendMode === "text" ? message.trim() : null,
+      template_name: sendMode === "template" ? selectedTemplate : null,
+      template_params: sendMode === "template" ? templateParams.filter((p) => p.trim()) : null,
+    };
+    const { data: campaign } = await (supabase as any)
+      .from("whatsapp_bulk_campaigns")
+      .insert(campaignBody)
+      .select("id")
+      .single();
+    const campaignId = campaign?.id;
 
     let sent = 0;
     let failed = 0;
@@ -1481,9 +1518,18 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
       await new Promise((r) => setTimeout(r, 500));
     }
 
+    // Update campaign record
+    if (campaignId) {
+      await (supabase as any)
+        .from("whatsapp_bulk_campaigns")
+        .update({ sent_count: sent, failed_count: failed, status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", campaignId);
+    }
+
     setSending(false);
     queryClient.invalidateQueries({ queryKey: ["whatsapp-messages", storeId] });
     queryClient.invalidateQueries({ queryKey: ["whatsapp-analytics", storeId] });
+    queryClient.invalidateQueries({ queryKey: ["bulk-campaigns", storeId] });
     toast({
       title: "Bulk send complete!",
       description: `✅ ${sent} sent, ❌ ${failed} failed out of ${numbers.length}`,
@@ -1757,6 +1803,54 @@ function BulkMessagingTab({ storeId }: { storeId: string }) {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Campaign History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BarChart3 className="h-5 w-5" />
+            Campaign History
+          </CardTitle>
+          <CardDescription>Track status of your bulk messaging campaigns</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!campaigns?.length ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No campaigns yet. Send your first bulk message above.</p>
+          ) : (
+            <div className="space-y-3">
+              {campaigns.map((c: any) => (
+                <div key={c.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      {c.template_name || (c.message_body ? c.message_body.slice(0, 40) + "..." : "Campaign")}
+                    </span>
+                    <Badge className={cn(
+                      "text-[10px]",
+                      c.status === "completed" ? "bg-green-100 text-green-700 border-green-200" :
+                      c.status === "sending" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
+                      c.status === "failed" ? "bg-red-100 text-red-700 border-red-200" :
+                      "bg-muted text-muted-foreground"
+                    )}>
+                      {c.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{c.recipient_count} recipients</span>
+                    <span>✅ {c.sent_count} sent · ❌ {c.failed_count} failed</span>
+                  </div>
+                  {c.recipient_count > 0 && (
+                    <Progress value={((c.sent_count + c.failed_count) / c.recipient_count) * 100} className="h-1.5" />
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    {format(new Date(c.created_at), "dd MMM yyyy, hh:mm a")}
+                    {c.completed_at && ` — completed ${format(new Date(c.completed_at), "hh:mm a")}`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -1878,70 +1972,115 @@ function OptOutTab({ storeId }: { storeId: string }) {
 }
 
 // ─── Customer Segmentation Tab ──────────────────────────────────────
-function SegmentationTab({ storeId }: { storeId: string }) {
+function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToBulk?: (phones: string[]) => void }) {
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
   const [segmentPhones, setSegmentPhones] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [productFilter, setProductFilter] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [customDateFrom, setCustomDateFrom] = useState<Date | undefined>();
+  const [customDateTo, setCustomDateTo] = useState<Date | undefined>();
+
+  // Fetch products for filter
+  const { data: products } = useQuery({
+    queryKey: ["store-products-filter", storeId],
+    queryFn: async () => {
+      const { data } = await supabase.from("products").select("id, name, category").eq("store_id", storeId).eq("is_active", true).order("name");
+      return data || [];
+    },
+  });
+
+  // Get unique categories
+  const categories = useMemo(() => {
+    if (!products) return [];
+    return [...new Set(products.map((p: any) => p.category).filter(Boolean))].sort();
+  }, [products]);
 
   const segments = [
     { id: "all_customers", label: "All Customers", icon: Users, desc: "Every customer with a phone number", color: "text-blue-500" },
     { id: "repeat_buyers", label: "Repeat Buyers", icon: TrendingUp, desc: "Customers with 2+ orders", color: "text-green-500" },
-    { id: "high_value", label: "High Value", icon: Package, desc: "Orders above ₹1000 total", color: "text-purple-500" },
-    { id: "recent_buyers", label: "Recent Buyers", icon: Clock, desc: "Ordered in last 7 days", color: "text-orange-500" },
-    { id: "inactive", label: "Inactive Customers", icon: UserX, desc: "No orders in last 30 days", color: "text-red-500" },
+    { id: "high_value", label: "High Value", icon: Target, desc: "Customers with 5+ orders", color: "text-purple-500" },
+    { id: "recent_30d", label: "Recent (30 days)", icon: Clock, desc: "Ordered in the last 30 days", color: "text-orange-500" },
+    { id: "inactive_90d", label: "Inactive (90+ days)", icon: UserX, desc: "No orders in 90+ days", color: "text-red-500" },
+    { id: "filtered", label: "Custom Filter", icon: Target, desc: "Product, category & date filters", color: "text-indigo-500" },
   ];
+
+  const getDateRange = () => {
+    const now = new Date();
+    if (dateFilter === "today") {
+      const start = new Date(now); start.setHours(0,0,0,0);
+      return { from: start.toISOString(), to: now.toISOString() };
+    }
+    if (dateFilter === "7days") {
+      return { from: new Date(now.getTime() - 7*24*60*60*1000).toISOString(), to: now.toISOString() };
+    }
+    if (dateFilter === "30days") {
+      return { from: new Date(now.getTime() - 30*24*60*60*1000).toISOString(), to: now.toISOString() };
+    }
+    if (dateFilter === "custom" && customDateFrom) {
+      return { from: customDateFrom.toISOString(), to: customDateTo ? customDateTo.toISOString() : now.toISOString() };
+    }
+    return null;
+  };
 
   const loadSegment = async (segmentId: string) => {
     setLoading(true);
     setSelectedSegment(segmentId);
-
     try {
-      let query = (supabase as any).from("orders")
-        .select("customer_phone, customer_name, total, created_at")
-        .eq("store_id", storeId)
-        .not("customer_phone", "is", null);
+      if (segmentId === "filtered") {
+        // Custom filter: join orders → order_items → products
+        let query = supabase
+          .from("orders")
+          .select("customer_phone, order_items!inner(product_id, product_name)")
+          .eq("store_id", storeId)
+          .not("customer_phone", "is", null);
 
-      if (segmentId === "recent_buyers") {
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        query = query.gte("created_at", weekAgo);
+        const dateRange = getDateRange();
+        if (dateRange) {
+          query = query.gte("created_at", dateRange.from).lte("created_at", dateRange.to);
+        }
+
+        const { data: orderData, error } = await query;
+        if (error) throw error;
+
+        let phones: string[] = [];
+        if (orderData) {
+          for (const order of orderData as any[]) {
+            if (!order.customer_phone) continue;
+            const items = order.order_items || [];
+            let matchesProduct = !productFilter;
+            let matchesCategory = !categoryFilter;
+
+            for (const item of items) {
+              if (productFilter && item.product_id === productFilter) matchesProduct = true;
+              if (categoryFilter) {
+                const prod = products?.find((p: any) => p.id === item.product_id);
+                if (prod && (prod as any).category === categoryFilter) matchesCategory = true;
+              }
+            }
+
+            if (matchesProduct && matchesCategory) {
+              phones.push(order.customer_phone);
+            }
+          }
+        }
+        setSegmentPhones([...new Set(phones)]);
+      } else {
+        // Existing segment logic
+        let query = supabase.from("customers").select("phone").eq("store_id", storeId).not("phone", "is", null);
+
+        switch (segmentId) {
+          case "repeat_buyers": query = query.gte("order_count", 2); break;
+          case "high_value": query = query.gte("order_count", 5); break;
+          case "recent_30d": query = query.gte("updated_at", new Date(Date.now() - 30*24*60*60*1000).toISOString()); break;
+          case "inactive_90d": query = query.lt("updated_at", new Date(Date.now() - 90*24*60*60*1000).toISOString()); break;
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        setSegmentPhones((data || []).map((c: any) => c.phone).filter(Boolean));
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      let phones: string[] = [];
-      const orders = data || [];
-
-      if (segmentId === "all_customers") {
-        phones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))] as string[];
-      } else if (segmentId === "repeat_buyers") {
-        const counts: Record<string, number> = {};
-        orders.forEach((o: any) => { counts[o.customer_phone] = (counts[o.customer_phone] || 0) + 1; });
-        phones = Object.entries(counts).filter(([_, c]) => c >= 2).map(([p]) => p);
-      } else if (segmentId === "high_value") {
-        const totals: Record<string, number> = {};
-        orders.forEach((o: any) => { totals[o.customer_phone] = (totals[o.customer_phone] || 0) + Number(o.total); });
-        phones = Object.entries(totals).filter(([_, t]) => t >= 1000).map(([p]) => p);
-      } else if (segmentId === "recent_buyers") {
-        phones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))] as string[];
-      } else if (segmentId === "inactive") {
-        const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        const recentPhones = new Set(
-          orders.filter((o: any) => o.created_at >= monthAgo).map((o: any) => o.customer_phone)
-        );
-        const allPhones = [...new Set(orders.map((o: any) => o.customer_phone).filter(Boolean))] as string[];
-        phones = allPhones.filter((p) => !recentPhones.has(p));
-      }
-
-      // Filter out opted-out numbers
-      const { data: optouts } = await (supabase as any)
-        .from("whatsapp_optouts")
-        .select("phone")
-        .eq("store_id", storeId);
-      const optedOut = new Set((optouts || []).map((o: any) => o.phone));
-      phones = phones.filter((p) => !optedOut.has(p.replace(/[\s\-()]/g, "")));
-
-      setSegmentPhones(phones);
     } catch (e: any) {
       toast({ title: "Error loading segment", description: e.message, variant: "destructive" });
     } finally {
@@ -1949,61 +2088,178 @@ function SegmentationTab({ storeId }: { storeId: string }) {
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(segmentPhones.join("\n"));
-    toast({ title: `${segmentPhones.length} numbers copied!`, description: "Paste them in the Bulk tab to send messages" });
-  };
-
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">Customer Segments</h3>
-        <p className="text-sm text-muted-foreground">Target specific customer groups for your campaigns. Opted-out numbers are auto-excluded.</p>
-      </div>
+      {/* Custom Filters Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Target className="h-5 w-5" />
+            Advanced Filters
+          </CardTitle>
+          <CardDescription>Filter customers by product, category, and date range</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-2">
+              <Label className="text-xs">Product</Label>
+              <Select value={productFilter} onValueChange={setProductFilter}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Any product" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Any product</SelectItem>
+                  {products?.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Category</Label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Any category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Any category</SelectItem>
+                  {categories.map((c: string) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Date Range</Label>
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="All time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="7days">Last 7 days</SelectItem>
+                  <SelectItem value="30days">Last 30 days</SelectItem>
+                  <SelectItem value="custom">Custom range</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-      <div className="grid gap-3">
-        {segments.map((seg) => (
+          {dateFilter === "custom" && (
+            <div className="flex gap-3">
+              <div className="space-y-1">
+                <Label className="text-[11px]">From</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left text-xs", !customDateFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-1.5 h-3 w-3" />
+                      {customDateFrom ? format(customDateFrom, "dd MMM yyyy") : "Start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={customDateFrom} onSelect={setCustomDateFrom} className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px]">To</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left text-xs", !customDateTo && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-1.5 h-3 w-3" />
+                      {customDateTo ? format(customDateTo, "dd MMM yyyy") : "End date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={customDateTo} onSelect={setCustomDateTo} className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          )}
+
+          <Button
+            size="sm"
+            onClick={() => loadSegment("filtered")}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Search className="h-3.5 w-3.5 mr-1" />}
+            Apply Filters
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Quick Segments */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {segments.filter(s => s.id !== "filtered").map((seg) => (
           <Card
             key={seg.id}
             className={cn(
-              "cursor-pointer transition-all hover:shadow-sm",
-              selectedSegment === seg.id && "ring-2 ring-primary"
+              "cursor-pointer transition-all hover:shadow-md",
+              selectedSegment === seg.id ? "ring-2 ring-primary" : ""
             )}
             onClick={() => loadSegment(seg.id)}
           >
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <seg.icon className={cn("h-5 w-5", seg.color)} />
-                <div>
-                  <p className="text-sm font-medium">{seg.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{seg.desc}</p>
-                </div>
-              </div>
-              {selectedSegment === seg.id && (
-                <Badge variant="outline">
-                  {loading ? "Loading..." : `${segmentPhones.length} contacts`}
-                </Badge>
-              )}
+            <CardContent className="p-4 text-center">
+              <seg.icon className={`h-6 w-6 mx-auto mb-2 ${seg.color}`} />
+              <p className="text-sm font-medium">{seg.label}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{seg.desc}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {selectedSegment && segmentPhones.length > 0 && !loading && (
+      {loading && (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {selectedSegment && !loading && (
         <Card>
-          <CardContent className="p-4 space-y-3">
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{segmentPhones.length} numbers ready</span>
-              <Button size="sm" onClick={copyToClipboard}>
-                Copy All → Use in Bulk Tab
-              </Button>
+              <CardTitle className="text-base">
+                {segmentPhones.length} customers found
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(segmentPhones.join("\n"));
+                    toast({ title: "Copied!", description: `${segmentPhones.length} numbers copied to clipboard` });
+                  }}
+                  disabled={!segmentPhones.length}
+                >
+                  Copy All
+                </Button>
+                {onSendToBulk && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      onSendToBulk(segmentPhones);
+                      toast({ title: "Sent to Bulk!", description: `${segmentPhones.length} numbers added to Bulk tab` });
+                    }}
+                    disabled={!segmentPhones.length}
+                  >
+                    <Send className="h-3.5 w-3.5 mr-1" /> Send to Bulk
+                  </Button>
+                )}
+              </div>
             </div>
+          </CardHeader>
+          <CardContent>
             <div className="max-h-32 overflow-y-auto bg-muted/50 rounded p-2 space-y-0.5">
               {segmentPhones.slice(0, 20).map((p, i) => (
                 <p key={i} className="text-xs font-mono">{p}</p>
               ))}
               {segmentPhones.length > 20 && (
                 <p className="text-xs text-muted-foreground">...and {segmentPhones.length - 20} more</p>
+              )}
+              {segmentPhones.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-2">No customers match this filter</p>
               )}
             </div>
           </CardContent>
@@ -2640,6 +2896,12 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
 // ─── Storivo Mode Dashboard ─────────────────────────────────────────
 function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitchMode: () => void }) {
   const [activeTab, setActiveTab] = useState("automations");
+  const [bulkNumbers, setBulkNumbers] = useState<string[]>([]);
+
+  const handleSendToBulk = (phones: string[]) => {
+    setBulkNumbers(phones);
+    setActiveTab("bulk");
+  };
 
   return (
     <div className="space-y-6">
@@ -2664,9 +2926,18 @@ function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSw
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-2">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="automations" className="text-[11px]">
-            <Zap className="h-3 w-3 mr-1" /> Automations
+            <Zap className="h-3 w-3 mr-1" /> Auto
+          </TabsTrigger>
+          <TabsTrigger value="segments" className="text-[11px]">
+            <Target className="h-3 w-3 mr-1" /> Segments
+          </TabsTrigger>
+          <TabsTrigger value="bulk" className="text-[11px]">
+            <Megaphone className="h-3 w-3 mr-1" /> Bulk
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="text-[11px]">
+            <FileCheck className="h-3 w-3 mr-1" /> Templates
           </TabsTrigger>
           <TabsTrigger value="analytics" className="text-[11px]">
             <BarChart3 className="h-3 w-3 mr-1" /> Stats
@@ -2675,6 +2946,15 @@ function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSw
 
         <TabsContent value="automations" className="mt-4">
           <AutomationsTab storeId={storeId} />
+        </TabsContent>
+        <TabsContent value="segments" className="mt-4">
+          <SegmentationTab storeId={storeId} onSendToBulk={handleSendToBulk} />
+        </TabsContent>
+        <TabsContent value="bulk" className="mt-4">
+          <BulkMessagingTab storeId={storeId} initialNumbers={bulkNumbers} />
+        </TabsContent>
+        <TabsContent value="templates" className="mt-4">
+          <MetaTemplatesTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="analytics" className="mt-4">
           <AnalyticsTab storeId={storeId} />
@@ -2687,6 +2967,12 @@ function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSw
 // ─── Own Mode Dashboard (Full 8-tab) ────────────────────────────────
 function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitchMode: () => void }) {
   const [activeTab, setActiveTab] = useState<string | undefined>();
+  const [bulkNumbers, setBulkNumbers] = useState<string[]>([]);
+
+  const handleSendToBulk = (phones: string[]) => {
+    setBulkNumbers(phones);
+    setActiveTab("bulk");
+  };
 
   const { data: config } = useQuery({
     queryKey: ["whatsapp-config-own", storeId],
@@ -2772,7 +3058,7 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
           <ChatTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="bulk" className="mt-4">
-          <BulkMessagingTab storeId={storeId} />
+          <BulkMessagingTab storeId={storeId} initialNumbers={bulkNumbers} />
         </TabsContent>
         <TabsContent value="automations" className="mt-4">
           <AutomationsTab storeId={storeId} />
@@ -2781,7 +3067,7 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
           <MetaTemplatesTab storeId={storeId} />
         </TabsContent>
         <TabsContent value="segments" className="mt-4">
-          <SegmentationTab storeId={storeId} />
+          <SegmentationTab storeId={storeId} onSendToBulk={handleSendToBulk} />
         </TabsContent>
         <TabsContent value="schedule" className="mt-4">
           <ScheduleTab storeId={storeId} />

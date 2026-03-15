@@ -1285,6 +1285,66 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_bulk_campaigns: {
+        Row: {
+          admin_campaign: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          failed_count: number | null
+          id: string
+          message_body: string | null
+          recipient_count: number | null
+          sent_count: number | null
+          status: string | null
+          store_id: string
+          template_name: string | null
+          template_params: Json | null
+        }
+        Insert: {
+          admin_campaign?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          message_body?: string | null
+          recipient_count?: number | null
+          sent_count?: number | null
+          status?: string | null
+          store_id: string
+          template_name?: string | null
+          template_params?: Json | null
+        }
+        Update: {
+          admin_campaign?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          message_body?: string | null
+          recipient_count?: number | null
+          sent_count?: number | null
+          status?: string | null
+          store_id?: string
+          template_name?: string | null
+          template_params?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_bulk_campaigns_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_bulk_campaigns_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_config: {
         Row: {
           access_token: string | null

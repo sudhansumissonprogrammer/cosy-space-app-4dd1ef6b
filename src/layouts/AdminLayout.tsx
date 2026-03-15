@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Shield, Users, ShoppingBag, LogOut, LayoutDashboard, CreditCard, BarChart3, Settings } from "lucide-react";
+import { Shield, Users, ShoppingBag, LogOut, LayoutDashboard, CreditCard, BarChart3, Settings, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,7 @@ const navItems = [
   { title: "Overview", url: "/admin", icon: LayoutDashboard },
   { title: "Users & Stores", url: "/admin/users-stores", icon: Users },
   { title: "Orders", url: "/admin/orders", icon: ShoppingBag },
+  { title: "WhatsApp", url: "/admin/whatsapp", icon: MessageSquare },
   { title: "Subscriptions", url: "/admin/subscriptions", icon: CreditCard },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
   { title: "Settings", url: "/admin/settings", icon: Settings },
