@@ -348,13 +348,72 @@ function ChatTab({ storeId }: { storeId: string }) {
 }
 
 // ─── Automations Tab ─────────────────────────────────────────────────
+
+const TEMPLATE_VARIABLES: Record<string, { var: string; label: string }[]> = {
+  order_confirmation: [
+    { var: "{{name}}", label: "Customer Name" },
+    { var: "{{order_id}}", label: "Order ID" },
+    { var: "{{total}}", label: "Order Total" },
+    { var: "{{product_names}}", label: "Product Names" },
+    { var: "{{store_name}}", label: "Store Name" },
+    { var: "{{currency}}", label: "Currency" },
+  ],
+  shipping_update: [
+    { var: "{{name}}", label: "Customer Name" },
+    { var: "{{order_id}}", label: "Order ID" },
+    { var: "{{tracking_url}}", label: "Tracking URL" },
+    { var: "{{tracking_number}}", label: "Tracking Number" },
+    { var: "{{store_name}}", label: "Store Name" },
+    { var: "{{product_names}}", label: "Product Names" },
+  ],
+  delivery_confirmation: [
+    { var: "{{name}}", label: "Customer Name" },
+    { var: "{{order_id}}", label: "Order ID" },
+    { var: "{{total}}", label: "Order Total" },
+    { var: "{{store_name}}", label: "Store Name" },
+    { var: "{{product_names}}", label: "Product Names" },
+  ],
+  abandoned_cart: [
+    { var: "{{name}}", label: "Customer Name" },
+    { var: "{{product_names}}", label: "Product Names" },
+    { var: "{{cart_total}}", label: "Cart Total" },
+    { var: "{{store_name}}", label: "Store Name" },
+    { var: "{{currency}}", label: "Currency" },
+  ],
+};
+
+function VariableChips({
+  variables,
+  onInsert,
+}: {
+  variables: { var: string; label: string }[];
+  onInsert: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      <span className="text-[11px] text-muted-foreground mr-1">Insert:</span>
+      {variables.map((v) => (
+        <button
+          key={v.var}
+          type="button"
+          onClick={() => onInsert(v.var)}
+          className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer border border-primary/20"
+        >
+          <Plus className="h-2.5 w-2.5" />
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function AutomationsTab({ storeId }: { storeId: string }) {
   const queryClient = useQueryClient();
   const [templates, setTemplates] = useState({
-    order_confirmation: { enabled: true, body: "Hi {{name}}, thank you for your order #{{order_id}}! Total: {{total}}. We'll update you on shipping." },
-    shipping_update: { enabled: true, body: "Hi {{name}}, your order #{{order_id}} has been shipped! Track it here: {{tracking_url}}" },
-    abandoned_cart: { enabled: true, body: "Hi {{name}}, you left items in your cart! Complete your order now and get free shipping 🛒" },
-    delivery_confirmation: { enabled: true, body: "Hi {{name}}, your order #{{order_id}} has been delivered! Thank you for shopping with us ❤️" },
+    order_confirmation: { enabled: true, body: "Hi {{name}}, thank you for your order #{{order_id}}! 🛍️\n\nItems: {{product_names}}\nTotal: {{total}}\n\nWe'll update you on shipping. — {{store_name}}" },
+    shipping_update: { enabled: true, body: "Hi {{name}}, great news! Your order #{{order_id}} has been shipped! 🚚\n\nTrack here: {{tracking_url}}\nTracking #: {{tracking_number}}\n\n— {{store_name}}" },
+    abandoned_cart: { enabled: true, body: "Hi {{name}}, you left some amazing items in your cart! 🛒\n\nItems: {{product_names}}\nTotal: {{cart_total}}\n\nComplete your order now before they're gone! — {{store_name}}" },
+    delivery_confirmation: { enabled: true, body: "Hi {{name}}, your order #{{order_id}} has been delivered! 🎉\n\nItems: {{product_names}}\nTotal: {{total}}\n\nThank you for shopping with {{store_name}} ❤️" },
   });
 
   const { data: savedTemplates } = useQuery({
@@ -409,10 +468,18 @@ function AutomationsTab({ storeId }: { storeId: string }) {
   });
 
   const templateLabels: Record<string, { label: string; icon: React.ElementType; desc: string }> = {
-    order_confirmation: { label: "Order Confirmation", icon: Package, desc: "Sent when a new order is placed" },
-    shipping_update: { label: "Shipping Update", icon: Package, desc: "Sent when order status changes to shipped" },
-    abandoned_cart: { label: "Abandoned Cart Recovery", icon: ShoppingCart, desc: "Sent after cart is abandoned for 1 hour" },
-    delivery_confirmation: { label: "Delivery Confirmation", icon: CheckCircle2, desc: "Sent when order is delivered" },
+    order_confirmation: { label: "Order Placed", icon: Package, desc: "Sent when a new order is placed" },
+    shipping_update: { label: "Order Shipped", icon: Package, desc: "Sent when order status changes to shipped" },
+    abandoned_cart: { label: "Abandoned Cart Recovery", icon: ShoppingCart, desc: "Sent to recover abandoned carts" },
+    delivery_confirmation: { label: "Order Delivered", icon: CheckCircle2, desc: "Sent when order is delivered" },
+  };
+
+  const insertVariable = (type: string, variable: string) => {
+    const current = templates[type as keyof typeof templates];
+    setTemplates({
+      ...templates,
+      [type]: { ...current, body: current.body + variable },
+    });
   };
 
   return (
@@ -429,6 +496,7 @@ function AutomationsTab({ storeId }: { storeId: string }) {
 
       {Object.entries(templates).map(([type, config]) => {
         const meta = templateLabels[type];
+        const vars = TEMPLATE_VARIABLES[type] || [];
         return (
           <Card key={type}>
             <CardHeader className="pb-3">
@@ -455,12 +523,13 @@ function AutomationsTab({ storeId }: { storeId: string }) {
                   onChange={(e) =>
                     setTemplates({ ...templates, [type]: { ...config, body: e.target.value } })
                   }
-                  rows={3}
+                  rows={4}
                   className="text-sm"
                 />
-                <p className="text-[11px] text-muted-foreground mt-2">
-                  Variables: {"{{name}}, {{order_id}}, {{total}}, {{tracking_url}}, {{store_name}}"}
-                </p>
+                <VariableChips
+                  variables={vars}
+                  onInsert={(v) => insertVariable(type, v)}
+                />
               </CardContent>
             )}
           </Card>
