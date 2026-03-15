@@ -243,13 +243,21 @@ function SetupTab({ storeId }: { storeId: string }) {
 }
 
 // ─── Chat Tab (WhatsApp-style) ──────────────────────────────────────
+
+const EMOJI_LIST = ["😊", "😂", "❤️", "👍", "🙏", "🎉", "🔥", "✅", "⭐", "💯", "🛍️", "📦", "🚚", "💰", "🏷️", "👋", "😍", "🤩", "💪", "✨", "🙌", "💐", "🎁", "💳", "📱", "🛒"];
+
 function ChatTab({ storeId }: { storeId: string }) {
   const queryClient = useQueryClient();
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [newChatPhone, setNewChatPhone] = useState("");
+  const [showNewChat, setShowNewChat] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Get all conversations (grouped by phone number)
   const { data: allMessages } = useQuery({
@@ -331,7 +339,6 @@ function ChatTab({ storeId }: { storeId: string }) {
       }
     }
 
-    // Sort by latest message
     return Array.from(map.values()).sort(
       (a, b) => new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime()
     );
@@ -373,7 +380,9 @@ function ChatTab({ storeId }: { storeId: string }) {
       if (res.error) throw res.error;
       if ((res.data as any)?.error) throw new Error((res.data as any).error);
       setMessage("");
+      setShowEmoji(false);
       queryClient.invalidateQueries({ queryKey: ["whatsapp-all-messages", storeId] });
+      inputRef.current?.focus();
     } catch (e: any) {
       toast({ title: "Failed to send", description: e.message, variant: "destructive" });
     } finally {
@@ -382,10 +391,11 @@ function ChatTab({ storeId }: { storeId: string }) {
   };
 
   const startNewChat = () => {
-    const phone = prompt("Enter customer phone number (with country code, e.g. +919876543210):");
-    if (phone && phone.trim()) {
-      const cleaned = phone.replace(/[\s\-()]/g, "").trim();
+    if (newChatPhone.trim()) {
+      const cleaned = newChatPhone.replace(/[\s\-()]/g, "").trim();
       setSelectedPhone(cleaned);
+      setShowNewChat(false);
+      setNewChatPhone("");
     }
   };
 
@@ -402,128 +412,269 @@ function ChatTab({ storeId }: { storeId: string }) {
 
     if (d.toDateString() === today.toDateString()) return "Today";
     if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const formatListDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return formatTime(dateStr);
+    if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
     return d.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
   const statusIcon = (status: string) => {
     switch (status) {
-      case "sent": return <CheckCircle2 className="h-3 w-3 text-muted-foreground" />;
-      case "delivered": return <span className="flex"><CheckCircle2 className="h-3 w-3 text-muted-foreground" /><CheckCircle2 className="h-3 w-3 -ml-1.5 text-muted-foreground" /></span>;
-      case "read": return <span className="flex"><CheckCircle2 className="h-3 w-3 text-blue-500" /><CheckCircle2 className="h-3 w-3 -ml-1.5 text-blue-500" /></span>;
-      case "failed": return <XCircle className="h-3 w-3 text-red-500" />;
+      case "sent": return <Check className="h-3 w-3 text-[hsl(var(--muted-foreground))]" />;
+      case "delivered": return <CheckCheck className="h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />;
+      case "read": return <CheckCheck className="h-3.5 w-3.5 text-[hsl(210,100%,55%)]" />;
+      case "failed": return <XCircle className="h-3 w-3 text-[hsl(var(--destructive))]" />;
       case "received": return null;
-      default: return <Clock className="h-3 w-3 text-muted-foreground" />;
+      default: return <Clock className="h-3 w-3 text-[hsl(var(--muted-foreground))]" />;
     }
   };
 
-  // Mobile: show conversation list or chat, not both
-  const showConversationList = !selectedPhone;
+  const getInitials = (name: string | null, phone: string) => {
+    if (name) {
+      return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+    }
+    return phone.slice(-2);
+  };
+
+  const getAvatarColor = (phone: string) => {
+    const colors = [
+      "bg-emerald-500", "bg-blue-500", "bg-purple-500", "bg-orange-500",
+      "bg-pink-500", "bg-teal-500", "bg-indigo-500", "bg-amber-500",
+    ];
+    const hash = phone.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  };
+
+  const insertEmoji = (emoji: string) => {
+    setMessage(prev => prev + emoji);
+    inputRef.current?.focus();
+  };
+
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-background" style={{ height: "calc(100vh - 280px)", minHeight: 400 }}>
+    <div className="border rounded-xl overflow-hidden bg-background shadow-sm" style={{ height: "calc(100vh - 280px)", minHeight: 450 }}>
       <div className="flex h-full">
-        {/* Conversation List (left panel) */}
-        <div className={`${selectedPhone ? "hidden sm:flex" : "flex"} flex-col w-full sm:w-80 sm:min-w-[280px] border-r`}>
-          {/* Search + New Chat */}
-          <div className="p-2 border-b space-y-2">
-            <div className="flex items-center gap-2">
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search conversations..."
-                className="text-sm h-8"
-              />
-              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={startNewChat}>
-                <Plus className="h-4 w-4" />
+        {/* ── Conversation List (left panel) ── */}
+        <div className={`${selectedPhone ? "hidden md:flex" : "flex"} flex-col w-full md:w-[340px] md:min-w-[300px] border-r`}>
+          {/* Header */}
+          <div className="px-4 py-3 bg-[hsl(var(--muted))] flex items-center justify-between">
+            <h3 className="font-semibold text-[15px]">Chats</h3>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setShowSearch(!showSearch)}
+              >
+                <Search className="h-4 w-4" />
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowNewChat(true)}>
+                    <Plus className="h-4 w-4 mr-2" /> New chat
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
-          {/* Conversations */}
+          {/* New Chat Input */}
+          {showNewChat && (
+            <div className="px-3 py-2 border-b bg-[hsl(var(--muted)/0.5)] space-y-2">
+              <p className="text-xs font-medium text-foreground">New Conversation</p>
+              <div className="flex gap-2">
+                <Input
+                  value={newChatPhone}
+                  onChange={(e) => setNewChatPhone(e.target.value)}
+                  placeholder="+919876543210"
+                  className="text-sm h-8"
+                  onKeyDown={(e) => e.key === "Enter" && startNewChat()}
+                />
+                <Button size="sm" className="h-8 px-3" onClick={startNewChat} disabled={!newChatPhone.trim()}>
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <Button variant="ghost" size="sm" className="h-6 text-xs w-full" onClick={() => setShowNewChat(false)}>
+                Cancel
+              </Button>
+            </div>
+          )}
+
+          {/* Search Bar */}
+          {showSearch && (
+            <div className="px-3 py-2 border-b">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name or phone..."
+                  className="text-sm h-8 pl-8"
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Conversations List */}
           <div className="flex-1 overflow-y-auto">
             {!filteredConversations.length ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4">
-                <MessageSquare className="h-10 w-10 mb-2 opacity-50" />
-                <p className="text-sm">No conversations yet</p>
-                <p className="text-xs mt-1">Start a new chat with the + button</p>
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
+                <div className="h-16 w-16 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center mb-3">
+                  <MessageSquare className="h-7 w-7 opacity-50" />
+                </div>
+                <p className="text-sm font-medium">No conversations yet</p>
+                <p className="text-xs mt-1 text-center">Click the menu icon above to start a new chat</p>
               </div>
             ) : (
-              filteredConversations.map((conv) => (
-                <button
-                  key={conv.phone}
-                  onClick={() => setSelectedPhone(conv.phone)}
-                  className={`w-full text-left p-3 border-b hover:bg-muted/50 transition-colors ${
-                    selectedPhone === conv.phone ? "bg-muted" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Phone className="h-4 w-4 text-primary" />
+              filteredConversations.map((conv) => {
+                const isActive = selectedPhone === conv.phone;
+                return (
+                  <button
+                    key={conv.phone}
+                    onClick={() => setSelectedPhone(conv.phone)}
+                    className={cn(
+                      "w-full text-left px-3 py-3 flex items-center gap-3 transition-colors border-b border-border/50",
+                      isActive ? "bg-[hsl(var(--accent))]" : "hover:bg-[hsl(var(--muted)/0.5)]"
+                    )}
+                  >
+                    {/* Avatar */}
+                    <div className={cn(
+                      "h-11 w-11 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-sm",
+                      getAvatarColor(conv.phone)
+                    )}>
+                      {getInitials(conv.name, conv.phone)}
                     </div>
+                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium truncate">
+                        <span className="text-[14px] font-medium truncate">
                           {conv.name || conv.phone}
                         </span>
-                        <span className="text-[10px] text-muted-foreground shrink-0">
-                          {formatDate(conv.lastMessage.created_at)}
+                        <span className={cn(
+                          "text-[11px] shrink-0 ml-2",
+                          conv.unread > 0 ? "text-[hsl(142,72%,40%)] font-medium" : "text-muted-foreground"
+                        )}>
+                          {formatListDate(conv.lastMessage.created_at)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between mt-0.5">
-                        <p className="text-xs text-muted-foreground truncate flex-1">
-                          {conv.lastMessage.direction === "incoming" ? "" : "You: "}
-                          {conv.lastMessage.message_body}
+                        <p className="text-[13px] text-muted-foreground truncate flex-1 flex items-center gap-1">
+                          {conv.lastMessage.direction !== "incoming" && (
+                            statusIcon(conv.lastMessage.status)
+                          )}
+                          <span className="truncate">
+                            {conv.lastMessage.message_body}
+                          </span>
                         </p>
                         {conv.unread > 0 && (
-                          <span className="ml-2 h-5 min-w-[20px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                          <span className="ml-2 h-5 min-w-[20px] rounded-full bg-[hsl(142,72%,40%)] text-white text-[11px] font-bold flex items-center justify-center px-1.5">
                             {conv.unread}
                           </span>
                         )}
                       </div>
                     </div>
-                  </div>
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* Chat Area (right panel) */}
-        <div className={`${!selectedPhone ? "hidden sm:flex" : "flex"} flex-col flex-1`}>
+        {/* ── Chat Area (right panel) ── */}
+        <div className={`${!selectedPhone ? "hidden md:flex" : "flex"} flex-col flex-1 min-w-0`}>
           {!selectedPhone ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <MessageSquare className="h-16 w-16 mb-4 opacity-30" />
-              <p className="text-lg font-medium">WhatsApp Business Chat</p>
-              <p className="text-sm mt-1">Select a conversation or start a new chat</p>
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground bg-[hsl(var(--muted)/0.3)]">
+              <div className="h-24 w-24 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center mb-4">
+                <MessageSquare className="h-12 w-12 opacity-30" />
+              </div>
+              <p className="text-xl font-light">WhatsApp Business</p>
+              <p className="text-sm mt-2 text-center max-w-sm">
+                Send and receive messages with your customers directly from your dashboard
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setShowNewChat(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Start a conversation
+              </Button>
             </div>
           ) : (
             <>
               {/* Chat Header */}
-              <div className="flex items-center gap-3 px-3 py-2 border-b bg-muted/30">
+              <div className="flex items-center gap-3 px-3 py-2.5 border-b bg-[hsl(var(--muted))]">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 sm:hidden"
+                  className="h-8 w-8 md:hidden shrink-0"
                   onClick={() => setSelectedPhone(null)}
                 >
-                  <XCircle className="h-4 w-4" />
+                  <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Phone className="h-4 w-4 text-primary" />
+                <div className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-sm",
+                  getAvatarColor(selectedPhone)
+                )}>
+                  {getInitials(conversations.find((c) => c.phone === selectedPhone)?.name || null, selectedPhone)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
+                  <p className="text-[14px] font-medium truncate">
                     {conversations.find((c) => c.phone === selectedPhone)?.name || selectedPhone}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">{selectedPhone}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {conversations.find((c) => c.phone === selectedPhone)?.name ? selectedPhone : "tap for contact info"}
+                  </p>
                 </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => {
+                      navigator.clipboard.writeText(selectedPhone);
+                      toast({ title: "Phone copied!" });
+                    }}>
+                      <Phone className="h-4 w-4 mr-2" /> Copy number
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSelectedPhone(null)}>
+                      <XCircle className="h-4 w-4 mr-2" /> Close chat
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-1" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }}>
+              {/* Messages Area */}
+              <div
+                className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5"
+                style={{
+                  backgroundColor: "hsl(var(--muted) / 0.2)",
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                }}
+              >
                 {selectedConversation.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-sm text-muted-foreground">No messages yet. Send the first message!</p>
+                    <div className="bg-[hsl(var(--muted))] rounded-lg px-4 py-2 text-center">
+                      <p className="text-xs text-muted-foreground">
+                        Send your first message to start the conversation
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   selectedConversation.map((msg: any, idx: number) => {
@@ -536,25 +687,34 @@ function ChatTab({ storeId }: { storeId: string }) {
                     return (
                       <React.Fragment key={msg.id}>
                         {showDate && (
-                          <div className="flex justify-center my-2">
-                            <span className="text-[10px] bg-muted px-3 py-1 rounded-full text-muted-foreground">
+                          <div className="flex justify-center my-3">
+                            <span className="text-[11px] bg-[hsl(var(--muted))] shadow-sm px-3 py-1 rounded-md text-muted-foreground font-medium">
                               {formatDate(msg.created_at)}
                             </span>
                           </div>
                         )}
-                        <div className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
+                        <div className={`flex ${isOutgoing ? "justify-end" : "justify-start"} mb-0.5`}>
                           <div
-                            className={`max-w-[80%] rounded-lg px-3 py-1.5 text-sm ${
+                            className={cn(
+                              "relative max-w-[85%] sm:max-w-[70%] rounded-lg px-3 py-1.5 text-[13.5px] shadow-sm",
                               isOutgoing
-                                ? "bg-primary text-primary-foreground rounded-br-none"
-                                : "bg-muted rounded-bl-none"
-                            }`}
+                                ? "bg-[hsl(142,70%,90%)] dark:bg-[hsl(142,40%,25%)] text-foreground rounded-tr-none"
+                                : "bg-card text-foreground rounded-tl-none"
+                            )}
                           >
-                            <p className="whitespace-pre-wrap break-words">{msg.message_body}</p>
-                            <div className={`flex items-center justify-end gap-1 mt-0.5 ${isOutgoing ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                              <span className="text-[10px]">{formatTime(msg.created_at)}</span>
+                            {/* Message body */}
+                            <p className="whitespace-pre-wrap break-words leading-[1.35]">{msg.message_body}</p>
+                            {/* Time + status */}
+                            <div className="flex items-center justify-end gap-1 -mb-0.5 mt-0.5">
+                              <span className="text-[10px] text-muted-foreground">{formatTime(msg.created_at)}</span>
                               {isOutgoing && statusIcon(msg.status)}
                             </div>
+                            {/* Error indicator */}
+                            {msg.status === "failed" && msg.error_message && (
+                              <p className="text-[10px] text-[hsl(var(--destructive))] mt-1 flex items-center gap-1">
+                                <AlertCircle className="h-2.5 w-2.5" /> {msg.error_message.slice(0, 60)}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </React.Fragment>
@@ -564,29 +724,68 @@ function ChatTab({ storeId }: { storeId: string }) {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Emoji Picker */}
+              {showEmoji && (
+                <div className="border-t px-3 py-2 bg-[hsl(var(--muted)/0.5)]">
+                  <div className="flex flex-wrap gap-1.5">
+                    {EMOJI_LIST.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => insertEmoji(emoji)}
+                        className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-[hsl(var(--muted))] text-lg transition-colors"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Message Input */}
-              <div className="border-t p-2 flex items-end gap-2">
-                <Textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  rows={1}
-                  className="text-sm resize-none min-h-[36px] max-h-[100px]"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
-                />
+              <div className="border-t px-2 py-2 flex items-end gap-1.5 bg-[hsl(var(--muted)/0.3)]">
                 <Button
+                  variant="ghost"
                   size="icon"
-                  className="h-9 w-9 shrink-0 rounded-full"
-                  onClick={sendMessage}
-                  disabled={sending || !message.trim()}
+                  className={cn("h-9 w-9 shrink-0 rounded-full", showEmoji && "bg-[hsl(var(--accent))]")}
+                  onClick={() => setShowEmoji(!showEmoji)}
                 >
-                  <Send className="h-4 w-4" />
+                  <Smile className="h-5 w-5 text-muted-foreground" />
                 </Button>
+                <div className="flex-1 relative">
+                  <Textarea
+                    ref={inputRef}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type a message"
+                    rows={1}
+                    className="text-[14px] resize-none min-h-[38px] max-h-[120px] rounded-xl bg-background border-border pr-3"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    onFocus={() => setShowEmoji(false)}
+                  />
+                </div>
+                {message.trim() ? (
+                  <Button
+                    size="icon"
+                    className="h-9 w-9 shrink-0 rounded-full bg-[hsl(142,72%,40%)] hover:bg-[hsl(142,72%,35%)] text-white"
+                    onClick={sendMessage}
+                    disabled={sending}
+                  >
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
+                ) : (
+                  <Button
+                    size="icon"
+                    className="h-9 w-9 shrink-0 rounded-full bg-[hsl(142,72%,40%)] hover:bg-[hsl(142,72%,35%)] text-white"
+                    disabled
+                  >
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </>
           )}
@@ -596,7 +795,6 @@ function ChatTab({ storeId }: { storeId: string }) {
   );
 }
 
-// ─── Automations Tab ─────────────────────────────────────────────────
 
 const TEMPLATE_VARIABLES: Record<string, { var: string; label: string }[]> = {
   order_confirmation: [
