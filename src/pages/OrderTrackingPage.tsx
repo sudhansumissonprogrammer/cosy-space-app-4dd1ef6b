@@ -14,7 +14,6 @@ import {
 import { format } from "date-fns";
 
 const STATUS_STEPS = [
-  { key: "pending", label: "Order Placed", icon: Package },
   { key: "confirmed", label: "Confirmed", icon: CheckCircle2 },
   { key: "shipped", label: "Shipped", icon: Truck },
   { key: "delivered", label: "Delivered", icon: CheckCircle2 },
