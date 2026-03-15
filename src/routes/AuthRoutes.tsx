@@ -56,6 +56,7 @@ export default function AuthRoutes() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/install" element={<InstallApp />} />
 
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
