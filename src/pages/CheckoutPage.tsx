@@ -428,6 +428,19 @@ export default function CheckoutPage() {
     }
   };
 
+  const notifyOrderEmail = (ordId: string) => {
+    void supabase.functions
+      .invoke("notify-order", {
+        body: { order_id: ordId, customer_email: email.trim() },
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error("notify-order error:", error.message);
+        }
+      })
+      .catch((err) => console.error("notify-order invoke error:", err));
+  };
+
   const saveAddressToAccount = async () => {
     if (!customer?.id) return;
     try {
