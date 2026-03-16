@@ -358,6 +358,7 @@ interface ThemeConfig {
   body_font: string;
   button_style: string;
   marquee_gradient: string;
+  marquee_text: string;
   product_card_style: string;
   category_style: string;
 }
