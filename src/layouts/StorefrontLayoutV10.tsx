@@ -460,7 +460,7 @@ function MilanoFooter({ store }: { store: StoreData }) {
             ))}
           </div>
           <div className="space-y-2.5">
-            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #b8873c)" }}>Policies</h4>
+            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>Policies</h4>
             {[
               { to: storefrontPath(store.slug, "return-policy"), label: "Return & Refund" },
               { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" },

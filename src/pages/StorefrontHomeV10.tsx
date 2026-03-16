@@ -164,7 +164,7 @@ function SectionHeader({ title, slug, linkTo }: { title: string; slug: string; l
         <Link
           to={storefrontPath(slug, linkTo)}
           className="text-xs font-semibold flex items-center gap-0.5 transition-opacity hover:opacity-70"
-          style={{ color: "var(--storefront-primary, #b8873c)" }}
+          style={{ color: "var(--storefront-primary, #1a1a1a)" }}
         >
           View All <ChevronRight className="h-3.5 w-3.5" />
         </Link>
