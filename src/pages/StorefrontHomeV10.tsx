@@ -45,7 +45,7 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
             to={storefrontPath(slug, "best-sellers")}
             className="inline-flex items-center gap-1.5 mt-2 px-6 py-2.5 text-sm font-semibold transition-all active:scale-95"
             style={{
-              backgroundColor: "var(--storefront-primary, #b8873c)",
+              backgroundColor: "var(--storefront-primary, #1a1a1a)",
               color: "var(--storefront-btn-text, #fff)",
               borderRadius: "var(--storefront-button-radius, 0.5rem)",
             }}
