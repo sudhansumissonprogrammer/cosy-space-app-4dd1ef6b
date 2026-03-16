@@ -126,9 +126,6 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           data: [event],
-          ...(process.env.META_TEST_EVENT_CODE
-            ? { test_event_code: process.env.META_TEST_EVENT_CODE }
-            : {}),
         }),
       }
     );
