@@ -271,6 +271,7 @@ export default function StorefrontHomeV10() {
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-2";
+  const categoryStyle = themeConfig?.category_style || "style-1";
   const effectiveSlug = slug || store.slug;
 
   return (
