@@ -5,6 +5,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { ArrowUpDown, Zap, Tag, Clock, Truck, Shield, RotateCcw } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
