@@ -24,7 +24,7 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
         }}
       >
         <div className="text-center space-y-3 px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70" style={{ color: "var(--storefront-primary, #b8873c)" }}>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>
             Welcome to
           </p>
           <h1
