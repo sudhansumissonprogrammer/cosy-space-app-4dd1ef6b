@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Globe, Palette, Lock, Check, Plus, Trash2, Flame } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Trash2, Flame, Store, MapPin, Clock, Image, FileText, Search, Award } from "lucide-react";
 import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 import { Switch } from "@/components/ui/switch";
 import { Link } from "react-router-dom";
@@ -31,13 +31,6 @@ interface Feature {
   title: string;
   description: string;
 }
-
-const THEMES = [
-  { id: "theme-1", name: "Classic", desc: "Clean & modern storefront", available: true },
-  { id: "theme-2", name: "Bold", desc: "Eye-catching vibrant design", available: false },
-  { id: "theme-3", name: "Minimal", desc: "Simple & elegant layout", available: false },
-  { id: "theme-4", name: "Starter", desc: "Starter template with cool UI", available: false },
-];
 
 export default function StoreSettings() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -67,13 +60,10 @@ export default function StoreSettings() {
   const [heroRemoved, setHeroRemoved] = useState(false);
   const [heroImages, setHeroImages] = useState<string[]>([]);
   const [heroImageFiles, setHeroImageFiles] = useState<File[]>([]);
-  const [theme, setTheme] = useState("theme-1");
   const [features, setFeatures] = useState<Feature[]>([]);
   const [returnPolicy, setReturnPolicy] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
-  const [facebookPixelId, setFacebookPixelId] = useState("");
-  const [metaAccessToken, setMetaAccessToken] = useState("");
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [ogImageUrl, setOgImageUrl] = useState("");
@@ -81,6 +71,7 @@ export default function StoreSettings() {
   const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
   const [ogImageRemoved, setOgImageRemoved] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState("");
+
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
     queryFn: async () => {
@@ -117,13 +108,10 @@ export default function StoreSettings() {
       if (existingHeroImages && Array.isArray(existingHeroImages) && existingHeroImages.length > 0) {
         setHeroImages(existingHeroImages);
       }
-      setTheme((store as any).theme || "theme-1");
       if (store.features) setFeatures(store.features as unknown as Feature[]);
       setReturnPolicy((store as any).return_policy || "");
       setShippingPolicy((store as any).shipping_policy || "");
       setBestSellingCarousel((store as any).best_selling_carousel || false);
-      setFacebookPixelId((store as any).facebook_pixel_id || "");
-      setMetaAccessToken((store as any).meta_access_token || "");
       setMetaTitle((store as any).meta_title || "");
       setMetaDescription((store as any).meta_description || "");
       setOgImageUrl((store as any).og_image_url || "");
@@ -132,7 +120,7 @@ export default function StoreSettings() {
     }
   }, [store]);
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
   const uploadFile = async (file: File, bucket: string) => {
     if (file.size > MAX_FILE_SIZE) throw new Error("File must be less than 5MB");
@@ -162,14 +150,12 @@ export default function StoreSettings() {
       if (bannerFile) bannerUrl = await uploadFile(bannerFile, "store-banners");
       if (heroFile) mobileHeroUrl = await uploadFile(heroFile, "store-banners");
 
-      // Upload new hero carousel images
       let finalHeroImages = [...heroImages];
       for (const file of heroImageFiles) {
         const url = await uploadFile(file, "store-banners");
         finalHeroImages.push(url);
       }
 
-      // Handle OG image upload
       let finalOgImageUrl = ogImageUrl;
       if (ogImageRemoved) finalOgImageUrl = "";
       if (ogImageFile) {
@@ -192,15 +178,12 @@ export default function StoreSettings() {
           business_hours: hasHours ? businessHours : null,
           logo_url: logoUrl,
           banner_url: bannerUrl,
-           mobile_hero_url: mobileHeroUrl,
-           mobile_hero_images: finalHeroImages.length > 0 ? finalHeroImages : null,
-          theme,
+          mobile_hero_url: mobileHeroUrl,
+          mobile_hero_images: finalHeroImages.length > 0 ? finalHeroImages : null,
           features: features.length > 0 ? features : null,
           return_policy: returnPolicy.trim() || null,
           shipping_policy: shippingPolicy.trim() || null,
           best_selling_carousel: bestSellingCarousel,
-          facebook_pixel_id: facebookPixelId.trim() || null,
-          meta_access_token: metaAccessToken.trim() || null,
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
           og_image_url: finalOgImageUrl.trim() || null,
@@ -230,7 +213,7 @@ export default function StoreSettings() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link to="/dashboard/stores">
+          <Link to="/dashboard">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -245,72 +228,39 @@ export default function StoreSettings() {
           e.preventDefault();
           updateMutation.mutate();
         }}
+        className="space-y-6"
       >
+        {/* ── 1. Basic Info ── */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">General</CardTitle>
-            <CardDescription>Update your store details</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Store className="h-5 w-5 text-primary" /> Basic Information
+            </CardTitle>
+            <CardDescription>Your store name, contact info and currency</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="store-name">Store Name *</Label>
               <Input id="store-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="store-desc">Description</Label>
-              <Textarea
-                id="store-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                maxLength={1000}
-              />
+              <Textarea id="store-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={1000} />
             </div>
-
-
-
-
-            <div className="space-y-2">
-              <Label htmlFor="whatsapp">WhatsApp Number</Label>
-              <Input
-                id="whatsapp"
-                placeholder="+1234567890"
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="owner-email">Notification Email</Label>
-              <Input
-                id="owner-email"
-                type="email"
-                placeholder="you@example.com"
-                value={ownerEmail}
-                onChange={(e) => setOwnerEmail(e.target.value)}
-                maxLength={200}
-              />
-              <p className="text-xs text-muted-foreground">Order notification emails will be sent to this address</p>
-            </div>
-
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+                <Label htmlFor="whatsapp">WhatsApp Number</Label>
+                <Input id="whatsapp" placeholder="+1234567890" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State / Region</Label>
-                <Input id="state" placeholder="Maharashtra" value={stateName} onChange={(e) => setStateName(e.target.value)} maxLength={100} />
+                <Label htmlFor="owner-email">Notification Email</Label>
+                <Input id="owner-email" type="email" placeholder="you@example.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={200} />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="currency">Currency</Label>
               <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger id="currency">
-                  <SelectValue placeholder="Select currency" />
-                </SelectTrigger>
+                <SelectTrigger id="currency"><SelectValue placeholder="Select currency" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="INR">₹ INR – Indian Rupee</SelectItem>
                   <SelectItem value="USD">$ USD – US Dollar</SelectItem>
@@ -329,12 +279,6 @@ export default function StoreSettings() {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="location">Full Address</Label>
-              <Input id="location" placeholder="123 Main St, City" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={500} />
-            </div>
-
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="instagram">Instagram URL</Label>
@@ -345,423 +289,197 @@ export default function StoreSettings() {
                 <Input id="facebook" placeholder="https://facebook.com/store" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} maxLength={200} />
               </div>
             </div>
+          </CardContent>
+        </Card>
 
+        {/* ── 2. Location & Hours ── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MapPin className="h-5 w-5 text-primary" /> Location & Hours
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State / Region</Label>
+                <Input id="state" placeholder="Maharashtra" value={stateName} onChange={(e) => setStateName(e.target.value)} maxLength={100} />
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label>Business Hours</Label>
+              <Label htmlFor="location">Full Address</Label>
+              <Input id="location" placeholder="123 Main St, City" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={500} />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Business Hours</Label>
               <div className="grid gap-2">
                 {Object.entries(businessHours).map(([day, hours]) => (
                   <div key={day} className="flex items-center gap-2">
                     <span className="w-10 text-sm font-medium capitalize text-muted-foreground">{day}</span>
-                    <Input
-                      placeholder="9:00-18:00 or Closed"
-                      value={hours}
-                      onChange={(e) => setBusinessHours((prev) => ({ ...prev, [day]: e.target.value }))}
-                      maxLength={50}
-                    />
+                    <Input placeholder="9:00-18:00 or Closed" value={hours} onChange={(e) => setBusinessHours((prev) => ({ ...prev, [day]: e.target.value }))} maxLength={50} />
                   </div>
                 ))}
               </div>
             </div>
+          </CardContent>
+        </Card>
 
+        {/* ── 3. Images & Media ── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Image className="h-5 w-5 text-primary" /> Images & Media
+            </CardTitle>
+            <CardDescription>Logo, banner, and mobile hero images</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Logo</Label>
                 {logoPreview ? (
                   <div className="relative inline-block">
                     <img src={logoPreview} alt="Logo" className="h-20 w-20 rounded-lg border object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => { setLogoFile(null); setLogoPreview(null); setLogoRemoved(true); }}
-                      className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    <button type="button" onClick={() => { setLogoFile(null); setLogoPreview(null); setLogoRemoved(true); }} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
                   </div>
                 ) : (
                   <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-input hover:border-primary/50">
                     <Upload className="h-4 w-4 text-muted-foreground" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) { setLogoFile(f); setLogoPreview(URL.createObjectURL(f)); setLogoRemoved(false); }
-                      }}
-                    />
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setLogoFile(f); setLogoPreview(URL.createObjectURL(f)); setLogoRemoved(false); } }} />
                   </label>
                 )}
               </div>
-
               <div className="space-y-2">
                 <Label>Banner</Label>
                 {bannerPreview ? (
                   <div className="relative inline-block">
                     <img src={bannerPreview} alt="Banner" className="h-20 w-40 rounded-lg border object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => { setBannerFile(null); setBannerPreview(null); setBannerRemoved(true); }}
-                      className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    <button type="button" onClick={() => { setBannerFile(null); setBannerPreview(null); setBannerRemoved(true); }} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
                   </div>
                 ) : (
                   <label className="flex h-20 w-40 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-input hover:border-primary/50">
                     <Upload className="h-4 w-4 text-muted-foreground" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) { setBannerFile(f); setBannerPreview(URL.createObjectURL(f)); setBannerRemoved(false); }
-                      }}
-                    />
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setBannerFile(f); setBannerPreview(URL.createObjectURL(f)); setBannerRemoved(false); } }} />
                   </label>
                 )}
               </div>
             </div>
 
+            {/* Mobile Hero */}
             <div className="space-y-2">
-              <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(shown only on mobile — add multiple for carousel)</span></Label>
-              
-              {/* Single legacy hero */}
+              <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(add multiple for carousel)</span></Label>
               {heroPreview ? (
                 <div className="relative inline-block">
                   <img src={heroPreview} alt="Mobile Hero" className="w-full max-h-32 rounded-lg border object-contain" />
-                  <button
-                    type="button"
-                    onClick={() => { setHeroFile(null); setHeroPreview(null); setHeroRemoved(true); }}
-                    className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                  <button type="button" onClick={() => { setHeroFile(null); setHeroPreview(null); setHeroRemoved(true); }} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
                 </div>
               ) : (
                 <label className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input hover:border-primary/50">
                   <Upload className="h-4 w-4 text-muted-foreground" />
                   <span className="text-[10px] text-muted-foreground">Upload mobile hero</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) { setHeroFile(f); setHeroPreview(URL.createObjectURL(f)); setHeroRemoved(false); }
-                    }}
-                  />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setHeroFile(f); setHeroPreview(URL.createObjectURL(f)); setHeroRemoved(false); } }} />
                 </label>
               )}
-
-              {/* Multiple hero images for carousel */}
-              <Label className="text-xs text-muted-foreground font-normal">Carousel Images (optional — adds swipeable hero slides)</Label>
+              <Label className="text-xs text-muted-foreground font-normal">Carousel Images (optional)</Label>
               <div className="flex flex-wrap gap-2">
                 {heroImages.map((url, i) => (
                   <div key={i} className="relative">
                     <img src={url} alt={`Hero ${i + 1}`} className="h-20 w-32 rounded-lg border object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setHeroImages(prev => prev.filter((_, idx) => idx !== i))}
-                      className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    <button type="button" onClick={() => setHeroImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
                 {heroImageFiles.map((file, i) => (
                   <div key={`new-${i}`} className="relative">
                     <img src={URL.createObjectURL(file)} alt={`New hero ${i + 1}`} className="h-20 w-32 rounded-lg border object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setHeroImageFiles(prev => prev.filter((_, idx) => idx !== i))}
-                      className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    <button type="button" onClick={() => setHeroImageFiles(prev => prev.filter((_, idx) => idx !== i))} className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
                 <label className="flex h-20 w-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-input hover:border-primary/50">
                   <Plus className="h-5 w-5 text-muted-foreground" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (files.length > 0) setHeroImageFiles(prev => [...prev, ...files]);
-                    }}
-                  />
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { const files = Array.from(e.target.files || []); if (files.length > 0) setHeroImageFiles(prev => [...prev, ...files]); }} />
                 </label>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* ── 4. Storefront Display ── */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Tracking & Analytics</CardTitle>
-            <CardDescription>Connect your Facebook Pixel for Meta Ads tracking</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Flame className="h-5 w-5 text-primary" /> Storefront Display
+            </CardTitle>
+            <CardDescription>Control how products and features appear on your store</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fb-pixel">Facebook Pixel ID</Label>
-              <Input
-                id="fb-pixel"
-                placeholder="e.g. 123456789012345"
-                value={facebookPixelId}
-                onChange={(e) => setFacebookPixelId(e.target.value)}
-                maxLength={20}
-              />
-              <p className="text-xs text-muted-foreground">
-                Enter your Facebook Pixel ID to track PageView, ViewContent, AddToCart, InitiateCheckout and Purchase events automatically.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="meta-token">Meta Conversions API Access Token</Label>
-              <Input
-                id="meta-token"
-                type="password"
-                placeholder="Enter your Meta CAPI access token"
-                value={metaAccessToken}
-                onChange={(e) => setMetaAccessToken(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Get this from Meta Events Manager → Settings → Conversions API → Generate Access Token. Enables server-side tracking for better ad optimization.
-              </p>
-            </div>
-
-            {store?.slug && (
-              <div className="space-y-2 rounded-lg border p-3 bg-muted/50">
-                <Label className="text-sm font-semibold">Product Catalog Feed URL</Label>
-                <p className="text-xs text-muted-foreground">
-                  Use this URL in Meta Commerce Manager to set up Dynamic Product Ads:
-                </p>
-                <div className="flex gap-2 items-center">
-                  <code className="flex-1 text-xs bg-background p-2 rounded border break-all">
-                    {`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed?slug=${store.slug}`}
-                  </code>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed?slug=${store.slug}`);
-                      toast.success("Feed URL copied!");
-                    }}
-                  >
-                    Copy
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Supports XML (default) and CSV (?format=csv) formats.
-                </p>
+          <CardContent className="space-y-5">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">Best Selling Carousel</p>
+                <p className="text-xs text-muted-foreground">Show best sellers in a swipeable carousel</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <Switch checked={bestSellingCarousel} onCheckedChange={setBestSellingCarousel} />
+            </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Why Choose Us</CardTitle>
-            <CardDescription>Manage selling points shown on your Contact page</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {features.map((feature, idx) => (
-              <div key={idx} className="flex gap-2 items-start rounded-lg border p-3">
-                <div className="flex-1 space-y-2">
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <Select
-                      value={feature.icon}
-                      onValueChange={(v) => {
-                        const updated = [...features];
-                        updated[idx] = { ...updated[idx], icon: v };
-                        setFeatures(updated);
-                      }}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Icon" /></SelectTrigger>
-                      <SelectContent>
-                        {ICON_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      placeholder="Title"
-                      value={feature.title}
-                      onChange={(e) => {
-                        const updated = [...features];
-                        updated[idx] = { ...updated[idx], title: e.target.value };
-                        setFeatures(updated);
-                      }}
-                      className="sm:col-span-2"
-                      maxLength={50}
-                    />
+            {/* Why Choose Us features */}
+            <div className="space-y-3">
+              <div>
+                <Label className="flex items-center gap-1.5"><Award className="h-3.5 w-3.5" /> Why Choose Us</Label>
+                <p className="text-xs text-muted-foreground">Selling points shown on your Contact page</p>
+              </div>
+              {features.map((feature, idx) => (
+                <div key={idx} className="flex gap-2 items-start rounded-lg border p-3">
+                  <div className="flex-1 space-y-2">
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <Select value={feature.icon} onValueChange={(v) => { const updated = [...features]; updated[idx] = { ...updated[idx], icon: v }; setFeatures(updated); }}>
+                        <SelectTrigger><SelectValue placeholder="Icon" /></SelectTrigger>
+                        <SelectContent>{ICON_OPTIONS.map((o) => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}</SelectContent>
+                      </Select>
+                      <Input placeholder="Title" value={feature.title} onChange={(e) => { const updated = [...features]; updated[idx] = { ...updated[idx], title: e.target.value }; setFeatures(updated); }} className="sm:col-span-2" maxLength={50} />
+                    </div>
+                    <Input placeholder="Description" value={feature.description} onChange={(e) => { const updated = [...features]; updated[idx] = { ...updated[idx], description: e.target.value }; setFeatures(updated); }} maxLength={100} />
                   </div>
-                  <Input
-                    placeholder="Description"
-                    value={feature.description}
-                    onChange={(e) => {
-                      const updated = [...features];
-                      updated[idx] = { ...updated[idx], description: e.target.value };
-                      setFeatures(updated);
-                    }}
-                    maxLength={100}
-                  />
+                  <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => setFeatures(features.filter((_, i) => i !== idx))}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={() => setFeatures(features.filter((_, i) => i !== idx))}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+              ))}
+              {features.length < 6 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setFeatures([...features, { icon: "Award", title: "", description: "" }])}>
+                  <Plus className="mr-1 h-4 w-4" /> Add Feature
                 </Button>
-              </div>
-            ))}
-            {features.length < 6 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setFeatures([...features, { icon: "Award", title: "", description: "" }])}
-              >
-                <Plus className="mr-1 h-4 w-4" /> Add Feature
-              </Button>
-            )}
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Policies */}
+        {/* ── 5. Store Policies ── */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Store Policies</CardTitle>
-            <CardDescription>Customize your return and shipping policies. Leave blank to use default templates.</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="h-5 w-5 text-primary" /> Store Policies
+            </CardTitle>
+            <CardDescription>Leave blank to use default templates</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="return-policy">Return Policy</Label>
-              <Textarea
-                id="return-policy"
-                value={returnPolicy}
-                onChange={(e) => setReturnPolicy(e.target.value)}
-                rows={6}
-                placeholder="Leave blank for a default return policy template..."
-                maxLength={5000}
-              />
+              <Textarea id="return-policy" value={returnPolicy} onChange={(e) => setReturnPolicy(e.target.value)} rows={5} placeholder="Leave blank for a default template..." maxLength={5000} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="shipping-policy">Shipping Policy</Label>
-              <Textarea
-                id="shipping-policy"
-                value={shippingPolicy}
-                onChange={(e) => setShippingPolicy(e.target.value)}
-                rows={6}
-                placeholder="Leave blank for a default shipping policy template..."
-                maxLength={5000}
-              />
+              <Textarea id="shipping-policy" value={shippingPolicy} onChange={(e) => setShippingPolicy(e.target.value)} rows={5} placeholder="Leave blank for a default template..." maxLength={5000} />
             </div>
           </CardContent>
         </Card>
 
-        {/* Domain Settings */}
+        {/* ── 6. SEO ── */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Custom Domain</CardTitle>
-            <CardDescription>Connect your own domain to this store</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                {store?.custom_domain ? (
-                  <span>Connected: <strong className="text-foreground">{store.custom_domain}</strong></span>
-                ) : (
-                  "No custom domain configured"
-                )}
-              </div>
-              <Button variant="outline" asChild>
-                <Link to={`/dashboard/stores/${storeId}/domain`}>
-                  <Globe className="mr-2 h-4 w-4" /> Configure Domain
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Best Selling Display */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Flame className="h-5 w-5 text-orange-500" /> Best Selling Display
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Search className="h-5 w-5 text-primary" /> SEO Settings
             </CardTitle>
-            <CardDescription>Choose how best-selling products appear on your storefront</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-foreground">Carousel Mode</p>
-                <p className="text-xs text-muted-foreground">Show best-selling products in a swipeable carousel instead of a grid</p>
-              </div>
-              <Switch
-                checked={bestSellingCarousel}
-                onCheckedChange={setBestSellingCarousel}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Theme</CardTitle>
-            <CardDescription>Choose your storefront look</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {THEMES.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  disabled={!t.available}
-                  onClick={() => t.available && setTheme(t.id)}
-                  className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all ${
-                    !t.available
-                      ? "cursor-not-allowed border-input bg-muted/40 opacity-60"
-                      : theme === t.id
-                      ? "border-primary bg-primary/5 shadow-md"
-                      : "border-input hover:border-primary/30"
-                  }`}
-                >
-                  {!t.available && (
-                    <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      <Lock className="h-2.5 w-2.5" /> Coming Soon
-                    </span>
-                  )}
-                  {theme === t.id && t.available && (
-                    <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-                      <Check className="h-3 w-3 text-primary-foreground" />
-                    </span>
-                  )}
-                  <div className={`flex h-12 w-full items-center justify-center rounded-lg ${
-                    t.available ? "bg-gradient-to-br from-primary/20 to-primary/5" : "bg-muted"
-                  }`}>
-                    <Palette className={`h-5 w-5 ${t.available ? "text-primary" : "text-muted-foreground"}`} />
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.desc}</p>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* SEO Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> SEO Settings</CardTitle>
-            <CardDescription>Optimize your store for search engines.</CardDescription>
+            <CardDescription>Optimize your store for search engines</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -779,13 +497,7 @@ export default function StoreSettings() {
               {ogImagePreview ? (
                 <div className="relative inline-block">
                   <img src={ogImagePreview} alt="OG Image" className="h-24 w-48 rounded-lg border object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => { setOgImageFile(null); setOgImagePreview(null); setOgImageUrl(""); setOgImageRemoved(true); }}
-                    className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                  <button type="button" onClick={() => { setOgImageFile(null); setOgImagePreview(null); setOgImageUrl(""); setOgImageRemoved(true); }} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
                 </div>
               ) : (
                 <label className="flex h-24 w-48 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-input hover:border-primary/50">
@@ -793,19 +505,34 @@ export default function StoreSettings() {
                     <Upload className="h-4 w-4 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Upload image</span>
                   </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) { setOgImageFile(f); setOgImagePreview(URL.createObjectURL(f)); setOgImageRemoved(false); }
-                    }}
-                  />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setOgImageFile(f); setOgImagePreview(URL.createObjectURL(f)); setOgImageRemoved(false); } }} />
                 </label>
               )}
               <p className="text-xs text-muted-foreground">Or paste a URL:</p>
               <Input value={ogImageUrl} onChange={(e) => { setOgImageUrl(e.target.value); if (e.target.value) { setOgImagePreview(e.target.value); setOgImageFile(null); setOgImageRemoved(false); } }} placeholder="https://..." maxLength={500} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── 7. Domain shortcut ── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Globe className="h-5 w-5 text-primary" /> Custom Domain
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                {store?.custom_domain ? (
+                  <span>Connected: <strong className="text-foreground">{store.custom_domain}</strong></span>
+                ) : "No custom domain configured"}
+              </div>
+              <Button variant="outline" asChild>
+                <Link to={`/dashboard/stores/${storeId}/domain`}>
+                  <Globe className="mr-2 h-4 w-4" /> Configure
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
