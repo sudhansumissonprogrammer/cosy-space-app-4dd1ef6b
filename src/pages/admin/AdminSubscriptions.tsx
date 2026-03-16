@@ -238,6 +238,9 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
 
 function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any; plans: any[]; onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
+  const isCustom = !!assignment.custom_plan_name;
+  const [useCustomPlan, setUseCustomPlan] = useState(isCustom);
+  const [customPlanName, setCustomPlanName] = useState(assignment.custom_plan_name || "");
   const [planId, setPlanId] = useState(assignment.plan_id || "");
   const [customPrice, setCustomPrice] = useState(assignment.custom_price?.toString() || "");
   const [isFreeLifetime, setIsFreeLifetime] = useState(assignment.is_free_lifetime || false);
@@ -253,7 +256,8 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
     try {
       const payload: any = {
         plan_id: planId,
-        custom_price: customPrice ? parseFloat(customPrice) : null,
+        custom_plan_name: useCustomPlan ? customPlanName.trim() || null : null,
+        custom_price: useCustomPlan || !isFreeLifetime ? (customPrice ? parseFloat(customPrice) : null) : 0,
         is_free_lifetime: isFreeLifetime,
         is_one_time: isOneTime,
         custom_product_limit: customLimit ? parseInt(customLimit) : null,
@@ -280,7 +284,9 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
     }
   };
 
-  const handleResetOverrides = async () => {
+  const handleResetOverrides = () => {
+    setUseCustomPlan(false);
+    setCustomPlanName("");
     setCustomPrice("");
     setIsFreeLifetime(false);
     setIsOneTime(false);
@@ -302,21 +308,36 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Base Plan</Label>
-            <Select value={planId} onValueChange={setPlanId}>
-              <SelectTrigger><SelectValue placeholder="Select plan" /></SelectTrigger>
-              <SelectContent>
-                {plans.filter((p) => p.is_active).map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name} — ₹{Number(p.price).toFixed(0)}/mo</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Plan Type Toggle */}
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <Label htmlFor="custom-plan-toggle" className="text-sm font-medium">Custom Monthly Plan</Label>
+            <Switch id="custom-plan-toggle" checked={useCustomPlan} onCheckedChange={setUseCustomPlan} />
           </div>
+
+          {!useCustomPlan ? (
+            <div className="space-y-2">
+              <Label>Global Plan</Label>
+              <Select value={planId} onValueChange={setPlanId}>
+                <SelectTrigger><SelectValue placeholder="Select plan" /></SelectTrigger>
+                <SelectContent>
+                  {plans.filter((p) => p.is_active).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name} — ₹{Number(p.price).toFixed(0)}/mo</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Custom Plan Name</Label>
+              <Input value={customPlanName} onChange={(e) => setCustomPlanName(e.target.value)} placeholder="e.g. Gold Monthly" />
+            </div>
+          )}
 
           <div className="rounded-lg border p-3 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-foreground">Store Overrides</p>
+              <p className="text-sm font-medium text-foreground">
+                {useCustomPlan ? "Custom Plan Settings" : "Store Overrides"}
+              </p>
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={handleResetOverrides}>
                 Reset All
               </Button>
@@ -334,14 +355,14 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
 
             {!isFreeLifetime && (
               <div className="space-y-1">
-                <Label className="text-sm">Custom Price (₹)</Label>
-                <Input type="number" min="0" step="1" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} placeholder="Use plan default" />
+                <Label className="text-sm">{useCustomPlan ? "Monthly Price (₹)" : "Custom Price (₹)"}</Label>
+                <Input type="number" min="0" step="1" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} placeholder={useCustomPlan ? "Required" : "Use plan default"} />
               </div>
             )}
 
             <div className="space-y-1">
-              <Label className="text-sm">Custom Product Limit</Label>
-              <Input type="number" min="1" value={customLimit} onChange={(e) => setCustomLimit(e.target.value)} placeholder="Use plan default" />
+              <Label className="text-sm">Product Limit</Label>
+              <Input type="number" min="1" value={customLimit} onChange={(e) => setCustomLimit(e.target.value)} placeholder={useCustomPlan ? "Unlimited" : "Use plan default"} />
             </div>
 
             <div className="space-y-1">
@@ -353,7 +374,9 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
 
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-          <Button onClick={handleSave} disabled={loading || !planId}>{loading ? "Saving..." : "Save"}</Button>
+          <Button onClick={handleSave} disabled={loading || !planId || (useCustomPlan && !customPlanName.trim())}>
+            {loading ? "Saving..." : "Save"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
