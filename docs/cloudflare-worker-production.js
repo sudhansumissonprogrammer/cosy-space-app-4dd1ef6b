@@ -13,7 +13,7 @@
  *    - *.storivo.in/*    (subdomains: OG rewrite + SEO files + proxy)
  *    - storivo.in/store/* (path redirect)
  *
- * Required: og-meta, sitemap, robots-txt edge functions must be deployed.
+ * Required: share-page, og-meta, sitemap, robots-txt edge functions must be deployed.
  */
 
 const ROOT_DOMAIN = "storivo.in";
@@ -21,7 +21,6 @@ const ORIGIN_HOST = "core-sparkle-suite.lovable.app";
 const SUPABASE_URL = "https://dtwmmuzmepdltroiypgu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0d21tdXptZXBkbHRyb2l5cGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDM4MjMsImV4cCI6MjA4OTIxOTgyM30.Kq4jRUeelihhqyRWLodiQIhhSi0AANQ7PletSjS4NlU";
 
-// Social media crawler + OG scraper User-Agent patterns
 const BOT_UA_REGEX = /WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|OpenGraphIO|opengraph\.xyz|Embedly|Iframely|MetaInspector|PetalBot|Bingbot|YandexBot|curl|wget|HeadlessChrome|Lighthouse|Prerender/i;
 
 function escapeHtml(str) {
@@ -33,7 +32,6 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
-/** Proxy a request to the Lovable origin */
 function proxyToOrigin(request) {
   const originUrl = new URL(request.url);
   originUrl.hostname = ORIGIN_HOST;
@@ -47,19 +45,31 @@ function proxyToOrigin(request) {
   });
 }
 
-/** Call a Supabase edge function */
-function callEdgeFunction(name, slug) {
-  return fetch(
-    `${SUPABASE_URL}/functions/v1/${name}?slug=${encodeURIComponent(slug)}`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-  );
+function callEdgeFunction(name, params = {}) {
+  const endpoint = new URL(`${SUPABASE_URL}/functions/v1/${name}`);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      endpoint.searchParams.set(key, String(value));
+    }
+  });
+
+  return fetch(endpoint.toString(), {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+  });
 }
 
-/**
- * Build a lightweight self-contained HTML page with OG tags.
- * Served directly to bots — no proxying needed, so it's instant.
- * Human visitors who somehow hit this get redirected to the real page.
- */
+function getProductSlugFromPath(pathname) {
+  const match = pathname.match(/^\/product\/([^/?#]+)/i);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function buildStoreUrl(slug, pathname, search = "") {
+  return `https://${slug}.${ROOT_DOMAIN}${pathname}${search}`;
+}
+
 function buildOgHtml(og, storeUrl) {
   const title = escapeHtml(og.title || "");
   const description = escapeHtml(og.description || "");
@@ -101,7 +111,6 @@ export default {
     const url = new URL(request.url);
     const hostname = url.hostname;
 
-    // ─── 1. PATH REDIRECT: storivo.in/store/{slug} → {slug}.storivo.in ───
     if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
       const match = url.pathname.match(/^\/store\/([a-zA-Z0-9_-]+)(\/.*)?$/);
       if (match) {
@@ -119,7 +128,6 @@ export default {
       return proxyToOrigin(request);
     }
 
-    // ─── SUBDOMAIN LOGIC ───
     if (!hostname.endsWith(`.${ROOT_DOMAIN}`)) {
       return proxyToOrigin(request);
     }
@@ -129,31 +137,46 @@ export default {
       return proxyToOrigin(request);
     }
 
-    // ─── 2. SEO FILES: /sitemap.xml and /robots.txt ───
     if (url.pathname === "/sitemap.xml") {
-      const res = await callEdgeFunction("sitemap", slug);
+      const res = await callEdgeFunction("sitemap", { slug });
       return new Response(await res.text(), {
         headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=86400" },
       });
     }
 
     if (url.pathname === "/robots.txt") {
-      const res = await callEdgeFunction("robots-txt", slug);
+      const res = await callEdgeFunction("robots-txt", { slug });
       return new Response(await res.text(), {
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=86400" },
       });
     }
 
-    // ─── 3. OG FOR SOCIAL CRAWLERS — serve lightweight HTML, no proxy needed ───
     const userAgent = request.headers.get("User-Agent") || "";
     if (BOT_UA_REGEX.test(userAgent)) {
       try {
-        const ogResponse = await callEdgeFunction("og-meta", slug);
+        const productSlug = getProductSlugFromPath(url.pathname);
+        const versionToken = url.searchParams.get("v");
 
+        const shareResponse = await callEdgeFunction("share-page", {
+          slug,
+          ...(productSlug ? { product: productSlug } : {}),
+          ...(versionToken ? { v: versionToken } : {}),
+        });
+
+        if (shareResponse.ok) {
+          return new Response(await shareResponse.text(), {
+            status: 200,
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+              "Cache-Control": "public, max-age=300, s-maxage=3600",
+            },
+          });
+        }
+
+        const ogResponse = await callEdgeFunction("og-meta", { slug });
         if (ogResponse.ok) {
           const og = await ogResponse.json();
-          const storeUrl = `https://${slug}.${ROOT_DOMAIN}${url.pathname}`;
-          const html = buildOgHtml(og, storeUrl);
+          const html = buildOgHtml(og, buildStoreUrl(slug, url.pathname, url.search));
 
           return new Response(html, {
             status: 200,
@@ -168,7 +191,6 @@ export default {
       }
     }
 
-    // ─── 4. NORMAL REQUEST — proxy to origin ───
     return proxyToOrigin(request);
   },
 };

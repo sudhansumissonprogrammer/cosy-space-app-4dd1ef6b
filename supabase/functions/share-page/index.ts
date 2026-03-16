@@ -26,8 +26,6 @@ function normalizeOgImageUrl(imageUrl: string): string {
       parsed.hostname.includes("shopify.com") ||
       parsed.pathname.includes("/cdn/shop/files/");
 
-    // WhatsApp can fail to render Shopify images when they are served as WebP
-    // (even when URL extension is .png/.jpg). Force crawler-safe JPEG output.
     if (isShopifyCdnAsset && !pathname.endsWith(".gif")) {
       parsed.searchParams.set("format", "pjpg");
       parsed.searchParams.set("width", "1200");
@@ -36,6 +34,18 @@ function normalizeOgImageUrl(imageUrl: string): string {
     return parsed.toString();
   } catch {
     return imageUrl;
+  }
+}
+
+function appendVersionParam(targetUrl: string, versionToken: string | null): string {
+  if (!versionToken) return targetUrl;
+
+  try {
+    const parsed = new URL(targetUrl);
+    parsed.searchParams.set("v", versionToken);
+    return parsed.toString();
+  } catch {
+    return targetUrl;
   }
 }
 
@@ -93,6 +103,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const slug = url.searchParams.get("slug");
   const productSlug = url.searchParams.get("product");
+  const versionToken = url.searchParams.get("v");
 
   if (!slug) {
     return new Response("Missing slug", { status: 400 });
@@ -103,7 +114,6 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Fetch store
   const { data: store, error } = await supabase
     .from("stores")
     .select("id, name, description, meta_title, meta_description, og_image_url, logo_url, banner_url, slug, currency")
@@ -114,9 +124,9 @@ Deno.serve(async (req) => {
     return new Response("Store not found", { status: 404 });
   }
 
-  const storeUrl = `https://${slug}.${ROOT_DOMAIN}`;
+  const baseStoreUrl = `https://${slug}.${ROOT_DOMAIN}`;
+  const storeUrl = appendVersionParam(baseStoreUrl, versionToken);
 
-  // ── Product share ──
   if (productSlug) {
     let { data: product } = await supabase
       .from("products")
@@ -126,7 +136,6 @@ Deno.serve(async (req) => {
       .eq("is_active", true)
       .maybeSingle();
 
-    // Fallback: allow sharing by product ID when slug is unavailable
     if (!product) {
       const { data: byId } = await supabase
         .from("products")
@@ -143,13 +152,13 @@ Deno.serve(async (req) => {
       const currency = product.currency || store.currency || "INR";
       const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
       const priceText = `${currencySymbol}${price}`;
-      
+
       const productTitle = escapeHtml(`${product.name} - ${priceText}`);
       const productDesc = escapeHtml(product.description || `Shop ${product.name} at ${store.name}`);
       const rawProductImage = product.image_url || store.og_image_url || store.banner_url || "";
       const productImage = normalizeOgImageUrl(rawProductImage);
       const productPath = product.slug || product.id;
-      const productUrl = `${storeUrl}/product/${productPath}`;
+      const productUrl = appendVersionParam(`${baseStoreUrl}/product/${productPath}`, versionToken);
 
       const html = buildHtml(productTitle, productDesc, productImage, productUrl, productUrl, escapeHtml(store.name));
       return new Response(html, {
@@ -161,7 +170,6 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── Store share (default) ──
   const title = escapeHtml(store.meta_title || store.name);
   const description = escapeHtml(store.meta_description || store.description || `Shop at ${store.name}`);
   const rawStoreImage = store.og_image_url || store.banner_url || store.logo_url || "";
