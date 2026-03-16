@@ -138,9 +138,9 @@ export default function StorefrontHome() {
             <section>
               <div className="flex items-center gap-3 mb-5">
                 <div className="h-px flex-1 bg-border" />
-                <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "'Alegreya SC', serif" }}>
-                  🔥 Best Selling
-                </h2>
+                 <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>
+                   🔥 Best Selling
+                 </h2>
                 <div className="h-px flex-1 bg-border" />
               </div>
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
