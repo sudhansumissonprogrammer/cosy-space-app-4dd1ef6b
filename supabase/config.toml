@@ -23,9 +23,3 @@ project_id = "nyopdqvfbgnjmqluhynr"
     verify_jwt = false
   [functions.whatsapp-webhook]
     verify_jwt = false
-  [functions.og-meta]
-    verify_jwt = false
-  [functions.sitemap]
-    verify_jwt = false
-  [functions.robots-txt]
-    verify_jwt = false

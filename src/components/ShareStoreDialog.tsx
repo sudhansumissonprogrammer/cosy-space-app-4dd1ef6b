@@ -16,14 +16,11 @@ interface ShareStoreDialogProps {
 export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOnly }: ShareStoreDialogProps) {
   const [copied, setCopied] = useState(false);
   const storeUrl = `https://${storeSlug}.${ROOT_DOMAIN}`;
-  // Share URL goes through edge function so social crawlers can read OG tags without Cloudflare blocking
-  // Add a version token to bypass social-platform cache and force fresh OG fetches.
-  const shareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(storeSlug)}&v=${Date.now()}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(storeUrl)}`;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(storeUrl);
       setCopied(true);
       toast.success("Link copied!");
       setTimeout(() => setCopied(false), 2000);
@@ -35,7 +32,7 @@ export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOn
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: storeName, url: shareUrl });
+        await navigator.share({ title: storeName, url: storeUrl });
       } catch { /* cancelled */ }
     }
   };
@@ -67,7 +64,7 @@ export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOn
             loading="lazy"
           />
           <div className="flex w-full gap-2">
-            <Input value={shareUrl} readOnly className="text-sm" />
+            <Input value={storeUrl} readOnly className="text-sm" />
             <Button size="icon" variant="outline" onClick={handleCopy}>
               {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
             </Button>

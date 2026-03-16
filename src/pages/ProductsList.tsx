@@ -33,7 +33,6 @@ import PaginationControls from "@/components/PaginationControls";
 import BulkEditDialog from "@/components/BulkEditDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import ProductForm from "@/components/ProductForm";
 
 type SortOption = "title-asc" | "title-desc" | "date-new" | "date-old";
 type StatusFilter = "all" | "active" | "draft";
@@ -75,9 +74,6 @@ export default function ProductsList() {
 
   // Image preview state
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-  // Mobile product sheet state
-  const [mobileProductId, setMobileProductId] = useState<string | null | undefined>(undefined); // undefined = closed, null = create, string = edit
 
   // Long-press state
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -328,15 +324,9 @@ export default function ProductsList() {
               </Button>
             </>
           )}
-          {isMobile ? (
-            <Button size="sm" disabled={limitInfo && !limitInfo.can_create} onClick={() => setMobileProductId(null)}>
-              <Plus className="mr-1 h-4 w-4" />
-            </Button>
-          ) : (
-            <Button size="sm" asChild disabled={limitInfo && !limitInfo.can_create}>
-              <Link to={`/dashboard/stores/${storeId}/products/create`}><Plus className="mr-1 h-4 w-4" />Add Product</Link>
-            </Button>
-          )}
+          <Button size="sm" asChild disabled={limitInfo && !limitInfo.can_create}>
+            <Link to={`/dashboard/stores/${storeId}/products/create`}><Plus className="mr-1 h-4 w-4" />{isMobile ? "" : "Add Product"}</Link>
+          </Button>
         </div>
       </div>
 
@@ -561,13 +551,13 @@ export default function ProductsList() {
                       <Package className="h-5 w-5 text-muted-foreground" />
                     </div>
                   )}
-                  <button
+                  <Link
+                    to={bulkMode ? "#" : `/dashboard/stores/${storeId}/products/${product.id}/edit`}
                     onClick={(e) => {
-                      if (longPressTriggered.current) return;
-                      if (bulkMode) { toggleBulkSelect(product.id); return; }
-                      setMobileProductId(product.id);
+                      if (longPressTriggered.current) { e.preventDefault(); return; }
+                      if (bulkMode) { e.preventDefault(); toggleBulkSelect(product.id); }
                     }}
-                    className="flex items-center gap-3 flex-1 min-w-0 active:bg-accent/50 transition-colors text-left"
+                    className="flex items-center gap-3 flex-1 min-w-0 active:bg-accent/50 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
@@ -586,7 +576,7 @@ export default function ProductsList() {
                     >
                       {product.is_active ? "Active" : "Draft"}
                     </Badge>
-                  </button>
+                  </Link>
                 </div>
               ))}
             </div>
@@ -863,31 +853,6 @@ export default function ProductsList() {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Mobile Product Edit/Create Sheet */}
-      <Sheet open={mobileProductId !== undefined} onOpenChange={(v) => { if (!v) setMobileProductId(undefined); }}>
-        <SheetContent side="bottom" className="h-[95vh] rounded-t-2xl px-0 overflow-hidden flex flex-col">
-          <SheetHeader className="px-4 pb-3 border-b">
-            <div className="flex items-center justify-between">
-              <SheetTitle className="text-lg font-bold">
-                {mobileProductId ? "Edit Product" : "Add Product"}
-              </SheetTitle>
-            </div>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-4 py-4">
-            {mobileProductId !== undefined && (
-              <ProductForm
-                key={mobileProductId || "create"}
-                productId={mobileProductId || undefined}
-                onClose={() => {
-                  setMobileProductId(undefined);
-                  queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
-                }}
-              />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
