@@ -255,8 +255,13 @@ export default function StorefrontHomeV2() {
         initialFiltersOpen={openFilters}
       />
 
-      {/* Category Pills */}
-      <CategoryPills categories={storeCategories} slug={slug!} />
+      {/* Categories */}
+      <UniversalCategories
+        categories={storeCategories}
+        storeSlug={slug!}
+        isLoading={!storeCategories}
+        categoryStyle={themeConfig?.category_style || "style-1"}
+      />
 
       {/* Products */}
       <div className="mx-auto max-w-6xl px-3 sm:px-4 pb-12 space-y-8">
