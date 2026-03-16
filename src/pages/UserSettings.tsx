@@ -39,6 +39,39 @@ export default function UserSettings() {
     enabled: !!user,
   });
 
+  // Get the user's store to look up plan assignment
+  const { data: userStore } = useQuery({
+    queryKey: ["my-store-for-plan", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("owner_id", user!.id)
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Get effective plan from store_plan_assignments (includes admin overrides)
+  const { data: storePlanAssignment } = useQuery({
+    queryKey: ["my-store-plan", userStore?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("store_plan_assignments")
+        .select("*, plans:plan_id(name, price, product_limit)")
+        .eq("store_id", userStore!.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userStore?.id,
+  });
+
+  // Fallback to subscriptions if no store plan assignment
   const { data: subscription } = useQuery({
     queryKey: ["my-subscription", user?.id],
     queryFn: async () => {
@@ -51,7 +84,7 @@ export default function UserSettings() {
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !storePlanAssignment,
   });
 
   useEffect(() => {
