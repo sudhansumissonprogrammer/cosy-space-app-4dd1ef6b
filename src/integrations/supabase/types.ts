@@ -1192,6 +1192,7 @@ export type Database = {
           is_verified: boolean
           location: string | null
           logo_url: string | null
+          meta_access_token: string | null
           meta_description: string | null
           meta_title: string | null
           mobile_hero_url: string | null
@@ -1226,6 +1227,7 @@ export type Database = {
           is_verified?: boolean
           location?: string | null
           logo_url?: string | null
+          meta_access_token?: string | null
           meta_description?: string | null
           meta_title?: string | null
           mobile_hero_url?: string | null
@@ -1260,6 +1262,7 @@ export type Database = {
           is_verified?: boolean
           location?: string | null
           logo_url?: string | null
+          meta_access_token?: string | null
           meta_description?: string | null
           meta_title?: string | null
           mobile_hero_url?: string | null
