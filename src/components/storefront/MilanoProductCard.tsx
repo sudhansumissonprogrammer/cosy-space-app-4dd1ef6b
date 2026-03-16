@@ -67,7 +67,7 @@ export default function MilanoProductCard({ product, slug, index = 0 }: MilanoPr
     <Link
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
       className="group overflow-hidden transition-all active:scale-[0.98]"
-      style={{ borderRadius: "12px", backgroundColor: "#fff" }}
+      style={{ borderRadius: "12px", backgroundColor: "var(--storefront-bg, #fff)" }}
     >
       {/* Image */}
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4", borderRadius: "12px" }}>
@@ -81,7 +81,7 @@ export default function MilanoProductCard({ product, slug, index = 0 }: MilanoPr
         ) : (
           <div
             className="h-full w-full flex items-center justify-center"
-            style={{ backgroundColor: "var(--storefront-primary, #b8873c)08" }}
+            style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}
           >
             <Tag className="h-10 w-10" style={{ color: "var(--storefront-text, #1a1a1a)20" }} />
           </div>
@@ -92,7 +92,7 @@ export default function MilanoProductCard({ product, slug, index = 0 }: MilanoPr
           <div
             className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold"
             style={{
-              backgroundColor: "var(--storefront-primary, #b8873c)",
+              backgroundColor: "var(--storefront-primary, #1a1a1a)",
               color: "var(--storefront-btn-text, #fff)",
               borderRadius: "6px",
             }}
@@ -107,24 +107,24 @@ export default function MilanoProductCard({ product, slug, index = 0 }: MilanoPr
             onClick={handleToggleWishlist}
             className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90"
             style={{
-              backgroundColor: wishlisted ? "var(--storefront-primary, #b8873c)" : "rgba(255,255,255,0.92)",
+              backgroundColor: wishlisted ? "var(--storefront-primary, #1a1a1a)" : "rgba(255,255,255,0.92)",
               boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
             }}
           >
             <Heart
               className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`}
-              style={{ color: wishlisted ? "#fff" : "var(--storefront-text, #1a1a1a)" }}
+              style={{ color: wishlisted ? "var(--storefront-btn-text, #fff)" : "var(--storefront-text, #1a1a1a)" }}
             />
           </button>
           <button
             onClick={handleAddToCart}
             className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90"
             style={{
-              backgroundColor: "rgba(255,255,255,0.92)",
+              backgroundColor: "var(--storefront-primary, #1a1a1a)",
               boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
             }}
           >
-            <ShoppingCart className="h-4 w-4" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+            <ShoppingCart className="h-4 w-4" style={{ color: "var(--storefront-btn-text, #fff)" }} />
           </button>
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function MilanoProductCard({ product, slug, index = 0 }: MilanoPr
         {/* Star rating — golden */}
         <div className="flex items-center gap-0.5">
           {[...Array(5)].map((_, i) => (
-            <svg key={i} className="h-3 w-3" viewBox="0 0 20 20" fill={i < fullStars ? "#DAA520" : "#e0e0e0"}>
+            <svg key={i} className="h-3 w-3" viewBox="0 0 20 20" fill={i < fullStars ? "#FFD700" : "#e0e0e0"}>
               <path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z" />
             </svg>
           ))}
