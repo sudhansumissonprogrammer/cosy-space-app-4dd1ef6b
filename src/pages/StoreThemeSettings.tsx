@@ -1985,6 +1985,7 @@ export default function StoreThemeSettings() {
         body_font: themeConfig.body_font,
         button_style: themeConfig.button_style,
         marquee_gradient: themeConfig.marquee_gradient,
+        marquee_text: themeConfig.marquee_text || DEFAULT_MARQUEE_TEXT,
         product_card_style: themeConfig.product_card_style || "style-1",
         category_style: themeConfig.category_style || "style-1",
       });
