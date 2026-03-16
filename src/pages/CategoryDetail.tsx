@@ -14,6 +14,7 @@ export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
   const navigate = useNavigate();
+  const isMilano = store.theme === "theme-10";
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
