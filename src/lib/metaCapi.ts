@@ -1,0 +1,72 @@
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * Get Meta cookie values (fbc, fbp) for deduplication
+ */
+function getMetaCookies() {
+  const cookies = document.cookie.split("; ");
+  let fbc = "";
+  let fbp = "";
+  for (const cookie of cookies) {
+    if (cookie.startsWith("_fbc=")) fbc = cookie.split("=")[1];
+    if (cookie.startsWith("_fbp=")) fbp = cookie.split("=")[1];
+  }
+  // Also check URL for fbclid
+  if (!fbc) {
+    const params = new URLSearchParams(window.location.search);
+    const fbclid = params.get("fbclid");
+    if (fbclid) {
+      fbc = `fb.1.${Date.now()}.${fbclid}`;
+    }
+  }
+  return { fbc, fbp };
+}
+
+interface CAPIEventParams {
+  storeId: string;
+  eventName: string;
+  userEmail?: string;
+  userPhone?: string;
+  externalId?: string;
+  customData?: {
+    content_ids?: string[];
+    content_type?: string;
+    contents?: { id: string; quantity: number; item_price?: number }[];
+    currency?: string;
+    value?: number;
+    num_items?: number;
+    order_id?: string;
+  };
+}
+
+/**
+ * Fire a server-side Meta Conversions API event.
+ * This runs alongside the client-side pixel for deduplication.
+ * Non-blocking — errors are silently logged.
+ */
+export function fireMetaCAPI(params: CAPIEventParams) {
+  const { fbc, fbp } = getMetaCookies();
+
+  // Fire and forget — don't block the UI
+  supabase.functions
+    .invoke("meta-capi", {
+      body: {
+        store_id: params.storeId,
+        event_name: params.eventName,
+        event_source_url: window.location.href,
+        user_email: params.userEmail || undefined,
+        user_phone: params.userPhone || undefined,
+        user_agent: navigator.userAgent,
+        fbc: fbc || undefined,
+        fbp: fbp || undefined,
+        external_id: params.externalId || undefined,
+        custom_data: params.customData || undefined,
+      },
+    })
+    .then(({ error }) => {
+      if (error) console.warn("Meta CAPI warning:", error.message);
+    })
+    .catch((err) => {
+      console.warn("Meta CAPI fire-and-forget error:", err);
+    });
+}
