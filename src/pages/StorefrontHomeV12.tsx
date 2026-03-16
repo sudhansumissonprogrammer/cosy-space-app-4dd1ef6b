@@ -6,6 +6,7 @@ import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import LazyRender from "@/components/storefront/LazyRender";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
@@ -233,6 +234,7 @@ export default function StorefrontHomeV12() {
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-3";
+  const categoryStyle = themeConfig?.category_style || "style-1";
   const effectiveSlug = slug || store.slug;
 
   return (
@@ -242,7 +244,7 @@ export default function StorefrontHomeV12() {
       {products && products.length > 0 && (
         <BestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
       )}
-      <V12Categories categories={storeCategories} slug={effectiveSlug} />
+      <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
       <div className="py-4">
         <SectionHeader title="Just For You" slug={effectiveSlug} linkTo="best-sellers" />
         {!products ? (

@@ -6,6 +6,7 @@ import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import LazyRender from "@/components/storefront/LazyRender";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
@@ -270,12 +271,13 @@ export default function StorefrontHomeV10() {
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-2";
+  const categoryStyle = themeConfig?.category_style || "style-1";
   const effectiveSlug = slug || store.slug;
 
   return (
     <div>
       <MilanoHero store={store} slug={effectiveSlug} />
-      <MilanoCategories categories={storeCategories} slug={effectiveSlug} />
+      <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
       <AnnouncementStrip customText={themeConfig?.marquee_text} />
       {products && products.length > 0 && (
         <BestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />

@@ -2378,12 +2378,13 @@ export default function StoreThemeSettings() {
             <h4 className="mb-3 text-sm font-semibold">Category Section Design</h4>
             <div className="space-y-1.5">
               <Label className="text-xs">Category Style</Label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                 {[
                   { value: "style-1", label: "Circle Carousel", icon: "○ ○ ○" },
-                  { value: "style-2", label: "Rect Carousel", icon: "▭ ▭ ▭" },
-                  { value: "style-3", label: "Rect Grid", icon: "▭▭\n▭▭" },
+                  { value: "style-2", label: "Square Carousel", icon: "□ □ □" },
+                  { value: "style-3", label: "Square Grid Modern", icon: "■■■\n■■■" },
                   { value: "style-4", label: "Square Grid", icon: "□□\n□□" },
+                  { value: "style-5", label: "Pill Tags", icon: "⬭ ⬭ ⬭" },
                 ].map((s) => (
                   <button
                     key={s.value}

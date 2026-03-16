@@ -5,6 +5,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { ArrowUpDown, Zap, Tag, Clock, Truck, Shield, RotateCcw } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -254,6 +255,7 @@ export default function StorefrontHomeV8() {
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
+  const categoryStyle = themeConfig?.category_style || "style-1";
   const effectiveSlug = slug || store.slug;
 
   const allSorted = useMemo(() => {
@@ -273,7 +275,7 @@ export default function StorefrontHomeV8() {
       <HeroCarousel store={store} />
 
       {/* Category Strip */}
-      <CategoryStrip categories={storeCategories} slug={effectiveSlug} />
+      <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
 
       {/* Flash Deals */}
       {products && <FlashDeals products={products} slug={effectiveSlug} />}
