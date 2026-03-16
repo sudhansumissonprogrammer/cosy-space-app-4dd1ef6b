@@ -459,6 +459,48 @@ export default function StoreSettings() {
                 Enter your Facebook Pixel ID to track PageView, ViewContent, AddToCart, InitiateCheckout and Purchase events automatically.
               </p>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meta-token">Meta Conversions API Access Token</Label>
+              <Input
+                id="meta-token"
+                type="password"
+                placeholder="Enter your Meta CAPI access token"
+                value={metaAccessToken}
+                onChange={(e) => setMetaAccessToken(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Get this from Meta Events Manager → Settings → Conversions API → Generate Access Token. Enables server-side tracking for better ad optimization.
+              </p>
+            </div>
+
+            {store?.slug && (
+              <div className="space-y-2 rounded-lg border p-3 bg-muted/50">
+                <Label className="text-sm font-semibold">Product Catalog Feed URL</Label>
+                <p className="text-xs text-muted-foreground">
+                  Use this URL in Meta Commerce Manager to set up Dynamic Product Ads:
+                </p>
+                <div className="flex gap-2 items-center">
+                  <code className="flex-1 text-xs bg-background p-2 rounded border break-all">
+                    {`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed?slug=${store.slug}`}
+                  </code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed?slug=${store.slug}`);
+                      toast.success("Feed URL copied!");
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Supports XML (default) and CSV (?format=csv) formats.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
