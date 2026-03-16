@@ -108,14 +108,27 @@ export default function StorefrontHome() {
         initialFiltersOpen={openFilters}
       />
 
-      <UniversalCategories
-        categories={storeCategories}
-        storeSlug={slug!}
-        isLoading={!storeCategories}
-        categoryStyle={categoryStyle}
-      />
-
-      <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
+      {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (
+        <>
+          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
+          <UniversalCategories
+            categories={storeCategories}
+            storeSlug={slug!}
+            isLoading={!storeCategories}
+            categoryStyle={categoryStyle}
+          />
+        </>
+      ) : (
+        <>
+          <UniversalCategories
+            categories={storeCategories}
+            storeSlug={slug!}
+            isLoading={!storeCategories}
+            categoryStyle={categoryStyle}
+          />
+          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
+        </>
+      )}
 
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
         {bestSellingProducts.length > 0 && (
