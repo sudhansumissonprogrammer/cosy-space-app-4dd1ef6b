@@ -367,7 +367,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   );
 }
 
-function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor }: { store: StoreData; themeStyle: React.CSSProperties; primaryColor: string; btnTextColor: string }) {
+function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, marqueeText }: { store: StoreData; themeStyle: React.CSSProperties; primaryColor: string; btnTextColor: string; marqueeText?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
