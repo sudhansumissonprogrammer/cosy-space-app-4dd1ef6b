@@ -158,23 +158,53 @@ export default function UserSettings() {
           <CardTitle className="text-base">Current Plan</CardTitle>
         </CardHeader>
         <CardContent>
-          {subscription ? (
-            <div className="flex items-center gap-3">
-              <Crown className="h-5 w-5 text-primary" />
-              <div>
-                <p className="font-medium text-foreground">{(subscription.plans as any)?.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  ${Number((subscription.plans as any)?.price || 0).toFixed(2)}/mo —{" "}
-                  {(subscription.plans as any)?.product_limit
-                    ? `${(subscription.plans as any).product_limit} products`
-                    : "Unlimited products"}
-                </p>
-              </div>
-              <Badge variant="default" className="ml-auto">Active</Badge>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Free plan</p>
-          )}
+          {(() => {
+            const spa = storePlanAssignment as any;
+            const plan = spa?.plans as any;
+            const effectiveName = spa?.custom_plan_name || plan?.name;
+            const isFreeLifetime = spa?.is_free_lifetime;
+            const isOneTime = spa?.is_one_time;
+            const effectivePrice = isFreeLifetime ? 0 : (spa?.custom_price ?? plan?.price ?? 0);
+            const effectiveLimit = isFreeLifetime ? null : (spa?.custom_product_limit ?? plan?.product_limit);
+
+            if (effectiveName) {
+              return (
+                <div className="flex items-center gap-3">
+                  <Crown className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium text-foreground">{effectiveName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {isFreeLifetime
+                        ? "Free Lifetime — Unlimited products"
+                        : `₹${Number(effectivePrice).toFixed(0)}${isOneTime ? " one-time" : "/mo"} — ${effectiveLimit ? `${effectiveLimit} products` : "Unlimited products"}`}
+                    </p>
+                  </div>
+                  <Badge variant="default" className="ml-auto">
+                    {isFreeLifetime ? "Lifetime" : "Active"}
+                  </Badge>
+                </div>
+              );
+            }
+
+            if (subscription) {
+              const subPlan = subscription.plans as any;
+              return (
+                <div className="flex items-center gap-3">
+                  <Crown className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium text-foreground">{subPlan?.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      ₹{Number(subPlan?.price || 0).toFixed(0)}/mo —{" "}
+                      {subPlan?.product_limit ? `${subPlan.product_limit} products` : "Unlimited products"}
+                    </p>
+                  </div>
+                  <Badge variant="default" className="ml-auto">Active</Badge>
+                </div>
+              );
+            }
+
+            return <p className="text-sm text-muted-foreground">Free plan</p>;
+          })()}
         </CardContent>
       </Card>
 
