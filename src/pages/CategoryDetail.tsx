@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import MilanoProductCard from "@/components/storefront/MilanoProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
   const navigate = useNavigate();
+  const isMilano = store.theme === "theme-10";
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
@@ -100,14 +102,13 @@ export default function CategoryDetail() {
               {products.length} {products.length === 1 ? "product" : "products"}
             </p>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {products.map((product) => (
-                <StorefrontProductCard
-                  key={product.id}
-                  product={product}
-                  slug={slug!}
-                  store={store}
-                />
-              ))}
+              {products.map((product, idx) =>
+                isMilano ? (
+                  <MilanoProductCard key={product.id} product={product} slug={slug!} index={idx} />
+                ) : (
+                  <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} />
+                )
+              )}
             </div>
           </>
         ) : (
