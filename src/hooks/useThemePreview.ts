@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 /**
  * Listens for postMessage from admin dashboard iframe parent
  * to provide live theme preview without page reload.
+ * 
+ * Pass storeId so that product_card_style / category_style changes
+ * are written into the React Query cache and picked up instantly
+ * by storefront components.
  */
-export function useThemePreview() {
+export function useThemePreview(storeId?: string) {
   const [previewOverride, setPreviewOverride] = useState<Record<string, string> | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const computePL = (hex: string) => {
@@ -37,11 +43,20 @@ export function useThemePreview() {
           "--storefront-marquee-gradient": c.marquee_gradient,
           "--storefront-btn-text": isLight(c.primary_color) ? "#1a1a1a" : "#ffffff",
         });
+
+        // Update React Query cache so product_card_style & category_style
+        // are picked up instantly by storefront components
+        if (storeId) {
+          queryClient.setQueryData(["storefront-theme-config", storeId], (old: any) => ({
+            ...old,
+            ...c,
+          }));
+        }
       }
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, []);
+  }, [storeId, queryClient]);
 
   return previewOverride;
 }
