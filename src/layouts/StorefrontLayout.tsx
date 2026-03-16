@@ -360,7 +360,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     <CartProvider slug={store.slug}>
       <WishlistProvider slug={store.slug}>
         <StorefrontAuthProvider storeId={store.id}>
-          <CheckoutAwareLayout store={store} themeStyle={themeStyle} primaryColor={primaryColor} btnTextColor={btnTextColor} />
+          <CheckoutAwareLayout store={store} themeStyle={themeStyle} primaryColor={primaryColor} btnTextColor={btnTextColor} marqueeText={themeConfig?.marquee_text} />
         </StorefrontAuthProvider>
       </WishlistProvider>
     </CartProvider>
