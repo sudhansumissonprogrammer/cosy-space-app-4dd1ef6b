@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import LazyRender from "@/components/storefront/LazyRender";
-import V12ProductCard from "@/components/storefront/V12ProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
