@@ -214,7 +214,7 @@ export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: st
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const themeConfig = store ? queryClient.getQueryData<any>(["storefront-theme-config", store.id]) : null;
+  const themeConfig = useStorefrontThemeConfig(store?.id);
 
   useEffect(() => {
     if (!themeConfig) return;

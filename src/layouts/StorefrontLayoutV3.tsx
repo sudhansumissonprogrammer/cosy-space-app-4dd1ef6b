@@ -266,7 +266,7 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
     }, 3000);
   }, [store?.id]);
 
-  const themeConfig = store ? queryClient.getQueryData<any>(["storefront-theme-config", store.id]) : null;
+  const themeConfig = useStorefrontThemeConfig(store?.id);
 
   useEffect(() => {
     if (!themeConfig) return;
