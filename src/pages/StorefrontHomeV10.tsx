@@ -1,11 +1,10 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Heart, ShoppingCart, Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
+import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import { useCart } from "@/contexts/CartContext";
-import { useWishlist } from "@/contexts/WishlistContext";
 import LazyRender from "@/components/storefront/LazyRender";
+import MilanoProductCard from "@/components/storefront/MilanoProductCard";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";

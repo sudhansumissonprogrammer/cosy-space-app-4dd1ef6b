@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import MilanoProductCard from "@/components/storefront/MilanoProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 
 export default function CategoryDetail() {
