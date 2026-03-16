@@ -110,7 +110,7 @@ export default function StorefrontHome() {
 
       {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (
         <>
-          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
+           <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
           <UniversalCategories
             categories={storeCategories}
             storeSlug={slug!}
