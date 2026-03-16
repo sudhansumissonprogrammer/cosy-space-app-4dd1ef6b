@@ -8,6 +8,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
@@ -314,6 +315,7 @@ export default function StorefrontHomeV4() {
   });
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
 
   const allProducts = useMemo(() => {
     if (!products) return [];
@@ -332,6 +334,16 @@ export default function StorefrontHomeV4() {
         products={products}
         slug={slug!}
       />
+
+      {/* Categories */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-12 pt-8">
+        <UniversalCategories
+          categories={storeCategories}
+          storeSlug={slug!}
+          isLoading={!storeCategories}
+          categoryStyle={themeConfig?.category_style || "style-1"}
+        />
+      </div>
 
       {/* Featured Collection */}
       {products && <FeaturedCollection products={allProducts} slug={slug!} store={store} />}

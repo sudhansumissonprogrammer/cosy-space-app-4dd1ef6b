@@ -10,7 +10,7 @@ import {
   CarouselNext,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import StorefrontProductCard from "./StorefrontProductCard";
+import UniversalProductCard from "./UniversalProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 
@@ -18,9 +18,10 @@ interface BestSellingCarouselProps {
   products: any[];
   slug: string;
   store: StoreData;
+  cardStyle?: string;
 }
 
-export default function BestSellingCarousel({ products, slug, store }: BestSellingCarouselProps) {
+export default function BestSellingCarousel({ products, slug, store, cardStyle = "style-1" }: BestSellingCarouselProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
@@ -63,10 +64,11 @@ export default function BestSellingCarousel({ products, slug, store }: BestSelli
                 key={product.id}
                 className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/4"
               >
-                <StorefrontProductCard
+                <UniversalProductCard
                   product={product}
                   slug={slug}
                   store={store}
+                  cardStyle={cardStyle}
                 />
               </CarouselItem>
             ))}

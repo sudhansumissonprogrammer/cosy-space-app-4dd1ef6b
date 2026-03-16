@@ -8,6 +8,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
@@ -277,8 +278,13 @@ export default function StorefrontHomeV3() {
       {/* Banner Slider */}
       <BannerSlider store={store} />
 
-      {/* Category Icons */}
-      <CategoryIconRow categories={storeCategories} slug={slug!} />
+      {/* Categories */}
+      <UniversalCategories
+        categories={storeCategories}
+        storeSlug={slug!}
+        isLoading={!storeCategories}
+        categoryStyle={themeConfig?.category_style || "style-1"}
+      />
 
       {/* Flash Deals */}
       {products && <FlashDeals products={products} slug={slug!} store={store} />}

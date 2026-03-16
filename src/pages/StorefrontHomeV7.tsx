@@ -8,6 +8,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
@@ -587,9 +588,16 @@ export default function StorefrontHomeV7() {
       />
 
       {/* Category Grid */}
-      {storeCategories && storeCategories.length > 0 && (
-        <MagazineCategoryGrid categories={storeCategories} slug={slug!} />
-      )}
+      <div className="py-12 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+          <UniversalCategories
+            categories={storeCategories}
+            storeSlug={slug!}
+            isLoading={!storeCategories}
+            categoryStyle={themeConfig?.category_style || "style-1"}
+          />
+        </div>
+      </div>
 
       {/* Editorial Section 2 */}
       <EditorialSection
