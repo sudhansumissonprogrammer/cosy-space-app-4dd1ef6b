@@ -3,7 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Truck, Shield, RotateCcw, Star, ArrowRight, Tag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
@@ -326,6 +326,8 @@ export default function StorefrontHomeV6() {
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const cardStyle = themeConfig?.product_card_style || "style-1";
 
   return (
     <>
@@ -380,14 +382,14 @@ export default function StorefrontHomeV6() {
           <>
             <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
               {products.slice(0, 12).map((product, idx) => (
-                <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} />
+                <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
             {products.length > 12 && (
               <LazyRender rootMargin="400px" minHeight={400}>
                 <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4 mt-4 sm:mt-6">
                   {products.slice(12).map((product) => (
-                    <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} />
+                    <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} cardStyle={cardStyle} />
                   ))}
                 </div>
               </LazyRender>

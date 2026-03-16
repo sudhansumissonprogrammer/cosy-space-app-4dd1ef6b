@@ -1065,11 +1065,13 @@ export type Database = {
           background_color: string
           body_font: string
           button_style: string
+          category_style: string
           created_at: string
           heading_font: string
           id: string
           marquee_gradient: string
           primary_color: string
+          product_card_style: string
           store_id: string
           text_color: string
           updated_at: string
@@ -1079,11 +1081,13 @@ export type Database = {
           background_color?: string
           body_font?: string
           button_style?: string
+          category_style?: string
           created_at?: string
           heading_font?: string
           id?: string
           marquee_gradient?: string
           primary_color?: string
+          product_card_style?: string
           store_id: string
           text_color?: string
           updated_at?: string
@@ -1093,11 +1097,13 @@ export type Database = {
           background_color?: string
           body_font?: string
           button_style?: string
+          category_style?: string
           created_at?: string
           heading_font?: string
           id?: string
           marquee_gradient?: string
           primary_color?: string
+          product_card_style?: string
           store_id?: string
           text_color?: string
           updated_at?: string

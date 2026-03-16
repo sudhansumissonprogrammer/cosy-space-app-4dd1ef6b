@@ -3,7 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, ChevronLeft, ChevronRight, Quote, Truck, Shield, RotateCcw } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
@@ -509,14 +509,14 @@ function AllProductsGrid({ store, slug }: { store: StoreData; slug: string }) {
           <>
             <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
               {products.slice(0, 12).map((product, idx) => (
-                <StorefrontProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} />
+                <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
             {products.length > 12 && (
               <LazyRender rootMargin="400px" minHeight={400}>
                 <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 mt-4">
                   {products.slice(12).map((product) => (
-                    <StorefrontProductCard key={product.id} product={product} slug={slug} store={store} />
+                    <UniversalProductCard key={product.id} product={product} slug={slug} store={store} cardStyle={cardStyle} />
                   ))}
                 </div>
               </LazyRender>
@@ -550,6 +550,8 @@ export default function StorefrontHomeV7() {
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const cardStyle = themeConfig?.product_card_style || "style-1";
 
   // Pick images for editorial sections
   const editorialImage1 = products?.find((p) => p.image_url)?.image_url || store.banner_url;

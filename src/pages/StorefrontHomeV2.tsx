@@ -3,7 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Search, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
@@ -174,7 +174,7 @@ function MasonryGrid({ products, slug, store }: { products: any[]; slug: string;
     <div className="columns-2 gap-3 sm:gap-4 md:columns-3 lg:columns-4 space-y-3 sm:space-y-4">
       {products.map((product, idx) => (
         <div key={product.id} className="break-inside-avoid">
-          <StorefrontProductCard product={product} slug={slug} store={store} priority={idx < 4} />
+          <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
         </div>
       ))}
     </div>
@@ -201,6 +201,8 @@ export default function StorefrontHomeV2() {
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const cardStyle = themeConfig?.product_card_style || "style-1";
 
   const bestSellingProducts = useMemo(() => {
     if (!products) return [];

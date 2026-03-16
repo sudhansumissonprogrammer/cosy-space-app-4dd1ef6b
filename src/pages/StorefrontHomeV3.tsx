@@ -3,7 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Search, ArrowUpDown, ChevronLeft, ChevronRight, Zap, Tag, Clock } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
@@ -257,6 +257,8 @@ export default function StorefrontHomeV3() {
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const cardStyle = themeConfig?.product_card_style || "style-1";
 
   const allSorted = useMemo(() => {
     if (!products) return [];
@@ -340,12 +342,13 @@ export default function StorefrontHomeV3() {
           <>
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
               {allSorted.slice(0, 8).map((product, idx) => (
-                <StorefrontProductCard
+                <UniversalProductCard
                   key={product.id}
                   product={product}
                   slug={slug!}
                   store={store}
                   priority={idx < 4}
+                  cardStyle={cardStyle}
                 />
               ))}
             </div>
@@ -353,11 +356,12 @@ export default function StorefrontHomeV3() {
               <LazyRender rootMargin="400px" minHeight={400}>
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
                   {allSorted.slice(8).map((product) => (
-                    <StorefrontProductCard
+                    <UniversalProductCard
                       key={product.id}
                       product={product}
                       slug={slug!}
                       store={store}
+                      cardStyle={cardStyle}
                     />
                   ))}
                 </div>

@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import LazyRender from "@/components/storefront/LazyRender";
-import V12ProductCard from "@/components/storefront/V12ProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
@@ -171,7 +171,7 @@ function V12Categories({ categories, slug }: { categories: any[] | undefined; sl
 }
 
 /* ── Best Selling Horizontal Scroll ── */
-function BestSellingSection({ products, slug }: { products: any[]; slug: string }) {
+function BestSellingSection({ products, slug, store, cardStyle }: { products: any[]; slug: string; store: any; cardStyle: string }) {
   const bestSellers = useMemo(() => products.filter(p => p.is_best_selling).slice(0, 10), [products]);
   if (bestSellers.length === 0) return null;
 
@@ -181,7 +181,7 @@ function BestSellingSection({ products, slug }: { products: any[]; slug: string 
       <div className="flex gap-3 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
         {bestSellers.map((product, idx) => (
           <div key={product.id} className="flex-shrink-0" style={{ width: "165px" }}>
-            <V12ProductCard product={product} slug={slug} index={idx} />
+            <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
           </div>
         ))}
       </div>
@@ -234,25 +234,18 @@ export default function StorefrontHomeV12() {
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const cardStyle = themeConfig?.product_card_style || "style-3";
   const effectiveSlug = slug || store.slug;
 
   return (
     <div>
-      {/* Hero Banner */}
       <V12Hero store={store} slug={effectiveSlug} />
-
-      {/* Marquee */}
       <V12Marquee />
-
-      {/* Best Selling Carousel */}
       {products && products.length > 0 && (
-        <BestSellingSection products={products} slug={effectiveSlug} />
+        <BestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
       )}
-
-      {/* Category Circles */}
       <V12Categories categories={storeCategories} slug={effectiveSlug} />
-
-      {/* Just For You — All Products Grid */}
       <div className="py-4">
         <SectionHeader title="Just For You" slug={effectiveSlug} linkTo="best-sellers" />
         {!products ? (
@@ -265,15 +258,14 @@ export default function StorefrontHomeV12() {
           <>
             <div className="grid grid-cols-2 gap-3 px-4">
               {products.slice(0, 6).map((product, idx) => (
-                <V12ProductCard key={product.id} product={product} slug={effectiveSlug} index={idx} />
+                <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
-
             {products.length > 6 && (
               <LazyRender rootMargin="600px" minHeight={400}>
                 <div className="grid grid-cols-2 gap-3 px-4 mt-3">
                   {products.slice(6).map((product, idx) => (
-                    <V12ProductCard key={product.id} product={product} slug={effectiveSlug} index={idx + 6} />
+                    <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
                   ))}
                 </div>
               </LazyRender>
@@ -282,14 +274,12 @@ export default function StorefrontHomeV12() {
         ) : (
           <div className="flex min-h-[40vh] items-center justify-center">
             <div className="text-center space-y-2">
-              <Tag className="h-12 w-12 mx-auto text-gray-200" />
-              <p className="text-sm text-gray-400">No products available yet.</p>
+              <Tag className="h-12 w-12 mx-auto text-muted-foreground/20" />
+              <p className="text-sm text-muted-foreground">No products available yet.</p>
             </div>
           </div>
         )}
       </div>
-
-      {/* Trust Badges */}
       <TrustBadges />
     </div>
   );

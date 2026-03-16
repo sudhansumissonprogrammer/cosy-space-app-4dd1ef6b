@@ -3,7 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Star, Quote, ArrowRight, Package } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
@@ -365,14 +365,14 @@ export default function StorefrontHomeV4() {
           <>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:gap-8">
               {allProducts.slice(0, 9).map((product, idx) => (
-                <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} />
+                <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
             {allProducts.length > 9 && (
               <LazyRender rootMargin="400px" minHeight={400}>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:gap-8 mt-6 lg:mt-8">
                   {allProducts.slice(9).map((product) => (
-                    <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} />
+                    <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} cardStyle={cardStyle} />
                   ))}
                 </div>
               </LazyRender>
