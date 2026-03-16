@@ -38,8 +38,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  const ogTitle = store.meta_title || store.name;
-  const ogDescription = store.meta_description || store.description || `Shop at ${store.name}`;
+  const ogTitle = store.meta_title || `${store.name} — Shop Online`;
+  const ogDescription = store.meta_description || store.description || `Shop the best products at ${store.name}. Fast delivery & easy returns.`;
   const ogImage = store.og_image_url || store.banner_url || store.logo_url || "";
 
   return new Response(
