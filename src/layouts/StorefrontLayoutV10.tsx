@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, ShoppingCart, Heart, User, Search, Menu, Home, LayoutGrid, Flame, SlidersHorizontal, X } from "lucide-react";
+import {
+  Store, ShoppingCart, Heart, User, Search, Menu, Home, LayoutGrid, X, ChevronRight,
+} from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout";
@@ -22,97 +24,153 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
-/* ── Fashion Header ── */
-function FashionHeader({ store }: { store: StoreData }) {
+/* ── Milano Header ── */
+function MilanoHeader({ store }: { store: StoreData }) {
   const { cartCount, openCart } = useCart();
-  const { wishlistCount } = useWishlist();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const queryClient = useQueryClient();
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const { wishlistCount } = useWishlist();
+  const { user } = useStorefrontAuth();
 
   return (
     <>
       <header
-        className="sticky top-0 z-40 flex items-center justify-between px-4 py-2.5"
+        className="sticky top-0 z-40 flex items-center justify-between px-4 py-3"
         style={{
-          backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
-          boxShadow: "0 1px 8px var(--storefront-text, hsl(var(--foreground)))06",
+          backgroundColor: "var(--storefront-bg, #f7f5f0)",
+          borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
         }}
       >
-        {/* Left: Menu */}
+        {/* Left: Hamburger */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90">
-              <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+            <button className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--storefront-text, #1a1a1a)" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="7" x2="21" y2="7" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="17" x2="21" y2="17" />
+              </svg>
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="storefront-font w-[280px] p-0">
-            <div className="flex flex-col">
-              <div className="border-b bg-card p-4">
-                {store.logo_url ? (
-                  <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[160px] object-contain" />
-                ) : (
-                  <span className="text-lg font-bold text-foreground">{store.name}</span>
-                )}
+
+          {/* Milano-style side menu */}
+          <SheetContent side="left" className="w-[320px] p-0 border-0" style={{ backgroundColor: "var(--storefront-bg, #f7f5f0)" }}>
+            <div className="flex flex-col h-full">
+              {/* Menu header bar */}
+              <div
+                className="flex items-center justify-between px-5 py-3.5"
+                style={{
+                  backgroundColor: "var(--storefront-accent, #3d1c28)",
+                  color: "var(--storefront-bg, #f7f5f0)",
+                }}
+              >
+                <span className="text-sm font-bold uppercase tracking-wider" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>Menu</span>
+                <button onClick={() => setMenuOpen(false)} className="flex h-8 w-8 items-center justify-center">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <nav className="flex flex-col gap-1 p-4">
+
+              {/* Navigation links */}
+              <nav className="flex-1 overflow-y-auto">
                 {[
                   { to: storefrontPath(store.slug), label: "Home" },
-                  { to: storefrontPath(store.slug, "best-sellers"), label: "Trending" },
-                  { to: storefrontPath(store.slug, "account"), label: "My Account" },
-                  { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
-                  { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
+                  { to: storefrontPath(store.slug, "best-sellers"), label: "Shop" },
+                  { to: storefrontPath(store.slug, "contact"), label: "Contact" },
                   { to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" },
+                  { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" },
                 ].map((link) => (
-                  <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="rounded-2xl px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                  <Link
+                    key={link.label}
+                    to={link.to}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors"
+                    style={{
+                      color: "var(--storefront-text, #1a1a1a)",
+                      borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
+                      fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
+                    }}
+                  >
                     {link.label}
+                    <ChevronRight className="h-4 w-4 opacity-40" />
                   </Link>
                 ))}
-                {categories && categories.length > 0 && (
-                  <>
-                    <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categories</div>
-                    {categories.map((cat: any) => (
-                      <Link key={cat.id} to={storefrontPath(store.slug, `category/${cat.slug}`)} onClick={() => setMenuOpen(false)} className="rounded-2xl px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
-                        {cat.name}
-                      </Link>
-                    ))}
-                  </>
-                )}
+
+                {/* Categories in menu */}
+                {categories && categories.length > 0 && categories.map((cat: any) => (
+                  <Link
+                    key={cat.id}
+                    to={storefrontPath(store.slug, `category/${cat.slug}`)}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors"
+                    style={{
+                      color: "var(--storefront-text, #1a1a1a)",
+                      borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
+                      fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
+                    }}
+                  >
+                    {cat.name}
+                    <ChevronRight className="h-4 w-4 opacity-40" />
+                  </Link>
+                ))}
               </nav>
+
+              {/* Bottom links */}
+              <div className="border-t" style={{ borderColor: "var(--storefront-text, #1a1a1a)0a" }}>
+                <Link
+                  to={storefrontPath(store.slug, "wishlist")}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-5 py-4 text-[15px] font-medium"
+                  style={{ color: "var(--storefront-text, #1a1a1a)", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}
+                >
+                  <Heart className="h-5 w-5" />
+                  Wishlist
+                </Link>
+                <Link
+                  to={storefrontPath(store.slug, user ? "account" : "login")}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-5 py-4 text-[15px] font-medium"
+                  style={{ color: "var(--storefront-text, #1a1a1a)", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}
+                >
+                  <User className="h-5 w-5" />
+                  {user ? "My Account" : "Login / Register"}
+                </Link>
+              </div>
             </div>
           </SheetContent>
         </Sheet>
 
-        {/* Center: Brand */}
+        {/* Center: Logo */}
         <Link to={storefrontPath(store.slug)} className="absolute left-1/2 -translate-x-1/2">
           {store.logo_url ? (
-            <img src={store.logo_url} alt={store.name} className="h-7 w-auto max-w-[120px] object-contain" />
+            <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[130px] object-contain" />
           ) : (
-            <span className="text-lg font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}>
+            <span
+              className="text-xl font-bold"
+              style={{
+                color: "var(--storefront-text, #1a1a1a)",
+                fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif",
+              }}
+            >
               {store.name}
             </span>
           )}
         </Link>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-1">
-          <button onClick={() => setSearchOpen(true)} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90">
-            <Search className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+        {/* Right: Search + Cart */}
+        <div className="flex items-center gap-0.5">
+          <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90">
+            <Search className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
           </button>
-          <Link to={storefrontPath(store.slug, "wishlist")} className="relative flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90">
-            <Heart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
-            {wishlistCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
-                {wishlistCount > 9 ? "9+" : wishlistCount}
-              </span>
-            )}
-          </Link>
-          <button onClick={openCart} className="relative flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90">
-            <ShoppingCart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+          <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90">
+            <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
             {cartCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
+              <span
+                className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
+                style={{ backgroundColor: "var(--storefront-primary, #b8873c)", color: "#fff" }}
+              >
                 {cartCount > 9 ? "9+" : cartCount}
               </span>
             )}
@@ -125,52 +183,29 @@ function FashionHeader({ store }: { store: StoreData }) {
   );
 }
 
-/* ── Floating Filter Button ── */
-function FloatingFilterButton({ store }: { store: StoreData }) {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
-
-  return (
-    <>
-      <button
-        onClick={() => setSearchOpen(true)}
-        className="fixed bottom-24 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full shadow-xl transition-all active:scale-90 md:hidden"
-        style={{
-          background: `linear-gradient(135deg, var(--storefront-primary, #FF3F6C), var(--storefront-accent, #FF3F6C)90)`,
-          color: "var(--storefront-btn-text, #fff)",
-          boxShadow: "0 8px 24px -4px var(--storefront-primary, #FF3F6C)50",
-        }}
-      >
-        <SlidersHorizontal className="h-5 w-5" />
-      </button>
-      <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={true} />
-    </>
-  );
-}
-
-/* ── Bottom Tab Bar ── */
-function FashionTabBar({ store }: { store: StoreData }) {
+/* ── Bottom Tab Bar (Milano style) ── */
+function MilanoTabBar({ store }: { store: StoreData }) {
   const location = useLocation();
   const { wishlistCount } = useWishlist();
+  const { cartCount, openCart } = useCart();
   const { user } = useStorefrontAuth();
 
   const basePath = storefrontPath(store.slug);
   const tabs = [
     { icon: Home, label: "Home", to: basePath, matchExact: true },
-    { icon: LayoutGrid, label: "Categories", to: storefrontPath(store.slug, "best-sellers"), match: "best-sellers" },
-    { icon: Flame, label: "Trends", to: storefrontPath(store.slug, "best-sellers"), match: "__trend__" },
+    { icon: User, label: "Account", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
+    { icon: LayoutGrid, label: "Shop", to: storefrontPath(store.slug, "best-sellers"), match: "best-sellers" },
     { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
-    { icon: User, label: "Profile", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
+    { icon: ShoppingCart, label: "Cart", to: "__cart__", match: "__cart__", badge: cartCount, isCart: true },
   ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div
-        className="flex items-center justify-around py-2 border-t"
+        className="flex items-center justify-around py-1.5 border-t"
         style={{
-          backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
-          borderColor: "var(--storefront-text, hsl(var(--foreground)))08",
+          backgroundColor: "var(--storefront-bg, #f7f5f0)",
+          borderColor: "var(--storefront-text, #1a1a1a)10",
         }}
       >
         {tabs.map((tab) => {
@@ -178,31 +213,43 @@ function FashionTabBar({ store }: { store: StoreData }) {
             ? location.pathname === basePath || location.pathname === basePath + "/"
             : location.pathname.includes(tab.match!);
           const TabIcon = tab.icon;
-          return (
-            <Link key={tab.label} to={tab.to} className="flex flex-col items-center justify-center gap-0.5 py-1 px-3 transition-all relative" style={{ minWidth: "48px" }}>
+
+          const content = (
+            <div className="flex flex-col items-center justify-center gap-0.5 py-1 px-2" style={{ minWidth: "52px" }}>
               <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
                 <TabIcon
-                  className="h-5 w-5 transition-colors"
-                  style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))40" }}
+                  className="h-[22px] w-[22px] transition-colors"
+                  style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : "var(--storefront-text, #1a1a1a)60" }}
                 />
-                {tab.badge && tab.badge > 0 && (
+                {tab.badge != null && tab.badge > 0 && (
                   <span
-                    className="absolute -right-1.5 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-bold"
-                    style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}
+                    className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold"
+                    style={{ backgroundColor: "var(--storefront-primary, #b8873c)", color: "#fff" }}
                   >
                     {tab.badge > 9 ? "9+" : tab.badge}
                   </span>
                 )}
               </div>
               <span
-                className="text-[9px] font-semibold"
-                style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))40" }}
+                className="text-[10px] font-medium"
+                style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : "var(--storefront-text, #1a1a1a)60" }}
               >
                 {tab.label}
               </span>
-              {isActive && (
-                <div className="absolute -bottom-2 h-0.5 w-5 rounded-full" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }} />
-              )}
+            </div>
+          );
+
+          if (tab.isCart) {
+            return (
+              <button key={tab.label} onClick={openCart} className="transition-all active:scale-90">
+                {content}
+              </button>
+            );
+          }
+
+          return (
+            <Link key={tab.label} to={tab.to} className="transition-all active:scale-90">
+              {content}
             </Link>
           );
         })}
@@ -213,23 +260,28 @@ function FashionTabBar({ store }: { store: StoreData }) {
 
 function StorefrontV10Skeleton() {
   return (
-    <div className="min-h-screen bg-background font-sans">
-      <div className="sticky top-0 z-30 px-4 py-2.5 flex items-center justify-between">
-        <Skeleton className="h-8 w-8 rounded-full" />
-        <Skeleton className="h-7 w-24" />
+    <div className="min-h-screen" style={{ backgroundColor: "#f7f5f0" }}>
+      <div className="sticky top-0 z-30 px-4 py-3 flex items-center justify-between" style={{ backgroundColor: "#f7f5f0" }}>
+        <Skeleton className="h-10 w-10 rounded-md" />
+        <Skeleton className="h-8 w-28" />
         <div className="flex gap-1">
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-10 w-10 rounded-md" />
+          <Skeleton className="h-10 w-10 rounded-md" />
         </div>
       </div>
-      <div className="px-4 space-y-4 mt-2">
-        <Skeleton className="h-48 w-full rounded-[20px]" />
-        <div className="flex gap-3">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-20 rounded-2xl flex-shrink-0" />)}
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-64 rounded-[20px]" />)}
-        </div>
+      <Skeleton className="h-[400px] w-full" />
+      <div className="px-4 py-4 flex gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex flex-col items-center gap-2 flex-shrink-0">
+            <Skeleton className="h-[72px] w-[72px] rounded-full" />
+            <Skeleton className="h-3 w-14" />
+          </div>
+        ))}
+      </div>
+      <div className="px-4 grid grid-cols-2 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-72 rounded-lg" />
+        ))}
       </div>
     </div>
   );
@@ -310,7 +362,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
     return `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
   };
 
-  const primaryColor = themeConfig?.primary_color || "#FF3F6C";
+  const primaryColor = themeConfig?.primary_color || "#b8873c";
   const primaryLight = computePrimaryLight(primaryColor);
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
@@ -323,7 +375,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
         "--storefront-bg": themeConfig.background_color,
         "--storefront-heading-font": themeConfig.heading_font,
         "--storefront-body-font": themeConfig.body_font,
-        "--storefront-button-radius": "9999px",
+        "--storefront-button-radius": themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : "0.5rem",
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,
         "--storefront-btn-text": btnTextColor,
       } as any
@@ -334,32 +386,99 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
       <WishlistProvider slug={store.slug}>
         <StorefrontAuthProvider storeId={store.id}>
           <div
-            className="storefront-font min-h-screen font-sans"
+            className="storefront-font min-h-screen"
             style={{
               ...themeStyle,
-              "--storefront-bottom-nav-height": "72px",
-              backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
-              color: "var(--storefront-text, hsl(var(--foreground)))",
+              "--storefront-bottom-nav-height": "64px",
+              backgroundColor: "var(--storefront-bg, #f7f5f0)",
+              color: "var(--storefront-text, #1a1a1a)",
+              fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
             } as React.CSSProperties}
           >
-            <FashionHeader store={store} />
+            <MilanoHeader store={store} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <StorefrontOrderNotification storeName={store.name} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-            <div className="pb-20 md:pb-0">
+            <div className="pb-16 md:pb-0">
               <Outlet context={store} />
             </div>
             <StorefrontInstagramSection store={store} />
-            <div className="hidden md:block">
-              <StorefrontFooter store={store} />
-            </div>
-            <FloatingFilterButton store={store} />
-            <FashionTabBar store={store} />
+            {/* Milano Footer */}
+            <MilanoFooter store={store} />
+            <MilanoTabBar store={store} />
             <SideCart store={store} />
             <FloatingWhatsApp store={store} />
           </div>
         </StorefrontAuthProvider>
       </WishlistProvider>
     </CartProvider>
+  );
+}
+
+/* ── Milano Footer ── */
+function MilanoFooter({ store }: { store: StoreData }) {
+  const year = new Date().getFullYear();
+
+  return (
+    <footer
+      className="mt-8"
+      style={{
+        backgroundColor: "var(--storefront-accent, #1a1a1a)",
+        color: "var(--storefront-bg, #f7f5f0)",
+      }}
+    >
+      <div className="px-5 py-10 space-y-8 max-w-6xl mx-auto">
+        {/* Brand */}
+        <div className="text-center space-y-3">
+          {store.logo_url ? (
+            <img src={store.logo_url} alt={store.name} className="h-10 w-auto mx-auto object-contain brightness-0 invert" />
+          ) : (
+            <h3
+              className="text-2xl font-bold"
+              style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}
+            >
+              {store.name}
+            </h3>
+          )}
+          {store.description && (
+            <p className="text-sm opacity-60 max-w-md mx-auto leading-relaxed">{store.description}</p>
+          )}
+        </div>
+
+        {/* Links grid */}
+        <div className="grid grid-cols-2 gap-6 text-sm">
+          <div className="space-y-2.5">
+            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #b8873c)" }}>Quick Links</h4>
+            {[
+              { to: storefrontPath(store.slug), label: "Home" },
+              { to: storefrontPath(store.slug, "best-sellers"), label: "Shop" },
+              { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
+            ].map((link) => (
+              <Link key={link.label} to={link.to} className="block opacity-60 hover:opacity-100 transition-opacity text-[13px]">
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <div className="space-y-2.5">
+            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #b8873c)" }}>Policies</h4>
+            {[
+              { to: storefrontPath(store.slug, "return-policy"), label: "Return & Refund" },
+              { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" },
+              { to: storefrontPath(store.slug, "terms"), label: "Terms & Conditions" },
+              { to: storefrontPath(store.slug, "privacy-policy"), label: "Privacy Policy" },
+            ].map((link) => (
+              <Link key={link.label} to={link.to} className="block opacity-60 hover:opacity-100 transition-opacity text-[13px]">
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <div className="pt-6 border-t border-white/10 text-center">
+          <p className="text-[11px] opacity-40">© {year} {store.name}. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
   );
 }
