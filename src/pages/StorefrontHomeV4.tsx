@@ -315,6 +315,7 @@ export default function StorefrontHomeV4() {
   });
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
 
   const allProducts = useMemo(() => {
     if (!products) return [];
