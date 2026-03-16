@@ -291,7 +291,7 @@ const COLOR_COMBINATIONS = [
     primary: "#004545",
     accent: "#FF7A00",
     text: "#1e293b",
-    background: "#F5F7F6",
+    background: "#FAFAFA",
     marquee: "linear-gradient(90deg, #004545, #FF7A00, #004545)",
   },
   {
