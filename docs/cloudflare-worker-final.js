@@ -18,8 +18,8 @@
 
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "core-sparkle-suite.lovable.app";
-const SUPABASE_URL = "https://nyopdqvfbgnjmqluhynr.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55b3BkcXZmYmduam1xbHVoeW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjUxMDUsImV4cCI6MjA4ODY0MTEwNX0.ziyVV6rwdgYIvOirV3s67QFDw2IrKrT6-bwBvhUR0OM";
+const SUPABASE_URL = "https://dtwmmuzmepdltroiypgu.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0d21tdXptZXBkbHRyb2l5cGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDM4MjMsImV4cCI6MjA4OTIxOTgyM30.Kq4jRUeelihhqyRWLodiQIhhSi0AANQ7PletSjS4NlU";
 
 // Social media crawler + OG scraper User-Agent patterns
 const BOT_UA_REGEX = /WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|OpenGraphIO|opengraph\.xyz|Embedly|Iframely|MetaInspector|PetalBot|Bingbot|YandexBot|curl|wget|HeadlessChrome|Lighthouse|Prerender/i;
