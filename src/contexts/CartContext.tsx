@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
+import { fireMetaCAPI } from "@/lib/metaCapi";
 
 export interface CartItem {
   productId: string;
