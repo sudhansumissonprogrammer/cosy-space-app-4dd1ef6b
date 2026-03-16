@@ -448,7 +448,7 @@ function MilanoFooter({ store }: { store: StoreData }) {
         {/* Links grid */}
         <div className="grid grid-cols-2 gap-6 text-sm">
           <div className="space-y-2.5">
-            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #b8873c)" }}>Quick Links</h4>
+            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>Quick Links</h4>
             {[
               { to: storefrontPath(store.slug), label: "Home" },
               { to: storefrontPath(store.slug, "best-sellers"), label: "Shop" },
