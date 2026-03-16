@@ -277,8 +277,13 @@ export default function StorefrontHomeV3() {
       {/* Banner Slider */}
       <BannerSlider store={store} />
 
-      {/* Category Icons */}
-      <CategoryIconRow categories={storeCategories} slug={slug!} />
+      {/* Categories */}
+      <UniversalCategories
+        categories={storeCategories}
+        storeSlug={slug!}
+        isLoading={!storeCategories}
+        categoryStyle={themeConfig?.category_style || "style-1"}
+      />
 
       {/* Flash Deals */}
       {products && <FlashDeals products={products} slug={slug!} store={store} />}
