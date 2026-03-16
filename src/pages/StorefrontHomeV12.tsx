@@ -244,7 +244,7 @@ export default function StorefrontHomeV12() {
       {products && products.length > 0 && (
         <BestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
       )}
-      <V12Categories categories={storeCategories} slug={effectiveSlug} />
+      <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
       <div className="py-4">
         <SectionHeader title="Just For You" slug={effectiveSlug} linkTo="best-sellers" />
         {!products ? (
