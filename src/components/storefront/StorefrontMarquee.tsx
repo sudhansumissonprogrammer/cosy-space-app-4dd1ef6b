@@ -1,3 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { useOutletContext } from "react-router-dom";
+
 const DEFAULT_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
 
 interface Props {
@@ -5,14 +8,30 @@ interface Props {
 }
 
 export default function StorefrontMarquee({ text }: Props) {
-  const displayText = text || DEFAULT_TEXT;
+  // Try to read marquee_text from theme config in React Query cache
+  const queryClient = useQueryClient();
+  let storeId: string | undefined;
+  try {
+    const ctx = useOutletContext<any>();
+    storeId = ctx?.id;
+  } catch {
+    // not inside an Outlet — ignore
+  }
+
+  const themeConfig = storeId
+    ? queryClient.getQueryData<any>(["storefront-theme-config", storeId])
+    : null;
+
+  const displayText = text || themeConfig?.marquee_text || DEFAULT_TEXT;
+
+  const segments = displayText.split(" • ").filter(Boolean);
 
   const Group = ({ prefix }: { prefix: string }) => (
     <div className="flex items-center gap-[35px] pr-[35px] md:gap-[60px] md:pr-[60px]">
-      {displayText.split(" • ").map((segment, idx, arr) => (
+      {segments.map((segment: string, idx: number) => (
         <span key={`${prefix}-${idx}`} className="flex items-center gap-2 whitespace-nowrap">
           <span>{segment.trim()}</span>
-          {idx < arr.length - 1 && <span className="text-black/70">•</span>}
+          {idx < segments.length - 1 && <span className="text-black/70">•</span>}
         </span>
       ))}
     </div>
