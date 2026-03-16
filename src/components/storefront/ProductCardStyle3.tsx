@@ -79,7 +79,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
         </button>
       </div>
       <div className="px-3 pt-2.5 pb-3 space-y-1.5">
-        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: "var(--storefront-text, #1a1a1a)", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>
+        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
           {product.name}
         </p>
         <div className="flex items-center gap-1">
