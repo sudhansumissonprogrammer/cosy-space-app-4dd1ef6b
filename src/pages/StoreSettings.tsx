@@ -186,6 +186,7 @@ export default function StoreSettings() {
           shipping_policy: shippingPolicy.trim() || null,
           best_selling_carousel: bestSellingCarousel,
           facebook_pixel_id: facebookPixelId.trim() || null,
+          meta_access_token: metaAccessToken.trim() || null,
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
           og_image_url: finalOgImageUrl.trim() || null,
