@@ -362,7 +362,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
     return `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
   };
 
-  const primaryColor = themeConfig?.primary_color || "#b8873c";
+  const primaryColor = themeConfig?.primary_color || "#1a1a1a";
   const primaryLight = computePrimaryLight(primaryColor);
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
