@@ -550,6 +550,8 @@ export default function StorefrontHomeV7() {
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const cardStyle = themeConfig?.product_card_style || "style-1";
 
   // Pick images for editorial sections
   const editorialImage1 = products?.find((p) => p.image_url)?.image_url || store.banner_url;
