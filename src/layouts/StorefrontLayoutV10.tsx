@@ -224,7 +224,7 @@ function MilanoTabBar({ store }: { store: StoreData }) {
                 {tab.badge != null && tab.badge > 0 && (
                   <span
                     className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold"
-                    style={{ backgroundColor: "var(--storefront-primary, #b8873c)", color: "#fff" }}
+                    style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)", color: "#fff" }}
                   >
                     {tab.badge > 9 ? "9+" : tab.badge}
                   </span>
