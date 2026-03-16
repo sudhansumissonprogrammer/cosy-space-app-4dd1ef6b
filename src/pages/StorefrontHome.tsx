@@ -126,7 +126,7 @@ export default function StorefrontHome() {
             isLoading={!storeCategories}
             categoryStyle={categoryStyle}
           />
-          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
+          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
         </>
       )}
 
