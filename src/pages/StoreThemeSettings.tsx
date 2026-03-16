@@ -2348,6 +2348,78 @@ export default function StoreThemeSettings() {
 
           <Separator />
 
+          {/* Product Card Style */}
+          <div>
+            <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Product Card Style</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "style-1", label: "Style 1", desc: "Clean minimal" },
+                  { value: "style-2", label: "Style 2", desc: "Badge & overlay" },
+                  { value: "style-3", label: "Style 3", desc: "Bold modern" },
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => updateField("product_card_style", s.value)}
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                      config.product_card_style === s.value
+                        ? "border-foreground bg-muted shadow-sm"
+                        : "border-border hover:border-foreground/30"
+                    }`}
+                  >
+                    {config.product_card_style === s.value && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="h-4 w-4 text-foreground" />
+                      </div>
+                    )}
+                    <ShoppingCart className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-xs font-semibold">{s.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{s.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Category Style */}
+          <div>
+            <h4 className="mb-3 text-sm font-semibold">Category Section Design</h4>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Category Style</Label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { value: "style-1", label: "Circle Carousel", icon: "○ ○ ○" },
+                  { value: "style-2", label: "Rect Carousel", icon: "▭ ▭ ▭" },
+                  { value: "style-3", label: "Rect Grid", icon: "▭▭\n▭▭" },
+                  { value: "style-4", label: "Square Grid", icon: "□□\n□□" },
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => updateField("category_style", s.value)}
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                      config.category_style === s.value
+                        ? "border-foreground bg-muted shadow-sm"
+                        : "border-border hover:border-foreground/30"
+                    }`}
+                  >
+                    {config.category_style === s.value && (
+                      <div className="absolute top-1.5 right-1.5">
+                        <Check className="h-3.5 w-3.5 text-foreground" />
+                      </div>
+                    )}
+                    <span className="text-lg font-mono leading-tight whitespace-pre text-muted-foreground">{s.icon}</span>
+                    <span className="text-[10px] font-semibold text-center">{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Full Storefront Preview */}
           <div>
             <div className="mb-3 flex items-center justify-between">
