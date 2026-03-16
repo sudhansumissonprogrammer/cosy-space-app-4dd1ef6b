@@ -169,7 +169,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
             {cartCount > 0 && (
               <span
                 className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
-                style={{ backgroundColor: "var(--storefront-primary, #b8873c)", color: "#fff" }}
+                style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)", color: "#fff" }}
               >
                 {cartCount > 9 ? "9+" : cartCount}
               </span>
@@ -224,7 +224,7 @@ function MilanoTabBar({ store }: { store: StoreData }) {
                 {tab.badge != null && tab.badge > 0 && (
                   <span
                     className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold"
-                    style={{ backgroundColor: "var(--storefront-primary, #b8873c)", color: "#fff" }}
+                    style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)", color: "#fff" }}
                   >
                     {tab.badge > 9 ? "9+" : tab.badge}
                   </span>
@@ -362,7 +362,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
     return `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
   };
 
-  const primaryColor = themeConfig?.primary_color || "#b8873c";
+  const primaryColor = themeConfig?.primary_color || "#1a1a1a";
   const primaryLight = computePrimaryLight(primaryColor);
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
@@ -448,7 +448,7 @@ function MilanoFooter({ store }: { store: StoreData }) {
         {/* Links grid */}
         <div className="grid grid-cols-2 gap-6 text-sm">
           <div className="space-y-2.5">
-            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #b8873c)" }}>Quick Links</h4>
+            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>Quick Links</h4>
             {[
               { to: storefrontPath(store.slug), label: "Home" },
               { to: storefrontPath(store.slug, "best-sellers"), label: "Shop" },
@@ -460,7 +460,7 @@ function MilanoFooter({ store }: { store: StoreData }) {
             ))}
           </div>
           <div className="space-y-2.5">
-            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #b8873c)" }}>Policies</h4>
+            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>Policies</h4>
             {[
               { to: storefrontPath(store.slug, "return-policy"), label: "Return & Refund" },
               { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" },

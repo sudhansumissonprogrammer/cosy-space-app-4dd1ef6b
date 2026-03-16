@@ -24,7 +24,7 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
         }}
       >
         <div className="text-center space-y-3 px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70" style={{ color: "var(--storefront-primary, #b8873c)" }}>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>
             Welcome to
           </p>
           <h1
@@ -45,7 +45,7 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
             to={storefrontPath(slug, "best-sellers")}
             className="inline-flex items-center gap-1.5 mt-2 px-6 py-2.5 text-sm font-semibold transition-all active:scale-95"
             style={{
-              backgroundColor: "var(--storefront-primary, #b8873c)",
+              backgroundColor: "var(--storefront-primary, #1a1a1a)",
               color: "var(--storefront-btn-text, #fff)",
               borderRadius: "var(--storefront-button-radius, 0.5rem)",
             }}
@@ -86,16 +86,16 @@ function MilanoCategories({ categories, slug }: { categories: any[] | undefined;
           >
             <div
               className="h-[72px] w-[72px] rounded-full overflow-hidden border-2 sm:h-20 sm:w-20"
-              style={{ borderColor: "var(--storefront-primary, #b8873c)40" }}
+              style={{ borderColor: "var(--storefront-primary, #1a1a1a)40" }}
             >
               {cat.image_url ? (
                 <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
               ) : (
                 <div
                   className="h-full w-full flex items-center justify-center"
-                  style={{ backgroundColor: "var(--storefront-primary, #b8873c)10" }}
+                  style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)10" }}
                 >
-                  <Tag className="h-5 w-5" style={{ color: "var(--storefront-primary, #b8873c)" }} />
+                  <Tag className="h-5 w-5" style={{ color: "var(--storefront-primary, #1a1a1a)" }} />
                 </div>
               )}
             </div>
@@ -129,7 +129,7 @@ function AnnouncementStrip() {
     <div
       className="w-full overflow-hidden py-2.5"
       style={{
-        background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a))",
+        background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #1a1a1a, #333, #1a1a1a))",
         color: "var(--storefront-text, #1a1a1a)",
       }}
     >
@@ -164,7 +164,7 @@ function SectionHeader({ title, slug, linkTo }: { title: string; slug: string; l
         <Link
           to={storefrontPath(slug, linkTo)}
           className="text-xs font-semibold flex items-center gap-0.5 transition-opacity hover:opacity-70"
-          style={{ color: "var(--storefront-primary, #b8873c)" }}
+          style={{ color: "var(--storefront-primary, #1a1a1a)" }}
         >
           View All <ChevronRight className="h-3.5 w-3.5" />
         </Link>
@@ -239,9 +239,9 @@ function TrustBadges() {
           <div
             key={label}
             className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl"
-            style={{ backgroundColor: "var(--storefront-primary, #b8873c)08" }}
+            style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}
           >
-            <Icon className="h-5 w-5" style={{ color: "var(--storefront-primary, #b8873c)" }} />
+            <Icon className="h-5 w-5" style={{ color: "var(--storefront-primary, #1a1a1a)" }} />
             <span
               className="text-[10px] font-semibold text-center"
               style={{ color: "var(--storefront-text, #1a1a1a)80" }}
