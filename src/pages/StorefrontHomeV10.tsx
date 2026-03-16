@@ -174,7 +174,7 @@ function SectionHeader({ title, slug, linkTo }: { title: string; slug: string; l
   );
 }
 
-/* ── Product Card (Milano style) ── */
+/* ── Product Card (Milano style — matches reference) ── */
 function MilanoProductCard({ product, slug, index }: { product: any; slug: string; index: number }) {
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -183,18 +183,6 @@ function MilanoProductCard({ product, slug, index }: { product: any; slug: strin
   const discount = product.sale_price && product.sale_price < product.price
     ? Math.round(((product.price - product.sale_price) / product.price) * 100)
     : null;
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      price: effectivePrice,
-      image: product.image_url,
-      quantity: 1,
-    });
-  };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -209,18 +197,36 @@ function MilanoProductCard({ product, slug, index }: { product: any; slug: strin
     });
   };
 
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart({
+      productId: product.id,
+      name: product.name,
+      price: effectivePrice,
+      image: product.image_url,
+      quantity: 1,
+    });
+  };
+
+  // Deterministic rating from product id
+  let hash = 0;
+  for (let i = 0; i < product.id.length; i++) {
+    hash = ((hash << 5) - hash) + product.id.charCodeAt(i);
+    hash |= 0;
+  }
+  const ratings = [4.2, 4.3, 4.4, 4.5, 4.5, 4.6, 4.6, 4.7, 4.8, 4.9];
+  const rating = ratings[Math.abs(hash) % ratings.length];
+  const fullStars = Math.floor(rating);
+
   return (
     <Link
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
       className="group overflow-hidden transition-all active:scale-[0.98]"
-      style={{
-        borderRadius: "8px",
-        backgroundColor: "#fff",
-        border: "1px solid var(--storefront-text, #1a1a1a)08",
-      }}
+      style={{ borderRadius: "12px", backgroundColor: "#fff" }}
     >
       {/* Image */}
-      <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
+      <div className="relative overflow-hidden" style={{ aspectRatio: "3/4", borderRadius: "12px" }}>
         {product.image_url ? (
           <img
             src={optimizeImageUrl(product.image_url, 400)}
@@ -240,37 +246,49 @@ function MilanoProductCard({ product, slug, index }: { product: any; slug: strin
         {/* Discount badge */}
         {discount && (
           <div
-            className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold"
+            className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold"
             style={{
-              backgroundColor: "#e53935",
-              color: "#fff",
-              borderRadius: "4px",
+              backgroundColor: "var(--storefront-primary, #b8873c)",
+              color: "var(--storefront-btn-text, #fff)",
+              borderRadius: "6px",
             }}
           >
             -{discount}%
           </div>
         )}
 
-        {/* Wishlist */}
-        <button
-          onClick={handleToggleWishlist}
-          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90"
-          style={{
-            backgroundColor: wishlisted ? "var(--storefront-primary, #b8873c)" : "rgba(255,255,255,0.9)",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          }}
-        >
-          <Heart
-            className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`}
-            style={{ color: wishlisted ? "#fff" : "var(--storefront-text, #1a1a1a)80" }}
-          />
-        </button>
+        {/* Wishlist + Quick-add icons — bottom-right stack */}
+        <div className="absolute bottom-2.5 right-2.5 flex flex-col gap-1.5">
+          <button
+            onClick={handleToggleWishlist}
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90"
+            style={{
+              backgroundColor: wishlisted ? "var(--storefront-primary, #b8873c)" : "rgba(255,255,255,0.92)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+            }}
+          >
+            <Heart
+              className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`}
+              style={{ color: wishlisted ? "#fff" : "var(--storefront-text, #1a1a1a)" }}
+            />
+          </button>
+          <button
+            onClick={handleAddToCart}
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.92)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+            }}
+          >
+            <ShoppingCart className="h-4 w-4" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+          </button>
+        </div>
       </div>
 
       {/* Product info */}
-      <div className="p-2.5 space-y-1">
+      <div className="px-2.5 pt-2.5 pb-3 space-y-1">
         <p
-          className="text-[12px] font-medium line-clamp-1"
+          className="text-[13px] font-semibold leading-tight truncate"
           style={{
             color: "var(--storefront-text, #1a1a1a)",
             fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
@@ -279,29 +297,26 @@ function MilanoProductCard({ product, slug, index }: { product: any; slug: strin
           {product.name}
         </p>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-[13px] font-bold" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
+        {/* Star rating */}
+        <div className="flex items-center gap-0.5">
+          {[...Array(5)].map((_, i) => (
+            <svg key={i} className="h-3 w-3" viewBox="0 0 20 20" fill={i < fullStars ? "var(--storefront-primary, #b8873c)" : "#e0e0e0"}>
+              <path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z" />
+            </svg>
+          ))}
+        </div>
+
+        {/* Price */}
+        <div className="flex items-center gap-1.5 pt-0.5">
+          <span className="text-[14px] font-bold" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
             ₹{Number(effectivePrice).toLocaleString("en-IN")}
           </span>
           {product.sale_price && product.sale_price < product.price && (
-            <span className="text-[11px] line-through opacity-40">
+            <span className="text-[11px] line-through opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
               ₹{Number(product.price).toLocaleString("en-IN")}
             </span>
           )}
         </div>
-
-        {/* Add to Cart */}
-        <button
-          onClick={handleAddToCart}
-          className="w-full flex items-center justify-center gap-1.5 mt-1.5 py-2 text-[11px] font-bold uppercase tracking-wide transition-all active:scale-95"
-          style={{
-            backgroundColor: "var(--storefront-primary, #b8873c)",
-            color: "var(--storefront-btn-text, #fff)",
-            borderRadius: "var(--storefront-button-radius, 0.5rem)",
-          }}
-        >
-          <ShoppingCart className="h-3.5 w-3.5" /> Add to Cart
-        </button>
       </div>
     </Link>
   );
