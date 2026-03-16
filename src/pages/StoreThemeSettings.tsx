@@ -2312,6 +2312,31 @@ export default function StoreThemeSettings() {
 
           <Separator />
 
+          {/* Marquee Strip Text */}
+          <div>
+            <h4 className="mb-3 text-sm font-semibold">Marquee Strip Text</h4>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Customize the scrolling ribbon text on your storefront. Use " • " to separate items.
+            </p>
+            <div className="space-y-2">
+              <textarea
+                value={config.marquee_text}
+                onChange={(e) => updateField("marquee_text", e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[80px] resize-y"
+                placeholder="🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments"
+              />
+              <button
+                type="button"
+                onClick={() => updateField("marquee_text", DEFAULT_MARQUEE_TEXT)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+              >
+                Reset to default
+              </button>
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Product Card Style */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
