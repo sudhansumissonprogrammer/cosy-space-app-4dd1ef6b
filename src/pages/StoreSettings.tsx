@@ -117,6 +117,7 @@ export default function StoreSettings() {
       setShippingPolicy((store as any).shipping_policy || "");
       setBestSellingCarousel((store as any).best_selling_carousel || false);
       setFacebookPixelId((store as any).facebook_pixel_id || "");
+      setMetaAccessToken((store as any).meta_access_token || "");
       setMetaTitle((store as any).meta_title || "");
       setMetaDescription((store as any).meta_description || "");
       setOgImageUrl((store as any).og_image_url || "");
