@@ -365,7 +365,7 @@ export default function StorefrontHomeV4() {
           <>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:gap-8">
               {allProducts.slice(0, 9).map((product, idx) => (
-                <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} />
+                <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
             {allProducts.length > 9 && (
