@@ -65,6 +65,8 @@ export default function StoreSettings() {
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
   const [heroRemoved, setHeroRemoved] = useState(false);
+  const [heroImages, setHeroImages] = useState<string[]>([]);
+  const [heroImageFiles, setHeroImageFiles] = useState<File[]>([]);
   const [theme, setTheme] = useState("theme-1");
   const [features, setFeatures] = useState<Feature[]>([]);
   const [returnPolicy, setReturnPolicy] = useState("");
