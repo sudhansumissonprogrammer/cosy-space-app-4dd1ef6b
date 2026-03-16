@@ -47,6 +47,8 @@ export default function AdminLogin() {
       _role: "admin",
     });
 
+    console.log("Admin check:", { userId: authData.user.id, isAdmin, roleError });
+
     if (roleError || !isAdmin) {
       await supabase.auth.signOut();
       setLoading(false);
