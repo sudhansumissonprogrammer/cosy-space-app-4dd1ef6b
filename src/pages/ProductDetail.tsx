@@ -23,6 +23,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
+import { fireMetaCAPI } from "@/lib/metaCapi";
 
 interface Variant {
   id: string;
@@ -232,12 +233,23 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!product) return;
-    fbPixelTrack("ViewContent", {
+    const eventData = {
       content_name: product.name,
       content_ids: [product.id],
       content_type: "product",
       value: product.sale_price && product.sale_price < product.price ? product.sale_price : product.price,
       currency: product.currency || store.currency || "INR",
+    };
+    fbPixelTrack("ViewContent", eventData);
+    fireMetaCAPI({
+      storeId: store.id,
+      eventName: "ViewContent",
+      customData: {
+        content_ids: [product.id],
+        content_type: "product",
+        value: Number(eventData.value),
+        currency: eventData.currency,
+      },
     });
   }, [product?.id]);
 

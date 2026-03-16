@@ -17,6 +17,7 @@ import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
+import { fireMetaCAPI } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 
 declare global {
@@ -289,15 +290,27 @@ export default function CheckoutPage() {
     setCouponCode("");
   };
 
-  // Facebook Pixel: InitiateCheckout
+  // Facebook Pixel + CAPI: InitiateCheckout
   useEffect(() => {
     if (checkoutItems.length === 0) return;
-    fbPixelTrack("InitiateCheckout", {
+    const eventData = {
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
       num_items: checkoutItems.length,
       value: subtotal,
       currency,
+    };
+    fbPixelTrack("InitiateCheckout", eventData);
+    fireMetaCAPI({
+      storeId: store.id,
+      eventName: "InitiateCheckout",
+      customData: {
+        content_ids: eventData.content_ids,
+        contents: eventData.contents,
+        num_items: eventData.num_items,
+        value: subtotal,
+        currency,
+      },
     });
   }, []);
 
@@ -509,6 +522,21 @@ export default function CheckoutPage() {
     saveExpressInfo();
     window.dispatchEvent(new CustomEvent("order-placed"));
     fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+    fireMetaCAPI({
+      storeId: store.id,
+      eventName: "Purchase",
+      userEmail: email.trim() || undefined,
+      userPhone: phone.trim() || undefined,
+      externalId: customer?.id || undefined,
+      customData: {
+        content_ids: checkoutItems.map((i) => i.productId),
+        contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+        value: total,
+        currency,
+        num_items: checkoutItems.length,
+        order_id: newOrderId,
+      },
+    });
     // Fire all post-order tasks in parallel (non-blocking)
     if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
     notifyOrderEmail(newOrderId);
