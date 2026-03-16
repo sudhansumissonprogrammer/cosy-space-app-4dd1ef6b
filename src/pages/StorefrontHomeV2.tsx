@@ -169,7 +169,7 @@ function CategoryPills({ categories, slug }: { categories: any[] | undefined; sl
 }
 
 /* ── Masonry Product Grid ── */
-function MasonryGrid({ products, slug, store }: { products: any[]; slug: string; store: StoreData }) {
+function MasonryGrid({ products, slug, store, cardStyle }: { products: any[]; slug: string; store: StoreData; cardStyle: string }) {
   return (
     <div className="columns-2 gap-3 sm:gap-4 md:columns-3 lg:columns-4 space-y-3 sm:space-y-4">
       {products.map((product, idx) => (
