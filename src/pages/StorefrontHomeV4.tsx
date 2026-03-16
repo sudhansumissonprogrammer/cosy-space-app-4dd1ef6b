@@ -299,6 +299,8 @@ export default function StorefrontHomeV4() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const cardStyle = themeConfig?.product_card_style || "style-1";
   const [searchOpen, setSearchOpen] = useState(false);
 
   useStoreJsonLd({
