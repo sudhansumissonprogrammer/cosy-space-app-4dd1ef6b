@@ -120,7 +120,7 @@ export default function StorefrontHome() {
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
         {bestSellingProducts.length > 0 && (
           (store as any).best_selling_carousel ? (
-            <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} />
+            <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
           ) : (
             <section>
               <div className="flex items-center gap-3 mb-5">
