@@ -255,6 +255,7 @@ export default function StorefrontHomeV8() {
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
+  const categoryStyle = themeConfig?.category_style || "style-1";
   const effectiveSlug = slug || store.slug;
 
   const allSorted = useMemo(() => {
