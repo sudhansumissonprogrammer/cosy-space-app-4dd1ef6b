@@ -275,7 +275,7 @@ export default function StorefrontHomeV8() {
       <HeroCarousel store={store} />
 
       {/* Category Strip */}
-      <CategoryStrip categories={storeCategories} slug={effectiveSlug} />
+      <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
 
       {/* Flash Deals */}
       {products && <FlashDeals products={products} slug={effectiveSlug} />}
