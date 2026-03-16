@@ -1,0 +1,1 @@
+UPDATE stores SET og_image_url = banner_url WHERE slug = 'overlaynow' AND og_image_url IS NULL;

@@ -21,7 +21,7 @@ const SUPABASE_URL = "https://nyopdqvfbgnjmqluhynr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55b3BkcXZmYmduam1xbHVoeW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjUxMDUsImV4cCI6MjA4ODY0MTEwNX0.ziyVV6rwdgYIvOirV3s67QFDw2IrKrT6-bwBvhUR0OM";
 
 // Social media crawler User-Agent patterns
-const BOT_UA_REGEX = /WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot/i;
+const BOT_UA_REGEX = /WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|OpenGraphIO|opengraph\.xyz|Embedly|Iframely|MetaInspector|curl|wget|PetalBot|Bingbot|YandexBot/i;
 
 function escapeHtml(str) {
   if (!str) return "";
