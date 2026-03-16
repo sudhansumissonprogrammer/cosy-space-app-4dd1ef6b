@@ -188,15 +188,18 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                       <TableCell>
                         <Badge variant="outline">
                           <Crown className="mr-1 h-3 w-3" />
-                          {plan?.name || "—"}
+                          {assignment.custom_plan_name || plan?.name || "—"}
                         </Badge>
+                        {assignment.custom_plan_name && (
+                          <span className="ml-1 text-xs text-muted-foreground">(custom)</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {hasOverride ? (
                           <div className="flex flex-wrap gap-1">
                             {assignment.is_free_lifetime && <Badge variant="secondary" className="text-xs">Free Lifetime</Badge>}
                             {assignment.is_one_time && <Badge variant="secondary" className="text-xs">One-time</Badge>}
-                            {assignment.custom_price != null && <Badge variant="secondary" className="text-xs">₹{assignment.custom_price}</Badge>}
+                            {assignment.custom_price != null && <Badge variant="secondary" className="text-xs">₹{assignment.custom_price}/mo</Badge>}
                             {assignment.custom_product_limit != null && <Badge variant="secondary" className="text-xs">{assignment.custom_product_limit} products</Badge>}
                           </div>
                         ) : (
