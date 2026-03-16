@@ -102,14 +102,13 @@ export default function CategoryDetail() {
               {products.length} {products.length === 1 ? "product" : "products"}
             </p>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {products.map((product) => (
-                <StorefrontProductCard
-                  key={product.id}
-                  product={product}
-                  slug={slug!}
-                  store={store}
-                />
-              ))}
+              {products.map((product, idx) =>
+                isMilano ? (
+                  <MilanoProductCard key={product.id} product={product} slug={slug!} index={idx} />
+                ) : (
+                  <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} />
+                )
+              )}
             </div>
           </>
         ) : (
