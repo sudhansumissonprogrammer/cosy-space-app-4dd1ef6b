@@ -71,6 +71,7 @@ export default function StoreSettings() {
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const [facebookPixelId, setFacebookPixelId] = useState("");
+  const [metaAccessToken, setMetaAccessToken] = useState("");
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [ogImageUrl, setOgImageUrl] = useState("");
