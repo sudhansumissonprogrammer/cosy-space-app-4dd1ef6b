@@ -276,6 +276,42 @@ const COLOR_COMBINATIONS = [
     background: "#ffffff",
     marquee: "linear-gradient(90deg, #000000, #333333, #000000)",
   },
+  {
+    id: "teal-elegance",
+    name: "Teal Elegance",
+    primary: "#004545",
+    accent: "#FF7A00",
+    text: "#1A1A1A",
+    background: "#F5F7F6",
+    marquee: "linear-gradient(90deg, #004545, #0F6B6B, #FF7A00)",
+  },
+  {
+    id: "teal-conversion",
+    name: "Teal Conversion",
+    primary: "#004545",
+    accent: "#FF7A00",
+    text: "#1e293b",
+    background: "#F5F7F6",
+    marquee: "linear-gradient(90deg, #004545, #FF7A00, #004545)",
+  },
+  {
+    id: "teal-minimal",
+    name: "Teal Minimal",
+    primary: "#004545",
+    accent: "#006666",
+    text: "#111111",
+    background: "#FFFFFF",
+    marquee: "linear-gradient(90deg, #004545, #006666, #004545)",
+  },
+  {
+    id: "teal-blaze",
+    name: "Teal Blaze",
+    primary: "#004545",
+    accent: "#FF6B35",
+    text: "#0F172A",
+    background: "#F8FAFA",
+    marquee: "linear-gradient(90deg, #004545, #00A8A8, #FF6B35)",
+  },
 ];
 
 /* ── Per-theme recommended color combinations (curated for best visual result) ── */
