@@ -10,7 +10,7 @@ import {
   CarouselNext,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import StorefrontProductCard from "./StorefrontProductCard";
+import UniversalProductCard from "./UniversalProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 
@@ -18,6 +18,7 @@ interface BestSellingCarouselProps {
   products: any[];
   slug: string;
   store: StoreData;
+  cardStyle?: string;
 }
 
 export default function BestSellingCarousel({ products, slug, store }: BestSellingCarouselProps) {
