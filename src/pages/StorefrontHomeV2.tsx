@@ -318,10 +318,10 @@ export default function StorefrontHomeV2() {
           </div>
         ) : allSorted.length > 0 ? (
           <>
-            <MasonryGrid products={allSorted.slice(0, 12)} slug={slug!} store={store} />
+            <MasonryGrid products={allSorted.slice(0, 12)} slug={slug!} store={store} cardStyle={cardStyle} />
             {allSorted.length > 12 && (
               <LazyRender rootMargin="400px" minHeight={400}>
-                <MasonryGrid products={allSorted.slice(12)} slug={slug!} store={store} />
+                <MasonryGrid products={allSorted.slice(12)} slug={slug!} store={store} cardStyle={cardStyle} />
               </LazyRender>
             )}
           </>
