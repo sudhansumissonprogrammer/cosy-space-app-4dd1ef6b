@@ -162,6 +162,13 @@ export default function StoreSettings() {
       if (bannerFile) bannerUrl = await uploadFile(bannerFile, "store-banners");
       if (heroFile) mobileHeroUrl = await uploadFile(heroFile, "store-banners");
 
+      // Upload new hero carousel images
+      let finalHeroImages = [...heroImages];
+      for (const file of heroImageFiles) {
+        const url = await uploadFile(file, "store-banners");
+        finalHeroImages.push(url);
+      }
+
       // Handle OG image upload
       let finalOgImageUrl = ogImageUrl;
       if (ogImageRemoved) finalOgImageUrl = "";
