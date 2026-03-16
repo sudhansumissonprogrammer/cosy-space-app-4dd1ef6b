@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -281,7 +282,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     }, 3000);
   }, [store?.id]);
 
-  const themeConfig = store ? queryClient.getQueryData<any>(["storefront-theme-config", store.id]) : null;
+  const themeConfig = useStorefrontThemeConfig(store?.id);
 
   // Load Google Font dynamically
   useEffect(() => {

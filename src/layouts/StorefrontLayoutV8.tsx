@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Store, ShoppingCart, Heart, User, Search, Menu, Home, LayoutGrid, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -293,7 +294,7 @@ export default function StorefrontLayoutV8({ slugOverride }: { slugOverride?: st
     }, 3000);
   }, [store?.id]);
 
-  const themeConfig = store ? queryClient.getQueryData<any>(["storefront-theme-config", store.id]) : null;
+  const themeConfig = useStorefrontThemeConfig(store?.id);
 
   useEffect(() => {
     if (!themeConfig) return;
