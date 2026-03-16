@@ -300,7 +300,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
   // Listen for live theme preview messages from admin dashboard iframe parent
-  const previewOverride = useThemePreview();
+  const previewOverride = useThemePreview(store?.id);
 
   if (isLoading) {
     return <StorefrontSkeleton />;
