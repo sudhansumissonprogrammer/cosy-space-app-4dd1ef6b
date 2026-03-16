@@ -5,6 +5,27 @@ const corsHeaders = {
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+function normalizeOgImageUrl(imageUrl: string): string {
+  if (!imageUrl) return "";
+
+  try {
+    const parsed = new URL(imageUrl);
+    const pathname = parsed.pathname.toLowerCase();
+    const isShopifyCdnAsset =
+      parsed.hostname.includes("shopify.com") ||
+      parsed.pathname.includes("/cdn/shop/files/");
+
+    if (isShopifyCdnAsset && !pathname.endsWith(".gif")) {
+      parsed.searchParams.set("format", "pjpg");
+      parsed.searchParams.set("width", "1200");
+    }
+
+    return parsed.toString();
+  } catch {
+    return imageUrl;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -40,7 +61,7 @@ Deno.serve(async (req) => {
 
   const ogTitle = store.meta_title || `${store.name} — Shop Online`;
   const ogDescription = store.meta_description || store.description || `Shop the best products at ${store.name}. Fast delivery & easy returns.`;
-  const ogImage = store.og_image_url || store.banner_url || store.logo_url || "";
+  const ogImage = normalizeOgImageUrl(store.og_image_url || store.banner_url || store.logo_url || "");
 
   return new Response(
     JSON.stringify({ title: ogTitle, description: ogDescription, image: ogImage, slug: store.slug }),
