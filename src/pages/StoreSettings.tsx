@@ -212,6 +212,7 @@ export default function StoreSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store", storeId] });
       queryClient.invalidateQueries({ queryKey: ["stores"] });
+      setHeroImageFiles([]);
       toast.success("Store settings updated!");
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
