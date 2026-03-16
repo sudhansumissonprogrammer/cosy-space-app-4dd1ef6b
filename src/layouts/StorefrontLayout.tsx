@@ -52,6 +52,8 @@ export function useStorefront(slugOverride?: string) {
         if (result.theme_config) {
           queryClient.setQueryData(["storefront-theme-config", store.id], result.theme_config);
         }
+        // Persist store ID for CAPI usage in CartContext
+        try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
       }
       return result;
     },
