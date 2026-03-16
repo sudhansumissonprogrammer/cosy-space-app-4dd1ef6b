@@ -234,25 +234,18 @@ export default function StorefrontHomeV12() {
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const cardStyle = themeConfig?.product_card_style || "style-3";
   const effectiveSlug = slug || store.slug;
 
   return (
     <div>
-      {/* Hero Banner */}
       <V12Hero store={store} slug={effectiveSlug} />
-
-      {/* Marquee */}
       <V12Marquee />
-
-      {/* Best Selling Carousel */}
       {products && products.length > 0 && (
-        <BestSellingSection products={products} slug={effectiveSlug} />
+        <BestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
       )}
-
-      {/* Category Circles */}
       <V12Categories categories={storeCategories} slug={effectiveSlug} />
-
-      {/* Just For You — All Products Grid */}
       <div className="py-4">
         <SectionHeader title="Just For You" slug={effectiveSlug} linkTo="best-sellers" />
         {!products ? (
@@ -265,15 +258,14 @@ export default function StorefrontHomeV12() {
           <>
             <div className="grid grid-cols-2 gap-3 px-4">
               {products.slice(0, 6).map((product, idx) => (
-                <V12ProductCard key={product.id} product={product} slug={effectiveSlug} index={idx} />
+                <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
-
             {products.length > 6 && (
               <LazyRender rootMargin="600px" minHeight={400}>
                 <div className="grid grid-cols-2 gap-3 px-4 mt-3">
                   {products.slice(6).map((product, idx) => (
-                    <V12ProductCard key={product.id} product={product} slug={effectiveSlug} index={idx + 6} />
+                    <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
                   ))}
                 </div>
               </LazyRender>
@@ -282,14 +274,12 @@ export default function StorefrontHomeV12() {
         ) : (
           <div className="flex min-h-[40vh] items-center justify-center">
             <div className="text-center space-y-2">
-              <Tag className="h-12 w-12 mx-auto text-gray-200" />
-              <p className="text-sm text-gray-400">No products available yet.</p>
+              <Tag className="h-12 w-12 mx-auto text-muted-foreground/20" />
+              <p className="text-sm text-muted-foreground">No products available yet.</p>
             </div>
           </div>
         )}
       </div>
-
-      {/* Trust Badges */}
       <TrustBadges />
     </div>
   );
