@@ -358,6 +358,8 @@ interface ThemeConfig {
   body_font: string;
   button_style: string;
   marquee_gradient: string;
+  product_card_style: string;
+  category_style: string;
 }
 
 const THEME_DEFAULTS: Record<string, ThemeConfig> = {
