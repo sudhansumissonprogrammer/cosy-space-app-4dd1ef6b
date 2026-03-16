@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { ArrowRight, ChevronLeft, ChevronRight, Quote, Truck, Shield, RotateCcw } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
