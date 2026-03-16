@@ -1,11 +1,9 @@
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
-import MilanoProductCard from "@/components/storefront/MilanoProductCard";
-import V12ProductCard from "@/components/storefront/V12ProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 
@@ -25,9 +23,12 @@ function ProductCardSkeleton() {
 export default function StorefrontBestSellers() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
-  const isTheme10 = store.theme === "theme-10";
-  const isTheme12 = store.theme === "theme-12";
-  const showAll = isTheme10 || isTheme12;
+  const queryClient = useQueryClient();
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const cardStyle = themeConfig?.product_card_style || "style-1";
+
+  // Show all products for themes that use Shop as full catalog
+  const showAll = ["theme-10", "theme-12"].includes(store.theme);
 
   const { data: products, isLoading } = useQuery({
     queryKey: showAll ? ["storefront-shop-all", store.id] : ["storefront-best-sellers", store.id],
@@ -52,12 +53,6 @@ export default function StorefrontBestSellers() {
 
   const pageTitle = showAll ? "Shop All" : "🔥 Best Sellers";
 
-  const renderCard = (product: any, index: number) => {
-    if (isTheme12) return <V12ProductCard key={product.id} product={product} slug={slug!} index={index} />;
-    if (isTheme10) return <MilanoProductCard key={product.id} product={product} slug={slug!} index={index} />;
-    return <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} />;
-  };
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-5 flex items-center gap-3">
@@ -81,7 +76,16 @@ export default function StorefrontBestSellers() {
         </div>
       ) : products && products.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((product, index) => renderCard(product, index))}
+          {products.map((product, index) => (
+            <UniversalProductCard
+              key={product.id}
+              product={product}
+              slug={slug!}
+              store={store}
+              priority={index < 4}
+              cardStyle={cardStyle}
+            />
+          ))}
         </div>
       ) : (
         <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">

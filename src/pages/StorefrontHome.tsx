@@ -4,8 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Search, ArrowUpDown, SlidersHorizontal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import StorefrontCategories from "@/components/storefront/StorefrontCategories";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
@@ -48,9 +48,12 @@ export default function StorefrontHome() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  // Read directly from pre-seeded cache — zero fetch, instant render
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+
+  const cardStyle = themeConfig?.product_card_style || "style-1";
+  const categoryStyle = themeConfig?.category_style || "style-1";
 
   const bestSellingProducts = useMemo(() => {
     if (!products) return [];
@@ -96,7 +99,6 @@ export default function StorefrontHome() {
         </div>
       </div>
 
-      {/* Full-screen search overlay */}
       <StorefrontSearchOverlay
         open={searchOpen}
         onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
@@ -105,16 +107,16 @@ export default function StorefrontHome() {
         initialFiltersOpen={openFilters}
       />
 
-      <StorefrontCategories
+      <UniversalCategories
         categories={storeCategories}
         storeSlug={slug!}
         isLoading={!storeCategories}
+        categoryStyle={categoryStyle}
       />
 
       <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} storeName={store.name} />
 
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
-        {/* Best Selling Section */}
         {bestSellingProducts.length > 0 && (
           (store as any).best_selling_carousel ? (
             <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} />
@@ -129,12 +131,13 @@ export default function StorefrontHome() {
               </div>
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {bestSellingProducts.map((product, idx) => (
-                  <StorefrontProductCard
+                  <UniversalProductCard
                     key={product.id}
                     product={product}
                     slug={slug!}
                     store={store}
                     priority={idx < 4}
+                    cardStyle={cardStyle}
                   />
                 ))}
               </div>
@@ -142,7 +145,6 @@ export default function StorefrontHome() {
           )
         )}
 
-        {/* Product Grid */}
         <section>
           <div className="mb-5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -194,28 +196,28 @@ export default function StorefrontHome() {
             </div>
           ) : nonBestSellingProducts.length > 0 ? (
             <>
-              {/* First 8 products render immediately for fast LCP */}
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {nonBestSellingProducts.slice(0, 8).map((product, idx) => (
-                  <StorefrontProductCard
+                  <UniversalProductCard
                     key={product.id}
                     product={product}
                     slug={slug!}
                     store={store}
                     priority={idx < 4}
+                    cardStyle={cardStyle}
                   />
                 ))}
               </div>
-              {/* Remaining products lazy-render when scrolled near */}
               {nonBestSellingProducts.length > 8 && (
                 <LazyRender rootMargin="400px" minHeight={400}>
                   <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                     {nonBestSellingProducts.slice(8).map((product) => (
-                      <StorefrontProductCard
+                      <UniversalProductCard
                         key={product.id}
                         product={product}
                         slug={slug!}
                         store={store}
+                        cardStyle={cardStyle}
                       />
                     ))}
                   </div>
