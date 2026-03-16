@@ -340,12 +340,13 @@ export default function StorefrontHomeV3() {
           <>
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
               {allSorted.slice(0, 8).map((product, idx) => (
-                <StorefrontProductCard
+                <UniversalProductCard
                   key={product.id}
                   product={product}
                   slug={slug!}
                   store={store}
                   priority={idx < 4}
+                  cardStyle={cardStyle}
                 />
               ))}
             </div>
