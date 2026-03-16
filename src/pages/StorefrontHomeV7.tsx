@@ -465,7 +465,7 @@ function NewsletterBand() {
 function AllProductsGrid({ store, slug }: { store: StoreData; slug: string }) {
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
-  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
 
   return (
