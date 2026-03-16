@@ -3,7 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowUpDown, Zap, Tag, Clock, Truck, Shield, RotateCcw } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";

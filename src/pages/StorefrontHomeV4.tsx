@@ -3,7 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Star, Quote, ArrowRight, Package } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
