@@ -166,7 +166,7 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                 {filtered.map((assignment: any) => {
                   const store = assignment.stores as any;
                   const plan = assignment.plans as any;
-                  const hasOverride = assignment.is_free_lifetime || assignment.is_one_time || assignment.custom_price != null || assignment.custom_product_limit != null;
+                  const hasOverride = assignment.custom_plan_name || assignment.is_free_lifetime || assignment.is_one_time || assignment.custom_price != null || assignment.custom_product_limit != null;
 
                   return (
                     <TableRow key={assignment.id}>
