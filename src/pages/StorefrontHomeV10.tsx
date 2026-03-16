@@ -175,7 +175,7 @@ function SectionHeader({ title, slug, linkTo }: { title: string; slug: string; l
 
 
 /* ── Best Selling Horizontal Scroll ── */
-function BestSellingSection({ products, slug }: { products: any[]; slug: string }) {
+function BestSellingSection({ products, slug, store, cardStyle }: { products: any[]; slug: string; store: any; cardStyle: string }) {
   const bestSellers = useMemo(() => products.filter(p => p.is_best_selling).slice(0, 10), [products]);
   if (bestSellers.length === 0) return null;
 
@@ -185,7 +185,7 @@ function BestSellingSection({ products, slug }: { products: any[]; slug: string 
       <div className="flex gap-3 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
         {bestSellers.map((product, idx) => (
           <div key={product.id} className="flex-shrink-0" style={{ width: "160px" }}>
-            <MilanoProductCard product={product} slug={slug} index={idx} />
+            <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
           </div>
         ))}
       </div>
