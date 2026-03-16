@@ -69,7 +69,23 @@ export function CartProvider({ slug, children }: { slug: string; children: React
       value: item.price,
       currency: "INR",
     });
-  }, []);
+    // Server-side CAPI - need store ID from slug
+    try {
+      const storeId = localStorage.getItem(`store_id_${slug}`);
+      if (storeId) {
+        fireMetaCAPI({
+          storeId,
+          eventName: "AddToCart",
+          customData: {
+            content_ids: [item.productId],
+            content_type: "product",
+            value: item.price,
+            currency: "INR",
+          },
+        });
+      }
+    } catch {}
+  }, [slug]);
 
   const removeFromCart = useCallback((productId: string, variantId?: string) => {
     setItems((prev) => prev.filter((i) => !(i.productId === productId && i.variantId === variantId)));

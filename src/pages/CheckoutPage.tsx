@@ -522,6 +522,21 @@ export default function CheckoutPage() {
     saveExpressInfo();
     window.dispatchEvent(new CustomEvent("order-placed"));
     fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+    fireMetaCAPI({
+      storeId: store.id,
+      eventName: "Purchase",
+      userEmail: email.trim() || undefined,
+      userPhone: phone.trim() || undefined,
+      externalId: customer?.id || undefined,
+      customData: {
+        content_ids: checkoutItems.map((i) => i.productId),
+        contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+        value: total,
+        currency,
+        num_items: checkoutItems.length,
+        order_id: newOrderId,
+      },
+    });
     // Fire all post-order tasks in parallel (non-blocking)
     if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
     notifyOrderEmail(newOrderId);

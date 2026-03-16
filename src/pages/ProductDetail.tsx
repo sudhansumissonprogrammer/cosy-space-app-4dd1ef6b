@@ -233,12 +233,23 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!product) return;
-    fbPixelTrack("ViewContent", {
+    const eventData = {
       content_name: product.name,
       content_ids: [product.id],
       content_type: "product",
       value: product.sale_price && product.sale_price < product.price ? product.sale_price : product.price,
       currency: product.currency || store.currency || "INR",
+    };
+    fbPixelTrack("ViewContent", eventData);
+    fireMetaCAPI({
+      storeId: store.id,
+      eventName: "ViewContent",
+      customData: {
+        content_ids: [product.id],
+        content_type: "product",
+        value: Number(eventData.value),
+        currency: eventData.currency,
+      },
     });
   }, [product?.id]);
 
