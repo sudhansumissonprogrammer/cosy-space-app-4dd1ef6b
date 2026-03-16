@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import MilanoProductCard from "@/components/storefront/MilanoProductCard";
+import V12ProductCard from "@/components/storefront/V12ProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 
@@ -25,10 +26,11 @@ export default function StorefrontBestSellers() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const isTheme10 = store.theme === "theme-10";
+  const isTheme12 = store.theme === "theme-12";
+  const showAll = isTheme10 || isTheme12;
 
-  // For theme-10, show ALL products; otherwise only best sellers
   const { data: products, isLoading } = useQuery({
-    queryKey: isTheme10 ? ["storefront-shop-all", store.id] : ["storefront-best-sellers", store.id],
+    queryKey: showAll ? ["storefront-shop-all", store.id] : ["storefront-best-sellers", store.id],
     queryFn: async () => {
       let query = supabase
         .from("products")
@@ -36,7 +38,7 @@ export default function StorefrontBestSellers() {
         .eq("store_id", store.id)
         .eq("is_active", true);
 
-      if (!isTheme10) {
+      if (!showAll) {
         query = query.eq("is_best_selling", true);
       }
 
@@ -48,7 +50,13 @@ export default function StorefrontBestSellers() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const pageTitle = isTheme10 ? "Shop All" : "🔥 Best Sellers";
+  const pageTitle = showAll ? "Shop All" : "🔥 Best Sellers";
+
+  const renderCard = (product: any, index: number) => {
+    if (isTheme12) return <V12ProductCard key={product.id} product={product} slug={slug!} index={index} />;
+    if (isTheme10) return <MilanoProductCard key={product.id} product={product} slug={slug!} index={index} />;
+    return <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} />;
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -73,23 +81,7 @@ export default function StorefrontBestSellers() {
         </div>
       ) : products && products.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((product, index) =>
-            isTheme10 ? (
-              <MilanoProductCard
-                key={product.id}
-                product={product}
-                slug={slug!}
-                index={index}
-              />
-            ) : (
-              <StorefrontProductCard
-                key={product.id}
-                product={product}
-                slug={slug!}
-                store={store}
-              />
-            )
-          )}
+          {products.map((product, index) => renderCard(product, index))}
         </div>
       ) : (
         <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
