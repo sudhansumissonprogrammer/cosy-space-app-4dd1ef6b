@@ -281,7 +281,12 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     }, 3000);
   }, [store?.id]);
 
-  const themeConfig = store ? queryClient.getQueryData<any>(["storefront-theme-config", store.id]) : null;
+  const { data: themeConfig } = useQuery({
+    queryKey: ["storefront-theme-config", store?.id],
+    queryFn: () => queryClient.getQueryData(["storefront-theme-config", store?.id]) ?? null,
+    enabled: !!store?.id,
+    staleTime: Infinity,
+  }) as { data: any };
 
   // Load Google Font dynamically
   useEffect(() => {
