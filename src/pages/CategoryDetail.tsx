@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import MilanoProductCard from "@/components/storefront/MilanoProductCard";
+import V12ProductCard from "@/components/storefront/V12ProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 
 export default function CategoryDetail() {
@@ -15,6 +16,7 @@ export default function CategoryDetail() {
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
   const navigate = useNavigate();
   const isMilano = store.theme === "theme-10";
+  const isTheme12 = store.theme === "theme-12";
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
@@ -103,7 +105,9 @@ export default function CategoryDetail() {
             </p>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {products.map((product, idx) =>
-                isMilano ? (
+                isTheme12 ? (
+                  <V12ProductCard key={product.id} product={product} slug={slug!} index={idx} />
+                ) : isMilano ? (
                   <MilanoProductCard key={product.id} product={product} slug={slug!} index={idx} />
                 ) : (
                   <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} />

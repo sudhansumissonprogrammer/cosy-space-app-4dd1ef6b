@@ -325,6 +325,11 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "mint-fresh", "electric-violet", "royal-gold", "lux-black-gold", "lux-cream-brown",
     "ocean-teal", "emerald-luxe", "crimson-royale", "lilac-mist", "saffron-bloom",
   ],
+  "theme-12": [
+    "elegant-black-white", "coral-sunset", "crimson-royale", "app-purple-pink", "electric-violet",
+    "lilac-mist", "app-blue-orange", "mint-fresh", "app-teal-cyan", "royal-gold",
+    "lux-black-gold", "lux-cream-brown", "ocean-teal", "emerald-luxe", "saffron-bloom",
+  ],
 };
 
 /* ── Get sorted color combinations for a given theme ── */
@@ -446,6 +451,16 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555, #1a1a1a)",
   },
+  "theme-12": {
+    primary_color: "#FF3F6C",
+    accent_color: "#111111",
+    text_color: "#1a1a1a",
+    background_color: "#FFFFFF",
+    heading_font: "Poppins",
+    body_font: "Inter",
+    button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
+  },
 };
 
 const THEMES = [
@@ -460,6 +475,7 @@ const THEMES = [
   
   { id: "theme-10", name: "Fashion Runway", description: "Myntra-style fashion shopping with editorial collections", available: true },
   { id: "theme-11", name: "Shopping App", description: "Minimal nav with separated cart emphasis for faster conversions", available: true },
+  { id: "theme-12", name: "Starter Classic", description: "Clean classic storefront with hero, carousel & product grid", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
@@ -2171,6 +2187,8 @@ export default function StoreThemeSettings() {
                         ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
                         : theme.id === "theme-11"
                         ? "linear-gradient(135deg, #F5F5F5 0%, #1a1a1a 50%, #EF4444 100%)"
+                        : theme.id === "theme-12"
+                        ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
                         : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
                   />
