@@ -23,6 +23,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
+import { fireMetaCAPI } from "@/lib/metaCapi";
 
 interface Variant {
   id: string;
