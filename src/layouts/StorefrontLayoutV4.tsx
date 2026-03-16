@@ -237,7 +237,7 @@ export default function StorefrontLayoutV4({ slugOverride }: { slugOverride?: st
     link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
   }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
-  const previewOverride = useThemePreview();
+  const previewOverride = useThemePreview(store?.id);
 
   if (isLoading) return <StorefrontV4Skeleton />;
 
