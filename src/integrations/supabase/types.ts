@@ -1195,6 +1195,7 @@ export type Database = {
           meta_access_token: string | null
           meta_description: string | null
           meta_title: string | null
+          mobile_hero_images: Json | null
           mobile_hero_url: string | null
           name: string
           og_image_url: string | null
@@ -1230,6 +1231,7 @@ export type Database = {
           meta_access_token?: string | null
           meta_description?: string | null
           meta_title?: string | null
+          mobile_hero_images?: Json | null
           mobile_hero_url?: string | null
           name: string
           og_image_url?: string | null
@@ -1265,6 +1267,7 @@ export type Database = {
           meta_access_token?: string | null
           meta_description?: string | null
           meta_title?: string | null
+          mobile_hero_images?: Json | null
           mobile_hero_url?: string | null
           name?: string
           og_image_url?: string | null

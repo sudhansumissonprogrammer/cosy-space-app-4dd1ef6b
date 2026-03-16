@@ -65,6 +65,8 @@ export default function StoreSettings() {
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
   const [heroRemoved, setHeroRemoved] = useState(false);
+  const [heroImages, setHeroImages] = useState<string[]>([]);
+  const [heroImageFiles, setHeroImageFiles] = useState<File[]>([]);
   const [theme, setTheme] = useState("theme-1");
   const [features, setFeatures] = useState<Feature[]>([]);
   const [returnPolicy, setReturnPolicy] = useState("");
@@ -111,6 +113,10 @@ export default function StoreSettings() {
       if (store.logo_url) setLogoPreview(store.logo_url);
       if (store.banner_url) setBannerPreview(store.banner_url);
       if ((store as any).mobile_hero_url) setHeroPreview((store as any).mobile_hero_url);
+      const existingHeroImages = (store as any).mobile_hero_images;
+      if (existingHeroImages && Array.isArray(existingHeroImages) && existingHeroImages.length > 0) {
+        setHeroImages(existingHeroImages);
+      }
       setTheme((store as any).theme || "theme-1");
       if (store.features) setFeatures(store.features as unknown as Feature[]);
       setReturnPolicy((store as any).return_policy || "");
@@ -156,6 +162,13 @@ export default function StoreSettings() {
       if (bannerFile) bannerUrl = await uploadFile(bannerFile, "store-banners");
       if (heroFile) mobileHeroUrl = await uploadFile(heroFile, "store-banners");
 
+      // Upload new hero carousel images
+      let finalHeroImages = [...heroImages];
+      for (const file of heroImageFiles) {
+        const url = await uploadFile(file, "store-banners");
+        finalHeroImages.push(url);
+      }
+
       // Handle OG image upload
       let finalOgImageUrl = ogImageUrl;
       if (ogImageRemoved) finalOgImageUrl = "";
@@ -179,7 +192,8 @@ export default function StoreSettings() {
           business_hours: hasHours ? businessHours : null,
           logo_url: logoUrl,
           banner_url: bannerUrl,
-          mobile_hero_url: mobileHeroUrl,
+           mobile_hero_url: mobileHeroUrl,
+           mobile_hero_images: finalHeroImages.length > 0 ? finalHeroImages : null,
           theme,
           features: features.length > 0 ? features : null,
           return_policy: returnPolicy.trim() || null,
@@ -198,6 +212,7 @@ export default function StoreSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store", storeId] });
       queryClient.invalidateQueries({ queryKey: ["stores"] });
+      setHeroImageFiles([]);
       toast.success("Store settings updated!");
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
@@ -409,7 +424,9 @@ export default function StoreSettings() {
             </div>
 
             <div className="space-y-2">
-              <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(shown only on mobile)</span></Label>
+              <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(shown only on mobile — add multiple for carousel)</span></Label>
+              
+              {/* Single legacy hero */}
               {heroPreview ? (
                 <div className="relative inline-block">
                   <img src={heroPreview} alt="Mobile Hero" className="w-full max-h-32 rounded-lg border object-contain" />
@@ -436,6 +453,48 @@ export default function StoreSettings() {
                   />
                 </label>
               )}
+
+              {/* Multiple hero images for carousel */}
+              <Label className="text-xs text-muted-foreground font-normal">Carousel Images (optional — adds swipeable hero slides)</Label>
+              <div className="flex flex-wrap gap-2">
+                {heroImages.map((url, i) => (
+                  <div key={i} className="relative">
+                    <img src={url} alt={`Hero ${i + 1}`} className="h-20 w-32 rounded-lg border object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setHeroImages(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {heroImageFiles.map((file, i) => (
+                  <div key={`new-${i}`} className="relative">
+                    <img src={URL.createObjectURL(file)} alt={`New hero ${i + 1}`} className="h-20 w-32 rounded-lg border object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setHeroImageFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                <label className="flex h-20 w-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-input hover:border-primary/50">
+                  <Plus className="h-5 w-5 text-muted-foreground" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) setHeroImageFiles(prev => [...prev, ...files]);
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           </CardContent>
         </Card>
