@@ -509,7 +509,7 @@ function AllProductsGrid({ store, slug }: { store: StoreData; slug: string }) {
           <>
             <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
               {products.slice(0, 12).map((product, idx) => (
-                <StorefrontProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} />
+                <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
             {products.length > 12 && (
