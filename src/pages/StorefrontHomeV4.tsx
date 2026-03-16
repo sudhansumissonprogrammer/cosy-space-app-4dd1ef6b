@@ -335,6 +335,16 @@ export default function StorefrontHomeV4() {
         slug={slug!}
       />
 
+      {/* Categories */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-12 pt-8">
+        <UniversalCategories
+          categories={storeCategories}
+          storeSlug={slug!}
+          isLoading={!storeCategories}
+          categoryStyle={themeConfig?.category_style || "style-1"}
+        />
+      </div>
+
       {/* Featured Collection */}
       {products && <FeaturedCollection products={allProducts} slug={slug!} store={store} />}
 

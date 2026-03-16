@@ -345,9 +345,14 @@ export default function StorefrontHomeV6() {
       />
 
       {/* Categories */}
-      {storeCategories && storeCategories.length > 0 && (
-        <CategoryGrid categories={storeCategories} slug={slug!} />
-      )}
+      <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-6 pb-10 sm:pt-10 sm:pb-20">
+        <UniversalCategories
+          categories={storeCategories}
+          storeSlug={slug!}
+          isLoading={!storeCategories}
+          categoryStyle={themeConfig?.category_style || "style-1"}
+        />
+      </div>
 
       {/* Featured Products */}
       <section className="mx-auto max-w-7xl px-4 lg:px-8 pb-10 sm:pb-20">

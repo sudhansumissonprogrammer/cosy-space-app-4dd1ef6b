@@ -588,9 +588,16 @@ export default function StorefrontHomeV7() {
       />
 
       {/* Category Grid */}
-      {storeCategories && storeCategories.length > 0 && (
-        <MagazineCategoryGrid categories={storeCategories} slug={slug!} />
-      )}
+      <div className="py-12 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+          <UniversalCategories
+            categories={storeCategories}
+            storeSlug={slug!}
+            isLoading={!storeCategories}
+            categoryStyle={themeConfig?.category_style || "style-1"}
+          />
+        </div>
+      </div>
 
       {/* Editorial Section 2 */}
       <EditorialSection

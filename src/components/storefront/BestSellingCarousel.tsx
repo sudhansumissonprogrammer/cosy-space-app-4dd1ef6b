@@ -64,10 +64,11 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
                 key={product.id}
                 className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/4"
               >
-                <StorefrontProductCard
+                <UniversalProductCard
                   product={product}
                   slug={slug}
                   store={store}
+                  cardStyle={cardStyle}
                 />
               </CarouselItem>
             ))}
