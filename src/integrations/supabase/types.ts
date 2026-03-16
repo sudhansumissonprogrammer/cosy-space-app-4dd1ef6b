@@ -899,6 +899,70 @@ export type Database = {
         }
         Relationships: []
       }
+      store_plan_assignments: {
+        Row: {
+          created_at: string
+          custom_price: number | null
+          custom_product_limit: number | null
+          id: string
+          is_free_lifetime: boolean
+          is_one_time: boolean
+          notes: string | null
+          plan_id: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_price?: number | null
+          custom_product_limit?: number | null
+          id?: string
+          is_free_lifetime?: boolean
+          is_one_time?: boolean
+          notes?: string | null
+          plan_id: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_price?: number | null
+          custom_product_limit?: number | null
+          id?: string
+          is_free_lifetime?: boolean
+          is_one_time?: boolean
+          notes?: string | null
+          plan_id?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_plan_assignments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_plan_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_plan_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_shipping_config: {
         Row: {
           created_at: string
