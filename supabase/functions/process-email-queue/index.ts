@@ -25,84 +25,6 @@ function getRetryAfterSeconds(error: unknown): number {
   return 60
 }
 
-function normalizeQueuedPayload(rawPayload: any, queue: string, queueMessageId: number) {
-  const payload = rawPayload && typeof rawPayload === 'object' ? rawPayload : {}
-
-  const message_id =
-    typeof payload.message_id === 'string' && payload.message_id.trim().length > 0
-      ? payload.message_id.trim()
-      : `${queue}-${queueMessageId}`
-
-  const run_id =
-    typeof payload.run_id === 'string' && payload.run_id.trim().length > 0
-      ? payload.run_id.trim()
-      : null
-
-  const to =
-    typeof payload.to === 'string' && payload.to.trim().length > 0
-      ? payload.to.trim().toLowerCase()
-      : typeof payload.recipient_email === 'string' && payload.recipient_email.trim().length > 0
-        ? payload.recipient_email.trim().toLowerCase()
-        : ''
-
-  const html =
-    typeof payload.html === 'string' && payload.html.trim().length > 0
-      ? payload.html
-      : typeof payload.html_body === 'string'
-        ? payload.html_body
-        : ''
-
-  const subject = typeof payload.subject === 'string' ? payload.subject : ''
-
-  const text =
-    typeof payload.text === 'string' && payload.text.trim().length > 0
-      ? payload.text
-      : html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || subject
-
-  const label =
-    typeof payload.label === 'string' && payload.label.trim().length > 0
-      ? payload.label
-      : typeof payload.template_name === 'string' && payload.template_name.trim().length > 0
-        ? payload.template_name
-        : queue
-
-  const purpose = 'transactional'
-
-  const from =
-    typeof payload.from === 'string' && payload.from.trim().length > 0
-      ? payload.from
-      : 'Storivo Orders <noreply@storivo.in>'
-
-  const sender_domain =
-    typeof payload.sender_domain === 'string' && payload.sender_domain.trim().length > 0
-      ? payload.sender_domain
-      : 'notify.storivo.in'
-
-  const queued_at =
-    typeof payload.queued_at === 'string' && payload.queued_at.trim().length > 0
-      ? payload.queued_at
-      : new Date().toISOString()
-
-  return {
-    ...payload,
-    run_id,
-    message_id,
-    idempotency_key:
-      typeof payload.idempotency_key === 'string' && payload.idempotency_key.trim().length > 0
-        ? payload.idempotency_key
-        : message_id,
-    to,
-    from,
-    sender_domain,
-    subject,
-    html,
-    text,
-    label,
-    purpose,
-    queued_at,
-  }
-}
-
 function parseJwtClaims(token: string): Record<string, unknown> | null {
   const parts = token.split('.')
   if (parts.length < 2) {
@@ -199,13 +121,13 @@ Deno.serve(async (req) => {
     // messages not attempted when a 429 stops processing early.
     const messageIds = Array.from(
       new Set(
-        messages.map((msg) => {
-          const payload = msg?.message
-          if (payload?.message_id && typeof payload.message_id === 'string' && payload.message_id.trim().length > 0) {
-            return payload.message_id.trim()
-          }
-          return `${queue}-${msg.msg_id}`
-        })
+        messages
+          .map((msg) =>
+            msg?.message?.message_id && typeof msg.message.message_id === 'string'
+              ? msg.message.message_id
+              : null
+          )
+          .filter((id): id is string => Boolean(id))
       )
     )
     const failedAttemptsByMessageId = new Map<string, number>()
@@ -235,49 +157,11 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i]
-      const payload = normalizeQueuedPayload(msg.message, queue, msg.msg_id)
-      const failedAttempts = failedAttemptsByMessageId.get(payload.message_id) ?? 0
-
-      if (queue === 'transactional_emails' && !payload.unsubscribe_token && payload.to) {
-        const { data: tokenRow, error: tokenLookupError } = await supabase
-          .from('email_unsubscribe_tokens')
-          .select('token')
-          .eq('email', payload.to)
-          .is('used_at', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-
-        if (tokenLookupError) {
-          console.error('Failed to lookup unsubscribe token', {
-            queue,
-            msg_id: msg.msg_id,
-            error: tokenLookupError,
-          })
-        } else {
-          let unsubscribeToken = tokenRow?.token ?? null
-
-          if (!unsubscribeToken) {
-            unsubscribeToken = crypto.randomUUID()
-            const { error: tokenInsertError } = await supabase
-              .from('email_unsubscribe_tokens')
-              .insert({ email: payload.to, token: unsubscribeToken })
-
-            if (tokenInsertError) {
-              console.error('Failed to create unsubscribe token', {
-                queue,
-                msg_id: msg.msg_id,
-                error: tokenInsertError,
-              })
-              unsubscribeToken = null
-            }
-          }
-
-          if (unsubscribeToken) {
-            payload.unsubscribe_token = unsubscribeToken
-          }
-        }
-      }
+      const payload = msg.message
+      const failedAttempts =
+        payload?.message_id && typeof payload.message_id === 'string'
+          ? (failedAttemptsByMessageId.get(payload.message_id) ?? 0)
+          : 0
 
       // Drop expired messages (TTL exceeded)
       if (payload.queued_at) {
@@ -357,42 +241,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (!payload.to || !payload.subject || !payload.html) {
-        const payloadError = 'Invalid email payload: missing to, subject, or html'
-        console.error(payloadError, {
-          queue,
-          msg_id: msg.msg_id,
-          message_id: payload.message_id,
-        })
-
-        await supabase.from('email_send_log').insert({
-          message_id: payload.message_id,
-          template_name: payload.label || queue,
-          recipient_email: payload.to || 'unknown@example.invalid',
-          status: 'dlq',
-          error_message: payloadError,
-        })
-
-        const { error: invalidDlqError } = await supabase.rpc('move_to_dlq', {
-          source_queue: queue,
-          dlq_name: dlq,
-          message_id: msg.msg_id,
-          payload,
-        })
-        if (invalidDlqError) {
-          console.error('Failed to move invalid payload message to DLQ', {
-            queue,
-            msg_id: msg.msg_id,
-            error: invalidDlqError,
-          })
-        }
-        continue
-      }
-
       try {
         await sendLovableEmail(
           {
-            ...(queue === 'auth_emails' && payload.run_id ? { run_id: payload.run_id } : {}),
+            run_id: payload.run_id,
             to: payload.to,
             from: payload.from,
             sender_domain: payload.sender_domain,
