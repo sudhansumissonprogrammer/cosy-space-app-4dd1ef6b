@@ -2022,6 +2022,8 @@ export default function StoreThemeSettings() {
         body_font: themeConfig.body_font,
         button_style: themeConfig.button_style,
         marquee_gradient: themeConfig.marquee_gradient,
+        product_card_style: themeConfig.product_card_style || "style-1",
+        category_style: themeConfig.category_style || "style-1",
       });
     } else {
       setConfig(defaults);
