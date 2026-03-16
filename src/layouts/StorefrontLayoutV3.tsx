@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useParams, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Store, ShoppingCart, Heart, User, Search, Menu, Home, Grid3X3, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
