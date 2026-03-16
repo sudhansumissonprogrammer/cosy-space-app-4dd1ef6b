@@ -290,15 +290,27 @@ export default function CheckoutPage() {
     setCouponCode("");
   };
 
-  // Facebook Pixel: InitiateCheckout
+  // Facebook Pixel + CAPI: InitiateCheckout
   useEffect(() => {
     if (checkoutItems.length === 0) return;
-    fbPixelTrack("InitiateCheckout", {
+    const eventData = {
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
       num_items: checkoutItems.length,
       value: subtotal,
       currency,
+    };
+    fbPixelTrack("InitiateCheckout", eventData);
+    fireMetaCAPI({
+      storeId: store.id,
+      eventName: "InitiateCheckout",
+      customData: {
+        content_ids: eventData.content_ids,
+        contents: eventData.contents,
+        num_items: eventData.num_items,
+        value: subtotal,
+        currency,
+      },
     });
   }, []);
 
