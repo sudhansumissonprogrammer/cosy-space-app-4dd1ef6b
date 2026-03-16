@@ -15,7 +15,7 @@ export default function CategoryDetail() {
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const themeConfig = queryClient.getQueryData<any>(["storefront-theme-config", store.id]);
+  const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
 
   const { data: category, isLoading: categoryLoading } = useQuery({
