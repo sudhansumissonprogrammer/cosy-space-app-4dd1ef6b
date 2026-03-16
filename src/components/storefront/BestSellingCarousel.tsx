@@ -21,7 +21,7 @@ interface BestSellingCarouselProps {
   cardStyle?: string;
 }
 
-export default function BestSellingCarousel({ products, slug, store }: BestSellingCarouselProps) {
+export default function BestSellingCarousel({ products, slug, store, cardStyle = "style-1" }: BestSellingCarouselProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
