@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
-import MilanoProductCard from "@/components/storefront/MilanoProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 
@@ -24,31 +23,23 @@ function ProductCardSkeleton() {
 export default function StorefrontBestSellers() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
-  const isTheme10 = store.theme === "theme-10";
 
-  // For theme-10, show ALL products; otherwise only best sellers
   const { data: products, isLoading } = useQuery({
-    queryKey: isTheme10 ? ["storefront-shop-all", store.id] : ["storefront-best-sellers", store.id],
+    queryKey: ["storefront-best-sellers", store.id],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("products")
         .select("*")
         .eq("store_id", store.id)
-        .eq("is_active", true);
-
-      if (!isTheme10) {
-        query = query.eq("is_best_selling", true);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false });
+        .eq("is_active", true)
+        .eq("is_best_selling", true)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!store.id,
     staleTime: 5 * 60 * 1000,
   });
-
-  const pageTitle = isTheme10 ? "Shop All" : "🔥 Best Sellers";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -59,7 +50,7 @@ export default function StorefrontBestSellers() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="text-xl font-bold text-foreground">{pageTitle}</h1>
+        <h1 className="text-xl font-bold text-foreground">🔥 Best Sellers</h1>
         {products && (
           <span className="text-sm text-muted-foreground">({products.length} products)</span>
         )}
@@ -73,27 +64,18 @@ export default function StorefrontBestSellers() {
         </div>
       ) : products && products.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((product, index) =>
-            isTheme10 ? (
-              <MilanoProductCard
-                key={product.id}
-                product={product}
-                slug={slug!}
-                index={index}
-              />
-            ) : (
-              <StorefrontProductCard
-                key={product.id}
-                product={product}
-                slug={slug!}
-                store={store}
-              />
-            )
-          )}
+          {products.map((product) => (
+            <StorefrontProductCard
+              key={product.id}
+              product={product}
+              slug={slug!}
+              store={store}
+            />
+          ))}
         </div>
       ) : (
         <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
-          <p className="text-muted-foreground">No products yet.</p>
+          <p className="text-muted-foreground">No best-selling products yet.</p>
         </div>
       )}
     </div>
