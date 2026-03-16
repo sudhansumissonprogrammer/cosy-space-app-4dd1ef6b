@@ -3,7 +3,7 @@
  *
  * Handles THREE responsibilities:
  * 1. 301 redirect: storivo.in/store/{slug} → {slug}.storivo.in
- * 2. OG rewriting: Detects social crawlers on subdomains and injects store-specific OG tags
+ * 2. OG rewriting: Detects social crawlers on subdomains and serves lightweight OG HTML
  * 3. SEO files: Intercepts /sitemap.xml and /robots.txt on subdomains → Edge Functions
  *
  * Deploy in Cloudflare dashboard:
@@ -21,8 +21,8 @@ const ORIGIN_HOST = "core-sparkle-suite.lovable.app";
 const SUPABASE_URL = "https://dtwmmuzmepdltroiypgu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0d21tdXptZXBkbHRyb2l5cGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDM4MjMsImV4cCI6MjA4OTIxOTgyM30.Kq4jRUeelihhqyRWLodiQIhhSi0AANQ7PletSjS4NlU";
 
-// Social media crawler User-Agent patterns
-const BOT_UA_REGEX = /WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|OpenGraphIO|opengraph\.xyz|Embedly|Iframely|MetaInspector|PetalBot|Bingbot|YandexBot/i;
+// Social media crawler + OG scraper User-Agent patterns
+const BOT_UA_REGEX = /WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|OpenGraphIO|opengraph\.xyz|Embedly|Iframely|MetaInspector|PetalBot|Bingbot|YandexBot|curl|wget|HeadlessChrome|Lighthouse|Prerender/i;
 
 function escapeHtml(str) {
   if (!str) return "";
@@ -55,6 +55,47 @@ function callEdgeFunction(name, slug) {
   );
 }
 
+/**
+ * Build a lightweight self-contained HTML page with OG tags.
+ * This is served directly to bots — no proxying needed, so it's instant.
+ * Human visitors who somehow hit this get redirected to the real page.
+ */
+function buildOgHtml(og, storeUrl) {
+  const title = escapeHtml(og.title || "");
+  const description = escapeHtml(og.description || "");
+  const image = og.image || "";
+  const siteName = escapeHtml(og.title?.split("—")[0]?.trim() || og.title || "");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <meta name="description" content="${description}">
+  <meta property="og:title" content="${title}">
+  <meta property="og:description" content="${description}">
+  <meta property="og:url" content="${escapeHtml(storeUrl)}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="${siteName}">
+  ${image ? `<meta property="og:image" content="${escapeHtml(image)}">
+  <meta property="og:image:secure_url" content="${escapeHtml(image)}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">` : ""}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${title}">
+  <meta name="twitter:description" content="${description}">
+  ${image ? `<meta name="twitter:image" content="${escapeHtml(image)}">` : ""}
+  <link rel="canonical" href="${escapeHtml(storeUrl)}">
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(storeUrl)}">
+  <script>window.location.replace("${storeUrl}");</script>
+</head>
+<body>
+  <p>Redirecting to <a href="${escapeHtml(storeUrl)}">${siteName}</a>...</p>
+</body>
+</html>`;
+}
+
 export default {
   async fetch(request) {
     const url = new URL(request.url);
@@ -75,7 +116,6 @@ export default {
           },
         });
       }
-      // Not a /store/ path on root domain — proxy to origin
       return proxyToOrigin(request);
     }
 
@@ -104,7 +144,7 @@ export default {
       });
     }
 
-    // ─── 3. OG REWRITING FOR SOCIAL CRAWLERS ───
+    // ─── 3. OG FOR SOCIAL CRAWLERS — serve lightweight HTML, no proxy needed ───
     const userAgent = request.headers.get("User-Agent") || "";
     if (BOT_UA_REGEX.test(userAgent)) {
       try {
@@ -113,41 +153,9 @@ export default {
         if (ogResponse.ok) {
           const og = await ogResponse.json();
           const storeUrl = `https://${slug}.${ROOT_DOMAIN}${url.pathname}`;
+          const html = buildOgHtml(og, storeUrl);
 
-          // Fetch original HTML from origin
-          const originResponse = await proxyToOrigin(request);
-          const html = await originResponse.text();
-
-          // Build store-specific OG tags
-          const ogTags = `
-    <title>${escapeHtml(og.title)}</title>
-    <meta name="description" content="${escapeHtml(og.description)}">
-    <meta property="og:title" content="${escapeHtml(og.title)}">
-    <meta property="og:description" content="${escapeHtml(og.description)}">
-    <meta property="og:url" content="${escapeHtml(storeUrl)}">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="${escapeHtml(og.title.split('—')[0]?.trim() || og.title)}">
-    ${og.image ? `<meta property="og:image" content="${escapeHtml(og.image)}">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">` : ""}
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${escapeHtml(og.title)}">
-    <meta name="twitter:description" content="${escapeHtml(og.description)}">
-    ${og.image ? `<meta name="twitter:image" content="${escapeHtml(og.image)}">` : ""}
-    <link rel="canonical" href="${escapeHtml(storeUrl)}">
-  </head>`;
-
-          // Strip existing meta tags to avoid duplicates, then inject new ones
-          let rewritten = html
-            .replace(/<title>[^<]*<\/title>/i, "")
-            .replace(/<meta\s+name="description"[^>]*>/gi, "")
-            .replace(/<meta\s+property="og:[^"]*"[^>]*>/gi, "")
-            .replace(/<meta\s+name="twitter:[^"]*"[^>]*>/gi, "")
-            .replace(/<link\s+rel="canonical"[^>]*>/gi, "");
-
-          rewritten = rewritten.replace(/<\/head>/i, ogTags);
-
-          return new Response(rewritten, {
+          return new Response(html, {
             status: 200,
             headers: {
               "Content-Type": "text/html; charset=utf-8",
