@@ -45,6 +45,7 @@ const StoreTaxSettings = lazy(() => import("@/pages/StoreTaxSettings"));
 const StoreAbandonedCarts = lazy(() => import("@/pages/StoreAbandonedCarts"));
 const StoreThemeSettings = lazy(() => import("@/pages/StoreThemeSettings"));
 const WhatsAppMarketing = lazy(() => import("@/pages/WhatsAppMarketing"));
+const StoreTracking = lazy(() => import("@/pages/StoreTracking"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const InstallApp = lazy(() => import("@/pages/InstallApp"));
 
@@ -105,6 +106,7 @@ export default function AuthRoutes() {
           <Route path="stores/:storeId/abandoned-carts" element={<StoreAbandonedCarts />} />
           <Route path="stores/:storeId/theme" element={<StoreThemeSettings />} />
           <Route path="stores/:storeId/whatsapp" element={<WhatsAppMarketing />} />
+          <Route path="stores/:storeId/tracking" element={<StoreTracking />} />
           <Route path="analytics" element={<StoreAnalytics />} />
           <Route path="settings" element={<UserSettings />} />
         </Route>
