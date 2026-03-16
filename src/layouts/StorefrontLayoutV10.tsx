@@ -75,18 +75,20 @@ function MilanoHeader({ store }: { store: StoreData }) {
 
               {/* Navigation links */}
               <nav className="flex-1 overflow-y-auto">
+                {/* Pages section */}
+                <div className="px-5 pt-4 pb-1">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Pages</h4>
+                </div>
                 {[
                   { to: storefrontPath(store.slug), label: "Home" },
                   { to: storefrontPath(store.slug, "best-sellers"), label: "Shop" },
                   { to: storefrontPath(store.slug, "contact"), label: "Contact" },
-                  { to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" },
-                  { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" },
                 ].map((link) => (
                   <Link
                     key={link.label}
                     to={link.to}
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors"
+                    className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors"
                     style={{
                       color: "var(--storefront-text, #1a1a1a)",
                       borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
@@ -98,20 +100,53 @@ function MilanoHeader({ store }: { store: StoreData }) {
                   </Link>
                 ))}
 
-                {/* Categories in menu */}
-                {categories && categories.length > 0 && categories.map((cat: any) => (
+                {/* Categories section */}
+                {categories && categories.length > 0 && (
+                  <>
+                    <div className="px-5 pt-5 pb-1">
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Categories</h4>
+                    </div>
+                    {categories.map((cat: any) => (
+                      <Link
+                        key={cat.id}
+                        to={storefrontPath(store.slug, `category/${cat.slug}`)}
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors"
+                        style={{
+                          color: "var(--storefront-text, #1a1a1a)",
+                          borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
+                          fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
+                        }}
+                      >
+                        {cat.name}
+                        <ChevronRight className="h-4 w-4 opacity-40" />
+                      </Link>
+                    ))}
+                  </>
+                )}
+
+                {/* Policies section */}
+                <div className="px-5 pt-5 pb-1">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Policies</h4>
+                </div>
+                {[
+                  { to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" },
+                  { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" },
+                  { to: storefrontPath(store.slug, "terms"), label: "Terms & Conditions" },
+                  { to: storefrontPath(store.slug, "privacy-policy"), label: "Privacy Policy" },
+                ].map((link) => (
                   <Link
-                    key={cat.id}
-                    to={storefrontPath(store.slug, `category/${cat.slug}`)}
+                    key={link.label}
+                    to={link.to}
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors"
+                    className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors"
                     style={{
                       color: "var(--storefront-text, #1a1a1a)",
                       borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
                       fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
                     }}
                   >
-                    {cat.name}
+                    {link.label}
                     <ChevronRight className="h-4 w-4 opacity-40" />
                   </Link>
                 ))}
