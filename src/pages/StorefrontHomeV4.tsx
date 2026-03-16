@@ -372,7 +372,7 @@ export default function StorefrontHomeV4() {
               <LazyRender rootMargin="400px" minHeight={400}>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:gap-8 mt-6 lg:mt-8">
                   {allProducts.slice(9).map((product) => (
-                    <StorefrontProductCard key={product.id} product={product} slug={slug!} store={store} />
+                    <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} cardStyle={cardStyle} />
                   ))}
                 </div>
               </LazyRender>

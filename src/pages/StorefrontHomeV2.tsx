@@ -174,7 +174,7 @@ function MasonryGrid({ products, slug, store }: { products: any[]; slug: string;
     <div className="columns-2 gap-3 sm:gap-4 md:columns-3 lg:columns-4 space-y-3 sm:space-y-4">
       {products.map((product, idx) => (
         <div key={product.id} className="break-inside-avoid">
-          <StorefrontProductCard product={product} slug={slug} store={store} priority={idx < 4} />
+          <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
         </div>
       ))}
     </div>
