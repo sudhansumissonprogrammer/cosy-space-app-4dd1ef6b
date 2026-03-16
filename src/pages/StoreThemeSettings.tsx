@@ -358,108 +358,70 @@ interface ThemeConfig {
   body_font: string;
   button_style: string;
   marquee_gradient: string;
+  product_card_style: string;
+  category_style: string;
 }
 
 const THEME_DEFAULTS: Record<string, ThemeConfig> = {
   "theme-1": {
-    primary_color: "#b8873c",
-    accent_color: "#000000",
-    text_color: "#1a1a1a",
-    background_color: "#f7f5f0",
-    heading_font: "Alegreya SC",
-    body_font: "Inter",
-    button_style: "rounded",
+    primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
+    heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+    product_card_style: "style-1", category_style: "style-1",
   },
   "theme-2": {
-    primary_color: "#b8873c",
-    accent_color: "#000000",
-    text_color: "#1a1a1a",
-    background_color: "#f7f5f0",
-    heading_font: "Space Grotesk",
-    body_font: "DM Sans",
-    button_style: "pill",
+    primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
+    heading_font: "Space Grotesk", body_font: "DM Sans", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+    product_card_style: "style-1", category_style: "style-1",
   },
   "theme-3": {
-    primary_color: "#3B82F6",
-    accent_color: "#F97316",
-    text_color: "#1e293b",
-    background_color: "#F8FAFC",
-    heading_font: "Inter",
-    body_font: "Inter",
-    button_style: "rounded",
+    primary_color: "#3B82F6", accent_color: "#F97316", text_color: "#1e293b", background_color: "#F8FAFC",
+    heading_font: "Inter", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #3B82F6, #60a5fa, #F97316)",
+    product_card_style: "style-1", category_style: "style-1",
   },
   "theme-4": {
-    primary_color: "#C8A96A",
-    accent_color: "#1C1C1C",
-    text_color: "#1C1C1C",
-    background_color: "#F8F5F0",
-    heading_font: "Playfair Display",
-    body_font: "Inter",
-    button_style: "square",
+    primary_color: "#C8A96A", accent_color: "#1C1C1C", text_color: "#1C1C1C", background_color: "#F8F5F0",
+    heading_font: "Playfair Display", body_font: "Inter", button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #C8A96A, #e8d5a8, #C8A96A)",
+    product_card_style: "style-1", category_style: "style-2",
   },
   "theme-6": {
-    primary_color: "#2563EB",
-    accent_color: "#1e293b",
-    text_color: "#1e293b",
-    background_color: "#F8FAFC",
-    heading_font: "Poppins",
-    body_font: "Inter",
-    button_style: "rounded",
+    primary_color: "#2563EB", accent_color: "#1e293b", text_color: "#1e293b", background_color: "#F8FAFC",
+    heading_font: "Poppins", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #2563EB, #60a5fa, #F97316)",
+    product_card_style: "style-1", category_style: "style-1",
   },
   "theme-7": {
-    primary_color: "#1a1a1a",
-    accent_color: "#1a1a1a",
-    text_color: "#1a1a1a",
-    background_color: "#ffffff",
-    heading_font: "Playfair Display",
-    body_font: "Inter",
-    button_style: "square",
+    primary_color: "#1a1a1a", accent_color: "#1a1a1a", text_color: "#1a1a1a", background_color: "#ffffff",
+    heading_font: "Playfair Display", body_font: "Inter", button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555555, #1a1a1a)",
+    product_card_style: "style-2", category_style: "style-3",
   },
   "theme-8": {
-    primary_color: "#6C5CE7",
-    accent_color: "#FD79A8",
-    text_color: "#1e293b",
-    background_color: "#FFFFFF",
-    heading_font: "DM Sans",
-    body_font: "Inter",
-    button_style: "pill",
+    primary_color: "#6C5CE7", accent_color: "#FD79A8", text_color: "#1e293b", background_color: "#FFFFFF",
+    heading_font: "DM Sans", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #6C5CE7, #a29bfe, #FD79A8)",
+    product_card_style: "style-1", category_style: "style-1",
   },
   "theme-10": {
-    primary_color: "#FF3F6C",
-    accent_color: "#111111",
-    text_color: "#1a1a1a",
-    background_color: "#FFFFFF",
-    heading_font: "Poppins",
-    body_font: "Inter",
-    button_style: "pill",
+    primary_color: "#FF3F6C", accent_color: "#111111", text_color: "#1a1a1a", background_color: "#FFFFFF",
+    heading_font: "Poppins", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
+    product_card_style: "style-1", category_style: "style-1",
   },
   "theme-11": {
-    primary_color: "#1a1a1a",
-    accent_color: "#EF4444",
-    text_color: "#1a1a1a",
-    background_color: "#F5F5F5",
-    heading_font: "DM Sans",
-    body_font: "Inter",
-    button_style: "pill",
+    primary_color: "#1a1a1a", accent_color: "#EF4444", text_color: "#1a1a1a", background_color: "#F5F5F5",
+    heading_font: "DM Sans", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555, #1a1a1a)",
+    product_card_style: "style-1", category_style: "style-1",
   },
   "theme-12": {
-    primary_color: "#FF3F6C",
-    accent_color: "#111111",
-    text_color: "#1a1a1a",
-    background_color: "#FFFFFF",
-    heading_font: "Poppins",
-    body_font: "Inter",
-    button_style: "rounded",
+    primary_color: "#FF3F6C", accent_color: "#111111", text_color: "#1a1a1a", background_color: "#FFFFFF",
+    heading_font: "Poppins", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
+    product_card_style: "style-3", category_style: "style-1",
   },
 };
 
@@ -2020,6 +1982,8 @@ export default function StoreThemeSettings() {
         body_font: themeConfig.body_font,
         button_style: themeConfig.button_style,
         marquee_gradient: themeConfig.marquee_gradient,
+        product_card_style: themeConfig.product_card_style || "style-1",
+        category_style: themeConfig.category_style || "style-1",
       });
     } else {
       setConfig(defaults);
@@ -2339,6 +2303,78 @@ export default function StoreThemeSettings() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Product Card Style */}
+          <div>
+            <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Product Card Style</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "style-1", label: "Style 1", desc: "Clean minimal" },
+                  { value: "style-2", label: "Style 2", desc: "Badge & overlay" },
+                  { value: "style-3", label: "Style 3", desc: "Bold modern" },
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => updateField("product_card_style", s.value)}
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                      config.product_card_style === s.value
+                        ? "border-foreground bg-muted shadow-sm"
+                        : "border-border hover:border-foreground/30"
+                    }`}
+                  >
+                    {config.product_card_style === s.value && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="h-4 w-4 text-foreground" />
+                      </div>
+                    )}
+                    <ShoppingCart className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-xs font-semibold">{s.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{s.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Category Style */}
+          <div>
+            <h4 className="mb-3 text-sm font-semibold">Category Section Design</h4>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Category Style</Label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { value: "style-1", label: "Circle Carousel", icon: "○ ○ ○" },
+                  { value: "style-2", label: "Rect Carousel", icon: "▭ ▭ ▭" },
+                  { value: "style-3", label: "Rect Grid", icon: "▭▭\n▭▭" },
+                  { value: "style-4", label: "Square Grid", icon: "□□\n□□" },
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => updateField("category_style", s.value)}
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                      config.category_style === s.value
+                        ? "border-foreground bg-muted shadow-sm"
+                        : "border-border hover:border-foreground/30"
+                    }`}
+                  >
+                    {config.category_style === s.value && (
+                      <div className="absolute top-1.5 right-1.5">
+                        <Check className="h-3.5 w-3.5 text-foreground" />
+                      </div>
+                    )}
+                    <span className="text-lg font-mono leading-tight whitespace-pre text-muted-foreground">{s.icon}</span>
+                    <span className="text-[10px] font-semibold text-center">{s.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
