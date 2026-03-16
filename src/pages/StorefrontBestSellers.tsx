@@ -1,5 +1,6 @@
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
