@@ -129,7 +129,7 @@ function AnnouncementStrip() {
     <div
       className="w-full overflow-hidden py-2.5"
       style={{
-        background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a))",
+        background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #1a1a1a, #333, #1a1a1a))",
         color: "var(--storefront-text, #1a1a1a)",
       }}
     >
