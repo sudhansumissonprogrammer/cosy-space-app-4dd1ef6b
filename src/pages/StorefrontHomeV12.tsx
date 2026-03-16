@@ -66,13 +66,10 @@ function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
 }
 
 /* ── Marquee Announcement ── */
-function V12Marquee() {
-  const items = [
-    { icon: "🚚", text: "Free Shipping On All Orders" },
-    { icon: "🔄", text: "Easy Returns" },
-    { icon: "🔒", text: "Secure Payments" },
-    { icon: "💰", text: "COD Available" },
-  ];
+function V12Marquee({ customText }: { customText?: string }) {
+  const DEFAULT_TEXT = "🚚 Free Shipping On All Orders • 🔄 Easy Returns • 🔒 Secure Payments • 💰 COD Available";
+  const displayText = customText || DEFAULT_TEXT;
+  const segments = displayText.split(" • ").filter(Boolean);
 
   return (
     <div
@@ -85,11 +82,10 @@ function V12Marquee() {
       <div className="flex w-max animate-marquee">
         {[0, 1].map((group) => (
           <div key={group} className="flex items-center gap-6 pr-6 md:gap-10 md:pr-10">
-            {items.map((item, idx) => (
+            {segments.map((segment, idx) => (
               <span key={`${group}-${idx}`} className="flex items-center gap-1.5 whitespace-nowrap text-[12px] font-semibold">
-                <span>{item.icon}</span>
-                <span>{item.text}</span>
-                {idx < items.length - 1 && <span className="opacity-60">•</span>}
+                <span>{segment.trim()}</span>
+                {idx < segments.length - 1 && <span className="opacity-60">•</span>}
               </span>
             ))}
           </div>
@@ -241,7 +237,7 @@ export default function StorefrontHomeV12() {
   return (
     <div>
       <V12Hero store={store} slug={effectiveSlug} />
-      <V12Marquee />
+      <V12Marquee customText={themeConfig?.marquee_text} />
       {products && products.length > 0 && (
         <BestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
       )}

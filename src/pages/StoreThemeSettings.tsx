@@ -358,70 +358,73 @@ interface ThemeConfig {
   body_font: string;
   button_style: string;
   marquee_gradient: string;
+  marquee_text: string;
   product_card_style: string;
   category_style: string;
 }
+
+const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
 
 const THEME_DEFAULTS: Record<string, ThemeConfig> = {
   "theme-1": {
     primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
     heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
-    product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-1", category_style: "style-1",
   },
   "theme-2": {
     primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
     heading_font: "Space Grotesk", body_font: "DM Sans", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
-    product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-1", category_style: "style-1",
   },
   "theme-3": {
     primary_color: "#3B82F6", accent_color: "#F97316", text_color: "#1e293b", background_color: "#F8FAFC",
     heading_font: "Inter", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #3B82F6, #60a5fa, #F97316)",
-    product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-1", category_style: "style-1",
   },
   "theme-4": {
     primary_color: "#C8A96A", accent_color: "#1C1C1C", text_color: "#1C1C1C", background_color: "#F8F5F0",
     heading_font: "Playfair Display", body_font: "Inter", button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #C8A96A, #e8d5a8, #C8A96A)",
-    product_card_style: "style-1", category_style: "style-2",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-1", category_style: "style-2",
   },
   "theme-6": {
     primary_color: "#2563EB", accent_color: "#1e293b", text_color: "#1e293b", background_color: "#F8FAFC",
     heading_font: "Poppins", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #2563EB, #60a5fa, #F97316)",
-    product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-1", category_style: "style-1",
   },
   "theme-7": {
     primary_color: "#1a1a1a", accent_color: "#1a1a1a", text_color: "#1a1a1a", background_color: "#ffffff",
     heading_font: "Playfair Display", body_font: "Inter", button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555555, #1a1a1a)",
-    product_card_style: "style-2", category_style: "style-3",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-2", category_style: "style-3",
   },
   "theme-8": {
     primary_color: "#6C5CE7", accent_color: "#FD79A8", text_color: "#1e293b", background_color: "#FFFFFF",
     heading_font: "DM Sans", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #6C5CE7, #a29bfe, #FD79A8)",
-    product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-1", category_style: "style-1",
   },
   "theme-10": {
     primary_color: "#FF3F6C", accent_color: "#111111", text_color: "#1a1a1a", background_color: "#FFFFFF",
     heading_font: "Poppins", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
-    product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-1", category_style: "style-1",
   },
   "theme-11": {
     primary_color: "#1a1a1a", accent_color: "#EF4444", text_color: "#1a1a1a", background_color: "#F5F5F5",
     heading_font: "DM Sans", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555, #1a1a1a)",
-    product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-1", category_style: "style-1",
   },
   "theme-12": {
     primary_color: "#FF3F6C", accent_color: "#111111", text_color: "#1a1a1a", background_color: "#FFFFFF",
     heading_font: "Poppins", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
-    product_card_style: "style-3", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-3", category_style: "style-1",
   },
 };
 
@@ -1982,6 +1985,7 @@ export default function StoreThemeSettings() {
         body_font: themeConfig.body_font,
         button_style: themeConfig.button_style,
         marquee_gradient: themeConfig.marquee_gradient,
+        marquee_text: themeConfig.marquee_text || DEFAULT_MARQUEE_TEXT,
         product_card_style: themeConfig.product_card_style || "style-1",
         category_style: themeConfig.category_style || "style-1",
       });
@@ -2303,6 +2307,31 @@ export default function StoreThemeSettings() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Marquee Strip Text */}
+          <div>
+            <h4 className="mb-3 text-sm font-semibold">Marquee Strip Text</h4>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Customize the scrolling ribbon text on your storefront. Use " • " to separate items.
+            </p>
+            <div className="space-y-2">
+              <textarea
+                value={config.marquee_text}
+                onChange={(e) => updateField("marquee_text", e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[80px] resize-y"
+                placeholder="🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments"
+              />
+              <button
+                type="button"
+                onClick={() => updateField("marquee_text", DEFAULT_MARQUEE_TEXT)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+              >
+                Reset to default
+              </button>
             </div>
           </div>
 

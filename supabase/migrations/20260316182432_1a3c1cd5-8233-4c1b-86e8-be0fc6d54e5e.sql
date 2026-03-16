@@ -1,0 +1,1 @@
+ALTER TABLE public.store_theme_config ADD COLUMN marquee_text text NOT NULL DEFAULT '🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality';

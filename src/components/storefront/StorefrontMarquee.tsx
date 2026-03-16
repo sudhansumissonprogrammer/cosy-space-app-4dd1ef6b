@@ -1,23 +1,19 @@
-export default function StorefrontMarquee() {
-  const items = [
-    { icon: "🚚", text: "Free Delivery" },
-    { icon: "🔄", text: "Easy Returns" },
-    { icon: "🔒", text: "Secure Payment Gateway" },
-    { icon: "💰", text: "Cash On Delivery Available" },
-    { icon: "👜", text: "Premium Quality" },
-  ];
+const DEFAULT_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
 
-  const separator = <span className="text-black/70">•</span>;
+interface Props {
+  text?: string;
+}
+
+export default function StorefrontMarquee({ text }: Props) {
+  const displayText = text || DEFAULT_TEXT;
+  const segments = displayText.split(" • ").filter(Boolean);
 
   const Group = ({ prefix }: { prefix: string }) => (
     <div className="flex items-center gap-[35px] pr-[35px] md:gap-[60px] md:pr-[60px]">
-      {items.map((item, idx) => (
+      {segments.map((segment, idx) => (
         <span key={`${prefix}-${idx}`} className="flex items-center gap-2 whitespace-nowrap">
-          <span className="inline-flex items-center gap-2">
-            <span>{item.icon}</span>
-            <span>{item.text}</span>
-          </span>
-          {idx < items.length - 1 && separator}
+          <span>{segment.trim()}</span>
+          {idx < segments.length - 1 && <span className="text-black/70">•</span>}
         </span>
       ))}
     </div>
