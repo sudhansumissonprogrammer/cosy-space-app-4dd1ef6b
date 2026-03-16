@@ -2381,9 +2381,10 @@ export default function StoreThemeSettings() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
                   { value: "style-1", label: "Circle Carousel", icon: "○ ○ ○" },
-                  { value: "style-2", label: "Rect Carousel", icon: "▭ ▭ ▭" },
-                  { value: "style-3", label: "Rect Grid", icon: "▭▭\n▭▭" },
+                  { value: "style-2", label: "Square Carousel", icon: "□ □ □" },
+                  { value: "style-3", label: "Square Grid Modern", icon: "■■■\n■■■" },
                   { value: "style-4", label: "Square Grid", icon: "□□\n□□" },
+                  { value: "style-5", label: "Pill Tags", icon: "⬭ ⬭ ⬭" },
                 ].map((s) => (
                   <button
                     key={s.value}
