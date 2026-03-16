@@ -902,6 +902,7 @@ export type Database = {
       store_plan_assignments: {
         Row: {
           created_at: string
+          custom_plan_name: string | null
           custom_price: number | null
           custom_product_limit: number | null
           id: string
@@ -915,6 +916,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_plan_name?: string | null
           custom_price?: number | null
           custom_product_limit?: number | null
           id?: string
@@ -928,6 +930,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_plan_name?: string | null
           custom_price?: number | null
           custom_product_limit?: number | null
           id?: string
