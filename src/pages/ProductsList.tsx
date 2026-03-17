@@ -46,7 +46,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "date-old", label: "Created (oldest first)" },
 ];
 
-export default function ProductsList() {
+export default function ProductsList() { // v2
   const { storeId } = useParams<{ storeId: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
