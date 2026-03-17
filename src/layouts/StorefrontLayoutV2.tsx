@@ -299,6 +299,7 @@ export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: st
             <TransparentNav store={store} scrolled={scrolled} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <StorefrontOrderNotification storeName={store.name} />
+            <StorefrontPushListener storeId={store.id} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <Outlet context={store} />
             <StorefrontInstagramSection store={store} />
