@@ -525,12 +525,21 @@ export default function CheckoutPage() {
     saveExpressInfo();
     window.dispatchEvent(new CustomEvent("order-placed"));
     fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+    // Split fullName into first/last for enhanced CAPI matching
+    const nameParts = fullName.trim().split(/\s+/);
+    const firstName = nameParts[0] || undefined;
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
     fireMetaCAPI({
       storeId: store.id,
       eventName: "Purchase",
       userEmail: email.trim() || undefined,
       userPhone: phone.trim() || undefined,
       externalId: customer?.id || undefined,
+      firstName,
+      lastName,
+      city: city.trim() || undefined,
+      state: state.trim() || undefined,
+      zipCode: pincode.trim() || undefined,
       customData: {
         content_ids: checkoutItems.map((i) => i.productId),
         contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
