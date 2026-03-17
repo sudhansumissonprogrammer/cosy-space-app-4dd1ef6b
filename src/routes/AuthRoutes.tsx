@@ -46,6 +46,7 @@ const StoreAbandonedCarts = lazy(() => import("@/pages/StoreAbandonedCarts"));
 const StoreThemeSettings = lazy(() => import("@/pages/StoreThemeSettings"));
 const WhatsAppMarketing = lazy(() => import("@/pages/WhatsAppMarketing"));
 const StoreTracking = lazy(() => import("@/pages/StoreTracking"));
+const StoreNotifications = lazy(() => import("@/pages/StoreNotifications"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const InstallApp = lazy(() => import("@/pages/InstallApp"));
 
