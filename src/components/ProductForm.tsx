@@ -563,6 +563,55 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                 </label>
               </div>
               <p className="text-xs text-muted-foreground">Max 5MB per image</p>
+
+              {/* Image URL input */}
+              <div className="flex items-end gap-2 pt-1">
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="image-url-input" className="text-xs text-muted-foreground">Or add image via URL</Label>
+                  <Input
+                    id="image-url-input"
+                    placeholder="https://example.com/image.jpg"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const input = e.currentTarget;
+                        const url = input.value.trim();
+                        if (!url) return;
+                        if (!/^https?:\/\/.+/i.test(url)) { toast.error("Please enter a valid URL"); return; }
+                        if (!imagePreview) {
+                          setImagePreview(url);
+                          setImageFile(null);
+                        } else {
+                          setAdditionalPreviews((prev) => [...prev, { url, isExisting: false }]);
+                        }
+                        input.value = "";
+                        toast.success("Image added from URL");
+                      }
+                    }}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const input = document.getElementById("image-url-input") as HTMLInputElement;
+                    const url = input?.value?.trim();
+                    if (!url) return;
+                    if (!/^https?:\/\/.+/i.test(url)) { toast.error("Please enter a valid URL"); return; }
+                    if (!imagePreview) {
+                      setImagePreview(url);
+                      setImageFile(null);
+                    } else {
+                      setAdditionalPreviews((prev) => [...prev, { url, isExisting: false }]);
+                    }
+                    input.value = "";
+                    toast.success("Image added from URL");
+                  }}
+                >
+                  Add URL
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
