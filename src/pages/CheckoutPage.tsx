@@ -51,8 +51,10 @@ export default function CheckoutPage() {
 
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [expressMode, setExpressMode] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
   const [razorpayMethod, setRazorpayMethod] = useState<"upi" | "card" | "netbanking" | "wallet">("upi");
   const [upiApp, setUpiApp] = useState<"google_pay" | "phonepe" | "paytm" | "other" | null>(null);
