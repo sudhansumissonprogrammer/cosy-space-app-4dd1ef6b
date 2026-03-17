@@ -49,7 +49,7 @@ export default function StoreNotifications() {
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const session = await supabase.auth.getSession();
         const token = session.data.session?.access_token;
-        await fetch(
+        const pushRes = await fetch(
           `https://${projectId}.supabase.co/functions/v1/web-push`,
           {
             method: "POST",
@@ -66,6 +66,12 @@ export default function StoreNotifications() {
             }),
           }
         );
+        if (pushRes.ok) {
+          const result = await pushRes.json();
+          if (result.total > 0) {
+            toast.info(`Push sent to ${result.sent}/${result.total} subscribers`);
+          }
+        }
       } catch {
         // Web push is best-effort; don't fail the whole operation
       }
