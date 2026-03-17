@@ -2,11 +2,13 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-import { Minus, Plus, Search, UtensilsCrossed } from "lucide-react";
+import { Minus, Plus, Search, UtensilsCrossed, SlidersHorizontal, X, ChevronDown } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { useCart } from "@/contexts/CartContext";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 
 /* ── Veg / Non-Veg indicator ── */
 function DietBadge({ category }: { category: string | null }) {
@@ -29,7 +31,7 @@ function DietBadge({ category }: { category: string | null }) {
   );
 }
 
-/* ── Menu Item Card ── */
+/* ── Menu Item Card (style-4 inline) ── */
 function MenuItemCard({
   product,
   currency,
@@ -73,7 +75,6 @@ function MenuItemCard({
         border: "1px solid var(--storefront-text, #1a1a1a)08",
       }}
     >
-      {/* Image */}
       {product.image_url && (
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
           <img
@@ -90,7 +91,6 @@ function MenuItemCard({
         </div>
       )}
 
-      {/* Details */}
       <div className="flex flex-1 flex-col justify-between gap-1 py-0.5">
         <div>
           <div className="flex items-center gap-1.5">
@@ -130,7 +130,6 @@ function MenuItemCard({
             )}
           </div>
 
-          {/* Quantity Controls */}
           {qty === 0 ? (
             <button
               onClick={handleAdd}
@@ -146,24 +145,13 @@ function MenuItemCard({
           ) : (
             <div
               className="flex items-center gap-0 rounded-xl overflow-hidden"
-              style={{
-                backgroundColor: "#25D366",
-                color: "#ffffff",
-              }}
+              style={{ backgroundColor: "#25D366", color: "#ffffff" }}
             >
-              <button
-                onClick={handleDecrease}
-                className="flex h-8 w-8 items-center justify-center transition-all active:scale-90"
-              >
+              <button onClick={handleDecrease} className="flex h-8 w-8 items-center justify-center transition-all active:scale-90">
                 <Minus className="h-3.5 w-3.5" />
               </button>
-              <span className="flex h-8 w-6 items-center justify-center text-xs font-bold">
-                {qty}
-              </span>
-              <button
-                onClick={handleIncrease}
-                className="flex h-8 w-8 items-center justify-center transition-all active:scale-90"
-              >
+              <span className="flex h-8 w-6 items-center justify-center text-xs font-bold">{qty}</span>
+              <button onClick={handleIncrease} className="flex h-8 w-8 items-center justify-center transition-all active:scale-90">
                 <Plus className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -184,11 +172,8 @@ function CategoryTabs({
   activeCategory: string;
   onSelect: (cat: string) => void;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   return (
     <div
-      ref={scrollRef}
       className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
@@ -213,16 +198,48 @@ function CategoryTabs({
   );
 }
 
-/* ── Search Bar ── */
+/* ── Enhanced Search Bar with Filter + Autofill ── */
+type SortOption = "default" | "price-asc" | "price-desc" | "name-asc";
+type DietFilter = "all" | "veg" | "non-veg";
+
 function MenuSearchBar({
   value,
   onChange,
+  products,
+  sortBy,
+  onSortChange,
+  dietFilter,
+  onDietChange,
 }: {
   value: string;
   onChange: (v: string) => void;
+  products: any[];
+  sortBy: SortOption;
+  onSortChange: (v: SortOption) => void;
+  dietFilter: DietFilter;
+  onDietChange: (v: DietFilter) => void;
 }) {
+  const [showFilters, setShowFilters] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const suggestions = useMemo(() => {
+    if (!value.trim()) return [];
+    const q = value.toLowerCase();
+    return products
+      .filter(
+        (p: any) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q)
+      )
+      .slice(0, 5);
+  }, [value, products]);
+
+  const activeFilterCount =
+    (sortBy !== "default" ? 1 : 0) + (dietFilter !== "all" ? 1 : 0);
+
   return (
-    <div className="px-4 pt-3">
+    <div className="px-4 pt-3 relative">
       <div
         className="flex items-center gap-2 rounded-xl px-3 py-2.5"
         style={{
@@ -235,14 +252,152 @@ function MenuSearchBar({
           style={{ color: "var(--storefront-text, #1a1a1a)" }}
         />
         <input
+          ref={inputRef}
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setShowSuggestions(true);
+          }}
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           placeholder="Search menu..."
           className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-40"
           style={{ color: "var(--storefront-text, #1a1a1a)" }}
         />
+        {value && (
+          <button onClick={() => { onChange(""); setShowSuggestions(false); }}>
+            <X className="h-4 w-4 opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+          </button>
+        )}
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="relative flex h-7 w-7 items-center justify-center rounded-lg transition-all"
+          style={{
+            backgroundColor: showFilters || activeFilterCount > 0 ? "#25D36620" : "transparent",
+          }}
+        >
+          <SlidersHorizontal className="h-4 w-4" style={{ color: activeFilterCount > 0 ? "#25D366" : "var(--storefront-text, #1a1a1a)80" }} />
+          {activeFilterCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: "#25D366" }}>
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* Autofill Suggestions */}
+      {showSuggestions && suggestions.length > 0 && (
+        <div
+          className="absolute left-4 right-4 z-50 mt-1 overflow-hidden rounded-xl shadow-lg"
+          style={{
+            backgroundColor: "var(--storefront-bg, #ffffff)",
+            border: "1px solid var(--storefront-text, #1a1a1a)15",
+          }}
+        >
+          {suggestions.map((p: any) => (
+            <button
+              key={p.id}
+              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-all hover:opacity-80"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(p.name);
+                setShowSuggestions(false);
+              }}
+              style={{ borderBottom: "1px solid var(--storefront-text, #1a1a1a)08" }}
+            >
+              {p.image_url && (
+                <img src={optimizeImageUrl(p.image_url, 80)} alt="" className="h-8 w-8 rounded-lg object-cover" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold truncate" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
+                  {p.name}
+                </p>
+                <p className="text-[10px] opacity-50" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
+                  {p.category || ""}
+                </p>
+              </div>
+              <span className="text-xs font-bold" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
+                {(p.sale_price || p.price).toLocaleString()}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div
+          className="mt-2 rounded-xl p-3 space-y-3"
+          style={{
+            backgroundColor: "var(--storefront-text, #1a1a1a)04",
+            border: "1px solid var(--storefront-text, #1a1a1a)10",
+          }}
+        >
+          {/* Sort */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1.5" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
+              Sort by
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                { value: "default" as SortOption, label: "Default" },
+                { value: "price-asc" as SortOption, label: "Price ↑" },
+                { value: "price-desc" as SortOption, label: "Price ↓" },
+                { value: "name-asc" as SortOption, label: "Name A-Z" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => onSortChange(opt.value)}
+                  className="rounded-full px-3 py-1 text-[11px] font-semibold transition-all"
+                  style={{
+                    backgroundColor: sortBy === opt.value ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
+                    color: sortBy === opt.value ? "#fff" : "var(--storefront-text, #1a1a1a)80",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Diet Filter */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1.5" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
+              Diet
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                { value: "all" as DietFilter, label: "All" },
+                { value: "veg" as DietFilter, label: "🟢 Veg" },
+                { value: "non-veg" as DietFilter, label: "🔴 Non-Veg" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => onDietChange(opt.value)}
+                  className="rounded-full px-3 py-1 text-[11px] font-semibold transition-all"
+                  style={{
+                    backgroundColor: dietFilter === opt.value ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
+                    color: dietFilter === opt.value ? "#fff" : "var(--storefront-text, #1a1a1a)80",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {activeFilterCount > 0 && (
+            <button
+              onClick={() => { onSortChange("default"); onDietChange("all"); }}
+              className="text-[11px] font-semibold underline opacity-60"
+              style={{ color: "var(--storefront-text, #1a1a1a)" }}
+            >
+              Clear all filters
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -258,6 +413,8 @@ export default function StorefrontHomeV13() {
       (p: any) => p.is_active
     );
 
+  const categories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]) || [];
+
   useStoreJsonLd({
     storeName: store?.name,
     storeSlug: store?.slug,
@@ -268,6 +425,12 @@ export default function StorefrontHomeV13() {
   });
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
+  const [dietFilter, setDietFilter] = useState<DietFilter>("all");
+
+  const cardStyle = (themeConfig as any)?.product_card_style || "style-4";
+  const categoryStyle = (themeConfig as any)?.category_style || "style-5";
+  const isMenuStyle = cardStyle === "style-4";
 
   // Build category list from products
   const allCategories = useMemo(() => {
@@ -281,12 +444,14 @@ export default function StorefrontHomeV13() {
 
   const [activeCategory, setActiveCategory] = useState("All");
 
-  // Filter products
+  // Filter + sort products
   const filteredProducts = useMemo(() => {
     let result = products;
+
     if (activeCategory !== "All") {
       result = result.filter((p: any) => p.category === activeCategory);
     }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -295,8 +460,31 @@ export default function StorefrontHomeV13() {
           p.description?.toLowerCase().includes(q)
       );
     }
+
+    // Diet filter
+    if (dietFilter === "veg") {
+      result = result.filter((p: any) => {
+        const cat = (p.category || "").toLowerCase();
+        return cat.includes("veg") && !cat.includes("non-veg") && !cat.includes("nonveg");
+      });
+    } else if (dietFilter === "non-veg") {
+      result = result.filter((p: any) => {
+        const cat = (p.category || "").toLowerCase();
+        return cat.includes("non-veg") || cat.includes("nonveg");
+      });
+    }
+
+    // Sort
+    if (sortBy === "price-asc") {
+      result = [...result].sort((a, b) => (a.sale_price || a.price) - (b.sale_price || b.price));
+    } else if (sortBy === "price-desc") {
+      result = [...result].sort((a, b) => (b.sale_price || b.price) - (a.sale_price || a.price));
+    } else if (sortBy === "name-asc") {
+      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
     return result;
-  }, [products, activeCategory, searchQuery]);
+  }, [products, activeCategory, searchQuery, dietFilter, sortBy]);
 
   // Group by category for section display
   const groupedProducts = useMemo(() => {
@@ -320,8 +508,27 @@ export default function StorefrontHomeV13() {
 
   return (
     <div className="min-h-screen">
-      {/* Search */}
-      <MenuSearchBar value={searchQuery} onChange={setSearchQuery} />
+      {/* Universal Categories (if images exist and not pill/text-only) */}
+      {categories.length > 0 && categoryStyle !== "style-5" && (
+        <div className="pt-3">
+          <UniversalCategories
+            categories={categories}
+            slug={store?.slug}
+            categoryStyle={categoryStyle}
+          />
+        </div>
+      )}
+
+      {/* Search + Filters */}
+      <MenuSearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        products={products}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        dietFilter={dietFilter}
+        onDietChange={setDietFilter}
+      />
 
       {/* Category Tabs */}
       {allCategories.length > 1 && (
@@ -354,15 +561,30 @@ export default function StorefrontHomeV13() {
                 {group.category}
               </h2>
             )}
-            <div className="flex flex-col gap-2.5">
-              {group.items.map((product: any) => (
-                <MenuItemCard
-                  key={product.id}
-                  product={product}
-                  currency={currency}
-                />
-              ))}
-            </div>
+
+            {isMenuStyle ? (
+              <div className="flex flex-col gap-2.5">
+                {group.items.map((product: any) => (
+                  <MenuItemCard
+                    key={product.id}
+                    product={product}
+                    currency={currency}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {group.items.map((product: any) => (
+                  <UniversalProductCard
+                    key={product.id}
+                    product={product}
+                    slug={store?.slug}
+                    store={store as any}
+                    cardStyle={cardStyle}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
