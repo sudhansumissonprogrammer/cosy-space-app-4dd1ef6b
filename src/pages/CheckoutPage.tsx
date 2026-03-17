@@ -517,7 +517,7 @@ export default function CheckoutPage() {
     } catch {}
   };
 
-  const finalizeOrder = (newOrderId: string, newOrderNumber: string | null) => {
+  const finalizeOrder = (newOrderId: string, newOrderNumber: string | null, profit?: number | null) => {
     setOrderId(newOrderId);
     setOrderNumber(newOrderNumber);
     setShowUpsell(true);
