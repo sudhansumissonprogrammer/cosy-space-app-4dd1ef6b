@@ -40,7 +40,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [slug, setSlug] = useState("");
   const [price, setPrice] = useState("");
   const [salePrice, setSalePrice] = useState("");
-  const [costPrice, setCostPrice] = useState("");
+  
   const [description, setDescription] = useState("");
   const [stockQuantity, setStockQuantity] = useState("0");
   const [trackStock, setTrackStock] = useState(false);
@@ -235,7 +235,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       setSlug(existingProduct.slug || "");
       setPrice(String(existingProduct.price));
       setSalePrice(existingProduct.sale_price ? String(existingProduct.sale_price) : "");
-      setCostPrice((existingProduct as any).cost_price ? String((existingProduct as any).cost_price) : "");
+      
       setDescription(existingProduct.description || "");
       setStockQuantity(String(existingProduct.stock_quantity));
       setTrackStock(existingProduct.stock_quantity > 0);
@@ -342,7 +342,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         slug: slug.trim() || generateSlug(name.trim()),
         price: parseFloat(price),
         sale_price: salePrice ? parseFloat(salePrice) : null,
-        cost_price: costPrice ? parseFloat(costPrice) : null,
+        
         description: description.trim() || null,
         stock_quantity: trackStock ? (parseInt(stockQuantity) || 0) : 0,
         category: category || null,
@@ -683,19 +683,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cost-price">Cost Price <span className="text-xs text-muted-foreground">(for profit tracking & Meta ROAS optimization)</span></Label>
-              <Input
-                id="cost-price"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">When set, Meta receives profit margin instead of revenue — optimizing ads for profit, not just sales.</p>
-            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-3">
