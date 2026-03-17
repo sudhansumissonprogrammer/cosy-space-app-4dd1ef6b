@@ -645,6 +645,21 @@ export default function CheckoutPage() {
 
 
   if (orderPlaced) {
+    // Show post-purchase upsell first, then confirmation
+    if (showUpsell && orderId) {
+      return (
+        <PostPurchaseUpsell
+          storeId={store.id}
+          storeName={store.name}
+          orderId={orderId}
+          orderNumber={orderNumber}
+          orderedProductIds={checkoutItems.map((i) => i.productId)}
+          currency={currency}
+          onSkip={() => setShowUpsell(false)}
+        />
+      );
+    }
+
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
