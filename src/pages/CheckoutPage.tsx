@@ -544,7 +544,7 @@ export default function CheckoutPage() {
       customData: {
         content_ids: checkoutItems.map((i) => i.productId),
         contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-        value: total,
+        value: profit !== null && profit !== undefined ? profit : total,
         currency,
         num_items: checkoutItems.length,
         order_id: newOrderId,
