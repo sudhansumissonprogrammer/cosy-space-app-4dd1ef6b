@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Copy, BarChart3, Facebook, Server, Rss } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export default function StoreTracking() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -31,6 +32,26 @@ export default function StoreTracking() {
       return data;
     },
     enabled: !!storeId && !!user,
+  });
+
+  // Feed health check
+  const { data: feedHealth } = useQuery({
+    queryKey: ["feed-health", store?.slug],
+    queryFn: async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed?slug=${store!.slug}&format=xml`
+        );
+        if (!res.ok) return { ok: false, count: 0, error: `HTTP ${res.status}` };
+        const text = await res.text();
+        const itemCount = (text.match(/<item>/g) || []).length;
+        return { ok: true, count: itemCount, error: null };
+      } catch (e: any) {
+        return { ok: false, count: 0, error: e.message };
+      }
+    },
+    enabled: !!store?.slug,
+    staleTime: 60000,
   });
 
   useEffect(() => {
@@ -58,9 +79,14 @@ export default function StoreTracking() {
     onError: (err: any) => toast.error(err.message || "Failed to update"),
   });
 
-  const feedUrl = store?.slug
+  const feedBaseUrl = store?.slug
     ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed?slug=${store.slug}`
     : "";
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied!`);
+  };
 
   if (isLoading) {
     return (
@@ -114,6 +140,16 @@ export default function StoreTracking() {
                 Automatically tracks PageView, ViewContent, AddToCart, InitiateCheckout and Purchase events.
               </p>
             </div>
+            {facebookPixelId && (
+              <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
+                <p className="text-xs font-medium text-foreground">Events tracked automatically:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "Purchase"].map((e) => (
+                    <Badge key={e} variant="secondary" className="text-xs">{e}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -140,6 +176,22 @@ export default function StoreTracking() {
                 Get this from Meta Events Manager → Settings → Conversions API → Generate Access Token.
               </p>
             </div>
+            {facebookPixelId && metaAccessToken && (
+              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                  Dual tracking active — client-side pixel + server-side CAPI with deduplication
+                </p>
+              </div>
+            )}
+            {facebookPixelId && !metaAccessToken && (
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3">
+                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Add CAPI token for 20-30% better ad match rates (recommended by Meta)
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -147,32 +199,93 @@ export default function StoreTracking() {
         {store?.slug && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Rss className="h-5 w-5 text-orange-500" />
-                Product Catalog Feed
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Rss className="h-5 w-5 text-orange-500" />
+                  Product Catalog Feed
+                </CardTitle>
+                {feedHealth && (
+                  <Badge variant={feedHealth.ok ? "default" : "destructive"} className="text-xs">
+                    {feedHealth.ok ? `${feedHealth.count} items` : "Error"}
+                  </Badge>
+                )}
+              </div>
               <CardDescription>Use this feed URL in Meta Commerce Manager for Dynamic Product Ads</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2 items-center">
-                <code className="flex-1 text-xs bg-muted p-2.5 rounded-md border break-all">
-                  {feedUrl}
-                </code>
+            <CardContent className="space-y-4">
+              {/* XML Feed */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">XML Feed (recommended for Meta)</Label>
+                <div className="flex gap-2 items-center">
+                  <code className="flex-1 text-xs bg-muted p-2.5 rounded-md border break-all select-all">
+                    {feedBaseUrl}
+                  </code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(feedBaseUrl, "XML feed URL")}
+                  >
+                    <Copy className="mr-1 h-3.5 w-3.5" /> Copy
+                  </Button>
+                </div>
+              </div>
+
+              {/* CSV Feed */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">CSV Feed (for Google Merchant)</Label>
+                <div className="flex gap-2 items-center">
+                  <code className="flex-1 text-xs bg-muted p-2.5 rounded-md border break-all select-all">
+                    {feedBaseUrl}&format=csv
+                  </code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(`${feedBaseUrl}&format=csv`, "CSV feed URL")}
+                  >
+                    <Copy className="mr-1 h-3.5 w-3.5" /> Copy
+                  </Button>
+                </div>
+              </div>
+
+              {/* Test links */}
+              <div className="flex gap-2 pt-1">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(feedUrl);
-                    toast.success("Feed URL copied!");
-                  }}
+                  className="text-xs"
+                  asChild
                 >
-                  <Copy className="mr-1 h-3.5 w-3.5" /> Copy
+                  <a href={feedBaseUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-1 h-3 w-3" /> Preview XML
+                  </a>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  asChild
+                >
+                  <a href={`${feedBaseUrl}&format=csv`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-1 h-3 w-3" /> Download CSV
+                  </a>
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Supports XML (default) and CSV (<code>?format=csv</code>) formats.
-              </p>
+
+              {/* Feed info */}
+              <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
+                <p className="text-xs font-medium text-foreground">Feed includes:</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• All active products with images, prices & sale prices</li>
+                  <li>• Product variants expanded as separate items (sizes, colors)</li>
+                  <li>• <code className="bg-muted px-1 rounded">item_group_id</code> for variant grouping</li>
+                  <li>• Up to 10 additional images per product</li>
+                  <li>• Auto-refreshes with 1 hour cache</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
         )}
