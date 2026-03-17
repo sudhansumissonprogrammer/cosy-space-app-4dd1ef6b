@@ -13,12 +13,17 @@ interface CAPIEvent {
   event_time: number;
   event_source_url?: string;
   user_data: {
-    em?: string[];       // hashed email
-    ph?: string[];       // hashed phone
+    em?: string[];
+    ph?: string[];
+    fn?: string[];
+    ln?: string[];
+    ct?: string[];
+    st?: string[];
+    zp?: string[];
     client_ip_address?: string;
     client_user_agent?: string;
-    fbc?: string;        // click ID
-    fbp?: string;        // browser ID
+    fbc?: string;
+    fbp?: string;
     external_id?: string[];
   };
   custom_data?: {
@@ -58,6 +63,11 @@ Deno.serve(async (req) => {
       fbc,
       fbp,
       external_id,
+      first_name,
+      last_name,
+      city,
+      state,
+      zip_code,
       custom_data,
     } = await req.json();
 
@@ -68,7 +78,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get store's pixel ID and meta access token
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -89,7 +98,6 @@ Deno.serve(async (req) => {
     const pixelId = store.facebook_pixel_id;
     const accessToken = store.meta_access_token;
 
-    // Build user data with hashed PII
     const userData: CAPIEvent["user_data"] = {
       client_ip_address: client_ip || undefined,
       client_user_agent: user_agent || undefined,
@@ -101,12 +109,27 @@ Deno.serve(async (req) => {
       userData.em = [await hashSHA256(user_email)];
     }
     if (user_phone) {
-      // Remove non-digits, hash
       const cleaned = user_phone.replace(/\D/g, "");
       userData.ph = [await hashSHA256(cleaned)];
     }
     if (external_id) {
       userData.external_id = [await hashSHA256(external_id)];
+    }
+    // Enhanced matching fields
+    if (first_name) {
+      userData.fn = [await hashSHA256(first_name)];
+    }
+    if (last_name) {
+      userData.ln = [await hashSHA256(last_name)];
+    }
+    if (city) {
+      userData.ct = [await hashSHA256(city)];
+    }
+    if (state) {
+      userData.st = [await hashSHA256(state)];
+    }
+    if (zip_code) {
+      userData.zp = [await hashSHA256(zip_code)];
     }
 
     const event: CAPIEvent = {
@@ -118,15 +141,12 @@ Deno.serve(async (req) => {
       action_source: "website",
     };
 
-    // Send to Meta Conversions API
     const metaResponse = await fetch(
       `${META_GRAPH_URL}/${pixelId}/events?access_token=${accessToken}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          data: [event],
-        }),
+        body: JSON.stringify({ data: [event] }),
       }
     );
 
