@@ -22,6 +22,7 @@ import SideCart from "@/components/storefront/SideCart";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
+import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
 import ExitIntentPopup from "@/components/storefront/ExitIntentPopup";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
