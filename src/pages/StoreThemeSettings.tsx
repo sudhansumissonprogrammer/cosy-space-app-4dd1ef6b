@@ -472,6 +472,13 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
     marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-3", category_style: "style-1",
   },
+  "theme-13": {
+    primary_color: "#25D366", accent_color: "#128C7E", text_color: "#1a1a1a", background_color: "#FFFFFF",
+    heading_font: "DM Sans", body_font: "Inter", button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #25D366, #128C7E, #25D366)",
+    marquee_text: "🍽️ Scan & Order • 📱 WhatsApp Ordering • 🚀 Quick Service • ✨ Fresh & Delicious",
+    product_card_style: "style-4", category_style: "style-5",
+  },
 };
 
 const THEMES = [
