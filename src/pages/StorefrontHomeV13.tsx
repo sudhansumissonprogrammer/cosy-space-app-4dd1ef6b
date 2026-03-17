@@ -258,7 +258,14 @@ export default function StorefrontHomeV13() {
       (p: any) => p.is_active
     );
 
-  useStoreJsonLd(store);
+  useStoreJsonLd({
+    storeName: store?.name,
+    storeSlug: store?.slug,
+    description: store?.description || undefined,
+    logo: store?.logo_url || undefined,
+    location: (store as any)?.location || undefined,
+    whatsappNumber: (store as any)?.whatsapp_number || undefined,
+  });
 
   const [searchQuery, setSearchQuery] = useState("");
 
