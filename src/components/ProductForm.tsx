@@ -235,7 +235,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       setSlug(existingProduct.slug || "");
       setPrice(String(existingProduct.price));
       setSalePrice(existingProduct.sale_price ? String(existingProduct.sale_price) : "");
-      setCostPrice((existingProduct as any).cost_price ? String((existingProduct as any).cost_price) : "");
+      
       setDescription(existingProduct.description || "");
       setStockQuantity(String(existingProduct.stock_quantity));
       setTrackStock(existingProduct.stock_quantity > 0);
