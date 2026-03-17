@@ -591,7 +591,7 @@ export default function CheckoutPage() {
               });
               if (verifyError) throw new Error("Verification failed");
               setPlacing(false);
-              finalizeOrder(newOrder.id, newOrder.number);
+               finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
           } catch { setPlacing(false); toast.error("Payment verification failed."); }
         };
 
