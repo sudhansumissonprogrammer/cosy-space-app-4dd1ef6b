@@ -1185,6 +1185,7 @@ export type Database = {
           created_at: string
           currency: string
           custom_domain: string | null
+          default_profit_margin: number | null
           description: string | null
           facebook_pixel_id: string | null
           facebook_url: string | null
@@ -1221,6 +1222,7 @@ export type Database = {
           created_at?: string
           currency?: string
           custom_domain?: string | null
+          default_profit_margin?: number | null
           description?: string | null
           facebook_pixel_id?: string | null
           facebook_url?: string | null
@@ -1257,6 +1259,7 @@ export type Database = {
           created_at?: string
           currency?: string
           custom_domain?: string | null
+          default_profit_margin?: number | null
           description?: string | null
           facebook_pixel_id?: string | null
           facebook_url?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.stores ADD COLUMN default_profit_margin numeric DEFAULT 30;

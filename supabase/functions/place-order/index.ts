@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("id, is_suspended")
+      .select("id, is_suspended, default_profit_margin")
       .eq("id", store_id)
       .single();
 
@@ -129,6 +129,7 @@ Deno.serve(async (req) => {
 
     // Calculate profit margin for Meta CAPI optimization
     let totalProfit: number | null = null;
+    const defaultMargin = store.default_profit_margin ?? 30;
     const productIds = items.map((i) => i.productId).filter(Boolean);
     if (productIds.length > 0) {
       const { data: productsData } = await supabase
@@ -136,18 +137,20 @@ Deno.serve(async (req) => {
         .select("id, cost_price")
         .in("id", productIds);
 
-      if (productsData && productsData.some((p: any) => p.cost_price !== null)) {
-        totalProfit = 0;
-        for (const item of items) {
-          const prod = productsData.find((p: any) => p.id === item.productId);
-          if (prod?.cost_price !== null && prod?.cost_price !== undefined) {
-            totalProfit += (Number(item.price) - Number(prod.cost_price)) * Number(item.quantity);
-          } else {
-            // No cost price set for this product — use full revenue as fallback
-            totalProfit += Number(item.price) * Number(item.quantity);
-          }
+      totalProfit = 0;
+      for (const item of items) {
+        const prod = productsData?.find((p: any) => p.id === item.productId);
+        if (prod?.cost_price !== null && prod?.cost_price !== undefined) {
+          // Use actual cost price
+          totalProfit += (Number(item.price) - Number(prod.cost_price)) * Number(item.quantity);
+        } else {
+          // Fallback: use store's default profit margin %
+          totalProfit += Number(item.price) * (defaultMargin / 100) * Number(item.quantity);
         }
       }
+    } else {
+      // No product IDs — use default margin on total
+      totalProfit = Number(order.total) * (defaultMargin / 100);
     }
 
     if (lead) {
