@@ -683,19 +683,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cost-price">Cost Price <span className="text-xs text-muted-foreground">(for profit tracking & Meta ROAS optimization)</span></Label>
-              <Input
-                id="cost-price"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">When set, Meta receives profit margin instead of revenue — optimizing ads for profit, not just sales.</p>
-            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-3">
