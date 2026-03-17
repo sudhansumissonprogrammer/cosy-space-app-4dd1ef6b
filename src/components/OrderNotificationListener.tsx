@@ -59,9 +59,21 @@ export default function OrderNotificationListener() {
       Notification.requestPermission();
     }
 
+    const updateAppBadge = () => {
+      unseenCountRef.current += 1;
+      try {
+        if ("setAppBadge" in navigator) {
+          (navigator as any).setAppBadge(unseenCountRef.current);
+        }
+      } catch {}
+    };
+
     const showNotification = (title: string, body: string) => {
       // Play chime sound
       playNotificationChime();
+
+      // Update PWA app badge
+      updateAppBadge();
 
       // Toast notification (always)
       toast(title, {
