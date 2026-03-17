@@ -65,6 +65,7 @@ function MobileMenu({
                 items: [
                   { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeId}/whatsapp` },
                   { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
+                  { label: "Push Notifications", icon: Bell, path: `/dashboard/stores/${storeId}/notifications` },
                   { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
                 ],
               },
@@ -207,6 +208,17 @@ export default function DashboardLayout() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [storeId]);
+
+  // Clear app badge when visiting orders page
+  useEffect(() => {
+    if (storeId && location.pathname.includes("/orders")) {
+      try {
+        if ("clearAppBadge" in navigator) {
+          (navigator as any).clearAppBadge();
+        }
+      } catch {}
+    }
+  }, [location.pathname, storeId]);
 
   const go = (path: string) => {
     navigate(path);

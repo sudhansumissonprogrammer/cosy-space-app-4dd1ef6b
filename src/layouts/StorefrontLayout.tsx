@@ -22,6 +22,7 @@ import SideCart from "@/components/storefront/SideCart";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
+import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
 import ExitIntentPopup from "@/components/storefront/ExitIntentPopup";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
@@ -442,6 +443,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
       <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
       <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
       <StorefrontOrderNotification storeName={store.name} />
+      <StorefrontPushListener storeId={store.id} />
       <Outlet context={store} />
       <StorefrontInstagramSection store={store} />
       <StorefrontFooter store={store} />

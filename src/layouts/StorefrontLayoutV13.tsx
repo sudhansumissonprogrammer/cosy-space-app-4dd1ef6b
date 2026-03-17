@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout";
 import { CartProvider, useCart } from "@/contexts/CartContext";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
+import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -274,6 +275,7 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
       >
         <RestaurantHeader store={store} tableNumber={tableNumber} />
         <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+        <StorefrontPushListener storeId={store.id} />
         <div className="pb-28">
           <Outlet context={{ ...store, tableNumber }} />
         </div>

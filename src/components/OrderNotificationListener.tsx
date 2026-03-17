@@ -37,6 +37,7 @@ function playNotificationChime() {
 
 export default function OrderNotificationListener() {
   const notifiedRef = useRef<Set<string>>(new Set());
+  const unseenCountRef = useRef(0);
 
   // Get user's store IDs so we only notify for their stores
   const { data: storeIds } = useQuery({
@@ -58,9 +59,21 @@ export default function OrderNotificationListener() {
       Notification.requestPermission();
     }
 
+    const updateAppBadge = () => {
+      unseenCountRef.current += 1;
+      try {
+        if ("setAppBadge" in navigator) {
+          (navigator as any).setAppBadge(unseenCountRef.current);
+        }
+      } catch {}
+    };
+
     const showNotification = (title: string, body: string) => {
       // Play chime sound
       playNotificationChime();
+
+      // Update PWA app badge
+      updateAppBadge();
 
       // Toast notification (always)
       toast(title, {

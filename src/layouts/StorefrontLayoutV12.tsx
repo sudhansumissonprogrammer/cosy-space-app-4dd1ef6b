@@ -18,6 +18,7 @@ import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import SideCart from "@/components/storefront/SideCart";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
+import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -493,6 +494,7 @@ export default function StorefrontLayoutV12({ slugOverride }: { slugOverride?: s
             <V12Header store={store} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <StorefrontOrderNotification storeName={store.name} />
+            <StorefrontPushListener storeId={store.id} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <div className="pb-16 md:pb-0">
               <Outlet context={store} />

@@ -15,6 +15,7 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 import SideCart from "@/components/storefront/SideCart";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
+import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -420,6 +421,7 @@ export default function StorefrontLayoutV7({ slugOverride }: { slugOverride?: st
             <EditorialHeader store={store} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <StorefrontOrderNotification storeName={store.name} />
+            <StorefrontPushListener storeId={store.id} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <Outlet context={store} />
             <StorefrontInstagramSection store={store} />
