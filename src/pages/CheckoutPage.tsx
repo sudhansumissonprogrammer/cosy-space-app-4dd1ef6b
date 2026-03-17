@@ -19,6 +19,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
+import PostPurchaseUpsell from "@/components/storefront/PostPurchaseUpsell";
 
 declare global {
   interface Window {
@@ -50,8 +51,10 @@ export default function CheckoutPage() {
 
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [expressMode, setExpressMode] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
   const [razorpayMethod, setRazorpayMethod] = useState<"upi" | "card" | "netbanking" | "wallet">("upi");
   const [upiApp, setUpiApp] = useState<"google_pay" | "phonepe" | "paytm" | "other" | null>(null);
@@ -517,17 +520,27 @@ export default function CheckoutPage() {
   const finalizeOrder = (newOrderId: string, newOrderNumber: string | null) => {
     setOrderId(newOrderId);
     setOrderNumber(newOrderNumber);
+    setShowUpsell(true);
     setOrderPlaced(true);
     if (!isSingleMode) clearCart();
     saveExpressInfo();
     window.dispatchEvent(new CustomEvent("order-placed"));
     fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+    // Split fullName into first/last for enhanced CAPI matching
+    const nameParts = fullName.trim().split(/\s+/);
+    const firstName = nameParts[0] || undefined;
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
     fireMetaCAPI({
       storeId: store.id,
       eventName: "Purchase",
       userEmail: email.trim() || undefined,
       userPhone: phone.trim() || undefined,
       externalId: customer?.id || undefined,
+      firstName,
+      lastName,
+      city: city.trim() || undefined,
+      state: state.trim() || undefined,
+      zipCode: pincode.trim() || undefined,
       customData: {
         content_ids: checkoutItems.map((i) => i.productId),
         contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
@@ -633,6 +646,21 @@ export default function CheckoutPage() {
 
 
   if (orderPlaced) {
+    // Show post-purchase upsell first, then confirmation
+    if (showUpsell && orderId) {
+      return (
+        <PostPurchaseUpsell
+          storeId={store.id}
+          storeName={store.name}
+          orderId={orderId}
+          orderNumber={orderNumber}
+          orderedProductIds={checkoutItems.map((i) => i.productId)}
+          currency={currency}
+          onSkip={() => setShowUpsell(false)}
+        />
+      );
+    }
+
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -732,8 +760,24 @@ export default function CheckoutPage() {
           <span className="text-sm font-medium text-foreground">Delivery Details</span>
         </div>
 
-        {/* Saved address summary or inline form */}
-        {savedAddresses && savedAddresses.length > 0 && selectedAddr ? (
+        {/* Express mode for returning users with localStorage data (not logged in with saved addresses) */}
+        {expressMode && !selectedAddr && savedInfo.fullName && savedInfo.phone && savedInfo.streetAddress && savedInfo.pincode ? (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">⚡ Express</Badge>
+                </div>
+                <p className="text-sm font-medium text-foreground">{savedInfo.fullName}</p>
+                <p className="text-xs text-muted-foreground">{[savedInfo.streetAddress, savedInfo.city, savedInfo.state, savedInfo.pincode].filter(Boolean).join(", ")}</p>
+                <p className="text-xs text-muted-foreground">{savedInfo.phone}</p>
+              </div>
+              <Button size="sm" variant="ghost" className="text-xs h-7 px-2" onClick={() => setExpressMode(false)}>
+                <Pencil className="h-3 w-3 mr-1" /> Edit
+              </Button>
+            </div>
+          </div>
+        ) : savedAddresses && savedAddresses.length > 0 && selectedAddr ? (
           <div className="rounded-lg border border-border bg-accent/30 p-3">
             <div className="flex items-start justify-between">
               <div>

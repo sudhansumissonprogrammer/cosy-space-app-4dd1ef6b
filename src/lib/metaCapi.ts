@@ -28,6 +28,11 @@ interface CAPIEventParams {
   userEmail?: string;
   userPhone?: string;
   externalId?: string;
+  firstName?: string;
+  lastName?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
   customData?: {
     content_ids?: string[];
     content_type?: string;
@@ -60,6 +65,11 @@ export function fireMetaCAPI(params: CAPIEventParams) {
         fbc: fbc || undefined,
         fbp: fbp || undefined,
         external_id: params.externalId || undefined,
+        first_name: params.firstName || undefined,
+        last_name: params.lastName || undefined,
+        city: params.city || undefined,
+        state: params.state || undefined,
+        zip_code: params.zipCode || undefined,
         custom_data: params.customData || undefined,
       },
     })

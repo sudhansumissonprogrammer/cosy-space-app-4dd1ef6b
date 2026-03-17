@@ -1940,6 +1940,10 @@ export type Database = {
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       get_admin_users_stores: { Args: never; Returns: Json }
+      get_co_purchased_products: {
+        Args: { _limit?: number; _product_id: string }
+        Returns: string[]
+      }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
       get_store_views: {
         Args: { _store_ids: string[] }

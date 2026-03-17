@@ -1,0 +1,151 @@
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Copy, Gift, X } from "lucide-react";
+import { toast } from "sonner";
+import { fireMetaCAPI } from "@/lib/metaCapi";
+
+interface ExitIntentPopupProps {
+  storeId: string;
+  storeName: string;
+}
+
+export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupProps) {
+  const [show, setShow] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const { data: coupon } = useQuery({
+    queryKey: ["exit-intent-coupon", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .order("discount_value", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (!coupon) return;
+
+    const alreadyShown = sessionStorage.getItem(`exit_popup_${storeId}`);
+    if (alreadyShown) return;
+
+    // Desktop: mouseleave
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 0) {
+        sessionStorage.setItem(`exit_popup_${storeId}`, "1");
+        setShow(true);
+      }
+    };
+
+    // Mobile: back/scroll-up detection (simplified — use visibilitychange)
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        // Don't show popup on visibility hidden, only on mouseleave
+      }
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener("mouseleave", handleMouseLeave);
+      document.addEventListener("visibilitychange", handleVisibility);
+    }, 5000); // Wait 5s before enabling
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [coupon, storeId]);
+
+  const handleCopy = async () => {
+    if (!coupon) return;
+    try {
+      await navigator.clipboard.writeText(coupon.code);
+      setCopied(true);
+      toast.success("Coupon code copied!");
+      
+      // Fire CAPI Lead event
+      fireMetaCAPI({
+        storeId,
+        eventName: "Lead",
+        customData: {
+          content_type: "coupon",
+          content_ids: [coupon.id],
+        },
+      });
+
+      setTimeout(() => setShow(false), 1500);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  if (!coupon) return null;
+
+  const discountText = coupon.discount_type === "percentage"
+    ? `${coupon.discount_value}% OFF`
+    : `${coupon.discount_value} OFF`;
+
+  return (
+    <Dialog open={show} onOpenChange={setShow}>
+      <DialogContent className="max-w-[340px] rounded-2xl p-0 overflow-hidden border-0 shadow-2xl">
+        <button
+          onClick={() => setShow(false)}
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-accent/80 text-muted-foreground hover:text-foreground transition-all"
+        >
+          <X className="h-4 w-4" strokeWidth={2.5} />
+        </button>
+
+        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 pt-8 text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
+            <Gift className="h-7 w-7 text-primary" />
+          </div>
+          <h3 className="text-lg font-bold text-foreground">Wait! Don't leave yet 🎉</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Here's a special discount from {storeName}
+          </p>
+        </div>
+
+        <div className="px-6 pb-6 text-center">
+          <div className="my-4 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
+            <Badge className="mb-2 text-lg font-extrabold px-3 py-1">
+              {discountText}
+            </Badge>
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <code className="text-lg font-mono font-bold text-foreground tracking-wider">
+                {coupon.code}
+              </code>
+              <Button
+                size="sm"
+                variant={copied ? "secondary" : "default"}
+                onClick={handleCopy}
+                className="text-xs font-bold"
+              >
+                {copied ? "Copied! ✓" : <><Copy className="h-3 w-3 mr-1" /> Copy</>}
+              </Button>
+            </div>
+            {coupon.min_order_amount > 0 && (
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Min. order: {coupon.min_order_amount}
+              </p>
+            )}
+          </div>
+
+          <Button className="w-full font-semibold" onClick={() => setShow(false)}>
+            Continue Shopping
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

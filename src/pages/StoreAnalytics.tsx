@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { BarChart3, TrendingUp, Package } from "lucide-react";
+import { BarChart3, TrendingUp, Package, AlertTriangle, ImageOff, CheckCircle2 } from "lucide-react";
 
 export default function StoreAnalytics() {
   const { user } = useAuth();
@@ -36,6 +36,23 @@ export default function StoreAnalytics() {
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as any[];
+    },
+    enabled: storeIds.length > 0,
+  });
+
+  // Store Health: products missing images / unoptimized
+  const { data: healthData } = useQuery({
+    queryKey: ["store-health", storeIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, image_url, name")
+        .in("store_id", storeIds);
+      if (error) throw error;
+      const total = data?.length || 0;
+      const noImage = data?.filter((p) => !p.image_url).length || 0;
+      const unoptimized = data?.filter((p) => p.image_url && !p.image_url.includes("width=") && !p.image_url.includes("w=")).length || 0;
+      return { total, noImage, unoptimized, optimized: total - noImage - unoptimized };
     },
     enabled: storeIds.length > 0,
   });
@@ -165,6 +182,48 @@ export default function StoreAnalytics() {
           )}
         </CardContent>
       </Card>
+
+      {/* Store Health Dashboard */}
+      {healthData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Store Health</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Products</p>
+                  <p className="text-lg font-bold text-foreground">{healthData.total}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <ImageOff className="h-5 w-5 text-destructive" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Missing Images</p>
+                  <p className="text-lg font-bold text-foreground">{healthData.noImage}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Unoptimized Images</p>
+                  <p className="text-lg font-bold text-foreground">{healthData.unoptimized}</p>
+                </div>
+              </div>
+            </div>
+            {(healthData.noImage > 0 || healthData.unoptimized > 0) && (
+              <div className="mt-3 rounded-lg bg-warning/10 border border-warning/20 p-3">
+                <p className="text-xs font-medium text-foreground">
+                  ⚠️ {healthData.noImage > 0 ? `${healthData.noImage} products have no image. ` : ""}
+                  {healthData.unoptimized > 0 ? `${healthData.unoptimized} products use unoptimized images — slowing page load.` : ""}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

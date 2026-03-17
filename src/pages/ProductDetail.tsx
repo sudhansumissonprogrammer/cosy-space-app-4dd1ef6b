@@ -578,9 +578,26 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* Trust Badges Above CTA */}
+          {!isOutOfStock && (
+            <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                <Lock className="h-3 w-3 text-success" /> Secure
+              </span>
+              <span className="text-muted-foreground/30">|</span>
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                <Truck className="h-3 w-3 text-success" /> Free Delivery
+              </span>
+              <span className="text-muted-foreground/30">|</span>
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                <RotateCcw className="h-3 w-3 text-success" /> Easy Returns
+              </span>
+            </div>
+          )}
+
           {/* CTA Buttons */}
           {!isOutOfStock && (
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-3 grid grid-cols-2 gap-3">
               {/* Add to Cart */}
               <button
                 className={`relative flex h-[46px] items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
@@ -975,6 +992,22 @@ function FrequentlyBoughtTogether({
   const { data: bundleProducts } = useQuery({
     queryKey: ["bundle-products", storeId, currentProductId],
     queryFn: async () => {
+      // First try co-occurrence based recommendations
+      const { data: coIds, error: coErr } = await supabase.rpc("get_co_purchased_products", {
+        _product_id: currentProductId,
+        _limit: 2,
+      });
+      
+      if (!coErr && coIds && coIds.length > 0) {
+        const { data: coProducts, error } = await supabase
+          .from("products")
+          .select("*")
+          .in("id", coIds)
+          .eq("is_active", true);
+        if (!error && coProducts && coProducts.length > 0) return coProducts.slice(0, 2);
+      }
+
+      // Fallback to category-based
       const { data, error } = await supabase
         .from("products")
         .select("*")
