@@ -40,7 +40,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [slug, setSlug] = useState("");
   const [price, setPrice] = useState("");
   const [salePrice, setSalePrice] = useState("");
-  const [costPrice, setCostPrice] = useState("");
+  
   const [description, setDescription] = useState("");
   const [stockQuantity, setStockQuantity] = useState("0");
   const [trackStock, setTrackStock] = useState(false);
