@@ -19,6 +19,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
+import PostPurchaseUpsell from "@/components/storefront/PostPurchaseUpsell";
 
 declare global {
   interface Window {
