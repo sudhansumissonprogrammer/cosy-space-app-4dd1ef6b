@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
       ? `#${1000 + orderRow.order_number}`
       : `#${createdOrder.id.slice(0, 8).toUpperCase()}`;
 
-    return new Response(JSON.stringify({ success: true, order_id: createdOrder.id, order_number: orderNumber }), {
+    return new Response(JSON.stringify({ success: true, order_id: createdOrder.id, order_number: orderNumber, profit: totalProfit }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
