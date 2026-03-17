@@ -520,6 +520,7 @@ export default function CheckoutPage() {
   const finalizeOrder = (newOrderId: string, newOrderNumber: string | null) => {
     setOrderId(newOrderId);
     setOrderNumber(newOrderNumber);
+    setShowUpsell(true);
     setOrderPlaced(true);
     if (!isSingleMode) clearCart();
     saveExpressInfo();
