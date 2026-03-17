@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { BarChart3, TrendingUp, Package } from "lucide-react";
+import { BarChart3, TrendingUp, Package, AlertTriangle, ImageOff, CheckCircle2 } from "lucide-react";
 
 export default function StoreAnalytics() {
   const { user } = useAuth();
