@@ -40,6 +40,23 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
+  // Store Health: products missing images / unoptimized
+  const { data: healthData } = useQuery({
+    queryKey: ["store-health", storeIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, image_url, name")
+        .in("store_id", storeIds);
+      if (error) throw error;
+      const total = data?.length || 0;
+      const noImage = data?.filter((p) => !p.image_url).length || 0;
+      const unoptimized = data?.filter((p) => p.image_url && !p.image_url.includes("width=") && !p.image_url.includes("w=")).length || 0;
+      return { total, noImage, unoptimized, optimized: total - noImage - unoptimized };
+    },
+    enabled: storeIds.length > 0,
+  });
+
   const ordersByMonth = (() => {
     if (!ordersData) return [];
     const map: Record<string, { month: string; orders: number; revenue: number }> = {};
