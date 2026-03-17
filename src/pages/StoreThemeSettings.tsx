@@ -2401,6 +2401,7 @@ export default function StoreThemeSettings() {
                   { value: "style-1", label: "Style 1", desc: "Clean minimal" },
                   { value: "style-2", label: "Style 2", desc: "Badge & overlay" },
                   { value: "style-3", label: "Style 3", desc: "Bold modern" },
+                  { value: "style-4", label: "Style 4", desc: "Menu list" },
                 ].map((s) => (
                   <button
                     key={s.value}

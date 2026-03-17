@@ -2,6 +2,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardStyle2 from "./ProductCardStyle2";
 import ProductCardStyle3 from "./ProductCardStyle3";
+import ProductCardStyle4 from "./ProductCardStyle4";
 
 interface Props {
   product: Tables<"products">;
@@ -21,6 +22,8 @@ export default function UniversalProductCard({ product, slug, store, priority = 
       return <ProductCardStyle2 product={product} slug={slug} store={store} priority={priority} />;
     case "style-3":
       return <ProductCardStyle3 product={product} slug={slug} store={store} priority={priority} />;
+    case "style-4":
+      return <ProductCardStyle4 product={product} slug={slug} store={store} priority={priority} />;
     default:
       return <ProductCardStyle1 product={product} slug={slug} store={store} priority={priority} />;
   }

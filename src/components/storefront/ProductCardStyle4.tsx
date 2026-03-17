@@ -1,0 +1,172 @@
+import { useCallback } from "react";
+import { Minus, Plus } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import type { Tables } from "@/integrations/supabase/types";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
+
+/* ── Veg / Non-Veg indicator ── */
+function DietBadge({ category }: { category: string | null }) {
+  if (!category) return null;
+  const lower = category.toLowerCase();
+  const isVeg = lower.includes("veg") && !lower.includes("non-veg");
+  const isNonVeg = lower.includes("non-veg") || lower.includes("nonveg");
+  if (!isVeg && !isNonVeg) return null;
+
+  return (
+    <div
+      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border"
+      style={{ borderColor: isVeg ? "#22c55e" : "#ef4444" }}
+    >
+      <div
+        className="h-2 w-2 rounded-full"
+        style={{ backgroundColor: isVeg ? "#22c55e" : "#ef4444" }}
+      />
+    </div>
+  );
+}
+
+interface Props {
+  product: Tables<"products">;
+  slug: string;
+  store: Tables<"stores">;
+  priority?: boolean;
+}
+
+export default function ProductCardStyle4({ product, slug, store }: Props) {
+  const { items, addToCart, updateQuantity } = useCart();
+  const existing = items.find(
+    (i) => i.productId === product.id && !i.variantId
+  );
+  const qty = existing?.quantity || 0;
+
+  const price = product.sale_price || product.price;
+  const originalPrice = product.sale_price ? product.price : null;
+  const hasDiscount = originalPrice && originalPrice > price;
+  const currency = store.currency === "USD" ? "$" : "₹";
+
+  const handleAdd = useCallback(() => {
+    addToCart({
+      productId: product.id,
+      name: product.name,
+      price,
+      image: product.image_url || undefined,
+      quantity: 1,
+    });
+  }, [addToCart, product, price]);
+
+  const handleIncrease = useCallback(() => {
+    updateQuantity(product.id, undefined, qty + 1);
+  }, [updateQuantity, product.id, qty]);
+
+  const handleDecrease = useCallback(() => {
+    updateQuantity(product.id, undefined, qty - 1);
+  }, [updateQuantity, product.id, qty]);
+
+  return (
+    <div
+      className="flex gap-3 rounded-2xl p-3 transition-all"
+      style={{
+        backgroundColor: "var(--storefront-text, #1a1a1a)06",
+        border: "1px solid var(--storefront-text, #1a1a1a)08",
+      }}
+    >
+      {/* Image */}
+      {product.image_url && (
+        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
+          <img
+            src={optimizeImageUrl(product.image_url, 200)}
+            alt={product.name}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+          {hasDiscount && (
+            <div className="absolute left-1 top-1 rounded-md bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Details */}
+      <div className="flex flex-1 flex-col justify-between gap-1 py-0.5">
+        <div>
+          <div className="flex items-center gap-1.5">
+            <DietBadge category={product.category} />
+            <h3
+              className="text-sm font-semibold leading-tight line-clamp-2"
+              style={{
+                color: "var(--storefront-text, #1a1a1a)",
+                fontFamily: "var(--storefront-heading-font, inherit)",
+              }}
+            >
+              {product.name}
+            </h3>
+          </div>
+          {product.description && (
+            <p
+              className="mt-0.5 text-xs leading-snug line-clamp-2 opacity-50"
+              style={{ color: "var(--storefront-text, #1a1a1a)" }}
+            >
+              {product.description}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className="text-sm font-bold"
+              style={{ color: "var(--storefront-text, #1a1a1a)" }}
+            >
+              {currency}{price.toLocaleString()}
+            </span>
+            {hasDiscount && (
+              <span className="text-xs line-through opacity-40">
+                {currency}{originalPrice.toLocaleString()}
+              </span>
+            )}
+          </div>
+
+          {/* Quantity Controls */}
+          {qty === 0 ? (
+            <button
+              onClick={handleAdd}
+              className="rounded-xl px-4 py-1.5 text-xs font-bold transition-all active:scale-95"
+              style={{
+                backgroundColor: "#25D36615",
+                color: "#25D366",
+                border: "1.5px solid #25D36640",
+              }}
+            >
+              ADD
+            </button>
+          ) : (
+            <div
+              className="flex items-center gap-0 rounded-xl overflow-hidden"
+              style={{
+                backgroundColor: "#25D366",
+                color: "#ffffff",
+              }}
+            >
+              <button
+                onClick={handleDecrease}
+                className="flex h-8 w-8 items-center justify-center transition-all active:scale-90"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="flex h-8 w-6 items-center justify-center text-xs font-bold">
+                {qty}
+              </span>
+              <button
+                onClick={handleIncrease}
+                className="flex h-8 w-8 items-center justify-center transition-all active:scale-90"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
