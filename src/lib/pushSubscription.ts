@@ -109,9 +109,10 @@ export async function registerPushSubscription(
 
     if (!subscription) {
       console.log("[push] Creating new subscription...");
+      const applicationServerKey = Uint8Array.from(urlBase64ToUint8Array(vapidKey));
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey,
       });
       console.log("[push] Subscription created");
     } else {
