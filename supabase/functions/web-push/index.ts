@@ -313,10 +313,12 @@ serve(async (req) => {
     // POST with action: "send" — send push to all subscribers of a store
     if (body.action === "send") {
       const { store_id, title, message, url: linkUrl } = body;
+      console.log("[web-push] send action", { store_id, title, message });
 
       // Verify caller is store owner (check auth header)
       const authHeader = req.headers.get("Authorization");
       if (!authHeader) {
+        console.log("[web-push] No auth header");
         return new Response(
           JSON.stringify({ error: "Unauthorized" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -329,7 +331,12 @@ serve(async (req) => {
         .select("*")
         .eq("store_id", store_id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("[web-push] DB error:", error);
+        throw error;
+      }
+
+      console.log("[web-push] Found subscriptions:", subscriptions?.length || 0);
 
       const payload = JSON.stringify({
         title,
@@ -344,6 +351,7 @@ serve(async (req) => {
 
       for (const sub of subscriptions || []) {
         try {
+          console.log("[web-push] Sending to:", sub.endpoint.substring(0, 60));
           await sendWebPush(
             {
               endpoint: sub.endpoint,
@@ -352,8 +360,10 @@ serve(async (req) => {
             payload
           );
           sent++;
+          console.log("[web-push] Sent OK");
         } catch (err: any) {
           failed++;
+          console.error("[web-push] Send error:", err.message);
           // 410 Gone or 404 means subscription expired
           if (err.message?.includes("410") || err.message?.includes("404")) {
             expiredEndpoints.push(sub.endpoint);
