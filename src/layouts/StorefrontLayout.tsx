@@ -446,6 +446,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
       <StorefrontFooter store={store} />
       <SideCart store={store} />
       <FloatingWhatsApp store={store} />
+      <ExitIntentPopup storeId={store.id} storeName={store.name} />
 
       {/* Exit Checkout Confirmation Dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
