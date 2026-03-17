@@ -55,8 +55,9 @@ export async function registerPushSubscription(storeId: string): Promise<boolean
       console.log("[push] Existing subscription found");
     } else {
       console.log("[push] Creating new subscription...");
-      // Convert VAPID key to Uint8Array
-      const applicationServerKey = urlBase64ToUint8Array(vapidKey);
+      // Convert VAPID key to ArrayBuffer
+      const keyBytes = urlBase64ToUint8Array(vapidKey);
+      const applicationServerKey = keyBytes.buffer as ArrayBuffer;
 
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
