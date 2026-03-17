@@ -872,6 +872,48 @@ export type Database = {
         }
         Relationships: []
       }
+      store_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          link_url: string | null
+          store_id: string
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          store_id: string
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          store_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_notifications_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_notifications_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_payment_config: {
         Row: {
           created_at: string
