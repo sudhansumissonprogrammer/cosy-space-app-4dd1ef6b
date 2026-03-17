@@ -472,6 +472,13 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
     marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-3", category_style: "style-1",
   },
+  "theme-13": {
+    primary_color: "#25D366", accent_color: "#128C7E", text_color: "#1a1a1a", background_color: "#FFFFFF",
+    heading_font: "DM Sans", body_font: "Inter", button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #25D366, #128C7E, #25D366)",
+    marquee_text: "🍽️ Scan & Order • 📱 WhatsApp Ordering • 🚀 Quick Service • ✨ Fresh & Delicious",
+    product_card_style: "style-4", category_style: "style-5",
+  },
 };
 
 const THEMES = [
@@ -2389,11 +2396,12 @@ export default function StoreThemeSettings() {
             <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
             <div className="space-y-1.5">
               <Label className="text-xs">Product Card Style</Label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 {[
                   { value: "style-1", label: "Style 1", desc: "Clean minimal" },
                   { value: "style-2", label: "Style 2", desc: "Badge & overlay" },
                   { value: "style-3", label: "Style 3", desc: "Bold modern" },
+                  { value: "style-4", label: "Style 4", desc: "Menu list" },
                 ].map((s) => (
                   <button
                     key={s.value}
