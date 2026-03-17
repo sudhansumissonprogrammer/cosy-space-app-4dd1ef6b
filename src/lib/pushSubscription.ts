@@ -11,10 +11,14 @@ export async function getVapidPublicKey(): Promise<string | null> {
     const res = await fetch(
       `https://${projectId}.supabase.co/functions/v1/web-push/vapid-key`
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.log("[push] Failed to get VAPID key:", res.status);
+      return null;
+    }
     const data = await res.json();
     return data.vapidPublicKey || null;
-  } catch {
+  } catch (err) {
+    console.error("[push] Error getting VAPID key:", err);
     return null;
   }
 }
@@ -22,16 +26,18 @@ export async function getVapidPublicKey(): Promise<string | null> {
 export async function registerPushSubscription(storeId: string): Promise<boolean> {
   try {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      console.log("Push not supported");
+      console.log("[push] Push not supported in this browser");
       return false;
     }
 
-    // Get VAPID public key
+    // Get VAPID public key first
     const vapidKey = await getVapidPublicKey();
     if (!vapidKey) {
-      console.log("No VAPID key configured");
+      console.log("[push] No VAPID key configured");
       return false;
     }
+
+    console.log("[push] VAPID key obtained, registering SW...");
 
     // Register service worker
     const registration = await navigator.serviceWorker.register(SW_PATH, {
@@ -40,21 +46,30 @@ export async function registerPushSubscription(storeId: string): Promise<boolean
 
     // Wait for SW to be ready
     await navigator.serviceWorker.ready;
+    console.log("[push] Service worker ready");
 
     // Check existing subscription
     let subscription = await registration.pushManager.getSubscription();
 
-    if (!subscription) {
-      // Convert VAPID key
-      const applicationServerKey = urlBase64ToUint8Array(vapidKey).buffer as ArrayBuffer;
+    if (subscription) {
+      console.log("[push] Existing subscription found");
+    } else {
+      console.log("[push] Creating new subscription...");
+      // Convert VAPID key to ArrayBuffer
+      const keyBytes = urlBase64ToUint8Array(vapidKey);
+      const applicationServerKey = keyBytes.buffer as ArrayBuffer;
 
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey,
       });
+      console.log("[push] Subscription created");
     }
 
     // Send subscription to server
+    const subJson = subscription.toJSON();
+    console.log("[push] Sending subscription to server...");
+
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     const res = await fetch(
       `https://${projectId}.supabase.co/functions/v1/web-push`,
@@ -64,14 +79,21 @@ export async function registerPushSubscription(storeId: string): Promise<boolean
         body: JSON.stringify({
           action: "subscribe",
           store_id: storeId,
-          subscription: subscription.toJSON(),
+          subscription: subJson,
         }),
       }
     );
 
+    if (res.ok) {
+      console.log("[push] Subscription registered successfully");
+    } else {
+      const text = await res.text();
+      console.error("[push] Subscription registration failed:", res.status, text);
+    }
+
     return res.ok;
   } catch (err) {
-    console.error("Push subscription failed:", err);
+    console.error("[push] Push subscription failed:", err);
     return false;
   }
 }
