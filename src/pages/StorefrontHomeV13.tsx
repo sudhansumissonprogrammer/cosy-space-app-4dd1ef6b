@@ -513,7 +513,7 @@ export default function StorefrontHomeV13() {
         <div className="pt-3">
           <UniversalCategories
             categories={categories}
-            slug={store?.slug}
+            storeSlug={store?.slug}
             categoryStyle={categoryStyle}
           />
         </div>
