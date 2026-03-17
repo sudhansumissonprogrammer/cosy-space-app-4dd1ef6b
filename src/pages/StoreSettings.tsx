@@ -71,6 +71,7 @@ export default function StoreSettings() {
   const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
   const [ogImageRemoved, setOgImageRemoved] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState("");
+  const [defaultProfitMargin, setDefaultProfitMargin] = useState<number>(30);
 
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", storeId],
