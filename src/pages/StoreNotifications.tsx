@@ -35,6 +35,7 @@ export default function StoreNotifications() {
 
   const sendMutation = useMutation({
     mutationFn: async () => {
+      // 1. Insert into store_notifications (triggers realtime for online users)
       const { error } = await supabase.from("store_notifications").insert({
         store_id: storeId!,
         title: title.trim(),
@@ -42,6 +43,32 @@ export default function StoreNotifications() {
         link_url: linkUrl.trim() || null,
       });
       if (error) throw error;
+
+      // 2. Also send web-push for offline users
+      try {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        await fetch(
+          `https://${projectId}.supabase.co/functions/v1/web-push`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({
+              action: "send",
+              store_id: storeId,
+              title: title.trim(),
+              message: body.trim(),
+              url: linkUrl.trim() || "/",
+            }),
+          }
+        );
+      } catch {
+        // Web push is best-effort; don't fail the whole operation
+      }
     },
     onSuccess: () => {
       toast.success("Notification sent to all store visitors!");

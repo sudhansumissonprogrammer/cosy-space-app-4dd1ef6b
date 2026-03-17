@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Bell } from "lucide-react";
+import { registerPushSubscription } from "@/lib/pushSubscription";
 
 function playChime() {
   try {
@@ -24,13 +25,22 @@ function playChime() {
 
 export default function StorefrontPushListener({ storeId }: { storeId: string }) {
   const notifiedRef = useRef<Set<string>>(new Set());
+  const pushRegistered = useRef(false);
 
   useEffect(() => {
     if (!storeId) return;
 
-    // Request notification permission
+    // Request notification permission and register push subscription
     if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted" && !pushRegistered.current) {
+          pushRegistered.current = true;
+          registerPushSubscription(storeId);
+        }
+      });
+    } else if ("Notification" in window && Notification.permission === "granted" && !pushRegistered.current) {
+      pushRegistered.current = true;
+      registerPushSubscription(storeId);
     }
 
     const channel = supabase
@@ -59,7 +69,7 @@ export default function StorefrontPushListener({ storeId }: { storeId: string })
               : undefined,
           });
 
-          // Browser notification
+          // Browser notification (fallback when SW push doesn't fire)
           if ("Notification" in window && Notification.permission === "granted") {
             const n = new Notification(notif.title, {
               body: notif.body,
