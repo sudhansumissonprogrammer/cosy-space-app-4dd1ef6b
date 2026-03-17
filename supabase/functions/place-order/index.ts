@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("id, is_suspended")
+      .select("id, is_suspended, default_profit_margin")
       .eq("id", store_id)
       .single();
 
