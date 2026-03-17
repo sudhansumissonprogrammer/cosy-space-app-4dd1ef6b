@@ -282,6 +282,11 @@ export default function StoreSettings() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="profit-margin">Default Profit Margin (%)</Label>
+              <Input id="profit-margin" type="number" min={0} max={100} value={defaultProfitMargin} onChange={(e) => setDefaultProfitMargin(Number(e.target.value))} />
+              <p className="text-xs text-muted-foreground">Used for Meta ad optimization when product cost price isn't set. E.g. 30 means 30% of sale price is profit.</p>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="instagram">Instagram URL</Label>
