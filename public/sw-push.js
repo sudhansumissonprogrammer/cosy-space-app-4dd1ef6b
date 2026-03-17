@@ -11,6 +11,18 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+self.addEventListener('pushsubscriptionchange', (event) => {
+  console.log('[sw-push] Subscription changed');
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({ type: 'push-subscription-change' });
+      });
+    })
+  );
+});
+
 self.addEventListener('push', (event) => {
   console.log('[sw-push] Push received');
 
@@ -55,14 +67,13 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      // Focus existing window if available
       for (const client of clients) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.navigate(url);
           return client.focus();
         }
       }
-      // Open new window
+
       return self.clients.openWindow(url);
     })
   );

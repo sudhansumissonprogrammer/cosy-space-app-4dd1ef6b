@@ -1,8 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Bell } from "lucide-react";
-import { registerPushSubscription } from "@/lib/pushSubscription";
+import {
+  canUsePushNotifications,
+  isStandaloneMode,
+  registerPushSubscription,
+} from "@/lib/pushSubscription";
+
+const ENABLE_PUSH_TOAST_ID = "enable-store-push";
+const REGISTER_THROTTLE_MS = 60 * 1000;
 
 function playChime() {
   try {
@@ -25,23 +32,109 @@ function playChime() {
 
 export default function StorefrontPushListener({ storeId }: { storeId: string }) {
   const notifiedRef = useRef<Set<string>>(new Set());
-  const pushRegistered = useRef(false);
+  const registerInFlightRef = useRef(false);
+  const lastRegisterAtRef = useRef(0);
+  const permissionPromptOpenRef = useRef(false);
+
+  const syncPushSubscription = useCallback(
+    async (forceRefresh = false) => {
+      if (!storeId || !canUsePushNotifications() || Notification.permission !== "granted") {
+        return false;
+      }
+
+      const now = Date.now();
+      if (registerInFlightRef.current) return false;
+      if (!forceRefresh && now - lastRegisterAtRef.current < REGISTER_THROTTLE_MS) {
+        return false;
+      }
+
+      registerInFlightRef.current = true;
+      lastRegisterAtRef.current = now;
+
+      try {
+        return await registerPushSubscription(storeId, { forceRefresh });
+      } finally {
+        registerInFlightRef.current = false;
+      }
+    },
+    [storeId]
+  );
+
+  const promptForPushPermission = useCallback(() => {
+    if (
+      !storeId ||
+      !canUsePushNotifications() ||
+      !isStandaloneMode() ||
+      Notification.permission !== "default" ||
+      permissionPromptOpenRef.current
+    ) {
+      return;
+    }
+
+    permissionPromptOpenRef.current = true;
+
+    toast("Enable notifications", {
+      id: ENABLE_PUSH_TOAST_ID,
+      duration: 12000,
+      description: "Turn on notifications to receive store alerts on your phone.",
+      action: {
+        label: "Enable",
+        onClick: async () => {
+          const permission = await Notification.requestPermission();
+          permissionPromptOpenRef.current = false;
+
+          if (permission === "granted") {
+            toast.dismiss(ENABLE_PUSH_TOAST_ID);
+            await syncPushSubscription(true);
+            toast.success("Notifications enabled");
+            return;
+          }
+
+          if (permission === "denied") {
+            toast.error("Notifications are blocked in your browser settings");
+          }
+        },
+      },
+    });
+
+    window.setTimeout(() => {
+      permissionPromptOpenRef.current = false;
+    }, 12500);
+  }, [storeId, syncPushSubscription]);
 
   useEffect(() => {
     if (!storeId) return;
 
-    // Request notification permission and register push subscription
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted" && !pushRegistered.current) {
-          pushRegistered.current = true;
-          registerPushSubscription(storeId);
-        }
-      });
-    } else if ("Notification" in window && Notification.permission === "granted" && !pushRegistered.current) {
-      pushRegistered.current = true;
-      registerPushSubscription(storeId);
+    if (canUsePushNotifications() && Notification.permission === "granted") {
+      void syncPushSubscription(true);
+    } else {
+      promptForPushPermission();
     }
+
+    const handleResume = () => {
+      if (canUsePushNotifications() && Notification.permission === "granted") {
+        void syncPushSubscription();
+      } else {
+        promptForPushPermission();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        handleResume();
+      }
+    };
+
+    const handleServiceWorkerMessage = (event: MessageEvent<{ type?: string }>) => {
+      if (event.data?.type === "push-subscription-change") {
+        void syncPushSubscription(true);
+      }
+    };
+
+    window.addEventListener("focus", handleResume);
+    window.addEventListener("pageshow", handleResume);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
 
     const channel = supabase
       .channel(`store-notifs-${storeId}`)
@@ -69,7 +162,6 @@ export default function StorefrontPushListener({ storeId }: { storeId: string })
               : undefined,
           });
 
-          // Browser notification (fallback when SW push doesn't fire)
           if ("Notification" in window && Notification.permission === "granted") {
             const n = new Notification(notif.title, {
               body: notif.body,
@@ -87,9 +179,14 @@ export default function StorefrontPushListener({ storeId }: { storeId: string })
       .subscribe();
 
     return () => {
+      toast.dismiss(ENABLE_PUSH_TOAST_ID);
+      window.removeEventListener("focus", handleResume);
+      window.removeEventListener("pageshow", handleResume);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
       supabase.removeChannel(channel);
     };
-  }, [storeId]);
+  }, [promptForPushPermission, storeId, syncPushSubscription]);
 
   return null;
 }
