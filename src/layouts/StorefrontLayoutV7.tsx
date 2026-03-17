@@ -15,6 +15,7 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 import SideCart from "@/components/storefront/SideCart";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
+import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
