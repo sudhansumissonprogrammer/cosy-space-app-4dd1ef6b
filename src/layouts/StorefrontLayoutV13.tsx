@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout";
 import { CartProvider, useCart } from "@/contexts/CartContext";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
+import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { Skeleton } from "@/components/ui/skeleton";
