@@ -65,6 +65,7 @@ function MobileMenu({
                 items: [
                   { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeId}/whatsapp` },
                   { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
+                  { label: "Push Notifications", icon: Bell, path: `/dashboard/stores/${storeId}/notifications` },
                   { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
                 ],
               },
