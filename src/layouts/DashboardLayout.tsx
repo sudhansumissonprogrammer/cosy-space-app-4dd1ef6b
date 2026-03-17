@@ -209,6 +209,17 @@ export default function DashboardLayout() {
     return () => { supabase.removeChannel(channel); };
   }, [storeId]);
 
+  // Clear app badge when visiting orders page
+  useEffect(() => {
+    if (storeId && location.pathname.includes("/orders")) {
+      try {
+        if ("clearAppBadge" in navigator) {
+          (navigator as any).clearAppBadge();
+        }
+      } catch {}
+    }
+  }, [location.pathname, storeId]);
+
   const go = (path: string) => {
     navigate(path);
     setMenuOpen(false);
