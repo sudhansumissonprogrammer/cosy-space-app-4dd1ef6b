@@ -373,15 +373,26 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         }
       }
 
-      // Upload additional images
-      if (additionalFiles.length > 0 && savedProductId) {
+      // Upload additional images (files + URL-based)
+      if (savedProductId) {
         const existingCount = additionalPreviews.filter((p) => p.isExisting).length;
+        // Handle file uploads
+        let orderIdx = existingCount;
         for (let i = 0; i < additionalFiles.length; i++) {
           const url = await uploadImage(additionalFiles[i]);
           await (supabase as any).from("product_images").insert({
             product_id: savedProductId,
             image_url: url,
-            display_order: existingCount + i,
+            display_order: orderIdx++,
+          });
+        }
+        // Handle URL-only additional images (no file, not existing in DB)
+        const urlOnlyPreviews = additionalPreviews.filter((p) => !p.isExisting && !p.url.startsWith("blob:"));
+        for (const preview of urlOnlyPreviews) {
+          await (supabase as any).from("product_images").insert({
+            product_id: savedProductId,
+            image_url: preview.url,
+            display_order: orderIdx++,
           });
         }
       }
