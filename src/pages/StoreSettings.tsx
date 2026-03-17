@@ -190,6 +190,7 @@ export default function StoreSettings() {
           meta_description: metaDescription.trim() || null,
           og_image_url: finalOgImageUrl.trim() || null,
           owner_email: ownerEmail.trim() || null,
+          default_profit_margin: defaultProfitMargin,
         })
         .eq("id", storeId!);
       if (error) throw error;
