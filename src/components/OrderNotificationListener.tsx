@@ -37,6 +37,7 @@ function playNotificationChime() {
 
 export default function OrderNotificationListener() {
   const notifiedRef = useRef<Set<string>>(new Set());
+  const unseenCountRef = useRef(0);
 
   // Get user's store IDs so we only notify for their stores
   const { data: storeIds } = useQuery({
