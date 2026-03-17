@@ -578,9 +578,26 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* Trust Badges Above CTA */}
+          {!isOutOfStock && (
+            <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                <Lock className="h-3 w-3 text-success" /> Secure
+              </span>
+              <span className="text-muted-foreground/30">|</span>
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                <Truck className="h-3 w-3 text-success" /> Free Delivery
+              </span>
+              <span className="text-muted-foreground/30">|</span>
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                <RotateCcw className="h-3 w-3 text-success" /> Easy Returns
+              </span>
+            </div>
+          )}
+
           {/* CTA Buttons */}
           {!isOutOfStock && (
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-3 grid grid-cols-2 gap-3">
               {/* Add to Cart */}
               <button
                 className={`relative flex h-[46px] items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
