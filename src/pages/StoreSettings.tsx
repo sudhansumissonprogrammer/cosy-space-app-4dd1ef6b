@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,11 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Trash2, Flame, Store, MapPin, Clock, Image, FileText, Search, Award } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Trash2, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download } from "lucide-react";
 import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 import { Switch } from "@/components/ui/switch";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { QRCodeSVG } from "qrcode.react";
 
 const ICON_OPTIONS = [
   { value: "Award", label: "Award" },
