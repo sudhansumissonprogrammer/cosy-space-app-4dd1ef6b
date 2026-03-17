@@ -127,6 +127,29 @@ Deno.serve(async (req) => {
     const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
     if (itemsErr) throw itemsErr;
 
+    // Calculate profit margin for Meta CAPI optimization
+    let totalProfit: number | null = null;
+    const productIds = items.map((i) => i.productId).filter(Boolean);
+    if (productIds.length > 0) {
+      const { data: productsData } = await supabase
+        .from("products")
+        .select("id, cost_price")
+        .in("id", productIds);
+
+      if (productsData && productsData.some((p: any) => p.cost_price !== null)) {
+        totalProfit = 0;
+        for (const item of items) {
+          const prod = productsData.find((p: any) => p.id === item.productId);
+          if (prod?.cost_price !== null && prod?.cost_price !== undefined) {
+            totalProfit += (Number(item.price) - Number(prod.cost_price)) * Number(item.quantity);
+          } else {
+            // No cost price set for this product — use full revenue as fallback
+            totalProfit += Number(item.price) * Number(item.quantity);
+          }
+        }
+      }
+    }
+
     if (lead) {
       await supabase.from("customer_leads").insert({
         store_id,
@@ -171,7 +194,7 @@ Deno.serve(async (req) => {
       ? `#${1000 + orderRow.order_number}`
       : `#${createdOrder.id.slice(0, 8).toUpperCase()}`;
 
-    return new Response(JSON.stringify({ success: true, order_id: createdOrder.id, order_number: orderNumber }), {
+    return new Response(JSON.stringify({ success: true, order_id: createdOrder.id, order_number: orderNumber, profit: totalProfit }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

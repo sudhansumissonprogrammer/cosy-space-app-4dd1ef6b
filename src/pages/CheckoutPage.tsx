@@ -405,12 +405,12 @@ export default function CheckoutPage() {
       throw new Error(error.message || "Failed to place order");
     }
 
-    const result = data as { order_id?: string; order_number?: string; error?: string } | null;
+    const result = data as { order_id?: string; order_number?: string; profit?: number | null; error?: string } | null;
     if (!result?.order_id) {
       throw new Error(result?.error || "Failed to place order");
     }
 
-    return { id: result.order_id, number: result.order_number || null };
+    return { id: result.order_id, number: result.order_number || null, profit: result.profit ?? null };
   };
 
   const createGuestAccount = async (ordId: string) => {
@@ -517,7 +517,7 @@ export default function CheckoutPage() {
     } catch {}
   };
 
-  const finalizeOrder = (newOrderId: string, newOrderNumber: string | null) => {
+  const finalizeOrder = (newOrderId: string, newOrderNumber: string | null, profit?: number | null) => {
     setOrderId(newOrderId);
     setOrderNumber(newOrderNumber);
     setShowUpsell(true);
@@ -544,7 +544,7 @@ export default function CheckoutPage() {
       customData: {
         content_ids: checkoutItems.map((i) => i.productId),
         contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-        value: total,
+        value: profit !== null && profit !== undefined ? profit : total,
         currency,
         num_items: checkoutItems.length,
         order_id: newOrderId,
@@ -591,7 +591,7 @@ export default function CheckoutPage() {
               });
               if (verifyError) throw new Error("Verification failed");
               setPlacing(false);
-              finalizeOrder(newOrder.id, newOrder.number);
+               finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
           } catch { setPlacing(false); toast.error("Payment verification failed."); }
         };
 
@@ -635,7 +635,7 @@ export default function CheckoutPage() {
       }
 
       // COD flow
-      finalizeOrder(newOrder.id, newOrder.number);
+      finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
