@@ -670,11 +670,11 @@ export default function ProductsList() { // v2
                         <TableCell>
                           {product.image_url ? (
                             <img
-                              src={product.image_url}
+                              src={cleanImageUrl(product.image_url)}
                               alt=""
                               className="h-10 w-10 rounded-md border object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               loading="lazy"
-                              onClick={() => setPreviewImage(product.image_url)}
+                              onClick={() => setPreviewImage(cleanImageUrl(product.image_url))}
                             />
                           ) : (
                             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent"><Package className="h-4 w-4 text-muted-foreground" /></div>
