@@ -43,7 +43,9 @@ export default function AdminOverview() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">Overview</h1>
 
-      {isLoading ? (
+      {isError ? (
+        <QueryErrorState message="Failed to load admin stats" onRetry={() => refetch()} />
+      ) : isLoading ? (
         <StatCardsSkeleton />
       ) : (
         <>
