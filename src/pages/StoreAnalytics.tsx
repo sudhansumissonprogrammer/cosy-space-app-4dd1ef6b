@@ -279,13 +279,57 @@ export default function StoreAnalytics() {
 
       {/* Date range tabs */}
       <Tabs value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-        <TabsList className="h-8 w-full grid grid-cols-4">
+        <TabsList className="h-8 w-full grid grid-cols-5">
           <TabsTrigger value="7d" className="text-xs h-7">7 days</TabsTrigger>
           <TabsTrigger value="30d" className="text-xs h-7">30 days</TabsTrigger>
           <TabsTrigger value="90d" className="text-xs h-7">90 days</TabsTrigger>
-          <TabsTrigger value="all" className="text-xs h-7">All time</TabsTrigger>
+          <TabsTrigger value="all" className="text-xs h-7">All</TabsTrigger>
+          <TabsTrigger value="custom" className="text-xs h-7">Custom</TabsTrigger>
         </TabsList>
       </Tabs>
+
+      {/* Custom date range picker */}
+      {dateRange === "custom" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1.5 justify-start", !customFrom && "text-muted-foreground")}>
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {customFrom ? format(customFrom, "MMM d, yyyy") : "From"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={customFrom}
+                onSelect={setCustomFrom}
+                disabled={(date) => date > new Date() || (customTo ? date > customTo : false)}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+          <span className="text-xs text-muted-foreground">to</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1.5 justify-start", !customTo && "text-muted-foreground")}>
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {customTo ? format(customTo, "MMM d, yyyy") : "To"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={customTo}
+                onSelect={setCustomTo}
+                disabled={(date) => date > new Date() || (customFrom ? date < customFrom : false)}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 gap-2.5">
