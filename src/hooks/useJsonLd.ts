@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { ROOT_DOMAIN } from "@/lib/subdomain";
+import { getProductRating } from "@/lib/productUtils";
 
 const SCRIPT_ID = "json-ld-structured-data";
 const BREADCRUMB_SCRIPT_ID = "json-ld-breadcrumb";
