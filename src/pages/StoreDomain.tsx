@@ -12,16 +12,7 @@ export default function StoreDomain() {
   const { storeId } = useParams<{ storeId: string }>();
   const { user } = useAuth();
 
-  const { data: store, isLoading } = useQuery({
-    queryKey: ["store", storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores").select("*").eq("id", storeId!).eq("owner_id", user!.id).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId && !!user,
-  });
+  const { data: store, isLoading } = useStoreData(storeId);
 
   const subdomainUrl = store ? `https://${store.slug}.${ROOT_DOMAIN}` : "";
   const pathUrl = store ? `${window.location.origin}/store/${store.slug}` : "";

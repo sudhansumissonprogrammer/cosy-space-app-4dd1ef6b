@@ -76,20 +76,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   });
 
   // Load store
-  const { data: store } = useQuery({
-    queryKey: ["store", storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("*")
-        .eq("id", storeId!)
-        .eq("owner_id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId && !!user,
-  });
+  const { data: store } = useStoreData(storeId);
 
   // Categories
   const { data: categories } = useQuery({

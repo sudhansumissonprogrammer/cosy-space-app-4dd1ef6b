@@ -19,20 +19,7 @@ export default function StoreTracking() {
   const [facebookPixelId, setFacebookPixelId] = useState("");
   const [metaAccessToken, setMetaAccessToken] = useState("");
 
-  const { data: store, isLoading } = useQuery({
-    queryKey: ["store", storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("*")
-        .eq("id", storeId!)
-        .eq("owner_id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId && !!user,
-  });
+  const { data: store, isLoading } = useStoreData(storeId);
 
   // Feed health check
   const { data: feedHealth } = useQuery({

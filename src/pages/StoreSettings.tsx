@@ -74,20 +74,7 @@ export default function StoreSettings() {
   const [ownerEmail, setOwnerEmail] = useState("");
   const [defaultProfitMargin, setDefaultProfitMargin] = useState<number>(30);
 
-  const { data: store, isLoading } = useQuery({
-    queryKey: ["store", storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("*")
-        .eq("id", storeId!)
-        .eq("owner_id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId && !!user,
-  });
+  const { data: store, isLoading } = useStoreData(storeId);
 
   useEffect(() => {
     if (store) {
