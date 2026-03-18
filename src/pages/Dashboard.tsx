@@ -54,7 +54,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { data: store, isLoading: storeLoading } = useQuery({
+  const { data: store, isLoading: storeLoading, isError: storeError, refetch: refetchStore } = useQuery({
     queryKey: ["my-store", user?.id],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
