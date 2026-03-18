@@ -648,7 +648,7 @@ export default function ProductsList() { // v2
                             <span className="font-medium text-foreground">{currencySymbol}{Number(product.price).toFixed(2)}</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">{product.stock_quantity}</TableCell>
+                        <TableCell className="text-right">{product.stock_quantity >= 999999 ? "∞" : product.stock_quantity}</TableCell>
                         <TableCell>
                           <Badge variant={product.is_active ? "default" : "secondary"}>{product.is_active ? "Active" : "Draft"}</Badge>
                         </TableCell>
