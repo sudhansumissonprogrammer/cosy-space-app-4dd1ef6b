@@ -372,7 +372,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   );
 }
 
-function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, marqueeText }: { store: StoreData; themeStyle: React.CSSProperties; primaryColor: string; btnTextColor: string; marqueeText?: string }) {
+function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, marqueeText, marqueeEnabled }: { store: StoreData; themeStyle: React.CSSProperties; primaryColor: string; btnTextColor: string; marqueeText?: string; marqueeEnabled?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
