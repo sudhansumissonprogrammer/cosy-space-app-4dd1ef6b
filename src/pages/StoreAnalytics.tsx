@@ -127,8 +127,9 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  const rangeDays = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90 : 9999;
-  const rangeStart = startOfDay(subDays(new Date(), rangeDays));
+  const rangeDays = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90 : dateRange === "custom" && customFrom && customTo ? differenceInDays(customTo, customFrom) || 1 : 9999;
+  const rangeStart = dateRange === "custom" && customFrom ? startOfDay(customFrom) : startOfDay(subDays(new Date(), rangeDays));
+  const rangeEnd = dateRange === "custom" && customTo ? startOfDay(subDays(customTo, -1)) : new Date();
   const priorStart = startOfDay(subDays(rangeStart, rangeDays));
 
   const filtered = useMemo(() => {
