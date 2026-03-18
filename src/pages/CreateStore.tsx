@@ -295,6 +295,54 @@ export default function CreateStore() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-8 relative">
+      {/* Existing Store Dialog */}
+      <Dialog open={showExistingStoreDialog} onOpenChange={setShowExistingStoreDialog}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogHeader className="items-center">
+            <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Crown className="h-8 w-8 text-primary animate-bounce" />
+            </div>
+            <DialogTitle className="text-xl">You Already Have a Store!</DialogTitle>
+            <DialogDescription className="text-sm">
+              Your store <span className="font-semibold text-primary">{existingStoreSlug}.storivo.in</span> is already live and ready for business.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="rounded-xl border bg-accent/30 p-4 text-left">
+              <div className="flex items-start gap-3">
+                <ShoppingBag className="mt-0.5 h-5 w-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">One store per account</p>
+                  <p className="text-xs text-muted-foreground">
+                    Each account gets one powerful store. Head to your dashboard to manage products, orders, and themes!
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate("/dashboard")}
+              className="w-full gap-2"
+            >
+              <Rocket className="h-4 w-4" />
+              Go to My Dashboard
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (existingStoreSlug) {
+                  window.open(`https://${existingStoreSlug}.storivo.in`, "_blank");
+                }
+              }}
+              className="w-full text-xs gap-1.5"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              Visit My Store
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Confetti overlay */}
       {showConfetti && (
         <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
