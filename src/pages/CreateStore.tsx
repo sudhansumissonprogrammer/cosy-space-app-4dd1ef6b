@@ -21,7 +21,7 @@ import {
   Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Zap,
   Rocket, Crown, ShoppingBag,
 } from "lucide-react";
-import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
+import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 
 const CURRENCIES = [
   { code: "INR", label: "Indian Rupee (₹)" },
@@ -137,7 +137,7 @@ export default function CreateStore() {
   };
 
   const uploadFile = async (file: File, bucket: string, path: string) => {
-    const result = await compressImage(file);
+    const result = await processImage(file);
     const msg = getCompressionMessage(result);
     if (msg) toast.success(msg);
     const ext = result.file.name.split(".").pop();

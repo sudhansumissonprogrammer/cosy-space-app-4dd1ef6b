@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Trash2, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download } from "lucide-react";
-import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
+import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { Switch } from "@/components/ui/switch";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -127,7 +127,7 @@ export default function StoreSettings() {
 
   const uploadFile = async (file: File, bucket: string) => {
     if (file.size > MAX_FILE_SIZE) throw new Error("File must be less than 5MB");
-    const result = await compressImage(file);
+    const result = await processImage(file);
     const msg = getCompressionMessage(result);
     if (msg) toast.success(msg);
     const ext = result.file.name.split(".").pop();

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Upload, X, Crown } from "lucide-react";
-import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
+import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -98,7 +98,7 @@ export default function UserSettings() {
     mutationFn: async () => {
       let avatarUrl = profile?.avatar_url || null;
       if (avatarFile) {
-        const result = await compressImage(avatarFile);
+        const result = await processImage(avatarFile);
         const msg = getCompressionMessage(result);
         if (msg) toast.success(msg);
         const ext = result.file.name.split(".").pop();

@@ -17,10 +17,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
+import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_PRODUCT_IMAGES = 5;
 
 interface ProductFormProps {
   productId?: string;
@@ -124,7 +125,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       let image_url: string | null = null;
 
       if (categoryImageFile) {
-        const result = await compressImage(categoryImageFile);
+        const result = await processImage(categoryImageFile);
         const msg = getCompressionMessage(result);
         if (msg) toast.success(msg);
         const ext = result.file.name.split(".").pop();
@@ -273,10 +274,18 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
 
   const handleAdditionalFiles = (files: FileList | null) => {
     if (!files) return;
+    const totalExisting = additionalPreviews.filter(p => p.isExisting).length;
+    const totalNew = additionalFiles.length;
+    const remaining = MAX_PRODUCT_IMAGES - totalExisting - totalNew - (imagePreview ? 1 : 0);
+    
+    const fileArr = Array.from(files);
+    if (fileArr.length > remaining) {
+      toast.error(`Maximum ${MAX_PRODUCT_IMAGES} images per product. You can add ${Math.max(0, remaining)} more.`);
+    }
+    
     const newFiles: File[] = [];
     const newPreviews: { url: string; isExisting: boolean }[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    for (const file of fileArr.slice(0, Math.max(0, remaining))) {
       if (file.size > MAX_FILE_SIZE) {
         toast.error(`${file.name} exceeds 5MB limit`);
         continue;
@@ -302,7 +311,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   };
 
   const uploadImage = async (file: File) => {
-    const result = await compressImage(file);
+    const result = await processImage(file);
     const msg = getCompressionMessage(result);
     if (msg) toast.success(msg);
     const ext = result.file.name.split(".").pop();
