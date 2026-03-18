@@ -278,7 +278,7 @@ export default function StorefrontHomeV10() {
     <div>
       <MilanoHero store={store} slug={effectiveSlug} />
       <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
-      <AnnouncementStrip customText={themeConfig?.marquee_text} />
+      {(themeConfig?.marquee_enabled ?? true) && <AnnouncementStrip customText={themeConfig?.marquee_text} />}
       {products && products.length > 0 && (
         <BestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
       )}

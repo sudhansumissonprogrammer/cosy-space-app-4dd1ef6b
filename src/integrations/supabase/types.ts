@@ -1156,6 +1156,7 @@ export type Database = {
           created_at: string
           heading_font: string
           id: string
+          marquee_enabled: boolean
           marquee_gradient: string
           marquee_text: string
           primary_color: string
@@ -1173,6 +1174,7 @@ export type Database = {
           created_at?: string
           heading_font?: string
           id?: string
+          marquee_enabled?: boolean
           marquee_gradient?: string
           marquee_text?: string
           primary_color?: string
@@ -1190,6 +1192,7 @@ export type Database = {
           created_at?: string
           heading_font?: string
           id?: string
+          marquee_enabled?: boolean
           marquee_gradient?: string
           marquee_text?: string
           primary_color?: string

@@ -365,14 +365,14 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     <CartProvider slug={store.slug}>
       <WishlistProvider slug={store.slug}>
         <StorefrontAuthProvider storeId={store.id}>
-          <CheckoutAwareLayout store={store} themeStyle={themeStyle} primaryColor={primaryColor} btnTextColor={btnTextColor} marqueeText={themeConfig?.marquee_text} />
+          <CheckoutAwareLayout store={store} themeStyle={themeStyle} primaryColor={primaryColor} btnTextColor={btnTextColor} marqueeText={themeConfig?.marquee_text} marqueeEnabled={themeConfig?.marquee_enabled ?? true} />
         </StorefrontAuthProvider>
       </WishlistProvider>
     </CartProvider>
   );
 }
 
-function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, marqueeText }: { store: StoreData; themeStyle: React.CSSProperties; primaryColor: string; btnTextColor: string; marqueeText?: string }) {
+function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, marqueeText, marqueeEnabled }: { store: StoreData; themeStyle: React.CSSProperties; primaryColor: string; btnTextColor: string; marqueeText?: string; marqueeEnabled?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
@@ -405,7 +405,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
 
   return (
     <div className="storefront-font min-h-screen font-sans" style={{ ...themeStyle, backgroundColor: "var(--storefront-bg, hsl(var(--background)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-      <StorefrontMarquee text={marqueeText} />
+      {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
       
       <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">

@@ -240,7 +240,7 @@ export default function StorefrontHomeV12() {
   return (
     <div>
       <V12Hero store={store} slug={effectiveSlug} />
-      <V12Marquee customText={themeConfig?.marquee_text} />
+      {(themeConfig?.marquee_enabled ?? true) && <V12Marquee customText={themeConfig?.marquee_text} />}
       {products && products.length > 0 && (
         <BestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
       )}

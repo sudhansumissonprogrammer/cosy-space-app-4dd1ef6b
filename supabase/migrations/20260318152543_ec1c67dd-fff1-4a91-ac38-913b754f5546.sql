@@ -1,0 +1,1 @@
+ALTER TABLE public.store_theme_config ADD COLUMN IF NOT EXISTS marquee_enabled boolean NOT NULL DEFAULT true;
