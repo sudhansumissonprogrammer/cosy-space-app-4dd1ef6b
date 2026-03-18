@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Settings, LogOut, Users, ShoppingBag,
-  CreditCard, BarChart3, MessageSquare, Shield,
+  CreditCard, BarChart3, MessageSquare, Shield, Activity,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -35,6 +35,7 @@ export function AdminSidebar() {
   const marketingItems = [
     { title: "WhatsApp", url: "/admin/whatsapp", icon: MessageSquare },
     { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+    { title: "Usage Monitor", url: "/admin/usage", icon: Activity },
   ];
 
   const settingsItems = [

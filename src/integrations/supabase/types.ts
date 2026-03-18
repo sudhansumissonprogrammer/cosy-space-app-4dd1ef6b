@@ -2038,6 +2038,7 @@ export type Database = {
         Returns: string[]
       }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
+      get_store_usage_stats: { Args: never; Returns: Json }
       get_store_views: {
         Args: { _store_ids: string[] }
         Returns: {
