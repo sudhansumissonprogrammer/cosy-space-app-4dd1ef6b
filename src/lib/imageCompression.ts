@@ -83,7 +83,7 @@ export async function compressImage(
           }
 
           let currentQuality = quality - 0.1;
-          while (blob.size > 300 * 1024 && currentQuality > 0.3) {
+          while (blob.size > 150 * 1024 && currentQuality > 0.2) {
             blob = await tryFormat(`image/${ext === "webp" ? "webp" : "jpeg"}`, currentQuality);
             if (!blob) break;
             currentQuality -= 0.1;
