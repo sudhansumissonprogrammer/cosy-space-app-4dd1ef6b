@@ -16,7 +16,9 @@ export default function CategoryDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const themeConfig = useStorefrontThemeConfig(store.id);
-  const cardStyle = themeConfig?.product_card_style || "style-1";
+  const storeTheme = (store as any)?.theme || "starter";
+  const cardStyle = themeConfig?.product_card_style || (storeTheme === "theme-13" ? "style-4" : "style-1");
+  const isMenuStyle = cardStyle === "style-4";
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
@@ -86,18 +88,33 @@ export default function CategoryDetail() {
           <p className="mb-5 text-sm text-muted-foreground">
             {products.length} {products.length === 1 ? "product" : "products"}
           </p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((product, idx) => (
-              <UniversalProductCard
-                key={product.id}
-                product={product}
-                slug={slug!}
-                store={store}
-                priority={idx < 4}
-                cardStyle={cardStyle}
-              />
-            ))}
-          </div>
+          {isMenuStyle ? (
+            <div className="flex flex-col gap-2.5">
+              {products.map((product, idx) => (
+                <UniversalProductCard
+                  key={product.id}
+                  product={product}
+                  slug={slug!}
+                  store={store}
+                  priority={idx < 4}
+                  cardStyle={cardStyle}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {products.map((product, idx) => (
+                <UniversalProductCard
+                  key={product.id}
+                  product={product}
+                  slug={slug!}
+                  store={store}
+                  priority={idx < 4}
+                  cardStyle={cardStyle}
+                />
+              ))}
+            </div>
+          )}
         </>
       ) : (
         <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
