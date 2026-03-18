@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -109,16 +110,7 @@ export default function ProductsList() { // v2
     }
   }, []);
 
-  const { data: store } = useQuery({
-    queryKey: ["store", storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores").select("*").eq("id", storeId!).eq("owner_id", user!.id).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId && !!user,
-  });
+  const { data: store } = useStoreData(storeId);
 
   const { data: limitInfo } = useQuery({
     queryKey: ["product-limit", user?.id],

@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -207,15 +208,7 @@ export default function BulkUpload() {
     enabled: !!user,
   });
 
-  const { data: store } = useQuery({
-    queryKey: ["store", storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("stores").select("currency").eq("id", storeId!).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId,
-  });
+  const { data: store } = useStoreData(storeId);
 
   const { data: categories } = useQuery({
     queryKey: ["categories", storeId],

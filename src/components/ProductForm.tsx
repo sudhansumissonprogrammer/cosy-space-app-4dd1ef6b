@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,20 +77,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   });
 
   // Load store
-  const { data: store } = useQuery({
-    queryKey: ["store", storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("*")
-        .eq("id", storeId!)
-        .eq("owner_id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId && !!user,
-  });
+  const { data: store } = useStoreData(storeId);
 
   // Categories
   const { data: categories } = useQuery({
