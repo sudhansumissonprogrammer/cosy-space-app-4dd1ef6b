@@ -237,7 +237,6 @@ export default function DashboardLayout() {
           <div className="flex-1 flex flex-col min-w-0">
             <DynamicPwaManifest storeName="Storivo" logoUrl="/pwa-192x192.png" themeColor="#1a1a1a" startUrl="/dashboard" />
             <SmartInstallPrompt appName="Storivo" primaryColor="#1a1a1a" textColor="#ffffff" />
-            <OrderNotificationListener />
             <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger />
