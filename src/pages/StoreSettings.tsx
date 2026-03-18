@@ -127,7 +127,7 @@ export default function StoreSettings() {
 
   const uploadFile = async (file: File, bucket: string) => {
     if (file.size > MAX_FILE_SIZE) throw new Error("File must be less than 5MB");
-    const result = await compressImage(file);
+    const result = await processImage(file);
     const msg = getCompressionMessage(result);
     if (msg) toast.success(msg);
     const ext = result.file.name.split(".").pop();

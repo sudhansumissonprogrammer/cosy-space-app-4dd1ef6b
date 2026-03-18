@@ -98,7 +98,7 @@ export default function UserSettings() {
     mutationFn: async () => {
       let avatarUrl = profile?.avatar_url || null;
       if (avatarFile) {
-        const result = await compressImage(avatarFile);
+        const result = await processImage(avatarFile);
         const msg = getCompressionMessage(result);
         if (msg) toast.success(msg);
         const ext = result.file.name.split(".").pop();
