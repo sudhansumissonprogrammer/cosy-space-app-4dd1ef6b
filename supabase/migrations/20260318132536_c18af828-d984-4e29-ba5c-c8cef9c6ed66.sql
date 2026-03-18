@@ -1,0 +1,1 @@
+UPDATE products SET currency = stores.currency FROM stores WHERE products.store_id = stores.id AND products.currency != stores.currency;
