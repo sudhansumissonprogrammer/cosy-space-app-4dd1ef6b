@@ -298,6 +298,26 @@ export default function BulkUpload() {
 
       const remaining = limitInfo?.product_limit ? limitInfo.product_limit - limitInfo.current_count : Infinity;
 
+      // Auto-create missing categories
+      const uniqueCategories = [...new Set(validRows.map(r => r.mapped.category).filter(Boolean))];
+      const existingCategoryNames = new Set(categoryNames.map(n => n.toLowerCase()));
+      const missingCategories = uniqueCategories.filter(c => !existingCategoryNames.has(c.toLowerCase()));
+
+      if (missingCategories.length > 0) {
+        const newCategories = missingCategories.map(name => ({
+          store_id: storeId!,
+          name,
+          slug: name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-"),
+        }));
+        const { error: catError } = await (supabase as any).from("categories").insert(newCategories);
+        if (catError) {
+          console.error("Failed to create categories:", catError);
+          toast.error(`Failed to auto-create some categories: ${catError.message}`);
+        } else {
+          toast.success(`Auto-created ${missingCategories.length} new categor${missingCategories.length === 1 ? 'y' : 'ies'}: ${missingCategories.join(', ')}`);
+        }
+      }
+
       // For update mode, load existing products by SKU
       let existingBySku: Record<string, string> = {};
       if (importMode === "update" || importMode === "both") {
@@ -375,6 +395,7 @@ export default function BulkUpload() {
     onSuccess: (data) => {
       setImportResult(data);
       setStep("result");
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products-count", storeId] });
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
