@@ -35,6 +35,12 @@ export function optimizeImageUrl(url: string | null | undefined, width: number =
   return url;
 }
 
+/** Extract the first URL from a potentially comma-separated image_url field */
+export function cleanImageUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  return url.includes(",") ? url.split(",")[0].trim() : url.trim();
+}
+
 /** Get a srcSet string for responsive images */
 export function getImageSrcSet(url: string | null | undefined, sizes: number[] = [400, 600, 800]): string {
   if (!url) return "";
