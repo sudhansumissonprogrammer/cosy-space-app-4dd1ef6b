@@ -275,11 +275,9 @@ export default function BulkUpload() {
       const sale_price = salePriceStr ? parseFloat(salePriceStr) || null : null;
       const description = getValue("description");
       const rawCategory = getValue("category");
-      const stockStr = getValue("stock_quantity");
+      const stockStr = getValue("stock_quantity").trim();
       // If no stock column mapped or value is empty, treat as unlimited (999999)
-      const stock_quantity = (columnMapping["stock_quantity"] === undefined || columnMapping["stock_quantity"] === -1 || stockStr.trim() === "")
-        ? 999999
-        : (parseInt(stockStr) || 0);
+      const stock_quantity = stockStr === "" ? 999999 : (parseInt(stockStr) || 0);
       const sku = getValue("sku");
       const image_url = getValue("image_url");
       const activeStr = getValue("is_active");
