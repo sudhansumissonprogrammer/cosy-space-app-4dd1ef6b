@@ -51,11 +51,37 @@ export default function StorefrontHome() {
   });
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const totalProducts = queryClient.getQueryData<number>(["storefront-total-products", store.id]) ?? 0;
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const categoryStyle = themeConfig?.category_style || "style-1";
+
+  const hasMore = (products?.length ?? 0) < totalProducts;
+
+  const loadMoreProducts = useCallback(async () => {
+    if (loadingMore || !hasMore || !store?.id) return;
+    setLoadingMore(true);
+    try {
+      const currentCount = products?.length ?? 0;
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .order("is_best_selling", { ascending: false })
+        .order("created_at", { ascending: false })
+        .range(currentCount, currentCount + 49);
+      if (!error && data) {
+        const merged = [...(products || []), ...data];
+        queryClient.setQueryData(["storefront-products", store.id], merged);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, store?.id, products, queryClient]);
 
   const bestSellingProducts = useMemo(() => {
     if (!products) return [];
