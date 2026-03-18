@@ -11,6 +11,7 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 
 /* ── Hero Banner ── */
 function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
@@ -280,6 +281,7 @@ export default function StorefrontHomeV12() {
         )}
       </div>
       <TrustBadges />
+      <StorefrontInstagramSection store={store} />
     </div>
   );
 }

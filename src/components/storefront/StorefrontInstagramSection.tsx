@@ -2,6 +2,7 @@ import { Instagram } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
+import { cleanImageUrl } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 interface StorefrontInstagramSectionProps {
@@ -21,7 +22,7 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
     .slice(0, 6)
     .map((p: any) => ({
       id: p.id,
-      url: p.image_url,
+      url: cleanImageUrl(p.image_url),
       name: p.name,
       slug: p.slug,
     }));

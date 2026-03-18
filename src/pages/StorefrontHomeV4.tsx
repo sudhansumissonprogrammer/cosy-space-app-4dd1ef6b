@@ -12,6 +12,7 @@ import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 
 /* ── Full-Screen Hero ── */
 function LuxuryHero({ store }: { store: StoreData }) {
@@ -421,6 +422,7 @@ export default function StorefrontHomeV4() {
       <LazyRender rootMargin="200px" minHeight={200}>
         <Newsletter />
       </LazyRender>
+      <StorefrontInstagramSection store={store} />
     </>
   );
 }

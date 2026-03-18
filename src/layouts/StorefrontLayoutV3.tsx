@@ -357,7 +357,7 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
             <div className="pb-20 md:pb-0">
               <Outlet context={store} />
             </div>
-            <StorefrontInstagramSection store={store} />
+            
             <div className="pb-20 md:pb-0">
               <StorefrontFooter store={store} />
             </div>

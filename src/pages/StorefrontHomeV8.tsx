@@ -13,6 +13,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 
 /* ── Hero Carousel (Embla) ── */
 function HeroCarousel({ store }: { store: StoreData }) {
@@ -352,6 +353,7 @@ export default function StorefrontHomeV8() {
           </div>
         )}
       </div>
+      <StorefrontInstagramSection store={store} />
     </div>
   );
 }

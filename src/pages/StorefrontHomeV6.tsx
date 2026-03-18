@@ -12,6 +12,7 @@ import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 
 /* ── Two-Column Hero ── */
 function HeroSection({ store }: { store: StoreData }) {
@@ -423,6 +424,7 @@ export default function StorefrontHomeV6() {
       <LazyRender rootMargin="200px" minHeight={200}>
         <NewsletterSection />
       </LazyRender>
+      <StorefrontInstagramSection store={store} />
     </>
   );
 }
