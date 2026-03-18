@@ -18,7 +18,7 @@ interface CheckItem {
   icon: React.ElementType;
 }
 
-export default function StoreChecklist({ storeId }: StoreChecklistProps) {
+const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(function StoreChecklist({ storeId }, ref) {
   const navigate = useNavigate();
 
   const { data: checks } = useQuery({

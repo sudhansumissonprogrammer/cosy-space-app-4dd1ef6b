@@ -160,7 +160,8 @@ export default function OnboardingWalkthrough({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden border-0 rounded-2xl">
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden border-0 rounded-2xl" aria-describedby={undefined}>
+        <DialogTitle className="sr-only">Store Setup Guide</DialogTitle>
         {/* Progress */}
         <div className="px-5 pt-4 pb-0">
           <div className="flex items-center justify-between mb-1.5">
