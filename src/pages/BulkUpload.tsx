@@ -545,7 +545,7 @@ export default function BulkUpload() {
                 </div>
               </button>
             </div>
-            <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
+            <input ref={fileRef} type="file" accept=".csv,.txt,text/csv,text/comma-separated-values,application/csv,application/vnd.ms-excel,text/plain" className="hidden" onChange={handleFile} />
           </CardContent>
         </Card>
       )}
