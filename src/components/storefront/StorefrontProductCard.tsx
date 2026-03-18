@@ -161,14 +161,6 @@ export default function StorefrontProductCard({ product, slug, store, priority =
             />
           </button>
 
-          {/* Quick View */}
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuickViewOpen(true); }}
-            className="absolute right-2.5 bottom-2.5 z-10 flex items-center gap-1 rounded-full bg-card/80 backdrop-blur-sm px-2 py-1 text-[9px] font-bold text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-card shadow-sm"
-          >
-            <Eye className="h-3 w-3" />
-            Quick View
-          </button>
 
           {product.image_url ? (
             <img
