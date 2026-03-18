@@ -69,4 +69,6 @@ const TopProducts = React.forwardRef<HTMLDivElement, TopProductsProps>(function 
       </CardContent>
     </Card>
   );
-}
+});
+
+export default TopProducts;

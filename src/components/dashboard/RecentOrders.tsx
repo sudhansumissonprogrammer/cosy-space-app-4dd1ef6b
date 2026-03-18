@@ -89,4 +89,6 @@ const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(functio
       </CardContent>
     </Card>
   );
-}
+});
+
+export default RecentOrders;
