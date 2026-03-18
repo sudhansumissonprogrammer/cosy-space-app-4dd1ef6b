@@ -12,17 +12,18 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
-  Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Palette, Lock,
+  Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Zap,
 } from "lucide-react";
 import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 
 const CURRENCIES = [
+  { code: "INR", label: "Indian Rupee (₹)" },
   { code: "USD", label: "US Dollar ($)" },
   { code: "EUR", label: "Euro (€)" },
   { code: "GBP", label: "British Pound (£)" },
-  { code: "INR", label: "Indian Rupee (₹)" },
   { code: "AED", label: "UAE Dirham (AED)" },
   { code: "SAR", label: "Saudi Riyal (SAR)" },
   { code: "BRL", label: "Brazilian Real (R$)" },
@@ -37,18 +38,10 @@ const CURRENCIES = [
 ];
 
 const STEPS = [
-  { id: 1, title: "Store Info", icon: Store, desc: "Name & branding" },
-  { id: 2, title: "Location", icon: MapPin, desc: "Where you are" },
-  { id: 3, title: "Contact", icon: Phone, desc: "How to reach you" },
-  { id: 4, title: "Social", icon: Instagram, desc: "Your presence" },
-  { id: 5, title: "Theme", icon: Palette, desc: "Pick a look" },
-];
-
-const THEMES = [
-  { id: "theme-1", name: "Classic", desc: "Clean & modern storefront", available: true },
-  { id: "theme-2", name: "Bold", desc: "Eye-catching vibrant design", available: false },
-  { id: "theme-3", name: "Minimal", desc: "Simple & elegant layout", available: false },
-  { id: "theme-4", name: "Starter", desc: "Starter template with cool UI", available: false },
+  { id: 1, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
+  { id: 2, title: "Location", icon: MapPin, desc: "Where you are", motivation: "Great start! Keep going 💪" },
+  { id: 3, title: "Contact", icon: Phone, desc: "How to reach you", motivation: "Almost there! 🎯" },
+  { id: 4, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
 ];
 
 export default function CreateStore() {
@@ -58,8 +51,8 @@ export default function CreateStore() {
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [checkingStore, setCheckingStore] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
 
-  // Check if user already has a store
   useEffect(() => {
     if (!user) return;
     supabase
@@ -77,12 +70,12 @@ export default function CreateStore() {
       });
   }, [user, navigate]);
 
-  // Step 1 - Store Info
+  // Step 1
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
-  const [currency, setCurrency] = useState("USD");
-  const [orderMode, setOrderMode] = useState<"whatsapp" | "website">("whatsapp");
+  const [currency, setCurrency] = useState("INR");
+  const [orderMode, setOrderMode] = useState<"whatsapp" | "website" | "both">("website");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [heroFile, setHeroFile] = useState<File | null>(null);
@@ -90,21 +83,20 @@ export default function CreateStore() {
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
 
-  // Step 2 - Location
+  // Step 2
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [location, setLocation] = useState("");
 
-  // Step 3 - Contact
+  // Step 3
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
 
-  // Step 4 - Social
+  // Step 4
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
 
-  // Step 5 - Theme
-  const [theme, setTheme] = useState("theme-1");
+  const theme = "theme-1";
 
   const generateSlug = (value: string) =>
     value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -157,7 +149,7 @@ export default function CreateStore() {
       return;
     }
     setDirection("forward");
-    setStep((s) => Math.min(s + 1, 5));
+    setStep((s) => Math.min(s + 1, 4));
   };
 
   const goBack = () => {
@@ -215,8 +207,9 @@ export default function CreateStore() {
         return;
       }
 
-      toast.success("Store created successfully!");
-      navigate("/dashboard/stores");
+      setShowConfetti(true);
+      toast.success("Store created successfully! 🎉");
+      setTimeout(() => navigate("/dashboard/stores"), 1500);
     } catch (err: any) {
       toast.error(err.message || "Failed to create store");
     } finally {
@@ -224,10 +217,8 @@ export default function CreateStore() {
     }
   };
 
-  const animClass =
-    direction === "forward"
-      ? "animate-fade-in"
-      : "animate-fade-in";
+  const progress = (step / STEPS.length) * 100;
+  const currentStep = STEPS[step - 1];
 
   if (checkingStore) {
     return (
@@ -238,14 +229,45 @@ export default function CreateStore() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 pb-8">
+    <div className="mx-auto max-w-2xl space-y-6 pb-8 relative">
+      {/* Confetti overlay */}
+      {showConfetti && (
+        <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+          <div className="text-6xl animate-bounce-once">🎉</div>
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: `${6 + Math.random() * 8}px`,
+                height: `${6 + Math.random() * 8}px`,
+                backgroundColor: ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--warning))', 'hsl(var(--success))'][i % 4],
+                left: `${10 + Math.random() * 80}%`,
+                top: `${10 + Math.random() * 80}%`,
+                animation: `confetti-fall ${1 + Math.random() * 2}s ease-out forwards`,
+                animationDelay: `${Math.random() * 0.5}s`,
+                opacity: 0.8,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center">
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
           <Sparkles className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold text-foreground">Create Your Store</h1>
-        <p className="mt-1 text-muted-foreground">Set up your storefront in just a few steps</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Create Your Store</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Set up your storefront in just a few steps</p>
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-2">
+        <Progress value={progress} className="h-2" />
+        <p className="text-center text-xs font-medium text-primary animate-fade-in" key={step}>
+          {currentStep.motivation}
+        </p>
       </div>
 
       {/* Step Indicator */}
@@ -255,9 +277,9 @@ export default function CreateStore() {
             <button
               type="button"
               onClick={() => { if (s.id < step) { setDirection("back"); setStep(s.id); } }}
-              className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-300 ${
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-all duration-300 ${
                 step === s.id
-                  ? "bg-primary text-primary-foreground shadow-md"
+                  ? "bg-primary text-primary-foreground shadow-md scale-110"
                   : step > s.id
                   ? "bg-primary/10 text-primary cursor-pointer hover:bg-primary/20"
                   : "bg-muted text-muted-foreground"
@@ -271,7 +293,7 @@ export default function CreateStore() {
               <span className="hidden sm:inline">{s.title}</span>
             </button>
             {i < STEPS.length - 1 && (
-              <div className={`mx-1 h-px w-6 transition-colors duration-300 ${
+              <div className={`mx-1 h-px w-6 transition-colors duration-500 ${
                 step > s.id ? "bg-primary" : "bg-border"
               }`} />
             )}
@@ -281,12 +303,16 @@ export default function CreateStore() {
 
       {/* Step Content */}
       <Card className="overflow-hidden border-0 shadow-lg">
-        <CardContent className="p-6 sm:p-8">
-          <div key={step} className={animClass}>
+        <CardContent className="p-5 sm:p-8">
+          <div
+            key={step}
+            className="animate-fade-in"
+            style={{ animationDuration: "0.35s" }}
+          >
             {/* Step 1: Store Info */}
             {step === 1 && (
               <div className="space-y-5">
-                <div className="mb-6">
+                <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Store Information</h2>
                   <p className="text-sm text-muted-foreground">Tell us about your store</p>
                 </div>
@@ -335,43 +361,52 @@ export default function CreateStore() {
                   </Select>
                 </div>
 
-                {/* Order Mode */}
+                {/* Order Mode — 3 options */}
                 <div className="space-y-2">
                   <Label>How do you want to take orders?</Label>
-                  <RadioGroup value={orderMode} onValueChange={(v) => setOrderMode(v as "whatsapp" | "website")} className="grid gap-3 sm:grid-cols-2">
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                  <RadioGroup
+                    value={orderMode}
+                    onValueChange={(v) => setOrderMode(v as "whatsapp" | "website" | "both")}
+                    className="grid gap-3"
+                  >
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all duration-200 ${orderMode === "whatsapp" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
                       <RadioGroupItem value="whatsapp" className="mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                          <MessageCircle className="h-4 w-4 text-green-600" /> Order via WhatsApp
+                          <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp Orders
                         </p>
-                        <p className="text-xs text-muted-foreground">Take orders via WhatsApp messages</p>
+                        <p className="text-xs text-muted-foreground">Customers order via WhatsApp messages</p>
                       </div>
                     </label>
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "website" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all duration-200 ${orderMode === "website" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
                       <RadioGroupItem value="website" className="mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                          <Globe className="h-4 w-4 text-blue-600" /> Order via Website
+                          <Globe className="h-4 w-4 text-blue-600" /> Website Orders
                         </p>
-                        <p className="text-xs text-muted-foreground">Customers checkout on your site</p>
+                        <p className="text-xs text-muted-foreground">Customers checkout directly on your site</p>
+                      </div>
+                    </label>
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all duration-200 ${orderMode === "both" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
+                      <RadioGroupItem value="both" className="mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                          <Zap className="h-4 w-4 text-amber-500" /> Both WhatsApp & Website
+                        </p>
+                        <p className="text-xs text-muted-foreground">Let customers choose their preferred way</p>
                       </div>
                     </label>
                   </RadioGroup>
                 </div>
 
-                {/* Logo + Banner side by side */}
+                {/* Logo + Banner */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Logo</Label>
                     {logoPreview ? (
                       <div className="relative inline-block">
                         <img src={logoPreview} alt="Logo" className="h-24 w-24 rounded-xl border object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => removeFile(setLogoFile, setLogoPreview)}
-                          className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                        >
+                        <button type="button" onClick={() => removeFile(setLogoFile, setLogoPreview)} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
                           <X className="h-3 w-3" />
                         </button>
                       </div>
@@ -379,12 +414,7 @@ export default function CreateStore() {
                       <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input transition-all hover:border-primary/50 hover:bg-accent/50">
                         <Upload className="h-5 w-5 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">Upload</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setLogoFile, setLogoPreview)}
-                        />
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setLogoFile, setLogoPreview)} />
                       </label>
                     )}
                   </div>
@@ -393,11 +423,7 @@ export default function CreateStore() {
                     {bannerPreview ? (
                       <div className="relative">
                         <img src={bannerPreview} alt="Banner" className="h-24 w-full rounded-xl border object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => removeFile(setBannerFile, setBannerPreview)}
-                          className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                        >
+                        <button type="button" onClick={() => removeFile(setBannerFile, setBannerPreview)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
                           <X className="h-3 w-3" />
                         </button>
                       </div>
@@ -405,28 +431,19 @@ export default function CreateStore() {
                       <label className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input transition-all hover:border-primary/50 hover:bg-accent/50">
                         <Upload className="h-5 w-5 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">Upload banner</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setBannerFile, setBannerPreview)}
-                        />
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setBannerFile, setBannerPreview)} />
                       </label>
                     )}
                   </div>
                 </div>
 
-                {/* Mobile Hero Banner (optional) */}
+                {/* Mobile Hero */}
                 <div className="space-y-2">
-                  <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(optional — shown only on mobile)</span></Label>
+                  <Label>Mobile Hero Banner <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
                   {heroPreview ? (
                     <div className="relative">
                       <img src={heroPreview} alt="Mobile Hero" className="w-full rounded-xl border object-contain max-h-48" />
-                      <button
-                        type="button"
-                        onClick={() => removeFile(setHeroFile, setHeroPreview)}
-                        className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                      >
+                      <button type="button" onClick={() => removeFile(setHeroFile, setHeroPreview)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -435,12 +452,7 @@ export default function CreateStore() {
                       <Upload className="h-5 w-5 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">Upload mobile hero image</span>
                       <span className="text-[10px] text-muted-foreground/70">You can skip this</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setHeroFile, setHeroPreview)}
-                      />
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setHeroFile, setHeroPreview)} />
                     </label>
                   )}
                 </div>
@@ -450,46 +462,29 @@ export default function CreateStore() {
             {/* Step 2: Location */}
             {step === 2 && (
               <div className="space-y-5">
-                <div className="mb-6">
+                <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Location Details</h2>
                   <p className="text-sm text-muted-foreground">Help customers find you</p>
+                </div>
+
+                <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 text-center">
+                  <p className="text-xs text-muted-foreground">📍 All fields here are optional — you can skip ahead!</p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      placeholder="Mumbai"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      maxLength={100}
-                      className="h-11"
-                    />
+                    <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} className="h-11" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="state">State / Region</Label>
-                    <Input
-                      id="state"
-                      placeholder="Maharashtra"
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      maxLength={100}
-                      className="h-11"
-                    />
+                    <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} className="h-11" />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="address">Full Address</Label>
-                  <Textarea
-                    id="address"
-                    placeholder="123 Main Street, Building A, Floor 2..."
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    maxLength={500}
-                    rows={3}
-                  />
+                  <Textarea id="address" placeholder="123 Main Street, Building A, Floor 2..." value={location} onChange={(e) => setLocation(e.target.value)} maxLength={500} rows={3} />
                   <p className="text-xs text-muted-foreground">This will be shown on your storefront</p>
                 </div>
 
@@ -498,9 +493,7 @@ export default function CreateStore() {
                     <MapPin className="mt-0.5 h-5 w-5 text-primary" />
                     <div>
                       <p className="text-sm font-medium text-foreground">Why add a location?</p>
-                      <p className="text-xs text-muted-foreground">
-                        Stores with a location get more trust from customers and appear more professional.
-                      </p>
+                      <p className="text-xs text-muted-foreground">Stores with a location get more trust from customers and appear more professional.</p>
                     </div>
                   </div>
                 </div>
@@ -510,28 +503,23 @@ export default function CreateStore() {
             {/* Step 3: Contact */}
             {step === 3 && (
               <div className="space-y-5">
-                <div className="mb-6">
+                <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Contact Details</h2>
                   <p className="text-sm text-muted-foreground">How customers can reach you</p>
                 </div>
 
+                <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 text-center">
+                  <p className="text-xs text-muted-foreground">📞 Only email is required — WhatsApp is optional unless you chose WhatsApp orders</p>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="whatsapp">WhatsApp Number {orderMode === "whatsapp" ? "*" : "(optional)"}</Label>
+                  <Label htmlFor="whatsapp">WhatsApp Number {(orderMode === "whatsapp" || orderMode === "both") ? "*" : "(optional)"}</Label>
                   <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                    </span>
-                    <Input
-                      id="whatsapp"
-                      placeholder="+91 98765 43210"
-                      value={whatsappNumber}
-                      onChange={(e) => setWhatsappNumber(e.target.value)}
-                      maxLength={20}
-                      className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
-                    />
+                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Phone className="h-4 w-4" /></span>
+                    <Input id="whatsapp" placeholder="+91 98765 43210" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} maxLength={20} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {orderMode === "whatsapp"
+                    {(orderMode === "whatsapp" || orderMode === "both")
                       ? "Customers will use this to place orders via WhatsApp"
                       : "Optional — for customer support"}
                   </p>
@@ -540,39 +528,29 @@ export default function CreateStore() {
                 <div className="space-y-2">
                   <Label htmlFor="owner-email">Your Email *</Label>
                   <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground">
-                      <Globe className="h-4 w-4" />
-                    </span>
-                    <Input
-                      id="owner-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={ownerEmail}
-                      onChange={(e) => setOwnerEmail(e.target.value)}
-                      maxLength={200}
-                      className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
-                    />
+                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Globe className="h-4 w-4" /></span>
+                    <Input id="owner-email" type="email" placeholder="you@example.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    You'll receive order notification emails at this address
-                  </p>
+                  <p className="text-xs text-muted-foreground">You'll receive order notification emails at this address</p>
                 </div>
 
                 <div className="rounded-xl border bg-accent/30 p-4">
                   <div className="flex items-start gap-3">
-                    {orderMode === "whatsapp" ? (
+                    {(orderMode === "whatsapp" || orderMode === "both") ? (
                       <Phone className="mt-0.5 h-5 w-5 text-primary" />
                     ) : (
                       <Globe className="mt-0.5 h-5 w-5 text-primary" />
                     )}
                     <div>
                       <p className="text-sm font-medium text-foreground">
-                        {orderMode === "whatsapp" ? "WhatsApp ordering" : "Website ordering"}
+                        {orderMode === "both" ? "Dual ordering mode" : orderMode === "whatsapp" ? "WhatsApp ordering" : "Website ordering"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {orderMode === "whatsapp"
-                          ? "When customers click \"Order on WhatsApp\", a pre-filled message with product details will open in WhatsApp. Make sure to include your country code."
-                          : "Customers will see a \"Buy Now\" button and checkout directly on your website with address and COD payment."}
+                        {orderMode === "both"
+                          ? "Customers can choose to checkout on your website or order via WhatsApp — best of both worlds!"
+                          : orderMode === "whatsapp"
+                          ? 'When customers click "Order on WhatsApp", a pre-filled message with product details will open in WhatsApp.'
+                          : 'Customers will see a "Buy Now" button and checkout directly on your website.'}
                       </p>
                     </div>
                   </div>
@@ -583,42 +561,28 @@ export default function CreateStore() {
             {/* Step 4: Social Media */}
             {step === 4 && (
               <div className="space-y-5">
-                <div className="mb-6">
+                <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Social Media</h2>
                   <p className="text-sm text-muted-foreground">Connect your social accounts</p>
+                </div>
+
+                <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 text-center">
+                  <p className="text-xs text-muted-foreground">🔗 Both are optional — you can add them later from Settings</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="instagram">Instagram</Label>
                   <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground">
-                      <Instagram className="h-4 w-4" />
-                    </span>
-                    <Input
-                      id="instagram"
-                      placeholder="https://instagram.com/yourstore"
-                      value={instagramUrl}
-                      onChange={(e) => setInstagramUrl(e.target.value)}
-                      maxLength={200}
-                      className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
-                    />
+                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Instagram className="h-4 w-4" /></span>
+                    <Input id="instagram" placeholder="https://instagram.com/yourstore" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="facebook">Facebook</Label>
                   <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
-                    <span className="flex-shrink-0 px-3 text-muted-foreground">
-                      <Facebook className="h-4 w-4" />
-                    </span>
-                    <Input
-                      id="facebook"
-                      placeholder="https://facebook.com/yourstore"
-                      value={facebookUrl}
-                      onChange={(e) => setFacebookUrl(e.target.value)}
-                      maxLength={200}
-                      className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
-                    />
+                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Facebook className="h-4 w-4" /></span>
+                    <Input id="facebook" placeholder="https://facebook.com/yourstore" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
                   </div>
                 </div>
 
@@ -626,64 +590,16 @@ export default function CreateStore() {
                   <div className="flex items-start gap-3">
                     <Sparkles className="mt-0.5 h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">One more step!</p>
-                      <p className="text-xs text-muted-foreground">
-                        Social links help build trust. You can always add these later.
-                      </p>
+                      <p className="text-sm font-medium text-foreground">You're all set! 🎉</p>
+                      <p className="text-xs text-muted-foreground">Click "Create Store" to launch your store. You can always update everything later.</p>
                     </div>
                   </div>
                 </div>
               </div>
             )}
-
-            {/* Step 5: Theme */}
-            {step === 5 && (
-              <div className="space-y-5">
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-foreground">Choose a Theme</h2>
-                  <p className="text-sm text-muted-foreground">Pick a look for your storefront</p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {THEMES.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      disabled={!t.available}
-                      onClick={() => t.available && setTheme(t.id)}
-                      className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-5 text-center transition-all ${
-                        !t.available
-                          ? "cursor-not-allowed border-input bg-muted/40 opacity-60"
-                          : theme === t.id
-                          ? "border-primary bg-primary/5 shadow-md"
-                          : "border-input hover:border-primary/30"
-                      }`}
-                    >
-                      {!t.available && (
-                        <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          <Lock className="h-2.5 w-2.5" /> Coming Soon
-                        </span>
-                      )}
-                      {theme === t.id && t.available && (
-                        <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-                          <Check className="h-3 w-3 text-primary-foreground" />
-                        </span>
-                      )}
-                      <div className={`flex h-16 w-full items-center justify-center rounded-lg ${
-                        t.available ? "bg-gradient-to-br from-primary/20 to-primary/5" : "bg-muted"
-                      }`}>
-                        <Palette className={`h-6 w-6 ${t.available ? "text-primary" : "text-muted-foreground"}`} />
-                      </div>
-                      <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">{t.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Navigation Buttons */}
+          {/* Navigation */}
           <div className="mt-8 flex items-center justify-between gap-3">
             {step > 1 ? (
               <Button type="button" variant="ghost" onClick={goBack} className="gap-2">
@@ -693,17 +609,12 @@ export default function CreateStore() {
               <div />
             )}
 
-            {step < 5 ? (
+            {step < 4 ? (
               <Button type="button" onClick={goNext} className="gap-2 px-6">
                 Next <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="gap-2 px-8"
-              >
+              <Button type="button" onClick={handleSubmit} disabled={loading} className="gap-2 px-8">
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
