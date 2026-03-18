@@ -56,7 +56,7 @@ export default function StorefrontProductCard({ product, slug, store, priority =
   const { isWishlisted, toggleWishlist } = useWishlist();
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
-  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  
 
   const wishlisted = isWishlisted(product.id);
 
