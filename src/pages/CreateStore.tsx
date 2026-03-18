@@ -373,7 +373,7 @@ export default function CreateStore() {
                       <RadioGroupItem value="whatsapp" className="mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                          <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp Orders
+                          <MessageCircle className="h-4 w-4 text-success" /> WhatsApp Orders
                         </p>
                         <p className="text-xs text-muted-foreground">Customers order via WhatsApp messages</p>
                       </div>
