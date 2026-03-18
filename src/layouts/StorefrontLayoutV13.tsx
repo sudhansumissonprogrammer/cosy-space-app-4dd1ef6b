@@ -267,7 +267,7 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
       >
         <RestaurantHeader store={store} tableNumber={tableNumber} />
         <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-        <StorefrontPushListener storeId={store.id} />
+        
         <div className="pb-28">
           <Outlet context={{ ...store, tableNumber }} />
         </div>
