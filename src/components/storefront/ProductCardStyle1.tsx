@@ -132,7 +132,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
           </button>
         )}
       </div>
-      <ProductQuickView product={product} store={store} open={quickViewOpen} onOpenChange={setQuickViewOpen} />
+      
     </div>
   );
 }
