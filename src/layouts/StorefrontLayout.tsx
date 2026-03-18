@@ -433,8 +433,6 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
 
       <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
       <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-      <StorefrontOrderNotification storeName={store.name} />
-      <StorefrontPushListener storeId={store.id} />
       <Outlet context={store} />
       
       <StorefrontFooter store={store} />
