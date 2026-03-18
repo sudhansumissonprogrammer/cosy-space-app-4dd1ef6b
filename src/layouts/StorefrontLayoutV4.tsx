@@ -204,15 +204,7 @@ export default function StorefrontLayoutV4({ slugOverride }: { slugOverride?: st
   useEffect(() => {
     if (!store?.id || viewTracked.current) return;
     viewTracked.current = true;
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    if (!projectId) return;
-    setTimeout(() => {
-      fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ store_id: store.id, path: window.location.pathname }),
-      }).catch(() => {});
-    }, 3000);
+    trackPageView(store.id);
   }, [store?.id]);
 
   useEffect(() => {
