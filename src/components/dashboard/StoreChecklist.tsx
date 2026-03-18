@@ -142,4 +142,6 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
       </CardContent>
     </Card>
   );
-}
+});
+
+export default StoreChecklist;
