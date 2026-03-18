@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
       .eq("store_id", store.id)
       .eq("is_active", true)
       .order("created_at", { ascending: false })
-      .limit(5000);
+      .limit(1000);
 
     if (prodErr) {
       return new Response("Error fetching products", { status: 500, headers: corsHeaders });
@@ -261,7 +261,8 @@ ${items.join("\n")}
       headers: {
         ...corsHeaders,
         "Content-Type": "application/xml; charset=utf-8",
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": "public, max-age=1800, s-maxage=3600",
+        "CDN-Cache-Control": "public, max-age=3600",
       },
     });
   } catch (err) {

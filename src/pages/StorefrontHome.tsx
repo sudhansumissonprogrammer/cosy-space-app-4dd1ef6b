@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-import { Search, ArrowUpDown, SlidersHorizontal } from "lucide-react";
+import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
@@ -51,11 +52,37 @@ export default function StorefrontHome() {
   });
 
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const totalProducts = queryClient.getQueryData<number>(["storefront-total-products", store.id]) ?? 0;
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const categoryStyle = themeConfig?.category_style || "style-1";
+
+  const hasMore = (products?.length ?? 0) < totalProducts;
+
+  const loadMoreProducts = useCallback(async () => {
+    if (loadingMore || !hasMore || !store?.id) return;
+    setLoadingMore(true);
+    try {
+      const currentCount = products?.length ?? 0;
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .order("is_best_selling", { ascending: false })
+        .order("created_at", { ascending: false })
+        .range(currentCount, currentCount + 49);
+      if (!error && data) {
+        const merged = [...(products || []), ...data];
+        queryClient.setQueryData(["storefront-products", store.id], merged);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, store?.id, products, queryClient]);
 
   const bestSellingProducts = useMemo(() => {
     if (!products) return [];
@@ -237,7 +264,19 @@ export default function StorefrontHome() {
                     ))}
                   </div>
                 </LazyRender>
-              )}
+               )}
+               {hasMore && (
+                 <div className="flex justify-center pt-4">
+                   <button
+                     onClick={loadMoreProducts}
+                     disabled={loadingMore}
+                     className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
+                   >
+                     {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                     {loadingMore ? "Loading..." : "Load More Products"}
+                   </button>
+                 </div>
+               )}
             </>
           ) : (
             <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">

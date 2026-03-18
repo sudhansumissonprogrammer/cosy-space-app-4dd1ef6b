@@ -42,7 +42,7 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug! });
+      const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
       if (error) throw error;
       const result = data as any;
       const store = result?.store as StoreData | null;
@@ -50,6 +50,7 @@ export function useStorefront(slugOverride?: string) {
         queryClient.setQueryData(["storefront", slug], store);
         queryClient.setQueryData(["storefront-products", store.id], result.products || []);
         queryClient.setQueryData(["storefront-categories", store.id], result.categories || []);
+        queryClient.setQueryData(["storefront-total-products", store.id], result.total_products || 0);
         if (result.theme_config) {
           queryClient.setQueryData(["storefront-theme-config", store.id], result.theme_config);
         }
