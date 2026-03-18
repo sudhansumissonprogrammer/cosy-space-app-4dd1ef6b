@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, Image, FileText, Package, CreditCard, Truck, Palette, Phone } from "lucide-react";
 
 interface StoreChecklistProps {
   storeId: string;
@@ -11,8 +11,10 @@ interface StoreChecklistProps {
 
 interface CheckItem {
   label: string;
+  hint: string;
   done: boolean;
   url: string;
+  icon: React.ElementType;
 }
 
 export default function StoreChecklist({ storeId }: StoreChecklistProps) {
@@ -34,16 +36,57 @@ export default function StoreChecklist({ storeId }: StoreChecklistProps) {
       const isWhatsAppOnly = store?.order_mode === "whatsapp";
 
       const items: CheckItem[] = [
-        { label: "Add store logo", done: !!store?.logo_url, url: `/dashboard/stores/${storeId}/settings` },
-        { label: "Add store description", done: !!store?.description, url: `/dashboard/stores/${storeId}/settings` },
-        { label: "Add your first product", done: (productsRes.count ?? 0) > 0, url: `/dashboard/stores/${storeId}/products/create` },
-        // Only show payment/shipping setup for website orders
+        {
+          label: "Add store logo",
+          hint: "Go to Settings → Media section",
+          done: !!store?.logo_url,
+          url: `/dashboard/stores/${storeId}/settings`,
+          icon: Image,
+        },
+        {
+          label: "Add store description",
+          hint: "Go to Settings → Basic Info",
+          done: !!store?.description,
+          url: `/dashboard/stores/${storeId}/settings`,
+          icon: FileText,
+        },
+        {
+          label: "Add your first product",
+          hint: "Products → Create Product",
+          done: (productsRes.count ?? 0) > 0,
+          url: `/dashboard/stores/${storeId}/products/create`,
+          icon: Package,
+        },
         ...(!isWhatsAppOnly ? [
-          { label: "Set up payments", done: !!paymentsRes.data, url: `/dashboard/stores/${storeId}/payments` },
-          { label: "Set up shipping", done: !!shippingRes.data, url: `/dashboard/stores/${storeId}/shipping` },
+          {
+            label: "Set up payments",
+            hint: "Payments page in sidebar",
+            done: !!paymentsRes.data,
+            url: `/dashboard/stores/${storeId}/payments`,
+            icon: CreditCard,
+          },
+          {
+            label: "Set up shipping",
+            hint: "Shipping page in sidebar",
+            done: !!shippingRes.data,
+            url: `/dashboard/stores/${storeId}/shipping`,
+            icon: Truck,
+          },
         ] : []),
-        { label: "Customize theme", done: !!themeRes.data, url: `/dashboard/stores/${storeId}/theme` },
-        { label: "Add WhatsApp number", done: !!store?.whatsapp_number, url: `/dashboard/stores/${storeId}/settings` },
+        {
+          label: "Customize theme",
+          hint: "Theme page in sidebar",
+          done: !!themeRes.data,
+          url: `/dashboard/stores/${storeId}/theme`,
+          icon: Palette,
+        },
+        {
+          label: "Add WhatsApp number",
+          hint: "Go to Settings → Basic Info",
+          done: !!store?.whatsapp_number,
+          url: `/dashboard/stores/${storeId}/settings`,
+          icon: Phone,
+        },
       ];
       return items;
     },
@@ -56,7 +99,6 @@ export default function StoreChecklist({ storeId }: StoreChecklistProps) {
   const allDone = doneCount === checks.length;
   const progress = Math.round((doneCount / checks.length) * 100);
 
-  // Hide if everything is complete
   if (allDone) return null;
 
   return (
@@ -64,28 +106,35 @@ export default function StoreChecklist({ storeId }: StoreChecklistProps) {
       <CardContent className="p-3">
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Store Setup</p>
-          <span className="text-[10px] font-medium text-muted-foreground">{doneCount}/{checks.length}</span>
+          <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">
+            {doneCount}/{checks.length} done
+          </span>
         </div>
         <Progress value={progress} className="h-1.5 mb-3" />
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {checks.map((item) => (
             <button
               key={item.label}
               onClick={() => !item.done && navigate(item.url)}
               disabled={item.done}
-              className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
+              className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
                 item.done
                   ? "text-muted-foreground opacity-60"
                   : "text-foreground hover:bg-accent/50"
               }`}
             >
-              <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                item.done ? "bg-emerald-100 text-emerald-600" : "border border-muted-foreground/30"
+              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                item.done ? "bg-emerald-100 text-emerald-600" : "border border-muted-foreground/30 text-muted-foreground"
               }`}>
-                {item.done && <Check className="h-3 w-3" />}
+                {item.done ? <Check className="h-3 w-3" /> : <item.icon className="h-3 w-3" />}
               </div>
-              <span className={`flex-1 ${item.done ? "line-through" : ""}`}>{item.label}</span>
-              {!item.done && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+              <div className="flex-1 min-w-0">
+                <span className={`text-sm block ${item.done ? "line-through" : "font-medium"}`}>{item.label}</span>
+                {!item.done && (
+                  <span className="text-[10px] text-muted-foreground block">{item.hint}</span>
+                )}
+              </div>
+              {!item.done && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
             </button>
           ))}
         </div>
