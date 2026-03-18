@@ -440,7 +440,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
             <div className="pb-16 md:pb-0">
               <Outlet context={store} />
             </div>
-            <StorefrontInstagramSection store={store} />
+            
             {/* Milano Footer */}
             <MilanoFooter store={store} />
             <MilanoTabBar store={store} />

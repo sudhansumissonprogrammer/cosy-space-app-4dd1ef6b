@@ -445,7 +445,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
       <StorefrontOrderNotification storeName={store.name} />
       <StorefrontPushListener storeId={store.id} />
       <Outlet context={store} />
-      <StorefrontInstagramSection store={store} />
+      
       <StorefrontFooter store={store} />
       <SideCart store={store} />
       <FloatingWhatsApp store={store} />

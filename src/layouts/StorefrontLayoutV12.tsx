@@ -499,7 +499,7 @@ export default function StorefrontLayoutV12({ slugOverride }: { slugOverride?: s
             <div className="pb-16 md:pb-0">
               <Outlet context={store} />
             </div>
-            <StorefrontInstagramSection store={store} />
+            
             <V12Footer store={store} />
             <V12TabBar store={store} />
             <SideCart store={store} />

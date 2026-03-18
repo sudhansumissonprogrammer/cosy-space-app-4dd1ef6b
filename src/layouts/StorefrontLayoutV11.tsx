@@ -400,7 +400,7 @@ export default function StorefrontLayoutV11({ slugOverride }: { slugOverride?: s
             <div className="pb-24 md:pb-0">
               <Outlet context={store} />
             </div>
-            <StorefrontInstagramSection store={store} />
+            
             <div className="pb-24 md:pb-0">
               <StorefrontFooter store={store} />
             </div>
