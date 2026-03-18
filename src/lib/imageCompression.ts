@@ -136,9 +136,7 @@ export async function processImage(
             type: mimeType,
           });
 
-          console.log(
-            `[ImageProcess] ✅ ${formatSize(originalSize)} → ${formatSize(blob.size)} | Type: ${mimeType} | Dims: ${canvas.width}x${canvas.height}`
-          );
+          // Production: no console output
 
           resolve({
             file: compressedFile,

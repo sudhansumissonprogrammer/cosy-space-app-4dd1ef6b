@@ -1,23 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Package, ShoppingCart, Star, Heart, Check, Plus, Minus, Loader2 } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
-import { useWishlist } from "@/contexts/WishlistContext";
-import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, splitImageUrls } from "@/lib/imageOptimize";
-
-
-function getProductRating(productId: string): number {
-  let hash = 0;
-  for (let i = 0; i < productId.length; i++) {
-    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
-    hash |= 0;
-  }
-  const ratings = [4.2, 4.3, 4.3, 4.4, 4.5, 4.5, 4.5, 4.6, 4.6, 4.6, 4.6, 4.7, 4.8, 4.9];
-  return ratings[Math.abs(hash) % ratings.length];
-}
+import { getProductRating, getDiscountPercent } from "@/lib/productUtils";
+import { useProductCardActions } from "@/hooks/useProductCardActions";
 
 interface Props {
   product: Tables<"products">;
@@ -30,47 +18,26 @@ const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
 export default function ProductCardStyle1({ product, slug, store, priority = false }: Props) {
-  const { addToCart, items, updateQuantity } = useCart();
-  const { isWishlisted, toggleWishlist } = useWishlist();
+  const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
-  
 
-  const wishlisted = isWishlisted(product.id);
-  const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
-  const cartQty = cartItem?.quantity || 0;
+  const discountPercent = getDiscountPercent(product.price, product.sale_price);
+  const categoryLabel = product.category || "TOP RATED";
 
-  const price = product.sale_price && product.sale_price < product.price
-    ? Number(product.sale_price)
-    : Number(product.price);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (isAdding) return;
     setIsAdding(true);
-    addToCart({ productId: product.id, name: product.name, price, image: product.image_url || undefined });
+    handleAddToCart(e);
     setIsAdding(false);
     setJustAdded(true);
-    toast.success(`${product.name} added to cart`);
     setTimeout(() => setJustAdded(false), 1200);
   };
 
   const handleIncrement = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty + 1); };
   const handleDecrement = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty - 1); };
-
-  const handleWishlist = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleWishlist({ productId: product.id, name: product.name, price: Number(product.price), salePrice: product.sale_price ? Number(product.sale_price) : undefined, image: product.image_url || undefined, slug: product.slug || product.id, category: product.category || undefined });
-    toast.success(wishlisted ? "Removed from wishlist" : "Added to wishlist");
-  };
-
-  const discountPercent = product.sale_price && product.sale_price < product.price
-    ? Math.round(((Number(product.price) - Number(product.sale_price)) / Number(product.price)) * 100)
-    : null;
-
-  const categoryLabel = product.category || "TOP RATED";
 
   return (
     <div
@@ -88,7 +55,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
               </span>
             </div>
           )}
-          <button onClick={handleWishlist} className="absolute right-2.5 top-2.5 z-10 p-1 transition-all duration-200 hover:scale-110 active:scale-95">
+          <button onClick={handleToggleWishlist} className="absolute right-2.5 top-2.5 z-10 p-1 transition-all duration-200 hover:scale-110 active:scale-95">
             <Heart className={`h-4 w-4 drop-shadow-md transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"}`} />
           </button>
           {(() => {
@@ -137,12 +104,11 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-95"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
           </div>
         ) : (
-          <button className={`flex h-7 w-full items-center justify-center gap-1.5 rounded-lg text-[9px] font-extrabold uppercase tracking-widest sm:h-8 sm:text-[10px] transition-all duration-300 active:scale-[0.98] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "btn-gold opacity-80 cursor-wait" : "btn-gold hover:brightness-110"}`} onClick={handleAddToCart} disabled={isAdding}>
+          <button className={`flex h-7 w-full items-center justify-center gap-1.5 rounded-lg text-[9px] font-extrabold uppercase tracking-widest sm:h-8 sm:text-[10px] transition-all duration-300 active:scale-[0.98] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "btn-gold opacity-80 cursor-wait" : "btn-gold hover:brightness-110"}`} onClick={handleAdd} disabled={isAdding}>
             {isAdding ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /><span className="whitespace-nowrap">Adding...</span></>) : justAdded ? (<><Check className="h-3.5 w-3.5" strokeWidth={3} /><span className="whitespace-nowrap">Added to Cart</span></>) : (<><ShoppingCart className="h-3.5 w-3.5" /><span className="whitespace-nowrap">ADD TO CART</span></>)}
           </button>
         )}
       </div>
-      
     </div>
   );
 }
