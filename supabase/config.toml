@@ -1,13 +1,1 @@
-project_id = "dtwmmuzmepdltroiypgu"
-
-[functions.process-email-queue]
-verify_jwt = true
-
-[functions.meta-capi]
-verify_jwt = false
-
-[functions.product-feed]
-verify_jwt = false
-
-[functions.web-push]
-verify_jwt = false
+project_id = "kzvfjknnslgcwumzlwkb"
