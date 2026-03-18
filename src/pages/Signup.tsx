@@ -85,7 +85,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
         options: {
@@ -97,8 +97,8 @@ export default function Signup() {
       if (error) {
         if (isFetchFailure(error.message)) {
           await signUpWithProxy(normalizedEmail, password, normalizedFullName);
-          toast.success("Account created! Check your email to confirm.");
-          navigate("/login");
+          toast.success("Account created! Signing you in...");
+          navigate("/dashboard");
           return;
         }
 
@@ -106,8 +106,14 @@ export default function Signup() {
         return;
       }
 
-      toast.success("Account created! Check your email to confirm.");
-      navigate("/login");
+      // If session is returned (auto-confirm enabled), go to dashboard
+      if (signUpData?.session) {
+        toast.success("Account created! Welcome to Storivo.");
+        navigate("/dashboard");
+      } else {
+        toast.success("Account created! Please check your email to confirm.");
+        navigate("/login");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to create account";
 
