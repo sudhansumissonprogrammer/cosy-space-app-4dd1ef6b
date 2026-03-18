@@ -8,6 +8,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import { getDiscountPercent } from "@/lib/productUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
@@ -180,7 +181,7 @@ function FlashDeals({ products, slug }: { products: any[]; slug: string }) {
       {/* Cards */}
       <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch", scrollSnapType: "x mandatory" }}>
         {deals.map((product) => {
-          const discount = Math.round(((product.price - product.sale_price) / product.price) * 100);
+          const discount = getDiscountPercent(product.price, product.sale_price);
           return (
             <Link
               key={product.id}
