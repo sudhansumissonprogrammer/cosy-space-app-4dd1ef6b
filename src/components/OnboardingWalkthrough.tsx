@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -16,14 +16,19 @@ import {
   ChevronLeft,
   CheckCircle2,
   Store,
+  Image,
+  FileText,
+  Phone,
+  Settings,
+  BarChart3,
+  Globe,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface OnboardingStep {
   icon: React.ElementType;
   title: string;
-  description: string;
-  tip: string;
+  items: { text: string; where: string }[];
   action?: string;
   route?: string;
 }
@@ -31,62 +36,73 @@ interface OnboardingStep {
 const STEPS: OnboardingStep[] = [
   {
     icon: Store,
-    title: "Welcome to Your Store! 🎉",
-    description:
-      "You've just created your online store. Let's walk through a few quick steps to get you ready to start selling.",
-    tip: "This setup takes less than 5 minutes. You can always come back to any step later.",
+    title: "Welcome! Let's set up your store 🎉",
+    items: [
+      { text: "This guide shows you exactly where everything is", where: "" },
+      { text: "Takes about 3 minutes — skip anytime", where: "" },
+      { text: "You can reopen this from the Guide button", where: "" },
+    ],
+  },
+  {
+    icon: Settings,
+    title: "Complete Your Store Profile",
+    items: [
+      { text: "Add your store logo & banner", where: "Settings → Media" },
+      { text: "Write a store description", where: "Settings → Basic Info" },
+      { text: "Add your WhatsApp number", where: "Settings → Basic Info" },
+      { text: "Set your location", where: "Settings → Location" },
+    ],
+    action: "Open Settings",
+    route: "settings",
   },
   {
     icon: Package,
     title: "Add Your Products",
-    description:
-      "Start by adding your first product. Include a name, price, images, and description. You can also bulk-upload products using a CSV file.",
-    tip: "Pro tip: High-quality images and detailed descriptions boost conversions by up to 30%.",
-    action: "Go to Products",
-    route: "products",
+    items: [
+      { text: "Create products with name, price & images", where: "Products → Create" },
+      { text: "Use CSV bulk upload for many products", where: "Products → Bulk Upload" },
+      { text: "Organize with categories", where: "Products page" },
+      { text: "Mark best sellers for homepage carousel", where: "Edit Product → toggle" },
+    ],
+    action: "Add Product",
+    route: "products/create",
   },
   {
     icon: CreditCard,
-    title: "Set Up Payments",
-    description:
-      "Connect Razorpay to accept online payments via UPI, cards, and wallets. You can also enable Cash on Delivery for local orders.",
-    tip: "Offering multiple payment options reduces cart abandonment significantly.",
-    action: "Configure Payments",
+    title: "Payments & Shipping",
+    items: [
+      { text: "Connect Razorpay for UPI, cards & wallets", where: "Payments page" },
+      { text: "Enable Cash on Delivery", where: "Payments page" },
+      { text: "Set flat shipping rate or free above ₹X", where: "Shipping page" },
+      { text: "Configure tax (GST) if needed", where: "Tax Settings page" },
+    ],
+    action: "Set Up Payments",
     route: "payments",
   },
   {
-    icon: Truck,
-    title: "Configure Shipping",
-    description:
-      "Set a flat shipping rate or offer free shipping above a certain order amount. Keep it simple — customers love free shipping!",
-    tip: "Stores with free shipping thresholds see 20% higher average order values.",
-    action: "Set Up Shipping",
-    route: "shipping",
-  },
-  {
     icon: Palette,
-    title: "Customize Your Theme",
-    description:
-      "Choose from 10+ beautiful storefront themes and pick a color combination that matches your brand. Preview everything in real-time on mobile.",
-    tip: "The ⭐ Recommended color combos are tested for readability and visual appeal.",
+    title: "Customize Look & Feel",
+    items: [
+      { text: "Pick from 10+ storefront themes", where: "Theme page" },
+      { text: "Choose brand colors & fonts", where: "Theme page" },
+      { text: "Preview live on mobile", where: "Theme page → Preview" },
+      { text: "Add SEO title & description", where: "Settings → SEO" },
+    ],
     action: "Customize Theme",
     route: "theme",
   },
   {
-    icon: Share2,
-    title: "Share Your Store",
-    description:
-      "Your store is live on a unique subdomain. Share the link on WhatsApp, Instagram, and Facebook to start getting customers.",
-    tip: "Add your Facebook Pixel ID in settings to track ad conversions automatically.",
-    action: "Share Store",
-    route: "settings",
-  },
-  {
     icon: Rocket,
-    title: "You're All Set! 🚀",
-    description:
-      "Your store is ready to go. Start adding products, run ads, and watch orders roll in. You can manage everything from this dashboard.",
-    tip: "Check your Analytics page regularly to track views, orders, and revenue growth.",
+    title: "Launch & Grow 🚀",
+    items: [
+      { text: "Share store link on WhatsApp & Instagram", where: "Dashboard → Share" },
+      { text: "Connect a custom domain", where: "Settings → Domain" },
+      { text: "Set up Facebook Pixel for ad tracking", where: "Tracking page" },
+      { text: "Create discount coupons", where: "Coupons page" },
+      { text: "Track analytics & orders", where: "Analytics page" },
+    ],
+    action: "View Dashboard",
+    route: "",
   },
 ];
 
@@ -125,10 +141,13 @@ export default function OnboardingWalkthrough({
   };
 
   const handleAction = () => {
-    if (step.route) {
+    if (step.route !== undefined) {
       localStorage.setItem(`onboarding-done-${storeId}`, "true");
       onOpenChange(false);
-      navigate(`/dashboard/stores/${storeId}/${step.route}`);
+      const path = step.route
+        ? `/dashboard/stores/${storeId}/${step.route}`
+        : `/dashboard`;
+      navigate(path);
     }
   };
 
@@ -140,82 +159,93 @@ export default function OnboardingWalkthrough({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden border-0 rounded-2xl">
-        {/* Progress bar */}
-        <div className="px-6 pt-5 pb-0">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">
-              Step {currentStep + 1} of {STEPS.length}
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden border-0 rounded-2xl">
+        {/* Progress */}
+        <div className="px-5 pt-4 pb-0">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {currentStep + 1} / {STEPS.length}
             </span>
             <button
               onClick={handleSkip}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
               Skip guide
             </button>
           </div>
-          <Progress value={progress} className="h-1.5" />
+          <Progress value={progress} className="h-1" />
         </div>
 
         {/* Content */}
-        <div className="px-6 pt-6 pb-4 flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
-            <Icon className="w-8 h-8 text-primary" />
+        <div className="px-5 pt-5 pb-3">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Icon className="w-5 h-5 text-primary" />
+            </div>
+            <h2 className="text-base font-bold text-foreground leading-tight">
+              {step.title}
+            </h2>
           </div>
 
-          <h2 className="text-xl font-bold text-foreground mb-2">
-            {step.title}
-          </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-sm">
-            {step.description}
-          </p>
-
-          {/* Tip card */}
-          <div className="w-full rounded-xl bg-accent/50 border border-border px-4 py-3 text-left">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              💡 {step.tip}
-            </p>
+          {/* Checklist items */}
+          <div className="space-y-0.5">
+            {step.items.map((item, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2.5 rounded-lg px-2.5 py-2 hover:bg-accent/40 transition-colors"
+              >
+                <div className="mt-0.5 w-5 h-5 rounded-full border border-muted-foreground/25 flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-semibold text-muted-foreground">{i + 1}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-foreground leading-snug">{item.text}</p>
+                  {item.where && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5">📍 {item.where}</p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Actions */}
-        <div className="px-6 pb-5 flex items-center gap-2">
+        <div className="px-5 pb-4 flex items-center gap-2">
           {!isFirst && (
             <Button
               variant="ghost"
               size="sm"
               onClick={handlePrev}
-              className="gap-1"
+              className="gap-1 h-8 text-xs"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
               Back
             </Button>
           )}
 
           <div className="flex-1" />
 
-          {step.action && step.route && (
+          {step.action && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleAction}
-              className="gap-1"
+              className="gap-1 h-8 text-xs"
             >
               {step.action}
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           )}
 
-          <Button size="sm" onClick={handleNext} className="gap-1">
+          <Button size="sm" onClick={handleNext} className="gap-1 h-8 text-xs">
             {isLast ? (
               <>
-                <CheckCircle2 className="w-4 h-4" />
-                Get Started
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Done
               </>
             ) : (
               <>
                 Next
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </>
             )}
           </Button>
