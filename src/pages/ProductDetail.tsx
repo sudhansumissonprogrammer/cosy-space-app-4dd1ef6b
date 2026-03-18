@@ -1354,7 +1354,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
           </div>
 
           <img
-            src={images[activeIndex]}
+            src={optimizeImageUrl(images[activeIndex], 800)}
             alt={productName}
             className="aspect-square w-full object-contain transition-transform duration-300"
             decoding="async"
