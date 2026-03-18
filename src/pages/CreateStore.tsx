@@ -391,7 +391,7 @@ export default function CreateStore() {
                       <RadioGroupItem value="both" className="mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                          <Zap className="h-4 w-4 text-amber-500" /> Both WhatsApp & Website
+                          <Zap className="h-4 w-4 text-warning" /> Both WhatsApp & Website
                         </p>
                         <p className="text-xs text-muted-foreground">Let customers choose their preferred way</p>
                       </div>
