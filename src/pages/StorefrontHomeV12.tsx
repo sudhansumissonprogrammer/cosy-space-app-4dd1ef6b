@@ -281,6 +281,7 @@ export default function StorefrontHomeV12() {
         )}
       </div>
       <TrustBadges />
+      <StorefrontInstagramSection store={store} />
     </div>
   );
 }
