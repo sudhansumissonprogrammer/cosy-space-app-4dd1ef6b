@@ -116,20 +116,32 @@ function generateSlug(name: string): string {
 
 function fuzzyMatch(input: string, candidates: string[]): string | null {
   const lower = input.toLowerCase().trim();
+  if (!lower) return null;
   // exact match
   const exact = candidates.find((c) => c.toLowerCase() === lower);
   if (exact) return exact;
-  // starts-with match
+  // starts-with match (either direction)
   const starts = candidates.find((c) => c.toLowerCase().startsWith(lower) || lower.startsWith(c.toLowerCase()));
   if (starts) return starts;
-  // 3-4 char similarity match
+  // 3-4 char prefix similarity
   if (lower.length >= 3) {
-    const prefix = lower.substring(0, Math.min(4, lower.length));
-    const partial = candidates.find((c) => c.toLowerCase().substring(0, prefix.length) === prefix);
+    const prefixLen = Math.min(4, lower.length);
+    const prefix = lower.substring(0, prefixLen);
+    const partial = candidates.find((c) => {
+      const cl = c.toLowerCase();
+      return cl.substring(0, prefixLen) === prefix || cl.includes(prefix) || prefix.includes(cl.substring(0, Math.min(4, cl.length)));
+    });
     if (partial) return partial;
     // contains match
     const contains = candidates.find((c) => c.toLowerCase().includes(lower) || lower.includes(c.toLowerCase()));
     if (contains) return contains;
+    // Levenshtein-like: match if >60% chars overlap
+    const charMatch = candidates.find((c) => {
+      const cl = c.toLowerCase();
+      const common = [...lower].filter(ch => cl.includes(ch)).length;
+      return common >= Math.max(3, Math.floor(Math.min(lower.length, cl.length) * 0.6));
+    });
+    if (charMatch) return charMatch;
   }
   return null;
 }
