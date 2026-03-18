@@ -315,9 +315,7 @@ export default function ProductDetail() {
   }
 
   const hasDiscount = product.sale_price && product.sale_price < product.price;
-  const discountPct = hasDiscount
-    ? Math.round(((product.price - product.sale_price!) / product.price) * 100)
-    : 0;
+  const discountPct = getDiscountPercent(product.price, product.sale_price) || 0;
   const currency = product.currency || "USD";
   const basePrice = hasDiscount ? product.sale_price! : product.price;
   const variantPrice = selectedVariant?.price ?? basePrice;
