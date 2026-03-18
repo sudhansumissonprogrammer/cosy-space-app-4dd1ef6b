@@ -388,6 +388,35 @@ export default function ProductsList() { // v2
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={exitBulkMode}>Cancel</Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={bulkSelected.size === 0 || bulkDeleteMutation.isPending}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  {bulkDeleteMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete {bulkSelected.size} Products</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the selected products and all their images/variants. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => bulkDeleteMutation.mutate()}
+                  >
+                    Delete All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button
               size="sm"
               disabled={bulkSelected.size === 0}
