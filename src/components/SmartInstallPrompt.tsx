@@ -9,15 +9,12 @@ interface BeforeInstallPromptEvent extends Event {
 
 const POPUP_DISMISSED_KEY = "pwa-popup-dismissed";
 const STRIP_DISMISSED_KEY = "pwa-strip-dismissed";
+const WAS_INSTALLED_KEY = "pwa-was-installed";
 
 interface SmartInstallPromptProps {
-  /** App/store name to display */
   appName: string;
-  /** Primary color for branding */
   primaryColor?: string;
-  /** Text color on primary */
   textColor?: string;
-  /** Delay in ms before showing popup */
   delay?: number;
 }
 
@@ -32,17 +29,30 @@ export default function SmartInstallPrompt({
   const [showStrip, setShowStrip] = useState(false);
 
   useEffect(() => {
-    // Already installed — standalone mode or iOS standalone
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as any).standalone === true;
-    if (isStandalone) return;
 
-    // Listen for install event (user installs while on page)
+    // If currently standalone, mark as installed and don't show prompts
+    if (isStandalone) {
+      localStorage.setItem(WAS_INSTALLED_KEY, "true");
+      return;
+    }
+
+    // Detect uninstall: was installed before but now running in browser
+    const wasInstalled = localStorage.getItem(WAS_INSTALLED_KEY);
+    if (wasInstalled === "true") {
+      // User uninstalled — clear all dismiss keys so prompts re-appear
+      localStorage.removeItem(POPUP_DISMISSED_KEY);
+      localStorage.removeItem(STRIP_DISMISSED_KEY);
+      localStorage.removeItem(WAS_INSTALLED_KEY);
+    }
+
     const onInstalled = () => {
       setShowPopup(false);
       setShowStrip(false);
       setDeferredPrompt(null);
+      localStorage.setItem(WAS_INSTALLED_KEY, "true");
     };
     window.addEventListener("appinstalled", onInstalled);
 
@@ -57,15 +67,12 @@ export default function SmartInstallPrompt({
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
 
-      // Check if popup was dismissed within 24 hours
       const popupDismissed = localStorage.getItem(POPUP_DISMISSED_KEY);
       const wasRecentlyDismissed = popupDismissed && Date.now() - Number(popupDismissed) < 24 * 60 * 60 * 1000;
 
       if (wasRecentlyDismissed) {
-        // Show strip directly
         setShowStrip(true);
       } else {
-        // Show popup after delay
         setTimeout(() => setShowPopup(true), delay);
       }
     };
@@ -84,6 +91,7 @@ export default function SmartInstallPrompt({
     if (outcome === "accepted") {
       setShowPopup(false);
       setShowStrip(false);
+      localStorage.setItem(WAS_INSTALLED_KEY, "true");
     }
     setDeferredPrompt(null);
   }, [deferredPrompt]);
@@ -104,7 +112,6 @@ export default function SmartInstallPrompt({
     return (
       <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
         <div className="w-full max-w-sm mx-3 mb-4 sm:mb-0 rounded-2xl bg-card shadow-2xl border border-border overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-          {/* Header with gradient */}
           <div
             className="px-5 pt-6 pb-5 text-center"
             style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` }}
@@ -123,13 +130,12 @@ export default function SmartInstallPrompt({
             </p>
           </div>
 
-          {/* Benefits */}
           <div className="px-5 py-4 space-y-2.5">
-            {(appName.toLowerCase().includes("admin")
+            {(appName.toLowerCase().includes("storivo")
               ? [
                   { emoji: "⚡", text: "Manage orders on the go" },
                   { emoji: "🔔", text: "Instant order notifications" },
-                  { emoji: "📱", text: "Full-screen Shopify-like experience" },
+                  { emoji: "📱", text: "Full-screen app experience" },
                 ]
               : [
                   { emoji: "⚡", text: "Lightning fast loading" },
@@ -144,13 +150,8 @@ export default function SmartInstallPrompt({
             ))}
           </div>
 
-          {/* Actions */}
           <div className="px-5 pb-5 flex gap-2.5">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={handleDismissPopup}
-            >
+            <Button variant="outline" className="flex-1" onClick={handleDismissPopup}>
               Not Now
             </Button>
             <Button
@@ -167,11 +168,11 @@ export default function SmartInstallPrompt({
     );
   }
 
-  // Header strip
+  // Strip under header
   if (showStrip) {
     return (
       <div
-        className="sticky top-0 z-[60] flex items-center gap-2 px-3 py-1.5"
+        className="sticky top-12 z-[55] flex items-center gap-2 px-3 py-1.5 border-b border-border"
         style={{ backgroundColor: primaryColor, color: textColor }}
       >
         <Download className="h-3.5 w-3.5 shrink-0 opacity-80" />
