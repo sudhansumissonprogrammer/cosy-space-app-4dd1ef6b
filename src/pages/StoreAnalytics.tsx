@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { format, subDays, startOfDay, isAfter, parseISO, differenceInDays, isBefore } from "date-fns";
 
-type DateRange = "7d" | "30d" | "90d" | "all";
+type DateRange = "7d" | "30d" | "90d" | "custom" | "all";
 
 function MetricCard({
   title, value, change, icon: Icon, prefix = "", suffix = "",
