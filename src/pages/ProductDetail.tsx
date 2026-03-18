@@ -290,7 +290,8 @@ export default function ProductDetail() {
 
   const allImages = (() => {
     const imgs: string[] = [];
-    if (product?.image_url) imgs.push(product.image_url);
+    // Split comma-separated URLs from image_url field into individual images
+    if (product?.image_url) imgs.push(...splitImageUrls(product.image_url));
     if (extraImages) imgs.push(...extraImages.map((i) => i.image_url));
     return imgs;
   })();

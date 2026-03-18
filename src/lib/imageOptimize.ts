@@ -41,6 +41,15 @@ export function cleanImageUrl(url: string | null | undefined): string {
   return url.includes(",") ? url.split(",")[0].trim() : url.trim();
 }
 
+/** Split a comma-separated image_url field into an array of individual URLs */
+export function splitImageUrls(url: string | null | undefined): string[] {
+  if (!url) return [];
+  return url
+    .split(",")
+    .map((u) => u.trim())
+    .filter((u) => u.length > 0);
+}
+
 /** Get a srcSet string for responsive images */
 export function getImageSrcSet(url: string | null | undefined, sizes: number[] = [400, 600, 800]): string {
   if (!url) return "";
