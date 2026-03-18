@@ -29,7 +29,12 @@ export default function StorefrontSignup() {
     const { error } = await signUp(email, password, name);
     setLoading(false);
     if (error) {
-      toast.error(error.message || "Signup failed");
+      // Handle "User already registered" gracefully
+      if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
+        toast.error("This email is already registered. Please sign in instead.");
+      } else {
+        toast.error(error.message || "Signup failed");
+      }
     } else {
       toast.success("Account created! You're now signed in.");
       navigate(storefrontPath(store.slug, "account"));
