@@ -1,21 +1,11 @@
 import { Link } from "react-router-dom";
 import { Heart, ShoppingCart, Tag } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
-import { useWishlist } from "@/contexts/WishlistContext";
-import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
-
-function getProductRating(productId: string): number {
-  let hash = 0;
-  for (let i = 0; i < productId.length; i++) {
-    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
-    hash |= 0;
-  }
-  const ratings = [4.2, 4.3, 4.4, 4.5, 4.5, 4.6, 4.6, 4.7, 4.8, 4.9];
-  return ratings[Math.abs(hash) % ratings.length];
-}
+import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
+import { useProductCardActions } from "@/hooks/useProductCardActions";
+import StarRating from "./StarRating";
 
 interface Props {
   product: Tables<"products">;
@@ -29,31 +19,9 @@ interface Props {
  * star ratings below, no explicit Add to Cart button row.
  */
 export default function ProductCardStyle2({ product, slug, store, priority = false }: Props) {
-  const { addToCart } = useCart();
-  const { isWishlisted, toggleWishlist } = useWishlist();
-  const wishlisted = isWishlisted(product.id);
-
-  const effectivePrice = product.sale_price && product.sale_price < product.price ? product.sale_price : product.price;
-  const discount = product.sale_price && product.sale_price < product.price
-    ? Math.round(((Number(product.price) - Number(product.sale_price)) / Number(product.price)) * 100)
-    : null;
-
+  const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
+  const discount = getDiscountPercent(product.price, product.sale_price);
   const rating = getProductRating(product.id);
-  const fullStars = Math.floor(rating);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addToCart({ productId: product.id, name: product.name, price: Number(effectivePrice), image: product.image_url || undefined, quantity: 1 });
-    toast.success(`${product.name} added to cart`);
-  };
-
-  const handleToggleWishlist = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleWishlist({ productId: product.id, name: product.name, price: Number(product.price), salePrice: product.sale_price ? Number(product.sale_price) : undefined, image: product.image_url || undefined, slug: product.slug || product.id });
-    toast.success(wishlisted ? "Removed from wishlist" : "Added to wishlist");
-  };
 
   return (
     <Link
@@ -99,20 +67,14 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
         <p className="text-[13px] font-semibold leading-tight truncate" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
           {product.name}
         </p>
-        <div className="flex items-center gap-0.5">
-          {[...Array(5)].map((_, i) => (
-            <svg key={i} className="h-3 w-3" viewBox="0 0 20 20" fill={i < fullStars ? "#FFD700" : "#e0e0e0"}>
-              <path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z" />
-            </svg>
-          ))}
-        </div>
+        <StarRating rating={rating} />
         <div className="flex items-center gap-1.5 pt-0.5">
           <span className="text-[14px] font-bold" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
-            {store.currency || "₹"}{Number(effectivePrice).toLocaleString("en-IN")}
+            {formatPrice(effectivePrice, store.currency)}
           </span>
-          {product.sale_price && product.sale_price < product.price && (
+          {discount && (
             <span className="text-[11px] line-through opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
-              {store.currency || "₹"}{Number(product.price).toLocaleString("en-IN")}
+              {formatPrice(product.price, store.currency)}
             </span>
           )}
         </div>
