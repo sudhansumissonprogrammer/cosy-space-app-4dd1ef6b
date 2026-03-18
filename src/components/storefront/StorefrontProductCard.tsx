@@ -6,7 +6,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl, getImageSrcSet } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet, splitImageUrls } from "@/lib/imageOptimize";
 
 
 function getProductRating(productId: string): number {
@@ -162,22 +162,21 @@ export default function StorefrontProductCard({ product, slug, store, priority =
           </button>
 
 
-          {product.image_url ? (
-            <img
-              src={optimizeImageUrl(product.image_url, 400)}
-              srcSet={getImageSrcSet(product.image_url, [300, 400, 600])}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-              loading={priority ? "eager" : "lazy"}
-              decoding={priority ? "sync" : "async"}
-              fetchPriority={priority ? "high" : "auto"}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-secondary/40">
-              <Package className="h-10 w-10 text-muted-foreground/40" />
-            </div>
-          )}
+          {(() => {
+            const images = splitImageUrls(product.image_url);
+            if (images.length === 0) {
+              return <div className="flex h-full w-full items-center justify-center bg-secondary/40"><Package className="h-10 w-10 text-muted-foreground/40" /></div>;
+            }
+            const hasSecond = images.length > 1;
+            return (
+              <>
+                <img src={optimizeImageUrl(images[0], 400)} srcSet={getImageSrcSet(images[0], [300, 400, 600])} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} className={`h-full w-full object-cover transition-all duration-500 ease-out group-hover:scale-105 ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "auto"} />
+                {hasSecond && (
+                  <img src={optimizeImageUrl(images[1], 400)} alt={product.name} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:scale-105" loading="lazy" />
+                )}
+              </>
+            );
+          })()}
         </div>
       </Link>
 

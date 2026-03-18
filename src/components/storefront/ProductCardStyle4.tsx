@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { Tables } from "@/integrations/supabase/types";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
 
 /* ── Veg / Non-Veg indicator ── */
 function DietBadge({ category }: { category: string | null }) {
@@ -70,22 +70,29 @@ export default function ProductCardStyle4({ product, slug, store }: Props) {
         border: "1px solid var(--storefront-text, #1a1a1a)08",
       }}
     >
-      {/* Image */}
-      {product.image_url && (
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
-          <img
-            src={optimizeImageUrl(product.image_url, 200)}
-            alt={product.name}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-          {hasDiscount && (
-            <div className="absolute left-1 top-1 rounded-md bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-              {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
-            </div>
-          )}
-        </div>
-      )}
+      {(() => {
+        const images = splitImageUrls(product.image_url);
+        if (images.length === 0) return null;
+        const hasSecond = images.length > 1;
+        return (
+          <div className="group/img relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
+            <img
+              src={optimizeImageUrl(images[0], 200)}
+              alt={product.name}
+              className={`h-full w-full object-cover transition-all duration-500 ${hasSecond ? "group-hover/img:opacity-0" : ""}`}
+              loading="lazy"
+            />
+            {hasSecond && (
+              <img src={optimizeImageUrl(images[1], 200)} alt={product.name} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover/img:opacity-100" loading="lazy" />
+            )}
+            {hasDiscount && (
+              <div className="absolute left-1 top-1 rounded-md bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Details */}
       <div className="flex flex-1 flex-col justify-between gap-1 py-0.5">

@@ -5,7 +5,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
 
 function getProductRating(productId: string): number {
   let hash = 0;
@@ -62,13 +62,25 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
       style={{ borderRadius: "12px", backgroundColor: "var(--storefront-bg, #fff)" }}
     >
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4", borderRadius: "12px" }}>
-        {product.image_url ? (
-          <img src={optimizeImageUrl(product.image_url, 400)} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading={priority ? "eager" : "lazy"} />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}>
-            <Tag className="h-10 w-10" style={{ color: "var(--storefront-text, #1a1a1a)20" }} />
-          </div>
-        )}
+        {(() => {
+          const images = splitImageUrls(product.image_url);
+          if (images.length === 0) {
+            return (
+              <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}>
+                <Tag className="h-10 w-10" style={{ color: "var(--storefront-text, #1a1a1a)20" }} />
+              </div>
+            );
+          }
+          const hasSecond = images.length > 1;
+          return (
+            <>
+              <img src={optimizeImageUrl(images[0], 400)} alt={product.name} className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} />
+              {hasSecond && (
+                <img src={optimizeImageUrl(images[1], 400)} alt={product.name} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" />
+              )}
+            </>
+          );
+        })()}
         {discount && (
           <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)", color: "var(--storefront-btn-text, #fff)", borderRadius: "6px" }}>
             -{discount}%
