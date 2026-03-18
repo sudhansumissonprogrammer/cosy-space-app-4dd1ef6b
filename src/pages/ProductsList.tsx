@@ -221,6 +221,26 @@ export default function ProductsList() { // v2
     onError: (err: any) => toast.error(err.message || "Bulk update failed"),
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async () => {
+      const ids = Array.from(bulkSelected);
+      if (ids.length === 0) throw new Error("No products selected");
+      for (const id of ids) {
+        await supabase.from("product_images").delete().eq("product_id", id);
+        await supabase.from("product_variants").delete().eq("product_id", id);
+        const { error } = await supabase.from("products").delete().eq("id", id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["product-limit"] });
+      toast.success(`${bulkSelected.size} products deleted`);
+      exitBulkMode();
+    },
+    onError: (err: any) => toast.error(err.message || "Bulk delete failed"),
+  });
+
   const activeFilterCount =
     (stockFilter !== "all" ? 1 : 0) +
     (categoryFilter.length > 0 ? 1 : 0);
