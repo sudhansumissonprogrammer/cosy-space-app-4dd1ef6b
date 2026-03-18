@@ -224,7 +224,14 @@ export default function BulkUpload() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.endsWith(".csv")) { toast.error("Please upload a CSV file"); return; }
+    // Accept .csv or common CSV MIME types; also allow .xls/.xlsx extension picked by Android
+    const validExts = [".csv", ".txt"];
+    const validMimes = ["text/csv", "text/comma-separated-values", "application/csv", "application/vnd.ms-excel", "text/plain"];
+    const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+    if (!validExts.includes(ext) && !validMimes.includes(file.type)) {
+      toast.error("Please upload a CSV file (.csv)");
+      return;
+    }
     setFileName(file.name);
     const reader = new FileReader();
     reader.onload = (ev) => {
