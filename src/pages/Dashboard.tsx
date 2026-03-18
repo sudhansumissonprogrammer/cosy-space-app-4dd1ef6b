@@ -17,6 +17,7 @@ import PendingActions from "@/components/dashboard/PendingActions";
 import RecentOrders from "@/components/dashboard/RecentOrders";
 import TopProducts from "@/components/dashboard/TopProducts";
 import StoreChecklist from "@/components/dashboard/StoreChecklist";
+import QueryErrorState from "@/components/QueryErrorState";
 
 function ShimmerBlock({ className }: { className?: string }) {
   return (
