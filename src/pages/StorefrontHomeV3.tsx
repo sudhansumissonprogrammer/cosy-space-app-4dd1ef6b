@@ -381,6 +381,7 @@ export default function StorefrontHomeV3() {
           </div>
         )}
       </div>
+      <StorefrontInstagramSection store={store} />
     </>
   );
 }

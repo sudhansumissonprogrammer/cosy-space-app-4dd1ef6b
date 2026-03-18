@@ -421,6 +421,7 @@ export default function StorefrontHomeV4() {
       <LazyRender rootMargin="200px" minHeight={200}>
         <Newsletter />
       </LazyRender>
+      <StorefrontInstagramSection store={store} />
     </>
   );
 }
