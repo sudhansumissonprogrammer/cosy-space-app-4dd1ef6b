@@ -30,8 +30,8 @@ export async function compressImage(
 ): Promise<CompressionResult> {
   const originalSize = file.size;
 
-  // Skip if already small enough (under 200KB)
-  if (file.size <= 200 * 1024) {
+  // Skip if already small enough (under 150KB)
+  if (file.size <= 150 * 1024) {
     return { file, originalSize, compressedSize: file.size, skipped: true };
   }
 
