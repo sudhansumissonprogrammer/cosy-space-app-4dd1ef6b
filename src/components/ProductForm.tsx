@@ -303,7 +303,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   };
 
   const uploadImage = async (file: File) => {
-    const result = await compressImage(file);
+    const result = await processImage(file);
     const msg = getCompressionMessage(result);
     if (msg) toast.success(msg);
     const ext = result.file.name.split(".").pop();
