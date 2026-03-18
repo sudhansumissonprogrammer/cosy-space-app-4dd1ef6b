@@ -601,11 +601,11 @@ export default function ProductsList() { // v2
                   {/* Image - tap to preview */}
                   {product.image_url ? (
                     <img
-                      src={product.image_url}
+                      src={cleanImageUrl(product.image_url)}
                       alt=""
                       className="h-12 w-12 rounded-lg border object-cover shrink-0 cursor-pointer"
                       loading="lazy"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!longPressTriggered.current) setPreviewImage(product.image_url); }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!longPressTriggered.current) setPreviewImage(cleanImageUrl(product.image_url)); }}
                     />
                   ) : (
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
