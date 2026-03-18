@@ -120,8 +120,8 @@ export default function Signup() {
       if (isFetchFailure(message)) {
         try {
           await signUpWithProxy(normalizedEmail, password, normalizedFullName);
-          toast.success("Account created! Check your email to confirm.");
-          navigate("/login");
+          toast.success("Account created! Signing you in...");
+          navigate("/dashboard");
           return;
         } catch (proxyErr) {
           const proxyMessage =
