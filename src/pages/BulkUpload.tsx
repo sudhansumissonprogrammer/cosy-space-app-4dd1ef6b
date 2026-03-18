@@ -396,6 +396,7 @@ export default function BulkUpload() {
               slug: generateSlug(mapped.name),
               price: mapped.price,
               sale_price: mapped.sale_price,
+              currency: store?.currency || 'INR',
               description: mapped.description || null,
               category: mapped.category || null,
               stock_quantity: mapped.stock_quantity,
