@@ -163,7 +163,7 @@ export default function ProductsList() { // v2
     if (statusFilter === "active") result = result.filter(p => p.is_active);
     if (statusFilter === "draft") result = result.filter(p => !p.is_active);
     if (stockFilter === "in-stock") result = result.filter(p => p.stock_quantity > 0);
-    if (stockFilter === "out-of-stock") result = result.filter(p => p.stock_quantity <= 0);
+    if (stockFilter === "out-of-stock") result = result.filter(p => p.stock_quantity <= 0 && p.stock_quantity < 999999);
     if (categoryFilter.length > 0) result = result.filter(p => p.category && categoryFilter.includes(p.category));
     switch (sort) {
       case "title-asc": result.sort((a, b) => a.name.localeCompare(b.name)); break;
