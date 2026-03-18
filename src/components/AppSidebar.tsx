@@ -202,6 +202,19 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/analytics", true)}>
+                  <NavLink
+                    to="/dashboard/analytics"
+                    end
+                    className="hover:bg-accent/50"
+                    activeClassName="bg-accent text-accent-foreground font-medium"
+                  >
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    {!collapsed && <span>Analytics</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
