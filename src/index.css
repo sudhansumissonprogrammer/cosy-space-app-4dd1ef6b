@@ -189,3 +189,8 @@
 @keyframes shimmer {
   100% { transform: translateX(100%); }
 }
+
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(60vh) rotate(720deg) scale(0.3); opacity: 0; }
+}
