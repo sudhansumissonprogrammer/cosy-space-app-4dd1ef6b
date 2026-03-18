@@ -57,22 +57,25 @@ export default function CreateStore() {
   const [checkingStore, setCheckingStore] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
 
+  const [showExistingStoreDialog, setShowExistingStoreDialog] = useState(false);
+  const [existingStoreSlug, setExistingStoreSlug] = useState<string | null>(null);
+  const [creatingAnimation, setCreatingAnimation] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     supabase
       .from("stores")
-      .select("id")
+      .select("id, slug")
       .eq("owner_id", user.id)
       .limit(1)
       .then(({ data }) => {
         if (data && data.length > 0) {
-          toast.error("You already have a store. Only one store per account is allowed.");
-          navigate("/dashboard/stores");
-        } else {
-          setCheckingStore(false);
+          setExistingStoreSlug(data[0].slug);
+          setShowExistingStoreDialog(true);
         }
+        setCheckingStore(false);
       });
-  }, [user, navigate]);
+  }, [user]);
 
   // Step 1
   const [name, setName] = useState("");
