@@ -425,8 +425,6 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
           >
             <MilanoHeader store={store} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-            <StorefrontOrderNotification storeName={store.name} />
-            <StorefrontPushListener storeId={store.id} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <div className="pb-16 md:pb-0">
               <Outlet context={store} />
