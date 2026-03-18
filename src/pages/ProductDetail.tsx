@@ -20,7 +20,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
