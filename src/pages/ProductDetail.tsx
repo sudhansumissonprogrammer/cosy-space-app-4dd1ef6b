@@ -20,7 +20,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
@@ -290,7 +290,8 @@ export default function ProductDetail() {
 
   const allImages = (() => {
     const imgs: string[] = [];
-    if (product?.image_url) imgs.push(product.image_url);
+    // Split comma-separated URLs from image_url field into individual images
+    if (product?.image_url) imgs.push(...splitImageUrls(product.image_url));
     if (extraImages) imgs.push(...extraImages.map((i) => i.image_url));
     return imgs;
   })();
@@ -1395,7 +1396,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
                   i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
                 }`}
               >
-                <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <img src={optimizeImageUrl(img, 120)} alt="" className="h-full w-full object-cover" loading="lazy" />
               </button>
             ))}
           </div>
