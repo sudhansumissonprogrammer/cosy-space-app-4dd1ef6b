@@ -35,20 +35,15 @@ interface Variant {
   sku: string | null;
 }
 
-/* ── Fake but consistent social proof from product ID ── */
+/* ── Social proof from shared utility ── */
 function getProductStats(productId: string) {
-  let hash = 0;
-  for (let i = 0; i < productId.length; i++) {
-    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
-    hash |= 0;
-  }
-  const abs = Math.abs(hash);
-  const ratings = [4.2, 4.3, 4.4, 4.5, 4.5, 4.6, 4.6, 4.7, 4.7, 4.8, 4.8, 4.9];
-  const rating = ratings[abs % ratings.length];
-  const reviewCount = 12 + (abs % 188);
-  const viewers = 3 + (abs % 18);
-  const soldRecently = 15 + (abs % 85);
-  return { rating, reviewCount, viewers, soldRecently };
+  const stats = getProductStatsUtil(productId);
+  return {
+    rating: stats.rating,
+    reviewCount: stats.reviewCount,
+    viewers: stats.viewingNow,
+    soldRecently: stats.soldThisWeek,
+  };
 }
 
 function getDeliveryDate() {
