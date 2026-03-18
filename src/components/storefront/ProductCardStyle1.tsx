@@ -34,7 +34,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
   const { isWishlisted, toggleWishlist } = useWishlist();
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
-  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  
 
   const wishlisted = isWishlisted(product.id);
   const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
