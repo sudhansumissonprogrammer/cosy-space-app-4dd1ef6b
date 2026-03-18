@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
       .eq("store_id", store.id)
       .eq("is_active", true)
       .order("created_at", { ascending: false })
-      .limit(5000);
+      .limit(1000);
 
     if (prodErr) {
       return new Response("Error fetching products", { status: 500, headers: corsHeaders });
