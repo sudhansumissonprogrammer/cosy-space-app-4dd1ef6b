@@ -732,13 +732,21 @@ export default function CreateStore() {
                 Next <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button type="button" onClick={handleSubmit} disabled={loading} className="gap-2 px-8">
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Create Store
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="gap-2 px-8 relative overflow-hidden group"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <span className="relative flex items-center gap-2">
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Rocket className="h-4 w-4 group-hover:animate-bounce" />
+                  )}
+                  Launch My Store 🚀
+                </span>
               </Button>
             )}
           </div>
