@@ -443,6 +443,60 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          context: string | null
+          created_at: string
+          id: string
+          level: string
+          message: string
+          metadata: Json | null
+          stack: string | null
+          store_id: string | null
+          url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string
+          id?: string
+          level?: string
+          message: string
+          metadata?: Json | null
+          stack?: string | null
+          store_id?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          context?: string | null
+          created_at?: string
+          id?: string
+          level?: string
+          message?: string
+          metadata?: Json | null
+          stack?: string | null
+          store_id?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "error_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           id: string

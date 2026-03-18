@@ -22,6 +22,7 @@ const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminWhatsApp = lazy(() => import("@/pages/admin/AdminWhatsApp"));
 const AdminUsageMonitoring = lazy(() => import("@/pages/admin/AdminUsageMonitoring"));
+const AdminErrorLogs = lazy(() => import("@/pages/admin/AdminErrorLogs"));
 
 // Dashboard
 const DashboardLayout = lazy(() => import("@/layouts/DashboardLayout"));
@@ -79,6 +80,7 @@ export default function AuthRoutes() {
           <Route path="subscriptions" element={<AdminSubscriptions />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="usage" element={<AdminUsageMonitoring />} />
+          <Route path="error-logs" element={<AdminErrorLogs />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

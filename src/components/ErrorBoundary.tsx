@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { logError } from "@/lib/logError";
 
 interface Props {
   children: React.ReactNode;
@@ -23,10 +24,12 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // silently log for debugging; no console.log in production
-    if (import.meta.env.DEV) {
-      console.error("ErrorBoundary caught:", error, info.componentStack);
-    }
+    logError({
+      message: error.message,
+      stack: error.stack,
+      context: "ErrorBoundary",
+      metadata: { componentStack: info.componentStack?.slice(0, 500) },
+    });
   }
 
   handleReset = () => {
