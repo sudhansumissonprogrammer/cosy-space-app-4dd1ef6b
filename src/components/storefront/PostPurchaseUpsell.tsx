@@ -7,6 +7,7 @@ import { Loader2, Plus, ShoppingBag, X } from "lucide-react";
 import { toast } from "sonner";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { cleanImageUrl } from "@/lib/imageOptimize";
+import { getDiscountPercent } from "@/lib/productUtils";
 
 interface UpsellProps {
   storeId: string;
