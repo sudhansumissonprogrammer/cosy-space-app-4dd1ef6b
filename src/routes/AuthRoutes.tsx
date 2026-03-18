@@ -22,6 +22,7 @@ const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminWhatsApp = lazy(() => import("@/pages/admin/AdminWhatsApp"));
 const AdminUsageMonitoring = lazy(() => import("@/pages/admin/AdminUsageMonitoring"));
+const AdminErrorLogs = lazy(() => import("@/pages/admin/AdminErrorLogs"));
 
 // Dashboard
 const DashboardLayout = lazy(() => import("@/layouts/DashboardLayout"));
