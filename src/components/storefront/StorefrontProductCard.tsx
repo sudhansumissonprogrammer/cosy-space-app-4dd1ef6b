@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet } from "@/lib/imageOptimize";
-import ProductQuickView from "./ProductQuickView";
+
 
 function getProductRating(productId: string): number {
   let hash = 0;
