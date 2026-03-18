@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +8,7 @@ interface TopProductsProps {
   currencySymbol: string;
 }
 
-export default function TopProducts({ storeId, currencySymbol }: TopProductsProps) {
+const TopProducts = React.forwardRef<HTMLDivElement, TopProductsProps>(function TopProducts({ storeId, currencySymbol }, ref) {
   const { data: topProducts } = useQuery({
     queryKey: ["top-products-dashboard", storeId],
     staleTime: 5 * 60 * 1000,
@@ -68,4 +69,6 @@ export default function TopProducts({ storeId, currencySymbol }: TopProductsProp
       </CardContent>
     </Card>
   );
-}
+});
+
+export default TopProducts;

@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +20,7 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-red-100 text-red-800",
 };
 
-export default function RecentOrders({ storeId, currencySymbol }: RecentOrdersProps) {
+const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(function RecentOrders({ storeId, currencySymbol }, ref) {
   const navigate = useNavigate();
 
   const { data: orders } = useQuery({
@@ -88,4 +89,6 @@ export default function RecentOrders({ storeId, currencySymbol }: RecentOrdersPr
       </CardContent>
     </Card>
   );
-}
+});
+
+export default RecentOrders;

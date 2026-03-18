@@ -6,21 +6,11 @@ import { Plus, Star, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { cleanImageUrl } from "@/lib/imageOptimize";
-import { getDiscountPercent } from "@/lib/productUtils";
+import { getDiscountPercent, getProductRating } from "@/lib/productUtils";
 
 interface CartUpsellProps {
   storeId: string;
   currency: string;
-}
-
-function getRating(id: string): number {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) {
-    h = ((h << 5) - h) + id.charCodeAt(i);
-    h |= 0;
-  }
-  const r = [4.2, 4.3, 4.4, 4.5, 4.5, 4.6, 4.6, 4.7, 4.8, 4.9];
-  return r[Math.abs(h) % r.length];
 }
 
 export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
@@ -93,7 +83,7 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
         {upsellProducts.map((product) => {
           const hasDiscount = product.sale_price && product.sale_price < product.price;
           const displayPrice = hasDiscount ? Number(product.sale_price) : Number(product.price);
-          const rating = getRating(product.id);
+          const rating = getProductRating(product.id);
 
           return (
             <div

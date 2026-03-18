@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Package, ShoppingCart, Star, Zap, Heart, Check, Plus, Minus, Loader2, Flame, Sparkles } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
@@ -39,28 +38,16 @@ const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
 export default function StorefrontProductCard({ product, slug, store, priority = false }: StorefrontProductCardProps) {
-  const { wishlisted, cartQty, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
-  const { addToCart } = useCart();
+  const { wishlisted, cartQty, handleAddToCart: hookAddToCart, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
-  const price = product.sale_price && product.sale_price < product.price
-    ? Number(product.sale_price) : Number(product.price);
-
   const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
     if (isAdding) return;
     setIsAdding(true);
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      price,
-      image: product.image_url || undefined,
-    });
+    hookAddToCart(e);
     setIsAdding(false);
     setJustAdded(true);
-    toast.success(`${product.name} added to cart`);
     setTimeout(() => setJustAdded(false), 1200);
   };
 
