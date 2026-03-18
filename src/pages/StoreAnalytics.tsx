@@ -14,9 +14,9 @@ import {
 } from "recharts";
 import {
   TrendingUp, TrendingDown, ShoppingBag, Eye, DollarSign, Users,
-  ShoppingCart, Repeat, ArrowUpRight, Package, BarChart3,
+  ShoppingCart, Repeat, ArrowUpRight, Package, BarChart3, CalendarIcon,
 } from "lucide-react";
-import { format, subDays, startOfDay, isAfter, parseISO, differenceInDays } from "date-fns";
+import { format, subDays, startOfDay, isAfter, parseISO, differenceInDays, isBefore } from "date-fns";
 
 type DateRange = "7d" | "30d" | "90d" | "all";
 
