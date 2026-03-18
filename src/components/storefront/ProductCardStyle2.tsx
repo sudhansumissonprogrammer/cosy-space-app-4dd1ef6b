@@ -5,7 +5,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
 
 function getProductRating(productId: string): number {
   let hash = 0;
