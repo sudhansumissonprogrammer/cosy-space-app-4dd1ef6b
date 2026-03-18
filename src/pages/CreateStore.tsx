@@ -10,12 +10,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
   Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Zap,
+  Rocket, Crown, ShoppingBag,
 } from "lucide-react";
 import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 
