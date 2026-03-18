@@ -98,13 +98,12 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
     mutationFn: async () => {
       const ids = Array.from(selected);
       if (ids.length === 0) throw new Error("No products selected");
-
-      for (const id of ids) {
-        await supabase.from("product_images").delete().eq("product_id", id);
-        await supabase.from("product_variants").delete().eq("product_id", id);
-        const { error } = await supabase.from("products").delete().eq("id", id);
-        if (error) throw error;
-      }
+      const { error: imgErr } = await supabase.from("product_images").delete().in("product_id", ids);
+      if (imgErr) throw imgErr;
+      const { error: varErr } = await supabase.from("product_variants").delete().in("product_id", ids);
+      if (varErr) throw varErr;
+      const { error } = await supabase.from("products").delete().in("id", ids);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products", storeId] });
