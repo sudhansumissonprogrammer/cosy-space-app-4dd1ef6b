@@ -5,17 +5,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
 } from "recharts";
 import {
   TrendingUp, TrendingDown, ShoppingBag, Eye, DollarSign, Users,
-  ShoppingCart, Repeat, ArrowUpRight, Package, BarChart3,
+  ShoppingCart, Repeat, ArrowUpRight, Package, BarChart3, CalendarIcon,
 } from "lucide-react";
-import { format, subDays, startOfDay, isAfter, parseISO, differenceInDays } from "date-fns";
+import { format, subDays, startOfDay, isAfter, parseISO, differenceInDays, isBefore } from "date-fns";
 
-type DateRange = "7d" | "30d" | "90d" | "all";
+type DateRange = "7d" | "30d" | "90d" | "custom" | "all";
 
 function MetricCard({
   title, value, change, icon: Icon, prefix = "", suffix = "",
@@ -55,6 +58,9 @@ const CHART_COLORS = [
 export default function StoreAnalytics() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState<DateRange>("30d");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(subDays(new Date(), 14));
+  const [customTo, setCustomTo] = useState<Date | undefined>(new Date());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const { data: stores } = useQuery({
     queryKey: ["stores", user?.id],
@@ -121,29 +127,38 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  const rangeDays = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90 : 9999;
-  const rangeStart = startOfDay(subDays(new Date(), rangeDays));
+  const rangeDays = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90 : dateRange === "custom" && customFrom && customTo ? differenceInDays(customTo, customFrom) || 1 : 9999;
+  const rangeStart = dateRange === "custom" && customFrom ? startOfDay(customFrom) : startOfDay(subDays(new Date(), rangeDays));
+  const rangeEnd = dateRange === "custom" && customTo ? startOfDay(subDays(customTo, -1)) : new Date();
   const priorStart = startOfDay(subDays(rangeStart, rangeDays));
 
   const filtered = useMemo(() => {
     if (!allOrders) return { current: [], prior: [] };
-    const current = allOrders.filter((o: any) => dateRange === "all" || isAfter(parseISO(o.created_at), rangeStart));
+    const current = allOrders.filter((o: any) => {
+      if (dateRange === "all") return true;
+      const d = parseISO(o.created_at);
+      return isAfter(d, rangeStart) && (dateRange !== "custom" || isBefore(d, rangeEnd));
+    });
     const prior = allOrders.filter((o: any) => {
       const d = parseISO(o.created_at);
       return isAfter(d, priorStart) && !isAfter(d, rangeStart);
     });
     return { current, prior };
-  }, [allOrders, dateRange]);
+  }, [allOrders, dateRange, customFrom, customTo]);
 
   const filteredViews = useMemo(() => {
     if (!pageViews) return { current: [], prior: [] };
-    const current = pageViews.filter((v: any) => dateRange === "all" || isAfter(parseISO(v.created_at), rangeStart));
+    const current = pageViews.filter((v: any) => {
+      if (dateRange === "all") return true;
+      const d = parseISO(v.created_at);
+      return isAfter(d, rangeStart) && (dateRange !== "custom" || isBefore(d, rangeEnd));
+    });
     const prior = pageViews.filter((v: any) => {
       const d = parseISO(v.created_at);
       return isAfter(d, priorStart) && !isAfter(d, rangeStart);
     });
     return { current, prior };
-  }, [pageViews, dateRange]);
+  }, [pageViews, dateRange, customFrom, customTo]);
 
   // Metrics
   const totalRevenue = filtered.current.filter((o: any) => o.status !== "cancelled").reduce((s: number, o: any) => s + Number(o.total || 0), 0);
@@ -264,13 +279,57 @@ export default function StoreAnalytics() {
 
       {/* Date range tabs */}
       <Tabs value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-        <TabsList className="h-8 w-full grid grid-cols-4">
+        <TabsList className="h-8 w-full grid grid-cols-5">
           <TabsTrigger value="7d" className="text-xs h-7">7 days</TabsTrigger>
           <TabsTrigger value="30d" className="text-xs h-7">30 days</TabsTrigger>
           <TabsTrigger value="90d" className="text-xs h-7">90 days</TabsTrigger>
-          <TabsTrigger value="all" className="text-xs h-7">All time</TabsTrigger>
+          <TabsTrigger value="all" className="text-xs h-7">All</TabsTrigger>
+          <TabsTrigger value="custom" className="text-xs h-7">Custom</TabsTrigger>
         </TabsList>
       </Tabs>
+
+      {/* Custom date range picker */}
+      {dateRange === "custom" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1.5 justify-start", !customFrom && "text-muted-foreground")}>
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {customFrom ? format(customFrom, "MMM d, yyyy") : "From"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={customFrom}
+                onSelect={setCustomFrom}
+                disabled={(date) => date > new Date() || (customTo ? date > customTo : false)}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+          <span className="text-xs text-muted-foreground">to</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1.5 justify-start", !customTo && "text-muted-foreground")}>
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {customTo ? format(customTo, "MMM d, yyyy") : "To"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={customTo}
+                onSelect={setCustomTo}
+                disabled={(date) => date > new Date() || (customFrom ? date < customFrom : false)}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 gap-2.5">
