@@ -125,7 +125,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       let image_url: string | null = null;
 
       if (categoryImageFile) {
-        const result = await compressImage(categoryImageFile);
+        const result = await processImage(categoryImageFile);
         const msg = getCompressionMessage(result);
         if (msg) toast.success(msg);
         const ext = result.file.name.split(".").pop();
