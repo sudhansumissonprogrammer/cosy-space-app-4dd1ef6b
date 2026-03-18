@@ -395,6 +395,7 @@ export default function BulkUpload() {
     onSuccess: (data) => {
       setImportResult(data);
       setStep("result");
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products-count", storeId] });
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
