@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus, ShoppingBag, Share2, Palette, Eye } from "lucide-react";
+import { Share2, Palette, Settings, BarChart3 } from "lucide-react";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 
 interface QuickActionsProps {
@@ -14,9 +14,9 @@ export default function QuickActions({ storeId, storeSlug, storeName, isWhatsApp
   const navigate = useNavigate();
 
   const actions = [
-    { label: "Add Product", icon: Plus, onClick: () => navigate(`/dashboard/stores/${storeId}/products/create`) },
-    ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, onClick: () => navigate(`/dashboard/stores/${storeId}/orders`) }] : []),
     { label: "Theme", icon: Palette, onClick: () => navigate(`/dashboard/stores/${storeId}/theme`) },
+    { label: "Settings", icon: Settings, onClick: () => navigate(`/dashboard/stores/${storeId}/settings`) },
+    { label: "Analytics", icon: BarChart3, onClick: () => navigate(`/dashboard/analytics`) },
   ];
 
   return (
@@ -40,7 +40,7 @@ export default function QuickActions({ storeId, storeSlug, storeName, isWhatsApp
           trigger={
             <Button variant="outline" size="sm" className="shrink-0 gap-1.5 text-xs h-8">
               <Share2 className="h-3.5 w-3.5" />
-              Share Store
+              Share
             </Button>
           }
         />
