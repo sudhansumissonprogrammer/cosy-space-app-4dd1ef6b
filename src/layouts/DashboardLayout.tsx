@@ -185,7 +185,7 @@ export default function DashboardLayout() {
   const storeId = store?.id;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
 
-  // Pending orders count + realtime (skip for WhatsApp-only stores)
+  // Pending orders count (manual fetch, no realtime)
   useEffect(() => {
     if (!storeId || isWhatsAppOnly) return;
     const fetchCount = async () => {
@@ -197,17 +197,7 @@ export default function DashboardLayout() {
       setPendingOrders(count ?? 0);
     };
     fetchCount();
-
-    const channel = supabase
-      .channel("mobile-nav-orders")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
-        () => fetchCount()
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [storeId]);
+  }, [storeId, isWhatsAppOnly]);
 
   // Clear app badge when visiting orders page
   useEffect(() => {

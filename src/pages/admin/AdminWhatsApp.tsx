@@ -52,23 +52,8 @@ function AdminChatTab() {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
-
-  // Subscribe to realtime updates
-  React.useEffect(() => {
-    const channel = supabase
-      .channel("admin-whatsapp-chat")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "whatsapp_messages" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-all-messages"] });
-        }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [queryClient]);
 
   // Group by store+phone
   const conversations = useMemo(() => {

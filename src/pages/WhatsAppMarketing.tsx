@@ -278,41 +278,8 @@ function ChatTab({ storeId }: { storeId: string }) {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
-
-  // Subscribe to realtime updates
-  React.useEffect(() => {
-    const channel = supabase
-      .channel(`whatsapp-chat-${storeId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "whatsapp_messages",
-          filter: `store_id=eq.${storeId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["whatsapp-all-messages", storeId] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "whatsapp_messages",
-          filter: `store_id=eq.${storeId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["whatsapp-all-messages", storeId] });
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [storeId, queryClient]);
 
   // Group messages by phone number to create conversations
   const conversations = useMemo(() => {
