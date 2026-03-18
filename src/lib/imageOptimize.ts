@@ -5,6 +5,11 @@
 export function optimizeImageUrl(url: string | null | undefined, width: number = 400): string {
   if (!url) return "";
 
+  // Handle comma-separated URLs — take only the first one
+  const firstUrl = url.includes(",") ? url.split(",")[0].trim() : url.trim();
+  if (!firstUrl) return "";
+  url = firstUrl;
+
   // Shopify CDN: append width param (e.g., &width=400)
   if (url.includes("cdn/shop/") || url.includes("cdn.shopify.com")) {
     const u = new URL(url);
