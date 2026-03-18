@@ -21,7 +21,7 @@ import {
   Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Zap,
   Rocket, Crown, ShoppingBag,
 } from "lucide-react";
-import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
+import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 
 const CURRENCIES = [
   { code: "INR", label: "Indian Rupee (₹)" },
