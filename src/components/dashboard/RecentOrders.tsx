@@ -19,7 +19,7 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-red-100 text-red-800",
 };
 
-export default function RecentOrders({ storeId, currencySymbol }: RecentOrdersProps) {
+const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(function RecentOrders({ storeId, currencySymbol }, ref) {
   const navigate = useNavigate();
 
   const { data: orders } = useQuery({

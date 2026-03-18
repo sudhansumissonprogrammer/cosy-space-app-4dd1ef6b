@@ -83,7 +83,7 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
         {upsellProducts.map((product) => {
           const hasDiscount = product.sale_price && product.sale_price < product.price;
           const displayPrice = hasDiscount ? Number(product.sale_price) : Number(product.price);
-          const rating = getRating(product.id);
+          const rating = getProductRating(product.id);
 
           return (
             <div

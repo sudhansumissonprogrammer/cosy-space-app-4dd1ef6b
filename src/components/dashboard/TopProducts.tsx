@@ -7,7 +7,7 @@ interface TopProductsProps {
   currencySymbol: string;
 }
 
-export default function TopProducts({ storeId, currencySymbol }: TopProductsProps) {
+const TopProducts = React.forwardRef<HTMLDivElement, TopProductsProps>(function TopProducts({ storeId, currencySymbol }, ref) {
   const { data: topProducts } = useQuery({
     queryKey: ["top-products-dashboard", storeId],
     staleTime: 5 * 60 * 1000,
