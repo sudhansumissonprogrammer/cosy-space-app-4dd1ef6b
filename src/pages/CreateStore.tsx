@@ -10,12 +10,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
   Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Zap,
+  Rocket, Crown, ShoppingBag,
 } from "lucide-react";
 import { compressImage, getCompressionMessage } from "@/lib/imageCompression";
 
@@ -53,22 +57,25 @@ export default function CreateStore() {
   const [checkingStore, setCheckingStore] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
 
+  const [showExistingStoreDialog, setShowExistingStoreDialog] = useState(false);
+  const [existingStoreSlug, setExistingStoreSlug] = useState<string | null>(null);
+  const [creatingAnimation, setCreatingAnimation] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     supabase
       .from("stores")
-      .select("id")
+      .select("id, slug")
       .eq("owner_id", user.id)
       .limit(1)
       .then(({ data }) => {
         if (data && data.length > 0) {
-          toast.error("You already have a store. Only one store per account is allowed.");
-          navigate("/dashboard/stores");
-        } else {
-          setCheckingStore(false);
+          setExistingStoreSlug(data[0].slug);
+          setShowExistingStoreDialog(true);
         }
+        setCheckingStore(false);
       });
-  }, [user, navigate]);
+  }, [user]);
 
   // Step 1
   const [name, setName] = useState("");
@@ -159,7 +166,12 @@ export default function CreateStore() {
 
   const handleSubmit = async () => {
     if (!user) return;
+    setCreatingAnimation(true);
     setLoading(true);
+
+    // Brief magical delay for the animation
+    await new Promise(r => setTimeout(r, 1200));
+
     try {
       let logoUrl: string | null = null;
       let bannerUrl: string | null = null;
@@ -199,6 +211,7 @@ export default function CreateStore() {
       });
 
       if (error) {
+        setCreatingAnimation(false);
         if (error.code === "23505") {
           toast.error("A store with this slug already exists");
         } else {
@@ -209,8 +222,9 @@ export default function CreateStore() {
 
       setShowConfetti(true);
       toast.success("Store created successfully! 🎉");
-      setTimeout(() => navigate("/dashboard/stores"), 1500);
+      setTimeout(() => navigate("/dashboard/stores"), 2000);
     } catch (err: any) {
+      setCreatingAnimation(false);
       toast.error(err.message || "Failed to create store");
     } finally {
       setLoading(false);
@@ -228,8 +242,107 @@ export default function CreateStore() {
     );
   }
 
+  // Full-screen creating animation overlay
+  if (creatingAnimation) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
+        {/* Animated rings */}
+        <div className="relative flex items-center justify-center">
+          <div className="absolute h-32 w-32 rounded-full border-2 border-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
+          <div className="absolute h-24 w-24 rounded-full border-2 border-primary/30 animate-ping" style={{ animationDuration: "1.5s", animationDelay: "0.3s" }} />
+          <div className="absolute h-16 w-16 rounded-full border-2 border-primary/40 animate-ping" style={{ animationDuration: "1s", animationDelay: "0.6s" }} />
+          <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
+            <Rocket className="h-10 w-10 text-primary-foreground animate-bounce" />
+          </div>
+        </div>
+
+        {/* Floating particles */}
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-primary/20"
+            style={{
+              width: `${4 + Math.random() * 6}px`,
+              height: `${4 + Math.random() * 6}px`,
+              left: `${15 + Math.random() * 70}%`,
+              top: `${15 + Math.random() * 70}%`,
+              animation: `float-particle ${2 + Math.random() * 3}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
+
+        <div className="mt-10 text-center space-y-2">
+          <h2 className="text-xl font-bold text-foreground animate-pulse">
+            Creating your store...
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Setting up <span className="font-semibold text-primary">{name || "your store"}</span> ✨
+          </p>
+          <div className="mx-auto mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-1000"
+              style={{
+                width: loading ? "85%" : "100%",
+                animation: "progress-grow 1.5s ease-out forwards",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-8 relative">
+      {/* Existing Store Dialog */}
+      <Dialog open={showExistingStoreDialog} onOpenChange={setShowExistingStoreDialog}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogHeader className="items-center">
+            <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Crown className="h-8 w-8 text-primary animate-bounce" />
+            </div>
+            <DialogTitle className="text-xl">You Already Have a Store!</DialogTitle>
+            <DialogDescription className="text-sm">
+              Your store <span className="font-semibold text-primary">{existingStoreSlug}.storivo.in</span> is already live and ready for business.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="rounded-xl border bg-accent/30 p-4 text-left">
+              <div className="flex items-start gap-3">
+                <ShoppingBag className="mt-0.5 h-5 w-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">One store per account</p>
+                  <p className="text-xs text-muted-foreground">
+                    Each account gets one powerful store. Head to your dashboard to manage products, orders, and themes!
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate("/dashboard")}
+              className="w-full gap-2"
+            >
+              <Rocket className="h-4 w-4" />
+              Go to My Dashboard
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (existingStoreSlug) {
+                  window.open(`https://${existingStoreSlug}.storivo.in`, "_blank");
+                }
+              }}
+              className="w-full text-xs gap-1.5"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              Visit My Store
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Confetti overlay */}
       {showConfetti && (
         <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
@@ -619,13 +732,21 @@ export default function CreateStore() {
                 Next <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button type="button" onClick={handleSubmit} disabled={loading} className="gap-2 px-8">
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Create Store
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="gap-2 px-8 relative overflow-hidden group"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <span className="relative flex items-center gap-2">
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Rocket className="h-4 w-4 group-hover:animate-bounce" />
+                  )}
+                  Launch My Store 🚀
+                </span>
               </Button>
             )}
           </div>
