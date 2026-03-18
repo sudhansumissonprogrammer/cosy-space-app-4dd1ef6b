@@ -342,7 +342,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         slug: slug.trim() || generateSlug(name.trim()),
         price: parseFloat(price),
         sale_price: salePrice ? parseFloat(salePrice) : null,
-        
+        currency: store?.currency || 'INR',
         description: description.trim() || null,
         stock_quantity: trackStock ? (parseInt(stockQuantity) || 0) : 999999,
         category: category || null,

@@ -207,6 +207,16 @@ export default function BulkUpload() {
     enabled: !!user,
   });
 
+  const { data: store } = useQuery({
+    queryKey: ["store", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("stores").select("currency").eq("id", storeId!).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!storeId,
+  });
+
   const { data: categories } = useQuery({
     queryKey: ["categories", storeId],
     queryFn: async () => {
@@ -386,6 +396,7 @@ export default function BulkUpload() {
               slug: generateSlug(mapped.name),
               price: mapped.price,
               sale_price: mapped.sale_price,
+              currency: store?.currency || 'INR',
               description: mapped.description || null,
               category: mapped.category || null,
               stock_quantity: mapped.stock_quantity,
