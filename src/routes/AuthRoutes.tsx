@@ -78,6 +78,7 @@ export default function AuthRoutes() {
           <Route path="whatsapp" element={<AdminWhatsApp />} />
           <Route path="subscriptions" element={<AdminSubscriptions />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="usage" element={<AdminUsageMonitoring />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
