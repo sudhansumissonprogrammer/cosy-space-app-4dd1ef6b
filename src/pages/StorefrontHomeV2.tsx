@@ -12,6 +12,7 @@ import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 
 /* ── Hero Carousel ── */
 function HeroCarousel({ store }: { store: StoreData }) {
