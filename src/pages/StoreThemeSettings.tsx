@@ -405,6 +405,7 @@ interface ThemeConfig {
   button_style: string;
   marquee_gradient: string;
   marquee_text: string;
+  marquee_enabled: boolean;
   product_card_style: string;
   category_style: string;
 }
