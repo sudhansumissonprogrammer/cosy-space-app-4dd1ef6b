@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { getSubdomainSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { logError } from "@/lib/logError";
 
 // Storefront — eagerly loaded for fast storefront rendering
 import StorefrontLayout from "./layouts/StorefrontLayout";
