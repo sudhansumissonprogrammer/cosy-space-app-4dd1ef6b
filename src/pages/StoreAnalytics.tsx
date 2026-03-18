@@ -158,7 +158,7 @@ export default function StoreAnalytics() {
       return isAfter(d, priorStart) && !isAfter(d, rangeStart);
     });
     return { current, prior };
-  }, [pageViews, dateRange]);
+  }, [pageViews, dateRange, customFrom, customTo]);
 
   // Metrics
   const totalRevenue = filtered.current.filter((o: any) => o.status !== "cancelled").reduce((s: number, o: any) => s + Number(o.total || 0), 0);
