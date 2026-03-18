@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import OrderNotificationListener from "@/components/OrderNotificationListener";
+
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import {
@@ -237,7 +237,6 @@ export default function DashboardLayout() {
           <div className="flex-1 flex flex-col min-w-0">
             <DynamicPwaManifest storeName="Storivo" logoUrl="/pwa-192x192.png" themeColor="#1a1a1a" startUrl="/dashboard" />
             <SmartInstallPrompt appName="Storivo" primaryColor="#1a1a1a" textColor="#ffffff" />
-            <OrderNotificationListener />
             <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger />
@@ -291,7 +290,7 @@ export default function DashboardLayout() {
     >
       <DynamicPwaManifest storeName="Storivo" logoUrl="/pwa-192x192.png" themeColor="#1a1a1a" startUrl="/dashboard" />
       <SmartInstallPrompt appName="Storivo" primaryColor="#1a1a1a" textColor="#ffffff" />
-      <OrderNotificationListener />
+      
 
       {/* Shopify-style header */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-[#1a1a1a] px-3">

@@ -17,8 +17,7 @@ import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import SideCart from "@/components/storefront/SideCart";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
-import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
-import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
+import { trackPageView } from "@/lib/trackPageView";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
@@ -299,15 +298,7 @@ export default function StorefrontLayoutV11({ slugOverride }: { slugOverride?: s
   useEffect(() => {
     if (!store?.id || viewTracked.current) return;
     viewTracked.current = true;
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    if (!projectId) return;
-    setTimeout(() => {
-      fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ store_id: store.id, path: window.location.pathname }),
-      }).catch(() => {});
-    }, 3000);
+    trackPageView(store.id);
   }, [store?.id]);
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
@@ -394,8 +385,6 @@ export default function StorefrontLayoutV11({ slugOverride }: { slugOverride?: s
           >
             <AppHeader store={store} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-            <StorefrontOrderNotification storeName={store.name} />
-            <StorefrontPushListener storeId={store.id} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <div className="pb-24 md:pb-0">
               <Outlet context={store} />

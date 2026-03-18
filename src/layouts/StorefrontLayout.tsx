@@ -21,8 +21,7 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import SideCart from "@/components/storefront/SideCart";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
-import StorefrontOrderNotification from "@/components/storefront/StorefrontOrderNotification";
-import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
+import { trackPageView } from "@/lib/trackPageView";
 import ExitIntentPopup from "@/components/storefront/ExitIntentPopup";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
@@ -275,15 +274,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   useEffect(() => {
     if (!store?.id || viewTracked.current) return;
     viewTracked.current = true;
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    if (!projectId) return;
-    setTimeout(() => {
-      fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ store_id: store.id, path: window.location.pathname }),
-      }).catch(() => {});
-    }, 3000);
+    trackPageView(store.id);
   }, [store?.id]);
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
@@ -442,8 +433,6 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
 
       <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
       <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-      <StorefrontOrderNotification storeName={store.name} />
-      <StorefrontPushListener storeId={store.id} />
       <Outlet context={store} />
       
       <StorefrontFooter store={store} />

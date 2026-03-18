@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout";
 import { CartProvider, useCart } from "@/contexts/CartContext";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
-import StorefrontPushListener from "@/components/storefront/StorefrontPushListener";
+import { trackPageView } from "@/lib/trackPageView";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -191,15 +191,7 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
   useEffect(() => {
     if (!store?.id || viewTracked.current) return;
     viewTracked.current = true;
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    if (!projectId) return;
-    setTimeout(() => {
-      fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ store_id: store.id, path: window.location.pathname }),
-      }).catch(() => {});
-    }, 3000);
+    trackPageView(store.id);
   }, [store?.id]);
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
@@ -275,7 +267,7 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
       >
         <RestaurantHeader store={store} tableNumber={tableNumber} />
         <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-        <StorefrontPushListener storeId={store.id} />
+        
         <div className="pb-28">
           <Outlet context={{ ...store, tableNumber }} />
         </div>
