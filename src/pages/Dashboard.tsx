@@ -143,6 +143,13 @@ export default function Dashboard() {
     return <DashboardSkeleton />;
   }
 
+  // Error loading store
+  if (storeError) {
+    return (
+      <QueryErrorState message="Failed to load your store" onRetry={() => refetchStore()} />
+    );
+  }
+
   // No store yet — show create CTA
   if (!storeId) {
     return (
