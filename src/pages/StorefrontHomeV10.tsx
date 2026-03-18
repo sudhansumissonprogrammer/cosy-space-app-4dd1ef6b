@@ -11,6 +11,7 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 
 /* ── Hero Image Section ── */
 function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
