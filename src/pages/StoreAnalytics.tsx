@@ -134,17 +134,25 @@ export default function StoreAnalytics() {
 
   const filtered = useMemo(() => {
     if (!allOrders) return { current: [], prior: [] };
-    const current = allOrders.filter((o: any) => dateRange === "all" || isAfter(parseISO(o.created_at), rangeStart));
+    const current = allOrders.filter((o: any) => {
+      if (dateRange === "all") return true;
+      const d = parseISO(o.created_at);
+      return isAfter(d, rangeStart) && (dateRange !== "custom" || isBefore(d, rangeEnd));
+    });
     const prior = allOrders.filter((o: any) => {
       const d = parseISO(o.created_at);
       return isAfter(d, priorStart) && !isAfter(d, rangeStart);
     });
     return { current, prior };
-  }, [allOrders, dateRange]);
+  }, [allOrders, dateRange, customFrom, customTo]);
 
   const filteredViews = useMemo(() => {
     if (!pageViews) return { current: [], prior: [] };
-    const current = pageViews.filter((v: any) => dateRange === "all" || isAfter(parseISO(v.created_at), rangeStart));
+    const current = pageViews.filter((v: any) => {
+      if (dateRange === "all") return true;
+      const d = parseISO(v.created_at);
+      return isAfter(d, rangeStart) && (dateRange !== "custom" || isBefore(d, rangeEnd));
+    });
     const prior = pageViews.filter((v: any) => {
       const d = parseISO(v.created_at);
       return isAfter(d, priorStart) && !isAfter(d, rangeStart);
