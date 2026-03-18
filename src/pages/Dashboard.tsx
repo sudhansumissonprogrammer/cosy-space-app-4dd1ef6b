@@ -17,6 +17,7 @@ import PendingActions from "@/components/dashboard/PendingActions";
 import RecentOrders from "@/components/dashboard/RecentOrders";
 import TopProducts from "@/components/dashboard/TopProducts";
 import StoreChecklist from "@/components/dashboard/StoreChecklist";
+import QueryErrorState from "@/components/QueryErrorState";
 
 function ShimmerBlock({ className }: { className?: string }) {
   return (
@@ -54,7 +55,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { data: store, isLoading: storeLoading } = useQuery({
+  const { data: store, isLoading: storeLoading, isError: storeError, refetch: refetchStore } = useQuery({
     queryKey: ["my-store", user?.id],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
@@ -141,6 +142,13 @@ export default function Dashboard() {
   // Show skeleton while store query is loading
   if (storeLoading) {
     return <DashboardSkeleton />;
+  }
+
+  // Error loading store
+  if (storeError) {
+    return (
+      <QueryErrorState message="Failed to load your store" onRetry={() => refetchStore()} />
+    );
   }
 
   // No store yet — show create CTA

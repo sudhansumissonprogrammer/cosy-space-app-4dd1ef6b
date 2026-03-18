@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { getSubdomainSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { logError } from "@/lib/logError";
 
 // Storefront — eagerly loaded for fast storefront rendering
 import StorefrontLayout from "./layouts/StorefrontLayout";
@@ -57,6 +58,15 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000,
       refetchOnWindowFocus: false,
       retry: 1,
+    },
+    mutations: {
+      onError: (error: Error) => {
+        logError({
+          message: error.message,
+          stack: error.stack,
+          context: "mutation",
+        });
+      },
     },
   },
 });

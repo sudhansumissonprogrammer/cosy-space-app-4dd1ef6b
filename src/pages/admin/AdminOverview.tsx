@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Store, ShoppingBag, Ban, Package, DollarSign, UserX, UserPlus, ShoppingCart } from "lucide-react";
 import { StatCardsSkeleton } from "@/components/admin/AdminSkeletons";
+import QueryErrorState from "@/components/QueryErrorState";
 import { format } from "date-fns";
 
 interface AdminStats {
@@ -18,7 +19,7 @@ interface AdminStats {
 }
 
 export default function AdminOverview() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-stats"],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
@@ -42,7 +43,9 @@ export default function AdminOverview() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">Overview</h1>
 
-      {isLoading ? (
+      {isError ? (
+        <QueryErrorState message="Failed to load admin stats" onRetry={() => refetch()} />
+      ) : isLoading ? (
         <StatCardsSkeleton />
       ) : (
         <>
