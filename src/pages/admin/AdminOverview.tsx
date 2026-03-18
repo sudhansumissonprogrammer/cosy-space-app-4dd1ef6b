@@ -19,7 +19,7 @@ interface AdminStats {
 }
 
 export default function AdminOverview() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-stats"],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
