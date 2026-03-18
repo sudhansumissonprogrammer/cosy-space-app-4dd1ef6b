@@ -572,7 +572,9 @@ export default function ProductsList() { // v2
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {product.stock_quantity > 0
+                        {product.stock_quantity >= 999999
+                          ? "Unlimited"
+                          : product.stock_quantity > 0
                           ? `${product.stock_quantity} available`
                           : "Out of stock"}
                       </p>
