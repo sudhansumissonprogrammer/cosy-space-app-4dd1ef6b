@@ -2,6 +2,7 @@ import { Instagram } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
+import { cleanImageUrl } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 interface StorefrontInstagramSectionProps {
