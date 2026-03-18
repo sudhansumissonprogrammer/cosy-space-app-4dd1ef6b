@@ -116,7 +116,7 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
                 )}
                 {hasDiscount && (
                   <span className="absolute left-1.5 top-1.5 rounded bg-destructive px-1 py-0.5 text-[8px] font-bold text-destructive-foreground">
-                    {Math.round(((Number(product.price) - Number(product.sale_price!)) / Number(product.price)) * 100)}% OFF
+                    {getDiscountPercent(Number(product.price), Number(product.sale_price!))}% OFF
                   </span>
                 )}
               </div>

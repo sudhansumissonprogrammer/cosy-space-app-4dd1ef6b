@@ -133,7 +133,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
                     <>
                       <span className="text-xs text-muted-foreground line-through">{currency} {Number(product.price).toFixed(0)}</span>
                       <Badge variant="secondary" className="text-[9px] px-1 py-0">
-                        {Math.round(((product.price - product.sale_price!) / product.price) * 100)}% OFF
+                        {getDiscountPercent(product.price, product.sale_price!)}% OFF
                       </Badge>
                     </>
                   )}

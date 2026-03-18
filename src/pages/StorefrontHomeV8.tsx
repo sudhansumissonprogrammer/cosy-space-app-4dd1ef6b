@@ -181,7 +181,7 @@ function FlashDeals({ products, slug }: { products: any[]; slug: string }) {
       {/* Cards */}
       <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch", scrollSnapType: "x mandatory" }}>
         {deals.map((product) => {
-          const discount = Math.round(((product.price - product.sale_price) / product.price) * 100);
+          const discount = getDiscountPercent(product.price, product.sale_price);
           return (
             <Link
               key={product.id}
