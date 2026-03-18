@@ -21,6 +21,7 @@ import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_PRODUCT_IMAGES = 5;
 
 interface ProductFormProps {
   productId?: string;
