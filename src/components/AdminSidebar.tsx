@@ -36,6 +36,7 @@ export function AdminSidebar() {
     { title: "WhatsApp", url: "/admin/whatsapp", icon: MessageSquare },
     { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
     { title: "Usage Monitor", url: "/admin/usage", icon: Activity },
+    { title: "Error Logs", url: "/admin/error-logs", icon: AlertTriangle },
   ];
 
   const settingsItems = [

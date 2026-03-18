@@ -80,6 +80,7 @@ export default function AuthRoutes() {
           <Route path="subscriptions" element={<AdminSubscriptions />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="usage" element={<AdminUsageMonitoring />} />
+          <Route path="error-logs" element={<AdminErrorLogs />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
