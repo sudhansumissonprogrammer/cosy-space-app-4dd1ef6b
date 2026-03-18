@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, ShoppingBag, X } from "lucide-react";
 import { toast } from "sonner";
 import { fireMetaCAPI } from "@/lib/metaCapi";
+import { cleanImageUrl } from "@/lib/imageOptimize";
 
 interface UpsellProps {
   storeId: string;
