@@ -196,6 +196,26 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* Store URL */}
+      {store?.slug && (
+        <Card className="border shadow-none">
+          <CardContent className="flex items-center gap-3 p-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Eye className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">Your Store</p>
+              <p className="text-sm font-medium text-foreground truncate">{store.slug}.storivo.in</p>
+            </div>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 shrink-0" asChild>
+              <a href={`https://${store.slug}.storivo.in`} target="_blank" rel="noopener noreferrer">
+                <Eye className="h-3 w-3" /> View
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick Actions */}
       {storeId && (
         <QuickActions storeId={storeId} storeSlug={store?.slug} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} />

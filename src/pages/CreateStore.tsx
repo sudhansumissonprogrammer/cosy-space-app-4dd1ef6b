@@ -330,9 +330,14 @@ export default function CreateStore() {
                 </div>
 
                 {slug && (
-                  <p className="text-xs text-muted-foreground">
-                    Your store URL: <span className="font-medium text-foreground">/store/{slug}</span>
-                  </p>
+                  <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground">Your store will be live at:</p>
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <Globe className="h-3.5 w-3.5 text-primary" />
+                      {slug}.storivo.in
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">You can connect your own custom domain later in Settings → Domain</p>
+                  </div>
                 )}
 
                 <div className="space-y-2">
