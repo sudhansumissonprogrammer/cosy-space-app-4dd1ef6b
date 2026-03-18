@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, ShoppingBag, X } from "lucide-react";
 import { toast } from "sonner";
 import { fireMetaCAPI } from "@/lib/metaCapi";
+import { cleanImageUrl } from "@/lib/imageOptimize";
 
 interface UpsellProps {
   storeId: string;
@@ -119,7 +120,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
               className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-all hover:border-primary/30"
             >
               <img
-                src={product.image_url || "/placeholder.svg"}
+                src={cleanImageUrl(product.image_url) || "/placeholder.svg"}
                 alt={product.name}
                 className="h-16 w-16 rounded-lg object-cover border border-border flex-shrink-0"
               />

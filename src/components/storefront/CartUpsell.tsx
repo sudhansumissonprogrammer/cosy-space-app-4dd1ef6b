@@ -5,6 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { Plus, Star, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { cleanImageUrl } from "@/lib/imageOptimize";
 
 interface CartUpsellProps {
   storeId: string;
@@ -102,7 +103,7 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
               <div className="relative aspect-square w-full bg-accent">
                 {product.image_url ? (
                   <img
-                    src={product.image_url}
+                    src={cleanImageUrl(product.image_url)}
                     alt={product.name}
                     className="h-full w-full object-cover"
                     loading="lazy"
