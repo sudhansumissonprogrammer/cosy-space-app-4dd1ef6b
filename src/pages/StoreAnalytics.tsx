@@ -58,6 +58,9 @@ const CHART_COLORS = [
 export default function StoreAnalytics() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState<DateRange>("30d");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(subDays(new Date(), 14));
+  const [customTo, setCustomTo] = useState<Date | undefined>(new Date());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const { data: stores } = useQuery({
     queryKey: ["stores", user?.id],
