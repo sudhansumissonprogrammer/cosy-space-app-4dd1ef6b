@@ -48,7 +48,6 @@ export async function processImage(
 
   // Skip if already small WebP under target
   if (file.size <= MAX_OUTPUT_KB * 1024 && file.type === "image/webp") {
-    console.log(`[ImageProcess] Skipped (already ${formatSize(file.size)} WebP)`);
     return { file, originalSize, compressedSize: file.size, skipped: true };
   }
 
