@@ -2059,7 +2059,7 @@ export default function StoreThemeSettings() {
     iframeDesktopRef.current?.contentWindow?.postMessage(msg, "*");
   }, []);
 
-  const updateField = (key: keyof ThemeConfig, value: string) => {
+  const updateField = (key: keyof ThemeConfig, value: string | boolean) => {
     const newConfig = { ...config, [key]: value };
     setConfig(newConfig);
     setDirty(true);
