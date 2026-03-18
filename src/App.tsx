@@ -59,6 +59,15 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       retry: 1,
     },
+    mutations: {
+      onError: (error: Error) => {
+        logError({
+          message: error.message,
+          stack: error.stack,
+          context: "mutation",
+        });
+      },
+    },
   },
 });
 
