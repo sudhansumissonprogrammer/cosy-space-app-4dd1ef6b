@@ -63,16 +63,7 @@ export default function StoreOrders() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  const { data: store } = useQuery({
-    queryKey: ["store", storeId],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("stores").select("*").eq("id", storeId!).eq("owner_id", user!.id).maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId && !!user,
-  });
+  const { data: store } = useStoreData(storeId);
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["website-orders-all", storeId],

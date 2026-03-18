@@ -31,21 +31,7 @@ export default function StorePayments() {
   const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
   const [razorpayOpen, setRazorpayOpen] = useState(false);
 
-  const { data: store, isLoading: storeLoading } = useQuery({
-    queryKey: ["store", storeId],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("id, name, order_mode")
-        .eq("id", storeId!)
-        .eq("owner_id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId && !!user,
-  });
+  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
   const { data: paymentConfig, isLoading: configLoading } = useQuery({
     queryKey: ["payment-config", storeId],
