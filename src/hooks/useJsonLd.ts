@@ -133,16 +133,8 @@ export function useProductJsonLd({ product, storeSlug, storeName }: ProductJsonL
   }, [product, storeSlug, storeName]);
 }
 
-// Deterministic rating from product ID (matches the fake reviews in ProductDetail)
 function getProductRatingForSchema(productId: string): string {
-  let hash = 0;
-  for (let i = 0; i < productId.length; i++) {
-    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
-    hash |= 0;
-  }
-  const abs = Math.abs(hash);
-  const ratings = [4.2, 4.3, 4.4, 4.5, 4.5, 4.6, 4.6, 4.7, 4.7, 4.8, 4.8, 4.9];
-  return ratings[abs % ratings.length].toFixed(1);
+  return getProductRating(productId).toFixed(1);
 }
 
 function getProductReviewCountForSchema(productId: string): number {
