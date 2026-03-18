@@ -382,7 +382,7 @@ export default function CreateStore() {
                       <RadioGroupItem value="website" className="mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                          <Globe className="h-4 w-4 text-blue-600" /> Website Orders
+                          <Globe className="h-4 w-4 text-accent-foreground" /> Website Orders
                         </p>
                         <p className="text-xs text-muted-foreground">Customers checkout directly on your site</p>
                       </div>
