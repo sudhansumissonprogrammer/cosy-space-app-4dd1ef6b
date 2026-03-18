@@ -207,6 +207,16 @@ export default function BulkUpload() {
     enabled: !!user,
   });
 
+  const { data: store } = useQuery({
+    queryKey: ["store", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("stores").select("currency").eq("id", storeId!).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!storeId,
+  });
+
   const { data: categories } = useQuery({
     queryKey: ["categories", storeId],
     queryFn: async () => {
