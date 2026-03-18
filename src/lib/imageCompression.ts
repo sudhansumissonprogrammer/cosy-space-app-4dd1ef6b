@@ -30,8 +30,8 @@ export async function compressImage(
 ): Promise<CompressionResult> {
   const originalSize = file.size;
 
-  // Skip if already small enough (under 200KB)
-  if (file.size <= 200 * 1024) {
+  // Skip if already small enough (under 150KB)
+  if (file.size <= 150 * 1024) {
     return { file, originalSize, compressedSize: file.size, skipped: true };
   }
 
@@ -83,7 +83,7 @@ export async function compressImage(
           }
 
           let currentQuality = quality - 0.1;
-          while (blob.size > 300 * 1024 && currentQuality > 0.3) {
+          while (blob.size > 150 * 1024 && currentQuality > 0.2) {
             blob = await tryFormat(`image/${ext === "webp" ? "webp" : "jpeg"}`, currentQuality);
             if (!blob) break;
             currentQuality -= 0.1;

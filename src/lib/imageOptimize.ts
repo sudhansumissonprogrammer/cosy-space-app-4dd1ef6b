@@ -1,7 +1,11 @@
 /**
  * Optimizes external image URLs by appending width/quality params.
- * Supports Shopify CDN, Unsplash, and generic URL patterns.
+ * Supports Supabase Storage (render/image transform), Shopify CDN, Unsplash,
+ * and falls back to an edge function proxy for arbitrary URLs.
  */
+
+const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
+
 export function optimizeImageUrl(url: string | null | undefined, width: number = 400): string {
   if (!url) return "";
 
@@ -26,10 +30,28 @@ export function optimizeImageUrl(url: string | null | undefined, width: number =
     return u.toString();
   }
 
-  // Supabase Storage: use transform
+  // Supabase Storage: use render/image transform API
   if (url.includes("supabase.co/storage")) {
-    const separator = url.includes("?") ? "&" : "?";
-    return `${url}${separator}width=${width}&quality=80`;
+    try {
+      const u = new URL(url);
+      // Transform /storage/v1/object/public/bucket/path
+      // into     /storage/v1/render/image/public/bucket/path
+      u.pathname = u.pathname.replace(
+        "/storage/v1/object/",
+        "/storage/v1/render/image/"
+      );
+      u.searchParams.set("width", String(width));
+      u.searchParams.set("quality", "75");
+      return u.toString();
+    } catch {
+      return url;
+    }
+  }
+
+  // For any other external URL, proxy through our edge function
+  if (SUPABASE_PROJECT_ID && (url.startsWith("http://") || url.startsWith("https://"))) {
+    const proxyUrl = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-resize?url=${encodeURIComponent(url)}&w=${width}&q=75`;
+    return proxyUrl;
   }
 
   return url;
