@@ -328,8 +328,9 @@ export default function ProductDetail() {
   const showBuyNow = orderMode === "website" || orderMode === "both";
   const stats = getProductStats(product.id);
   const wishlisted = isWishlisted(product.id);
-  const isLowStock = product.stock_quantity > 0 && product.stock_quantity <= 10;
-  const isOutOfStock = product.stock_quantity <= 0;
+  const isUnlimitedStock = product.stock_quantity >= 999999;
+  const isLowStock = !isUnlimitedStock && product.stock_quantity > 0 && product.stock_quantity <= 10;
+  const isOutOfStock = !isUnlimitedStock && product.stock_quantity <= 0;
 
   const handleAddToCart = () => {
     addToCart({
