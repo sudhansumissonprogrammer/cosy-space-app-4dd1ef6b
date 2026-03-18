@@ -163,7 +163,7 @@ export default function ProductsList() { // v2
     if (statusFilter === "active") result = result.filter(p => p.is_active);
     if (statusFilter === "draft") result = result.filter(p => !p.is_active);
     if (stockFilter === "in-stock") result = result.filter(p => p.stock_quantity > 0);
-    if (stockFilter === "out-of-stock") result = result.filter(p => p.stock_quantity <= 0);
+    if (stockFilter === "out-of-stock") result = result.filter(p => p.stock_quantity <= 0 && p.stock_quantity < 999999);
     if (categoryFilter.length > 0) result = result.filter(p => p.category && categoryFilter.includes(p.category));
     switch (sort) {
       case "title-asc": result.sort((a, b) => a.name.localeCompare(b.name)); break;
@@ -572,7 +572,9 @@ export default function ProductsList() { // v2
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {product.stock_quantity > 0
+                        {product.stock_quantity >= 999999
+                          ? "Unlimited"
+                          : product.stock_quantity > 0
                           ? `${product.stock_quantity} available`
                           : "Out of stock"}
                       </p>
@@ -646,7 +648,7 @@ export default function ProductsList() { // v2
                             <span className="font-medium text-foreground">{currencySymbol}{Number(product.price).toFixed(2)}</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">{product.stock_quantity}</TableCell>
+                        <TableCell className="text-right">{product.stock_quantity >= 999999 ? "∞" : product.stock_quantity}</TableCell>
                         <TableCell>
                           <Badge variant={product.is_active ? "default" : "secondary"}>{product.is_active ? "Active" : "Draft"}</Badge>
                         </TableCell>

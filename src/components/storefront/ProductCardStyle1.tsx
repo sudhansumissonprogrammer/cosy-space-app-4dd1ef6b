@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Package, ShoppingCart, Star, Heart, Check, Plus, Minus, Loader2, Eye } from "lucide-react";
+import { Package, ShoppingCart, Star, Heart, Check, Plus, Minus, Loader2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet } from "@/lib/imageOptimize";
-import ProductQuickView from "./ProductQuickView";
+
 
 function getProductRating(productId: string): number {
   let hash = 0;
@@ -34,7 +34,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
   const { isWishlisted, toggleWishlist } = useWishlist();
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
-  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  
 
   const wishlisted = isWishlisted(product.id);
   const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
@@ -91,9 +91,6 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
           <button onClick={handleWishlist} className="absolute right-2.5 top-2.5 z-10 p-1 transition-all duration-200 hover:scale-110 active:scale-95">
             <Heart className={`h-4 w-4 drop-shadow-md transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"}`} />
           </button>
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuickViewOpen(true); }} className="absolute right-2.5 bottom-2.5 z-10 flex items-center gap-1 rounded-full bg-card/80 backdrop-blur-sm px-2 py-1 text-[9px] font-bold text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-card shadow-sm">
-            <Eye className="h-3 w-3" /> Quick View
-          </button>
           {product.image_url ? (
             <img src={optimizeImageUrl(product.image_url, 400)} srcSet={getImageSrcSet(product.image_url, [300, 400, 600])} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "auto"} />
           ) : (
@@ -135,7 +132,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
           </button>
         )}
       </div>
-      <ProductQuickView product={product} store={store} open={quickViewOpen} onOpenChange={setQuickViewOpen} />
+      
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack } from "@/hooks/useFacebookPixel";
@@ -328,8 +329,9 @@ export default function ProductDetail() {
   const showBuyNow = orderMode === "website" || orderMode === "both";
   const stats = getProductStats(product.id);
   const wishlisted = isWishlisted(product.id);
-  const isLowStock = product.stock_quantity > 0 && product.stock_quantity <= 10;
-  const isOutOfStock = product.stock_quantity <= 0;
+  const isUnlimitedStock = product.stock_quantity >= 999999;
+  const isLowStock = !isUnlimitedStock && product.stock_quantity > 0 && product.stock_quantity <= 10;
+  const isOutOfStock = !isUnlimitedStock && product.stock_quantity <= 0;
 
   const handleAddToCart = () => {
     addToCart({
@@ -1353,7 +1355,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
           </div>
 
           <img
-            src={images[activeIndex]}
+            src={optimizeImageUrl(images[activeIndex], 800)}
             alt={productName}
             className="aspect-square w-full object-contain transition-transform duration-300"
             decoding="async"
