@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Settings, LogOut, Users, ShoppingBag,
-  CreditCard, BarChart3, MessageSquare, Shield, Activity,
+  CreditCard, BarChart3, MessageSquare, Shield, Activity, AlertTriangle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
