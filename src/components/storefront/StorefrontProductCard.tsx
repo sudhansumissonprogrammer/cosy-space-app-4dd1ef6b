@@ -40,10 +40,10 @@ const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)
 
 export default function StorefrontProductCard({ product, slug, store, priority = false }: StorefrontProductCardProps) {
   const { wishlisted, cartQty, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
+  const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
-  const { addToCart } = useProductCardActions(product);
   const price = product.sale_price && product.sale_price < product.price
     ? Number(product.sale_price) : Number(product.price);
 
