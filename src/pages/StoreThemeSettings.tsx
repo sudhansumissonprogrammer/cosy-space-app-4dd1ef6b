@@ -435,7 +435,7 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     primary_color: "#C8A96A", accent_color: "#1C1C1C", text_color: "#1C1C1C", background_color: "#F8F5F0",
     heading_font: "Playfair Display", body_font: "Inter", button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #C8A96A, #e8d5a8, #C8A96A)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, product_card_style: "style-1", category_style: "style-2",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-2",
   },
   "theme-6": {
     primary_color: "#2563EB", accent_color: "#1e293b", text_color: "#1e293b", background_color: "#F8FAFC",
