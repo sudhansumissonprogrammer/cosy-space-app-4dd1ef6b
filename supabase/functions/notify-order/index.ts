@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const EMAIL_SENDER_DOMAIN = "notify.storivo.in";
+const EMAIL_SENDER_DOMAIN = "mail.storivo.in";
 
 function getEmailFrom(storeName: string) {
   // Sanitize store name for email FROM field (remove special chars)
