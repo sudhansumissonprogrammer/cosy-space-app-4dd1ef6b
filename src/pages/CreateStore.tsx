@@ -70,12 +70,13 @@ export default function CreateStore() {
       .limit(1)
       .then(({ data }) => {
         if (data && data.length > 0) {
-          setExistingStoreSlug(data[0].slug);
-          setShowExistingStoreDialog(true);
+          // User already has a store — redirect to dashboard immediately
+          navigate("/dashboard", { replace: true });
+          return;
         }
         setCheckingStore(false);
       });
-  }, [user]);
+  }, [user, navigate]);
 
   // Step 1
   const [name, setName] = useState("");
