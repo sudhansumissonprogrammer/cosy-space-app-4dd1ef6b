@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ const STEPS = [
 export default function CreateStore() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
@@ -223,7 +225,8 @@ export default function CreateStore() {
 
       setShowConfetti(true);
       toast.success("Store created successfully! 🎉");
-      setTimeout(() => navigate("/dashboard/stores"), 2000);
+      queryClient.invalidateQueries({ queryKey: ["my-store"] });
+      setTimeout(() => navigate("/dashboard", { replace: true }), 2000);
     } catch (err: any) {
       setCreatingAnimation(false);
       toast.error(err.message || "Failed to create store");
