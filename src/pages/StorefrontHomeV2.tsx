@@ -53,7 +53,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
 
   useEffect(() => {
     if (slideCount <= 1) return;
-    const timer = setInterval(() => setCurrent((c) => (c + 1) % slideCount), 5000);
+    const timer = setInterval(() => setCurrent((c) => (c + 1) % slideCount), 2000);
     return () => clearInterval(timer);
   }, [slideCount]);
 

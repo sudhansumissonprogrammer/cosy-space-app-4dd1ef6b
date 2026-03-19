@@ -51,7 +51,7 @@ function BannerSlider({ store }: { store: StoreData }) {
 
   useEffect(() => {
     if (count <= 1) return;
-    const t = setInterval(() => setCurrent((c) => (c + 1) % count), 4000);
+    const t = setInterval(() => setCurrent((c) => (c + 1) % count), 2000);
     return () => clearInterval(t);
   }, [count]);
 
