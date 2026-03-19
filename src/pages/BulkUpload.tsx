@@ -422,6 +422,7 @@ export default function BulkUpload() {
       setStep("result");
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products-count", storeId] });
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
       const msg = [];
