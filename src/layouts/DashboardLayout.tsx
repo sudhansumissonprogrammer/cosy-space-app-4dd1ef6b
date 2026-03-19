@@ -82,6 +82,8 @@ function MobileMenu({
         {
           title: "Store",
           items: [
+            { label: "Categories", icon: Package, path: `/dashboard/stores/${storeId}/categories` },
+            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeId}/media` },
             { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload` },
             { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme` },
             { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain` },
