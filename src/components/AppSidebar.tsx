@@ -87,6 +87,8 @@ export function AppSidebar() {
   const catalogItems = storeId
     ? [
         { title: "Products", url: `/dashboard/stores/${storeId}/products`, icon: Package },
+        { title: "Categories", url: `/dashboard/stores/${storeId}/categories`, icon: FolderOpen },
+        { title: "Media Library", url: `/dashboard/stores/${storeId}/media`, icon: ImageIcon },
         { title: "Bulk Upload", url: `/dashboard/stores/${storeId}/products/bulk-upload`, icon: Upload },
       ]
     : [];
