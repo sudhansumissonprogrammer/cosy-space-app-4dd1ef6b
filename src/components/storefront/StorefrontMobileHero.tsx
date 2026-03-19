@@ -17,7 +17,7 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
   if (slides.length === 0) return null;
 
   return (
-    <div className="block md:hidden">
+    <div className="group">
       <HeroBannerCarousel
         images={slides}
         storeName={storeName}
