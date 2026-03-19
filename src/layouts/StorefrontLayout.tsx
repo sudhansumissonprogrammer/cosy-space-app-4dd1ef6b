@@ -270,7 +270,7 @@ function StorefrontSkeleton() {
 }
 
 export default function StorefrontLayout({ slugOverride }: { slugOverride?: string } = {}) {
-  const { store, isLoading, slug } = useStorefront(slugOverride);
+  const { store, isLoading, error, slug, refetch } = useStorefront(slugOverride);
   const viewTracked = useRef(false);
   const queryClient = useQueryClient();
 
@@ -313,6 +313,24 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
 
   if (isLoading) {
     return <StorefrontSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center">
+        <Store className="h-12 w-12 text-muted-foreground" />
+        <h1 className="text-2xl font-semibold text-foreground">Store is temporarily unavailable</h1>
+        <p className="max-w-md text-muted-foreground">
+          {error instanceof Error ? error.message : "Unable to load store data right now. Please try again."}
+        </p>
+        <div className="flex gap-2">
+          <Button onClick={() => void refetch()}>Retry</Button>
+          <Button asChild variant="outline">
+            <Link to="/">Go home</Link>
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (!store) {
