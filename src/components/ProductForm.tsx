@@ -12,8 +12,9 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2 } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon } from "lucide-react";
 import { Link } from "react-router-dom";
+import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
