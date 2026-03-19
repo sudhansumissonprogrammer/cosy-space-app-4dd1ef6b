@@ -39,11 +39,19 @@ export function useStorefront(slugOverride?: string) {
   const slug = slugOverride || paramSlug;
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
+      const rpcResponse = await Promise.race([
+        supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 }),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("Server is taking too long. Please retry.")), 15000);
+        }),
+      ]);
+
+      const { data, error } = rpcResponse as { data: unknown; error: unknown };
       if (error) throw error;
+
       const result = data as any;
       const store = result?.store as StoreData | null;
       if (store) {
@@ -55,17 +63,21 @@ export function useStorefront(slugOverride?: string) {
           queryClient.setQueryData(["storefront-theme-config", store.id], result.theme_config);
         }
         // Persist store ID for CAPI usage in CartContext
-        try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
+        try {
+          localStorage.setItem(`store_id_${slug}`, store.id);
+        } catch {}
       }
       return result;
     },
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    retry: 1,
+    retryDelay: 1000,
   });
 
-  const store = data?.store as StoreData | null ?? null;
-  return { store, isLoading, error, slug };
+  const store = (data?.store as StoreData | null) ?? null;
+  return { store, isLoading, error, slug, refetch };
 }
 
 function CartBadge() {
