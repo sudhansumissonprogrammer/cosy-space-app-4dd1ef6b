@@ -12,12 +12,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Hero Banner ── */
 function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
-  const heroUrl = store.mobile_hero_url || store.banner_url;
+  const heroImages: string[] = [];
+  const mhi = (store as any).mobile_hero_images;
+  if (mhi && Array.isArray(mhi) && mhi.length > 0) {
+    heroImages.push(...mhi);
+  } else {
+    const heroUrl = store.mobile_hero_url || store.banner_url;
+    if (heroUrl) heroImages.push(heroUrl);
+  }
 
-  if (!heroUrl) {
+  if (heroImages.length === 0) {
     return (
       <div
         className="w-full flex items-center justify-center"
@@ -55,16 +63,13 @@ function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
   }
 
   return (
-    <div className="w-full relative">
-      <img
-        src={optimizeImageUrl(heroUrl, 800)}
-        alt={`${store.name} hero`}
-        className="w-full h-auto object-cover"
-        style={{ maxHeight: "520px" }}
-        loading="eager"
-        fetchPriority="high"
-      />
-    </div>
+    <HeroBannerCarousel
+      images={heroImages}
+      storeName={store.name}
+      interval={2000}
+      imageClassName="w-full h-auto object-cover"
+      maxHeight="520px"
+    />
   );
 }
 

@@ -23,15 +23,22 @@ function HeroCarousel({ store }: { store: StoreData }) {
 
   const slides = useMemo(() => {
     const s: { image: string; title: string; subtitle?: string; link?: string }[] = [];
-    if ((store as any).banner_url) s.push({ image: (store as any).banner_url, title: store.name, subtitle: "Shop the latest collection" });
-    if ((store as any).mobile_hero_url) s.push({ image: (store as any).mobile_hero_url, title: "New Arrivals", subtitle: "Fresh styles just landed" });
+    const mhi = (store as any).mobile_hero_images;
+    if (mhi && Array.isArray(mhi) && mhi.length > 0) {
+      mhi.forEach((url: string, idx: number) => {
+        s.push({ image: url, title: idx === 0 ? store.name : "New Arrivals", subtitle: idx === 0 ? "Shop the latest collection" : "Fresh styles just landed" });
+      });
+    } else {
+      if ((store as any).banner_url) s.push({ image: (store as any).banner_url, title: store.name, subtitle: "Shop the latest collection" });
+      if ((store as any).mobile_hero_url) s.push({ image: (store as any).mobile_hero_url, title: "New Arrivals", subtitle: "Fresh styles just landed" });
+    }
     const best = products?.filter((p: any) => p.is_best_selling && p.image_url).slice(0, 3) || [];
     best.forEach((p: any) => s.push({ image: p.image_url, title: p.name, subtitle: `₹${Number(p.sale_price || p.price).toLocaleString("en-IN")}`, link: storefrontPath(store.slug, `product/${p.slug || p.id}`) }));
     if (s.length === 0) s.push({ image: "", title: store.name, subtitle: "Welcome to our store" });
     return s;
   }, [store, products]);
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center" }, [Autoplay({ delay: 4000, stopOnInteraction: false })]);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center" }, [Autoplay({ delay: 2000, stopOnInteraction: false })]);
   const [selected, setSelected] = useState(0);
 
   useEffect(() => {

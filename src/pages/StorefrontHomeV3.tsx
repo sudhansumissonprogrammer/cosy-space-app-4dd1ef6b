@@ -24,11 +24,18 @@ function BannerSlider({ store }: { store: StoreData }) {
 
   const slides = useMemo(() => {
     const s: { image: string; title: string; link?: string }[] = [];
-    if ((store as any).banner_url) {
-      s.push({ image: (store as any).banner_url, title: store.name });
-    }
-    if ((store as any).mobile_hero_url) {
-      s.push({ image: (store as any).mobile_hero_url, title: "New Arrivals" });
+    const mhi = (store as any).mobile_hero_images;
+    if (mhi && Array.isArray(mhi) && mhi.length > 0) {
+      mhi.forEach((url: string, idx: number) => {
+        s.push({ image: url, title: idx === 0 ? store.name : "New Arrivals" });
+      });
+    } else {
+      if ((store as any).banner_url) {
+        s.push({ image: (store as any).banner_url, title: store.name });
+      }
+      if ((store as any).mobile_hero_url) {
+        s.push({ image: (store as any).mobile_hero_url, title: "New Arrivals" });
+      }
     }
     const bestSelling = products?.filter((p: any) => p.is_best_selling && p.image_url).slice(0, 3) || [];
     bestSelling.forEach((p: any) => {
@@ -44,7 +51,7 @@ function BannerSlider({ store }: { store: StoreData }) {
 
   useEffect(() => {
     if (count <= 1) return;
-    const t = setInterval(() => setCurrent((c) => (c + 1) % count), 4000);
+    const t = setInterval(() => setCurrent((c) => (c + 1) % count), 2000);
     return () => clearInterval(t);
   }, [count]);
 

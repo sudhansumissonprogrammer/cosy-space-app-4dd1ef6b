@@ -13,32 +13,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Full-Screen Hero ── */
 function LuxuryHero({ store }: { store: StoreData }) {
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
 
-  const heroImage = (store as any).banner_url || (store as any).mobile_hero_url || null;
-  const bestProduct = products?.find((p: any) => p.is_best_selling && p.image_url);
+  const heroImages: string[] = [];
+  const mhi = (store as any).mobile_hero_images;
+  if (mhi && Array.isArray(mhi) && mhi.length > 0) {
+    heroImages.push(...mhi);
+  } else {
+    const heroImage = (store as any).banner_url || (store as any).mobile_hero_url || null;
+    if (heroImage) heroImages.push(heroImage);
+  }
 
-  return (
-    <section className="relative w-full h-[70vh] sm:h-screen" style={{ minHeight: "400px", maxHeight: "900px" }}>
-      {heroImage ? (
-        <img
-          src={optimizeImageUrl(heroImage, 1400)}
-          alt={store.name}
-          className="absolute inset-0 h-full w-full object-cover"
-          loading="eager"
-        />
-      ) : (
-        <div
-          className="absolute inset-0"
-          style={{ background: `linear-gradient(135deg, var(--storefront-accent, #1C1C1C), var(--storefront-text, #1C1C1C))` }}
-        />
-      )}
+  const overlayContent = (
+    <>
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/10" />
-
       <div className="absolute inset-0 flex items-center justify-center text-center">
         <div className="max-w-2xl px-6">
           <div className="mb-4 h-[1px] mx-auto w-12" style={{ backgroundColor: "var(--storefront-primary, #C8A96A)" }} />
@@ -63,6 +56,32 @@ function LuxuryHero({ store }: { store: StoreData }) {
           <div className="mt-4 h-[1px] mx-auto w-12" style={{ backgroundColor: "var(--storefront-primary, #C8A96A)" }} />
         </div>
       </div>
+    </>
+  );
+
+  if (heroImages.length === 0) {
+    return (
+      <section className="relative w-full h-[70vh] sm:h-screen" style={{ minHeight: "400px", maxHeight: "900px" }}>
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(135deg, var(--storefront-accent, #1C1C1C), var(--storefront-text, #1C1C1C))` }}
+        />
+        {overlayContent}
+      </section>
+    );
+  }
+
+  return (
+    <section className="relative w-full" style={{ minHeight: "400px", maxHeight: "900px" }}>
+      <HeroBannerCarousel
+        images={heroImages}
+        storeName={store.name}
+        optimizeWidth={1400}
+        interval={2000}
+        className="h-[70vh] sm:h-screen"
+        imageClassName="absolute inset-0 h-full w-full object-cover"
+        overlay={overlayContent}
+      />
     </section>
   );
 }
