@@ -36,8 +36,8 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "halo-canvas"
-const SENDER_DOMAIN = "notify.storivo.in"
+const SITE_NAME = "Storivo"
+const SENDER_DOMAIN = "mail.storivo.in"
 const ROOT_DOMAIN = "storivo.in"
 const FROM_DOMAIN = "storivo.in" // Domain shown in From address (may be root or sender subdomain)
 
