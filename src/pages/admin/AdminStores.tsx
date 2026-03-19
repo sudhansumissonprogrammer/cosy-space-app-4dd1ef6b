@@ -75,13 +75,18 @@ export default function AdminStores() {
 
   const deleteStore = useMutation({
     mutationFn: async (storeId: string) => {
-      const { error } = await supabase.from("stores").delete().eq("id", storeId);
+      const { data, error } = await supabase.functions.invoke("delete-store", {
+        body: { storeId },
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-stores"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stores-count"] });
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-      toast.success("Store deleted");
+      toast.success(`Store deleted — ${data?.results?.storage_files_deleted ?? 0} files cleaned up`);
     },
     onError: (err: any) => toast.error(err.message),
   });
