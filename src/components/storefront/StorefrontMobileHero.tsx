@@ -43,17 +43,19 @@ function normalizeHeroImages(value: unknown): string[] {
 
 export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, storeName }: StorefrontMobileHeroProps) {
   const slides = normalizeHeroImages(mobileHeroImages);
+  const fallbackHero = mobileHeroUrl?.trim();
 
-  if (slides.length === 0 && mobileHeroUrl?.trim()) {
-    slides.push(mobileHeroUrl.trim());
+  if (fallbackHero && !slides.includes(fallbackHero)) {
+    slides.push(fallbackHero);
   }
 
-  if (slides.length === 0) return null;
+  const uniqueSlides = Array.from(new Set(slides));
+  if (uniqueSlides.length === 0) return null;
 
   return (
     <div className="group">
       <HeroBannerCarousel
-        images={slides}
+        images={uniqueSlides}
         storeName={storeName}
         interval={2000}
         imageClassName="w-full h-auto object-contain"
