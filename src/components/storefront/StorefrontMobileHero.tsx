@@ -1,6 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import HeroBannerCarousel from "./HeroBannerCarousel";
 
 interface StorefrontMobileHeroProps {
   mobileHeroUrl: string | null | undefined;
@@ -9,7 +7,6 @@ interface StorefrontMobileHeroProps {
 }
 
 export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, storeName }: StorefrontMobileHeroProps) {
-  // Build slides array: use mobileHeroImages if available, fallback to single mobileHeroUrl
   const slides: string[] = [];
   if (mobileHeroImages && mobileHeroImages.length > 0) {
     slides.push(...mobileHeroImages);
@@ -19,25 +16,14 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
 
   if (slides.length === 0) return null;
 
-  const isCarousel = slides.length > 1;
-
-  if (!isCarousel) {
-    return (
-      <div className="block md:hidden">
-        <img
-          src={optimizeImageUrl(slides[0], 800)}
-          alt={`${storeName} hero banner`}
-          className="w-full h-auto object-contain"
-          loading="eager"
-          fetchPriority="high"
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="block md:hidden">
-      <HeroCarousel slides={slides} storeName={storeName} />
+      <HeroBannerCarousel
+        images={slides}
+        storeName={storeName}
+        interval={2000}
+        imageClassName="w-full h-auto object-contain"
+      />
     </div>
   );
 }
