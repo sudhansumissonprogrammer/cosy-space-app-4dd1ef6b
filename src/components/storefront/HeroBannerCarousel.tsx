@@ -74,6 +74,7 @@ function CarouselInner({
   const [current, setCurrent] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dragStartRef = useRef<number | null>(null);
+  const dragCurrentRef = useRef<number | null>(null);
   const isDraggingRef = useRef(false);
   const len = images.length;
 
@@ -111,15 +112,31 @@ function CarouselInner({
 
   // Touch events
   const handleTouchStart = (e: React.TouchEvent) => {
-    dragStartRef.current = e.touches[0].clientX;
+    if (e.touches.length !== 1) return;
+    const startX = e.touches[0].clientX;
+    dragStartRef.current = startX;
+    dragCurrentRef.current = startX;
     if (intervalRef.current) clearInterval(intervalRef.current);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (dragStartRef.current === null || e.touches.length !== 1) return;
+    dragCurrentRef.current = e.touches[0].clientX;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (dragStartRef.current === null) return;
-    const diff = e.changedTouches[0].clientX - dragStartRef.current;
+    const endX = dragCurrentRef.current ?? e.changedTouches[0]?.clientX ?? dragStartRef.current;
+    const diff = endX - dragStartRef.current;
     dragStartRef.current = null;
+    dragCurrentRef.current = null;
     handleDragEnd(diff);
+  };
+
+  const handleTouchCancel = () => {
+    dragStartRef.current = null;
+    dragCurrentRef.current = null;
+    resetTimer();
   };
 
   // Mouse events (desktop drag)
@@ -152,12 +169,14 @@ function CarouselInner({
   };
 
   return (
-    <div className={`relative overflow-hidden ${className || ""}`}>
+    <div className={`relative overflow-hidden touch-pan-y ${className || ""}`}>
       <div
         className="flex transition-transform duration-500 ease-out select-none"
         style={{ transform: `translateX(-${current * 100}%)`, cursor: "grab" }}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

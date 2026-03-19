@@ -2,16 +2,50 @@ import HeroBannerCarousel from "./HeroBannerCarousel";
 
 interface StorefrontMobileHeroProps {
   mobileHeroUrl: string | null | undefined;
-  mobileHeroImages?: string[] | null;
+  mobileHeroImages?: unknown;
   storeName: string;
 }
 
+function normalizeHeroImages(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const raw = value.trim();
+    if (!raw) return [];
+
+    if (raw.startsWith("[") && raw.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .filter((item): item is string => typeof item === "string")
+            .map((item) => item.trim())
+            .filter(Boolean);
+        }
+      } catch {
+        // fall back to comma-split below
+      }
+    }
+
+    return raw
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
 export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, storeName }: StorefrontMobileHeroProps) {
-  const slides: string[] = [];
-  if (mobileHeroImages && mobileHeroImages.length > 0) {
-    slides.push(...mobileHeroImages);
-  } else if (mobileHeroUrl) {
-    slides.push(mobileHeroUrl);
+  const slides = normalizeHeroImages(mobileHeroImages);
+
+  if (slides.length === 0 && mobileHeroUrl?.trim()) {
+    slides.push(mobileHeroUrl.trim());
   }
 
   if (slides.length === 0) return null;
