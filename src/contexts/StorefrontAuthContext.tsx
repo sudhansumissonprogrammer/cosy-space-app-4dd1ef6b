@@ -91,49 +91,6 @@ export function StorefrontAuthProvider({
     return () => subscription.unsubscribe();
   }, [fetchOrCreateCustomer]);
 
-  const isFetchFailure = (message: string) => {
-    const normalized = message.toLowerCase();
-    return (
-      normalized.includes("failed to fetch") ||
-      normalized.includes("network") ||
-      normalized.includes("context canceled") ||
-      normalized.includes("request canceled")
-    );
-  };
-
-  const signInWithProxy = async (loginEmail: string, loginPassword: string) => {
-    const { data, error } = await supabase.functions.invoke("auth-proxy", {
-      body: {
-        action: "login",
-        email: loginEmail,
-        password: loginPassword,
-      },
-    });
-
-    if (error) {
-      throw new Error(error.message || "Unable to connect to authentication service");
-    }
-
-    const proxyError = (data as { error?: string } | null)?.error;
-    if (proxyError) {
-      throw new Error(proxyError);
-    }
-
-    const sessionData = (data as { data?: { access_token?: string; refresh_token?: string } } | null)?.data;
-    if (!sessionData?.access_token || !sessionData?.refresh_token) {
-      throw new Error("Authentication failed. Please try again.");
-    }
-
-    const { error: sessionError } = await supabase.auth.setSession({
-      access_token: sessionData.access_token,
-      refresh_token: sessionData.refresh_token,
-    });
-
-    if (sessionError) {
-      throw new Error(sessionError.message);
-    }
-  };
-
   const signUp = async (email: string, password: string, name?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
@@ -144,38 +101,8 @@ export function StorefrontAuthProvider({
   };
 
   const signIn = async (email: string, password: string) => {
-    const normalizedEmail = email.trim().toLowerCase();
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
-      });
-
-      if (error) {
-        if (isFetchFailure(error.message)) {
-          await signInWithProxy(normalizedEmail, password);
-          return { error: null };
-        }
-
-        return { error };
-      }
-
-      return { error: null };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Authentication failed";
-
-      if (isFetchFailure(message)) {
-        try {
-          await signInWithProxy(normalizedEmail, password);
-          return { error: null };
-        } catch (proxyErr) {
-          return { error: proxyErr };
-        }
-      }
-
-      return { error: err };
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
   };
 
   const signOut = async () => {

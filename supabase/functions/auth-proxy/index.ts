@@ -53,23 +53,6 @@ function getErrorMessage(payload: unknown): string {
   );
 }
 
-function isTimeoutError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const message = error.message.toLowerCase();
-  return message.includes("aborted") || message.includes("timeout") || message.includes("context canceled");
-}
-
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 12000): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -103,14 +86,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const requestOrigin = new URL(req.url).origin;
-    const requestApiKey =
-      req.headers.get("apikey") ||
-      req.headers.get("x-api-key") ||
-      Deno.env.get("SUPABASE_ANON_KEY") ||
-      Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
-    if (!requestApiKey) {
+    if (!supabaseUrl || !anonKey) {
       return new Response(JSON.stringify({ error: "Auth service unavailable" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -119,29 +98,17 @@ Deno.serve(async (req) => {
 
     const authHeaders = {
       "Content-Type": "application/json",
-      apikey: requestApiKey,
-      authorization: `Bearer ${requestApiKey}`,
+      apikey: anonKey,
+      authorization: `Bearer ${anonKey}`,
       "x-client-info": "auth-proxy",
     };
 
     if (action === "login") {
-      let response: Response;
-
-      try {
-        response = await fetchWithTimeout(`${requestOrigin}/auth/v1/token?grant_type=password`, {
-          method: "POST",
-          headers: authHeaders,
-          body: JSON.stringify({ email, password }),
-        });
-      } catch (fetchErr) {
-        if (isTimeoutError(fetchErr)) {
-          return new Response(JSON.stringify({ error: "Authentication server timeout. Please retry." }), {
-            status: 504,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        throw fetchErr;
-      }
+      const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ email, password }),
+      });
 
       const body = await response.json().catch(() => ({}));
 
@@ -171,23 +138,11 @@ Deno.serve(async (req) => {
       ? `?redirect_to=${encodeURIComponent(payload.redirectTo)}`
       : "";
 
-    let signupResponse: Response;
-
-    try {
-      signupResponse = await fetchWithTimeout(`${requestOrigin}/auth/v1/signup${redirectParam}`, {
-        method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify(signupPayload),
-      });
-    } catch (fetchErr) {
-      if (isTimeoutError(fetchErr)) {
-        return new Response(JSON.stringify({ error: "Authentication server timeout. Please retry." }), {
-          status: 504,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw fetchErr;
-    }
+    const signupResponse = await fetch(`${supabaseUrl}/auth/v1/signup${redirectParam}`, {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify(signupPayload),
+    });
 
     const signupBody = await signupResponse.json().catch(() => ({}));
 
