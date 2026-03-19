@@ -72,8 +72,9 @@ function CarouselInner({
 }: Required<Pick<HeroBannerCarouselProps, "images" | "storeName" | "optimizeWidth" | "interval">> &
   Pick<HeroBannerCarouselProps, "className" | "imageClassName" | "maxHeight" | "overlay">) {
   const [current, setCurrent] = useState(0);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dragStartRef = useRef<number | null>(null);
+  const isDraggingRef = useRef(false);
   const len = images.length;
 
   const goTo = useCallback(
@@ -81,8 +82,8 @@ function CarouselInner({
     [len]
   );
 
-  const next = useCallback(() => goTo(current + 1), [current, goTo]);
-  const prev = useCallback(() => goTo(current - 1), [current, goTo]);
+  const next = useCallback(() => setCurrent((c) => (c + 1) % len), [len]);
+  const prev = useCallback(() => setCurrent((c) => (c - 1 + len) % len), [len]);
 
   // Auto-play
   useEffect(() => {
@@ -92,34 +93,75 @@ function CarouselInner({
     };
   }, [next, interval]);
 
-  const resetTimer = () => {
+  const resetTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(next, interval);
-  };
+  }, [next, interval]);
 
+  const handleDragEnd = useCallback(
+    (diff: number) => {
+      if (Math.abs(diff) > 50) {
+        if (diff < 0) next();
+        else prev();
+      }
+      resetTimer();
+    },
+    [next, prev, resetTimer]
+  );
+
+  // Touch events
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientX);
+    dragStartRef.current = e.touches[0].clientX;
     if (intervalRef.current) clearInterval(intervalRef.current);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStart === null) return;
-    const diff = e.changedTouches[0].clientX - touchStart;
-    if (Math.abs(diff) > 50) {
-      if (diff < 0) next();
-      else prev();
+    if (dragStartRef.current === null) return;
+    const diff = e.changedTouches[0].clientX - dragStartRef.current;
+    dragStartRef.current = null;
+    handleDragEnd(diff);
+  };
+
+  // Mouse events (desktop drag)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    dragStartRef.current = e.clientX;
+    isDraggingRef.current = true;
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current || dragStartRef.current === null) return;
+    isDraggingRef.current = false;
+    const diff = e.clientX - dragStartRef.current;
+    dragStartRef.current = null;
+    handleDragEnd(diff);
+  };
+
+  const handleMouseLeave = () => {
+    if (isDraggingRef.current && dragStartRef.current !== null) {
+      isDraggingRef.current = false;
+      dragStartRef.current = null;
+      resetTimer();
     }
-    setTouchStart(null);
-    resetTimer();
   };
 
   return (
     <div className={`relative overflow-hidden ${className || ""}`}>
       <div
-        className="flex transition-transform duration-500 ease-out"
-        style={{ transform: `translateX(-${current * 100}%)` }}
+        className="flex transition-transform duration-500 ease-out select-none"
+        style={{ transform: `translateX(-${current * 100}%)`, cursor: "grab" }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       >
         {images.map((url, i) => (
           <div key={i} className="w-full flex-shrink-0">
@@ -130,6 +172,7 @@ function CarouselInner({
               style={maxHeight ? { maxHeight } : undefined}
               loading={i === 0 ? "eager" : "lazy"}
               fetchPriority={i === 0 ? "high" : undefined}
+              draggable={false}
             />
           </div>
         ))}
@@ -153,6 +196,22 @@ function CarouselInner({
           />
         ))}
       </div>
+
+      {/* Arrow buttons for desktop */}
+      <button
+        onClick={() => { prev(); resetTimer(); }}
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 hover:opacity-100 sm:opacity-70"
+        aria-label="Previous slide"
+      >
+        ‹
+      </button>
+      <button
+        onClick={() => { next(); resetTimer(); }}
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 hover:opacity-100 sm:opacity-70"
+        aria-label="Next slide"
+      >
+        ›
+      </button>
     </div>
   );
 }
