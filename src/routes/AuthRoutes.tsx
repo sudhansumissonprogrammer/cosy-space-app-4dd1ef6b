@@ -101,6 +101,8 @@ export default function AuthRoutes() {
           <Route path="stores/:storeId/products/create" element={<CreateProduct />} />
           <Route path="stores/:storeId/products/:productId/edit" element={<EditProduct />} />
           <Route path="stores/:storeId/products/bulk-upload" element={<BulkUpload />} />
+          <Route path="stores/:storeId/categories" element={<CategoryManagement />} />
+          <Route path="stores/:storeId/media" element={<MediaLibrary />} />
           <Route path="stores/:storeId/orders" element={<StoreOrders />} />
           <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
           <Route path="stores/:storeId/settings" element={<StoreSettings />} />
