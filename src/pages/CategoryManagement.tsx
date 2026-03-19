@@ -1,0 +1,263 @@
+import { useState } from "react";
+import { useParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useStoreData } from "@/hooks/useStoreData";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon } from "lucide-react";
+import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+export default function CategoryManagement() {
+  const { storeId } = useParams<{ storeId: string }>();
+  const queryClient = useQueryClient();
+  const { data: store } = useStoreData(storeId);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const { data: categories, isLoading } = useQuery({
+    queryKey: ["categories", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("store_id", storeId!)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!storeId,
+  });
+
+  const openCreate = () => {
+    setEditingId(null);
+    setName("");
+    setImageFile(null);
+    setImagePreview(null);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (cat: any) => {
+    setEditingId(cat.id);
+    setName(cat.name);
+    setImageFile(null);
+    setImagePreview(cat.image_url || null);
+    setDialogOpen(true);
+  };
+
+  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) { toast.error("Image must be under 5MB"); return; }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) { toast.error("Category name is required"); return; }
+    setSaving(true);
+    try {
+      const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      let image_url: string | null = imagePreview;
+
+      if (imageFile) {
+        const result = await processImage(imageFile);
+        const msg = getCompressionMessage(result);
+        if (msg) toast.success(msg);
+        const ext = result.file.name.split(".").pop();
+        const path = `${storeId}/categories/${slug}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("product-images").upload(path, result.file);
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+        image_url = urlData.publicUrl;
+      }
+
+      if (editingId) {
+        const { error } = await supabase
+          .from("categories")
+          .update({ name: name.trim(), slug, image_url })
+          .eq("id", editingId);
+        if (error) throw error;
+        toast.success("Category updated");
+      } else {
+        const { error } = await supabase
+          .from("categories")
+          .insert({ store_id: storeId!, name: name.trim(), slug, image_url });
+        if (error) throw error;
+        toast.success("Category created");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+      setDialogOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save category");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (catId: string) => {
+      const { error } = await supabase.from("categories").delete().eq("id", catId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+      toast.success("Category deleted");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to delete"),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Categories</h1>
+          <p className="text-sm text-muted-foreground">Manage your store categories</p>
+        </div>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="mr-1.5 h-4 w-4" /> Add Category
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
+          ))}
+        </div>
+      ) : !categories || categories.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 py-12">
+            <FolderOpen className="h-12 w-12 text-muted-foreground" />
+            <p className="text-muted-foreground">No categories yet</p>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="mr-1.5 h-4 w-4" /> Create First Category
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {categories.map((cat) => (
+            <Card key={cat.id} className="group overflow-hidden">
+              <div className="relative aspect-square bg-muted">
+                {cat.image_url ? (
+                  <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
+                  </div>
+                )}
+                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="flex w-full justify-end gap-1 p-2">
+                    <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => openEdit(cat)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="icon" variant="destructive" className="h-8 w-8">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete "{cat.name}"?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will remove the category. Products in this category won't be deleted.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => deleteMutation.mutate(cat.id)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </div>
+              <CardContent className="p-3">
+                <p className="truncate text-sm font-medium text-foreground">{cat.name}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit Category" : "New Category"}</DialogTitle>
+            <DialogDescription>
+              {editingId ? "Update category details" : "Add a new category to your store"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Category Name *</Label>
+              <Input
+                placeholder="e.g. Summer Collection"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Category Image</Label>
+              <div className="flex items-center gap-3">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img src={imagePreview} alt="" className="h-24 w-24 rounded-lg border object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setImageFile(null); setImagePreview(null); }}
+                      className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                    >
+                      <span className="sr-only">Remove</span>×
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input hover:border-primary/50">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground">Upload</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImage} />
+                  </label>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingId ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
