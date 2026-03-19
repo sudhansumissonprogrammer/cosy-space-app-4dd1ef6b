@@ -13,25 +13,36 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Split Hero ── */
 function SplitHero({ store }: { store: StoreData }) {
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const heroProduct = products?.find((p: any) => p.image_url) || null;
-  const heroImage = heroProduct?.image_url || store.banner_url;
+
+  // Collect hero images
+  const heroImages: string[] = [];
+  const mhi = (store as any).mobile_hero_images;
+  if (mhi && Array.isArray(mhi) && mhi.length > 0) {
+    heroImages.push(...mhi);
+  } else {
+    const heroImage = heroProduct?.image_url || (store as any).banner_url;
+    if (heroImage) heroImages.push(heroImage);
+    if ((store as any).mobile_hero_url && !heroImages.includes((store as any).mobile_hero_url)) heroImages.push((store as any).mobile_hero_url);
+  }
 
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2 min-h-[50vh] lg:min-h-[70vh]">
       {/* Left: Image */}
       <div className="relative overflow-hidden bg-muted" style={{ backgroundColor: "var(--storefront-text, #1a1a1a)08" }}>
-        {heroImage ? (
-          <img
-            src={optimizeImageUrl(heroImage, 1200)}
-            alt={store.name}
-            className="h-full w-full object-cover"
-            style={{ minHeight: "300px", maxHeight: "80vh" }}
-            loading="eager"
+        {heroImages.length > 0 ? (
+          <HeroBannerCarousel
+            images={heroImages}
+            storeName={store.name}
+            className="h-full"
+            imageClassName="h-full w-full object-cover"
+            maxHeight="80vh"
           />
         ) : (
           <div

@@ -13,12 +13,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Two-Column Hero ── */
 function HeroSection({ store }: { store: StoreData }) {
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const heroProduct = products?.find((p: any) => p.image_url) || null;
+
+  // Collect hero images
+  const heroImages: string[] = [];
+  const mhi = (store as any).mobile_hero_images;
+  if (mhi && Array.isArray(mhi) && mhi.length > 0) {
+    heroImages.push(...mhi);
+  } else {
+    if ((store as any).banner_url) heroImages.push((store as any).banner_url);
+    if ((store as any).mobile_hero_url) heroImages.push((store as any).mobile_hero_url);
+    if (heroProduct?.image_url && !heroImages.includes(heroProduct.image_url)) heroImages.push(heroProduct.image_url);
+  }
 
   return (
     <section className="mx-auto max-w-7xl px-4 lg:px-8 pt-10 pb-10 sm:pt-20 sm:pb-20 lg:pt-[80px] lg:pb-[80px]">
@@ -65,24 +77,13 @@ function HeroSection({ store }: { store: StoreData }) {
 
         {/* Right image */}
         <div className="relative">
-          {heroProduct?.image_url ? (
+          {heroImages.length > 0 ? (
             <div className="overflow-hidden" style={{ borderRadius: "24px" }}>
-              <img
-                src={optimizeImageUrl(heroProduct.image_url, 800)}
-                alt={heroProduct.name}
-                className="w-full object-cover transition-transform duration-700 hover:scale-105 aspect-square sm:aspect-[4/5]"
-                style={{ maxHeight: "560px" }}
-                loading="eager"
-              />
-            </div>
-          ) : store.banner_url ? (
-            <div className="overflow-hidden" style={{ borderRadius: "24px" }}>
-              <img
-                src={store.banner_url}
-                alt={store.name}
-                className="w-full object-cover aspect-square sm:aspect-[4/5]"
-                style={{ maxHeight: "560px" }}
-                loading="eager"
+              <HeroBannerCarousel
+                images={heroImages}
+                storeName={store.name}
+                imageClassName="w-full object-cover aspect-square sm:aspect-[4/5]"
+                maxHeight="560px"
               />
             </div>
           ) : (
