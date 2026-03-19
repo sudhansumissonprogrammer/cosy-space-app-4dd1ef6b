@@ -14,12 +14,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
-  Upload, Trash2, Loader2, Image as ImageIcon, Search, Copy, Check, X,
+  Upload, Trash2, Loader2, Image as ImageIcon, Search, Copy, Check,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+interface MediaItem {
+  id: string;
+  store_id: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  created_at: string;
+}
 
 export default function MediaLibrary() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -37,14 +46,14 @@ export default function MediaLibrary() {
   const { data: media, isLoading } = useQuery({
     queryKey: ["media-library", storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("media_library")
         .select("*")
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return data;
+      return data as MediaItem[];
     },
     enabled: !!storeId,
   });
@@ -74,7 +83,7 @@ export default function MediaLibrary() {
         if (upErr) { toast.error(`Failed to upload ${file.name}`); continue; }
         const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
 
-        const { error: dbErr } = await supabase.from("media_library").insert({
+        const { error: dbErr } = await (supabase as any).from("media_library").insert({
           store_id: storeId,
           file_url: urlData.publicUrl,
           file_name: file.name,
@@ -95,17 +104,17 @@ export default function MediaLibrary() {
 
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      // Get URLs to delete from storage
       const toDelete = media?.filter((m) => ids.includes(m.id)) || [];
       for (const item of toDelete) {
-        // Extract storage path from URL
-        const url = new URL(item.file_url);
-        const pathMatch = url.pathname.match(/\/object\/public\/product-images\/(.+)/);
-        if (pathMatch) {
-          await supabase.storage.from("product-images").remove([pathMatch[1]]);
-        }
+        try {
+          const url = new URL(item.file_url);
+          const pathMatch = url.pathname.match(/\/object\/public\/product-images\/(.+)/);
+          if (pathMatch) {
+            await supabase.storage.from("product-images").remove([pathMatch[1]]);
+          }
+        } catch {}
       }
-      const { error } = await supabase.from("media_library").delete().in("id", ids);
+      const { error } = await (supabase as any).from("media_library").delete().in("id", ids);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -163,38 +172,24 @@ export default function MediaLibrary() {
         onChange={(e) => handleUpload(e.target.files)}
       />
 
-      {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search images..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+        <Input placeholder="Search images..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
 
-      {/* Upload zone */}
       <div
         className="flex items-center justify-center rounded-xl border-2 border-dashed border-input p-8 transition-colors hover:border-primary/50 cursor-pointer"
         onClick={() => fileRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleUpload(e.dataTransfer.files);
-        }}
+        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleUpload(e.dataTransfer.files); }}
       >
         <div className="text-center">
           <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-2 text-sm text-muted-foreground">
-            Drag & drop images here or click to upload
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">Drag & drop images here or click to upload</p>
           <p className="text-xs text-muted-foreground">Max 5MB per image</p>
         </div>
       </div>
 
-      {/* Grid */}
       {isLoading ? (
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -205,9 +200,7 @@ export default function MediaLibrary() {
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12">
             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              {search ? "No images match your search" : "No images uploaded yet"}
-            </p>
+            <p className="text-muted-foreground">{search ? "No images match your search" : "No images uploaded yet"}</p>
           </CardContent>
         </Card>
       ) : (
@@ -221,13 +214,7 @@ export default function MediaLibrary() {
                   isSelected ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-border"
                 }`}
               >
-                <img
-                  src={item.file_url}
-                  alt={item.file_name}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-                {/* Checkbox overlay */}
+                <img src={item.file_url} alt={item.file_name} className="h-full w-full object-cover" loading="lazy" />
                 <div className={`absolute left-2 top-2 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
                   <Checkbox
                     checked={isSelected}
@@ -235,7 +222,6 @@ export default function MediaLibrary() {
                     className="h-5 w-5 border-2 border-white bg-black/40 data-[state=checked]:bg-primary"
                   />
                 </div>
-                {/* Actions overlay */}
                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
                   <span className="truncate text-[10px] text-white max-w-[70%]">{item.file_name}</span>
                   <button
@@ -251,14 +237,11 @@ export default function MediaLibrary() {
         </div>
       )}
 
-      {/* Bulk delete dialog */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selected.size} image{selected.size > 1 ? "s" : ""}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the selected images from storage. This cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogDescription>This will permanently delete the selected images from storage.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

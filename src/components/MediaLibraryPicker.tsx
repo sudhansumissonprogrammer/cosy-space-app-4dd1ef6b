@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Search, Image as ImageIcon, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface MediaItem {
+  id: string;
+  file_url: string;
+  file_name: string;
+}
+
 interface MediaLibraryPickerProps {
   storeId: string;
   open: boolean;
@@ -24,14 +30,14 @@ export default function MediaLibraryPicker({ storeId, open, onClose, onSelect, m
   const { data: media, isLoading } = useQuery({
     queryKey: ["media-library", storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("media_library")
         .select("*")
         .eq("store_id", storeId)
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return data;
+      return data as MediaItem[];
     },
     enabled: !!storeId && open,
   });
@@ -68,12 +74,7 @@ export default function MediaLibraryPicker({ storeId, open, onClose, onSelect, m
 
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search images..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+          <Input placeholder="Search images..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
 
         <div className="flex-1 overflow-auto min-h-0">
@@ -102,12 +103,7 @@ export default function MediaLibraryPicker({ storeId, open, onClose, onSelect, m
                       isSelected ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-border"
                     }`}
                   >
-                    <img
-                      src={item.file_url}
-                      alt={item.file_name}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
+                    <img src={item.file_url} alt={item.file_name} className="h-full w-full object-cover" loading="lazy" />
                     {isSelected && (
                       <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
                         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
