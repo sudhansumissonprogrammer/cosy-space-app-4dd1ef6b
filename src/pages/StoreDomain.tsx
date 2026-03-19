@@ -149,98 +149,14 @@ export default function StoreDomain() {
                 </Button>
               </div>
 
-              {/* Step-by-step setup guide */}
-              <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <Info className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold">Setup Guide — Follow these steps</p>
+                  <p className="text-sm font-semibold">Domain Setup</p>
                 </div>
-
-                {/* Step 1 */}
-                <div className="space-y-1.5">
-                  <p className="text-sm font-medium">Step 1: Create a free Cloudflare account</p>
-                  <p className="text-xs text-muted-foreground">
-                    Go to{" "}
-                    <a href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                      cloudflare.com/sign-up
-                    </a>{" "}
-                    and create a free account.
-                  </p>
-                </div>
-
-                {/* Step 2 */}
-                <div className="space-y-1.5">
-                  <p className="text-sm font-medium">Step 2: Add your domain to Cloudflare</p>
-                  <p className="text-xs text-muted-foreground">
-                    In Cloudflare dashboard, click "Add a site" → enter <strong>{savedDomain.replace(/^www\./, "")}</strong> → choose the <strong>Free</strong> plan.
-                  </p>
-                </div>
-
-                {/* Step 3 */}
-                <div className="space-y-1.5">
-                  <p className="text-sm font-medium">Step 3: Update nameservers at your registrar</p>
-                  <p className="text-xs text-muted-foreground">
-                    Cloudflare will give you 2 nameservers (e.g., <code className="bg-muted px-1 rounded">ns1.cloudflare.com</code>). Go to your domain registrar (Hostinger / GoDaddy / Namecheap) → DNS settings → replace the existing nameservers with the Cloudflare ones. This may take up to 24 hours to propagate.
-                  </p>
-                </div>
-
-                {/* Step 4 */}
-                <div className="space-y-1.5">
-                  <p className="text-sm font-medium">Step 4: Add DNS records in Cloudflare</p>
-                  <p className="text-xs text-muted-foreground">
-                    Once your domain is active on Cloudflare, go to DNS → Records and add:
-                  </p>
-                  <div className="overflow-x-auto rounded border bg-background">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b bg-muted/50">
-                          <th className="py-2 px-3 text-left font-medium">Type</th>
-                          <th className="py-2 px-3 text-left font-medium">Name</th>
-                          <th className="py-2 px-3 text-left font-medium">Content</th>
-                          <th className="py-2 px-3 text-left font-medium">Proxy</th>
-                        </tr>
-                      </thead>
-                      <tbody className="font-mono">
-                        <tr className="border-b">
-                          <td className="py-2 px-3">CNAME</td>
-                          <td className="py-2 px-3">@</td>
-                          <td className="py-2 px-3">{store?.slug}.{ROOT_DOMAIN}</td>
-                          <td className="py-2 px-3">
-                            <span className="inline-block rounded bg-primary/10 px-1.5 py-0.5 text-primary text-[10px] font-semibold">Proxied ☁️</span>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 px-3">CNAME</td>
-                          <td className="py-2 px-3">www</td>
-                          <td className="py-2 px-3">{store?.slug}.{ROOT_DOMAIN}</td>
-                          <td className="py-2 px-3">
-                            <span className="inline-block rounded bg-primary/10 px-1.5 py-0.5 text-primary text-[10px] font-semibold">Proxied ☁️</span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    ⚠️ Make sure the orange cloud (Proxy) is <strong>ON</strong> for both records.
-                  </p>
-                </div>
-
-                {/* Step 5 */}
-                <div className="space-y-1.5">
-                  <p className="text-sm font-medium">Step 5: Set SSL to Full</p>
-                  <p className="text-xs text-muted-foreground">
-                    In Cloudflare → SSL/TLS → set encryption mode to <strong>Full</strong>. This ensures your custom domain works with HTTPS.
-                  </p>
-                </div>
-
-                {/* Step 6 */}
-                <div className="space-y-1.5">
-                  <p className="text-sm font-medium">Step 6: Done! 🎉</p>
-                  <p className="text-xs text-muted-foreground">
-                    Once DNS propagates (usually 5–30 minutes with Cloudflare), your store will be accessible at{" "}
-                    <strong>https://{savedDomain}</strong>. Cloudflare provides free SSL automatically.
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Custom domain purchase and DNS setup is handled by the admin. Please <strong>contact the admin</strong> to get your domain configured and connected to your store.
+                </p>
               </div>
             </div>
           )}
