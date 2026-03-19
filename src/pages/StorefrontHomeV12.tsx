@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Hero Banner ── */
 function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
