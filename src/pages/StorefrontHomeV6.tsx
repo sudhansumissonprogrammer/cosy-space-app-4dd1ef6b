@@ -20,69 +20,32 @@ function HeroSection({ store }: { store: StoreData }) {
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const heroProduct = products?.find((p: any) => p.image_url) || null;
 
+  // Collect hero images
+  const heroImages: string[] = [];
+  const mhi = (store as any).mobile_hero_images;
+  if (mhi && Array.isArray(mhi) && mhi.length > 0) {
+    heroImages.push(...mhi);
+  } else {
+    if ((store as any).banner_url) heroImages.push((store as any).banner_url);
+    if ((store as any).mobile_hero_url) heroImages.push((store as any).mobile_hero_url);
+    if (heroProduct?.image_url && !heroImages.includes(heroProduct.image_url)) heroImages.push(heroProduct.image_url);
+  }
+
   return (
     <section className="mx-auto max-w-7xl px-4 lg:px-8 pt-10 pb-10 sm:pt-20 sm:pb-20 lg:pt-[80px] lg:pb-[80px]">
       <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
         {/* Left text */}
         <div>
-          <h1
-            className="text-3xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
-            style={{ fontFamily: "var(--storefront-heading-font, 'Poppins')", color: "var(--storefront-text, #1e293b)" }}
-          >
-            {store.name}
-          </h1>
-          <p
-            className="mt-5 text-lg leading-relaxed max-w-lg"
-            style={{ color: "var(--storefront-text, #1e293b)", opacity: 0.6 }}
-          >
-            {store.description || "Discover premium products crafted with care. Quality you can trust, style you'll love."}
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link
-              to={storefrontPath(store.slug, "best-sellers")}
-              className="inline-flex items-center gap-2 px-8 py-4 text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
-              style={{
-                backgroundColor: "var(--storefront-primary, #2563EB)",
-                color: "var(--storefront-btn-text, #fff)",
-                borderRadius: "var(--storefront-button-radius, 0.75rem)",
-              }}
-            >
-              Shop Now <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to={storefrontPath(store.slug, "contact")}
-              className="inline-flex items-center gap-2 px-8 py-4 text-sm font-semibold border transition-all duration-300 hover:opacity-70"
-              style={{
-                borderColor: "var(--storefront-text, #1e293b)20",
-                color: "var(--storefront-text, #1e293b)",
-                borderRadius: "var(--storefront-button-radius, 0.75rem)",
-              }}
-            >
-              Learn More
-            </Link>
-          </div>
-        </div>
-
+...
         {/* Right image */}
         <div className="relative">
-          {heroProduct?.image_url ? (
+          {heroImages.length > 0 ? (
             <div className="overflow-hidden" style={{ borderRadius: "24px" }}>
-              <img
-                src={optimizeImageUrl(heroProduct.image_url, 800)}
-                alt={heroProduct.name}
-                className="w-full object-cover transition-transform duration-700 hover:scale-105 aspect-square sm:aspect-[4/5]"
-                style={{ maxHeight: "560px" }}
-                loading="eager"
-              />
-            </div>
-          ) : store.banner_url ? (
-            <div className="overflow-hidden" style={{ borderRadius: "24px" }}>
-              <img
-                src={store.banner_url}
-                alt={store.name}
-                className="w-full object-cover aspect-square sm:aspect-[4/5]"
-                style={{ maxHeight: "560px" }}
-                loading="eager"
+              <HeroBannerCarousel
+                images={heroImages}
+                storeName={store.name}
+                imageClassName="w-full object-cover aspect-square sm:aspect-[4/5]"
+                maxHeight="560px"
               />
             </div>
           ) : (
