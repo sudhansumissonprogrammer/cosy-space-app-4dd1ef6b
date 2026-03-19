@@ -13,6 +13,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
+import { useQueryClient } from "@tanstack/react-query";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { Truck, Shield, RotateCcw, Star, ArrowRight, Tag } from "lucide-react";
+import type { StoreData } from "@/layouts/StorefrontLayout";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+import LazyRender from "@/components/storefront/LazyRender";
+import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
+import { Skeleton } from "@/components/ui/skeleton";
+import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 
 /* ── Two-Column Hero ── */
 function HeroSection({ store }: { store: StoreData }) {
