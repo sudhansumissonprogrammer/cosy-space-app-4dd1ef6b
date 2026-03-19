@@ -38,7 +38,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
     return s;
   }, [store, products]);
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center" }, [Autoplay({ delay: 4000, stopOnInteraction: false })]);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center" }, [Autoplay({ delay: 2000, stopOnInteraction: false })]);
   const [selected, setSelected] = useState(0);
 
   useEffect(() => {
