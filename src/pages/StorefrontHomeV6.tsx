@@ -50,7 +50,44 @@ function HeroSection({ store }: { store: StoreData }) {
       <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
         {/* Left text */}
         <div>
-...
+          <h1
+            className="text-3xl font-bold leading-[1.1] sm:text-5xl lg:text-6xl"
+            style={{ fontFamily: "var(--storefront-heading-font, 'Poppins')", color: "var(--storefront-text, #1e293b)" }}
+          >
+            {store.name}
+          </h1>
+          <p
+            className="mt-5 text-lg leading-relaxed max-w-lg"
+            style={{ color: "var(--storefront-text, #1e293b)", opacity: 0.6 }}
+          >
+            {store.description || "Discover premium products crafted with care. Quality you can trust, style you'll love."}
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <Link
+              to={storefrontPath(store.slug, "best-sellers")}
+              className="inline-flex items-center gap-2 px-8 py-4 text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
+              style={{
+                backgroundColor: "var(--storefront-primary, #2563EB)",
+                color: "var(--storefront-btn-text, #fff)",
+                borderRadius: "var(--storefront-button-radius, 0.75rem)",
+              }}
+            >
+              Shop Now <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to={storefrontPath(store.slug, "contact")}
+              className="inline-flex items-center gap-2 px-8 py-4 text-sm font-semibold border transition-all duration-300 hover:opacity-70"
+              style={{
+                borderColor: "var(--storefront-text, #1e293b)20",
+                color: "var(--storefront-text, #1e293b)",
+                borderRadius: "var(--storefront-button-radius, 0.75rem)",
+              }}
+            >
+              Learn More
+            </Link>
+          </div>
+        </div>
+
         {/* Right image */}
         <div className="relative">
           {heroImages.length > 0 ? (
