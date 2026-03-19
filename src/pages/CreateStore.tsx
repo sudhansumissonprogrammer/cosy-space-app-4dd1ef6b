@@ -224,7 +224,8 @@ export default function CreateStore() {
 
       setShowConfetti(true);
       toast.success("Store created successfully! 🎉");
-      setTimeout(() => navigate("/dashboard/stores"), 2000);
+      queryClient.invalidateQueries({ queryKey: ["my-store"] });
+      setTimeout(() => navigate("/dashboard", { replace: true }), 2000);
     } catch (err: any) {
       setCreatingAnimation(false);
       toast.error(err.message || "Failed to create store");
