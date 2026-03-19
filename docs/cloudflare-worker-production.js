@@ -1,17 +1,19 @@
 /**
  * Unified Cloudflare Worker: storivo-router
  *
- * Handles THREE responsibilities:
+ * Handles FOUR responsibilities:
  * 1. 301 redirect: storivo.in/store/{slug} → {slug}.storivo.in
  * 2. OG rewriting: Detects social crawlers on subdomains and serves lightweight OG HTML
  * 3. SEO files: Intercepts /sitemap.xml and /robots.txt on subdomains → Edge Functions
+ * 4. Custom domains: Looks up custom_domain in DB to resolve store slug
  *
  * Deploy in Cloudflare dashboard:
  * 1. Workers & Pages → Create Worker → Name: "storivo-router"
  * 2. Paste this entire code
- * 3. Add TWO routes under Workers Routes for your zone:
+ * 3. Add routes:
  *    - *.storivo.in/*    (subdomains: OG rewrite + SEO files + proxy)
  *    - storivo.in/store/* (path redirect)
+ *    - For custom domains: add route on each custom domain zone
  *
  * Required: share-page, og-meta, sitemap, robots-txt edge functions must be deployed.
  */
@@ -23,6 +25,10 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const BOT_UA_REGEX = /WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|OpenGraphIO|opengraph\.xyz|Embedly|Iframely|MetaInspector|PetalBot|Bingbot|YandexBot|curl|wget|HeadlessChrome|Lighthouse|Prerender/i;
 
+// In-memory cache for custom domain lookups (TTL: 5 min)
+const domainCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000;
+
 function escapeHtml(str) {
   if (!str) return "";
   return str
@@ -32,9 +38,13 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
-function proxyToOrigin(request) {
+function proxyToOrigin(request, overridePath) {
   const originUrl = new URL(request.url);
   originUrl.hostname = ORIGIN_HOST;
+  if (overridePath) {
+    originUrl.pathname = overridePath;
+    originUrl.search = "";
+  }
   const headers = new Headers(request.headers);
   headers.set("Host", ORIGIN_HOST);
   return fetch(originUrl.toString(), {
@@ -43,6 +53,16 @@ function proxyToOrigin(request) {
     body: request.body,
     redirect: "follow",
   });
+}
+
+/**
+ * Proxy to origin but rewrite the path to /store/{slug}/...
+ * so the SPA can resolve the correct storefront.
+ */
+function proxyStoreRequest(request, slug) {
+  const url = new URL(request.url);
+  const storePath = `/store/${slug}${url.pathname === "/" ? "" : url.pathname}`;
+  return proxyToOrigin(request, storePath + url.search);
 }
 
 function callEdgeFunction(name, params = {}) {
@@ -59,6 +79,45 @@ function callEdgeFunction(name, params = {}) {
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
     },
   });
+}
+
+/**
+ * Look up a custom domain in the stores table.
+ * Returns the store slug if found, null otherwise.
+ * Results are cached in-memory for 5 minutes.
+ */
+async function resolveCustomDomain(hostname) {
+  // Check cache first
+  const cached = domainCache.get(hostname);
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    return cached.slug;
+  }
+
+  try {
+    // Query Supabase REST API: select slug from stores where custom_domain = hostname
+    const queryUrl = `${SUPABASE_URL}/rest/v1/stores?select=slug&custom_domain=eq.${encodeURIComponent(hostname)}&is_suspended=eq.false&limit=1`;
+    const res = await fetch(queryUrl, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Accept": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json();
+    const slug = data?.[0]?.slug || null;
+
+    // Cache the result (even null to avoid repeated lookups)
+    domainCache.set(hostname, { slug, ts: Date.now() });
+
+    return slug;
+  } catch {
+    return null;
+  }
 }
 
 function getProductSlugFromPath(pathname) {
@@ -106,11 +165,58 @@ function buildOgHtml(og, storeUrl) {
 </html>`;
 }
 
+/**
+ * Handle bot/crawler requests for a given slug + URL.
+ * Returns an OG HTML response or null if not a bot / lookup failed.
+ */
+async function handleBotRequest(request, slug, url) {
+  const userAgent = request.headers.get("User-Agent") || "";
+  if (!BOT_UA_REGEX.test(userAgent)) return null;
+
+  try {
+    const productSlug = getProductSlugFromPath(url.pathname);
+    const versionToken = url.searchParams.get("v");
+
+    const shareResponse = await callEdgeFunction("share-page", {
+      slug,
+      ...(productSlug ? { product: productSlug } : {}),
+      ...(versionToken ? { v: versionToken } : {}),
+    });
+
+    if (shareResponse.ok) {
+      return new Response(await shareResponse.text(), {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=300, s-maxage=3600",
+        },
+      });
+    }
+
+    const ogResponse = await callEdgeFunction("og-meta", { slug });
+    if (ogResponse.ok) {
+      const og = await ogResponse.json();
+      const html = buildOgHtml(og, buildStoreUrl(slug, url.pathname, url.search));
+      return new Response(html, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=300, s-maxage=3600",
+        },
+      });
+    }
+  } catch {
+    // Fall through
+  }
+  return null;
+}
+
 export default {
   async fetch(request) {
     const url = new URL(request.url);
     const hostname = url.hostname;
 
+    // ─── 1. Root domain: redirect /store/{slug} paths ───
     if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
       const match = url.pathname.match(/^\/store\/([a-zA-Z0-9_-]+)(\/.*)?$/);
       if (match) {
@@ -128,69 +234,62 @@ export default {
       return proxyToOrigin(request);
     }
 
-    if (!hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-      return proxyToOrigin(request);
-    }
-
-    const slug = hostname.slice(0, hostname.length - ROOT_DOMAIN.length - 1);
-    if (!slug || slug.includes(".") || slug === "www") {
-      return proxyToOrigin(request);
-    }
-
-    if (url.pathname === "/sitemap.xml") {
-      const res = await callEdgeFunction("sitemap", { slug });
-      return new Response(await res.text(), {
-        headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=86400" },
-      });
-    }
-
-    if (url.pathname === "/robots.txt") {
-      const res = await callEdgeFunction("robots-txt", { slug });
-      return new Response(await res.text(), {
-        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=86400" },
-      });
-    }
-
-    const userAgent = request.headers.get("User-Agent") || "";
-    if (BOT_UA_REGEX.test(userAgent)) {
-      try {
-        const productSlug = getProductSlugFromPath(url.pathname);
-        const versionToken = url.searchParams.get("v");
-
-        const shareResponse = await callEdgeFunction("share-page", {
-          slug,
-          ...(productSlug ? { product: productSlug } : {}),
-          ...(versionToken ? { v: versionToken } : {}),
-        });
-
-        if (shareResponse.ok) {
-          return new Response(await shareResponse.text(), {
-            status: 200,
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-              "Cache-Control": "public, max-age=300, s-maxage=3600",
-            },
-          });
-        }
-
-        const ogResponse = await callEdgeFunction("og-meta", { slug });
-        if (ogResponse.ok) {
-          const og = await ogResponse.json();
-          const html = buildOgHtml(og, buildStoreUrl(slug, url.pathname, url.search));
-
-          return new Response(html, {
-            status: 200,
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-              "Cache-Control": "public, max-age=300, s-maxage=3600",
-            },
-          });
-        }
-      } catch {
-        // Fall through to normal proxy on error
+    // ─── 2. Subdomain requests (*.storivo.in) ───
+    if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
+      const slug = hostname.slice(0, hostname.length - ROOT_DOMAIN.length - 1);
+      if (!slug || slug.includes(".") || slug === "www") {
+        return proxyToOrigin(request);
       }
+
+      // SEO files
+      if (url.pathname === "/sitemap.xml") {
+        const res = await callEdgeFunction("sitemap", { slug });
+        return new Response(await res.text(), {
+          headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=86400" },
+        });
+      }
+      if (url.pathname === "/robots.txt") {
+        const res = await callEdgeFunction("robots-txt", { slug });
+        return new Response(await res.text(), {
+          headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=86400" },
+        });
+      }
+
+      // Bot/crawler handling
+      const botResponse = await handleBotRequest(request, slug, url);
+      if (botResponse) return botResponse;
+
+      return proxyToOrigin(request);
     }
 
+    // ─── 3. Custom domain requests ───
+    // If hostname doesn't match storivo.in, check if it's a custom domain
+    const slug = await resolveCustomDomain(hostname);
+
+    if (slug) {
+      // SEO files for custom domains
+      if (url.pathname === "/sitemap.xml") {
+        const res = await callEdgeFunction("sitemap", { slug });
+        return new Response(await res.text(), {
+          headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=86400" },
+        });
+      }
+      if (url.pathname === "/robots.txt") {
+        const res = await callEdgeFunction("robots-txt", { slug });
+        return new Response(await res.text(), {
+          headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=86400" },
+        });
+      }
+
+      // Bot/crawler handling for custom domains
+      const botResponse = await handleBotRequest(request, slug, url);
+      if (botResponse) return botResponse;
+
+      // Proxy to origin with /store/{slug} path rewrite
+      return proxyStoreRequest(request, slug);
+    }
+
+    // ─── 4. Fallback: proxy to origin as-is ───
     return proxyToOrigin(request);
   },
 };
