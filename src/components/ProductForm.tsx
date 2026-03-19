@@ -12,8 +12,9 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2 } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon } from "lucide-react";
 import { Link } from "react-router-dom";
+import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -60,7 +61,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   interface VariantRow { id?: string; name: string; sku: string; price: string; stock: string; isActive: boolean; isExisting?: boolean }
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [expandedVariant, setExpandedVariant] = useState<number | null>(null);
-
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
 
   // Check product limit
@@ -575,8 +576,36 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                     onChange={(e) => handleAdditionalFiles(e.target.files)}
                   />
                 </label>
+                {/* Choose from Library */}
+                <button
+                  type="button"
+                  onClick={() => setLibraryOpen(true)}
+                  className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input transition-colors hover:border-primary/50"
+                >
+                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Library</span>
+                </button>
               </div>
               <p className="text-xs text-muted-foreground">Max 5MB per image</p>
+
+              {/* Media Library Picker */}
+              <MediaLibraryPicker
+                storeId={storeId!}
+                open={libraryOpen}
+                onClose={() => setLibraryOpen(false)}
+                multiple
+                onSelect={(urls) => {
+                  for (const url of urls) {
+                    if (!imagePreview) {
+                      setImagePreview(url);
+                      setImageFile(null);
+                    } else {
+                      setAdditionalPreviews((prev) => [...prev, { url, isExisting: false }]);
+                    }
+                  }
+                  if (urls.length > 0) toast.success(`${urls.length} image${urls.length > 1 ? "s" : ""} added from library`);
+                }}
+              />
 
               {/* Image URL input */}
               <div className="flex items-end gap-2 pt-1">

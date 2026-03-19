@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
-  ShoppingCart, Palette, BarChart3, MessageSquare, Bell,
+  ShoppingCart, Palette, BarChart3, MessageSquare, Bell, FolderOpen, Image as ImageIcon,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -87,6 +87,8 @@ export function AppSidebar() {
   const catalogItems = storeId
     ? [
         { title: "Products", url: `/dashboard/stores/${storeId}/products`, icon: Package },
+        { title: "Categories", url: `/dashboard/stores/${storeId}/categories`, icon: FolderOpen },
+        { title: "Media Library", url: `/dashboard/stores/${storeId}/media`, icon: ImageIcon },
         { title: "Bulk Upload", url: `/dashboard/stores/${storeId}/products/bulk-upload`, icon: Upload },
       ]
     : [];
