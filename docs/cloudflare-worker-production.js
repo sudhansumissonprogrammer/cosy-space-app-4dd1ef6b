@@ -56,7 +56,6 @@ async function resolveCustomDomain(hostname) {
     const data = await res.json();
     const slug = data.slug || null;
 
-    // Cache the resolution for 5 minutes
     const cacheResponse = new Response(JSON.stringify({ slug }), {
       headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },
     });
@@ -74,7 +73,6 @@ async function proxyToOrigin(request, storeSlug) {
   const originUrl = new URL(request.url);
   originUrl.hostname = ORIGIN_HOST;
 
-  // If we resolved a store slug (custom domain), pass it as ?store= so the frontend picks it up
   if (storeSlug) {
     originUrl.searchParams.set("store", storeSlug);
   }
@@ -198,7 +196,6 @@ async function handleStore(request, slug, useCustomDomainUrl) {
       );
       if (ogRes && ogRes.ok) {
         const og = await ogRes.json();
-        // For custom domains, use the actual URL; for subdomains, build the subdomain URL
         const canonical = useCustomDomainUrl
           ? `${url.origin}${url.pathname}${url.search}`
           : buildStoreUrl(slug, url.pathname, url.search);
