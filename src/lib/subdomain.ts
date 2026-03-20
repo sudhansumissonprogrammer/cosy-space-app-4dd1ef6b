@@ -1,10 +1,32 @@
 const ROOT_DOMAIN = "storivo.in";
 
+declare global {
+  interface Window {
+    __STORE_SLUG__?: string;
+  }
+}
+
 /**
- * Extract the store slug from the current hostname's subdomain.
+ * Extract the store slug using multiple strategies:
+ * 1. window.__STORE_SLUG__ (injected by Cloudflare worker for custom domains)
+ * 2. ?store= query param fallback
+ * 3. Subdomain extraction from hostname
  * Returns null for root domain, www, localhost, and Lovable preview URLs.
  */
 export function getSubdomainSlug(): string | null {
+  // 1. Try from header/worker-injected global (custom domain)
+  if (window.__STORE_SLUG__) {
+    return window.__STORE_SLUG__;
+  }
+
+  // 2. Try query param fallback
+  const params = new URLSearchParams(window.location.search);
+  const slugFromQuery = params.get("store");
+  if (slugFromQuery) {
+    return slugFromQuery;
+  }
+
+  // 3. Fall back to subdomain extraction
   const hostname = window.location.hostname;
 
   // Ignore localhost and IP addresses
@@ -19,7 +41,6 @@ export function getSubdomainSlug(): string | null {
 
   // Must end with our root domain
   if (!hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-    // Exact root domain match (no subdomain)
     if (hostname === ROOT_DOMAIN) return null;
     return null;
   }
@@ -32,7 +53,7 @@ export function getSubdomainSlug(): string | null {
     return null;
   }
 
-  // Could be nested subdomain like "a.b" — only allow single-level
+  // Only allow single-level subdomains
   if (subdomain.includes(".")) {
     return null;
   }
