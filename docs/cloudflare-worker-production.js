@@ -211,8 +211,8 @@ async function handleStore(request, slug, useCustomDomainUrl) {
     }
   }
 
-  /* NORMAL USERS */
-  return handleCachedPage(request, useCustomDomainUrl ? slug : null);
+  /* NORMAL USERS — always pass slug so the SPA knows which store to load */
+  return handleCachedPage(request, slug);
 }
 
 /* ---------------- MAIN ---------------- */
