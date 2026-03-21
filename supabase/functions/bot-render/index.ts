@@ -127,7 +127,7 @@ ${allImages.length > 1 ? `<div class="thumbs">${allImages.slice(0, 6).map((img: 
 <div class="info">
 <h1 itemprop="name">${esc(product.name)}</h1>
 <div class="price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-<span itemprop="price"-content="${product.sale_price || product.price}">${price}</span>
+<span itemprop="price" content="${product.sale_price || product.price}">${price}</span>
 <meta itemprop="priceCurrency" content="${product.currency || store.currency || "INR"}">
 ${originalPrice ? `<span class="original">${originalPrice}</span>` : ""}
 <link itemprop="availability" href="${product.stock_quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"}">
