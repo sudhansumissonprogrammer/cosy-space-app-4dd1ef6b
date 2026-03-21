@@ -100,7 +100,7 @@ function SquareGridModern({ categories, storeSlug }: { categories: Category[]; s
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group relative">
           <div className="w-full rounded-xl overflow-hidden transition-all group-hover:shadow-lg" style={{ aspectRatio: "1/1" }}>
             {cat.image_url ? (
-              <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+              <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" width={200} height={200} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-7 w-7 text-muted-foreground" /></div>
             )}
