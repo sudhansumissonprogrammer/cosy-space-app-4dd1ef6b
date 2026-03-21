@@ -21,7 +21,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               {store.logo_url ? (
-                <img src={store.logo_url} alt={store.name} width={120} height={40} className="h-10 w-auto max-w-[120px] object-contain" loading="lazy" decoding="async" />
+                <img src={optimizeImageUrl(store.logo_url, 120, 80)} alt={store.name} width={120} height={40} className="h-10 w-auto max-w-[120px] object-contain" loading="lazy" decoding="async" />
               ) : (
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
                   <Store className="h-4 w-4 text-primary-foreground" />

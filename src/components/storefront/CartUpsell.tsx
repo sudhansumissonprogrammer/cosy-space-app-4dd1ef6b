@@ -94,10 +94,12 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
               <div className="relative aspect-square w-full bg-accent">
                 {product.image_url ? (
                   <img
-                    src={cleanImageUrl(product.image_url)}
+                    src={optimizeImageUrl(cleanImageUrl(product.image_url), 200)}
                     alt={product.name}
                     className="h-full w-full object-cover"
                     loading="lazy"
+                    width={130}
+                    height={130}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">

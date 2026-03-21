@@ -121,9 +121,12 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
               className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-all hover:border-primary/30"
             >
               <img
-                src={cleanImageUrl(product.image_url) || "/placeholder.svg"}
+                src={optimizeImageUrl(cleanImageUrl(product.image_url) || "/placeholder.svg", 200)}
                 alt={product.name}
                 className="h-16 w-16 rounded-lg object-cover border border-border flex-shrink-0"
+                loading="lazy"
+                width={64}
+                height={64}
               />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground line-clamp-1">{product.name}</p>

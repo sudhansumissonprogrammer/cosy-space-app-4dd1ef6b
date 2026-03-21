@@ -182,7 +182,7 @@ export function preloadHeroImage(
   link.href = optimized;
   link.setAttribute("fetchpriority", "high");
   // Add srcset for responsive preload
-  const srcSet = getImageSrcSet(url, [400, 600, 800, 1200], 75);
+  const srcSet = getImageSrcSet(url, [200, 400, 800], 75);
   if (srcSet) {
     link.setAttribute("imagesrcset", srcSet);
     link.setAttribute("imagesizes", HERO_IMAGE_SIZES);
