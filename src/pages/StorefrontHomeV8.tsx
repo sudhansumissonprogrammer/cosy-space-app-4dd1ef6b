@@ -56,7 +56,18 @@ function HeroCarousel({ store }: { store: StoreData }) {
             <div key={i} className="min-w-0 shrink-0 grow-0 basis-full">
               <div className="relative h-44 sm:h-52 overflow-hidden rounded-2xl">
                 {slide.image ? (
-                  <img src={optimizeImageUrl(slide.image, 800)} alt={slide.title} className="absolute inset-0 h-full w-full object-cover" loading={i === 0 ? "eager" : "lazy"} />
+                  <img
+                    src={optimizeImageUrl(slide.image, 800)}
+                    srcSet={getImageSrcSet(slide.image, [400, 600, 800, 1200]) || undefined}
+                    sizes="100vw"
+                    alt={slide.title}
+                    width={800}
+                    height={400}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    loading={i === 0 ? "eager" : "lazy"}
+                    fetchPriority={i === 0 ? "high" : "auto"}
+                    decoding={i === 0 ? "sync" : "async"}
+                  />
                 ) : (
                   <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, var(--storefront-primary, #6C5CE7), var(--storefront-accent, #FD79A8))` }} />
                 )}
