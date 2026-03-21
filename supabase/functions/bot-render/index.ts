@@ -290,8 +290,10 @@ Deno.serve(async (req) => {
   }
 
   // Build canonical URL
-  const canonical = domain
-    ? `https://${domain}`
+  // Sanitize domain to prevent injection
+  const safeDomain = domain ? domain.replace(/[^a-zA-Z0-9.\-]/g, "") : null;
+  const canonical = safeDomain
+    ? `https://${safeDomain}`
     : `https://${slug}.${ROOT_DOMAIN}`;
 
   // Product page
