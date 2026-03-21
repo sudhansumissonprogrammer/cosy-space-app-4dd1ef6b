@@ -22,7 +22,7 @@ export default function HeroBannerCarousel({
   images,
   storeName,
   optimizeWidth = 800,
-  interval = 2000,
+  interval = 4000,
   className = "",
   imageClassName = "w-full h-auto object-cover",
   maxHeight,
