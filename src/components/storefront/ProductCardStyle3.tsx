@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Heart, ShoppingCart, Tag } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet, splitImageUrls, PRODUCT_CARD_SIZES } from "@/lib/imageOptimize";
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
