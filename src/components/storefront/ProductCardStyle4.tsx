@@ -164,15 +164,17 @@ export default function ProductCardStyle4({ product, slug, store }: Props) {
               <button
                 onClick={handleDecrease}
                 className="flex h-8 w-8 items-center justify-center transition-all active:scale-90"
+                aria-label="Decrease quantity"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
-              <span className="flex h-8 w-6 items-center justify-center text-xs font-bold">
+              <span className="flex h-8 w-6 items-center justify-center text-xs font-bold" aria-live="polite">
                 {qty}
               </span>
               <button
                 onClick={handleIncrease}
                 className="flex h-8 w-8 items-center justify-center transition-all active:scale-90"
+                aria-label="Increase quantity"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>

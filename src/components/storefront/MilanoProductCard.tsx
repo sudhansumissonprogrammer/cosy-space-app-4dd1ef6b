@@ -57,11 +57,11 @@ export default function MilanoProductCard({ product, slug, index = 0 }: MilanoPr
 
         {/* Wishlist + Quick-add icons — bottom-right stack */}
         <div className="absolute bottom-2.5 right-2.5 flex flex-col gap-1.5">
-          <button onClick={handleToggleWishlist} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "#fee2e2" : "rgba(255,255,255,0.92)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}>
-            <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "var(--storefront-text, #1a1a1a)" }} />
+          <button onClick={handleToggleWishlist} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "#fee2e2" : "rgba(255,255,255,0.92)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+            <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
           </button>
-          <button onClick={handleAddToCart} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}>
-            <ShoppingCart className="h-4 w-4" style={{ color: "var(--storefront-btn-text, #fff)" }} />
+          <button onClick={handleAddToCart} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={`Add ${product.name} to cart`}>
+            <ShoppingCart className="h-4 w-4" style={{ color: "var(--storefront-btn-text, #fff)" }} aria-hidden="true" />
           </button>
         </div>
       </div>
