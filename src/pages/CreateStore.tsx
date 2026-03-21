@@ -23,6 +23,7 @@ import {
   Rocket, Crown, ShoppingBag,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 
 const CURRENCIES = [
   { code: "INR", label: "Indian Rupee (₹)" },
