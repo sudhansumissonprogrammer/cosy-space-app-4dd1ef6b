@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -11,7 +11,7 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { getDiscountPercent } from "@/lib/productUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet } from "@/lib/imageOptimize";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
@@ -56,7 +56,18 @@ function HeroCarousel({ store }: { store: StoreData }) {
             <div key={i} className="min-w-0 shrink-0 grow-0 basis-full">
               <div className="relative h-44 sm:h-52 overflow-hidden rounded-2xl">
                 {slide.image ? (
-                  <img src={optimizeImageUrl(slide.image, 800)} alt={slide.title} className="absolute inset-0 h-full w-full object-cover" loading={i === 0 ? "eager" : "lazy"} />
+                  <img
+                    src={optimizeImageUrl(slide.image, 800)}
+                    srcSet={getImageSrcSet(slide.image, [400, 600, 800, 1200]) || undefined}
+                    sizes="100vw"
+                    alt={slide.title}
+                    width={800}
+                    height={400}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    loading={i === 0 ? "eager" : "lazy"}
+                    fetchPriority={i === 0 ? "high" : "auto"}
+                    decoding={i === 0 ? "sync" : "async"}
+                  />
                 ) : (
                   <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, var(--storefront-primary, #6C5CE7), var(--storefront-accent, #FD79A8))` }} />
                 )}
@@ -81,7 +92,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
       {slides.length > 1 && (
         <div className="flex justify-center gap-1.5 mt-2.5">
           {slides.map((_, i) => (
-            <button key={i} onClick={() => emblaApi?.scrollTo(i)} className="rounded-full transition-all" style={{
+            <button key={i} onClick={() => emblaApi?.scrollTo(i)} aria-label={`Go to slide ${i + 1}`} className="rounded-full transition-all" style={{
               width: i === selected ? "20px" : "6px",
               height: "6px",
               backgroundColor: i === selected ? "var(--storefront-primary, #6C5CE7)" : "var(--storefront-text, #1a1a1a)20",
@@ -114,7 +125,7 @@ function CategoryStrip({ categories, slug }: { categories: any[] | undefined; sl
               }}
             >
               {cat.image_url ? (
-                <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover rounded-full" loading="lazy" />
+                <img src={optimizeImageUrl(cat.image_url, 128)} alt={cat.name} width={64} height={64} className="h-full w-full object-cover rounded-full" loading="lazy" decoding="async" />
               ) : (
                 <Tag className="h-6 w-6" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />
               )}
@@ -198,10 +209,10 @@ function FlashDeals({ products, slug }: { products: any[]; slug: string }) {
             >
               <div className="relative" style={{ aspectRatio: "1/1" }}>
                 {product.image_url ? (
-                  <img src={optimizeImageUrl(product.image_url, 300)} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
+                  <img src={optimizeImageUrl(product.image_url, 300)} alt={product.name} width={300} height={300} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))08" }}>
-                    <Tag className="h-8 w-8" style={{ color: "var(--storefront-text, hsl(var(--foreground)))15" }} />
+                    <Tag className="h-8 w-8" style={{ color: "var(--storefront-text, hsl(var(--foreground)))15" }} aria-hidden="true" />
                   </div>
                 )}
                 <span className="absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
