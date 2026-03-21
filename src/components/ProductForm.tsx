@@ -419,6 +419,8 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       }
 
       toast.success(isEditing ? "Product updated!" : "Product created!");
+      // Trigger revalidation of pre-rendered storefront pages
+      if (store?.slug) revalidateStore(store.slug);
       if (onClose) {
         onClose();
       } else {
