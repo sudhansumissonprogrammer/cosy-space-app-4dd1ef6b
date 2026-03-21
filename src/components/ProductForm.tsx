@@ -301,16 +301,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   };
 
   const uploadImage = async (file: File) => {
-    const result = await processImage(file);
-    const msg = getCompressionMessage(result);
-    if (msg) toast.success(msg);
-    const ext = result.file.name.split(".").pop();
-    const path = `${user!.id}/${storeId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { data, error } = await supabase.storage
-      .from("product-images")
-      .upload(path, result.file, { cacheControl: "3600", upsert: true });
-    if (error) throw error;
-    return supabase.storage.from("product-images").getPublicUrl(data.path).data.publicUrl;
+    const basePath = generateUploadPath(user!.id, storeId!);
+    const result = await uploadOptimizedImage(file, "product-images", basePath);
+    if (result.compressionMessage) toast.success(result.compressionMessage);
+    return result.mainUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
