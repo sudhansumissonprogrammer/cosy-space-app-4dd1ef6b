@@ -98,9 +98,31 @@ Deno.serve(async (req) => {
     transactional_emails: state?.transactional_email_ttl_minutes ?? DEFAULT_TRANSACTIONAL_TTL_MINUTES,
   }
 
+  // 2. Quick pre-check: peek both queues to see if there's any work.
+  //    If both are empty, exit immediately to save compute.
+  let hasWork = false
+  for (const q of ['auth_emails', 'transactional_emails']) {
+    const { data: peek } = await supabase.rpc('read_email_batch', {
+      queue_name: q,
+      batch_size: 1,
+      vt: 0, // visibility timeout 0 = peek without claiming
+    })
+    if (peek && peek.length > 0) {
+      hasWork = true
+      break
+    }
+  }
+
+  if (!hasWork) {
+    return new Response(
+      JSON.stringify({ processed: 0, skipped: 'empty_queues' }),
+      { headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
   let totalProcessed = 0
 
-  // 2. Process auth_emails first (priority), then transactional_emails
+  // 3. Process auth_emails first (priority), then transactional_emails
   for (const queue of ['auth_emails', 'transactional_emails']) {
     const dlq = `${queue}_dlq`
     const { data: messages, error: readError } = await supabase.rpc('read_email_batch', {
