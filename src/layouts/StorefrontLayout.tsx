@@ -134,7 +134,7 @@ function HamburgerMenu({ store }: { store: StoreData }) {
         <div className="flex flex-col">
           <div className="border-b bg-card p-4">
             {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[160px] object-contain" />
+              <img src={store.logo_url} alt={store.name} width={160} height={40} className="h-10 w-auto max-w-[160px] object-contain" loading="eager" />
             ) : (
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
