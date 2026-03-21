@@ -125,7 +125,7 @@ function CategoryStrip({ categories, slug }: { categories: any[] | undefined; sl
               }}
             >
               {cat.image_url ? (
-                <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover rounded-full" loading="lazy" />
+                <img src={optimizeImageUrl(cat.image_url, 128)} alt={cat.name} width={64} height={64} className="h-full w-full object-cover rounded-full" loading="lazy" decoding="async" />
               ) : (
                 <Tag className="h-6 w-6" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />
               )}
