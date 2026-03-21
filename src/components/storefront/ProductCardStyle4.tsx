@@ -78,9 +78,14 @@ export default function ProductCardStyle4({ product, slug, store }: Props) {
           <div className="group/img relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
             <img
               src={optimizeImageUrl(images[0], 200)}
+              srcSet={getImageSrcSet(images[0], [100, 200])}
+              sizes="96px"
               alt={product.name}
+              width={200}
+              height={200}
               className={`h-full w-full object-cover transition-all duration-500 ${hasSecond ? "group-hover/img:opacity-0" : ""}`}
               loading="lazy"
+              decoding="async"
             />
             {hasSecond && (
               <img src={optimizeImageUrl(images[1], 200)} alt={product.name} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover/img:opacity-100" loading="lazy" />

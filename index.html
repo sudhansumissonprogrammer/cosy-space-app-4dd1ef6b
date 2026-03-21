@@ -3,35 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Preconnect to critical origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://nyopdqvfbgnjmqluhynr.supabase.co" />
-    <link rel="dns-prefetch" href="https://nyopdqvfbgnjmqluhynr.supabase.co" />
+    <link rel="preconnect" href="https://kzvfjknnslgcwumzlwkb.supabase.co" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
-    <!-- Preload critical font files for instant text rendering -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;700&family=Changa:wght@400;500;600&family=Montserrat:wght@400;500;600;700&display=swap" as="style" />
-    <link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;500;700;800;900&family=Changa:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;500;700;800;900&family=Changa:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
+    <!-- Critical fonts: preload the subset we need immediately, defer the rest -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+    <!-- Non-critical decorative fonts: fully deferred -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;700&family=Changa:wght@400;600&family=Montserrat:wght@400;600;700&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Alegreya+SC:wght@400;700&family=Changa:wght@400;600&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
     <title>Storivo — Create Your Online Store</title>
     <meta name="description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
     <meta name="author" content="Storivo" />
     <meta name="theme-color" content="#4361ee" />
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <meta property="og:type" content="website" />
-    
-    
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/png" href="/pwa-192x192.png">
-  <meta property="og:title" content="Storivo — Create Your Online Store">
-  <meta name="twitter:title" content="Storivo — Create Your Online Store">
-  <meta property="og:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
-  <meta name="twitter:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
-  <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
-  <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
-</head>
-
+    <meta property="og:title" content="Storivo — Create Your Online Store">
+    <meta name="twitter:title" content="Storivo — Create Your Online Store">
+    <meta property="og:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
+    <meta name="twitter:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
+    <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
+    <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
+    <!-- Inline critical above-the-fold styles to prevent FOUC -->
+    <style>
+      body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+      #root{min-height:100vh}
+      /* Skeleton placeholder for initial load */
+      .initial-spinner{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f8fa}
+      .initial-spinner::after{content:'';width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#4361ee;border-radius:50%;animation:spin .6s linear infinite}
+      @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
+  </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="initial-spinner"></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
