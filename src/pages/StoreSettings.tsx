@@ -14,7 +14,7 @@ import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Trash2, Flame, Store, MapPi
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Switch } from "@/components/ui/switch";
-import { revalidateStore } from "@/lib/revalidate";
+
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeSVG } from "qrcode.react";
@@ -185,8 +185,6 @@ export default function StoreSettings() {
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       setHeroImageFiles([]);
       toast.success("Store settings updated!");
-      // Trigger revalidation of pre-rendered pages
-      if (store?.slug) revalidateStore(store.slug);
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
   });
