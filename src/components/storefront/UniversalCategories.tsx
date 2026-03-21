@@ -148,7 +148,7 @@ function PillCarousel({ categories, storeSlug }: { categories: Category[]; store
         >
           <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
             {cat.image_url ? (
-              <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+              <img src={optimizeImageUrl(cat.image_url, 32)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" width={32} height={32} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-3.5 w-3.5 text-muted-foreground" /></div>
             )}
