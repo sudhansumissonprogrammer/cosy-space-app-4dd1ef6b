@@ -185,8 +185,6 @@ export default function StoreSettings() {
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       setHeroImageFiles([]);
       toast.success("Store settings updated!");
-      // Trigger revalidation of pre-rendered pages
-      if (store?.slug) revalidateStore(store.slug);
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
   });
