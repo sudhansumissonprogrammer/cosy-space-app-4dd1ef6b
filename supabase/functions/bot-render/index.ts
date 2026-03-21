@@ -138,7 +138,7 @@ ${product.description ? `<div class="description" itemprop="description">${esc(p
 </article>
 </main>
 <footer class="footer">&copy; ${new Date().getFullYear()} ${storeName}. All rights reserved.</footer>
-<script>window.location.replace("${canonical}");</script>
+<script>window.location.replace(${JSON.stringify(canonical)});</script>
 </body>
 </html>`;
 }
