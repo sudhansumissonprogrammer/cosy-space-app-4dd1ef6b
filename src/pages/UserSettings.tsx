@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Upload, X, Crown } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
