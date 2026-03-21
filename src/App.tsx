@@ -8,29 +8,31 @@ import { getSubdomainSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
 
-// Storefront — eagerly loaded for fast storefront rendering
+// Storefront layouts — lazy load all except V1 (most common default)
 import StorefrontLayout from "./layouts/StorefrontLayout";
-import StorefrontLayoutV2 from "./layouts/StorefrontLayoutV2";
-import StorefrontLayoutV3 from "./layouts/StorefrontLayoutV3";
-import StorefrontLayoutV4 from "./layouts/StorefrontLayoutV4";
-import StorefrontLayoutV6 from "./layouts/StorefrontLayoutV6";
-import StorefrontLayoutV7 from "./layouts/StorefrontLayoutV7";
+const StorefrontLayoutV2 = lazy(() => import("./layouts/StorefrontLayoutV2"));
+const StorefrontLayoutV3 = lazy(() => import("./layouts/StorefrontLayoutV3"));
+const StorefrontLayoutV4 = lazy(() => import("./layouts/StorefrontLayoutV4"));
+const StorefrontLayoutV6 = lazy(() => import("./layouts/StorefrontLayoutV6"));
+const StorefrontLayoutV7 = lazy(() => import("./layouts/StorefrontLayoutV7"));
 const StorefrontLayoutV8 = lazy(() => import("./layouts/StorefrontLayoutV8"));
 const StorefrontLayoutV10 = lazy(() => import("./layouts/StorefrontLayoutV10"));
+const StorefrontLayoutV11 = lazy(() => import("./layouts/StorefrontLayoutV11"));
 const StorefrontLayoutV12 = lazy(() => import("./layouts/StorefrontLayoutV12"));
 const StorefrontLayoutV13 = lazy(() => import("./layouts/StorefrontLayoutV13"));
-import StorefrontLayoutV11 from "./layouts/StorefrontLayoutV11";
+
+// Storefront home pages — lazy load all except V1
 import StorefrontHome from "./pages/StorefrontHome";
-import StorefrontHomeV2 from "./pages/StorefrontHomeV2";
-import StorefrontHomeV3 from "./pages/StorefrontHomeV3";
+const StorefrontHomeV2 = lazy(() => import("./pages/StorefrontHomeV2"));
+const StorefrontHomeV3 = lazy(() => import("./pages/StorefrontHomeV3"));
 const StorefrontHomeV4 = lazy(() => import("./pages/StorefrontHomeV4"));
 const StorefrontHomeV6 = lazy(() => import("./pages/StorefrontHomeV6"));
 const StorefrontHomeV7 = lazy(() => import("./pages/StorefrontHomeV7"));
 const StorefrontHomeV8 = lazy(() => import("./pages/StorefrontHomeV8"));
 const StorefrontHomeV10 = lazy(() => import("./pages/StorefrontHomeV10"));
+const StorefrontHomeV11 = lazy(() => import("./pages/StorefrontHomeV11"));
 const StorefrontHomeV12 = lazy(() => import("./pages/StorefrontHomeV12"));
 const StorefrontHomeV13 = lazy(() => import("./pages/StorefrontHomeV13"));
-import StorefrontHomeV11 from "./pages/StorefrontHomeV11";
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
 const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
@@ -39,7 +41,20 @@ const StorefrontTerms = lazy(() => import("./pages/StorefrontTerms"));
 const StorefrontPrivacyPolicy = lazy(() => import("./pages/StorefrontPrivacyPolicy"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
-import { ProductDetailSkeleton } from "./pages/ProductDetail";
+// ProductDetailSkeleton is used as suspense fallback — import inline to avoid pulling full module
+const ProductDetailSkeleton = () => (
+  <div className="mx-auto max-w-6xl px-4 py-8 space-y-4">
+    <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="aspect-square animate-pulse rounded-xl bg-muted" />
+      <div className="space-y-4">
+        <div className="h-6 w-3/4 animate-pulse rounded bg-muted" />
+        <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-32 animate-pulse rounded bg-muted" />
+      </div>
+    </div>
+  </div>
+);
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
 const StorefrontLogin = lazy(() => import("./pages/StorefrontLogin"));
 const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));

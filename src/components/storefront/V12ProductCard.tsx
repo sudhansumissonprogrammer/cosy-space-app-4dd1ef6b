@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Heart, ShoppingCart, Tag } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet, PRODUCT_CARD_SIZES } from "@/lib/imageOptimize";
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
@@ -28,9 +28,15 @@ export default function V12ProductCard({ product, slug, index = 0 }: V12ProductC
         {product.image_url ? (
           <img
             src={optimizeImageUrl(product.image_url, 400)}
+            srcSet={getImageSrcSet(product.image_url, [300, 400, 600])}
+            sizes={PRODUCT_CARD_SIZES}
             alt={product.name}
+            width={400}
+            height={533}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading={index < 4 ? "eager" : "lazy"}
+            fetchPriority={index < 2 ? "high" : "auto"}
+            decoding={index < 4 ? "sync" : "async"}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center bg-gray-50">

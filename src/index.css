@@ -51,6 +51,7 @@
     --warning-foreground: 0 0% 100%;
 
     font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-display: swap;
     --font-storefront: 'Alegreya SC', serif;
 
     /* Storefront theme defaults (overridden by inline CSS vars) */

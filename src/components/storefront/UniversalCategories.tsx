@@ -2,6 +2,7 @@ import { Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 interface Category {
   id: string;
@@ -56,7 +57,7 @@ function CircleCarousel({ categories, storeSlug }: { categories: Category[]; sto
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all">
           <div className="h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
             {cat.image_url ? (
-              <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+              <img src={optimizeImageUrl(cat.image_url, 80)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" width={80} height={80} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" /></div>
             )}
@@ -76,7 +77,7 @@ function SquareCarousel({ categories, storeSlug }: { categories: Category[]; sto
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex-shrink-0 group">
           <div className="h-20 w-20 sm:h-[88px] sm:w-[88px] rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
             {cat.image_url ? (
-              <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+              <img src={optimizeImageUrl(cat.image_url, 88)} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" width={88} height={88} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-6 w-6 text-muted-foreground" /></div>
             )}
@@ -96,7 +97,7 @@ function SquareGridModern({ categories, storeSlug }: { categories: Category[]; s
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group relative">
           <div className="w-full rounded-xl overflow-hidden transition-all group-hover:shadow-lg" style={{ aspectRatio: "1/1" }}>
             {cat.image_url ? (
-              <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+              <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" width={200} height={200} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-7 w-7 text-muted-foreground" /></div>
             )}
@@ -117,7 +118,7 @@ function SquareGrid({ categories, storeSlug }: { categories: Category[]; storeSl
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group">
           <div className="w-full rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-md" style={{ aspectRatio: "1/1" }}>
             {cat.image_url ? (
-              <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+              <img src={optimizeImageUrl(cat.image_url, 250)} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" width={250} height={250} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-8 w-8 text-muted-foreground" /></div>
             )}
@@ -144,7 +145,7 @@ function PillCarousel({ categories, storeSlug }: { categories: Category[]; store
         >
           <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
             {cat.image_url ? (
-              <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+              <img src={optimizeImageUrl(cat.image_url, 32)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" width={32} height={32} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-3.5 w-3.5 text-muted-foreground" /></div>
             )}
