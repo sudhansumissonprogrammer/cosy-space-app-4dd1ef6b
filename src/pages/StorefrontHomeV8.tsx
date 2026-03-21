@@ -92,7 +92,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
       {slides.length > 1 && (
         <div className="flex justify-center gap-1.5 mt-2.5">
           {slides.map((_, i) => (
-            <button key={i} onClick={() => emblaApi?.scrollTo(i)} className="rounded-full transition-all" style={{
+            <button key={i} onClick={() => emblaApi?.scrollTo(i)} aria-label={`Go to slide ${i + 1}`} className="rounded-full transition-all" style={{
               width: i === selected ? "20px" : "6px",
               height: "6px",
               backgroundColor: i === selected ? "var(--storefront-primary, #6C5CE7)" : "var(--storefront-text, #1a1a1a)20",
