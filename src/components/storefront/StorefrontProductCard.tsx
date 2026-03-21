@@ -80,8 +80,8 @@ export default function StorefrontProductCard({ product, slug, store, priority =
             );
           })()}
 
-          <button onClick={handleToggleWishlist} className="absolute right-2.5 top-2.5 z-10 p-1 transition-all duration-200 hover:scale-110 active:scale-95">
-            <Heart className={`h-4 w-4 drop-shadow-md transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"}`} />
+          <button onClick={handleToggleWishlist} className="absolute right-2.5 top-2.5 z-10 p-1 transition-all duration-200 hover:scale-110 active:scale-95" aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+            <Heart className={`h-4 w-4 drop-shadow-md transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"}`} aria-hidden="true" />
           </button>
 
           {(() => {
@@ -129,9 +129,9 @@ export default function StorefrontProductCard({ product, slug, store, priority =
 
         {cartQty > 0 && !isAdding && !justAdded ? (
           <div className="flex h-7 sm:h-8 w-full items-center rounded-lg overflow-hidden btn-gold">
-            <button onClick={handleDecrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-95"><Minus className="h-3 w-3" strokeWidth={2.5} /></button>
-            <span className="flex-1 text-center text-[9px] font-extrabold whitespace-nowrap">{cartQty} in cart</span>
-            <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-95"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
+            <button onClick={handleDecrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-95" aria-label="Decrease quantity"><Minus className="h-3 w-3" strokeWidth={2.5} /></button>
+            <span className="flex-1 text-center text-[9px] font-extrabold whitespace-nowrap" aria-live="polite">{cartQty} in cart</span>
+            <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-95" aria-label="Increase quantity"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
           </div>
         ) : (
           <button

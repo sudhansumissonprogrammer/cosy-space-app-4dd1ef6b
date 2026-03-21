@@ -54,8 +54,8 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
             -{discount}%
           </div>
         )}
-        <button onClick={handleToggleWishlist} className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "#fee2e2" : "rgba(255,255,255,0.92)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}>
-          <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "#666" }} />
+        <button onClick={handleToggleWishlist} className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "#fee2e2" : "rgba(255,255,255,0.92)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+          <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "#666" }} aria-hidden="true" />
         </button>
       </div>
 
@@ -74,8 +74,8 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
             </span>
           )}
         </div>
-        <button onClick={handleAddToCart} className="w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-semibold uppercase tracking-wider transition-all active:scale-95 mt-1" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)", color: "var(--storefront-btn-text, #fff)", borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>
-          <ShoppingCart className="h-3.5 w-3.5" />
+        <button onClick={handleAddToCart} className="w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-semibold uppercase tracking-wider transition-all active:scale-95 mt-1" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)", color: "var(--storefront-btn-text, #fff)", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
+          <ShoppingCart className="h-3.5 w-3.5" aria-hidden="true" />
           Add to Cart
         </button>
       </div>
