@@ -116,16 +116,10 @@ export default function StoreSettings() {
 
   const uploadFile = async (file: File, bucket: string) => {
     if (file.size > MAX_FILE_SIZE) throw new Error("File must be less than 5MB");
-    const result = await processImage(file);
-    const msg = getCompressionMessage(result);
-    if (msg) toast.success(msg);
-    const ext = result.file.name.split(".").pop();
-    const path = `${user!.id}/${storeId}/${Date.now()}.${ext}`;
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(path, result.file, { cacheControl: "3600", upsert: true });
-    if (error) throw error;
-    return supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl;
+    const basePath = generateUploadPath(user!.id, storeId!);
+    const result = await uploadOptimizedImage(file, bucket, basePath);
+    if (result.compressionMessage) toast.success(result.compressionMessage);
+    return result.mainUrl;
   };
 
   const updateMutation = useMutation({

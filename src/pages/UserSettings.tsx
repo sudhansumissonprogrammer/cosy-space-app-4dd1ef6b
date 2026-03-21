@@ -99,16 +99,10 @@ export default function UserSettings() {
     mutationFn: async () => {
       let avatarUrl = profile?.avatar_url || null;
       if (avatarFile) {
-        const result = await processImage(avatarFile);
-        const msg = getCompressionMessage(result);
-        if (msg) toast.success(msg);
-        const ext = result.file.name.split(".").pop();
-        const path = `${user!.id}/avatar.${ext}`;
-        const { data, error } = await supabase.storage
-          .from("store-logos")
-          .upload(path, result.file, { cacheControl: "3600", upsert: true });
-        if (error) throw error;
-        avatarUrl = supabase.storage.from("store-logos").getPublicUrl(data.path).data.publicUrl;
+        const basePath = generateUploadPath(user!.id, "avatar");
+        const result = await uploadOptimizedImage(avatarFile, "store-logos", basePath);
+        if (result.compressionMessage) toast.success(result.compressionMessage);
+        avatarUrl = result.mainUrl;
       }
       const { error } = await supabase
         .from("profiles")
