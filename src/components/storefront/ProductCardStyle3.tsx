@@ -34,8 +34,8 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
           const images = splitImageUrls(product.image_url);
           if (images.length === 0) {
             return (
-              <div className="h-full w-full flex items-center justify-center bg-gray-50">
-                <Tag className="h-10 w-10 text-gray-200" />
+              <div className="h-full w-full flex items-center justify-center bg-secondary/40">
+                <Tag className="h-10 w-10 text-muted-foreground/40" />
               </div>
             );
           }
