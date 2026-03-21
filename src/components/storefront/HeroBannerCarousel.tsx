@@ -195,19 +195,42 @@ function CarouselInner({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
       >
-        {images.map((url, i) => (
-          <div key={i} className="w-full flex-shrink-0">
-            <img
-              src={optimizeImageUrl(url, optimizeWidth)}
-              alt={`${storeName} hero banner ${i + 1}`}
-              className={imageClassName}
-              style={maxHeight ? { maxHeight } : undefined}
-              loading={i === 0 ? "eager" : "lazy"}
-              fetchPriority={i === 0 ? "high" : undefined}
-              draggable={false}
-            />
-          </div>
-        ))}
+        {images.map((url, i) => {
+          const isFirst = i === 0;
+          const srcSet = getImageSrcSet(url, [400, 600, 800, 1200]);
+          return (
+            <div key={i} className="w-full flex-shrink-0">
+              {/* Only render first 2 slides eagerly; defer rest until visible */}
+              {i <= 1 ? (
+                <img
+                  src={optimizeImageUrl(url, optimizeWidth)}
+                  srcSet={srcSet || undefined}
+                  sizes={HERO_IMAGE_SIZES}
+                  alt={`${storeName} hero banner ${i + 1}`}
+                  className={imageClassName}
+                  style={maxHeight ? { maxHeight } : undefined}
+                  loading={isFirst ? "eager" : "lazy"}
+                  fetchPriority={isFirst ? "high" : "auto"}
+                  decoding={isFirst ? "sync" : "async"}
+                  width={1200}
+                  height={600}
+                  draggable={false}
+                />
+              ) : (
+                <DeferredSlide
+                  url={url}
+                  optimizeWidth={optimizeWidth}
+                  srcSet={srcSet}
+                  storeName={storeName}
+                  index={i}
+                  imageClassName={imageClassName}
+                  maxHeight={maxHeight}
+                  isVisible={i === current}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {overlay}
