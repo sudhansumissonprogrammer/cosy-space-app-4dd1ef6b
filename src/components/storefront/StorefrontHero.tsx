@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Store, BadgeCheck } from "lucide-react";
+import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 interface StorefrontHeroProps {
@@ -6,11 +8,29 @@ interface StorefrontHeroProps {
 }
 
 export default function StorefrontHero({ store }: StorefrontHeroProps) {
+  // Preload the banner for LCP
+  useEffect(() => {
+    if (store.banner_url) {
+      return preloadHeroImage(store.banner_url, 1200);
+    }
+  }, [store.banner_url]);
+
   return (
     <section className="relative">
       {store.banner_url ? (
         <div className="h-56 w-full sm:h-72 lg:h-80">
-          <img src={store.banner_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <img
+            src={optimizeImageUrl(store.banner_url, 1200, 75)}
+            srcSet={getImageSrcSet(store.banner_url, [400, 800, 1200]) || undefined}
+            sizes={HERO_IMAGE_SIZES}
+            alt={`${store.name} banner`}
+            className="h-full w-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+            decoding="sync"
+            width={1200}
+            height={400}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
         </div>
       ) : (
@@ -23,10 +43,12 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
           <div className="flex items-end gap-4">
             {store.logo_url ? (
               <img
-                src={store.logo_url}
+                src={optimizeImageUrl(store.logo_url, 96, 80)}
                 alt={store.name}
                 className="h-20 w-20 rounded-2xl border-4 border-background object-cover shadow-lg sm:h-24 sm:w-24"
-                loading="lazy"
+                loading="eager"
+                width={96}
+                height={96}
               />
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-background bg-card shadow-lg sm:h-24 sm:w-24">
