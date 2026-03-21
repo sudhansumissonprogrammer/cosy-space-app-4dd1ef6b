@@ -209,10 +209,10 @@ function FlashDeals({ products, slug }: { products: any[]; slug: string }) {
             >
               <div className="relative" style={{ aspectRatio: "1/1" }}>
                 {product.image_url ? (
-                  <img src={optimizeImageUrl(product.image_url, 300)} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
+                  <img src={optimizeImageUrl(product.image_url, 300)} alt={product.name} width={300} height={300} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))08" }}>
-                    <Tag className="h-8 w-8" style={{ color: "var(--storefront-text, hsl(var(--foreground)))15" }} />
+                    <Tag className="h-8 w-8" style={{ color: "var(--storefront-text, hsl(var(--foreground)))15" }} aria-hidden="true" />
                   </div>
                 )}
                 <span className="absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
