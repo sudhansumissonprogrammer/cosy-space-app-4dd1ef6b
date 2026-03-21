@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+import { revalidateStore } from "@/lib/revalidate";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -418,6 +419,8 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       }
 
       toast.success(isEditing ? "Product updated!" : "Product created!");
+      // Trigger revalidation of pre-rendered storefront pages
+      if (store?.slug) revalidateStore(store.slug);
       if (onClose) {
         onClose();
       } else {
