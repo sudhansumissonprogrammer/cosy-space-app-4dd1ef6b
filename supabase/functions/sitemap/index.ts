@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const slug = url.searchParams.get("slug");
+  const domain = url.searchParams.get("domain");
 
   if (!slug) {
     return new Response("Missing slug parameter", { status: 400, headers: corsHeaders });
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
   // Fetch store
   const { data: store, error: storeErr } = await supabase
     .from("stores")
-    .select("id, slug, name, updated_at")
+    .select("id, slug, name, updated_at, custom_domain")
     .eq("slug", slug)
     .eq("is_suspended", false)
     .single();
@@ -35,42 +36,46 @@ Deno.serve(async (req) => {
     return new Response("Store not found", { status: 404, headers: corsHeaders });
   }
 
-  // Fetch active products
-  const { data: products } = await supabase
-    .from("products")
-    .select("slug, id, updated_at, image_url, name, price, sale_price")
-    .eq("store_id", store.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+  // Use custom domain if available, otherwise subdomain
+  const storeHost = domain || store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
+  const baseUrl = `https://${storeHost}`;
 
-  // Fetch categories
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("slug, name")
-    .eq("store_id", store.id);
+  // Fetch active products and categories in parallel
+  const [productsResult, categoriesResult] = await Promise.all([
+    supabase
+      .from("products")
+      .select("slug, id, updated_at, image_url, name, price, sale_price")
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1000),
+    supabase
+      .from("categories")
+      .select("slug, name")
+      .eq("store_id", store.id),
+  ]);
 
-  const baseUrl = `https://${slug}.${ROOT_DOMAIN}`;
+  const products = productsResult.data;
+  const categories = categoriesResult.data;
+
   const now = new Date().toISOString().split("T")[0];
   const storeUpdated = store.updated_at?.split("T")[0] || now;
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-  <!-- Homepage -->
   <url>
     <loc>${baseUrl}</loc>
     <lastmod>${storeUpdated}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-  <!-- Contact -->
   <url>
     <loc>${baseUrl}/contact</loc>
     <lastmod>${storeUpdated}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
-  <!-- Best Sellers -->
   <url>
     <loc>${baseUrl}/best-sellers</loc>
     <lastmod>${storeUpdated}</lastmod>
@@ -83,7 +88,7 @@ Deno.serve(async (req) => {
   if (categories) {
     for (const cat of categories) {
       xml += `  <url>
-    <loc>${baseUrl}/category/${cat.slug}</loc>
+    <loc>${baseUrl}/category/${escapeXml(cat.slug)}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -91,22 +96,26 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Product pages
+  // Product pages with image sitemaps
   if (products) {
     for (const p of products) {
       const productSlug = p.slug || p.id;
       const lastmod = p.updated_at?.split("T")[0] || now;
       xml += `  <url>
-    <loc>${baseUrl}/product/${productSlug}</loc>
+    <loc>${baseUrl}/product/${escapeXml(productSlug)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>`;
       if (p.image_url) {
-        xml += `
+        // Handle comma-separated image URLs
+        const images = p.image_url.split(",").map((u: string) => u.trim()).filter(Boolean);
+        for (const img of images) {
+          xml += `
     <image:image>
-      <image:loc>${escapeXml(p.image_url)}</image:loc>
+      <image:loc>${escapeXml(img)}</image:loc>
       <image:title>${escapeXml(p.name)}</image:title>
     </image:image>`;
+        }
       }
       xml += `
   </url>
@@ -130,7 +139,7 @@ Deno.serve(async (req) => {
     headers: {
       ...corsHeaders,
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, max-age=1800, s-maxage=3600",
+      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
       "CDN-Cache-Control": "public, max-age=3600",
     },
   });
