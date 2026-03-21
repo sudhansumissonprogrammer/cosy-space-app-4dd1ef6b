@@ -121,7 +121,7 @@ function SquareGrid({ categories, storeSlug }: { categories: Category[]; storeSl
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group">
           <div className="w-full rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-md" style={{ aspectRatio: "1/1" }}>
             {cat.image_url ? (
-              <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+              <img src={optimizeImageUrl(cat.image_url, 250)} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" width={250} height={250} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-8 w-8 text-muted-foreground" /></div>
             )}
