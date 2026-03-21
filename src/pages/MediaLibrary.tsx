@@ -17,6 +17,7 @@ import {
   Upload, Trash2, Loader2, Image as ImageIcon, Search, Copy, Check,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
