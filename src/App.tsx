@@ -41,7 +41,20 @@ const StorefrontTerms = lazy(() => import("./pages/StorefrontTerms"));
 const StorefrontPrivacyPolicy = lazy(() => import("./pages/StorefrontPrivacyPolicy"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
-import { ProductDetailSkeleton } from "./pages/ProductDetail";
+// ProductDetailSkeleton is used as suspense fallback — import inline to avoid pulling full module
+const ProductDetailSkeleton = () => (
+  <div className="mx-auto max-w-6xl px-4 py-8 space-y-4">
+    <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="aspect-square animate-pulse rounded-xl bg-muted" />
+      <div className="space-y-4">
+        <div className="h-6 w-3/4 animate-pulse rounded bg-muted" />
+        <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-32 animate-pulse rounded bg-muted" />
+      </div>
+    </div>
+  </div>
+);
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
 const StorefrontLogin = lazy(() => import("./pages/StorefrontLogin"));
 const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
