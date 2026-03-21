@@ -31,8 +31,37 @@ import { useThemePreview } from "@/hooks/useThemePreview";
 export type StoreData = Tables<"stores">;
 
 /**
+ * Try to read pre-rendered data embedded by the render-page edge function.
+ * Returns null if no embedded data exists (dynamic fallback).
+ */
+function getEmbeddedStorefrontData(slug: string | undefined): any | null {
+  try {
+    const el = document.getElementById("__STOREFRONT_DATA__");
+    if (!el?.textContent) return null;
+    const data = JSON.parse(el.textContent);
+    // Verify the embedded data matches the requested slug
+    if (data._slug && data._slug === slug && data.store) {
+      // Remove the script tag after reading to prevent stale data on SPA navigation
+      el.remove();
+      // Also remove SSR placeholder content
+      const root = document.getElementById("root");
+      if (root?.hasAttribute("data-ssr")) {
+        root.removeAttribute("data-ssr");
+      }
+      return data;
+    }
+  } catch {
+    // Parse error — fall through to dynamic fetch
+  }
+  return null;
+}
+
+/**
  * Single RPC call fetches store + products + categories in one roundtrip.
  * Individual caches are seeded immediately so child pages render instantly.
+ *
+ * If the page was pre-rendered by render-page edge function, embedded data
+ * is used instead of making an API call (zero-latency hydration).
  */
 export function useStorefront(slugOverride?: string) {
   const { slug: paramSlug } = useParams<{ slug: string }>();
@@ -42,6 +71,24 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
+      // ── 1. Try embedded data from pre-rendered HTML ──
+      const embedded = getEmbeddedStorefrontData(slug);
+      if (embedded) {
+        const store = embedded.store as StoreData | null;
+        if (store) {
+          queryClient.setQueryData(["storefront", slug], store);
+          queryClient.setQueryData(["storefront-products", store.id], embedded.products || []);
+          queryClient.setQueryData(["storefront-categories", store.id], embedded.categories || []);
+          queryClient.setQueryData(["storefront-total-products", store.id], embedded.total_products || 0);
+          if (embedded.theme_config) {
+            queryClient.setQueryData(["storefront-theme-config", store.id], embedded.theme_config);
+          }
+          try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
+        }
+        return embedded;
+      }
+
+      // ── 2. Dynamic fallback — standard RPC call ──
       const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
       if (error) throw error;
       const result = data as any;
@@ -54,7 +101,6 @@ export function useStorefront(slugOverride?: string) {
         if (result.theme_config) {
           queryClient.setQueryData(["storefront-theme-config", store.id], result.theme_config);
         }
-        // Persist store ID for CAPI usage in CartContext
         try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
       }
       return result;
