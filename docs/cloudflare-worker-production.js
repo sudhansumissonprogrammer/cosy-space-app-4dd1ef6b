@@ -1,445 +1,423 @@
 /**
- * Cloudflare Worker: storivo-router (v3 — production)
- *
- * Handles:
- * 1. Subdomain routing + custom domain resolution
- * 2. Per-tenant HTML caching with stale-while-revalidate
- * 3. Bot/crawler OG rewriting
- * 4. SEO files (sitemap.xml, robots.txt)
- * 5. Security headers
- * 6. Timeout handling with cached fallback
- *
- * Routes:
- *   *.storivo.in/*       → subdomains
- *   storivo.in/store/*   → 301 redirect to subdomain
- *   custom-domains       → resolved via edge function
- *
- * Deploy: Workers & Pages → Create Worker → Paste code → Add routes
+ * STORIVO PRODUCTION ROUTER (FINAL UPGRADED + SEO BOT RENDER)
+ * - Subdomain + Custom domain
+ * - Full HTML for search engine bots (via bot-render edge function)
+ * - OG tags for social bots
+ * - SEO files
+ * - Edge caching (optimized)
+ * - Timeout protection
+ * - Multi-tenant safe cache
+ * - Admin/API bypass
  */
 
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "true-path-panel.lovable.app";
+
 const SUPABASE_URL = "https://kzvfjknnslgcwumzlwkb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg";
 
-// Origin fetch timeout (prevents Cloudflare 524)
-const ORIGIN_TIMEOUT_MS = 15000;
-// Cache TTLs (seconds)
-const HTML_CACHE_TTL = 300;       // 5 min for HTML pages
-const STALE_TTL = 86400;          // Serve stale for up to 24h on error
-const SEO_CACHE_TTL = 86400;      // 24h for sitemap/robots
-const OG_CACHE_TTL = 600;         // 10 min for OG responses
-const DOMAIN_CACHE_TTL = 300;     // 5 min for custom domain resolution
-const STATIC_CACHE_TTL = 2592000; // 30 days for static assets
+/* ---------------- BOT DETECTION ---------------- */
 
+// Search engine bots — get FULL HTML with visible content
+const SEARCH_BOT_REGEX =
+  /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot/i;
+
+// Social/preview bots — get OG meta tags only
+const SOCIAL_BOT_REGEX =
+  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Instagram|Snapchat/i;
+
+// Combined for general bot check
 const BOT_UA_REGEX =
-  /bot|crawler|spider|facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|OpenGraphIO|Embedly|Iframely|PetalBot|Prerender|Lighthouse/i;
-
-const STATIC_EXT_REGEX = /\.(js|css|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot|map|json|webmanifest)$/i;
+  /bot|crawler|spider|facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Instagram|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
 
 const cache = caches.default;
 
-/* ==================== SECURITY HEADERS ==================== */
+/* ---------------- CACHE KEY (MULTI-TENANT SAFE) ---------------- */
 
-const SECURITY_HEADERS = {
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
-  "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "SAMEORIGIN",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-  "X-XSS-Protection": "1; mode=block",
-};
+function getCacheKey(request, slug = "") {
+  const url = new URL(request.url);
 
-function addSecurityHeaders(response) {
-  const newResponse = new Response(response.body, response);
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
-    newResponse.headers.set(key, value);
-  }
-  // CSP — allow inline scripts/styles (SPA needs them), restrict sources
-  newResponse.headers.set(
-    "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://wa.me; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https: http:; connect-src 'self' https://*.supabase.co https://fonts.googleapis.com https://wa.me https://*.r2.dev; frame-ancestors 'self'"
-  );
-  return newResponse;
+  url.searchParams.delete("fbclid");
+  url.searchParams.delete("gclid");
+  url.searchParams.delete("utm_source");
+
+  const host = request.headers.get("host");
+
+  return new Request(`https://cache/${host}/${slug}${url.pathname}${url.search}`);
 }
 
-/* ==================== HELPERS ==================== */
+/* ---------------- HELPERS ---------------- */
 
 function escapeHtml(str = "") {
-  return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-function getCacheKey(request, storeSlug) {
-  const url = new URL(request.url);
-  // Strip tracking params for consistent cache keys
-  for (const p of ["fbclid", "gclid", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"]) {
-    url.searchParams.delete(p);
-  }
-  // Include store slug in cache key to prevent tenant data leakage
-  if (storeSlug) {
-    url.searchParams.set("__store", storeSlug);
-  }
-  return new Request(url.toString(), { method: "GET" });
-}
-
-function isStaticAsset(pathname) {
-  return STATIC_EXT_REGEX.test(pathname);
-}
-
-function getProductSlugFromPath(pathname) {
+function getProductSlug(pathname) {
   const match = pathname.match(/^\/product\/([^/?#]+)/i);
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-function buildStoreUrl(slug, pathname, search = "") {
-  return `https://${slug}.${ROOT_DOMAIN}${pathname}${search}`;
+function buildSubdomainUrl(slug, path, search = "") {
+  return `https://${slug}.${ROOT_DOMAIN}${path}${search}`;
 }
 
-/* ==================== ORIGIN FETCH WITH TIMEOUT ==================== */
-
-async function fetchWithTimeout(url, options = {}, timeoutMs = ORIGIN_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err.name === "AbortError") {
-      throw new Error("ORIGIN_TIMEOUT");
-    }
-    throw err;
-  }
-}
-
-/* ==================== SUPABASE EDGE FUNCTION ==================== */
+/* ---------------- SUPABASE ---------------- */
 
 function callEdgeFunction(name, params = {}) {
-  const endpoint = new URL(`${SUPABASE_URL}/functions/v1/${name}`);
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== "") {
-      endpoint.searchParams.set(k, String(v));
-    }
-  }
-  return fetchWithTimeout(
-    endpoint.toString(),
-    {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
+  const url = new URL(`${SUPABASE_URL}/functions/v1/${name}`);
+
+  Object.entries(params).forEach(([k, v]) => {
+    if (v) url.searchParams.set(k, v);
+  });
+
+  return fetch(url.toString(), {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
     },
-    10000 // Edge functions get 10s
-  );
+  });
 }
 
-/* ==================== CACHED EDGE FUNCTION ==================== */
+/* ---------------- DOMAIN RESOLUTION ---------------- */
 
-async function cachedEdgeCall(name, params, cacheKeyUrl, ttl) {
-  const cacheKey = new Request(cacheKeyUrl);
-  const cached = await cache.match(cacheKey);
-  if (cached) return cached;
+async function resolveDomain(hostname) {
+  const key = new Request(`https://cache/domain-${hostname}`);
 
-  try {
-    const response = await callEdgeFunction(name, params);
-    if (!response || !response.ok) return response || new Response(null, { status: 502 });
-
-    const body = await response.text();
-    const contentType = response.headers.get("Content-Type") || "text/plain";
-    const newResponse = new Response(body, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": `public, max-age=${ttl}, stale-while-revalidate=${STALE_TTL}`,
-      },
-    });
-    await cache.put(cacheKey, newResponse.clone());
-    return newResponse;
-  } catch {
-    return new Response("Service temporarily unavailable", { status: 503 });
-  }
-}
-
-/* ==================== CUSTOM DOMAIN RESOLUTION ==================== */
-
-async function resolveCustomDomain(hostname) {
-  const cacheKeyUrl = `https://cache-internal/domain-resolve/${hostname}`;
-  const cacheKey = new Request(cacheKeyUrl);
-  const cached = await cache.match(cacheKey);
+  const cached = await cache.match(key);
   if (cached) {
     const data = await cached.json();
     return data.slug || null;
   }
 
   try {
-    const res = await callEdgeFunction("get-store-by-domain", { domain: hostname });
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/stores?select=slug&custom_domain=eq.${hostname}&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      }
+    );
+
     if (!res.ok) return null;
+
     const data = await res.json();
-    const slug = data.slug || null;
+    const slug = data?.[0]?.slug || null;
 
     await cache.put(
-      cacheKey,
+      key,
       new Response(JSON.stringify({ slug }), {
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": `public, max-age=${DOMAIN_CACHE_TTL}`,
-        },
+        headers: { "Cache-Control": "public, max-age=300" },
       })
     );
+
     return slug;
   } catch {
     return null;
   }
 }
 
-/* ==================== PROXY TO ORIGIN ==================== */
+/* ---------------- ORIGIN FETCH (SAFE + OPTIMIZED) ---------------- */
+async function fetchOrigin(request, slug = null, rewritePath = null) {
+  const url = new URL(request.url);
+  url.hostname = ORIGIN_HOST;
 
-async function proxyToOrigin(request, storeSlug) {
-  const originUrl = new URL(request.url);
-  originUrl.hostname = ORIGIN_HOST;
-
-  if (storeSlug) {
-    originUrl.searchParams.set("store", storeSlug);
+  if (rewritePath) {
+    url.pathname = rewritePath;
   }
 
   const headers = new Headers(request.headers);
   headers.set("Host", ORIGIN_HOST);
-  // Pass original host for canonical URL generation
-  headers.set("X-Forwarded-Host", new URL(request.url).hostname);
 
-  return fetchWithTimeout(originUrl.toString(), {
-    method: request.method,
-    headers,
-    redirect: "follow",
-  });
-}
-
-/* ==================== CACHED PAGE WITH STALE-WHILE-REVALIDATE ==================== */
-
-async function handleCachedPage(request, storeSlug) {
-  const url = new URL(request.url);
-
-  // Static assets: long cache, no store isolation needed
-  if (isStaticAsset(url.pathname)) {
-    const cacheKey = getCacheKey(request, null);
-    const cached = await cache.match(cacheKey);
-    if (cached) return addSecurityHeaders(cached);
-
-    try {
-      const response = await proxyToOrigin(request, storeSlug);
-      if (response.ok) {
-        const newResponse = new Response(response.body, response);
-        newResponse.headers.set("Cache-Control", `public, max-age=${STATIC_CACHE_TTL}, immutable`);
-        await cache.put(cacheKey, newResponse.clone());
-        return addSecurityHeaders(newResponse);
-      }
-      return addSecurityHeaders(response);
-    } catch {
-      return new Response("Asset unavailable", { status: 503 });
-    }
+  if (slug) {
+    url.searchParams.set("store", slug);
   }
 
-  // HTML pages: per-tenant cache
-  const cacheKey = getCacheKey(request, storeSlug);
-  const cached = await cache.match(cacheKey);
-
-  // If we have a cached response, serve it
-  if (cached) {
-    // Background revalidation if cache is older than HTML_CACHE_TTL
-    // (the stale-while-revalidate header handles this at the CDN level)
-    return addSecurityHeaders(cached);
-  }
-
-  // No cache — fetch from origin with timeout protection
   try {
-    const response = await proxyToOrigin(request, storeSlug);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
-    if (response.ok) {
-      const newResponse = new Response(response.body, response);
-      newResponse.headers.set(
+    const res = await fetch(url.toString(), {
+      method: request.method,
+      headers,
+      signal: controller.signal,
+      cf: {
+        cacheTtl: 0,
+        cacheEverything: false,
+      },
+    });
+
+    clearTimeout(timeout);
+
+    const newRes = new Response(res.body, res);
+
+    const contentType = newRes.headers.get("content-type") || "";
+
+    // Static assets cache (30 days)
+    if (
+      contentType.includes("image") ||
+      contentType.includes("javascript") ||
+      contentType.includes("css")
+    ) {
+      newRes.headers.set(
         "Cache-Control",
-        `public, max-age=${HTML_CACHE_TTL}, stale-while-revalidate=${STALE_TTL}, stale-if-error=${STALE_TTL}`
+        "public, max-age=2592000, immutable"
       );
-      // Prevent caching of authenticated/admin content
-      newResponse.headers.set("Vary", "Cookie");
-      await cache.put(cacheKey, newResponse.clone());
-      return addSecurityHeaders(newResponse);
     }
 
-    return addSecurityHeaders(response);
-  } catch (err) {
-    // On timeout or network error, try to serve any stale cached version
-    const staleResponse = await cache.match(cacheKey);
-    if (staleResponse) {
-      const stale = new Response(staleResponse.body, staleResponse);
-      stale.headers.set("X-Cache-Status", "stale-on-error");
-      return addSecurityHeaders(stale);
+    // HTML cache (5 min + stale)
+    else if (contentType.includes("text/html")) {
+      newRes.headers.set(
+        "Cache-Control",
+        "public, max-age=300, stale-while-revalidate=86400"
+      );
     }
 
-    // No cache at all — show a friendly error
-    const status = err.message === "ORIGIN_TIMEOUT" ? 504 : 502;
-    return addSecurityHeaders(
-      new Response(
-        `<!DOCTYPE html><html><head><title>Loading...</title><meta http-equiv="refresh" content="5"></head><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><div style="text-align:center"><h2>Just a moment...</h2><p>The store is loading. This page will refresh automatically.</p></div></body></html>`,
-        {
-          status,
-          headers: { "Content-Type": "text/html", "Cache-Control": "no-store" },
-        }
-      )
+    // Security headers
+    newRes.headers.set("X-Frame-Options", "SAMEORIGIN");
+    newRes.headers.set("X-Content-Type-Options", "nosniff");
+    newRes.headers.set("X-XSS-Protection", "1; mode=block");
+    newRes.headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload"
+    );
+    newRes.headers.set(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=()"
+    );
+
+    return newRes;
+  } catch {
+    return new Response(
+      `
+      <html>
+        <head>
+          <title>Loading...</title>
+          <meta http-equiv="refresh" content="3">
+        </head>
+        <body style="font-family:sans-serif;text-align:center;padding:50px">
+          <h2>Loading your store...</h2>
+          <p>Please wait, retrying...</p>
+        </body>
+      </html>
+      `,
+      { status: 200, headers: { "Content-Type": "text/html" } }
     );
   }
 }
 
-/* ==================== OG HTML FOR BOTS ==================== */
 
-function buildOgHtml(og, storeUrl) {
+async function cachedFetch(request, slug = "", rewritePath = null) {
+  const key = getCacheKey(request, slug);
+  const url = new URL(request.url);
+
+  // Skip cache for admin/API
+  if (
+    url.pathname.startsWith("/admin") ||
+    url.pathname.startsWith("/api") ||
+    request.headers.get("cookie")?.includes("auth")
+  ) {
+    return fetchOrigin(request, slug, rewritePath);
+  }
+
+  // Try cache
+  const cached = await cache.match(key);
+
+  if (cached) {
+    // Background refresh (stale-while-revalidate)
+    event.waitUntil(
+      fetchOrigin(request, slug, rewritePath).then((res) => {
+        const contentType = res.headers.get("content-type") || "";
+
+        if (res.ok && contentType.includes("text/html")) {
+          cache.put(key, res.clone());
+        }
+      }).catch(() => {})
+    );
+
+    return cached;
+  }
+
+  let res;
+
+  try {
+    res = await fetchOrigin(request, slug, rewritePath);
+  } catch {
+    const fallback = await cache.match(key);
+    if (fallback) return fallback;
+    return new Response("Server Error", { status: 500 });
+  }
+
+  const contentType = res.headers.get("content-type") || "";
+
+  if (res.ok && contentType.includes("text/html")) {
+    await cache.put(key, res.clone());
+  }
+
+  return res;
+}
+
+/* ---------------- OG HTML (for social bots only) ---------------- */
+
+function buildOgHtml(og, finalUrl) {
   const title = escapeHtml(og.title || "");
-  const description = escapeHtml(og.description || "");
-  const image = og.image || "";
-  const siteName = escapeHtml(og.title?.split("—")[0]?.trim() || og.title || "");
+  const desc = escapeHtml(og.description || "");
+  const img = og.image || "";
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
-<meta name="description" content="${description}">
+
 <meta property="og:title" content="${title}">
-<meta property="og:description" content="${description}">
-<meta property="og:url" content="${escapeHtml(storeUrl)}">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="${siteName}">
-${image ? `<meta property="og:image" content="${escapeHtml(image)}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">` : ""}
+<meta property="og:description" content="${desc}">
+<meta property="og:url" content="${finalUrl}">
+${img ? `<meta property="og:image" content="${img}">` : ""}
+
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="${title}">
-<meta name="twitter:description" content="${description}">
-${image ? `<meta name="twitter:image" content="${escapeHtml(image)}">` : ""}
-<link rel="canonical" href="${escapeHtml(storeUrl)}">
-<meta http-equiv="refresh" content="0;url=${escapeHtml(storeUrl)}">
-<script>window.location.replace("${storeUrl}");</script>
+<link rel="canonical" href="${finalUrl}">
+
+<meta http-equiv="refresh" content="0;url=${finalUrl}">
+<script>location.replace("${finalUrl}")</script>
+
 </head>
-<body><p>Redirecting to <a href="${escapeHtml(storeUrl)}">${siteName}</a>...</p></body>
+<body></body>
 </html>`;
 }
 
-/* ==================== HANDLE STORE REQUEST ==================== */
+/* ---------------- BOT HANDLER (UPGRADED) ---------------- */
 
-async function handleStore(request, slug, isCustomDomain) {
-  const url = new URL(request.url);
-
-  /* SITEMAP */
-  if (url.pathname === "/sitemap.xml") {
-    const sitemapDomain = isCustomDomain ? url.hostname : `${slug}.${ROOT_DOMAIN}`;
-    return cachedEdgeCall(
-      "sitemap",
-      { slug, domain: sitemapDomain },
-      `https://cache-internal/sitemap/${slug}/${sitemapDomain}`,
-      SEO_CACHE_TTL
-    );
-  }
-
-  /* ROBOTS.TXT */
-  if (url.pathname === "/robots.txt") {
-    const robotsDomain = isCustomDomain ? url.hostname : `${slug}.${ROOT_DOMAIN}`;
-    return cachedEdgeCall(
-      "robots-txt",
-      { slug, domain: robotsDomain },
-      `https://cache-internal/robots/${slug}/${robotsDomain}`,
-      SEO_CACHE_TTL
-    );
-  }
-
-  /* BOT TRAFFIC → OG tags */
+async function handleBot(request, slug, url, isCustom) {
   const ua = request.headers.get("User-Agent") || "";
-  if (BOT_UA_REGEX.test(ua)) {
+  if (!BOT_UA_REGEX.test(ua)) return null;
+
+  const product = getProductSlug(url.pathname);
+  const finalUrl = isCustom
+    ? `${url.origin}${url.pathname}${url.search}`
+    : buildSubdomainUrl(slug, url.pathname, url.search);
+
+  // --- SEARCH ENGINE BOTS: full HTML with visible content ---
+  if (SEARCH_BOT_REGEX.test(ua)) {
     try {
-      const productSlug = getProductSlugFromPath(url.pathname);
-      const versionToken = url.searchParams.get("v");
-
-      // Try share-page first (full pre-rendered HTML)
-      const shareRes = await cachedEdgeCall(
-        "share-page",
-        { slug, ...(productSlug ? { product: productSlug } : {}), ...(versionToken ? { v: versionToken } : {}) },
-        `https://cache-internal/share/${slug}/${productSlug || "home"}/${versionToken || ""}`,
-        OG_CACHE_TTL
+      const botCacheKey = new Request(
+        `https://cache/bot-render/${slug}/${product || "home"}`
       );
-      if (shareRes && shareRes.ok) return shareRes;
+      const cached = await cache.match(botCacheKey);
+      if (cached) return cached;
 
-      // Fallback to OG meta JSON → build HTML
-      const ogRes = await cachedEdgeCall(
-        "og-meta",
-        { slug, ...(productSlug ? { product: productSlug } : {}) },
-        `https://cache-internal/og/${slug}/${productSlug || "home"}`,
-        OG_CACHE_TTL
-      );
-      if (ogRes && ogRes.ok) {
-        const og = await ogRes.json();
-        const canonical = isCustomDomain
-          ? `${url.origin}${url.pathname}${url.search}`
-          : buildStoreUrl(slug, url.pathname, url.search);
-        return new Response(buildOgHtml(og, canonical), {
+      const domain = isCustom ? url.hostname : null;
+      const res = await callEdgeFunction("bot-render", {
+        slug,
+        ...(product ? { product } : {}),
+        ...(domain ? { domain } : {}),
+      });
+
+      if (res && res.ok) {
+        const html = await res.text();
+        const response = new Response(html, {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": `public, max-age=${OG_CACHE_TTL}, stale-while-revalidate=${STALE_TTL}`,
+            "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
           },
         });
+        await cache.put(botCacheKey, response.clone());
+        return response;
       }
     } catch {
-      // Fall through to normal page on error
+      // Fall through to OG fallback
     }
   }
 
-  /* NORMAL USERS */
-  return handleCachedPage(request, slug);
+  // --- SOCIAL BOTS: OG meta tags only ---
+  try {
+    const res = await callEdgeFunction("og-meta", {
+      slug,
+      ...(product ? { product } : {}),
+    });
+
+    if (!res.ok) return null;
+
+    const og = await res.json();
+
+    return new Response(buildOgHtml(og, finalUrl), {
+      headers: {
+        "Content-Type": "text/html",
+        "Cache-Control": "public, max-age=300",
+      },
+    });
+  } catch {
+    return null;
+  }
 }
 
-/* ==================== MAIN ENTRY ==================== */
+/* ---------------- MAIN ---------------- */
 
 export default {
   async fetch(request) {
     const url = new URL(request.url);
     const hostname = url.hostname;
 
-    /* 1. ROOT DOMAIN — redirect /store/{slug} paths */
+    // ROOT DOMAIN
     if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
       const match = url.pathname.match(/^\/store\/([a-zA-Z0-9_-]+)(\/.*)?$/);
+
       if (match) {
-        const slug = match[1];
-        const remaining = match[2] || "";
-        return new Response(null, {
-          status: 301,
-          headers: {
-            Location: `https://${slug}.${ROOT_DOMAIN}${remaining}${url.search}`,
-            "Cache-Control": "public, max-age=31536000, immutable",
-          },
-        });
+        return Response.redirect(
+          `https://${match[1]}.${ROOT_DOMAIN}${match[2] || ""}${url.search}`,
+          301
+        );
       }
-      return handleCachedPage(request, null);
+
+      return cachedFetch(request);
     }
 
-    /* 2. SUBDOMAIN ({slug}.storivo.in) */
+    // SUBDOMAIN
     if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
-      if (!slug || slug.includes(".") || slug === "www") {
-        return handleCachedPage(request, null);
+
+      if (!slug || slug.includes(".")) {
+        return cachedFetch(request);
       }
-      return handleStore(request, slug, false);
+
+      if (url.pathname === "/sitemap.xml") {
+        return callEdgeFunction("sitemap", { slug });
+      }
+
+      if (url.pathname === "/robots.txt") {
+        return callEdgeFunction("robots-txt", { slug });
+      }
+
+      const bot = await handleBot(request, slug, url, false);
+      if (bot) return bot;
+
+      return cachedFetch(request, slug);
     }
 
-    /* 3. CUSTOM DOMAIN */
-    const resolvedSlug = await resolveCustomDomain(hostname);
-    if (resolvedSlug) {
-      return handleStore(request, resolvedSlug, true);
+    // CUSTOM DOMAIN
+    const slug = await resolveDomain(hostname);
+
+    if (slug) {
+      if (url.pathname === "/sitemap.xml") {
+        return callEdgeFunction("sitemap", { slug });
+      }
+
+      if (url.pathname === "/robots.txt") {
+        return callEdgeFunction("robots-txt", { slug });
+      }
+
+      const bot = await handleBot(request, slug, url, true);
+      if (bot) return bot;
+
+      return cachedFetch(request, slug);
     }
 
-    /* 4. UNKNOWN — proxy as-is */
-    return handleCachedPage(request, null);
+    // FALLBACK
+    return cachedFetch(request);
   },
 };
