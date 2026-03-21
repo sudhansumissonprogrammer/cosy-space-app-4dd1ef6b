@@ -149,6 +149,7 @@ export default function ProductCardStyle4({ product, slug, store }: Props) {
                 color: "#25D366",
                 border: "1.5px solid #25D36640",
               }}
+              aria-label={`Add ${product.name} to cart`}
             >
               ADD
             </button>
