@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 
 interface HeroBannerCarouselProps {
   images: string[];
@@ -28,18 +28,31 @@ export default function HeroBannerCarousel({
   maxHeight,
   overlay,
 }: HeroBannerCarouselProps) {
+  // Preload first image for LCP
+  useEffect(() => {
+    if (images.length > 0) {
+      return preloadHeroImage(images[0], optimizeWidth);
+    }
+  }, [images, optimizeWidth]);
+
   if (images.length === 0) return null;
 
   if (images.length === 1) {
+    const srcSet = getImageSrcSet(images[0], [400, 600, 800, 1200]);
     return (
       <div className={`relative ${className}`}>
         <img
           src={optimizeImageUrl(images[0], optimizeWidth)}
+          srcSet={srcSet || undefined}
+          sizes={HERO_IMAGE_SIZES}
           alt={`${storeName} hero banner`}
           className={imageClassName}
           style={maxHeight ? { maxHeight } : undefined}
           loading="eager"
           fetchPriority="high"
+          decoding="sync"
+          width={1200}
+          height={600}
         />
         {overlay}
       </div>
@@ -56,6 +69,39 @@ export default function HeroBannerCarousel({
       imageClassName={imageClassName}
       maxHeight={maxHeight}
       overlay={overlay}
+    />
+  );
+}
+
+/** Defers rendering of non-visible carousel slides to reduce initial payload */
+function DeferredSlide({
+  url, optimizeWidth, srcSet, storeName, index, imageClassName, maxHeight, isVisible,
+}: {
+  url: string; optimizeWidth: number; srcSet: string; storeName: string;
+  index: number; imageClassName?: string; maxHeight?: string; isVisible: boolean;
+}) {
+  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  useEffect(() => {
+    if (isVisible && !hasBeenVisible) setHasBeenVisible(true);
+  }, [isVisible, hasBeenVisible]);
+
+  if (!hasBeenVisible) {
+    return <div className={imageClassName} style={{ ...( maxHeight ? { maxHeight } : {}), aspectRatio: "2/1" }} />;
+  }
+
+  return (
+    <img
+      src={optimizeImageUrl(url, optimizeWidth)}
+      srcSet={srcSet || undefined}
+      sizes={HERO_IMAGE_SIZES}
+      alt={`${storeName} hero banner ${index + 1}`}
+      className={imageClassName}
+      style={maxHeight ? { maxHeight } : undefined}
+      loading="lazy"
+      decoding="async"
+      width={1200}
+      height={600}
+      draggable={false}
     />
   );
 }
@@ -182,19 +228,42 @@ function CarouselInner({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
       >
-        {images.map((url, i) => (
-          <div key={i} className="w-full flex-shrink-0">
-            <img
-              src={optimizeImageUrl(url, optimizeWidth)}
-              alt={`${storeName} hero banner ${i + 1}`}
-              className={imageClassName}
-              style={maxHeight ? { maxHeight } : undefined}
-              loading={i === 0 ? "eager" : "lazy"}
-              fetchPriority={i === 0 ? "high" : undefined}
-              draggable={false}
-            />
-          </div>
-        ))}
+        {images.map((url, i) => {
+          const isFirst = i === 0;
+          const srcSet = getImageSrcSet(url, [400, 600, 800, 1200]);
+          return (
+            <div key={i} className="w-full flex-shrink-0">
+              {/* Only render first 2 slides eagerly; defer rest until visible */}
+              {i <= 1 ? (
+                <img
+                  src={optimizeImageUrl(url, optimizeWidth)}
+                  srcSet={srcSet || undefined}
+                  sizes={HERO_IMAGE_SIZES}
+                  alt={`${storeName} hero banner ${i + 1}`}
+                  className={imageClassName}
+                  style={maxHeight ? { maxHeight } : undefined}
+                  loading={isFirst ? "eager" : "lazy"}
+                  fetchPriority={isFirst ? "high" : "auto"}
+                  decoding={isFirst ? "sync" : "async"}
+                  width={1200}
+                  height={600}
+                  draggable={false}
+                />
+              ) : (
+                <DeferredSlide
+                  url={url}
+                  optimizeWidth={optimizeWidth}
+                  srcSet={srcSet}
+                  storeName={storeName}
+                  index={i}
+                  imageClassName={imageClassName}
+                  maxHeight={maxHeight}
+                  isVisible={i === current}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {overlay}
