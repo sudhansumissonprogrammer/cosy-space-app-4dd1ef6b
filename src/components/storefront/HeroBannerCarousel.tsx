@@ -215,7 +215,7 @@ function CarouselInner({
   };
 
   return (
-    <div className={`relative overflow-hidden touch-pan-y ${className || ""}`}>
+    <div className={`relative overflow-hidden touch-pan-y group ${className || ""}`} role="region" aria-label={`${storeName} banner slideshow`}>
       <div
         className="flex transition-transform duration-500 ease-out select-none"
         style={{ transform: `translateX(-${current * 100}%)`, cursor: "grab" }}
