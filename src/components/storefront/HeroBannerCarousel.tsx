@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 
 interface HeroBannerCarouselProps {
   images: string[];
@@ -28,18 +28,31 @@ export default function HeroBannerCarousel({
   maxHeight,
   overlay,
 }: HeroBannerCarouselProps) {
+  // Preload first image for LCP
+  useEffect(() => {
+    if (images.length > 0) {
+      return preloadHeroImage(images[0], optimizeWidth);
+    }
+  }, [images, optimizeWidth]);
+
   if (images.length === 0) return null;
 
   if (images.length === 1) {
+    const srcSet = getImageSrcSet(images[0], [400, 600, 800, 1200]);
     return (
       <div className={`relative ${className}`}>
         <img
           src={optimizeImageUrl(images[0], optimizeWidth)}
+          srcSet={srcSet || undefined}
+          sizes={HERO_IMAGE_SIZES}
           alt={`${storeName} hero banner`}
           className={imageClassName}
           style={maxHeight ? { maxHeight } : undefined}
           loading="eager"
           fetchPriority="high"
+          decoding="sync"
+          width={1200}
+          height={600}
         />
         {overlay}
       </div>
