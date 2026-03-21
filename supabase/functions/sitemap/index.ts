@@ -89,6 +89,7 @@ Deno.serve(async (req) => {
     for (const cat of categories) {
       xml += `  <url>
     <loc>${baseUrl}/category/${escapeXml(cat.slug)}</loc>
+    <lastmod>${storeUpdated}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -34,8 +34,8 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
           const images = splitImageUrls(product.image_url);
           if (images.length === 0) {
             return (
-              <div className="h-full w-full flex items-center justify-center bg-gray-50">
-                <Tag className="h-10 w-10 text-gray-200" />
+              <div className="h-full w-full flex items-center justify-center bg-secondary/40">
+                <Tag className="h-10 w-10 text-muted-foreground/40" />
               </div>
             );
           }
@@ -44,7 +44,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
             <>
               <img src={optimizeImageUrl(images[0], 400)} srcSet={getImageSrcSet(images[0], [300, 400, 600])} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding={priority ? "sync" : "async"} />
               {hasSecond && (
-                <img src={optimizeImageUrl(images[1], 400)} alt={product.name} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" />
+                <img src={optimizeImageUrl(images[1], 400)} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" />
               )}
             </>
           );
