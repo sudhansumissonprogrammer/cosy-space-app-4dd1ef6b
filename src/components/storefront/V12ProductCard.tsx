@@ -20,7 +20,7 @@ export default function V12ProductCard({ product, slug, index = 0 }: V12ProductC
   return (
     <Link
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
-      className="group overflow-hidden bg-white transition-all active:scale-[0.98]"
+      className="group overflow-hidden bg-card transition-all active:scale-[0.98]"
       style={{ borderRadius: "12px", border: "1px solid #f0f0f0" }}
     >
       {/* Image */}
@@ -39,8 +39,8 @@ export default function V12ProductCard({ product, slug, index = 0 }: V12ProductC
             decoding={index < 4 ? "sync" : "async"}
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-gray-50">
-            <Tag className="h-10 w-10 text-gray-200" />
+          <div className="h-full w-full flex items-center justify-center bg-secondary/40">
+            <Tag className="h-10 w-10 text-muted-foreground/40" aria-hidden="true" />
           </div>
         )}
 
