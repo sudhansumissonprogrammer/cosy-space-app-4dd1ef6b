@@ -248,7 +248,7 @@ ${productCards}
 ${products.length > 30 ? `<p style="text-align:center;color:#666;margin-top:24px">Showing 30 of ${products.length} products</p>` : ""}
 </main>
 <footer class="footer">&copy; ${new Date().getFullYear()} ${storeName}. All rights reserved.</footer>
-<script>window.location.replace("${canonical}");</script>
+<script>window.location.replace(${JSON.stringify(canonical)});</script>
 </body>
 </html>`;
 }
