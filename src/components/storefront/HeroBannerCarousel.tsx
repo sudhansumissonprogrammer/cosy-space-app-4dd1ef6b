@@ -6,7 +6,7 @@ interface HeroBannerCarouselProps {
   storeName: string;
   /** Image optimization width (default 800) */
   optimizeWidth?: number;
-  /** Auto-play interval in ms (default 2000) */
+  /** Auto-play interval in ms (default 4000) */
   interval?: number;
   /** CSS class for the wrapper */
   className?: string;
