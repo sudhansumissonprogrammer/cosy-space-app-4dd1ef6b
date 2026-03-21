@@ -23,6 +23,7 @@ import {
   Rocket, Crown, ShoppingBag,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 
 const CURRENCIES = [
   { code: "INR", label: "Indian Rupee (₹)" },
@@ -139,18 +140,11 @@ export default function CreateStore() {
     setPreview(null);
   };
 
-  const uploadFile = async (file: File, bucket: string, path: string) => {
-    const result = await processImage(file);
-    const msg = getCompressionMessage(result);
-    if (msg) toast.success(msg);
-    const ext = result.file.name.split(".").pop();
-    const basePath = path.replace(/\.[^/.]+$/, "");
-    const { data, error } = await supabase.storage.from(bucket).upload(`${basePath}.${ext}`, result.file, {
-      cacheControl: "3600",
-      upsert: true,
-    });
-    if (error) throw error;
-    return supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl;
+  const uploadFile = async (file: File, bucket: string, _path: string) => {
+    const basePath = generateUploadPath(user!.id, "new-store");
+    const result = await uploadOptimizedImage(file, bucket, basePath);
+    if (result.compressionMessage) toast.success(result.compressionMessage);
+    return result.mainUrl;
   };
 
   const goNext = () => {

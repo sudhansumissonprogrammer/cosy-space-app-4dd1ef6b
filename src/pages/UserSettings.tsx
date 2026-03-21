@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Upload, X, Crown } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -98,16 +99,10 @@ export default function UserSettings() {
     mutationFn: async () => {
       let avatarUrl = profile?.avatar_url || null;
       if (avatarFile) {
-        const result = await processImage(avatarFile);
-        const msg = getCompressionMessage(result);
-        if (msg) toast.success(msg);
-        const ext = result.file.name.split(".").pop();
-        const path = `${user!.id}/avatar.${ext}`;
-        const { data, error } = await supabase.storage
-          .from("store-logos")
-          .upload(path, result.file, { cacheControl: "3600", upsert: true });
-        if (error) throw error;
-        avatarUrl = supabase.storage.from("store-logos").getPublicUrl(data.path).data.publicUrl;
+        const basePath = generateUploadPath(user!.id, "avatar");
+        const result = await uploadOptimizedImage(avatarFile, "store-logos", basePath);
+        if (result.compressionMessage) toast.success(result.compressionMessage);
+        avatarUrl = result.mainUrl;
       }
       const { error } = await supabase
         .from("profiles")

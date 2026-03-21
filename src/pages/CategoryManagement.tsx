@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -79,15 +80,10 @@ export default function CategoryManagement() {
       let image_url: string | null = imagePreview;
 
       if (imageFile) {
-        const result = await processImage(imageFile);
-        const msg = getCompressionMessage(result);
-        if (msg) toast.success(msg);
-        const ext = result.file.name.split(".").pop();
-        const path = `${storeId}/categories/${slug}-${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("product-images").upload(path, result.file);
-        if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
-        image_url = urlData.publicUrl;
+        const basePath = generateUploadPath(storeId!, "categories");
+        const result = await uploadOptimizedImage(imageFile, "product-images", basePath);
+        if (result.compressionMessage) toast.success(result.compressionMessage);
+        image_url = result.mainUrl;
       }
 
       if (editingId) {

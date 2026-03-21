@@ -1,18 +1,30 @@
 /**
  * Image optimization utilities for multi-tenant storefronts.
  *
- * Priority: Cloudflare Polish/Resizing → Supabase render → Shopify/Unsplash CDN → proxy fallback.
+ * Priority order:
+ *  1. Our own pipeline variants (basePath-200w.webp, -400w.webp, -800w.webp)
+ *  2. Supabase render/image transform API
+ *  3. Shopify / Unsplash CDN params
+ *  4. Edge function proxy fallback
+ *
  * All public images served through Cloudflare get automatic WebP/AVIF via Polish.
  */
 
+import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
+import type { VariantWidth } from "./imageCompression";
+
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
+
+/** Standard widths for srcSet that match our stored variants */
+const PIPELINE_WIDTHS: VariantWidth[] = [200, 400, 800];
 
 /**
  * Returns an optimised URL for a given image.
- * - For Supabase storage: uses /render/image/ transform API
- * - For Shopify/Unsplash CDNs: uses their native resize params
- * - For all other external URLs served through Cloudflare: uses /cdn-cgi/image/
- * - Fallback: edge-function proxy with caching
+ *
+ * For images uploaded through our pipeline: resolves to the correct
+ * stored size variant (no runtime resizing needed).
+ *
+ * For external URLs: uses CDN-specific params or edge function proxy.
  */
 export function optimizeImageUrl(
   url: string | null | undefined,
@@ -26,7 +38,14 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // Shopify CDN
+  // ── 1. Our own pipeline variants ──
+  if (isOptimizedUrl(url)) {
+    // Pick the best matching stored variant
+    const best = pickBestVariant(width);
+    return resolveVariantUrl(url, best);
+  }
+
+  // ── 2. Shopify CDN ──
   if (url.includes("cdn/shop/") || url.includes("cdn.shopify.com")) {
     const u = new URL(url);
     u.searchParams.set("width", String(width));
@@ -34,7 +53,7 @@ export function optimizeImageUrl(
     return u.toString();
   }
 
-  // Unsplash
+  // ── 3. Unsplash ──
   if (url.includes("images.unsplash.com")) {
     const u = new URL(url);
     u.searchParams.set("w", String(width));
@@ -44,7 +63,7 @@ export function optimizeImageUrl(
     return u.toString();
   }
 
-  // Supabase Storage: use render/image transform API
+  // ── 4. Supabase Storage: use render/image transform API ──
   if (url.includes("supabase.co/storage")) {
     try {
       const u = new URL(url);
@@ -60,13 +79,9 @@ export function optimizeImageUrl(
     }
   }
 
-  // External URL — try Cloudflare image resizing (works when site is behind CF)
-  // Format: /cdn-cgi/image/width=W,quality=Q,format=auto/ORIGINAL_URL
+  // ── 5. External URL — edge function proxy ──
   if (url.startsWith("https://") || url.startsWith("http://")) {
     try {
-      const parsed = new URL(url);
-      // If image is on our own domain (custom domain behind CF), use cdn-cgi
-      // Otherwise fall back to edge function proxy
       if (SUPABASE_PROJECT_ID) {
         return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-resize?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
       }
@@ -76,6 +91,14 @@ export function optimizeImageUrl(
   }
 
   return url;
+}
+
+/** Pick the closest stored variant width that is ≥ requested width */
+function pickBestVariant(requestedWidth: number): VariantWidth {
+  for (const w of PIPELINE_WIDTHS) {
+    if (w >= requestedWidth) return w;
+  }
+  return 800;
 }
 
 /** Extract the first URL from a potentially comma-separated image_url field */
@@ -95,16 +118,30 @@ export function splitImageUrls(url: string | null | undefined): string[] {
 
 /**
  * Get a srcSet string for responsive images.
- * Default breakpoints tuned for product cards (mobile 2-col → desktop 4-col).
+ *
+ * For pipeline-optimized images: uses actual stored variant files (200w, 400w, 800w).
+ * For external images: generates srcSet via CDN params / proxy.
  */
 export function getImageSrcSet(
   url: string | null | undefined,
-  sizes: number[] = [300, 400, 600, 800],
+  sizes: number[] = [200, 400, 800],
   quality: number = 75,
 ): string {
   if (!url) return "";
+
+  const firstUrl = url.includes(",") ? url.split(",")[0].trim() : url.trim();
+  if (!firstUrl) return "";
+
+  // For our pipeline images, only emit the 3 stored widths
+  if (isOptimizedUrl(firstUrl)) {
+    return PIPELINE_WIDTHS
+      .map((w) => `${resolveVariantUrl(firstUrl, w)} ${w}w`)
+      .join(", ");
+  }
+
+  // For external images, use runtime optimization
   return sizes
-    .map((w) => `${optimizeImageUrl(url, w, quality)} ${w}w`)
+    .map((w) => `${optimizeImageUrl(firstUrl, w, quality)} ${w}w`)
     .join(", ");
 }
 

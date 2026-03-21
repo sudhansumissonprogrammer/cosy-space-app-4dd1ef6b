@@ -17,6 +17,7 @@ import {
   Upload, Trash2, Loader2, Image as ImageIcon, Search, Copy, Check,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -72,22 +73,15 @@ export default function MediaLibrary() {
           toast.error(`${file.name} exceeds 5MB limit`);
           continue;
         }
-        const result = await processImage(file);
-        const msg = getCompressionMessage(result);
-        if (msg) toast.success(msg);
-        const ext = result.file.name.split(".").pop();
-        const path = `${user.id}/${storeId}/library/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("product-images")
-          .upload(path, result.file, { cacheControl: "3600" });
-        if (upErr) { toast.error(`Failed to upload ${file.name}`); continue; }
-        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+        const basePath = generateUploadPath(user.id, storeId) + `/library`;
+        const result = await uploadOptimizedImage(file, "product-images", basePath);
+        if (result.compressionMessage) toast.success(result.compressionMessage);
 
         const { error: dbErr } = await (supabase as any).from("media_library").insert({
           store_id: storeId,
-          file_url: urlData.publicUrl,
+          file_url: result.mainUrl,
           file_name: file.name,
-          file_size: result.file.size,
+          file_size: 0, // multi-variant, size is distributed
         });
         if (dbErr) { toast.error(`Failed to save ${file.name}`); continue; }
         successCount++;

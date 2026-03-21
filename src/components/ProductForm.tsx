@@ -20,6 +20,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -114,15 +115,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       let image_url: string | null = null;
 
       if (categoryImageFile) {
-        const result = await processImage(categoryImageFile);
-        const msg = getCompressionMessage(result);
-        if (msg) toast.success(msg);
-        const ext = result.file.name.split(".").pop();
-        const path = `${storeId}/${slug}-${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("product-images").upload(path, result.file);
-        if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
-        image_url = urlData.publicUrl;
+        const basePath = generateUploadPath(storeId!, "categories");
+        const uploadResult = await uploadOptimizedImage(categoryImageFile, "product-images", basePath);
+        if (uploadResult.compressionMessage) toast.success(uploadResult.compressionMessage);
+        image_url = uploadResult.mainUrl;
       }
 
       const { data, error } = await (supabase as any)
@@ -300,16 +296,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   };
 
   const uploadImage = async (file: File) => {
-    const result = await processImage(file);
-    const msg = getCompressionMessage(result);
-    if (msg) toast.success(msg);
-    const ext = result.file.name.split(".").pop();
-    const path = `${user!.id}/${storeId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { data, error } = await supabase.storage
-      .from("product-images")
-      .upload(path, result.file, { cacheControl: "3600", upsert: true });
-    if (error) throw error;
-    return supabase.storage.from("product-images").getPublicUrl(data.path).data.publicUrl;
+    const basePath = generateUploadPath(user!.id, storeId!);
+    const result = await uploadOptimizedImage(file, "product-images", basePath);
+    if (result.compressionMessage) toast.success(result.compressionMessage);
+    return result.mainUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

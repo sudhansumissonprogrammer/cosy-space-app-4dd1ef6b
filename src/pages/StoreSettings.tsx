@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Trash2, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
+import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Switch } from "@/components/ui/switch";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -115,16 +116,10 @@ export default function StoreSettings() {
 
   const uploadFile = async (file: File, bucket: string) => {
     if (file.size > MAX_FILE_SIZE) throw new Error("File must be less than 5MB");
-    const result = await processImage(file);
-    const msg = getCompressionMessage(result);
-    if (msg) toast.success(msg);
-    const ext = result.file.name.split(".").pop();
-    const path = `${user!.id}/${storeId}/${Date.now()}.${ext}`;
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(path, result.file, { cacheControl: "3600", upsert: true });
-    if (error) throw error;
-    return supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl;
+    const basePath = generateUploadPath(user!.id, storeId!);
+    const result = await uploadOptimizedImage(file, bucket, basePath);
+    if (result.compressionMessage) toast.success(result.compressionMessage);
+    return result.mainUrl;
   };
 
   const updateMutation = useMutation({
