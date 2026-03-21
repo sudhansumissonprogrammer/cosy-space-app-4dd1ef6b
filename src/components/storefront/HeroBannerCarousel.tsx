@@ -73,6 +73,39 @@ export default function HeroBannerCarousel({
   );
 }
 
+/** Defers rendering of non-visible carousel slides to reduce initial payload */
+function DeferredSlide({
+  url, optimizeWidth, srcSet, storeName, index, imageClassName, maxHeight, isVisible,
+}: {
+  url: string; optimizeWidth: number; srcSet: string; storeName: string;
+  index: number; imageClassName?: string; maxHeight?: string; isVisible: boolean;
+}) {
+  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  useEffect(() => {
+    if (isVisible && !hasBeenVisible) setHasBeenVisible(true);
+  }, [isVisible, hasBeenVisible]);
+
+  if (!hasBeenVisible) {
+    return <div className={imageClassName} style={{ ...( maxHeight ? { maxHeight } : {}), aspectRatio: "2/1" }} />;
+  }
+
+  return (
+    <img
+      src={optimizeImageUrl(url, optimizeWidth)}
+      srcSet={srcSet || undefined}
+      sizes={HERO_IMAGE_SIZES}
+      alt={`${storeName} hero banner ${index + 1}`}
+      className={imageClassName}
+      style={maxHeight ? { maxHeight } : undefined}
+      loading="lazy"
+      decoding="async"
+      width={1200}
+      height={600}
+      draggable={false}
+    />
+  );
+}
+
 function CarouselInner({
   images,
   storeName,
