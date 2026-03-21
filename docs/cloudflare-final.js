@@ -149,7 +149,7 @@ async function resolveDomain(hostname) {
     await cache.put(
       key,
       new Response(JSON.stringify({ slug }), {
-        headers: { "Cache-Control": "public, max-age=300" },
+        headers: { "Cache-Control": `public, max-age=${slug ? 300 : 60}` },
       })
     );
 

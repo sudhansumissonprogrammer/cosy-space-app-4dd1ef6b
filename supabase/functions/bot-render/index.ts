@@ -138,7 +138,7 @@ ${product.description ? `<div class="description" itemprop="description">${esc(p
 </article>
 </main>
 <footer class="footer">&copy; ${new Date().getFullYear()} ${storeName}. All rights reserved.</footer>
-<script>window.location.replace("${canonical}");</script>
+<script>window.location.replace(${JSON.stringify(canonical)});</script>
 </body>
 </html>`;
 }
@@ -248,7 +248,7 @@ ${productCards}
 ${products.length > 30 ? `<p style="text-align:center;color:#666;margin-top:24px">Showing 30 of ${products.length} products</p>` : ""}
 </main>
 <footer class="footer">&copy; ${new Date().getFullYear()} ${storeName}. All rights reserved.</footer>
-<script>window.location.replace("${canonical}");</script>
+<script>window.location.replace(${JSON.stringify(canonical)});</script>
 </body>
 </html>`;
 }
@@ -290,8 +290,10 @@ Deno.serve(async (req) => {
   }
 
   // Build canonical URL
-  const canonical = domain
-    ? `https://${domain}`
+  // Sanitize domain to prevent injection
+  const safeDomain = domain ? domain.replace(/[^a-zA-Z0-9.\-]/g, "") : null;
+  const canonical = safeDomain
+    ? `https://${safeDomain}`
     : `https://${slug}.${ROOT_DOMAIN}`;
 
   // Product page
