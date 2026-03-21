@@ -419,8 +419,15 @@ ${image ? `<meta name="twitter:image" content="${escapeHtml(image)}">` : ""}
 async function handleStore(request, slug, isCustomDomain) {
   const url = new URL(request.url);
 
-  /* REVALIDATE API */
+  /* REVALIDATE API — require Authorization header */
   if (url.pathname === "/revalidate") {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+      });
+    }
     return handleRevalidate(request, slug, isCustomDomain);
   }
 

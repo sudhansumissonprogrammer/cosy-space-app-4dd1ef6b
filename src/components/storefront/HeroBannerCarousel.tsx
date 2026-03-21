@@ -6,7 +6,7 @@ interface HeroBannerCarouselProps {
   storeName: string;
   /** Image optimization width (default 800) */
   optimizeWidth?: number;
-  /** Auto-play interval in ms (default 2000) */
+  /** Auto-play interval in ms (default 4000) */
   interval?: number;
   /** CSS class for the wrapper */
   className?: string;
@@ -22,7 +22,7 @@ export default function HeroBannerCarousel({
   images,
   storeName,
   optimizeWidth = 800,
-  interval = 2000,
+  interval = 4000,
   className = "",
   imageClassName = "w-full h-auto object-cover",
   maxHeight,
@@ -215,7 +215,7 @@ function CarouselInner({
   };
 
   return (
-    <div className={`relative overflow-hidden touch-pan-y ${className || ""}`}>
+    <div className={`relative overflow-hidden touch-pan-y group ${className || ""}`} role="region" aria-label={`${storeName} banner slideshow`}>
       <div
         className="flex transition-transform duration-500 ease-out select-none"
         style={{ transform: `translateX(-${current * 100}%)`, cursor: "grab" }}
