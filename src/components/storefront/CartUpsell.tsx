@@ -5,7 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { Plus, Star, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
-import { cleanImageUrl } from "@/lib/imageOptimize";
+import { cleanImageUrl, optimizeImageUrl } from "@/lib/imageOptimize";
 import { getDiscountPercent, getProductRating } from "@/lib/productUtils";
 
 interface CartUpsellProps {

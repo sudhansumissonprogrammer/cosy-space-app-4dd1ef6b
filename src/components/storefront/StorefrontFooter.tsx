@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Store, MapPin, Clock, MessageCircle, Instagram, Facebook } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 interface StorefrontFooterProps {
   store: StoreData;
