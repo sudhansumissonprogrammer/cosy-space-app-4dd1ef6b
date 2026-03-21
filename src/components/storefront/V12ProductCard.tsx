@@ -39,8 +39,8 @@ export default function V12ProductCard({ product, slug, index = 0 }: V12ProductC
             decoding={index < 4 ? "sync" : "async"}
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-gray-50">
-            <Tag className="h-10 w-10 text-gray-200" />
+          <div className="h-full w-full flex items-center justify-center bg-secondary/40">
+            <Tag className="h-10 w-10 text-muted-foreground/40" aria-hidden="true" />
           </div>
         )}
 
