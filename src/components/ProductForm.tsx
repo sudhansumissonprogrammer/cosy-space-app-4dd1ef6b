@@ -115,15 +115,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       let image_url: string | null = null;
 
       if (categoryImageFile) {
-        const result = await processImage(categoryImageFile);
-        const msg = getCompressionMessage(result);
-        if (msg) toast.success(msg);
-        const ext = result.file.name.split(".").pop();
-        const path = `${storeId}/${slug}-${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("product-images").upload(path, result.file);
-        if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
-        image_url = urlData.publicUrl;
+        const basePath = generateUploadPath(storeId!, "categories");
+        const uploadResult = await uploadOptimizedImage(categoryImageFile, "product-images", basePath);
+        if (uploadResult.compressionMessage) toast.success(uploadResult.compressionMessage);
+        image_url = uploadResult.mainUrl;
       }
 
       const { data, error } = await (supabase as any)
