@@ -11,7 +11,7 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { getDiscountPercent } from "@/lib/productUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet } from "@/lib/imageOptimize";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
