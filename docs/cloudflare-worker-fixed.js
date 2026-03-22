@@ -298,20 +298,44 @@ async function proxyToOrigin(request) {
   }
 }
 
+/* ============== PREFETCH STOREFRONT DATA ============== */
+
+async function prefetchStorefrontData(slug) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ _slug: slug, _product_limit: 50 }),
+      }
+    );
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 /* ============== INJECT STORE SLUG INTO HTML ============== */
 /**
  * FIX #2: For custom domains, the SPA running in the browser has no way
- * to detect which store to load:
- *   - window.location.hostname is "melleto.shop" (not a storivo.in subdomain)
- *   - No ?store= query param
- *   - window.__STORE_SLUG__ is not set
+ * to detect which store to load.
  *
- * Solution: Inject <script>window.__STORE_SLUG__="melleto"</script>
- * into the HTML response. The SPA's getSubdomainSlug() already checks
- * for window.__STORE_SLUG__ as its first strategy.
+ * PERF: Also injects window.__STOREFRONT_DATA__ with pre-fetched storefront
+ * data so the SPA renders instantly without an API waterfall.
  */
 async function fetchAndInjectSlug(request, slug) {
-  const response = await proxyToOrigin(request);
+  // Fetch origin HTML and storefront data in parallel
+  const [response, storefrontData] = await Promise.all([
+    proxyToOrigin(request),
+    prefetchStorefrontData(slug),
+  ]);
+
   const contentType = response.headers.get("content-type") || "";
 
   if (!contentType.includes("text/html") || !response.ok) {
@@ -320,11 +344,14 @@ async function fetchAndInjectSlug(request, slug) {
 
   let html = await response.text();
 
-  // Inject slug + prefetch storefront data RPC so browser starts fetching before JS loads
-  const rpcUrl = `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`;
-  const injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";</script>
-<link rel="preconnect" href="${SUPABASE_URL}" />
-<link rel="preload" href="${rpcUrl}" as="fetch" crossorigin="anonymous" />`;
+  let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
+  if (storefrontData) {
+    const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
+    injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
+  }
+  injection += `</script>
+<link rel="preconnect" href="${SUPABASE_URL}" />`;
+
   html = html.replace("<head>", `<head>${injection}`);
 
   return new Response(html, {

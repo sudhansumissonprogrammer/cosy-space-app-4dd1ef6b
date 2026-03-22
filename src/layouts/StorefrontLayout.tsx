@@ -42,6 +42,24 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
+      // Use pre-fetched data injected by Cloudflare Worker (eliminates API waterfall)
+      const injected = (window as any).__STOREFRONT_DATA__;
+      if (injected) {
+        delete (window as any).__STOREFRONT_DATA__;
+        const store = injected?.store as StoreData | null;
+        if (store) {
+          queryClient.setQueryData(["storefront", slug], store);
+          queryClient.setQueryData(["storefront-products", store.id], injected.products || []);
+          queryClient.setQueryData(["storefront-categories", store.id], injected.categories || []);
+          queryClient.setQueryData(["storefront-total-products", store.id], injected.total_products || 0);
+          if (injected.theme_config) {
+            queryClient.setQueryData(["storefront-theme-config", store.id], injected.theme_config);
+          }
+          try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
+        }
+        return injected;
+      }
+
       const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
       if (error) throw error;
       const result = data as any;
