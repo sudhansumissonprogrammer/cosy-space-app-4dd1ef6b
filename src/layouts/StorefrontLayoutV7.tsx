@@ -44,8 +44,8 @@ function CartBadgeV7() {
 function WishlistBadgeV7({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
-    <Link to={storefrontPath(slug, "wishlist")} className="relative">
-      <Heart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+    <Link to={storefrontPath(slug, "wishlist")} className="relative" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}>
+      <Heart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
       {wishlistCount > 0 && (
         <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
           {wishlistCount}
