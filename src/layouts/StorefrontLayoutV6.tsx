@@ -161,7 +161,7 @@ function CleanHeader({ store }: { store: StoreData }) {
         </div>
 
         {/* Logo */}
-        <Link to={storefrontPath(store.slug)} className="flex-shrink-0">
+        <Link to={storefrontPath(store.slug)} className="flex-shrink-0" aria-label={`${store.name} home`}>
           {store.logo_url ? (
             <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[140px] object-contain" />
           ) : (
