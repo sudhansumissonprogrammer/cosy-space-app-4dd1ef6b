@@ -49,8 +49,8 @@ function V12Header({ store }: { store: StoreData }) {
         {/* Left: Hamburger */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90">
-              <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+            <button className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Open menu">
+              <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
             </button>
           </SheetTrigger>
 
