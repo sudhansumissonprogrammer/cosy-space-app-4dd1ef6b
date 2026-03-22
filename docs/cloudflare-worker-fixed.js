@@ -559,12 +559,20 @@ export default {
     }
 
     // ─── SUBDOMAIN ───
-    // FIX #3: No path rewrite — SPA detects subdomain via getSubdomainSlug()
     if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
 
       if (!slug || slug.includes(".") || slug === "www") {
         return cachedFetch(request, "", ctx);
+      }
+
+      // 301 redirect to custom domain if one exists
+      const customDomain = await getCustomDomainForSlug(slug);
+      if (customDomain) {
+        return Response.redirect(
+          `https://${customDomain}${url.pathname}${url.search}`,
+          301
+        );
       }
 
       const seoResponse = await handleSeoFiles(url, slug);
