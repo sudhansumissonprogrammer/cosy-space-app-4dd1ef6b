@@ -106,8 +106,8 @@ function AppHeader({ store }: { store: StoreData }) {
         </button>
 
         {/* Cart */}
-        <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }}>
-          <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+        <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
+          <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
           {cartCount > 0 && (
             <span
               className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"

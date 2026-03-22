@@ -143,7 +143,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
         </Sheet>
 
         {/* Logo */}
-        <Link to={storefrontPath(store.slug)} className="flex-shrink-0">
+        <Link to={storefrontPath(store.slug)} className="flex-shrink-0" aria-label={`${store.name} home`}>
           {store.logo_url ? (
             <img
               src={store.logo_url}
