@@ -24,9 +24,11 @@ export default function StorefrontMarquee({ text }: Props) {
       className="w-full overflow-hidden py-2.5 text-[13px] md:text-[15px] font-medium font-sans"
       style={{
         background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a))",
-        color: "var(--storefront-text, #000000)",
+        color: "#000000",
         fontVariant: "small-caps",
       }}
+      role="marquee"
+      aria-label="Store announcements"
     >
       <div className="flex w-max animate-marquee hover:[animation-play-state:paused]">
         <Group prefix="a" />

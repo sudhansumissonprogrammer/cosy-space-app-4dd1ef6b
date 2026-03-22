@@ -299,7 +299,7 @@ export default function StorefrontLayoutV4({ slugOverride }: { slugOverride?: st
             <LuxuryNav store={store} scrolled={scrolled} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-            <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense>
+            <main><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
             
             <StorefrontFooter store={store} />
             <SideCart store={store} />

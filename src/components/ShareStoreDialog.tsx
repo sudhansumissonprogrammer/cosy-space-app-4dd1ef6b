@@ -45,8 +45,8 @@ export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOn
       <DialogTrigger asChild>
         {trigger || (
           iconOnly ? (
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <Share2 className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Share store">
+              <Share2 className="h-4 w-4" aria-hidden="true" />
             </Button>
           ) : (
             <Button variant="outline" size="sm">

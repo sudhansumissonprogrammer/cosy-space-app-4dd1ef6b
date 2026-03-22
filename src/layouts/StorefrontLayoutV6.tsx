@@ -399,7 +399,7 @@ export default function StorefrontLayoutV6({ slugOverride }: { slugOverride?: st
             <CleanHeader store={store} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-            <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense>
+            <main><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
             
             <CleanFooter store={store} />
             <SideCart store={store} />
