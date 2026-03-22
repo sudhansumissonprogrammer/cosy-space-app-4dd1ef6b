@@ -12,8 +12,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Globe, Copy, ExternalLink, Loader2, CheckCircle, AlertCircle, Shield, Server, FileText } from "lucide-react";
 import { ROOT_DOMAIN } from "@/lib/subdomain";
 
-const FALLBACK_ORIGIN = `fallback.${ROOT_DOMAIN}`;
-const NAMESERVER_IP = "185.158.133.1";
+const CNAME_TARGET = ROOT_DOMAIN;
 
 interface DnsRecord {
   type: string;
@@ -23,20 +22,19 @@ interface DnsRecord {
 }
 
 function getDnsRecords(domain: string): DnsRecord[] {
-  const isWww = domain.startsWith("www.");
-  const rootDomain = isWww ? domain.replace(/^www\./, "") : domain;
+  const rootDomain = domain.startsWith("www.") ? domain.replace(/^www\./, "") : domain;
 
   return [
     {
-      type: "A",
+      type: "CNAME",
       name: "@",
-      value: NAMESERVER_IP,
+      value: CNAME_TARGET,
       purpose: `Points ${rootDomain} to your store`,
     },
     {
-      type: "A",
+      type: "CNAME",
       name: "www",
-      value: NAMESERVER_IP,
+      value: CNAME_TARGET,
       purpose: `Points www.${rootDomain} to your store`,
     },
   ];
@@ -263,13 +261,14 @@ export default function StoreDomain() {
                     <li>Login to your domain registrar (where you bought the domain)</li>
                     <li>Go to <strong>DNS Settings</strong> or <strong>DNS Management</strong></li>
                     <li>
-                      Add an <strong>A Record</strong> with Name: <code className="bg-muted px-1 rounded text-xs">@</code> and Value: <code className="bg-muted px-1 rounded text-xs">{NAMESERVER_IP}</code>
+                      Add a <strong>CNAME Record</strong> with Name: <code className="bg-muted px-1 rounded text-xs">@</code> and Value: <code className="bg-muted px-1 rounded text-xs">{CNAME_TARGET}</code>
                     </li>
                     <li>
-                      Add another <strong>A Record</strong> with Name: <code className="bg-muted px-1 rounded text-xs">www</code> and Value: <code className="bg-muted px-1 rounded text-xs">{NAMESERVER_IP}</code>
+                      Add another <strong>CNAME Record</strong> with Name: <code className="bg-muted px-1 rounded text-xs">www</code> and Value: <code className="bg-muted px-1 rounded text-xs">{CNAME_TARGET}</code>
                     </li>
                     <li>Delete any existing A or CNAME records for <code className="bg-muted px-1 rounded text-xs">@</code> and <code className="bg-muted px-1 rounded text-xs">www</code></li>
                     <li>Save and wait for DNS propagation (usually 5–30 minutes, max 48 hours)</li>
+                    <li><strong>Note:</strong> Some registrars don't support CNAME on root (@). In that case, use CNAME flattening or contact support.</li>
                   </ol>
                 </div>
 
@@ -291,7 +290,7 @@ export default function StoreDomain() {
                 <div className="flex items-center gap-2 pt-1">
                   <Button variant="outline" size="sm" asChild>
                     <a
-                      href={`https://dnschecker.org/#A/${savedDomain}`}
+                      href={`https://dnschecker.org/#CNAME/${savedDomain}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="gap-1.5"
