@@ -1,6 +1,6 @@
 import { useState, useEffect, Suspense } from "react";
-import { Outlet, useLocation } from "react-router-dom";
-import { useNavigateTransition } from "@/hooks/useNavigateTransition";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
