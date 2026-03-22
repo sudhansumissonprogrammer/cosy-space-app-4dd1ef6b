@@ -96,8 +96,9 @@ function MobileAppHeader({ store }: { store: StoreData }) {
               backgroundColor: "var(--storefront-text, hsl(var(--foreground)))06",
               border: "1.5px solid var(--storefront-text, hsl(var(--foreground)))10",
             }}
+            aria-label="Search products"
           >
-            <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }} />
+            <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }} aria-hidden="true" />
             <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))35" }}>Search products...</span>
           </button>
 
