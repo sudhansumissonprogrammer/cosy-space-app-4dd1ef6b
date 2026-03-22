@@ -70,8 +70,8 @@ function MilanoHeader({ store }: { store: StoreData }) {
                 }}
               >
                 <span className="text-sm font-bold uppercase tracking-wider" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>Menu</span>
-                <button onClick={() => setMenuOpen(false)} className="flex h-8 w-8 items-center justify-center">
-                  <X className="h-5 w-5" />
+                <button onClick={() => setMenuOpen(false)} className="flex h-8 w-8 items-center justify-center" aria-label="Close menu">
+                  <X className="h-5 w-5" aria-hidden="true" />
                 </button>
               </div>
 
