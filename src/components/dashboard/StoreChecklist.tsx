@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -19,7 +19,7 @@ interface CheckItem {
 }
 
 const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(function StoreChecklist({ storeId }, ref) {
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
 
   const { data: checks } = useQuery({
     queryKey: ["store-checklist", storeId],

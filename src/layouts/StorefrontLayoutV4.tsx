@@ -22,6 +22,7 @@ import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
 /* ── Luxury Cart Badge ── */
@@ -298,7 +299,7 @@ export default function StorefrontLayoutV4({ slugOverride }: { slugOverride?: st
             <LuxuryNav store={store} scrolled={scrolled} />
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-            <Suspense fallback={null}><Outlet context={store} /></Suspense>
+            <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense>
             
             <StorefrontFooter store={store} />
             <SideCart store={store} />

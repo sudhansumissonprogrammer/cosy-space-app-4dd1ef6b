@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import {
   Dialog,
   DialogContent,
@@ -119,7 +119,7 @@ export default function OnboardingWalkthrough({
   onOpenChange,
 }: OnboardingWalkthroughProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
 
   const step = STEPS[currentStep];
   const Icon = step.icon;

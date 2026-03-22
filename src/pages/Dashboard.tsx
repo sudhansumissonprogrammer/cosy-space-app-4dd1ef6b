@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, LineChart, Line,
 } from "recharts";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
-import { useNavigate } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import QuickActions from "@/components/dashboard/QuickActions";
 import TodaySummary from "@/components/dashboard/TodaySummary";
 import PendingActions from "@/components/dashboard/PendingActions";
@@ -53,7 +53,7 @@ function cn(...classes: (string | undefined | false)[]) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
 
   const { data: store, isLoading: storeLoading, isError: storeError, refetch: refetchStore } = useQuery({
     queryKey: ["my-store", user?.id],

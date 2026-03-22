@@ -24,6 +24,7 @@ import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import { trackPageView } from "@/lib/trackPageView";
 import ExitIntentPopup from "@/components/storefront/ExitIntentPopup";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
@@ -519,7 +520,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
 
       <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
       <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-      <Suspense fallback={null}>
+      <Suspense fallback={<StorefrontContentSkeleton />}>
         <Outlet context={store} />
       </Suspense>
       

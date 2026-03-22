@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ const statusColors: Record<string, string> = {
 };
 
 const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(function RecentOrders({ storeId, currencySymbol }, ref) {
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
 
   const { data: orders } = useQuery({
     queryKey: ["recent-orders-dashboard", storeId],

@@ -12,6 +12,7 @@ import { trackPageView } from "@/lib/trackPageView";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
 /* ── Minimal Restaurant Header ── */
@@ -269,7 +270,7 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
         <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
         
         <div className="pb-28">
-          <Suspense fallback={null}><Outlet context={{ ...store, tableNumber }} /></Suspense>
+          <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={{ ...store, tableNumber }} /></Suspense>
         </div>
         <WhatsAppOrderBar store={store} tableNumber={tableNumber} />
       </div>
