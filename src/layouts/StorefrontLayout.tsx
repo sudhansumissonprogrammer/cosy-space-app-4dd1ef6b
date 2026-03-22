@@ -34,6 +34,41 @@ export type StoreData = Tables<"stores">;
  * Single RPC call fetches store + products + categories in one roundtrip.
  * Individual caches are seeded immediately so child pages render instantly.
  */
+/** Save storefront data to localStorage for instant future loads */
+function cacheToLocalStorage(slug: string, result: any) {
+  try {
+    const store = result?.store;
+    if (!store) return;
+    // Cache theme separately for instant theme detection in App.tsx
+    localStorage.setItem(`storefront_theme_${slug}`, store.theme || "theme-1");
+    // Cache full data (compact — only essential fields) for SWR
+    const compact = {
+      store: result.store,
+      products: (result.products || []).slice(0, 20), // first 20 for instant paint
+      categories: result.categories || [],
+      theme_config: result.theme_config || null,
+      total_products: result.total_products || 0,
+      _cachedAt: Date.now(),
+    };
+    localStorage.setItem(`storefront_data_${slug}`, JSON.stringify(compact));
+  } catch {}
+}
+
+/** Read cached storefront data from localStorage (< 10 min old) */
+function readLocalStorageCache(slug: string): any | null {
+  try {
+    const raw = localStorage.getItem(`storefront_data_${slug}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Accept cache up to 10 minutes old
+    if (parsed._cachedAt && Date.now() - parsed._cachedAt < 10 * 60 * 1000) {
+      return parsed;
+    }
+    localStorage.removeItem(`storefront_data_${slug}`);
+  } catch {}
+  return null;
+}
+
 export function useStorefront(slugOverride?: string) {
   const { slug: paramSlug } = useParams<{ slug: string }>();
   const slug = slugOverride || paramSlug;
@@ -42,7 +77,7 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      // Use pre-fetched data injected by Cloudflare Worker (eliminates API waterfall)
+      // 1. Use pre-fetched data injected by Cloudflare Worker (eliminates API waterfall)
       const injected = (window as any).__STOREFRONT_DATA__;
       if (injected) {
         delete (window as any).__STOREFRONT_DATA__;
@@ -56,10 +91,12 @@ export function useStorefront(slugOverride?: string) {
             queryClient.setQueryData(["storefront-theme-config", store.id], injected.theme_config);
           }
           try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
+          cacheToLocalStorage(slug!, injected);
         }
         return injected;
       }
 
+      // 2. Fetch from API
       const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
       if (error) throw error;
       const result = data as any;
@@ -73,8 +110,39 @@ export function useStorefront(slugOverride?: string) {
           queryClient.setQueryData(["storefront-theme-config", store.id], result.theme_config);
         }
         try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
+        cacheToLocalStorage(slug!, result);
       }
       return result;
+    },
+    // 3. Use localStorage cache as initialData for instant render (SWR pattern)
+    initialData: () => {
+      if (!slug) return undefined;
+      // Check injected data first
+      const injected = (window as any).__STOREFRONT_DATA__;
+      if (injected) return undefined; // let queryFn handle it
+      // Check localStorage cache
+      const cached = readLocalStorageCache(slug);
+      if (cached) {
+        // Seed individual caches immediately
+        const store = cached.store;
+        if (store) {
+          queryClient.setQueryData(["storefront", slug], store);
+          queryClient.setQueryData(["storefront-products", store.id], cached.products || []);
+          queryClient.setQueryData(["storefront-categories", store.id], cached.categories || []);
+          queryClient.setQueryData(["storefront-total-products", store.id], cached.total_products || 0);
+          if (cached.theme_config) {
+            queryClient.setQueryData(["storefront-theme-config", store.id], cached.theme_config);
+          }
+        }
+        return cached;
+      }
+      return undefined;
+    },
+    // Mark initialData as stale so it revalidates in background
+    initialDataUpdatedAt: () => {
+      if (!slug) return undefined;
+      const cached = readLocalStorageCache(slug);
+      return cached?._cachedAt;
     },
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
@@ -82,7 +150,7 @@ export function useStorefront(slugOverride?: string) {
   });
 
   const store = data?.store as StoreData | null ?? null;
-  return { store, isLoading, error, slug };
+  return { store, isLoading: isLoading && !data, error, slug };
 }
 
 function CartBadge() {

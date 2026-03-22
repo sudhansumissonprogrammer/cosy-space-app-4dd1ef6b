@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,7 +41,6 @@ const StorefrontTerms = lazy(() => import("./pages/StorefrontTerms"));
 const StorefrontPrivacyPolicy = lazy(() => import("./pages/StorefrontPrivacyPolicy"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
-// ProductDetailSkeleton is used as suspense fallback — import inline to avoid pulling full module
 const ProductDetailSkeleton = () => (
   <div className="mx-auto max-w-6xl px-4 py-8 space-y-4">
     <div className="h-8 w-48 animate-pulse rounded bg-muted" />
@@ -120,43 +119,57 @@ const storefrontChildRoutes = (theme: string) => {
   );
 };
 
-import { useStorefront } from "./layouts/StorefrontLayout";
+/**
+ * Get the theme instantly from injected data or localStorage cache.
+ * This avoids needing a full API call just to determine which layout to render.
+ */
+function getInstantTheme(slug: string | undefined): string {
+  if (!slug) return "theme-1";
+  
+  // 1. Check Cloudflare Worker injected data (instant, no API call)
+  const injected = (window as any).__STOREFRONT_DATA__;
+  if (injected?.store?.theme) {
+    return injected.store.theme;
+  }
+  
+  // 2. Check localStorage cache (instant, from previous visit)
+  try {
+    const cached = localStorage.getItem(`storefront_theme_${slug}`);
+    if (cached) return cached;
+  } catch {}
+  
+  return "theme-1";
+}
 
+function getLayoutComponent(theme: string) {
+  switch (theme) {
+    case "theme-13": return StorefrontLayoutV13;
+    case "theme-12": return StorefrontLayoutV12;
+    case "theme-11": return StorefrontLayoutV11;
+    case "theme-10": return StorefrontLayoutV10;
+    case "theme-8": return StorefrontLayoutV8;
+    case "theme-7": return StorefrontLayoutV7;
+    case "theme-6": return StorefrontLayoutV6;
+    case "theme-4": return StorefrontLayoutV4;
+    case "theme-3": return StorefrontLayoutV3;
+    case "theme-2": return StorefrontLayoutV2;
+    default: return StorefrontLayout;
+  }
+}
+
+/**
+ * Renders storefront directly using cached/injected theme — NO spinner, NO waterfall.
+ * The layout itself handles data fetching and shows its own skeleton if needed.
+ */
 function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
-  // Extract slug from URL path when not using subdomain
   const location = useLocation();
   const pathSlug = !slugOverride ? location.pathname.split("/store/")[1]?.split("/")[0] : undefined;
   const effectiveSlug = slugOverride || pathSlug;
-  const { store, isLoading } = useStorefront(effectiveSlug);
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  const theme = (store as any)?.theme || "theme-1";
+  
+  // Get theme INSTANTLY from cache/injected data — no API call, no spinner
+  const theme = useMemo(() => getInstantTheme(effectiveSlug), [effectiveSlug]);
   const basePath = slugOverride ? "/" : "/store/:slug";
-
-  const LayoutComponent = theme === "theme-13"
-    ? StorefrontLayoutV13
-    : theme === "theme-12"
-    ? StorefrontLayoutV12
-    : theme === "theme-11"
-    ? StorefrontLayoutV11
-    : theme === "theme-10"
-    ? StorefrontLayoutV10
-    : theme === "theme-8"
-    ? StorefrontLayoutV8
-    : theme === "theme-7"
-    ? StorefrontLayoutV7
-    : theme === "theme-6"
-    ? StorefrontLayoutV6
-    : theme === "theme-4"
-    ? StorefrontLayoutV4
-    : theme === "theme-3"
-    ? StorefrontLayoutV3
-    : theme === "theme-2"
-    ? StorefrontLayoutV2
-    : StorefrontLayout;
+  const LayoutComponent = getLayoutComponent(theme);
 
   return (
     <Routes>
@@ -180,10 +193,9 @@ function AppRouter() {
     const isProduction = hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`;
 
     if (isProduction) {
-      // Redirect /store/{slug}/... → {slug}.storivo.in/...
       const rest = location.pathname.replace(/^\/store\//, "");
       const slug = rest.split("/")[0];
-      const remainingPath = rest.slice(slug.length); // e.g. "/product/xyz"
+      const remainingPath = rest.slice(slug.length);
       const search = window.location.search;
       const hash = window.location.hash;
       window.location.replace(`https://${slug}.${ROOT_DOMAIN}${remainingPath}${search}${hash}`);
