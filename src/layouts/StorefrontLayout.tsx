@@ -494,12 +494,12 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
           ) : (
             <HamburgerMenu store={store} />
           )}
-          <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0">
+          <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0" aria-label={`${store.name} home`}>
             {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} width={160} height={48} className="h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[160px] object-contain" loading="eager" />
+              <img src={store.logo_url} alt={`${store.name} logo`} width={160} height={48} className="h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[160px] object-contain" loading="eager" />
             ) : (
               <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
-                <Store className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+                <Store className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" aria-hidden="true" />
               </div>
             )}
           </Link>
