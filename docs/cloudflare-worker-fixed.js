@@ -156,6 +156,45 @@ async function resolveDomain(hostname) {
   }
 }
 
+/* ============== CUSTOM DOMAIN LOOKUP BY SLUG ============== */
+
+async function getCustomDomainForSlug(slug) {
+  const key = new Request(`https://cache/slug-domain-${slug}`);
+
+  const cached = await cache.match(key);
+  if (cached) {
+    const data = await cached.json();
+    return data.custom_domain || null;
+  }
+
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/stores?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      }
+    );
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    const customDomain = data[0]?.custom_domain || null;
+
+    await cache.put(
+      key,
+      new Response(JSON.stringify({ custom_domain: customDomain }), {
+        headers: { "Cache-Control": "public, max-age=300" },
+      })
+    );
+
+    return customDomain;
+  } catch {
+    return null;
+  }
+}
+
 /* ============== PROXY TO ORIGIN ============== */
 /**
  * FIX #1: ALL requests proxy to origin via this function.
@@ -520,12 +559,20 @@ export default {
     }
 
     // ─── SUBDOMAIN ───
-    // FIX #3: No path rewrite — SPA detects subdomain via getSubdomainSlug()
     if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
 
       if (!slug || slug.includes(".") || slug === "www") {
         return cachedFetch(request, "", ctx);
+      }
+
+      // 301 redirect to custom domain if one exists
+      const customDomain = await getCustomDomainForSlug(slug);
+      if (customDomain) {
+        return Response.redirect(
+          `https://${customDomain}${url.pathname}${url.search}`,
+          301
+        );
       }
 
       const seoResponse = await handleSeoFiles(url, slug);
