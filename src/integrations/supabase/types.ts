@@ -1370,6 +1370,8 @@ export type Database = {
           custom_domain: string | null
           default_profit_margin: number | null
           description: string | null
+          domain_verification_token: string | null
+          domain_verified: boolean | null
           facebook_pixel_id: string | null
           facebook_url: string | null
           features: Json | null
@@ -1407,6 +1409,8 @@ export type Database = {
           custom_domain?: string | null
           default_profit_margin?: number | null
           description?: string | null
+          domain_verification_token?: string | null
+          domain_verified?: boolean | null
           facebook_pixel_id?: string | null
           facebook_url?: string | null
           features?: Json | null
@@ -1444,6 +1448,8 @@ export type Database = {
           custom_domain?: string | null
           default_profit_margin?: number | null
           description?: string | null
+          domain_verification_token?: string | null
+          domain_verified?: boolean | null
           facebook_pixel_id?: string | null
           facebook_url?: string | null
           features?: Json | null
