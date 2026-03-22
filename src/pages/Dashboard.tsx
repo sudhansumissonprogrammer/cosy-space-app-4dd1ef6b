@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, LineChart, Line,
 } from "recharts";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
-import { useNavigate } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import QuickActions from "@/components/dashboard/QuickActions";
 import TodaySummary from "@/components/dashboard/TodaySummary";
 import PendingActions from "@/components/dashboard/PendingActions";
