@@ -537,8 +537,9 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
           <button
             onClick={() => setShowExitDialog(false)}
             className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-accent/80 text-muted-foreground hover:text-foreground hover:scale-110 active:scale-95 transition-all"
+            aria-label="Close dialog"
           >
-            <X className="h-4 w-4" strokeWidth={2.5} />
+            <X className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
           </button>
           <div className="p-6 pt-8 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
