@@ -127,17 +127,6 @@ export default function ProductDetail() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
 
-  // Scroll to top when navigating between product pages
-  useEffect(() => {
-    // Multiple approaches to ensure scroll reset works across all browsers/devices
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    // Also try smooth as a delayed fallback for edge cases
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    });
-  }, [productSlug]);
   const { addToCart, items, cartTotal } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
@@ -150,11 +139,31 @@ export default function ProductDetail() {
 
   const deliveryDate = useMemo(() => getDeliveryDate(), []);
 
+  // Reset ALL state when navigating between products
+  useEffect(() => {
+    setSelectedVariant(null);
+    setQuantity(1);
+    setJustAdded(false);
+    setCartBounce(false);
+    setOpenAccordion("description");
+    // Scroll to top AFTER state reset
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    });
+  }, [productSlug]);
+
   const getCachedProduct = () => {
+    // Only use cache if we find the exact product matching current slug
     const cached = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
     if (!cached) return undefined;
     return cached.find((p: any) => p.slug === productSlug || p.id === productSlug) || undefined;
   };
+
+  // Check if we already have this specific product cached
+  const existingData = queryClient.getQueryData(["storefront-product", store.id, productSlug]);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["storefront-product", store.id, productSlug],
@@ -182,7 +191,8 @@ export default function ProductDetail() {
       if (error) throw error;
       return data;
     },
-    initialData: getCachedProduct,
+    // Only use initialData if there's no existing query data (prevents stale cross-product data)
+    initialData: existingData ? undefined : getCachedProduct,
     enabled: !!store.id && !!productSlug,
     staleTime: 2 * 60 * 1000,
   });
@@ -400,7 +410,7 @@ export default function ProductDetail() {
 
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-10">
         {/* Image Gallery */}
-        <ImageGallery images={allImages} productName={product.name} hasDiscount={hasDiscount} discountPct={discountPct} />
+        <ImageGallery key={product.id} images={allImages} productName={product.name} hasDiscount={hasDiscount} discountPct={discountPct} />
 
         {/* Product Info */}
         <div className="flex flex-col">
@@ -1296,8 +1306,19 @@ function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName
 function ImageGallery({ images, productName, hasDiscount, discountPct }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const touchStart = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+
+  // Preload all images
+  useEffect(() => {
+    setImageLoaded({});
+    images.forEach((src, idx) => {
+      const img = new Image();
+      img.onload = () => setImageLoaded(prev => ({ ...prev, [idx]: true }));
+      img.src = optimizeImageUrl(src, 800);
+    });
+  }, [images]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStart.current = e.touches[0].clientX;
@@ -1326,6 +1347,8 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
     );
   }
 
+  const isMainLoaded = imageLoaded[activeIndex];
+
   return (
     <>
       <div className="space-y-3 lg:sticky lg:top-4">
@@ -1349,13 +1372,19 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
             </div>
           </div>
 
+          {/* Skeleton placeholder while image loads */}
+          {!isMainLoaded && (
+            <Skeleton className="aspect-square w-full rounded-none" />
+          )}
           <img
+            key={`${activeIndex}-${images[activeIndex]}`}
             src={optimizeImageUrl(images[activeIndex], 800)}
             alt={productName}
-            className="aspect-square w-full object-contain transition-transform duration-300"
+            className={`aspect-square w-full object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
             decoding="async"
             fetchPriority="high"
             draggable={false}
+            onLoad={() => setImageLoaded(prev => ({ ...prev, [activeIndex]: true }))}
           />
 
           <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow backdrop-blur-sm">
