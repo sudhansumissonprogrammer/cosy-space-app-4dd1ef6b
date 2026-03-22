@@ -533,9 +533,40 @@ export default {
       request.headers.get("host") ||
       url.hostname;
 
+    // ─── HEALTH CHECK ENDPOINT ───
+    if (url.pathname === "/__health") {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const originCheck = await fetch(`https://${ORIGIN_HOST}/`, {
+          method: "HEAD",
+          headers: { Host: ORIGIN_HOST },
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        return new Response(
+          JSON.stringify({
+            status: originCheck.ok ? "healthy" : "degraded",
+            origin: originCheck.status,
+            timestamp: new Date().toISOString(),
+          }),
+          {
+            status: originCheck.ok ? 200 : 503,
+            headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          }
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({ status: "unhealthy", origin: "timeout", timestamp: new Date().toISOString() }),
+          { status: 503, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }
+        );
+      }
+    }
+
+    // ─── RATE LIMIT CLEANUP ───
+    cleanRateLimitMap();
+
     // ─── FIX #1: STATIC ASSETS → PROXY TO ORIGIN ───
-    // Previously: fetch(request) → went to melleto.shop → 403
-    // Now: proxyToOrigin() → goes to true-path-panel.lovable.app → 200
     const isStaticAsset =
       url.pathname.startsWith("/assets/") ||
       url.pathname.startsWith("/static/") ||
@@ -611,7 +642,15 @@ export default {
     }
 
     // ─── CUSTOM DOMAIN ───
-    // FIX #2: isCustomDomain=true triggers __STORE_SLUG__ injection
+    // Rate limit domain resolution lookups
+    const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for");
+    if (isRateLimited(clientIP)) {
+      return new Response("Too Many Requests", {
+        status: 429,
+        headers: { "Retry-After": "60", "Content-Type": "text/plain" },
+      });
+    }
+
     const cleanDomain = hostname.replace(/^www\./, "").toLowerCase().trim();
     const slug = await resolveDomain(cleanDomain);
 
@@ -625,7 +664,17 @@ export default {
       return cachedFetch(request, slug, ctx, true);
     }
 
-    // ─── FALLBACK ───
-    return cachedFetch(request, "", ctx);
+    // ─── UNKNOWN DOMAIN → 404 (strict tenant resolution) ───
+    return new Response(
+      `<!DOCTYPE html><html><head><title>Store Not Found</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:60px">
+<h1>Store Not Found</h1>
+<p>No store is configured for this domain.</p>
+</body></html>`,
+      {
+        status: 404,
+        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=60" },
+      }
+    );
   },
 };
