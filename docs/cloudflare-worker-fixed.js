@@ -399,7 +399,8 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   // Cache miss
   let res;
   try {
-    if (isCustomDomain && slug) {
+    if (slug) {
+      // Inject storefront data for both subdomains and custom domains
       res = await fetchAndInjectSlug(request, slug);
     } else {
       res = await proxyToOrigin(request);
@@ -412,13 +413,6 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
 
   const contentType = res.headers.get("content-type") || "";
   if (res.ok && contentType.includes("text/html")) {
-    // Add Link preload header for storefront data API (browser fetches in parallel with JS)
-    if (slug) {
-      res.headers.set(
-        "Link",
-        `<${SUPABASE_URL}/rest/v1/rpc/get_storefront_data>; rel=preload; as=fetch; crossorigin`
-      );
-    }
     ctx.waitUntil(cache.put(key, res.clone()));
   }
 
