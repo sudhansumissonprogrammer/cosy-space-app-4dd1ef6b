@@ -49,8 +49,8 @@ function MilanoHeader({ store }: { store: StoreData }) {
         {/* Left: Hamburger */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--storefront-text, #1a1a1a)" strokeWidth="2" strokeLinecap="round">
+            <button className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Open menu">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--storefront-text, #1a1a1a)" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                 <line x1="3" y1="7" x2="21" y2="7" />
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="17" x2="21" y2="17" />
