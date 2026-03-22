@@ -120,8 +120,8 @@ function EditorialHeader({ store }: { store: StoreData }) {
           <div className="lg:hidden mr-4">
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>
-                <button className="p-1">
-                  <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+                <button className="p-1" aria-label="Open menu">
+                  <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="storefront-font w-[280px] p-0 border-r-0">

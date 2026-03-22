@@ -488,8 +488,8 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
       <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
           {isCheckout ? (
-            <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick}>
-              <ArrowLeft className="h-5 w-5 text-foreground" strokeWidth={2.5} />
+            <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick} aria-label="Go back">
+              <ArrowLeft className="h-5 w-5 text-foreground" strokeWidth={2.5} aria-hidden="true" />
             </Button>
           ) : (
             <HamburgerMenu store={store} />
