@@ -49,8 +49,8 @@ function V12Header({ store }: { store: StoreData }) {
         {/* Left: Hamburger */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90">
-              <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+            <button className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Open menu">
+              <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
             </button>
           </SheetTrigger>
 
@@ -65,8 +65,8 @@ function V12Header({ store }: { store: StoreData }) {
                 }}
               >
                 <span className="text-sm font-bold uppercase tracking-wider" style={{ fontFamily: "var(--storefront-heading-font, 'Poppins'), sans-serif" }}>Menu</span>
-                <button onClick={() => setMenuOpen(false)} className="flex h-8 w-8 items-center justify-center">
-                  <X className="h-5 w-5" />
+                <button onClick={() => setMenuOpen(false)} className="flex h-8 w-8 items-center justify-center" aria-label="Close menu">
+                  <X className="h-5 w-5" aria-hidden="true" />
                 </button>
               </div>
 
@@ -192,11 +192,11 @@ function V12Header({ store }: { store: StoreData }) {
 
         {/* Right: Search + Cart */}
         <div className="flex items-center gap-0.5">
-          <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90">
-            <Search className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+          <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Search products">
+            <Search className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
           </button>
-          <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90">
-            <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+          <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
+            <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
             {cartCount > 0 && (
               <span
                 className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"

@@ -29,8 +29,8 @@ import { storefrontPath } from "@/lib/subdomain";
 function CartBadgeV6() {
   const { cartCount, openCart } = useCart();
   return (
-    <button onClick={openCart} className="relative group">
-      <ShoppingCart className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, #1e293b)" }} />
+    <button onClick={openCart} className="relative group" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
+      <ShoppingCart className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, #1e293b)" }} aria-hidden="true" />
       {cartCount > 0 && (
         <span
           className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
@@ -46,8 +46,8 @@ function CartBadgeV6() {
 function WishlistBadgeV6({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
-    <Link to={storefrontPath(slug, "wishlist")} className="relative group">
-      <Heart className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, #1e293b)" }} />
+    <Link to={storefrontPath(slug, "wishlist")} className="relative group" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}>
+      <Heart className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, #1e293b)" }} aria-hidden="true" />
       {wishlistCount > 0 && (
         <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
           {wishlistCount > 99 ? "99+" : wishlistCount}
@@ -61,8 +61,8 @@ function AccountBadgeV6({ slug }: { slug: string }) {
   const { user, loading } = useStorefrontAuth();
   if (loading) return null;
   return (
-    <Link to={storefrontPath(slug, user ? "account" : "login")} className="group">
-      <User className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, #1e293b)" }} />
+    <Link to={storefrontPath(slug, user ? "account" : "login")} className="group" aria-label={user ? "My account" : "Login"}>
+      <User className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, #1e293b)" }} aria-hidden="true" />
     </Link>
   );
 }
@@ -161,7 +161,7 @@ function CleanHeader({ store }: { store: StoreData }) {
         </div>
 
         {/* Logo */}
-        <Link to={storefrontPath(store.slug)} className="flex-shrink-0">
+        <Link to={storefrontPath(store.slug)} className="flex-shrink-0" aria-label={`${store.name} home`}>
           {store.logo_url ? (
             <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[140px] object-contain" />
           ) : (

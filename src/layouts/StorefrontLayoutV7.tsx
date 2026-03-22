@@ -27,8 +27,8 @@ import { storefrontPath } from "@/lib/subdomain";
 function CartBadgeV7() {
   const { cartCount, openCart } = useCart();
   return (
-    <button onClick={openCart} className="relative">
-      <ShoppingCart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+    <button onClick={openCart} className="relative" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
+      <ShoppingCart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
       {cartCount > 0 && (
         <span
           className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
@@ -44,8 +44,8 @@ function CartBadgeV7() {
 function WishlistBadgeV7({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
-    <Link to={storefrontPath(slug, "wishlist")} className="relative">
-      <Heart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+    <Link to={storefrontPath(slug, "wishlist")} className="relative" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}>
+      <Heart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
       {wishlistCount > 0 && (
         <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
           {wishlistCount}
@@ -59,8 +59,8 @@ function AccountBadgeV7({ slug }: { slug: string }) {
   const { user, loading } = useStorefrontAuth();
   if (loading) return null;
   return (
-    <Link to={storefrontPath(slug, user ? "account" : "login")}>
-      <User className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+    <Link to={storefrontPath(slug, user ? "account" : "login")} aria-label={user ? "My account" : "Login"}>
+      <User className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
     </Link>
   );
 }
@@ -120,8 +120,8 @@ function EditorialHeader({ store }: { store: StoreData }) {
           <div className="lg:hidden mr-4">
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>
-                <button className="p-1">
-                  <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+                <button className="p-1" aria-label="Open menu">
+                  <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="storefront-font w-[280px] p-0 border-r-0">

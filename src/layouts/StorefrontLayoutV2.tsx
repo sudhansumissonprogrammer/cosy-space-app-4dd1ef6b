@@ -29,9 +29,9 @@ import { storefrontPath } from "@/lib/subdomain";
 function CartBadgeV2() {
   const { cartCount, openCart } = useCart();
   return (
-    <button onClick={openCart} className="relative">
+    <button onClick={openCart} className="relative" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
       <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
-        <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+        <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
       {cartCount > 0 && (
         <span
@@ -48,9 +48,9 @@ function CartBadgeV2() {
 function WishlistBadgeV2({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
-    <Link to={storefrontPath(slug, "wishlist")} className="relative">
+    <Link to={storefrontPath(slug, "wishlist")} className="relative" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}>
       <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
-        <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
+        <Heart className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
       {wishlistCount > 0 && (
         <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
@@ -65,9 +65,9 @@ function AccountBadgeV2({ slug }: { slug: string }) {
   const { user, loading } = useStorefrontAuth();
   if (loading) return null;
   return (
-    <Link to={storefrontPath(slug, user ? "account" : "login")}>
+    <Link to={storefrontPath(slug, user ? "account" : "login")} aria-label={user ? "My account" : "Login"}>
       <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
-        <User className="h-4 w-4 sm:h-5 sm:w-5" />
+        <User className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
     </Link>
   );
@@ -143,7 +143,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
         </Sheet>
 
         {/* Logo */}
-        <Link to={storefrontPath(store.slug)} className="flex-shrink-0">
+        <Link to={storefrontPath(store.slug)} className="flex-shrink-0" aria-label={`${store.name} home`}>
           {store.logo_url ? (
             <img
               src={store.logo_url}

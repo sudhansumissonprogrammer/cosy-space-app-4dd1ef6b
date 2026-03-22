@@ -41,8 +41,8 @@ function AppHeader({ store }: { store: StoreData }) {
         {/* Menu */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }}>
-              <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+            <button className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label="Open menu">
+              <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="storefront-font w-[280px] p-0">
@@ -99,14 +99,15 @@ function AppHeader({ store }: { store: StoreData }) {
             backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08",
             border: "1px solid var(--storefront-text, hsl(var(--foreground)))12",
           }}
+          aria-label="Search products"
         >
-          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} />
+          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} aria-hidden="true" />
           <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
         </button>
 
         {/* Cart */}
-        <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }}>
-          <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+        <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
+          <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
           {cartCount > 0 && (
             <span
               className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
