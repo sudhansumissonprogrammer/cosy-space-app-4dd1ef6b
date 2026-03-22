@@ -61,8 +61,8 @@ function AccountBadgeV6({ slug }: { slug: string }) {
   const { user, loading } = useStorefrontAuth();
   if (loading) return null;
   return (
-    <Link to={storefrontPath(slug, user ? "account" : "login")} className="group">
-      <User className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, #1e293b)" }} />
+    <Link to={storefrontPath(slug, user ? "account" : "login")} className="group" aria-label={user ? "My account" : "Login"}>
+      <User className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, #1e293b)" }} aria-hidden="true" />
     </Link>
   );
 }
