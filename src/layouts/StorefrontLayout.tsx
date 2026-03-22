@@ -173,12 +173,12 @@ function CartBadge() {
 function WishlistBadge({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
-    <Link to={storefrontPath(slug, "wishlist")} className="relative">
-      <Button variant="ghost" size="icon" className="h-9 w-9">
+    <Link to={storefrontPath(slug, "wishlist")} className="relative" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}>
+      <Button variant="ghost" size="icon" className="h-9 w-9" aria-hidden="true" tabIndex={-1}>
         <Heart className="h-5 w-5" />
       </Button>
       {wishlistCount > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground" aria-hidden="true">
           {wishlistCount > 99 ? "99+" : wishlistCount}
         </span>
       )}
