@@ -588,8 +588,28 @@ export default {
       return proxyToOrigin(request);
     }
 
-    // ─── SUPABASE API → pass through ───
+    // ─── SUPABASE API → pass through (with edge caching for read-only storefront RPCs) ───
     if (url.pathname.startsWith("/api") || url.pathname.startsWith("/rest")) {
+      // Cache GET requests to storefront data RPC at the edge for 5 min
+      const isStorefrontRpc =
+        request.method === "GET" &&
+        url.pathname.includes("/rpc/get_storefront_data");
+
+      if (isStorefrontRpc) {
+        const apiCacheKey = new Request(`https://cache/api${url.pathname}${url.search}`);
+        const cachedApi = await cache.match(apiCacheKey);
+        if (cachedApi) return cachedApi;
+
+        const apiRes = await fetch(request);
+        if (apiRes.ok) {
+          const cloned = new Response(apiRes.body, apiRes);
+          cloned.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+          ctx.waitUntil(cache.put(apiCacheKey, cloned.clone()));
+          return cloned;
+        }
+        return apiRes;
+      }
+
       return fetch(request);
     }
 
