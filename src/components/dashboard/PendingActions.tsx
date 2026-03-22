@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShoppingBag, ShoppingCart } from "lucide-react";
@@ -9,7 +9,7 @@ interface PendingActionsProps {
 }
 
 export default function PendingActions({ storeId }: PendingActionsProps) {
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
 
   const { data } = useQuery({
     queryKey: ["pending-actions", storeId],

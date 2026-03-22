@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import { Button } from "@/components/ui/button";
 import { Share2, Palette, Settings, BarChart3 } from "lucide-react";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
@@ -11,7 +11,7 @@ interface QuickActionsProps {
 }
 
 export default function QuickActions({ storeId, storeSlug, storeName, isWhatsAppOnly }: QuickActionsProps) {
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
 
   const actions = [
     { label: "Theme", icon: Palette, onClick: () => navigate(`/dashboard/stores/${storeId}/theme`) },
