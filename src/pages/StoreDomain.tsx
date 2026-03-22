@@ -12,8 +12,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Globe, Copy, ExternalLink, Loader2, CheckCircle, AlertCircle, Shield, Server, FileText } from "lucide-react";
 import { ROOT_DOMAIN } from "@/lib/subdomain";
 
-const FALLBACK_ORIGIN = `fallback.${ROOT_DOMAIN}`;
-const NAMESERVER_IP = "185.158.133.1";
+const CNAME_TARGET = ROOT_DOMAIN;
 
 interface DnsRecord {
   type: string;
@@ -23,20 +22,19 @@ interface DnsRecord {
 }
 
 function getDnsRecords(domain: string): DnsRecord[] {
-  const isWww = domain.startsWith("www.");
-  const rootDomain = isWww ? domain.replace(/^www\./, "") : domain;
+  const rootDomain = domain.startsWith("www.") ? domain.replace(/^www\./, "") : domain;
 
   return [
     {
-      type: "A",
+      type: "CNAME",
       name: "@",
-      value: NAMESERVER_IP,
+      value: CNAME_TARGET,
       purpose: `Points ${rootDomain} to your store`,
     },
     {
-      type: "A",
+      type: "CNAME",
       name: "www",
-      value: NAMESERVER_IP,
+      value: CNAME_TARGET,
       purpose: `Points www.${rootDomain} to your store`,
     },
   ];
