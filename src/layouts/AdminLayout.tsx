@@ -104,7 +104,7 @@ export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const { navigate, isPending } = useNavigateTransition();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const isActive = (path: string, exact?: boolean) =>
