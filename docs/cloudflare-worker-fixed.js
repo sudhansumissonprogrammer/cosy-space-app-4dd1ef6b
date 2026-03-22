@@ -320,8 +320,11 @@ async function fetchAndInjectSlug(request, slug) {
 
   let html = await response.text();
 
-  // Inject right after <head> so it's available before any scripts run
-  const injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";</script>`;
+  // Inject slug + prefetch storefront data RPC so browser starts fetching before JS loads
+  const rpcUrl = `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`;
+  const injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";</script>
+<link rel="preconnect" href="${SUPABASE_URL}" />
+<link rel="preload" href="${rpcUrl}" as="fetch" crossorigin="anonymous" />`;
   html = html.replace("<head>", `<head>${injection}`);
 
   return new Response(html, {
