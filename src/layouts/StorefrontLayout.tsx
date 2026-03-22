@@ -519,7 +519,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
 
       <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
       <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-      <Suspense fallback={null}>
+      <Suspense fallback={<StorefrontContentSkeleton />}>
         <Outlet context={store} />
       </Suspense>
       
