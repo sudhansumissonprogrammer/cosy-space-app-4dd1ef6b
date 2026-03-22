@@ -1301,8 +1301,19 @@ function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName
 function ImageGallery({ images, productName, hasDiscount, discountPct }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const touchStart = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+
+  // Preload all images
+  useEffect(() => {
+    setImageLoaded({});
+    images.forEach((src, idx) => {
+      const img = new Image();
+      img.onload = () => setImageLoaded(prev => ({ ...prev, [idx]: true }));
+      img.src = optimizeImageUrl(src, 800);
+    });
+  }, [images]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStart.current = e.touches[0].clientX;
@@ -1331,6 +1342,8 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
     );
   }
 
+  const isMainLoaded = imageLoaded[activeIndex];
+
   return (
     <>
       <div className="space-y-3 lg:sticky lg:top-4">
@@ -1354,13 +1367,19 @@ function ImageGallery({ images, productName, hasDiscount, discountPct }: { image
             </div>
           </div>
 
+          {/* Skeleton placeholder while image loads */}
+          {!isMainLoaded && (
+            <Skeleton className="aspect-square w-full rounded-none" />
+          )}
           <img
+            key={`${activeIndex}-${images[activeIndex]}`}
             src={optimizeImageUrl(images[activeIndex], 800)}
             alt={productName}
-            className="aspect-square w-full object-contain transition-transform duration-300"
+            className={`aspect-square w-full object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
             decoding="async"
             fetchPriority="high"
             draggable={false}
+            onLoad={() => setImageLoaded(prev => ({ ...prev, [activeIndex]: true }))}
           />
 
           <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow backdrop-blur-sm">
