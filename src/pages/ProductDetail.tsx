@@ -127,17 +127,6 @@ export default function ProductDetail() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
 
-  // Scroll to top when navigating between product pages
-  useEffect(() => {
-    // Multiple approaches to ensure scroll reset works across all browsers/devices
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    // Also try smooth as a delayed fallback for edge cases
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    });
-  }, [productSlug]);
   const { addToCart, items, cartTotal } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
@@ -149,6 +138,22 @@ export default function ProductDetail() {
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
 
   const deliveryDate = useMemo(() => getDeliveryDate(), []);
+
+  // Reset ALL state when navigating between products
+  useEffect(() => {
+    setSelectedVariant(null);
+    setQuantity(1);
+    setJustAdded(false);
+    setCartBounce(false);
+    setOpenAccordion("description");
+    // Scroll to top AFTER state reset
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    });
+  }, [productSlug]);
 
   const getCachedProduct = () => {
     const cached = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
