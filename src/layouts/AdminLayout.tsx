@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useState, Suspense } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
+import { NavigationProgress } from "@/components/NavigationProgress";
+import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AdminSidebar } from "@/components/AdminSidebar";
@@ -13,7 +16,7 @@ import {
 } from "lucide-react";
 
 function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
   const location = useLocation();
   const { signOut } = useAuth();
 
@@ -102,7 +105,7 @@ export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
+  const { navigate, isPending } = useNavigateTransition();
   const location = useLocation();
 
   const isActive = (path: string, exact?: boolean) =>
@@ -124,7 +127,10 @@ export default function AdminLayout() {
               </div>
             </header>
             <main className="flex-1 overflow-auto p-6">
-              <Outlet />
+              <NavigationProgress isPending={isPending} />
+              <Suspense fallback={<ContentSkeleton />}>
+                <Outlet />
+              </Suspense>
             </main>
           </div>
         </div>
@@ -164,7 +170,10 @@ export default function AdminLayout() {
       </header>
 
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
-        <Outlet />
+        <NavigationProgress isPending={isPending} />
+        <Suspense fallback={<ContentSkeleton />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* Bottom nav */}

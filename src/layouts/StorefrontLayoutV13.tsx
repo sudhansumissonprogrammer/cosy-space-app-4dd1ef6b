@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -269,7 +269,7 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
         <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
         
         <div className="pb-28">
-          <Outlet context={{ ...store, tableNumber }} />
+          <Suspense fallback={null}><Outlet context={{ ...store, tableNumber }} /></Suspense>
         </div>
         <WhatsAppOrderBar store={store} tableNumber={tableNumber} />
       </div>

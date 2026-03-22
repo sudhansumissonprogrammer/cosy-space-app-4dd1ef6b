@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -519,7 +519,9 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
 
       <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
       <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-      <Outlet context={store} />
+      <Suspense fallback={null}>
+        <Outlet context={store} />
+      </Suspense>
       
       <StorefrontFooter store={store} />
       <SideCart store={store} />

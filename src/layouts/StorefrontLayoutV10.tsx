@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -427,7 +427,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <div className="pb-16 md:pb-0">
-              <Outlet context={store} />
+              <Suspense fallback={null}><Outlet context={store} /></Suspense>
             </div>
             
             {/* Milano Footer */}

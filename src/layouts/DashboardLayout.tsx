@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect, Suspense } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
+import { NavigationProgress } from "@/components/NavigationProgress";
+import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +37,7 @@ function MobileMenu({
   pendingOrders: number;
   isWhatsAppOnly: boolean;
 }) {
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
   const location = useLocation();
   const { signOut, user } = useAuth();
 
@@ -163,7 +166,7 @@ export default function DashboardLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingOrders, setPendingOrders] = useState(0);
   const location = useLocation();
-  const navigate = useNavigate();
+  const { navigate, isPending } = useNavigateTransition();
   const { signOut, user } = useAuth();
   const isMobile = useIsMobile();
 
@@ -251,7 +254,10 @@ export default function DashboardLayout() {
               </div>
             </header>
             <main className="flex-1 overflow-auto p-6">
-              <Outlet />
+              <NavigationProgress isPending={isPending} />
+              <Suspense fallback={<ContentSkeleton />}>
+                <Outlet />
+              </Suspense>
             </main>
           </div>
         </div>
@@ -323,7 +329,10 @@ export default function DashboardLayout() {
       </header>
 
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
-        <Outlet />
+        <NavigationProgress isPending={isPending} />
+        <Suspense fallback={<ContentSkeleton />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* Shopify-style bottom nav */}
