@@ -127,7 +127,10 @@ export default function AdminLayout() {
               </div>
             </header>
             <main className="flex-1 overflow-auto p-6">
-              <Outlet />
+              <NavigationProgress isPending={isPending} />
+              <Suspense fallback={<ContentSkeleton />}>
+                <Outlet />
+              </Suspense>
             </main>
           </div>
         </div>
