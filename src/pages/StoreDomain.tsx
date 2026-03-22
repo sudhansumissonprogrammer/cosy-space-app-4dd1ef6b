@@ -290,7 +290,7 @@ export default function StoreDomain() {
                 <div className="flex items-center gap-2 pt-1">
                   <Button variant="outline" size="sm" asChild>
                     <a
-                      href={`https://dnschecker.org/#A/${savedDomain}`}
+                      href={`https://dnschecker.org/#CNAME/${savedDomain}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="gap-1.5"
