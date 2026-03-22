@@ -1,12 +1,12 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function StoresList() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
 
   const { data: store, isLoading } = useQuery({
     queryKey: ["my-store", user?.id],

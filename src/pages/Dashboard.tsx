@@ -53,7 +53,7 @@ function cn(...classes: (string | undefined | false)[]) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
 
   const { data: store, isLoading: storeLoading, isError: storeError, refetch: refetchStore } = useQuery({
     queryKey: ["my-store", user?.id],
