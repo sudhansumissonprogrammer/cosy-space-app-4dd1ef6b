@@ -38,6 +38,36 @@ const EDGE_FN_TIMEOUT_MS = 10_000;
 
 const cache = caches.default;
 
+/* ============== RATE LIMITING ============== */
+
+const rateLimitMap = new Map(); // key → { count, resetAt }
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 60; // max domain lookups per IP per minute
+
+function isRateLimited(ip) {
+  if (!ip) return false;
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) return true;
+  return false;
+}
+
+// Periodically clean stale entries (runs on every request, lightweight)
+function cleanRateLimitMap() {
+  if (rateLimitMap.size < 1000) return;
+  const now = Date.now();
+  for (const [key, val] of rateLimitMap) {
+    if (now > val.resetAt) rateLimitMap.delete(key);
+  }
+}
+
 /* ============== SECURITY HEADERS ============== */
 
 const SECURITY_HEADERS = {
