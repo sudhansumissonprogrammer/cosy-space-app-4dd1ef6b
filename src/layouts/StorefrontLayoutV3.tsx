@@ -99,8 +99,9 @@ function AppHeader({ store }: { store: StoreData }) {
             backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08",
             border: "1px solid var(--storefront-text, hsl(var(--foreground)))12",
           }}
+          aria-label="Search products"
         >
-          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} />
+          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} aria-hidden="true" />
           <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
         </button>
 
