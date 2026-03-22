@@ -270,7 +270,7 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
         <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
         
         <div className="pb-28">
-          <Suspense fallback={null}><Outlet context={{ ...store, tableNumber }} /></Suspense>
+          <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={{ ...store, tableNumber }} /></Suspense>
         </div>
         <WhatsAppOrderBar store={store} tableNumber={tableNumber} />
       </div>

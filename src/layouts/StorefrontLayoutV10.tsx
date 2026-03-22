@@ -428,7 +428,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
             <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
             <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
             <div className="pb-16 md:pb-0">
-              <Suspense fallback={null}><Outlet context={store} /></Suspense>
+              <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense>
             </div>
             
             {/* Milano Footer */}
