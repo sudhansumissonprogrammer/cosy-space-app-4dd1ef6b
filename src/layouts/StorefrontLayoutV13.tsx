@@ -269,9 +269,9 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
         <RestaurantHeader store={store} tableNumber={tableNumber} />
         <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
         
-        <div className="pb-28">
+        <main className="pb-28">
           <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={{ ...store, tableNumber }} /></Suspense>
-        </div>
+        </main>
         <WhatsAppOrderBar store={store} tableNumber={tableNumber} />
       </div>
     </CartProvider>
