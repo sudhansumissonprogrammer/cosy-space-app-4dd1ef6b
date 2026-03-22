@@ -166,7 +166,7 @@ export default function DashboardLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingOrders, setPendingOrders] = useState(0);
   const location = useLocation();
-  const navigate = useNavigate();
+  const { navigate, isPending } = useNavigateTransition();
   const { signOut, user } = useAuth();
   const isMobile = useIsMobile();
 
