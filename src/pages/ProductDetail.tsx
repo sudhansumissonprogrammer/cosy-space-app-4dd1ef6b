@@ -405,7 +405,7 @@ export default function ProductDetail() {
 
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-10">
         {/* Image Gallery */}
-        <ImageGallery images={allImages} productName={product.name} hasDiscount={hasDiscount} discountPct={discountPct} />
+        <ImageGallery key={product.id} images={allImages} productName={product.name} hasDiscount={hasDiscount} discountPct={discountPct} />
 
         {/* Product Info */}
         <div className="flex flex-col">
