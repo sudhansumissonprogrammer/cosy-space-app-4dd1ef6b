@@ -328,7 +328,6 @@ export default function DashboardLayout() {
       </header>
 
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
-        <NavigationProgress isPending={isPending} />
         <Suspense fallback={<ContentSkeleton />}>
           <Outlet />
         </Suspense>
