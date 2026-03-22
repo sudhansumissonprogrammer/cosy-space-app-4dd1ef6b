@@ -151,8 +151,9 @@ async function resolveDomain(hostname) {
   }
 
   try {
+    // ✅ FIX: Query exact domain instead of fetching ALL stores
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stores?select=slug,custom_domain&limit=100`,
+      `${SUPABASE_URL}/rest/v1/stores?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -163,20 +164,15 @@ async function resolveDomain(hostname) {
 
     if (!res.ok) return null;
     const data = await res.json();
+    const slug = data[0]?.slug || null;
 
-    const match = data.find(
-      (item) =>
-        item.custom_domain &&
-        item.custom_domain.toLowerCase().trim() === domain
-    );
-
-    const slug = match?.slug || null;
-    if (!slug) return null;
+    // Cache hits for 5 min, misses for 60s (faster activation)
+    const ttl = slug ? 300 : 60;
 
     await cache.put(
       key,
       new Response(JSON.stringify({ slug }), {
-        headers: { "Cache-Control": "public, max-age=300" },
+        headers: { "Cache-Control": `public, max-age=${ttl}` },
       })
     );
 
