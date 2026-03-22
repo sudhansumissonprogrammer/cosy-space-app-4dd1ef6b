@@ -156,10 +156,14 @@ export default function ProductDetail() {
   }, [productSlug]);
 
   const getCachedProduct = () => {
+    // Only use cache if we find the exact product matching current slug
     const cached = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
     if (!cached) return undefined;
     return cached.find((p: any) => p.slug === productSlug || p.id === productSlug) || undefined;
   };
+
+  // Check if we already have this specific product cached
+  const existingData = queryClient.getQueryData(["storefront-product", store.id, productSlug]);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["storefront-product", store.id, productSlug],
@@ -187,7 +191,8 @@ export default function ProductDetail() {
       if (error) throw error;
       return data;
     },
-    initialData: getCachedProduct,
+    // Only use initialData if there's no existing query data (prevents stale cross-product data)
+    initialData: existingData ? undefined : getCachedProduct,
     enabled: !!store.id && !!productSlug,
     staleTime: 2 * 60 * 1000,
   });
