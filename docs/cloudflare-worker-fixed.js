@@ -320,8 +320,11 @@ async function fetchAndInjectSlug(request, slug) {
 
   let html = await response.text();
 
-  // Inject right after <head> so it's available before any scripts run
-  const injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";</script>`;
+  // Inject slug + prefetch storefront data RPC so browser starts fetching before JS loads
+  const rpcUrl = `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`;
+  const injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";</script>
+<link rel="preconnect" href="${SUPABASE_URL}" />
+<link rel="preload" href="${rpcUrl}" as="fetch" crossorigin="anonymous" />`;
   html = html.replace("<head>", `<head>${injection}`);
 
   return new Response(html, {
@@ -382,6 +385,13 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
 
   const contentType = res.headers.get("content-type") || "";
   if (res.ok && contentType.includes("text/html")) {
+    // Add Link preload header for storefront data API (browser fetches in parallel with JS)
+    if (slug) {
+      res.headers.set(
+        "Link",
+        `<${SUPABASE_URL}/rest/v1/rpc/get_storefront_data>; rel=preload; as=fetch; crossorigin`
+      );
+    }
     ctx.waitUntil(cache.put(key, res.clone()));
   }
 
@@ -585,8 +595,28 @@ export default {
       return proxyToOrigin(request);
     }
 
-    // ─── SUPABASE API → pass through ───
+    // ─── SUPABASE API → pass through (with edge caching for read-only storefront RPCs) ───
     if (url.pathname.startsWith("/api") || url.pathname.startsWith("/rest")) {
+      // Cache GET requests to storefront data RPC at the edge for 5 min
+      const isStorefrontRpc =
+        request.method === "GET" &&
+        url.pathname.includes("/rpc/get_storefront_data");
+
+      if (isStorefrontRpc) {
+        const apiCacheKey = new Request(`https://cache/api${url.pathname}${url.search}`);
+        const cachedApi = await cache.match(apiCacheKey);
+        if (cachedApi) return cachedApi;
+
+        const apiRes = await fetch(request);
+        if (apiRes.ok) {
+          const cloned = new Response(apiRes.body, apiRes);
+          cloned.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+          ctx.waitUntil(cache.put(apiCacheKey, cloned.clone()));
+          return cloned;
+        }
+        return apiRes;
+      }
+
       return fetch(request);
     }
 
