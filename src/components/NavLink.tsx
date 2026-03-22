@@ -6,24 +6,29 @@ interface NavLinkCompatProps extends Omit<NavLinkProps, "className"> {
   className?: string;
   activeClassName?: string;
   pendingClassName?: string;
+  /** When true, skip startTransition so Suspense fallback shows immediately */
+  instant?: boolean;
 }
 
 const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
-  ({ className, activeClassName, pendingClassName, to, onClick, ...props }, ref) => {
+  ({ className, activeClassName, pendingClassName, to, onClick, instant, ...props }, ref) => {
     const [, startTransition] = useTransition();
     const navigate = useNavigate();
 
     const handleClick = useCallback(
       (e: MouseEvent<HTMLAnchorElement>) => {
-        // Don't intercept modified clicks (new tab, etc.)
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
         e.preventDefault();
         onClick?.(e);
-        startTransition(() => {
+        if (instant) {
           navigate(to as string);
-        });
+        } else {
+          startTransition(() => {
+            navigate(to as string);
+          });
+        }
       },
-      [onClick, navigate, to]
+      [onClick, navigate, to, instant]
     );
 
     return (

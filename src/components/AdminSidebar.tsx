@@ -57,6 +57,7 @@ export function AdminSidebar() {
                 <NavLink
                   to={item.url}
                   end={item.exact}
+                  instant
                   className="hover:bg-accent/50"
                   activeClassName="bg-accent text-accent-foreground font-medium"
                 >
