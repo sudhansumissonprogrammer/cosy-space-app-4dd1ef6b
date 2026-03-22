@@ -23,6 +23,7 @@ import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOve
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
 /* ── Milano Header ── */
