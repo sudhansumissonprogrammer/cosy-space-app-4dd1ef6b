@@ -274,10 +274,10 @@ export default function StoreDomain() {
                 </div>
 
                 {/* Important notes */}
-                <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 space-y-1.5">
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-amber-600" />
-                    <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Important Notes</p>
+                    <Shield className="h-4 w-4 text-destructive" />
+                    <p className="text-sm font-semibold text-destructive">Important Notes</p>
                   </div>
                   <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
                     <li>If your domain uses Cloudflare, set DNS records to <strong>DNS-only (grey cloud)</strong>, not Proxied</li>
