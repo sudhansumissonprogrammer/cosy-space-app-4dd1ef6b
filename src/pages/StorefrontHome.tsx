@@ -199,8 +199,9 @@ export default function StorefrontHome() {
               <button
                 onClick={() => setSortOpen(!sortOpen)}
                 className="inline-flex items-center gap-1.5 rounded-full bg-accent/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                aria-label="Sort products"
               >
-                <ArrowUpDown className="h-3.5 w-3.5" />
+                <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="hidden sm:inline">
                   {sortBy === "popular" && "Popular"}
                   {sortBy === "price_asc" && "Price: Low"}
