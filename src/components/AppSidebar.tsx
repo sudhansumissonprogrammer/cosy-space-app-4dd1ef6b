@@ -211,6 +211,7 @@ export function AppSidebar() {
                   <NavLink
                     to="/dashboard/analytics"
                     end
+                    instant
                     className="hover:bg-accent/50"
                     activeClassName="bg-accent text-accent-foreground font-medium"
                   >
