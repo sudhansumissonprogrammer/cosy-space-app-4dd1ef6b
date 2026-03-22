@@ -27,8 +27,8 @@ import { storefrontPath } from "@/lib/subdomain";
 function CartBadgeV7() {
   const { cartCount, openCart } = useCart();
   return (
-    <button onClick={openCart} className="relative">
-      <ShoppingCart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+    <button onClick={openCart} className="relative" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
+      <ShoppingCart className="h-[18px] w-[18px]" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
       {cartCount > 0 && (
         <span
           className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
