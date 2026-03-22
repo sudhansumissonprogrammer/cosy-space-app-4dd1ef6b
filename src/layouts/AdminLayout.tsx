@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useState, Suspense } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
+import { NavigationProgress } from "@/components/NavigationProgress";
+import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AdminSidebar } from "@/components/AdminSidebar";
