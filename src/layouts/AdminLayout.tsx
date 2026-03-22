@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { navigate } = useNavigateTransition();
+  const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
 
