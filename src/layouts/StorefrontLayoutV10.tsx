@@ -198,8 +198,8 @@ function MilanoHeader({ store }: { store: StoreData }) {
 
         {/* Right: Search + Cart */}
         <div className="flex items-center gap-0.5">
-          <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90">
-            <Search className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} />
+          <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Search products">
+            <Search className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
           </button>
           <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
             <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
