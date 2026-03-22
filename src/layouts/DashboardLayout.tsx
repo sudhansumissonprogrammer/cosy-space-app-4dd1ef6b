@@ -37,7 +37,7 @@ function MobileMenu({
   pendingOrders: number;
   isWhatsAppOnly: boolean;
 }) {
-  const navigate = useNavigate();
+  const { navigate } = useNavigateTransition();
   const location = useLocation();
   const { signOut, user } = useAuth();
 
