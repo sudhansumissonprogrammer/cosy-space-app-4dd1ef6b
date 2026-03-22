@@ -142,6 +142,7 @@ export function AppSidebar() {
                   <NavLink
                     to={item.url}
                     end
+                    instant
                     className="hover:bg-accent/50"
                     activeClassName="bg-accent text-accent-foreground font-medium"
                   >
@@ -196,6 +197,7 @@ export function AppSidebar() {
                   <NavLink
                     to="/dashboard"
                     end
+                    instant
                     className="hover:bg-accent/50"
                     activeClassName="bg-accent text-accent-foreground font-medium"
                   >
@@ -209,6 +211,7 @@ export function AppSidebar() {
                   <NavLink
                     to="/dashboard/analytics"
                     end
+                    instant
                     className="hover:bg-accent/50"
                     activeClassName="bg-accent text-accent-foreground font-medium"
                   >
@@ -238,6 +241,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to="/dashboard/stores/create"
+                      instant
                       className="hover:bg-accent/50"
                       activeClassName="bg-accent text-accent-foreground font-medium"
                     >
@@ -261,6 +265,7 @@ export function AppSidebar() {
                   <NavLink
                     to="/dashboard/settings"
                     end
+                    instant
                     className="hover:bg-accent/50"
                     activeClassName="bg-accent text-accent-foreground font-medium"
                   >
