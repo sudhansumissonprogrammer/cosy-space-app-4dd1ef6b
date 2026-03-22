@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import {
   Dialog,
   DialogContent,
