@@ -114,16 +114,18 @@ export default function StorefrontHome() {
         <div className="mx-auto max-w-6xl flex items-center gap-2">
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex flex-1 items-center gap-2.5 rounded-full bg-accent/60 px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent"
+            className="flex flex-1 items-center gap-2.5 rounded-full bg-accent/60 px-4 py-2.5 text-sm text-foreground/60 transition-colors hover:bg-accent"
+            aria-label="Search products"
           >
-            <Search className="h-4 w-4 shrink-0" />
+            <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span>Search products...</span>
           </button>
           <button
             onClick={() => { setSearchOpen(true); setOpenFilters(true); }}
             className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-colors hover:bg-foreground/90"
+            aria-label="Open filters"
           >
-            <SlidersHorizontal className="h-4 w-4" />
+            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
