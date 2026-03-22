@@ -38,6 +38,36 @@ const EDGE_FN_TIMEOUT_MS = 10_000;
 
 const cache = caches.default;
 
+/* ============== RATE LIMITING ============== */
+
+const rateLimitMap = new Map(); // key → { count, resetAt }
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 60; // max domain lookups per IP per minute
+
+function isRateLimited(ip) {
+  if (!ip) return false;
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) return true;
+  return false;
+}
+
+// Periodically clean stale entries (runs on every request, lightweight)
+function cleanRateLimitMap() {
+  if (rateLimitMap.size < 1000) return;
+  const now = Date.now();
+  for (const [key, val] of rateLimitMap) {
+    if (now > val.resetAt) rateLimitMap.delete(key);
+  }
+}
+
 /* ============== SECURITY HEADERS ============== */
 
 const SECURITY_HEADERS = {
@@ -121,8 +151,9 @@ async function resolveDomain(hostname) {
   }
 
   try {
+    // ✅ FIX: Query exact domain instead of fetching ALL stores
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stores?select=slug,custom_domain&limit=100`,
+      `${SUPABASE_URL}/rest/v1/stores?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -133,20 +164,15 @@ async function resolveDomain(hostname) {
 
     if (!res.ok) return null;
     const data = await res.json();
+    const slug = data[0]?.slug || null;
 
-    const match = data.find(
-      (item) =>
-        item.custom_domain &&
-        item.custom_domain.toLowerCase().trim() === domain
-    );
-
-    const slug = match?.slug || null;
-    if (!slug) return null;
+    // Cache hits for 5 min, misses for 60s (faster activation)
+    const ttl = slug ? 300 : 60;
 
     await cache.put(
       key,
       new Response(JSON.stringify({ slug }), {
-        headers: { "Cache-Control": "public, max-age=300" },
+        headers: { "Cache-Control": `public, max-age=${ttl}` },
       })
     );
 
@@ -507,9 +533,40 @@ export default {
       request.headers.get("host") ||
       url.hostname;
 
+    // ─── HEALTH CHECK ENDPOINT ───
+    if (url.pathname === "/__health") {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const originCheck = await fetch(`https://${ORIGIN_HOST}/`, {
+          method: "HEAD",
+          headers: { Host: ORIGIN_HOST },
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        return new Response(
+          JSON.stringify({
+            status: originCheck.ok ? "healthy" : "degraded",
+            origin: originCheck.status,
+            timestamp: new Date().toISOString(),
+          }),
+          {
+            status: originCheck.ok ? 200 : 503,
+            headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          }
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({ status: "unhealthy", origin: "timeout", timestamp: new Date().toISOString() }),
+          { status: 503, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }
+        );
+      }
+    }
+
+    // ─── RATE LIMIT CLEANUP ───
+    cleanRateLimitMap();
+
     // ─── FIX #1: STATIC ASSETS → PROXY TO ORIGIN ───
-    // Previously: fetch(request) → went to melleto.shop → 403
-    // Now: proxyToOrigin() → goes to true-path-panel.lovable.app → 200
     const isStaticAsset =
       url.pathname.startsWith("/assets/") ||
       url.pathname.startsWith("/static/") ||
@@ -585,7 +642,15 @@ export default {
     }
 
     // ─── CUSTOM DOMAIN ───
-    // FIX #2: isCustomDomain=true triggers __STORE_SLUG__ injection
+    // Rate limit domain resolution lookups
+    const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for");
+    if (isRateLimited(clientIP)) {
+      return new Response("Too Many Requests", {
+        status: 429,
+        headers: { "Retry-After": "60", "Content-Type": "text/plain" },
+      });
+    }
+
     const cleanDomain = hostname.replace(/^www\./, "").toLowerCase().trim();
     const slug = await resolveDomain(cleanDomain);
 
@@ -599,7 +664,17 @@ export default {
       return cachedFetch(request, slug, ctx, true);
     }
 
-    // ─── FALLBACK ───
-    return cachedFetch(request, "", ctx);
+    // ─── UNKNOWN DOMAIN → 404 (strict tenant resolution) ───
+    return new Response(
+      `<!DOCTYPE html><html><head><title>Store Not Found</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:60px">
+<h1>Store Not Found</h1>
+<p>No store is configured for this domain.</p>
+</body></html>`,
+      {
+        status: 404,
+        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=60" },
+      }
+    );
   },
 };
