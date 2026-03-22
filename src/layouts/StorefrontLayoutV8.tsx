@@ -48,8 +48,8 @@ function MobileAppHeader({ store }: { store: StoreData }) {
           {/* Hamburger */}
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
-              <button className="flex h-9 w-9 items-center justify-center rounded-2xl transition-all active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }}>
-                <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+              <button className="flex h-9 w-9 items-center justify-center rounded-2xl transition-all active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label="Open menu">
+                <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="storefront-font w-[280px] p-0">
