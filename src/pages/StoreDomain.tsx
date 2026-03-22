@@ -257,160 +257,38 @@ export default function StoreDomain() {
           </div>
 
           {savedDomain && (
-            <div className="space-y-5">
-              {/* Saved domain badge */}
+            <div className="space-y-4">
               <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
-                {domainVerified ? (
-                  <CheckCircle className="h-4 w-4 shrink-0 text-green-600" />
-                ) : (
-                  <Clock className="h-4 w-4 shrink-0 text-amber-500" />
-                )}
+                <Globe className="h-4 w-4 shrink-0 text-primary" />
                 <code className="flex-1 text-sm font-medium">{savedDomain}</code>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded ${domainVerified ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
-                  {domainVerified ? "Verified" : "Pending Verification"}
-                </span>
                 <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={removeDomain}>
                   Remove
                 </Button>
               </div>
 
-              {/* Step 1: TXT Verification */}
-              {!domainVerified && verificationToken && (
-                <Card className="border-2 border-dashed border-amber-300 bg-amber-50/30">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Info className="h-5 w-5 text-amber-600" />
-                      DNS Verification Instructions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="rounded-lg bg-card border p-4 space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        <strong>Step 1:</strong> Add the following TXT record to your domain's DNS settings at your domain provider (like GoDaddy, Namecheap, Hostinger, Cloudflare, etc.)
-                      </p>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm font-medium text-muted-foreground w-20">Type</span>
-                          <span className="rounded bg-primary/10 px-3 py-1 text-sm font-bold text-primary">TXT</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm font-medium text-muted-foreground w-20">Name/Host</span>
-                          <code className="rounded bg-muted px-3 py-1 text-sm font-mono">@</code>
-                          <span className="text-xs text-muted-foreground">(or your domain name)</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm font-medium text-muted-foreground w-20">Value</span>
-                          <code className="rounded bg-foreground text-background px-3 py-1.5 text-sm font-mono">
-                            store-verify={verificationToken}
-                          </code>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 gap-1.5 text-xs"
-                            onClick={() => copyToClipboard(`store-verify=${verificationToken}`)}
-                          >
-                            <Copy className="h-3 w-3" />
-                            Copy
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm font-medium text-muted-foreground w-20">TTL</span>
-                          <code className="rounded bg-muted px-3 py-1 text-sm font-mono">3600</code>
-                          <span className="text-xs text-muted-foreground">(or default)</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2 rounded-lg bg-amber-100/50 border border-amber-200 p-3">
-                      <Clock className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
-                      <p className="text-sm text-muted-foreground">
-                        <strong>Note:</strong> After adding the record, DNS propagation may take a few minutes to several hours. Click the verify button below to check.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Button onClick={handleVerify} disabled={verifying} className="gap-2">
-                        {verifying ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4" />
-                        )}
-                        Verify Now
-                      </Button>
-                      <Button variant="outline" size="sm" asChild>
-                        <a
-                          href={`https://dnschecker.org/#TXT/${savedDomain}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="gap-1.5"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          Check DNS Propagation
-                        </a>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Step 2: CNAME Setup (shown after verification) */}
-              {domainVerified && (
-                <div className="rounded-xl border-2 border-dashed border-primary/20 bg-muted/30 p-5 space-y-4">
+              <Card className="border-2 border-[#25D366]/30 bg-[#25D366]/5">
+                <CardContent className="pt-5 space-y-3">
                   <div className="flex items-center gap-2">
-                    <Server className="h-5 w-5 text-primary" />
-                    <h3 className="font-semibold text-foreground">DNS Configuration (Step 2)</h3>
+                    <CheckCircle className="h-5 w-5 text-[#25D366]" />
+                    <h3 className="font-semibold text-foreground">Domain Saved Successfully!</h3>
                   </div>
-
                   <p className="text-sm text-muted-foreground">
-                    Domain verified! Now add these CNAME records to point your domain to your store:
+                    To complete the domain configuration, please contact us on WhatsApp. We'll set up DNS routing and SSL for <strong>{savedDomain}</strong>.
                   </p>
-
-                  <div className="space-y-2">
-                    {dnsRecords.map((record, i) => (
-                      <DnsRecordRow key={i} record={record} onCopy={copyToClipboard} />
-                    ))}
-                  </div>
-
-                  <div className="rounded-lg bg-card border p-4 space-y-3">
-                    <h4 className="text-sm font-semibold flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      Setup Steps
-                    </h4>
-                    <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                      <li>Go to <strong>DNS Settings</strong> at your domain registrar</li>
-                      <li>Add a <strong>CNAME Record</strong> with Name: <code className="bg-muted px-1 rounded text-xs">@</code> and Value: <code className="bg-muted px-1 rounded text-xs">{CNAME_TARGET}</code></li>
-                      <li>Add another <strong>CNAME Record</strong> with Name: <code className="bg-muted px-1 rounded text-xs">www</code> and Value: <code className="bg-muted px-1 rounded text-xs">{CNAME_TARGET}</code></li>
-                      <li>Delete any existing A or CNAME records for <code className="bg-muted px-1 rounded text-xs">@</code> and <code className="bg-muted px-1 rounded text-xs">www</code></li>
-                      <li>Save and wait for DNS propagation (5–30 minutes, max 48 hours)</li>
-                    </ol>
-                  </div>
-
-                  <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-destructive" />
-                      <p className="text-sm font-semibold text-destructive">Important Notes</p>
-                    </div>
-                    <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                      <li>If using Cloudflare, set DNS records to <strong>DNS-only (grey cloud)</strong></li>
-                      <li>Remove any conflicting A, AAAA, or CNAME records</li>
-                      <li>SSL certificate will be provisioned automatically after DNS is active</li>
-                    </ul>
-                  </div>
-
-                  <Button variant="outline" size="sm" asChild>
+                  <Button asChild className="gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white">
                     <a
-                      href={`https://dnschecker.org/#CNAME/${savedDomain}`}
+                      href={`https://wa.me/919692282485?text=${encodeURIComponent(`Hi! I want to configure my custom domain *${savedDomain}* for my store "${store?.name}". Store ID: ${storeId}`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="gap-1.5"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      Check DNS Propagation
+                      <svg viewBox="0 0 32 32" fill="currentColor" className="h-5 w-5">
+                        <path d="M16.004 3.2C9.056 3.2 3.406 8.848 3.404 15.8c-.001 2.222.58 4.392 1.683 6.303L3.2 28.8l6.867-1.802A12.56 12.56 0 0 0 16 28.398h.005C22.95 28.398 28.6 22.75 28.6 15.8 28.6 8.85 22.95 3.2 16.004 3.2Zm0 22.997h-.004a10.44 10.44 0 0 1-5.318-1.457l-.382-.226-3.955 1.038 1.055-3.858-.249-.395A10.42 10.42 0 0 1 5.54 15.8c.002-5.77 4.697-10.463 10.466-10.463 5.77 0 10.463 4.695 10.463 10.464 0 5.77-4.695 10.465-10.465 10.465v-.069Zm5.74-7.835c-.315-.158-1.863-.92-2.152-1.025-.289-.105-.499-.158-.71.158-.21.315-.815 1.025-.999 1.236-.184.21-.368.236-.683.079-.315-.158-1.33-.49-2.533-1.562-.937-.835-1.568-1.867-1.752-2.182-.184-.315-.02-.486.138-.643.142-.141.315-.368.473-.552.158-.184.21-.315.315-.526.106-.21.053-.394-.026-.552-.079-.158-.71-1.71-.973-2.341-.256-.615-.517-.532-.71-.542-.184-.008-.394-.01-.604-.01s-.552.079-.841.394c-.29.315-1.104 1.078-1.104 2.63 0 1.552 1.13 3.052 1.288 3.262.158.21 2.224 3.396 5.388 4.762.753.326 1.341.52 1.8.665.756.24 1.444.206 1.988.125.607-.09 1.863-.762 2.126-1.498.263-.736.263-1.367.184-1.498-.079-.132-.289-.21-.604-.369Z" />
+                      </svg>
+                      Chat on WhatsApp to Configure
                     </a>
                   </Button>
-                </div>
-              )}
+                </CardContent>
+              </Card>
             </div>
           )}
         </CardContent>
