@@ -241,6 +241,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to="/dashboard/stores/create"
+                      instant
                       className="hover:bg-accent/50"
                       activeClassName="bg-accent text-accent-foreground font-medium"
                     >
