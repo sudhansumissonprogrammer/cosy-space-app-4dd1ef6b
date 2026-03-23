@@ -73,8 +73,8 @@ function MenuItemCard({
     <div
       className="flex gap-3 rounded-2xl p-3 transition-all"
       style={{
-        backgroundColor: "var(--storefront-text, #1a1a1a)06",
-        border: "1px solid var(--storefront-text, #1a1a1a)08",
+        backgroundColor: withAlpha("var(--storefront-text, #1a1a1a)", "06"),
+        border: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "08")}`,
       }}
     >
       {product.image_url && (
