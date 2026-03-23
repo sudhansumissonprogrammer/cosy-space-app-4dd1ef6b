@@ -122,7 +122,7 @@ function FeaturedCollection({ products, slug, store }: { products: any[]; slug: 
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, #C8A96A)10" }}>
+              <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: withAlpha("var(--storefront-primary, #C8A96A)", "10") }}>
                 <Package className="h-16 w-16 opacity-20" />
               </div>
             )}
