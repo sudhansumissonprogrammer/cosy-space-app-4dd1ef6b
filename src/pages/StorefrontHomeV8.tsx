@@ -313,7 +313,7 @@ export default function StorefrontHomeV8() {
             <button
               onClick={() => setSortOpen(!sortOpen)}
               className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all active:scale-95"
-              style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))15" }}
+              style={{ borderColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "15") }}
             >
               <ArrowUpDown className="h-3 w-3" />
               {sortBy === "popular" && "Popular"}
