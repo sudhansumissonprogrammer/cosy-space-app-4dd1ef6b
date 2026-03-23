@@ -217,7 +217,7 @@ export default function StorefrontSearchOverlay({
           {/* Expandable filter panel */}
           {showFilters && (
             <div className="px-4 py-3 space-y-3 border-t animate-in slide-in-from-top-2 duration-200"
-              style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))10" }}
+              style={{ borderColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10") }}
             >
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider mb-2 opacity-50">Price Range</p>
