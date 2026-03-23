@@ -356,6 +356,33 @@ export type Database = {
           },
         ]
       }
+      dashboard_menu_config: {
+        Row: {
+          display_order: number
+          id: string
+          menu_key: string
+          menu_label: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          display_order?: number
+          id?: string
+          menu_key: string
+          menu_label: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          display_order?: number
+          id?: string
+          menu_key?: string
+          menu_label?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
