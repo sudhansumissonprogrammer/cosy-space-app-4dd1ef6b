@@ -146,7 +146,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
                     className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors"
                     style={{
                       color: "var(--storefront-text, #1a1a1a)",
-                      borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
+                      borderBottom: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "0a")}`,
                       fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
                     }}
                   >
