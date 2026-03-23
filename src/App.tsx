@@ -100,6 +100,7 @@ const storefrontChildRoutes = (theme: string) => {
   return (
     <>
       <Route index element={<HomeComponent />} />
+      <Route path="shop" element={<StorefrontShop />} />
       <Route path="best-sellers" element={<StorefrontBestSellers />} />
       <Route path="contact" element={<StorefrontContact />} />
       <Route path="return-policy" element={<StorefrontReturnPolicy />} />
