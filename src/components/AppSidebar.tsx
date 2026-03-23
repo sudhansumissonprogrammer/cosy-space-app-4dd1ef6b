@@ -117,7 +117,7 @@ export function AppSidebar() {
   const marketingItems = storeId
     ? [
         ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeId}/whatsapp`, icon: MessageSquare }] : []),
-        { title: "Push Notifications", url: `/dashboard/stores/${storeId}/notifications`, icon: Bell },
+        
         { title: "Tracking & Analytics", url: `/dashboard/stores/${storeId}/tracking`, icon: BarChart3 },
       ]
     : [];

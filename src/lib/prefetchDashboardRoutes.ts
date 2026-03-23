@@ -17,7 +17,7 @@ const dashboardImports = [
   () => import("@/pages/StoreTaxSettings"),
   () => import("@/pages/StoreAbandonedCarts"),
   () => import("@/pages/WhatsAppMarketing"),
-  () => import("@/pages/StoreNotifications"),
+  
   () => import("@/pages/StoreDomain"),
   () => import("@/pages/UserSettings"),
   () => import("@/pages/CustomerLeads"),
