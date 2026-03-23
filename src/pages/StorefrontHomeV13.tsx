@@ -332,8 +332,8 @@ function MenuSearchBar({
         <div
           className="mt-2 rounded-xl p-3 space-y-3"
           style={{
-            backgroundColor: "var(--storefront-text, #1a1a1a)04",
-            border: "1px solid var(--storefront-text, #1a1a1a)10",
+            backgroundColor: withAlpha("var(--storefront-text, #1a1a1a)", "04"),
+            border: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "10")}`,
           }}
         >
           {/* Sort */}
