@@ -5,7 +5,6 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, splitImageUrls, PRODUCT_CARD_SIZES } from "@/lib/imageOptimize";
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
-import { withAlpha } from "@/lib/storefrontColors";
 import StarRating from "./StarRating";
 
 interface Props {
@@ -35,8 +34,8 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
           const images = splitImageUrls(product.image_url);
           if (images.length === 0) {
             return (
-              <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: withAlpha("var(--storefront-primary, #1a1a1a)", "08") }}>
-                <Tag className="h-10 w-10" style={{ color: withAlpha("var(--storefront-text, #1a1a1a)", "20") }} />
+              <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}>
+                <Tag className="h-10 w-10" style={{ color: "var(--storefront-text, #1a1a1a)20" }} />
               </div>
             );
           }

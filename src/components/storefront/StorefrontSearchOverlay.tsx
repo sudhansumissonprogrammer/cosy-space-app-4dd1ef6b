@@ -4,7 +4,6 @@ import { Search, X, Package, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
-import { withAlpha } from "@/lib/storefrontColors";
 import type { Tables } from "@/integrations/supabase/types";
 
 type SortOption = "popular" | "price_asc" | "price_desc" | "newest";
@@ -15,17 +14,14 @@ interface StorefrontSearchOverlayProps {
   products: Tables<"products">[] | undefined;
   slug: string;
   initialFiltersOpen?: boolean;
-  currency?: string;
 }
 
-function getPriceRanges(currency: string) {
-  return [
-    { label: `Under ${currency}500`, range: [0, 500] as [number, number] },
-    { label: `${currency}500 – ${currency}1000`, range: [500, 1000] as [number, number] },
-    { label: `${currency}1000 – ${currency}2000`, range: [1000, 2000] as [number, number] },
-    { label: `${currency}2000+`, range: [2000, Infinity] as [number, number] },
-  ];
-}
+const PRICE_RANGES: { label: string; range: [number, number] }[] = [
+  { label: "Under ₹500", range: [0, 500] },
+  { label: "₹500 – ₹1000", range: [500, 1000] },
+  { label: "₹1000 – ₹2000", range: [1000, 2000] },
+  { label: "₹2000+", range: [2000, Infinity] },
+];
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "popular", label: "Popular" },
@@ -40,7 +36,6 @@ export default function StorefrontSearchOverlay({
   products,
   slug,
   initialFiltersOpen = false,
-  currency = "₹",
 }: StorefrontSearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
@@ -178,7 +173,7 @@ export default function StorefrontSearchOverlay({
               style={{
                 backgroundColor: activeFilterCount > 0 || showFilters
                   ? "var(--storefront-text, hsl(var(--foreground)))"
-                   : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
+                  : "var(--storefront-text, hsl(var(--foreground)))10",
                 color: activeFilterCount > 0 || showFilters
                   ? "var(--storefront-bg, hsl(var(--background)))"
                   : "var(--storefront-text, hsl(var(--foreground)))",
@@ -203,7 +198,7 @@ export default function StorefrontSearchOverlay({
                 style={{
                   backgroundColor: sortBy === opt.value
                     ? "var(--storefront-text, hsl(var(--foreground)))"
-                    : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
+                    : "var(--storefront-text, hsl(var(--foreground)))10",
                   color: sortBy === opt.value
                     ? "var(--storefront-bg, hsl(var(--background)))"
                     : "var(--storefront-text, hsl(var(--foreground)))",
@@ -217,7 +212,7 @@ export default function StorefrontSearchOverlay({
           {/* Expandable filter panel */}
           {showFilters && (
             <div className="px-4 py-3 space-y-3 border-t animate-in slide-in-from-top-2 duration-200"
-              style={{ borderColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10") }}
+              style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))10" }}
             >
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider mb-2 opacity-50">Price Range</p>
@@ -228,7 +223,7 @@ export default function StorefrontSearchOverlay({
                     style={{
                       backgroundColor: !priceRange
                         ? "var(--storefront-text, hsl(var(--foreground)))"
-                        : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
+                        : "var(--storefront-text, hsl(var(--foreground)))10",
                       color: !priceRange
                         ? "var(--storefront-bg, hsl(var(--background)))"
                         : "var(--storefront-text, hsl(var(--foreground)))",
@@ -236,7 +231,7 @@ export default function StorefrontSearchOverlay({
                   >
                     Any
                   </button>
-                  {getPriceRanges(currency).map((pr) => (
+                  {PRICE_RANGES.map((pr) => (
                     <button
                       key={pr.label}
                       onClick={() => setPriceRange(pr.range)}
@@ -244,7 +239,7 @@ export default function StorefrontSearchOverlay({
                       style={{
                         backgroundColor: priceRange?.[0] === pr.range[0]
                           ? "var(--storefront-text, hsl(var(--foreground)))"
-                          : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
+                          : "var(--storefront-text, hsl(var(--foreground)))10",
                         color: priceRange?.[0] === pr.range[0]
                           ? "var(--storefront-bg, hsl(var(--background)))"
                           : "var(--storefront-text, hsl(var(--foreground)))",
@@ -308,11 +303,11 @@ export default function StorefrontSearchOverlay({
                             <p className="text-xs mt-0.5">
                               {p.sale_price && p.sale_price < p.price ? (
                                 <>
-                                  <span className="font-semibold">{currency}{Number(p.sale_price).toFixed(0)}</span>
-                                  <span className="ml-1 line-through opacity-40">{currency}{Number(p.price).toFixed(0)}</span>
+                                  <span className="font-semibold">₹{Number(p.sale_price).toFixed(0)}</span>
+                                  <span className="ml-1 line-through opacity-40">₹{Number(p.price).toFixed(0)}</span>
                                 </>
                               ) : (
-                                <span className="font-semibold">{currency}{Number(p.price).toFixed(0)}</span>
+                                <span className="font-semibold">₹{Number(p.price).toFixed(0)}</span>
                               )}
                             </p>
                           </div>

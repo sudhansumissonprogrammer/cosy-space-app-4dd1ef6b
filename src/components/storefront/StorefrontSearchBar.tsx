@@ -10,7 +10,6 @@ interface StorefrontSearchBarProps {
   slug: string;
   searchQuery: string;
   onSearchChange: (value: string) => void;
-  currency?: string;
 }
 
 export default function StorefrontSearchBar({
@@ -18,7 +17,6 @@ export default function StorefrontSearchBar({
   slug,
   searchQuery,
   onSearchChange,
-  currency = "₹",
 }: StorefrontSearchBarProps) {
   const [focused, setFocused] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -102,15 +100,15 @@ export default function StorefrontSearchBar({
                         {p.sale_price && p.sale_price < p.price ? (
                           <>
                             <span className="font-semibold text-foreground">
-                              {currency}{Number(p.sale_price).toFixed(0)}
+                              ₹{Number(p.sale_price).toFixed(0)}
                             </span>
                             <span className="ml-1 line-through">
-                              {currency}{Number(p.price).toFixed(0)}
+                              ₹{Number(p.price).toFixed(0)}
                             </span>
                           </>
                         ) : (
                           <span className="font-semibold text-foreground">
-                            {currency}{Number(p.price).toFixed(0)}
+                            ₹{Number(p.price).toFixed(0)}
                           </span>
                         )}
                       </p>

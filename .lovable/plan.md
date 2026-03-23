@@ -1,90 +1,90 @@
 
-Objective
-- Restore storefront on real devices to match preview behavior/design and stop image/font/loading failures without rolling back performance work.
 
-What I found (deep analysis)
-1) Production/subdomain rendering is not the same as preview
-- Preview uses React app directly.
-- Live subdomain uses edge HTML injection + server-rendered shell.
-- The live shell currently outputs product cards that can differ visually from app cards (button/style mismatch), so users see “changed layout”.
+## Plan: Cold-Load Performance Optimization (4-5s → <2s on Mobile)
 
-2) Server-rendered shell image logic is breaking product images
-- Shell generates image src using `/cdn-cgi/image/.../https://external-image`.
-- For external sources (like carrybazaar.com / wordpress/shopify custom hosts), this can fail/hotlink-block and show broken images.
-- One product URL contains multiple comma-separated images; shell currently doesn’t split to first image, producing invalid src.
+The architecture is already well-optimized for repeat visits (Cloudflare Worker injects `__STOREFRONT_DATA__`, localStorage SWR cache). The cold-load bottleneck is clear: **JS parse/execute blocks rendering for ~1.5s**, the LCP image isn't discoverable until React renders, and non-critical resources compete with critical ones.
 
-3) HTML injection path is brittle
-- Skeleton replacement logic in worker is regex-fragile; malformed replacement can leave mixed old/new markup.
-- That causes unstable first paint and “not loading like before” behavior on fresh devices.
+---
 
-4) Remaining UI regressions from invalid CSS alpha syntax across themes
-- Many files still use invalid patterns like `var(--storefront-text...)0a` / `...08`.
-- Browsers drop these values, causing border/background/button styling drift.
-- Theme-10 (user’s store) still has multiple such values in header/menu/tabbar/home sections.
+### Root Cause Analysis
 
-5) Minor storefront consistency issues
-- Some components still hardcode color/currency formatting inconsistently with theme/store settings.
-- This contributes to visual mismatch between preview and published storefront.
+| Bottleneck | Impact | Fix |
+|-----------|--------|-----|
+| CSS bundle render-blocks for 1,250ms | FCP delayed | Inline critical CSS in `index.html` |
+| LCP image only discovered after React renders | LCP 4.6s | Worker injects `<link rel="preload">` for first product image |
+| `registerSW.js` is render-blocking (160ms) | FCP delayed | Defer SW registration |
+| All storefront JS loads before paint | FCP 3.2s | HTML skeleton in `index.html` for instant paint |
+| No `<meta charset>` early enough | Best practices flag | Move charset to first position |
+| Unused CSS 17KB in main bundle | Slower parse | Already using cssCodeSplit; add purgecss considerations |
 
-Safe fix implementation plan (minimal-risk, targeted)
-Phase 1 — Stabilize live rendering path first (highest impact)
-1. Harden edge shell image generation
-- In worker shell builder: always normalize product image by taking first URL from comma-separated string.
-- Only use `/cdn-cgi/image` for trusted compatible origins; for external hosts, use original URL (or safe proxy fallback) to prevent broken images.
-- Keep current performance preloading behavior where compatible.
+---
 
-2. Make shell replacement deterministic
-- Replace fragile regex replacement with marker-based replacement:
-  - Add explicit skeleton start/end markers in HTML template.
-  - Worker replaces content only between those markers.
-- Prevent partial DOM corruption and ensure scripts/styles remain intact.
+### Changes
 
-3. Keep app hydration source authoritative
-- Continue injecting `window.__STOREFRONT_DATA__` for speed.
-- Ensure shell HTML is only a visual placeholder, not a divergent UI implementation.
+#### 1. Enhanced HTML Shell with Storefront Skeleton (index.html)
 
-Phase 2 — Restore design parity (theme/UI regressions)
-4. Sweep and fix invalid alpha color syntax in storefront files
-- Replace remaining `var(...)xx` usages with `withAlpha(...)` or `color-mix(...)`.
-- Prioritize theme-10 + shared components first, then all storefront theme files found by regex scan.
-- This restores borders, tinted backgrounds, badges, and button surfaces.
+Replace the spinner with a **full storefront skeleton** (marquee + nav + search + product grid) directly in `index.html`. This renders in <100ms before any JS loads.
 
-5. Align button/product card styles to theme variables
-- Ensure Add to Cart and key CTAs use `--storefront-primary` + `--storefront-btn-text`.
-- Remove lingering hardcoded visual colors where they break theme consistency.
+Also:
+- Move `<meta charset>` to be the very first child of `<head>` (Best Practices fix)
+- Add `modulepreload` hints for the main entry chunk
+- Expand inline critical CSS to include storefront layout (nav bar, marquee bar, card grid skeleton shapes)
 
-6. Patch any remaining component-level drift
-- Search overlay hover/background tints
-- Header/menu borders
-- Trust badges / category chips
-- Product card fallback/image states
+**Key change**: The `<div id="root">` will contain a full storefront skeleton HTML instead of a spinner, so users see a meaningful layout immediately.
 
-Phase 3 — Verification and rollout
-7. Regression checklist on live domains (not just preview)
-- Open store on fresh browser/incognito + second device.
-- Confirm:
-  - Product images load (including first 4 above-the-fold)
-  - No broken `&amp;amp;` text rendering
-  - Buttons match previous intended design
-  - No permanent skeleton/flicker state
-  - Theme colors/fonts applied correctly
-  - Add-to-cart/cart drawer/checkout interactions work
+#### 2. Worker: Inject LCP Image Preload (docs/cloudflare-worker-fixed.js)
 
-8. Publish + edge cache hygiene
-- Publish latest build after fixes.
-- Purge edge cache for affected hosts to clear stale injected HTML.
-- Re-check subdomain and custom domain separately.
+In `fetchAndInjectSlug()`, after fetching storefront data, extract the first product image URL and inject a `<link rel="preload" as="image" fetchpriority="high">` into the HTML `<head>`. This makes the LCP image discoverable at HTML parse time, not after JS execution.
 
-Files I will touch in implementation
-- src/pages/StorefrontHomeV10.tsx
-- src/layouts/StorefrontLayoutV10.tsx
-- src/components/storefront/StorefrontSearchOverlay.tsx
-- (plus all storefront files with remaining invalid alpha syntax from scan)
-- docs/cloudflare-worker-fixed.js (and align final production worker variant used in deployment)
-- index.html (only if marker hooks are needed for deterministic shell replacement)
+Also inject `<link rel="preconnect">` for the product image origin (e.g., `overlaysnow.com`).
 
-Expected result
-- Live storefront on new devices matches preview structure/design.
-- Product images reliably load across external image hosts.
-- No random style regressions from invalid CSS color syntax.
-- Performance optimizations remain (fast first paint + cached storefront data), but without visual/behavior breakage.
+```text
+Current flow:  HTML → parse JS → execute React → render <img> → browser discovers image → loads
+New flow:      HTML (with preload) → browser discovers image immediately → loads in parallel with JS
+```
+
+#### 3. Defer Service Worker Registration (vite.config.ts)
+
+The `registerSW.js` script blocks rendering for 160ms. Change VitePWA to use `injectRegister: null` and register the SW manually after the page is interactive (in `main.tsx` with `requestIdleCallback`).
+
+#### 4. Async CSS Loading Pattern (index.html)
+
+Add the async CSS loading pattern for the main stylesheet. The Vite-generated CSS link in the built HTML is render-blocking. We'll add a small inline script that converts the CSS `<link>` to async after DOM is ready.
+
+#### 5. Optimize Font Loading (index.html)
+
+The current font preload/async pattern is good but can be improved:
+- Remove the `<link rel="preload" as="style">` for Inter (it creates an extra request that doesn't help since the stylesheet is already loaded async)
+- Keep only the `media="print" onload="this.media='all'"` pattern
+
+#### 6. Add `fetchpriority` to First Product Cards (ProductCardStyle1.tsx + all card styles)
+
+Already implemented with `priority` prop. Verify it flows through all 4 card styles correctly — this is already done.
+
+#### 7. Storefront Layout: Preconnect to Image Origins (StorefrontLayout.tsx)
+
+Add a `useEffect` that extracts the image CDN origin from the first product and injects a `<link rel="preconnect">` dynamically. This is already partially planned but needs implementation.
+
+---
+
+### File Changes Summary
+
+| File | Change |
+|------|--------|
+| `index.html` | Move charset first; replace spinner with storefront skeleton; expand critical CSS; remove redundant font preload; add async CSS script |
+| `docs/cloudflare-worker-fixed.js` | In `fetchAndInjectSlug()`: extract first product image, inject `<link rel="preload as="image">` and `<link rel="preconnect">` for image origin |
+| `vite.config.ts` | Set `injectRegister: null` in VitePWA config to stop render-blocking `registerSW.js` |
+| `src/main.tsx` | Add manual SW registration via `requestIdleCallback` after app mounts |
+| `src/layouts/StorefrontLayout.tsx` | Add `useEffect` to inject `<link rel="preconnect">` for product image CDN origin |
+
+### Expected Impact
+
+| Metric | Before | After (estimated) |
+|--------|--------|-------------------|
+| FCP | 3.2s | ~1.2s |
+| LCP | 4.6s | ~2.0s |
+| Speed Index | 5.1s | ~2.5s |
+| TBT | 0ms | 0ms (maintained) |
+| CLS | 0 | 0 (maintained) |
+| Performance Score | 74 | 90-95+ |
+

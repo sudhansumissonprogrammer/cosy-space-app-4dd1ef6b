@@ -21,7 +21,6 @@ const ORIGIN_HOST = "true-path-panel.lovable.app";
 const SUPABASE_URL = "https://kzvfjknnslgcwumzlwkb.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg";
-const IMAGE_PROXY_ENDPOINT = `${SUPABASE_URL}/functions/v1/image-resize`;
 
 /* ============== BOT DETECTION ============== */
 
@@ -60,10 +59,9 @@ function isRateLimited(ip) {
   return false;
 }
 
-// Periodically clean stale entries (runs probabilistically, not every request)
+// Periodically clean stale entries (runs on every request, lightweight)
 function cleanRateLimitMap() {
-  if (rateLimitMap.size < 100) return;
-  if (Math.random() > 0.01) return; // Only clean ~1% of requests
+  if (rateLimitMap.size < 1000) return;
   const now = Date.now();
   for (const [key, val] of rateLimitMap) {
     if (now > val.resetAt) rateLimitMap.delete(key);
@@ -270,11 +268,6 @@ async function proxyToOrigin(request) {
         "Cache-Control",
         "public, max-age=300, stale-while-revalidate=86400"
       );
-      newRes.headers.set(
-        "CDN-Cache-Control",
-        "public, max-age=600, stale-while-revalidate=86400"
-      );
-      newRes.headers.set("Vary", "Accept-Encoding");
     }
 
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
@@ -295,7 +288,7 @@ async function proxyToOrigin(request) {
 <p>Please wait, retrying...</p>
 </body></html>`,
       {
-        status: 503,
+        status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
@@ -305,16 +298,9 @@ async function proxyToOrigin(request) {
   }
 }
 
-/* ============== PREFETCH STOREFRONT DATA (EDGE-CACHED) ============== */
+/* ============== PREFETCH STOREFRONT DATA ============== */
 
 async function prefetchStorefrontData(slug) {
-  // Check edge cache first (avoids hitting Supabase on background revalidations)
-  const cacheKey = new Request(`https://cache/storefront-data/${slug}`);
-  const cached = await cache.match(cacheKey);
-  if (cached) {
-    try { return await cached.json(); } catch {}
-  }
-
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
@@ -329,227 +315,53 @@ async function prefetchStorefrontData(slug) {
       }
     );
     if (!res.ok) return null;
-    const data = await res.json();
-
-    // Cache the raw data at the edge for 5 min
-    if (data?.store) {
-      await cache.put(
-        cacheKey,
-        new Response(JSON.stringify(data), {
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
-          },
-        })
-      );
-    }
-
-    return data;
+    return await res.json();
   } catch {
     return null;
   }
 }
 
-/* ============== CLOUDFLARE IMAGE CDN ============== */
-
+/* ============== INJECT STORE SLUG INTO HTML ============== */
 /**
- * Route an image URL through Cloudflare's /cdn-cgi/image/ pipeline.
- * Provides automatic AVIF/WebP, server-side resizing, edge caching.
+ * FIX #2: For custom domains, the SPA running in the browser has no way
+ * to detect which store to load.
  *
- * IMPORTANT: Only use for images on domains we control or know support CF resizing.
- * External hosts (shopify CDN, wordpress, custom domains) may block or fail.
+ * PERF: Also injects window.__STOREFRONT_DATA__ with pre-fetched storefront
+ * data so the SPA renders instantly without an API waterfall.
  */
-const TRUSTED_IMAGE_HOSTS = [
-  "supabase.co",
-  "supabase.in",
-  "storivo.in",
-  "lovable.app",
-];
+async function fetchAndInjectSlug(request, slug) {
+  // Fetch origin HTML and storefront data in parallel
+  const [response, storefrontData] = await Promise.all([
+    proxyToOrigin(request),
+    prefetchStorefrontData(slug),
+  ]);
 
-function isTrustedImageHost(url) {
-  try {
-    const hostname = new URL(url).hostname;
-    return TRUSTED_IMAGE_HOSTS.some(h => hostname.endsWith(h));
-  } catch {
-    return false;
-  }
-}
+  const contentType = response.headers.get("content-type") || "";
 
-function decodeHtmlEntities(url = "") {
-  return String(url).replace(/&amp;/g, "&").trim();
-}
-
-function getPrimaryImageUrl(rawUrl) {
-  if (!rawUrl) return "";
-  const candidates = String(rawUrl)
-    .split(",")
-    .map((u) => decodeHtmlEntities(u))
-    .filter(Boolean);
-
-  for (const candidate of candidates) {
-    if (/^https?:\/\//i.test(candidate)) return candidate;
-    if (candidate.startsWith("//")) return `https:${candidate}`;
+  if (!contentType.includes("text/html") || !response.ok) {
+    return response;
   }
 
-  return "";
-}
+  let html = await response.text();
 
-function buildImageProxyUrl(imageUrl, width = 400, quality = 70) {
-  const url = new URL(IMAGE_PROXY_ENDPOINT);
-  url.searchParams.set("url", imageUrl);
-  url.searchParams.set("w", String(width));
-  url.searchParams.set("q", String(quality));
-  return url.toString();
-}
-
-/**
- * Normalize product image URL:
- * - Handle comma-separated image lists (take first)
- * - Only apply CF Image CDN for trusted hosts
- */
-function normalizeProductImage(rawUrl, width = 400, quality = 70) {
-  const firstUrl = getPrimaryImageUrl(rawUrl);
-  if (!firstUrl) return "";
-
-  // Only use CF Image CDN for trusted origins
-  if (isTrustedImageHost(firstUrl)) {
-    return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${firstUrl}`;
-  }
-  // External hosts: proxy via image-resize to avoid hotlink/cross-origin failures
-  return buildImageProxyUrl(firstUrl, width, quality);
-}
-
-function cfImageUrl(originUrl, width = 400, quality = 70) {
-  const firstUrl = getPrimaryImageUrl(originUrl);
-  if (!firstUrl) return "";
-
-  if (isTrustedImageHost(firstUrl)) {
-    return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${firstUrl}`;
-  }
-  return buildImageProxyUrl(firstUrl, width, quality);
-}
-
-/* ============== SERVER-RENDER CRITICAL HTML ============== */
-
-/**
- * Generates real storefront HTML at the edge using prefetched data.
- * This replaces the generic skeleton with actual store content (marquee,
- * nav bar, product cards) so users see real content before JS loads.
- */
-function buildServerRenderedShell(storefrontData) {
-  const store = storefrontData?.store;
-  if (!store) return "";
-
-  const products = (storefrontData.products || []).filter(p => p.is_active).slice(0, 4);
-  const categories = (storefrontData.categories || []).slice(0, 6);
-  const themeConfig = storefrontData.theme_config;
-  const storeName = escapeHtml(store.name || "");
-  const currency = store.currency || "INR";
-  const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
-
-  // Marquee
-  const marqueeEnabled = themeConfig?.marquee_enabled !== false;
-  const marqueeGradient = themeConfig?.marquee_gradient || "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)";
-  const marqueeText = themeConfig?.marquee_text || "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
-  const marqueeSegments = marqueeText.split(" • ").filter(Boolean);
-  const marqueeItemsHtml = marqueeSegments.map(s => `<span style="white-space:nowrap">${escapeHtml(s.trim())}</span>`).join('<span style="opacity:.7">•</span>');
-
-  const marqueeHtml = marqueeEnabled ? `<div style="width:100%;overflow:hidden;padding:10px 0;font-size:13px;font-weight:500;background:${escapeHtml(marqueeGradient)};color:#000;font-variant:small-caps"><div class="flex w-max animate-marquee" style="display:flex;gap:35px;padding-right:35px">${marqueeItemsHtml}${marqueeItemsHtml}</div></div>` : "";
-
-  // Nav bar with real logo/store name
-  const logoHtml = store.logo_url
-    ? `<img src="${escapeHtml(store.logo_url)}" alt="${storeName}" width="160" height="48" style="height:40px;width:auto;max-width:160px;object-fit:contain" />`
-    : `<div style="display:flex;align-items:center;gap:8px"><div style="width:36px;height:36px;border-radius:8px;background:#4361ee;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><span style="font-size:18px;font-weight:700">${storeName}</span></div>`;
-
-  const navHtml = `<div style="position:sticky;top:0;z-index:30;display:flex;align-items:center;height:56px;padding:0 12px;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid #e5e5e5"><div style="width:40px;height:40px;border-radius:10px;background:#e8e8e8"></div><div style="margin-left:6px">${logoHtml}</div><div style="flex:1"></div><div style="width:36px;height:36px;border-radius:50%;background:#e8e8e8;margin-left:4px"></div><div style="width:36px;height:36px;border-radius:50%;background:#e8e8e8;margin-left:4px"></div><div style="width:36px;height:36px;border-radius:50%;background:#e8e8e8;margin-left:4px"></div></div>`;
-
-  // Categories
-  let catsHtml = "";
-  if (categories.length > 0) {
-    const catItems = categories.map(cat => {
-      const catImg = cat.image_url
-        ? `<img src="${escapeHtml(cat.image_url)}" alt="${escapeHtml(cat.name)}" width="64" height="64" style="width:64px;height:64px;border-radius:50%;object-fit:cover" loading="lazy" />`
-        : `<div style="width:64px;height:64px;border-radius:50%;background:#e8e8e8" class="sf-shimmer"></div>`;
-      return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0"><div style="border-radius:50%;overflow:hidden">${catImg}</div><span style="font-size:11px;text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(cat.name)}</span></div>`;
-    }).join("");
-    catsHtml = `<div style="display:flex;gap:12px;padding:12px 16px;max-width:72rem;margin:0 auto;overflow-x:auto">${catItems}</div>`;
-  }
-
-  // Product cards — route images through CF Image CDN for auto AVIF/WebP + resize
-  let gridHtml = "";
-  if (products.length > 0) {
-    const primaryColor = themeConfig?.primary_color || "#b8873c";
-    const isLight = (hex) => {
-      const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-      return (r * 299 + g * 587 + b * 114) / 1000 > 160;
-    };
-    const btnText = isLight(primaryColor) ? "#1a1a1a" : "#ffffff";
-
-    const cards = products.map((p, idx) => {
-      const name = escapeHtml(p.name || "");
-      const rawImgUrl = p.image_url || "";
-      // Normalize: handle comma-separated URLs + external host safety
-      const imgUrl = escapeHtml(rawImgUrl ? normalizeProductImage(rawImgUrl, 400, 70) : "");
-      const price = p.sale_price || p.price || 0;
-      const originalPrice = p.sale_price ? p.price : null;
-      const discount = originalPrice ? Math.round((1 - price / originalPrice) * 100) : 0;
-      const loadAttr = idx < 2 ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
-
-      const priceHtml = originalPrice
-        ? `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:15px;font-weight:700">${currencySymbol}${price}</span><span style="font-size:12px;text-decoration:line-through;opacity:.5">${currencySymbol}${originalPrice}</span>${discount > 0 ? `<span style="font-size:11px;font-weight:600;color:#16a34a">${discount}% off</span>` : ""}</div>`
-        : `<span style="font-size:15px;font-weight:700">${currencySymbol}${price}</span>`;
-
-      const imageHtml = imgUrl
-        ? `<img src="${imgUrl}" alt="${name}" width="400" height="500" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block" ${loadAttr} />`
-        : `<div style="width:100%;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#9ca3af;font-size:12px">No image</div>`;
-
-      return `<div style="border-radius:16px;overflow:hidden;background:#fff;border:1px solid #e8e8e8">${imageHtml}<div style="padding:8px 10px 10px"><div style="font-size:12px;opacity:.5;margin-bottom:2px">${escapeHtml(p.category || "")}</div><div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${name}</div>${priceHtml}<div style="height:36px;border-radius:8px;margin-top:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:${primaryColor};color:${btnText};cursor:pointer">Add to Cart</div></div></div>`;
-    }).join("");
-
-    gridHtml = `<div style="padding:16px 16px 0;max-width:72rem;margin:0 auto"><div style="font-size:18px;font-weight:700;margin-bottom:12px">All Products</div></div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 16px 16px;max-width:72rem;margin:0 auto">${cards}</div>`;
-  }
-
-  return `<div id="sf-skeleton" data-server-rendered="true">${marqueeHtml}${navHtml}${catsHtml}${gridHtml}</div>`;
-}
-
-/* ============== STREAMING HTML INJECTION ============== */
-
-/**
- * Streams HTML from origin while injecting store data, preloads, and SSR content.
- * Uses TransformStream so the browser receives <head> bytes immediately
- * without waiting for the full origin response to buffer.
- */
-async function streamInjectedResponse(request, slug, storefrontData, originResponse) {
-  const contentType = originResponse.headers.get("content-type") || "";
-
-  if (!contentType.includes("text/html") || !originResponse.ok) {
-    return originResponse;
-  }
-
-  // Build injection payloads
-  let headInjection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
+  let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
-    headInjection += `window.__STOREFRONT_DATA__=${jsonStr};`;
+    injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
   }
-  headInjection += `</script>
-<link rel="preconnect" href="${SUPABASE_URL}" />
-<link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-<link rel="preconnect" href="https://${ROOT_DOMAIN}" crossorigin />
-<link rel="preload" as="font" href="/fonts/inter-latin.woff2" type="font/woff2" crossorigin fetchpriority="high" />`;
+  injection += `</script>
+<link rel="preconnect" href="${SUPABASE_URL}" />`;
 
-  // LCP image preload with srcset
+  // LCP optimization: preload the first product image so the browser discovers it
+  // at HTML parse time instead of waiting for React to render.
   let lcpPreload = "";
   if (storefrontData) {
     const products = storefrontData.products || [];
     const firstImage = products[0]?.image_url;
     if (firstImage) {
       const safeUrl = escapeHtml(firstImage);
-      // Use CF Image CDN for LCP preload variants
-      const widths = [200, 400, 600, 800];
-      const srcsetParts = widths.map(w => `${cfImageUrl(safeUrl, w, 70)} ${w}w`);
-      const srcsetAttr = srcsetParts.join(", ");
-      lcpPreload += `<link rel="preload" as="image" href="${cfImageUrl(safeUrl, 400, 70)}" imagesrcset="${srcsetAttr}" imagesizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" fetchpriority="high" />`;
+      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" />`;
+      // Preconnect to the image CDN origin
       try {
         const imgOrigin = new URL(firstImage).origin;
         if (imgOrigin && !imgOrigin.includes("supabase")) {
@@ -559,119 +371,12 @@ async function streamInjectedResponse(request, slug, storefrontData, originRespo
     }
   }
 
-  const serverHtml = storefrontData?.store ? buildServerRenderedShell(storefrontData) : "";
+  html = html.replace("<head>", `<head>${injection}${lcpPreload}`);
 
-  // Stream with TransformStream — inject on the fly
-  const { readable, writable } = new TransformStream();
-  const writer = writable.getWriter();
-  const reader = originResponse.body.getReader();
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-
-  let buffer = "";
-  let headInjected = false;
-  let skeletonInjected = false;
-  const markerStart = "<!-- sf-skeleton-start -->";
-  const markerEnd = "<!-- sf-skeleton-end -->";
-
-  (async () => {
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          // Flush remaining buffer
-          if (buffer) {
-            await writer.write(encoder.encode(buffer));
-          }
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // Inject into <head> as soon as we see it
-        if (!headInjected && buffer.includes("<head>")) {
-          buffer = buffer.replace("<head>", `<head>${headInjection}${lcpPreload}`);
-          headInjected = true;
-        }
-
-        // Replace skeleton with SSR content using marker-based approach
-        if (!skeletonInjected && serverHtml) {
-          const startIdx = buffer.indexOf(markerStart);
-          const endIdx = startIdx !== -1
-            ? buffer.indexOf(markerEnd, startIdx + markerStart.length)
-            : -1;
-
-          if (startIdx !== -1 && endIdx !== -1) {
-            buffer = buffer.substring(0, startIdx) + serverHtml + buffer.substring(endIdx + markerEnd.length);
-            skeletonInjected = true;
-          } else if (buffer.includes("sf-skeleton")) {
-            // Fallback: regex-based replacement for old HTML without markers
-            const skeletonMatch = buffer.match(/<div[^>]*id="sf-skeleton"[^>]*>[\s\S]*?<\/div>\s*(?:<\/div>\s*)*<\/div>/);
-            if (skeletonMatch) {
-              buffer = buffer.replace(skeletonMatch[0], serverHtml);
-              skeletonInjected = true;
-            }
-          }
-        }
-
-        // Flush processed content — keep only last 2KB in buffer for cross-chunk matching
-        if (buffer.length > 4096) {
-          let flushTo = buffer.length - 2048;
-
-          // If marker start exists but end hasn't arrived yet, preserve that section
-          // so start/end can be replaced even when split across large chunks.
-          if (!skeletonInjected && serverHtml) {
-            const startIdx = buffer.indexOf(markerStart);
-            if (startIdx !== -1) {
-              flushTo = Math.min(flushTo, startIdx);
-            }
-          }
-
-          if (flushTo > 0) {
-            await writer.write(encoder.encode(buffer.substring(0, flushTo)));
-            buffer = buffer.substring(flushTo);
-          }
-        }
-      }
-    } catch (err) {
-      // On error, flush whatever we have
-      if (buffer) {
-        try { await writer.write(encoder.encode(buffer)); } catch {}
-      }
-    } finally {
-      try { await writer.close(); } catch {}
-    }
-  })();
-
-  const headers = new Headers(originResponse.headers);
-  headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
-  headers.set("CDN-Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
-  headers.set("Vary", "Accept-Encoding");
-  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
-    headers.set(k, v);
-  }
-
-  return new Response(readable, {
-    status: originResponse.status,
-    headers,
+  return new Response(html, {
+    status: response.status,
+    headers: response.headers,
   });
-}
-
-/* ============== INJECT STORE SLUG INTO HTML (STREAMING) ============== */
-/**
- * FIX #2: For custom domains, the SPA running in the browser has no way
- * to detect which store to load.
- *
- * PERF: Uses streaming injection — <head> content flushes immediately.
- * PERF: Injects __STOREFRONT_DATA__ + server-rendered HTML at the edge.
- */
-async function fetchAndInjectSlug(request, slug) {
-  // Run both in parallel — origin fetch starts immediately alongside data fetch
-  const [storefrontData, originResponse] = await Promise.all([
-    prefetchStorefrontData(slug),
-    proxyToOrigin(request),
-  ]);
-  return streamInjectedResponse(request, slug, storefrontData, originResponse);
 }
 
 /* ============== CACHED FETCH ============== */
@@ -697,22 +402,15 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   const cached = await cache.match(key);
 
   if (cached) {
-    // Background revalidation: re-fetch and re-inject for fresh cache
     ctx.waitUntil(
-      (async () => {
-        try {
-          let freshRes;
-          if (slug) {
-            freshRes = await fetchAndInjectSlug(request, slug);
-          } else {
-            freshRes = await proxyToOrigin(request);
+      proxyToOrigin(request)
+        .then((res) => {
+          const ct = res.headers.get("content-type") || "";
+          if (res.ok && ct.includes("text/html")) {
+            return cache.put(key, res.clone());
           }
-          const ct = freshRes.headers.get("content-type") || "";
-          if (freshRes.ok && ct.includes("text/html")) {
-            await cache.put(key, freshRes.clone());
-          }
-        } catch {}
-      })()
+        })
+        .catch(() => {})
     );
     return cached;
   }
@@ -732,8 +430,6 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
     return new Response("Server Error", { status: 500 });
   }
 
-  // Cache the fully injected HTML (with SSR content + __STOREFRONT_DATA__)
-  // so subsequent first-visit requests from the same edge POP get pre-rendered HTML
   const contentType = res.headers.get("content-type") || "";
   if (res.ok && contentType.includes("text/html")) {
     ctx.waitUntil(cache.put(key, res.clone()));
@@ -792,9 +488,7 @@ async function handleBot(request, slug, url, isCustom) {
     ? `${url.origin}${url.pathname}${url.search}`
     : buildSubdomainUrl(slug, url.pathname, url.search);
 
-  const isSearchBot = SEARCH_BOT_REGEX.test(ua);
-
-  if (isSearchBot) {
+  if (SEARCH_BOT_REGEX.test(ua)) {
     try {
       const domainType = isCustom ? "custom" : "sub";
       const botCacheKey = new Request(
@@ -824,12 +518,11 @@ async function handleBot(request, slug, url, isCustom) {
         return response;
       }
     } catch {
-      // Fall through to OG meta
+      // Fall through
     }
   }
 
-  // Social bots or search bot fallback (bot-render failed)
-  if (SOCIAL_BOT_REGEX.test(ua) || isSearchBot) {
+  if (SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua)) {
     try {
       const res = await callEdgeFunction("og-meta", {
         slug,
@@ -1000,14 +693,8 @@ export default {
         return cachedFetch(request, "", ctx);
       }
 
-      // Run custom domain lookup, SEO, and bot checks in parallel
-      const [customDomain, seoResponse, botResponse] = await Promise.all([
-        getCustomDomainForSlug(slug),
-        handleSeoFiles(url, slug),
-        handleBot(request, slug, url, false),
-      ]);
-
       // 301 redirect to custom domain if one exists
+      const customDomain = await getCustomDomainForSlug(slug);
       if (customDomain) {
         return Response.redirect(
           `https://${customDomain}${url.pathname}${url.search}`,
@@ -1015,7 +702,10 @@ export default {
         );
       }
 
+      const seoResponse = await handleSeoFiles(url, slug);
       if (seoResponse) return seoResponse;
+
+      const botResponse = await handleBot(request, slug, url, false);
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx);
@@ -1031,29 +721,14 @@ export default {
       });
     }
 
-    // Redirect www → non-www for custom domains
-    const rawDomain = (hostname || "").toLowerCase().trim();
-    const isWww = rawDomain.startsWith("www.");
-    const cleanDomain = isWww ? rawDomain.slice(4) : rawDomain;
-
+    const cleanDomain = hostname.replace(/^www\./, "").toLowerCase().trim();
     const slug = await resolveDomain(cleanDomain);
 
     if (slug) {
-      // Canonical redirect: www.melleto.shop → melleto.shop
-      if (isWww) {
-        return Response.redirect(
-          `https://${cleanDomain}${url.pathname}${url.search}`,
-          301
-        );
-      }
-
-      // Run SEO and bot checks in parallel
-      const [seoResponse, botResponse] = await Promise.all([
-        handleSeoFiles(url, slug),
-        handleBot(request, slug, url, true),
-      ]);
-
+      const seoResponse = await handleSeoFiles(url, slug);
       if (seoResponse) return seoResponse;
+
+      const botResponse = await handleBot(request, slug, url, true);
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx, true);

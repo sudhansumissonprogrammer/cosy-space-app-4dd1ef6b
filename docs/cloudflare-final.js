@@ -165,6 +165,10 @@ async function fetchOrigin(request, slug = null) {
   const url = new URL(request.url);
   url.hostname = ORIGIN_HOST;
 
+  if (slug) {
+    url.searchParams.set("store", slug);
+  }
+
   // Clone headers and fix Host for origin routing
   const headers = new Headers(request.headers);
   headers.set("Host", ORIGIN_HOST);
@@ -208,21 +212,6 @@ async function fetchOrigin(request, slug = null) {
     // Apply security headers
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
       newRes.headers.set(k, v);
-    }
-
-    // Inject store slug for custom domains so SPA can resolve tenant context.
-    if (slug && contentType.includes("text/html") && newRes.ok) {
-      const html = await newRes.text();
-      const slugScript = `<script>window.__STORE_SLUG__=${JSON.stringify(String(slug))};</script>`;
-      const injectedHtml = html.includes("window.__STORE_SLUG__")
-        ? html
-        : html.includes("<head>")
-          ? html.replace("<head>", `<head>${slugScript}`)
-          : `${slugScript}${html}`;
-      return new Response(injectedHtml, {
-        status: newRes.status,
-        headers: newRes.headers,
-      });
     }
 
     return newRes;

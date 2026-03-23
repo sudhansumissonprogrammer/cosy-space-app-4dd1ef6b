@@ -1,9 +1,8 @@
-import "@/styles/storefront.css";
-import { useState, Suspense, lazy } from "react";
+import { useState, Suspense } from "react";
 import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -16,21 +15,19 @@ import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import SideCart from "@/components/storefront/SideCart";
+import SmartInstallPrompt from "@/components/SmartInstallPrompt";
+import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import { trackPageView } from "@/lib/trackPageView";
+import ExitIntentPopup from "@/components/storefront/ExitIntentPopup";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
-
-// Lazy load non-critical components — not needed for first paint (~20KB saving)
-const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
-const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhatsApp"));
-const SideCart = lazy(() => import("@/components/storefront/SideCart"));
-const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
-const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
-const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
 
 export type StoreData = Tables<"stores">;
 
@@ -100,8 +97,7 @@ export function useStorefront(slugOverride?: string) {
         return injected;
       }
 
-      // 2. Fetch from API (lazy-load Supabase — not needed on cache hit)
-      const { supabase } = await import("@/integrations/supabase/client");
+      // 2. Fetch from API
       const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
       if (error) throw error;
       const result = data as any;
@@ -388,7 +384,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
-  // Load Google Font dynamically — use display=swap so fonts render once loaded
+  // Load Google Font dynamically
   useEffect(() => {
     if (!themeConfig) return;
     const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
@@ -507,7 +503,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
     <div className="storefront-font min-h-screen font-sans" style={{ ...themeStyle, backgroundColor: "var(--storefront-bg, hsl(var(--background)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
       {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
       
-      <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
+      <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
           {isCheckout ? (
             <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick} aria-label="Go back">
@@ -540,13 +536,8 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
         </div>
       </nav>
 
-      {/* Non-critical components loaded lazily */}
-      <Suspense fallback={null}>
-        <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-      </Suspense>
-      <Suspense fallback={null}>
-        <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
-      </Suspense>
+      <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+      <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
       <main>
         <Suspense fallback={<StorefrontContentSkeleton />}>
           <Outlet context={store} />
@@ -554,15 +545,9 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
       </main>
       
       <StorefrontFooter store={store} />
-      <Suspense fallback={null}>
-        <SideCart store={store} />
-      </Suspense>
-      <Suspense fallback={null}>
-        <FloatingWhatsApp store={store} />
-      </Suspense>
-      <Suspense fallback={null}>
-        <ExitIntentPopup storeId={store.id} storeName={store.name} />
-      </Suspense>
+      <SideCart store={store} />
+      <FloatingWhatsApp store={store} />
+      <ExitIntentPopup storeId={store.id} storeName={store.name} />
 
       {/* Exit Checkout Confirmation Dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>

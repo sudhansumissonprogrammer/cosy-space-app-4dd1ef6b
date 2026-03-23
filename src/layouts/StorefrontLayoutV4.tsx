@@ -1,5 +1,3 @@
-import "@/styles/storefront.css";
-import { withAlpha } from "@/lib/storefrontColors";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useParams } from "react-router-dom";
@@ -86,7 +84,7 @@ function LuxuryNav({ store, scrolled }: { store: StoreData; scrolled: boolean })
           ? "var(--storefront-text, #1C1C1C)"
           : "#ffffff",
         borderBottom: scrolled
-          ? `1px solid ${withAlpha("var(--storefront-text, #1C1C1C)", "15")}`
+          ? "1px solid var(--storefront-text, #1C1C1C)15"
           : "none",
       }}
     >
@@ -103,7 +101,7 @@ function LuxuryNav({ store, scrolled }: { store: StoreData; scrolled: boolean })
           </SheetTrigger>
           <SheetContent side="left" className="storefront-font w-[320px] p-0 border-r-0">
             <div className="flex flex-col h-full" style={{ backgroundColor: "var(--storefront-bg, #F8F5F0)" }}>
-              <div className="border-b px-8 py-6" style={{ borderColor: withAlpha("var(--storefront-text, #1C1C1C)", "10") }}>
+              <div className="border-b px-8 py-6" style={{ borderColor: "var(--storefront-text, #1C1C1C)10" }}>
                 <span className="text-lg tracking-[0.15em] uppercase" style={{ fontFamily: "var(--storefront-heading-font, 'Playfair Display')", color: "var(--storefront-text, #1C1C1C)" }}>
                   {store.name}
                 </span>
@@ -122,7 +120,7 @@ function LuxuryNav({ store, scrolled }: { store: StoreData; scrolled: boolean })
                     to={link.to}
                     onClick={() => setMenuOpen(false)}
                     className="border-b py-3.5 text-[13px] font-light tracking-[0.1em] uppercase transition-opacity hover:opacity-60"
-                    style={{ borderColor: withAlpha("var(--storefront-text, #1C1C1C)", "08"), color: "var(--storefront-text, #1C1C1C)" }}
+                    style={{ borderColor: "var(--storefront-text, #1C1C1C)08", color: "var(--storefront-text, #1C1C1C)" }}
                   >
                     {link.label}
                   </Link>
@@ -138,7 +136,7 @@ function LuxuryNav({ store, scrolled }: { store: StoreData; scrolled: boolean })
                         to={storefrontPath(store.slug, `category/${cat.slug}`)}
                         onClick={() => setMenuOpen(false)}
                         className="border-b py-3 text-[13px] font-light tracking-[0.1em] uppercase transition-opacity hover:opacity-60"
-                        style={{ borderColor: withAlpha("var(--storefront-text, #1C1C1C)", "08"), color: "var(--storefront-text, #1C1C1C)" }}
+                        style={{ borderColor: "var(--storefront-text, #1C1C1C)08", color: "var(--storefront-text, #1C1C1C)" }}
                       >
                         {cat.name}
                       </Link>

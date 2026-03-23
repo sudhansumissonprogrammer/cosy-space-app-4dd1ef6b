@@ -1,5 +1,3 @@
-import "@/styles/storefront.css";
-import { withAlpha } from "@/lib/storefrontColors";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useSearchParams } from "react-router-dom";
@@ -23,8 +21,8 @@ function RestaurantHeader({ store, tableNumber }: { store: StoreData; tableNumbe
     <header
       className="sticky top-0 z-30 border-b backdrop-blur-md"
       style={{
-        backgroundColor: withAlpha("var(--storefront-bg, #ffffff)", "ee"),
-        borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "12"),
+        backgroundColor: "var(--storefront-bg, #ffffff)ee",
+        borderColor: "var(--storefront-text, #1a1a1a)12",
       }}
     >
       <div className="flex items-center gap-3 px-4 py-3">

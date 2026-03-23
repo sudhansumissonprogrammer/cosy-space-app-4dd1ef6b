@@ -3,7 +3,7 @@ import { useOutletContext, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
-
+import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
@@ -67,7 +67,6 @@ export default function StorefrontHome() {
     setLoadingMore(true);
     try {
       const currentCount = products?.length ?? 0;
-      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -137,7 +136,6 @@ export default function StorefrontHome() {
         products={products}
         slug={slug!}
         initialFiltersOpen={openFilters}
-        currency={store.currency === "USD" ? "$" : "₹"}
       />
 
       {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (

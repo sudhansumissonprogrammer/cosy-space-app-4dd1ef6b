@@ -3,7 +3,6 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { ArrowUpDown, Zap, Tag, Clock, Truck, Shield, RotateCcw } from "lucide-react";
-import { withAlpha } from "@/lib/storefrontColors";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
@@ -96,7 +95,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
             <button key={i} onClick={() => emblaApi?.scrollTo(i)} aria-label={`Go to slide ${i + 1}`} className="rounded-full transition-all" style={{
               width: i === selected ? "20px" : "6px",
               height: "6px",
-              backgroundColor: i === selected ? "var(--storefront-primary, #6C5CE7)" : withAlpha("var(--storefront-text, #1a1a1a)", "20"),
+              backgroundColor: i === selected ? "var(--storefront-primary, #6C5CE7)" : "var(--storefront-text, #1a1a1a)20",
             }} />
           ))}
         </div>
@@ -121,8 +120,8 @@ function CategoryStrip({ categories, slug }: { categories: any[] | undefined; sl
             <div
               className="h-16 w-16 rounded-full flex items-center justify-center overflow-hidden shadow-md transition-all"
               style={{
-                backgroundColor: withAlpha("var(--storefront-primary, hsl(var(--primary)))", "08"),
-                border: `2px solid ${withAlpha("var(--storefront-primary, hsl(var(--primary)))", "30")}`,
+                backgroundColor: "var(--storefront-primary, hsl(var(--primary)))08",
+                border: "2px solid var(--storefront-primary, hsl(var(--primary)))30",
               }}
             >
               {cat.image_url ? (
@@ -206,14 +205,14 @@ function FlashDeals({ products, slug }: { products: any[]; slug: string }) {
               key={product.id}
               to={storefrontPath(slug, `product/${product.slug || product.id}`)}
               className="flex-shrink-0 w-36 overflow-hidden rounded-2xl shadow-sm transition-all active:scale-[0.97]"
-              style={{ scrollSnapAlign: "start", backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: `1px solid ${withAlpha("var(--storefront-text, hsl(var(--foreground)))", "08")}` }}
+              style={{ scrollSnapAlign: "start", backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: "1px solid var(--storefront-text, hsl(var(--foreground)))08" }}
             >
               <div className="relative" style={{ aspectRatio: "1/1" }}>
                 {product.image_url ? (
                   <img src={optimizeImageUrl(product.image_url, 300)} alt={product.name} width={300} height={300} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: withAlpha("var(--storefront-primary, hsl(var(--primary)))", "08") }}>
-                    <Tag className="h-8 w-8" style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "15") }} aria-hidden="true" />
+                  <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))08" }}>
+                    <Tag className="h-8 w-8" style={{ color: "var(--storefront-text, hsl(var(--foreground)))15" }} aria-hidden="true" />
                   </div>
                 )}
                 <span className="absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
@@ -246,9 +245,9 @@ function TrustBadges() {
     <div className="px-4 py-3">
       <div className="flex gap-2 justify-between">
         {badges.map(({ icon: Icon, label }) => (
-          <div key={label} className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl" style={{ backgroundColor: withAlpha("var(--storefront-primary, hsl(var(--primary)))", "06") }}>
+          <div key={label} className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))06" }}>
             <Icon className="h-5 w-5" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />
-            <span className="text-[10px] font-semibold text-center" style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "80") }}>{label}</span>
+            <span className="text-[10px] font-semibold text-center" style={{ color: "var(--storefront-text, hsl(var(--foreground)))80" }}>{label}</span>
           </div>
         ))}
       </div>
@@ -313,7 +312,7 @@ export default function StorefrontHomeV8() {
             <button
               onClick={() => setSortOpen(!sortOpen)}
               className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all active:scale-95"
-              style={{ borderColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "15") }}
+              style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))15" }}
             >
               <ArrowUpDown className="h-3 w-3" />
               {sortBy === "popular" && "Popular"}
@@ -333,7 +332,7 @@ export default function StorefrontHomeV8() {
                     key={opt.value}
                     onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
                     className={`block w-full px-4 py-2.5 text-left text-xs transition-colors ${sortBy === opt.value ? "font-bold" : ""}`}
-                    style={{ backgroundColor: sortBy === opt.value ? withAlpha("var(--storefront-primary, hsl(var(--primary)))", "08") : "transparent" }}
+                    style={{ backgroundColor: sortBy === opt.value ? "var(--storefront-primary, hsl(var(--primary)))08" : "transparent" }}
                   >
                     {opt.label}
                   </button>

@@ -1,4 +1,3 @@
-import "@/styles/dashboard.css";
 import { useState, useEffect, Suspense } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";

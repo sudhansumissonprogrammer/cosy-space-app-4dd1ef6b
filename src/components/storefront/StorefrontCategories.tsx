@@ -2,7 +2,6 @@ import { Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 interface Category {
   id: string;
@@ -44,7 +43,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
               >
                 <div className="h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border" style={{ "--tw-border-opacity": 1 } as any} onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
                   {cat.image_url ? (
-                    <img src={optimizeImageUrl(cat.image_url, 80)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" width={80} height={80} />
+                    <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-accent">
                       <Tag className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" />

@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { withAlpha } from "@/lib/storefrontColors";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
@@ -32,7 +31,7 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
         className="w-full flex items-center justify-center"
         style={{
           height: "420px",
-          background: `linear-gradient(135deg, var(--storefront-accent, #3d1c28), ${withAlpha("var(--storefront-accent, #3d1c28)", "cc")})`,
+          background: `linear-gradient(135deg, var(--storefront-accent, #3d1c28), var(--storefront-accent, #3d1c28)cc)`,
         }}
       >
         <div className="text-center space-y-3 px-8">
@@ -95,14 +94,14 @@ function MilanoCategories({ categories, slug }: { categories: any[] | undefined;
           >
             <div
               className="h-[72px] w-[72px] rounded-full overflow-hidden border-2 sm:h-20 sm:w-20"
-              style={{ borderColor: withAlpha("var(--storefront-primary, #1a1a1a)", "40") }}
+              style={{ borderColor: "var(--storefront-primary, #1a1a1a)40" }}
             >
               {cat.image_url ? (
                 <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
               ) : (
                 <div
                   className="h-full w-full flex items-center justify-center"
-                  style={{ backgroundColor: withAlpha("var(--storefront-primary, #1a1a1a)", "10") }}
+                  style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)10" }}
                 >
                   <Tag className="h-5 w-5" style={{ color: "var(--storefront-primary, #1a1a1a)" }} />
                 </div>
@@ -217,7 +216,7 @@ function StorySection({ store }: { store: StoreData }) {
         to={storefrontPath(store.slug, "contact")}
         className="inline-flex items-center gap-1 mt-4 px-5 py-2 text-xs font-semibold uppercase tracking-wider border transition-all active:scale-95"
         style={{
-          borderColor: withAlpha("var(--storefront-bg, #f7f5f0)", "40"),
+          borderColor: "var(--storefront-bg, #f7f5f0)40",
           color: "var(--storefront-bg, #f7f5f0)",
           borderRadius: "var(--storefront-button-radius, 0.5rem)",
         }}
@@ -243,12 +242,12 @@ function TrustBadges() {
           <div
             key={label}
             className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl"
-            style={{ backgroundColor: withAlpha("var(--storefront-primary, #1a1a1a)", "08") }}
+            style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}
           >
             <Icon className="h-5 w-5" style={{ color: "var(--storefront-primary, #1a1a1a)" }} />
             <span
               className="text-[10px] font-semibold text-center"
-              style={{ color: withAlpha("var(--storefront-text, #1a1a1a)", "80") }}
+              style={{ color: "var(--storefront-text, #1a1a1a)80" }}
             >
               {label}
             </span>
@@ -318,8 +317,8 @@ export default function StorefrontHomeV10() {
         ) : (
           <div className="flex min-h-[40vh] items-center justify-center">
             <div className="text-center space-y-2">
-              <Tag className="h-12 w-12 mx-auto" style={{ color: withAlpha("var(--storefront-text, #1a1a1a)", "20") }} />
-              <p className="text-sm" style={{ color: withAlpha("var(--storefront-text, #1a1a1a)", "60") }}>No products available yet.</p>
+              <Tag className="h-12 w-12 mx-auto" style={{ color: "var(--storefront-text, #1a1a1a)20" }} />
+              <p className="text-sm" style={{ color: "var(--storefront-text, #1a1a1a)60" }}>No products available yet.</p>
             </div>
           </div>
         )}

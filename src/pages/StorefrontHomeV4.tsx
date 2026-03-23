@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { withAlpha } from "@/lib/storefrontColors";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -122,7 +121,7 @@ function FeaturedCollection({ products, slug, store }: { products: any[]; slug: 
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: withAlpha("var(--storefront-primary, #C8A96A)", "10") }}>
+              <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, #C8A96A)10" }}>
                 <Package className="h-16 w-16 opacity-20" />
               </div>
             )}
@@ -223,10 +222,10 @@ function BrandStory({ store }: { store: StoreData }) {
               loading="lazy"
             />
           ) : (
-            <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${withAlpha("var(--storefront-primary, #C8A96A)", "15")}, ${withAlpha("var(--storefront-accent, #1C1C1C)", "15")})` }} />
+            <div className="h-full w-full" style={{ background: `linear-gradient(135deg, var(--storefront-primary, #C8A96A)15, var(--storefront-accent, #1C1C1C)15)` }} />
           )}
           {/* Decorative border */}
-          <div className="absolute -bottom-3 -right-3 h-full w-full border-2 -z-10 hidden sm:block" style={{ borderColor: withAlpha("var(--storefront-primary, #C8A96A)", "30") }} />
+          <div className="absolute -bottom-3 -right-3 h-full w-full border-2 -z-10 hidden sm:block" style={{ borderColor: "var(--storefront-primary, #C8A96A)30" }} />
         </div>
       </div>
     </section>
@@ -258,7 +257,7 @@ function CustomerReviews() {
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {reviews.map((review, idx) => (
-          <div key={idx} className="border p-5 sm:p-8 text-center" style={{ borderColor: withAlpha("var(--storefront-text, #1C1C1C)", "12") }}>
+          <div key={idx} className="border p-5 sm:p-8 text-center" style={{ borderColor: "var(--storefront-text, #1C1C1C)12" }}>
             <Quote className="mx-auto h-6 w-6 mb-4 opacity-20" style={{ color: "var(--storefront-primary, #C8A96A)" }} />
             <p className="text-sm leading-relaxed italic opacity-70">"{review.text}"</p>
             <div className="mt-6 flex items-center justify-center gap-0.5">
@@ -387,7 +386,7 @@ export default function StorefrontHomeV4() {
         {!products ? (
           <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:gap-8">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="border" style={{ borderColor: withAlpha("var(--storefront-text, #1C1C1C)", "10") }}>
+              <div key={i} className="border" style={{ borderColor: "var(--storefront-text, #1C1C1C)10" }}>
                 <Skeleton className="w-full" style={{ aspectRatio: "3/4" }} />
                 <div className="p-4 space-y-2">
                   <Skeleton className="h-3 w-20" />
@@ -415,7 +414,7 @@ export default function StorefrontHomeV4() {
             )}
           </>
         ) : (
-          <div className="flex min-h-[200px] items-center justify-center border" style={{ borderColor: withAlpha("var(--storefront-text, #1C1C1C)", "10") }}>
+          <div className="flex min-h-[200px] items-center justify-center border" style={{ borderColor: "var(--storefront-text, #1C1C1C)10" }}>
             <p className="text-sm opacity-50">No products available yet.</p>
           </div>
         )}

@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { withAlpha } from "@/lib/storefrontColors";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -66,7 +65,7 @@ function HeroSection({ store }: { store: StoreData }) {
               to={storefrontPath(store.slug, "contact")}
               className="inline-flex items-center gap-2 px-8 py-4 text-sm font-semibold border transition-all duration-300 hover:opacity-70"
               style={{
-                borderColor: withAlpha("var(--storefront-text, #1e293b)", "20"),
+                borderColor: "var(--storefront-text, #1e293b)20",
                 color: "var(--storefront-text, #1e293b)",
                 borderRadius: "var(--storefront-button-radius, 0.75rem)",
               }}
@@ -125,7 +124,7 @@ function CategoryGrid({ categories, slug }: { categories: any[]; slug: string })
             key={cat.id}
             to={storefrontPath(slug, `category/${cat.slug}`)}
             className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-            style={{ borderRadius: "16px", border: "1px solid", borderColor: withAlpha("var(--storefront-text, #1e293b)", "10") }}
+            style={{ borderRadius: "16px", border: "1px solid", borderColor: "var(--storefront-text, #1e293b)10" }}
           >
             <div className="overflow-hidden" style={{ aspectRatio: "1/1" }}>
               {cat.image_url ? (
@@ -138,7 +137,7 @@ function CategoryGrid({ categories, slug }: { categories: any[]; slug: string })
               ) : (
                 <div
                   className="flex h-full w-full items-center justify-center"
-                  style={{ backgroundColor: withAlpha("var(--storefront-primary, #2563EB)", "08") }}
+                  style={{ backgroundColor: "var(--storefront-primary, #2563EB)08" }}
                 >
                   <Tag className="h-8 w-8" style={{ color: "var(--storefront-primary, #2563EB)", opacity: 0.3 }} />
                 </div>
@@ -177,14 +176,14 @@ function BenefitsSection() {
             style={{
               borderRadius: "16px",
               border: "1px solid",
-              borderColor: withAlpha("var(--storefront-text, #1e293b)", "08"),
+              borderColor: "var(--storefront-text, #1e293b)08",
             }}
           >
             <div
               className="flex h-12 w-12 flex-shrink-0 items-center justify-center"
               style={{
                 borderRadius: "12px",
-                backgroundColor: withAlpha("var(--storefront-primary, #2563EB)", "10"),
+                backgroundColor: "var(--storefront-primary, #2563EB)10",
               }}
             >
               <b.icon className="h-5 w-5" style={{ color: "var(--storefront-primary, #2563EB)" }} />
@@ -231,7 +230,7 @@ function TestimonialsSection() {
             style={{
               borderRadius: "16px",
               border: "1px solid",
-              borderColor: withAlpha("var(--storefront-text, #1e293b)", "08"),
+              borderColor: "var(--storefront-text, #1e293b)08",
             }}
           >
             <div className="flex gap-0.5 mb-4">
@@ -271,9 +270,9 @@ function NewsletterSection() {
         className="text-center p-10 sm:p-16"
         style={{
           borderRadius: "24px",
-          backgroundColor: withAlpha("var(--storefront-primary, #2563EB)", "08"),
+          backgroundColor: "var(--storefront-primary, #2563EB)08",
           border: "1px solid",
-          borderColor: withAlpha("var(--storefront-primary, #2563EB)", "15"),
+          borderColor: "var(--storefront-primary, #2563EB)15",
         }}
       >
         <h2
@@ -292,7 +291,7 @@ function NewsletterSection() {
             className="flex-1 px-5 py-3.5 text-sm border outline-none transition-colors focus:border-current"
             style={{
               borderRadius: "var(--storefront-button-radius, 0.75rem)",
-              borderColor: withAlpha("var(--storefront-text, #1e293b)", "15"),
+              borderColor: "var(--storefront-text, #1e293b)15",
               backgroundColor: "var(--storefront-bg, #F8FAFC)",
               color: "var(--storefront-text, #1e293b)",
             }}
@@ -378,7 +377,7 @@ export default function StorefrontHomeV6() {
         {!products ? (
           <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="overflow-hidden" style={{ borderRadius: "16px", border: "1px solid", borderColor: withAlpha("var(--storefront-text, #1e293b)", "08") }}>
+              <div key={i} className="overflow-hidden" style={{ borderRadius: "16px", border: "1px solid", borderColor: "var(--storefront-text, #1e293b)08" }}>
                 <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
                 <div className="p-4 space-y-2">
                   <Skeleton className="h-4 w-full" />

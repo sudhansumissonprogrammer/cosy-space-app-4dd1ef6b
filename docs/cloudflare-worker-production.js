@@ -134,6 +134,10 @@ async function fetchOrigin(request, slug = null, rewritePath = null) {
   const headers = new Headers(request.headers);
   headers.set("Host", ORIGIN_HOST);
 
+  if (slug) {
+    url.searchParams.set("store", slug);
+  }
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
@@ -187,21 +191,6 @@ async function fetchOrigin(request, slug = null, rewritePath = null) {
       "camera=(), microphone=(), geolocation=()"
     );
 
-    // Inject store slug for custom domains so SPA can resolve tenant context.
-    if (slug && contentType.includes("text/html") && newRes.ok) {
-      const html = await newRes.text();
-      const slugScript = `<script>window.__STORE_SLUG__=${JSON.stringify(String(slug))};</script>`;
-      const injectedHtml = html.includes("window.__STORE_SLUG__")
-        ? html
-        : html.includes("<head>")
-          ? html.replace("<head>", `<head>${slugScript}`)
-          : `${slugScript}${html}`;
-      return new Response(injectedHtml, {
-        status: newRes.status,
-        headers: newRes.headers,
-      });
-    }
-
     return newRes;
   } catch {
     return new Response(
@@ -223,7 +212,7 @@ async function fetchOrigin(request, slug = null, rewritePath = null) {
 }
 
 
-async function cachedFetch(request, slug = "", rewritePath = null, ctx) {
+async function cachedFetch(request, slug = "", rewritePath = null) {
   const key = getCacheKey(request, slug);
   const url = new URL(request.url);
 
@@ -241,17 +230,15 @@ async function cachedFetch(request, slug = "", rewritePath = null, ctx) {
 
   if (cached) {
     // Background refresh (stale-while-revalidate)
-    if (ctx) {
-      ctx.waitUntil(
-        fetchOrigin(request, slug, rewritePath).then((res) => {
-          const contentType = res.headers.get("content-type") || "";
+    event.waitUntil(
+      fetchOrigin(request, slug, rewritePath).then((res) => {
+        const contentType = res.headers.get("content-type") || "";
 
-          if (res.ok && contentType.includes("text/html")) {
-            cache.put(key, res.clone());
-          }
-        }).catch(() => {})
-      );
-    }
+        if (res.ok && contentType.includes("text/html")) {
+          cache.put(key, res.clone());
+        }
+      }).catch(() => {})
+    );
 
     return cached;
   }
@@ -372,7 +359,7 @@ async function handleBot(request, slug, url, isCustom) {
 /* ---------------- MAIN ---------------- */
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request) {
     const url = new URL(request.url);
     const hostname = url.hostname;
 
@@ -387,7 +374,7 @@ export default {
         );
       }
 
-      return cachedFetch(request, "", null, ctx);
+      return cachedFetch(request);
     }
 
     // SUBDOMAIN
@@ -395,7 +382,7 @@ export default {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
 
       if (!slug || slug.includes(".")) {
-        return cachedFetch(request, "", null, ctx);
+        return cachedFetch(request);
       }
 
       if (url.pathname === "/sitemap.xml") {
@@ -409,7 +396,7 @@ export default {
       const bot = await handleBot(request, slug, url, false);
       if (bot) return bot;
 
-      return cachedFetch(request, slug, null, ctx);
+      return cachedFetch(request, slug);
     }
 
     // CUSTOM DOMAIN
@@ -427,10 +414,10 @@ export default {
       const bot = await handleBot(request, slug, url, true);
       if (bot) return bot;
 
-      return cachedFetch(request, slug, null, ctx);
+      return cachedFetch(request, slug);
     }
 
     // FALLBACK
-    return cachedFetch(request, "", null, ctx);
+    return cachedFetch(request);
   },
 };

@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { withAlpha } from "@/lib/storefrontColors";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -36,7 +35,7 @@ function SplitHero({ store }: { store: StoreData }) {
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2 min-h-[50vh] lg:min-h-[70vh]">
       {/* Left: Image */}
-      <div className="relative overflow-hidden bg-muted" style={{ backgroundColor: withAlpha("var(--storefront-text, #1a1a1a)", "08") }}>
+      <div className="relative overflow-hidden bg-muted" style={{ backgroundColor: "var(--storefront-text, #1a1a1a)08" }}>
         {heroImages.length > 0 ? (
           <HeroBannerCarousel
             images={heroImages}
@@ -48,7 +47,7 @@ function SplitHero({ store }: { store: StoreData }) {
         ) : (
           <div
             className="flex h-full w-full items-center justify-center"
-            style={{ minHeight: "300px", backgroundColor: withAlpha("var(--storefront-primary, #1a1a1a)", "08") }}
+            style={{ minHeight: "300px", backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}
           >
             <span
               className="text-[120px] font-bold opacity-[0.04]"
@@ -146,7 +145,7 @@ function HorizontalProductStrip({ store, slug }: { store: StoreData; slug: strin
               onClick={() => scroll("left")}
               className="flex h-10 w-10 items-center justify-center border transition-opacity hover:opacity-60"
               style={{
-                borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "20"),
+                borderColor: "var(--storefront-text, #1a1a1a)20",
                 color: "var(--storefront-text, #1a1a1a)",
                 borderRadius: "var(--storefront-button-radius, 0px)",
               }}
@@ -157,7 +156,7 @@ function HorizontalProductStrip({ store, slug }: { store: StoreData; slug: strin
               onClick={() => scroll("right")}
               className="flex h-10 w-10 items-center justify-center border transition-opacity hover:opacity-60"
               style={{
-                borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "20"),
+                borderColor: "var(--storefront-text, #1a1a1a)20",
                 color: "var(--storefront-text, #1a1a1a)",
                 borderRadius: "var(--storefront-button-radius, 0px)",
               }}
@@ -191,7 +190,7 @@ function HorizontalProductStrip({ store, slug }: { store: StoreData; slug: strin
               ) : (
                 <div
                   className="flex h-full w-full items-center justify-center"
-                  style={{ backgroundColor: withAlpha("var(--storefront-primary, #1a1a1a)", "06") }}
+                  style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)06" }}
                 >
                   <span className="text-4xl font-bold opacity-[0.06]">{product.name.charAt(0)}</span>
                 </div>
@@ -276,7 +275,7 @@ function EditorialSection({
   const imageBlock = (
     <div
       className="overflow-hidden"
-      style={{ backgroundColor: withAlpha("var(--storefront-text, #1a1a1a)", "05"), minHeight: "300px" }}
+      style={{ backgroundColor: "var(--storefront-text, #1a1a1a)05", minHeight: "300px" }}
     >
       {imageUrl ? (
         <img
@@ -350,7 +349,7 @@ function MagazineCategoryGrid({ categories, slug }: { categories: any[]; slug: s
               ) : (
                 <div
                   className="h-full w-full"
-                  style={{ backgroundColor: withAlpha("var(--storefront-primary, #1a1a1a)", "08") }}
+                  style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}
                 />
               )}
               {/* Overlay */}
@@ -384,7 +383,7 @@ function TestimonialStrip() {
   return (
     <section
       className="py-16 sm:py-24 text-center"
-      style={{ backgroundColor: withAlpha("var(--storefront-primary, #1a1a1a)", "06") }}
+      style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)06" }}
     >
       <Quote
         className="mx-auto h-8 w-8 mb-6"
