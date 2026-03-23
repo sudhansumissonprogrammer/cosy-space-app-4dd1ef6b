@@ -1,4 +1,4 @@
-import { useState, Suspense } from "react";
+import { useState, Suspense, lazy } from "react";
 import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -15,19 +15,21 @@ import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
-import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
-import SideCart from "@/components/storefront/SideCart";
-import SmartInstallPrompt from "@/components/SmartInstallPrompt";
-import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import { trackPageView } from "@/lib/trackPageView";
-import ExitIntentPopup from "@/components/storefront/ExitIntentPopup";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
+
+// Lazy load non-critical components — not needed for first paint (~20KB saving)
+const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhatsApp"));
+const SideCart = lazy(() => import("@/components/storefront/SideCart"));
+const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
+const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
+const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
 
 export type StoreData = Tables<"stores">;
 
@@ -384,7 +386,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
-  // Load Google Font dynamically
+  // Load Google Font dynamically — use display=optional to prevent FOUT and CLS
   useEffect(() => {
     if (!themeConfig) return;
     const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
@@ -397,7 +399,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
       link.rel = "stylesheet";
       document.head.appendChild(link);
     }
-    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
+    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=optional`;
   }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
   // Listen for live theme preview messages from admin dashboard iframe parent
@@ -536,8 +538,13 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
         </div>
       </nav>
 
-      <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-      <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
+      {/* Non-critical components loaded lazily */}
+      <Suspense fallback={null}>
+        <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
+      </Suspense>
       <main>
         <Suspense fallback={<StorefrontContentSkeleton />}>
           <Outlet context={store} />
@@ -545,9 +552,15 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
       </main>
       
       <StorefrontFooter store={store} />
-      <SideCart store={store} />
-      <FloatingWhatsApp store={store} />
-      <ExitIntentPopup storeId={store.id} storeName={store.name} />
+      <Suspense fallback={null}>
+        <SideCart store={store} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <FloatingWhatsApp store={store} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ExitIntentPopup storeId={store.id} storeName={store.name} />
+      </Suspense>
 
       {/* Exit Checkout Confirmation Dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
