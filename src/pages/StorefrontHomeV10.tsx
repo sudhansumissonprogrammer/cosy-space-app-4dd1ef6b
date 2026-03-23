@@ -32,7 +32,7 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
         className="w-full flex items-center justify-center"
         style={{
           height: "420px",
-          background: `linear-gradient(135deg, var(--storefront-accent, #3d1c28), var(--storefront-accent, #3d1c28)cc)`,
+          background: `linear-gradient(135deg, var(--storefront-accent, #3d1c28), ${withAlpha("var(--storefront-accent, #3d1c28)", "cc")})`,
         }}
       >
         <div className="text-center space-y-3 px-8">
