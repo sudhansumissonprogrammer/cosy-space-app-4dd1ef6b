@@ -162,12 +162,10 @@ export function useStorefront(slugOverride?: string) {
       }
       return undefined;
     },
-    // Mark initialData as stale so it revalidates in background
-    initialDataUpdatedAt: () => {
-      if (!slug) return undefined;
-      const cached = readLocalStorageCache(slug);
-      return cached?._cachedAt;
-    },
+    // Always treat localStorage cache as stale — ensures a background
+    // refetch on every page load so theme / product changes appear instantly
+    // while the cached version renders immediately (true SWR).
+    initialDataUpdatedAt: 0,
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

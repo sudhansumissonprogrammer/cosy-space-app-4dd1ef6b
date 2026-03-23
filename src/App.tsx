@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState, useEffect } from "react";
+import { lazy, Suspense, useMemo, useState, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -189,6 +189,8 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   
   // Start with cached/injected theme instantly (no spinner)
   const [theme, setTheme] = useState(() => getInstantTheme(effectiveSlug));
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
 
   // Subscribe to query cache — when fresh data arrives with a different theme, switch instantly
   useEffect(() => {
@@ -197,14 +199,15 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
       if (event?.query?.queryKey?.[0] === "storefront-bulk" && event?.query?.queryKey?.[1] === effectiveSlug) {
         const freshData = event.query.state.data as any;
         const freshTheme = freshData?.store?.theme;
-        if (freshTheme && freshTheme !== theme) {
+        if (freshTheme && freshTheme !== themeRef.current) {
           setTheme(freshTheme);
+          themeRef.current = freshTheme;
           try { localStorage.setItem(`storefront_theme_${effectiveSlug}`, freshTheme); } catch {}
         }
       }
     });
     return unsubscribe;
-  }, [effectiveSlug, queryClient, theme]);
+  }, [effectiveSlug, queryClient]);
 
   const basePath = slugOverride ? "/" : "/store/:slug";
   const LayoutComponent = getLayoutComponent(theme);
