@@ -421,8 +421,7 @@ function buildServerRenderedShell(storefrontData) {
  * Uses TransformStream so the browser receives <head> bytes immediately
  * without waiting for the full origin response to buffer.
  */
-async function streamInjectedResponse(request, slug, storefrontData) {
-  const originResponse = await proxyToOrigin(request);
+async function streamInjectedResponse(request, slug, storefrontData, originResponse) {
   const contentType = originResponse.headers.get("content-type") || "";
 
   if (!contentType.includes("text/html") || !originResponse.ok) {
