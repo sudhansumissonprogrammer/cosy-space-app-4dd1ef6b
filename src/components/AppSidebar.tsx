@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
-  ShoppingCart, Palette, BarChart3, MessageSquare, Bell, FolderOpen, Image as ImageIcon,
+  ShoppingCart, Palette, BarChart3, MessageSquare, FolderOpen, Image as ImageIcon,
 } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
