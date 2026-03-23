@@ -59,9 +59,10 @@ function isRateLimited(ip) {
   return false;
 }
 
-// Periodically clean stale entries (runs on every request, lightweight)
+// Periodically clean stale entries (runs probabilistically, not every request)
 function cleanRateLimitMap() {
-  if (rateLimitMap.size < 1000) return;
+  if (rateLimitMap.size < 100) return;
+  if (Math.random() > 0.01) return; // Only clean ~1% of requests
   const now = Date.now();
   for (const [key, val] of rateLimitMap) {
     if (now > val.resetAt) rateLimitMap.delete(key);
@@ -293,7 +294,7 @@ async function proxyToOrigin(request) {
 <p>Please wait, retrying...</p>
 </body></html>`,
       {
-        status: 200,
+        status: 503,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
@@ -303,9 +304,16 @@ async function proxyToOrigin(request) {
   }
 }
 
-/* ============== PREFETCH STOREFRONT DATA ============== */
+/* ============== PREFETCH STOREFRONT DATA (EDGE-CACHED) ============== */
 
 async function prefetchStorefrontData(slug) {
+  // Check edge cache first (avoids hitting Supabase on background revalidations)
+  const cacheKey = new Request(`https://cache/storefront-data/${slug}`);
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    try { return await cached.json(); } catch {}
+  }
+
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
@@ -320,7 +328,22 @@ async function prefetchStorefrontData(slug) {
       }
     );
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json();
+
+    // Cache the raw data at the edge for 5 min
+    if (data?.store) {
+      await cache.put(
+        cacheKey,
+        new Response(JSON.stringify(data), {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+          },
+        })
+      );
+    }
+
+    return data;
   } catch {
     return null;
   }
@@ -670,7 +693,9 @@ async function handleBot(request, slug, url, isCustom) {
     ? `${url.origin}${url.pathname}${url.search}`
     : buildSubdomainUrl(slug, url.pathname, url.search);
 
-  if (SEARCH_BOT_REGEX.test(ua)) {
+  const isSearchBot = SEARCH_BOT_REGEX.test(ua);
+
+  if (isSearchBot) {
     try {
       const domainType = isCustom ? "custom" : "sub";
       const botCacheKey = new Request(
@@ -700,11 +725,12 @@ async function handleBot(request, slug, url, isCustom) {
         return response;
       }
     } catch {
-      // Fall through
+      // Fall through to OG meta
     }
   }
 
-  if (SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua)) {
+  // Social bots or search bot fallback (bot-render failed)
+  if (SOCIAL_BOT_REGEX.test(ua) || isSearchBot) {
     try {
       const res = await callEdgeFunction("og-meta", {
         slug,
@@ -875,8 +901,14 @@ export default {
         return cachedFetch(request, "", ctx);
       }
 
+      // Run custom domain lookup, SEO, and bot checks in parallel
+      const [customDomain, seoResponse, botResponse] = await Promise.all([
+        getCustomDomainForSlug(slug),
+        handleSeoFiles(url, slug),
+        handleBot(request, slug, url, false),
+      ]);
+
       // 301 redirect to custom domain if one exists
-      const customDomain = await getCustomDomainForSlug(slug);
       if (customDomain) {
         return Response.redirect(
           `https://${customDomain}${url.pathname}${url.search}`,
@@ -884,10 +916,7 @@ export default {
         );
       }
 
-      const seoResponse = await handleSeoFiles(url, slug);
       if (seoResponse) return seoResponse;
-
-      const botResponse = await handleBot(request, slug, url, false);
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx);
@@ -903,14 +932,29 @@ export default {
       });
     }
 
-    const cleanDomain = hostname.replace(/^www\./, "").toLowerCase().trim();
+    // Redirect www → non-www for custom domains
+    const rawDomain = (hostname || "").toLowerCase().trim();
+    const isWww = rawDomain.startsWith("www.");
+    const cleanDomain = isWww ? rawDomain.slice(4) : rawDomain;
+
     const slug = await resolveDomain(cleanDomain);
 
     if (slug) {
-      const seoResponse = await handleSeoFiles(url, slug);
-      if (seoResponse) return seoResponse;
+      // Canonical redirect: www.melleto.shop → melleto.shop
+      if (isWww) {
+        return Response.redirect(
+          `https://${cleanDomain}${url.pathname}${url.search}`,
+          301
+        );
+      }
 
-      const botResponse = await handleBot(request, slug, url, true);
+      // Run SEO and bot checks in parallel
+      const [seoResponse, botResponse] = await Promise.all([
+        handleSeoFiles(url, slug),
+        handleBot(request, slug, url, true),
+      ]);
+
+      if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx, true);
