@@ -190,6 +190,7 @@ export default function StoreOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
       toast.success("Order deleted");
       setMobileDetailOrder(null);
     },
