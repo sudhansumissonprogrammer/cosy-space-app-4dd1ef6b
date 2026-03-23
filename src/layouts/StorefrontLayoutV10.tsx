@@ -83,7 +83,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
                 </div>
                 {[
                   { to: storefrontPath(store.slug), label: "Home" },
-                  { to: storefrontPath(store.slug, "best-sellers"), label: "Shop" },
+                  { to: storefrontPath(store.slug, "shop"), label: "Shop" },
                   { to: storefrontPath(store.slug, "contact"), label: "Contact" },
                 ].map((link) => (
                   <Link
@@ -231,7 +231,7 @@ function MilanoTabBar({ store }: { store: StoreData }) {
   const tabs = [
     { icon: Home, label: "Home", to: basePath, matchExact: true },
     { icon: User, label: "Account", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
-    { icon: LayoutGrid, label: "Shop", to: storefrontPath(store.slug, "best-sellers"), match: "best-sellers" },
+    { icon: LayoutGrid, label: "Shop", to: storefrontPath(store.slug, "shop"), match: "shop" },
     { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
     { icon: ShoppingCart, label: "Cart", to: "__cart__", match: "__cart__", badge: cartCount, isCart: true },
   ];
@@ -479,7 +479,7 @@ function MilanoFooter({ store }: { store: StoreData }) {
             <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>Quick Links</h4>
             {[
               { to: storefrontPath(store.slug), label: "Home" },
-              { to: storefrontPath(store.slug, "best-sellers"), label: "Shop" },
+              { to: storefrontPath(store.slug, "shop"), label: "Shop" },
               { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
             ].map((link) => (
               <Link key={link.label} to={link.to} className="block opacity-60 hover:opacity-100 transition-opacity text-[13px]">

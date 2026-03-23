@@ -46,7 +46,7 @@ function LuxuryHero({ store }: { store: StoreData }) {
           </p>
           <div className="mt-8 flex items-center justify-center gap-4">
             <Link
-              to={storefrontPath(store.slug, "best-sellers")}
+              to={storefrontPath(store.slug, "shop")}
               className="inline-flex items-center gap-2 border px-8 py-3 text-[11px] font-medium tracking-[0.2em] uppercase text-white transition-all hover:bg-white hover:text-black"
               style={{ borderColor: "var(--storefront-primary, #C8A96A)" }}
             >

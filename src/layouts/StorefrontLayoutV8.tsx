@@ -134,7 +134,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
   const basePath = storefrontPath(store.slug);
   const tabs = [
     { icon: Home, label: "Home", to: basePath, matchExact: true },
-    { icon: LayoutGrid, label: "Categories", to: storefrontPath(store.slug, "best-sellers"), match: "best-sellers" },
+    { icon: LayoutGrid, label: "Categories", to: storefrontPath(store.slug, "shop"), match: "shop" },
     { icon: Search, label: "Search", to: "__search__", match: "__never__" },
     { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
     { icon: User, label: "Profile", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },

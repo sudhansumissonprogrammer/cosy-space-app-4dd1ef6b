@@ -40,7 +40,7 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">🔥 Best Selling</h2>
         <Link
-          to={storefrontPath(slug, "best-sellers")}
+          to={storefrontPath(slug, "shop")}
           className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:underline"
         >
           View All <ArrowRight className="h-3.5 w-3.5" />

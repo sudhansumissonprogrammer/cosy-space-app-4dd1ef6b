@@ -34,6 +34,7 @@ const StorefrontHomeV11 = lazy(() => import("./pages/StorefrontHomeV11"));
 const StorefrontHomeV12 = lazy(() => import("./pages/StorefrontHomeV12"));
 const StorefrontHomeV13 = lazy(() => import("./pages/StorefrontHomeV13"));
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
+const StorefrontShop = lazy(() => import("./pages/StorefrontShop"));
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
 const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
 const StorefrontShippingPolicy = lazy(() => import("./pages/StorefrontShippingPolicy"));
@@ -87,7 +88,7 @@ const queryClient = new QueryClient({
 
 const LoadingSpinner = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
-    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-muted border-t-foreground" />
   </div>
 );
 
@@ -99,6 +100,7 @@ const storefrontChildRoutes = (theme: string) => {
   return (
     <>
       <Route index element={<HomeComponent />} />
+      <Route path="shop" element={<StorefrontShop />} />
       <Route path="best-sellers" element={<StorefrontBestSellers />} />
       <Route path="contact" element={<StorefrontContact />} />
       <Route path="return-policy" element={<StorefrontReturnPolicy />} />

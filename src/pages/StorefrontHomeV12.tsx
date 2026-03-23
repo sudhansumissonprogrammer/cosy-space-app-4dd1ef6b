@@ -48,7 +48,7 @@ function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
             <p className="text-sm text-white/60 max-w-xs mx-auto">{store.description}</p>
           )}
           <Link
-            to={storefrontPath(slug, "best-sellers")}
+            to={storefrontPath(slug, "shop")}
             className="inline-flex items-center gap-1.5 mt-2 px-6 py-2.5 text-sm font-semibold text-white transition-all active:scale-95"
             style={{
               backgroundColor: "var(--storefront-primary, #FF3F6C)",
@@ -181,7 +181,7 @@ function BestSellingSection({ products, slug, store, cardStyle }: { products: an
 
   return (
     <div className="py-4">
-      <SectionHeader title="Best Selling" slug={slug} linkTo="best-sellers" />
+      <SectionHeader title="Best Selling" slug={slug} linkTo="shop" />
       <div className="flex gap-3 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
         {bestSellers.map((product, idx) => (
           <div key={product.id} className="flex-shrink-0" style={{ width: "165px" }}>
@@ -252,7 +252,7 @@ export default function StorefrontHomeV12() {
       )}
       <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
       <div className="py-4">
-        <SectionHeader title="Just For You" slug={effectiveSlug} linkTo="best-sellers" />
+        <SectionHeader title="Just For You" slug={effectiveSlug} linkTo="shop" />
         {!products ? (
           <div className="grid grid-cols-2 gap-3 px-4">
             {Array.from({ length: 4 }).map((_, i) => (

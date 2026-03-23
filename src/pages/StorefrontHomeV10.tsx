@@ -53,7 +53,7 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
             </p>
           )}
           <Link
-            to={storefrontPath(slug, "best-sellers")}
+            to={storefrontPath(slug, "shop")}
             className="inline-flex items-center gap-1.5 mt-2 px-6 py-2.5 text-sm font-semibold transition-all active:scale-95"
             style={{
               backgroundColor: "var(--storefront-primary, #1a1a1a)",
@@ -184,7 +184,7 @@ function BestSellingSection({ products, slug, store, cardStyle }: { products: an
 
   return (
     <div className="py-4">
-      <SectionHeader title="Best Selling" slug={slug} linkTo="best-sellers" />
+      <SectionHeader title="Best Selling" slug={slug} linkTo="shop" />
       <div className="flex gap-3 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
         {bestSellers.map((product, idx) => (
           <div key={product.id} className="flex-shrink-0" style={{ width: "160px" }}>
@@ -290,7 +290,7 @@ export default function StorefrontHomeV10() {
       )}
       <StorySection store={store} />
       <div className="py-4">
-        <SectionHeader title="Curated For You" slug={effectiveSlug} linkTo="best-sellers" />
+        <SectionHeader title="Curated For You" slug={effectiveSlug} linkTo="shop" />
         {!products ? (
           <div className="grid grid-cols-2 gap-3 px-4">
             {Array.from({ length: 4 }).map((_, i) => (

@@ -77,7 +77,7 @@ function V12Header({ store }: { store: StoreData }) {
                 </div>
                 {[
                   { to: storefrontPath(store.slug), label: "Home" },
-                  { to: storefrontPath(store.slug, "best-sellers"), label: "Shop All" },
+                  { to: storefrontPath(store.slug, "shop"), label: "Shop All" },
                   { to: storefrontPath(store.slug, "contact"), label: "Contact" },
                 ].map((link) => (
                   <Link
@@ -224,7 +224,7 @@ function V12TabBar({ store }: { store: StoreData }) {
   const basePath = storefrontPath(store.slug);
   const tabs = [
     { icon: Home, label: "Home", to: basePath, matchExact: true },
-    { icon: LayoutGrid, label: "Shop", to: storefrontPath(store.slug, "best-sellers"), match: "best-sellers" },
+    { icon: LayoutGrid, label: "Shop", to: storefrontPath(store.slug, "shop"), match: "shop" },
     { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
     { icon: User, label: "Account", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
     { icon: ShoppingCart, label: "Cart", to: "__cart__", match: "__cart__", badge: cartCount, isCart: true },
@@ -352,7 +352,7 @@ function V12Footer({ store }: { store: StoreData }) {
             <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #FF3F6C)" }}>Quick Links</h4>
             {[
               { to: storefrontPath(store.slug), label: "Home" },
-              { to: storefrontPath(store.slug, "best-sellers"), label: "Shop All" },
+              { to: storefrontPath(store.slug, "shop"), label: "Shop All" },
               { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
             ].map((link) => (
               <Link key={link.label} to={link.to} className="block opacity-60 hover:opacity-100 transition-opacity text-[13px]">
