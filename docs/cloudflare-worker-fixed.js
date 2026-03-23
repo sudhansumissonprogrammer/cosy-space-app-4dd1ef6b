@@ -21,6 +21,7 @@ const ORIGIN_HOST = "true-path-panel.lovable.app";
 const SUPABASE_URL = "https://kzvfjknnslgcwumzlwkb.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg";
+const IMAGE_PROXY_ENDPOINT = `${SUPABASE_URL}/functions/v1/image-resize`;
 
 /* ============== BOT DETECTION ============== */
 
@@ -374,32 +375,58 @@ function isTrustedImageHost(url) {
   }
 }
 
+function decodeHtmlEntities(url = "") {
+  return String(url).replace(/&amp;/g, "&").trim();
+}
+
+function getPrimaryImageUrl(rawUrl) {
+  if (!rawUrl) return "";
+  const candidates = String(rawUrl)
+    .split(",")
+    .map((u) => decodeHtmlEntities(u))
+    .filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (/^https?:\/\//i.test(candidate)) return candidate;
+    if (candidate.startsWith("//")) return `https:${candidate}`;
+  }
+
+  return "";
+}
+
+function buildImageProxyUrl(imageUrl, width = 400, quality = 70) {
+  const url = new URL(IMAGE_PROXY_ENDPOINT);
+  url.searchParams.set("url", imageUrl);
+  url.searchParams.set("w", String(width));
+  url.searchParams.set("q", String(quality));
+  return url.toString();
+}
+
 /**
  * Normalize product image URL:
  * - Handle comma-separated image lists (take first)
  * - Only apply CF Image CDN for trusted hosts
  */
 function normalizeProductImage(rawUrl, width = 400, quality = 70) {
-  if (!rawUrl) return "";
-  // Handle comma-separated image URLs — take the first one
-  const firstUrl = rawUrl.split(",")[0].trim();
+  const firstUrl = getPrimaryImageUrl(rawUrl);
   if (!firstUrl) return "";
+
   // Only use CF Image CDN for trusted origins
   if (isTrustedImageHost(firstUrl)) {
     return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${firstUrl}`;
   }
-  // External hosts: return original URL (avoid broken images from CF proxy failures)
-  return firstUrl;
+  // External hosts: proxy via image-resize to avoid hotlink/cross-origin failures
+  return buildImageProxyUrl(firstUrl, width, quality);
 }
 
 function cfImageUrl(originUrl, width = 400, quality = 70) {
-  if (!originUrl) return "";
-  const firstUrl = originUrl.split(",")[0].trim();
+  const firstUrl = getPrimaryImageUrl(originUrl);
   if (!firstUrl) return "";
+
   if (isTrustedImageHost(firstUrl)) {
     return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${firstUrl}`;
   }
-  return firstUrl;
+  return buildImageProxyUrl(firstUrl, width, quality);
 }
 
 /* ============== SERVER-RENDER CRITICAL HTML ============== */
@@ -472,7 +499,11 @@ function buildServerRenderedShell(storefrontData) {
         ? `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:15px;font-weight:700">${currencySymbol}${price}</span><span style="font-size:12px;text-decoration:line-through;opacity:.5">${currencySymbol}${originalPrice}</span>${discount > 0 ? `<span style="font-size:11px;font-weight:600;color:#16a34a">${discount}% off</span>` : ""}</div>`
         : `<span style="font-size:15px;font-weight:700">${currencySymbol}${price}</span>`;
 
-      return `<div style="border-radius:16px;overflow:hidden;background:#fff;border:1px solid #e8e8e8"><img src="${imgUrl}" alt="${name}" width="400" height="500" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block" ${loadAttr} /><div style="padding:8px 10px 10px"><div style="font-size:12px;opacity:.5;margin-bottom:2px">${escapeHtml(p.category || "")}</div><div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${name}</div>${priceHtml}<div style="height:36px;border-radius:8px;margin-top:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:${primaryColor};color:${btnText};cursor:pointer">Add to Cart</div></div></div>`;
+      const imageHtml = imgUrl
+        ? `<img src="${imgUrl}" alt="${name}" width="400" height="500" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block" ${loadAttr} />`
+        : `<div style="width:100%;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#9ca3af;font-size:12px">No image</div>`;
+
+      return `<div style="border-radius:16px;overflow:hidden;background:#fff;border:1px solid #e8e8e8">${imageHtml}<div style="padding:8px 10px 10px"><div style="font-size:12px;opacity:.5;margin-bottom:2px">${escapeHtml(p.category || "")}</div><div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${name}</div>${priceHtml}<div style="height:36px;border-radius:8px;margin-top:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:${primaryColor};color:${btnText};cursor:pointer">Add to Cart</div></div></div>`;
     }).join("");
 
     gridHtml = `<div style="padding:16px 16px 0;max-width:72rem;margin:0 auto"><div style="font-size:18px;font-weight:700;margin-bottom:12px">All Products</div></div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 16px 16px;max-width:72rem;margin:0 auto">${cards}</div>`;
@@ -540,6 +571,8 @@ async function streamInjectedResponse(request, slug, storefrontData, originRespo
   let buffer = "";
   let headInjected = false;
   let skeletonInjected = false;
+  const markerStart = "<!-- sf-skeleton-start -->";
+  const markerEnd = "<!-- sf-skeleton-end -->";
 
   (async () => {
     try {
@@ -563,11 +596,10 @@ async function streamInjectedResponse(request, slug, storefrontData, originRespo
 
         // Replace skeleton with SSR content using marker-based approach
         if (!skeletonInjected && serverHtml) {
-          // Primary: look for marker-based skeleton
-          const markerStart = "<!-- sf-skeleton-start -->";
-          const markerEnd = "<!-- sf-skeleton-end -->";
           const startIdx = buffer.indexOf(markerStart);
-          const endIdx = buffer.indexOf(markerEnd);
+          const endIdx = startIdx !== -1
+            ? buffer.indexOf(markerEnd, startIdx + markerStart.length)
+            : -1;
 
           if (startIdx !== -1 && endIdx !== -1) {
             buffer = buffer.substring(0, startIdx) + serverHtml + buffer.substring(endIdx + markerEnd.length);
@@ -584,9 +616,21 @@ async function streamInjectedResponse(request, slug, storefrontData, originRespo
 
         // Flush processed content — keep only last 2KB in buffer for cross-chunk matching
         if (buffer.length > 4096) {
-          const flushTo = buffer.length - 2048;
-          await writer.write(encoder.encode(buffer.substring(0, flushTo)));
-          buffer = buffer.substring(flushTo);
+          let flushTo = buffer.length - 2048;
+
+          // If marker start exists but end hasn't arrived yet, preserve that section
+          // so start/end can be replaced even when split across large chunks.
+          if (!skeletonInjected && serverHtml) {
+            const startIdx = buffer.indexOf(markerStart);
+            if (startIdx !== -1) {
+              flushTo = Math.min(flushTo, startIdx);
+            }
+          }
+
+          if (flushTo > 0) {
+            await writer.write(encoder.encode(buffer.substring(0, flushTo)));
+            buffer = buffer.substring(flushTo);
+          }
         }
       }
     } catch (err) {
