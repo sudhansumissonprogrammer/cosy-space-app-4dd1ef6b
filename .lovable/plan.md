@@ -1,90 +1,77 @@
 
 
-## Plan: Cold-Load Performance Optimization (4-5s → <2s on Mobile)
+## Plan: Critical Performance Fixes — CSS Splitting, Supabase Deferral, Theme Isolation, Worker Parallelization
 
-The architecture is already well-optimized for repeat visits (Cloudflare Worker injects `__STOREFRONT_DATA__`, localStorage SWR cache). The cold-load bottleneck is clear: **JS parse/execute blocks rendering for ~1.5s**, the LCP image isn't discoverable until React renders, and non-critical resources compete with critical ones.
+### Problem Summary
 
----
+4 critical bottlenecks remain on cold storefront load:
 
-### Root Cause Analysis
-
-| Bottleneck | Impact | Fix |
-|-----------|--------|-----|
-| CSS bundle render-blocks for 1,250ms | FCP delayed | Inline critical CSS in `index.html` |
-| LCP image only discovered after React renders | LCP 4.6s | Worker injects `<link rel="preload">` for first product image |
-| `registerSW.js` is render-blocking (160ms) | FCP delayed | Defer SW registration |
-| All storefront JS loads before paint | FCP 3.2s | HTML skeleton in `index.html` for instant paint |
-| No `<meta charset>` early enough | Best practices flag | Move charset to first position |
-| Unused CSS 17KB in main bundle | Slower parse | Already using cssCodeSplit; add purgecss considerations |
-
----
+1. **119KB monolithic CSS** — All admin/dashboard/11-theme styles render-block every storefront visitor
+2. **Supabase SDK (46KB gzip)** on storefront critical path — imported synchronously in `StorefrontLayout.tsx` line 5, but only used for the `get_storefront_data` RPC call (which is already bypassed when Worker-injected data exists)
+3. **vendor-ui (46KB gzip)** — Sheet, Dialog, Button eagerly imported in `StorefrontLayout.tsx` lines 6-8
+4. **All 11 themes bundled together** — `manualChunks` uses a static object, not a function, so Vite can't isolate per-theme chunks
 
 ### Changes
 
-#### 1. Enhanced HTML Shell with Storefront Skeleton (index.html)
+---
 
-Replace the spinner with a **full storefront skeleton** (marquee + nav + search + product grid) directly in `index.html`. This renders in <100ms before any JS loads.
+#### 1. Function-based `manualChunks` with per-theme isolation (`vite.config.ts`)
 
-Also:
-- Move `<meta charset>` to be the very first child of `<head>` (Best Practices fix)
-- Add `modulepreload` hints for the main entry chunk
-- Expand inline critical CSS to include storefront layout (nav bar, marquee bar, card grid skeleton shapes)
+Replace the static `manualChunks` object with a function that:
+- Routes each `StorefrontLayoutVX` and `StorefrontHomeVX` into its own `theme-X` chunk
+- Isolates admin pages (`route-admin`), dashboard pages (`route-dashboard`)
+- Keeps vendor splits (react, router, query, supabase, ui-core, ui-extra)
+- Adds `vendor-icons` for lucide-react
 
-**Key change**: The `<div id="root">` will contain a full storefront skeleton HTML instead of a spinner, so users see a meaningful layout immediately.
+This ensures a theme-12 visitor downloads zero code from themes 1-11, 13.
 
-#### 2. Worker: Inject LCP Image Preload (docs/cloudflare-worker-fixed.js)
+#### 2. Lazy-load Supabase SDK in StorefrontLayout (`src/layouts/StorefrontLayout.tsx`)
 
-In `fetchAndInjectSlug()`, after fetching storefront data, extract the first product image URL and inject a `<link rel="preload" as="image" fetchpriority="high">` into the HTML `<head>`. This makes the LCP image discoverable at HTML parse time, not after JS execution.
+The `supabase` import on line 5 pulls the entire SDK into the storefront critical path. Since Worker-injected data (`__STOREFRONT_DATA__`) eliminates the need for the RPC call on first load for most visitors:
 
-Also inject `<link rel="preconnect">` for the product image origin (e.g., `overlaysnow.com`).
+- Replace the static `import { supabase }` with a dynamic `import()` inside the `queryFn` — only when actually needing to call the API (cache miss, no injected data)
+- This removes ~46KB gzip from the initial storefront JS parse
 
-```text
-Current flow:  HTML → parse JS → execute React → render <img> → browser discovers image → loads
-New flow:      HTML (with preload) → browser discovers image immediately → loads in parallel with JS
-```
+#### 3. Lazy-load Sheet and Dialog (`src/layouts/StorefrontLayout.tsx`)
 
-#### 3. Defer Service Worker Registration (vite.config.ts)
+Sheet (hamburger menu) and Dialog (exit checkout confirmation) are never visible on first paint. Lazy-load them:
 
-The `registerSW.js` script blocks rendering for 160ms. Change VitePWA to use `injectRegister: null` and register the SW manually after the page is interactive (in `main.tsx` with `requestIdleCallback`).
+- Wrap `HamburgerMenu` in a lazy component that imports Sheet on first open
+- Wrap the exit-checkout Dialog similarly
+- Keep Button since it's lightweight and used in nav
 
-#### 4. Async CSS Loading Pattern (index.html)
+#### 4. Parallelize Worker subdomain checks (`docs/cloudflare-worker-fixed.js`)
 
-Add the async CSS loading pattern for the main stylesheet. The Vite-generated CSS link in the built HTML is render-blocking. We'll add a small inline script that converts the CSS `<link>` to async after DOM is ready.
+Lines 697-711: `getCustomDomainForSlug`, `handleSeoFiles`, `handleBot` run sequentially but are independent. Wrap in `Promise.all` to save 50-100ms per subdomain request.
 
-#### 5. Optimize Font Loading (index.html)
+#### 5. Move non-critical storefront components to lazy imports (`src/layouts/StorefrontLayout.tsx`)
 
-The current font preload/async pattern is good but can be improved:
-- Remove the `<link rel="preload" as="style">` for Inter (it creates an extra request that doesn't help since the stylesheet is already loaded async)
-- Keep only the `media="print" onload="this.media='all'"` pattern
-
-#### 6. Add `fetchpriority` to First Product Cards (ProductCardStyle1.tsx + all card styles)
-
-Already implemented with `priority` prop. Verify it flows through all 4 card styles correctly — this is already done.
-
-#### 7. Storefront Layout: Preconnect to Image Origins (StorefrontLayout.tsx)
-
-Add a `useEffect` that extracts the image CDN origin from the first product and injects a `<link rel="preconnect">` dynamically. This is already partially planned but needs implementation.
+These are already imported but should use `lazy()`:
+- `SideCart` — only renders when cart opens
+- `ExitIntentPopup` — only renders after delay
+- `FloatingWhatsApp` — non-critical
+- `SmartInstallPrompt` — non-critical
+- `DynamicPwaManifest` — non-critical
 
 ---
 
-### File Changes Summary
+### File Changes
 
 | File | Change |
 |------|--------|
-| `index.html` | Move charset first; replace spinner with storefront skeleton; expand critical CSS; remove redundant font preload; add async CSS script |
-| `docs/cloudflare-worker-fixed.js` | In `fetchAndInjectSlug()`: extract first product image, inject `<link rel="preload as="image">` and `<link rel="preconnect">` for image origin |
-| `vite.config.ts` | Set `injectRegister: null` in VitePWA config to stop render-blocking `registerSW.js` |
-| `src/main.tsx` | Add manual SW registration via `requestIdleCallback` after app mounts |
-| `src/layouts/StorefrontLayout.tsx` | Add `useEffect` to inject `<link rel="preconnect">` for product image CDN origin |
+| `vite.config.ts` | Replace static `manualChunks` with function-based splitter. Per-theme chunks, admin/dashboard isolation, `vendor-icons` chunk |
+| `src/layouts/StorefrontLayout.tsx` | Dynamic `import()` for Supabase SDK in queryFn. Lazy-load Sheet, Dialog, SideCart, ExitIntentPopup, FloatingWhatsApp, SmartInstallPrompt, DynamicPwaManifest |
+| `docs/cloudflare-worker-fixed.js` | Parallelize subdomain checks (custom domain + SEO + bot) with `Promise.all` |
 
 ### Expected Impact
 
-| Metric | Before | After (estimated) |
-|--------|--------|-------------------|
-| FCP | 3.2s | ~1.2s |
-| LCP | 4.6s | ~2.0s |
-| Speed Index | 5.1s | ~2.5s |
-| TBT | 0ms | 0ms (maintained) |
-| CLS | 0 | 0 (maintained) |
-| Performance Score | 74 | 90-95+ |
+| Metric | Before | After |
+|--------|--------|-------|
+| Storefront JS (initial) | ~325KB raw | ~120KB raw (theme-specific only) |
+| Supabase SDK | Always loaded (170KB raw) | Deferred until needed |
+| Sheet+Dialog UI | Always loaded (80KB raw) | Deferred until interaction |
+| Subdomain TTFB | Sequential (150ms) | Parallel (50ms) |
+| CSS | Still monolithic (Tailwind limitation) | Same — requires build-time purge plugin (out of scope) |
+
+**Note on CSS**: The 119KB CSS bundle is a Tailwind architectural constraint — all utility classes compile into one file. True CSS splitting requires `@tailwind` per entry point or a PurgeCSS post-build step, which is a larger refactor. The inline critical CSS in `index.html` already ensures the skeleton renders before the CSS bundle loads.
 
