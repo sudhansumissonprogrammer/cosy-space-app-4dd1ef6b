@@ -96,7 +96,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
             <button key={i} onClick={() => emblaApi?.scrollTo(i)} aria-label={`Go to slide ${i + 1}`} className="rounded-full transition-all" style={{
               width: i === selected ? "20px" : "6px",
               height: "6px",
-              backgroundColor: i === selected ? "var(--storefront-primary, #6C5CE7)" : "var(--storefront-text, #1a1a1a)20",
+              backgroundColor: i === selected ? "var(--storefront-primary, #6C5CE7)" : withAlpha("var(--storefront-text, #1a1a1a)", "20"),
             }} />
           ))}
         </div>
