@@ -137,6 +137,7 @@ export default function StorefrontHome() {
         products={products}
         slug={slug!}
         initialFiltersOpen={openFilters}
+        currency={store.currency === "USD" ? "$" : "₹"}
       />
 
       {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (

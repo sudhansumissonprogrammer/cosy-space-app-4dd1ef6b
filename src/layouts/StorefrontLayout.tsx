@@ -401,7 +401,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
       link.rel = "stylesheet";
       document.head.appendChild(link);
     }
-    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=optional`;
+    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
   }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
   // Listen for live theme preview messages from admin dashboard iframe parent

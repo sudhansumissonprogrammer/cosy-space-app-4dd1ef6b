@@ -14,6 +14,7 @@ interface StorefrontSearchOverlayProps {
   products: Tables<"products">[] | undefined;
   slug: string;
   initialFiltersOpen?: boolean;
+  currency?: string;
 }
 
 const PRICE_RANGES: { label: string; range: [number, number] }[] = [
@@ -36,6 +37,7 @@ export default function StorefrontSearchOverlay({
   products,
   slug,
   initialFiltersOpen = false,
+  currency = "₹",
 }: StorefrontSearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
@@ -303,11 +305,11 @@ export default function StorefrontSearchOverlay({
                             <p className="text-xs mt-0.5">
                               {p.sale_price && p.sale_price < p.price ? (
                                 <>
-                                  <span className="font-semibold">₹{Number(p.sale_price).toFixed(0)}</span>
-                                  <span className="ml-1 line-through opacity-40">₹{Number(p.price).toFixed(0)}</span>
+                                  <span className="font-semibold">{currency}{Number(p.sale_price).toFixed(0)}</span>
+                                  <span className="ml-1 line-through opacity-40">{currency}{Number(p.price).toFixed(0)}</span>
                                 </>
                               ) : (
-                                <span className="font-semibold">₹{Number(p.price).toFixed(0)}</span>
+                                <span className="font-semibold">{currency}{Number(p.price).toFixed(0)}</span>
                               )}
                             </p>
                           </div>
