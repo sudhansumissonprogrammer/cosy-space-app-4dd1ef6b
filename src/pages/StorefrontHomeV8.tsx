@@ -121,8 +121,8 @@ function CategoryStrip({ categories, slug }: { categories: any[] | undefined; sl
             <div
               className="h-16 w-16 rounded-full flex items-center justify-center overflow-hidden shadow-md transition-all"
               style={{
-                backgroundColor: "var(--storefront-primary, hsl(var(--primary)))08",
-                border: "2px solid var(--storefront-primary, hsl(var(--primary)))30",
+                backgroundColor: withAlpha("var(--storefront-primary, hsl(var(--primary)))", "08"),
+                border: `2px solid ${withAlpha("var(--storefront-primary, hsl(var(--primary)))", "30")}`,
               }}
             >
               {cat.image_url ? (
