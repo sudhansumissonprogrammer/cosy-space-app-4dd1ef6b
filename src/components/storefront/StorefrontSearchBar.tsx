@@ -18,6 +18,7 @@ export default function StorefrontSearchBar({
   slug,
   searchQuery,
   onSearchChange,
+  currency = "₹",
 }: StorefrontSearchBarProps) {
   const [focused, setFocused] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
