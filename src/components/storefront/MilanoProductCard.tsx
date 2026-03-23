@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { withAlpha } from "@/lib/storefrontColors";
 import { Heart, ShoppingCart, Tag } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, PRODUCT_CARD_SIZES } from "@/lib/imageOptimize";
@@ -43,8 +44,8 @@ export default function MilanoProductCard({ product, slug, index = 0 }: MilanoPr
             height={533}
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}>
-            <Tag className="h-10 w-10" style={{ color: "var(--storefront-text, #1a1a1a)20" }} />
+          <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: withAlpha("var(--storefront-primary, #1a1a1a)", "08") }}>
+            <Tag className="h-10 w-10" style={{ color: withAlpha("var(--storefront-text, #1a1a1a)", "20") }} />
           </div>
         )}
 

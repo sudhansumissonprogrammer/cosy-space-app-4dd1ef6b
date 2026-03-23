@@ -1,4 +1,5 @@
 import "@/styles/storefront.css";
+import { withAlpha } from "@/lib/storefrontColors";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useLocation } from "react-router-dom";
@@ -44,7 +45,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
         className="sticky top-0 z-40 flex items-center justify-between px-4 py-3"
         style={{
           backgroundColor: "var(--storefront-bg, #f7f5f0)",
-          borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
+          borderBottom: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "0a")}`,
         }}
       >
         {/* Left: Hamburger */}
@@ -94,7 +95,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
                     className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors"
                     style={{
                       color: "var(--storefront-text, #1a1a1a)",
-                      borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
+                      borderBottom: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "0a")}`,
                       fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
                     }}
                   >
@@ -117,7 +118,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
                         className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors"
                         style={{
                           color: "var(--storefront-text, #1a1a1a)",
-                          borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
+                          borderBottom: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "0a")}`,
                           fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
                         }}
                       >
@@ -145,7 +146,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
                     className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors"
                     style={{
                       color: "var(--storefront-text, #1a1a1a)",
-                      borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
+                      borderBottom: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "0a")}`,
                       fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
                     }}
                   >
@@ -156,7 +157,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
               </nav>
 
               {/* Bottom links */}
-              <div className="border-t" style={{ borderColor: "var(--storefront-text, #1a1a1a)0a" }}>
+              <div className="border-t" style={{ borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "0a") }}>
                 <Link
                   to={storefrontPath(store.slug, "wishlist")}
                   onClick={() => setMenuOpen(false)}
@@ -243,7 +244,7 @@ function MilanoTabBar({ store }: { store: StoreData }) {
         className="flex items-center justify-around py-1.5 border-t"
         style={{
           backgroundColor: "var(--storefront-bg, #f7f5f0)",
-          borderColor: "var(--storefront-text, #1a1a1a)10",
+          borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "10"),
         }}
       >
         {tabs.map((tab) => {
@@ -257,7 +258,7 @@ function MilanoTabBar({ store }: { store: StoreData }) {
               <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
                 <TabIcon
                   className="h-[22px] w-[22px] transition-colors"
-                  style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : "var(--storefront-text, #1a1a1a)60" }}
+                  style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : withAlpha("var(--storefront-text, #1a1a1a)", "60") }}
                 />
                 {tab.badge != null && tab.badge > 0 && (
                   <span
@@ -270,7 +271,7 @@ function MilanoTabBar({ store }: { store: StoreData }) {
               </div>
               <span
                 className="text-[10px] font-medium"
-                style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : "var(--storefront-text, #1a1a1a)60" }}
+                style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : withAlpha("var(--storefront-text, #1a1a1a)", "60") }}
               >
                 {tab.label}
               </span>

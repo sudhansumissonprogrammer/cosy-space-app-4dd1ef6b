@@ -354,9 +354,52 @@ async function prefetchStorefrontData(slug) {
 /**
  * Route an image URL through Cloudflare's /cdn-cgi/image/ pipeline.
  * Provides automatic AVIF/WebP, server-side resizing, edge caching.
+ *
+ * IMPORTANT: Only use for images on domains we control or know support CF resizing.
+ * External hosts (shopify CDN, wordpress, custom domains) may block or fail.
  */
+const TRUSTED_IMAGE_HOSTS = [
+  "supabase.co",
+  "supabase.in",
+  "storivo.in",
+  "lovable.app",
+];
+
+function isTrustedImageHost(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    return TRUSTED_IMAGE_HOSTS.some(h => hostname.endsWith(h));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Normalize product image URL:
+ * - Handle comma-separated image lists (take first)
+ * - Only apply CF Image CDN for trusted hosts
+ */
+function normalizeProductImage(rawUrl, width = 400, quality = 70) {
+  if (!rawUrl) return "";
+  // Handle comma-separated image URLs — take the first one
+  const firstUrl = rawUrl.split(",")[0].trim();
+  if (!firstUrl) return "";
+  // Only use CF Image CDN for trusted origins
+  if (isTrustedImageHost(firstUrl)) {
+    return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${firstUrl}`;
+  }
+  // External hosts: return original URL (avoid broken images from CF proxy failures)
+  return firstUrl;
+}
+
 function cfImageUrl(originUrl, width = 400, quality = 70) {
-  return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${originUrl}`;
+  if (!originUrl) return "";
+  const firstUrl = originUrl.split(",")[0].trim();
+  if (!firstUrl) return "";
+  if (isTrustedImageHost(firstUrl)) {
+    return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${firstUrl}`;
+  }
+  return firstUrl;
 }
 
 /* ============== SERVER-RENDER CRITICAL HTML ============== */
@@ -418,8 +461,8 @@ function buildServerRenderedShell(storefrontData) {
     const cards = products.map((p, idx) => {
       const name = escapeHtml(p.name || "");
       const rawImgUrl = p.image_url || "";
-      // Use CF Image CDN for optimized delivery (AVIF/WebP auto-negotiation + resize)
-      const imgUrl = escapeHtml(rawImgUrl ? cfImageUrl(rawImgUrl, 400, 70) : "");
+      // Normalize: handle comma-separated URLs + external host safety
+      const imgUrl = escapeHtml(rawImgUrl ? normalizeProductImage(rawImgUrl, 400, 70) : "");
       const price = p.sale_price || p.price || 0;
       const originalPrice = p.sale_price ? p.price : null;
       const discount = originalPrice ? Math.round((1 - price / originalPrice) * 100) : 0;
@@ -518,12 +561,24 @@ async function streamInjectedResponse(request, slug, storefrontData, originRespo
           headInjected = true;
         }
 
-        // Replace skeleton with SSR content
-        if (!skeletonInjected && serverHtml && buffer.includes("sf-skeleton")) {
-          const skeletonMatch = buffer.match(/<div class="sf-shell" id="sf-skeleton">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/);
-          if (skeletonMatch) {
-            buffer = buffer.replace(skeletonMatch[0], serverHtml);
+        // Replace skeleton with SSR content using marker-based approach
+        if (!skeletonInjected && serverHtml) {
+          // Primary: look for marker-based skeleton
+          const markerStart = "<!-- sf-skeleton-start -->";
+          const markerEnd = "<!-- sf-skeleton-end -->";
+          const startIdx = buffer.indexOf(markerStart);
+          const endIdx = buffer.indexOf(markerEnd);
+
+          if (startIdx !== -1 && endIdx !== -1) {
+            buffer = buffer.substring(0, startIdx) + serverHtml + buffer.substring(endIdx + markerEnd.length);
             skeletonInjected = true;
+          } else if (buffer.includes("sf-skeleton")) {
+            // Fallback: regex-based replacement for old HTML without markers
+            const skeletonMatch = buffer.match(/<div[^>]*id="sf-skeleton"[^>]*>[\s\S]*?<\/div>\s*(?:<\/div>\s*)*<\/div>/);
+            if (skeletonMatch) {
+              buffer = buffer.replace(skeletonMatch[0], serverHtml);
+              skeletonInjected = true;
+            }
           }
         }
 

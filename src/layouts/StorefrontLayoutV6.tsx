@@ -1,4 +1,5 @@
 import "@/styles/storefront.css";
+import { withAlpha } from "@/lib/storefrontColors";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useParams } from "react-router-dom";
@@ -94,7 +95,7 @@ function CleanHeader({ store }: { store: StoreData }) {
         height: "72px",
         backgroundColor: "var(--storefront-bg, #F8FAFC)",
         borderBottom: "1px solid",
-        borderColor: scrolled ? "var(--storefront-text, #1e293b)10" : "var(--storefront-text, #1e293b)08",
+        borderColor: scrolled ? withAlpha("var(--storefront-text, #1e293b)", "10") : withAlpha("var(--storefront-text, #1e293b)", "08"),
         boxShadow: scrolled ? "0 1px 3px rgba(0,0,0,0.04)" : "none",
       }}
     >
@@ -112,7 +113,7 @@ function CleanHeader({ store }: { store: StoreData }) {
                 className="flex flex-col h-full"
                 style={{ backgroundColor: "var(--storefront-bg, #F8FAFC)", color: "var(--storefront-text, #1e293b)" }}
               >
-                <div className="border-b p-6" style={{ borderColor: "var(--storefront-text, #1e293b)10" }}>
+                <div className="border-b p-6" style={{ borderColor: withAlpha("var(--storefront-text, #1e293b)", "10") }}>
                   {store.logo_url ? (
                     <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[160px] object-contain" />
                   ) : (
@@ -193,7 +194,7 @@ function CleanHeader({ store }: { store: StoreData }) {
                 Categories
               </span>
               <div className="absolute top-full left-0 mt-2 min-w-[180px] rounded-xl border p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-lg"
-                style={{ backgroundColor: "var(--storefront-bg, #F8FAFC)", borderColor: "var(--storefront-text, #1e293b)10" }}>
+                style={{ backgroundColor: "var(--storefront-bg, #F8FAFC)", borderColor: withAlpha("var(--storefront-text, #1e293b)", "10") }}>
                 {categories.map((cat: any) => (
                   <Link
                     key={cat.id}

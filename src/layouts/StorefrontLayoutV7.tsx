@@ -1,4 +1,5 @@
 import "@/styles/storefront.css";
+import { withAlpha } from "@/lib/storefrontColors";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useParams } from "react-router-dom";
@@ -81,7 +82,7 @@ function CategoryTicker({ store }: { store: StoreData }) {
       className="w-full overflow-hidden border-b py-2"
       style={{
         backgroundColor: "var(--storefront-bg, #ffffff)",
-        borderColor: "var(--storefront-text, #1a1a1a)08",
+        borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "08"),
       }}
     >
       <div className="flex w-max animate-marquee items-center gap-8">
@@ -113,7 +114,7 @@ function EditorialHeader({ store }: { store: StoreData }) {
         style={{
           height: "56px",
           backgroundColor: "var(--storefront-bg, #ffffff)",
-          borderColor: "var(--storefront-text, #1a1a1a)10",
+          borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "10"),
         }}
       >
         <div className="mx-auto flex h-full max-w-7xl items-center px-4 lg:px-8">
@@ -130,7 +131,7 @@ function EditorialHeader({ store }: { store: StoreData }) {
                   className="flex flex-col h-full"
                   style={{ backgroundColor: "var(--storefront-bg, #fff)", color: "var(--storefront-text, #1a1a1a)" }}
                 >
-                  <div className="border-b p-6" style={{ borderColor: "var(--storefront-text, #1a1a1a)08" }}>
+                  <div className="border-b p-6" style={{ borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "08") }}>
                     <span
                       className="text-lg font-bold tracking-tight uppercase"
                       style={{ fontFamily: "var(--storefront-heading-font, 'Playfair Display')" }}

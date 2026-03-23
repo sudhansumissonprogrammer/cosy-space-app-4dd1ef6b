@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
+import { withAlpha } from "@/lib/storefrontColors";
 import { useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -72,8 +73,8 @@ function MenuItemCard({
     <div
       className="flex gap-3 rounded-2xl p-3 transition-all"
       style={{
-        backgroundColor: "var(--storefront-text, #1a1a1a)06",
-        border: "1px solid var(--storefront-text, #1a1a1a)08",
+        backgroundColor: withAlpha("var(--storefront-text, #1a1a1a)", "06"),
+        border: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "08")}`,
       }}
     >
       {product.image_url && (
@@ -186,9 +187,9 @@ function CategoryTabs({
             onClick={() => onSelect(cat)}
             className="shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-all active:scale-95"
             style={{
-              backgroundColor: isActive ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
-              color: isActive ? "#ffffff" : "var(--storefront-text, #1a1a1a)90",
-              border: isActive ? "none" : "1px solid var(--storefront-text, #1a1a1a)12",
+               backgroundColor: isActive ? "#25D366" : withAlpha("var(--storefront-text, #1a1a1a)", "08"),
+               color: isActive ? "#ffffff" : withAlpha("var(--storefront-text, #1a1a1a)", "90"),
+               border: isActive ? "none" : `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "12")}`,
             }}
           >
             {cat}
@@ -244,8 +245,8 @@ function MenuSearchBar({
       <div
         className="flex items-center gap-2 rounded-xl px-3 py-2.5"
         style={{
-          backgroundColor: "var(--storefront-text, #1a1a1a)06",
-          border: "1px solid var(--storefront-text, #1a1a1a)10",
+          backgroundColor: withAlpha("var(--storefront-text, #1a1a1a)", "06"),
+          border: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "10")}`,
         }}
       >
         <Search
@@ -278,7 +279,7 @@ function MenuSearchBar({
             backgroundColor: showFilters || activeFilterCount > 0 ? "#25D36620" : "transparent",
           }}
         >
-          <SlidersHorizontal className="h-4 w-4" style={{ color: activeFilterCount > 0 ? "#25D366" : "var(--storefront-text, #1a1a1a)80" }} />
+          <SlidersHorizontal className="h-4 w-4" style={{ color: activeFilterCount > 0 ? "#25D366" : withAlpha("var(--storefront-text, #1a1a1a)", "80") }} />
           {activeFilterCount > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: "#25D366" }}>
               {activeFilterCount}
@@ -293,7 +294,7 @@ function MenuSearchBar({
           className="absolute left-4 right-4 z-50 mt-1 overflow-hidden rounded-xl shadow-lg"
           style={{
             backgroundColor: "var(--storefront-bg, #ffffff)",
-            border: "1px solid var(--storefront-text, #1a1a1a)15",
+            border: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "15")}`,
           }}
         >
           {suggestions.map((p: any) => (
@@ -305,7 +306,7 @@ function MenuSearchBar({
                 onChange(p.name);
                 setShowSuggestions(false);
               }}
-              style={{ borderBottom: "1px solid var(--storefront-text, #1a1a1a)08" }}
+              style={{ borderBottom: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "08")}` }}
             >
               {p.image_url && (
                 <img src={optimizeImageUrl(p.image_url, 80)} alt="" className="h-8 w-8 rounded-lg object-cover" />
@@ -331,8 +332,8 @@ function MenuSearchBar({
         <div
           className="mt-2 rounded-xl p-3 space-y-3"
           style={{
-            backgroundColor: "var(--storefront-text, #1a1a1a)04",
-            border: "1px solid var(--storefront-text, #1a1a1a)10",
+            backgroundColor: withAlpha("var(--storefront-text, #1a1a1a)", "04"),
+            border: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "10")}`,
           }}
         >
           {/* Sort */}
@@ -352,8 +353,8 @@ function MenuSearchBar({
                   onClick={() => onSortChange(opt.value)}
                   className="rounded-full px-3 py-1 text-[11px] font-semibold transition-all"
                   style={{
-                    backgroundColor: sortBy === opt.value ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
-                    color: sortBy === opt.value ? "#fff" : "var(--storefront-text, #1a1a1a)80",
+                    backgroundColor: sortBy === opt.value ? "#25D366" : withAlpha("var(--storefront-text, #1a1a1a)", "08"),
+                    color: sortBy === opt.value ? "#fff" : withAlpha("var(--storefront-text, #1a1a1a)", "80"),
                   }}
                 >
                   {opt.label}
@@ -378,8 +379,8 @@ function MenuSearchBar({
                   onClick={() => onDietChange(opt.value)}
                   className="rounded-full px-3 py-1 text-[11px] font-semibold transition-all"
                   style={{
-                    backgroundColor: dietFilter === opt.value ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
-                    color: dietFilter === opt.value ? "#fff" : "var(--storefront-text, #1a1a1a)80",
+                    backgroundColor: dietFilter === opt.value ? "#25D366" : withAlpha("var(--storefront-text, #1a1a1a)", "08"),
+                    color: dietFilter === opt.value ? "#fff" : withAlpha("var(--storefront-text, #1a1a1a)", "80"),
                   }}
                 >
                   {opt.label}
