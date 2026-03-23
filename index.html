@@ -124,5 +124,11 @@
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Defer non-critical CSS: swap from preload to stylesheet on load -->
+    <script>
+      document.querySelectorAll('link[rel="preload"][as="style"]').forEach(function(l){
+        l.onload=function(){this.rel='stylesheet'};
+      });
+    </script>
   </body>
 </html>
