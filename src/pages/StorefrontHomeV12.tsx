@@ -3,6 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
+import { withAlpha } from "@/lib/storefrontColors";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import LazyRender from "@/components/storefront/LazyRender";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
