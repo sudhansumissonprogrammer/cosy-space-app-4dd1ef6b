@@ -32,14 +32,33 @@
     <style>
       body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
       #root{min-height:100vh}
-      /* Skeleton placeholder for initial load */
-      .initial-spinner{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff}
-      .initial-spinner::after{content:'';width:28px;height:28px;border:3px solid #e5e5e5;border-top-color:#1a1a1a;border-radius:50%;animation:spin .5s linear infinite}
-      @keyframes spin{to{transform:rotate(360deg)}}
+      @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+      .sk{background:#f0f0f0;border-radius:8px}
+      .sk-shimmer{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:400px 100%;animation:shimmer 1.2s infinite}
+      .sf-skel{max-width:100%;padding:0}
+      .sf-skel-nav{height:56px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;padding:0 16px;gap:12px}
+      .sf-skel-hero{width:100%;aspect-ratio:16/7;background:#f0f0f0}
+      .sf-skel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
+      .sf-skel-card{border-radius:12px;overflow:hidden}
+      .sf-skel-card-img{width:100%;aspect-ratio:4/5}
+      .sf-skel-card-txt{padding:8px}
+      .sf-skel-card-txt div{height:10px;margin-bottom:6px;border-radius:4px}
+      @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr);gap:16px;padding:24px}}
     </style>
   </head>
   <body>
-    <div id="root"><div class="initial-spinner"></div></div>
+    <div id="root">
+      <div class="sf-skel">
+        <div class="sf-skel-nav"><div class="sk sk-shimmer" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk sk-shimmer" style="width:28px;height:28px;border-radius:50%"></div></div>
+        <div class="sf-skel-hero sk-shimmer"></div>
+        <div class="sf-skel-grid">
+          <div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:60%"></div><div class="sk sk-shimmer" style="width:40%"></div></div></div>
+          <div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:70%"></div><div class="sk sk-shimmer" style="width:35%"></div></div></div>
+          <div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:55%"></div><div class="sk sk-shimmer" style="width:45%"></div></div></div>
+          <div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:65%"></div><div class="sk sk-shimmer" style="width:38%"></div></div></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

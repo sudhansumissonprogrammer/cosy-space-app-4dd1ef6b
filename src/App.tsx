@@ -86,11 +86,29 @@ const queryClient = new QueryClient({
   },
 });
 
-const LoadingSpinner = () => (
-  <div className="flex min-h-screen items-center justify-center bg-background">
-    <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-muted border-t-foreground" />
+const StorefrontSkeleton = () => (
+  <div className="min-h-screen bg-background">
+    <div className="h-14 border-b border-border flex items-center px-4 gap-3">
+      <div className="h-7 w-24 rounded-lg bg-muted animate-pulse" />
+      <div className="flex-1" />
+      <div className="h-7 w-7 rounded-full bg-muted animate-pulse" />
+    </div>
+    <div className="w-full bg-muted animate-pulse" style={{ aspectRatio: "16/7" }} />
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="rounded-xl overflow-hidden">
+          <div className="w-full bg-muted animate-pulse" style={{ aspectRatio: "4/5" }} />
+          <div className="pt-2 space-y-1.5">
+            <div className="h-2.5 w-3/5 rounded bg-muted animate-pulse" />
+            <div className="h-2.5 w-2/5 rounded bg-muted animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
   </div>
 );
+
+const LoadingSpinner = () => <StorefrontSkeleton />;
 
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
 
