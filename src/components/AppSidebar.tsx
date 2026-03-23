@@ -4,6 +4,7 @@ import {
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
   ShoppingCart, Palette, BarChart3, MessageSquare, Bell, FolderOpen, Image as ImageIcon,
 } from "lucide-react";
+import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
