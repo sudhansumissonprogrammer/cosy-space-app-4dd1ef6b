@@ -245,8 +245,8 @@ function MenuSearchBar({
       <div
         className="flex items-center gap-2 rounded-xl px-3 py-2.5"
         style={{
-          backgroundColor: "var(--storefront-text, #1a1a1a)06",
-          border: "1px solid var(--storefront-text, #1a1a1a)10",
+          backgroundColor: withAlpha("var(--storefront-text, #1a1a1a)", "06"),
+          border: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "10")}`,
         }}
       >
         <Search
