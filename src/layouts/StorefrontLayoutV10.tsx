@@ -157,7 +157,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
               </nav>
 
               {/* Bottom links */}
-              <div className="border-t" style={{ borderColor: "var(--storefront-text, #1a1a1a)0a" }}>
+              <div className="border-t" style={{ borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "0a") }}>
                 <Link
                   to={storefrontPath(store.slug, "wishlist")}
                   onClick={() => setMenuOpen(false)}
