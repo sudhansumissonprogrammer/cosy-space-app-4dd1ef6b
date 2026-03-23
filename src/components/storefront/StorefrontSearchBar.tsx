@@ -10,6 +10,7 @@ interface StorefrontSearchBarProps {
   slug: string;
   searchQuery: string;
   onSearchChange: (value: string) => void;
+  currency?: string;
 }
 
 export default function StorefrontSearchBar({
