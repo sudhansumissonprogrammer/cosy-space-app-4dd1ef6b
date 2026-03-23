@@ -14,7 +14,9 @@ export function useThemePreview(storeId?: string) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const isValidHex = (hex: string) => typeof hex === "string" && /^#[0-9a-fA-F]{6}$/.test(hex);
     const computePL = (hex: string) => {
+      if (!isValidHex(hex)) return "#cccccc";
       const r = parseInt(hex.slice(1, 3), 16);
       const g = parseInt(hex.slice(3, 5), 16);
       const b = parseInt(hex.slice(5, 7), 16);
@@ -22,6 +24,7 @@ export function useThemePreview(storeId?: string) {
       return `#${l(r).toString(16).padStart(2, "0")}${l(g).toString(16).padStart(2, "0")}${l(b).toString(16).padStart(2, "0")}`;
     };
     const isLight = (hex: string) => {
+      if (!isValidHex(hex)) return false;
       const r = parseInt(hex.slice(1, 3), 16);
       const g = parseInt(hex.slice(3, 5), 16);
       const b = parseInt(hex.slice(5, 7), 16);
