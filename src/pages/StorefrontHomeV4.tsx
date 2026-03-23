@@ -258,7 +258,7 @@ function CustomerReviews() {
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {reviews.map((review, idx) => (
-          <div key={idx} className="border p-5 sm:p-8 text-center" style={{ borderColor: "var(--storefront-text, #1C1C1C)12" }}>
+          <div key={idx} className="border p-5 sm:p-8 text-center" style={{ borderColor: withAlpha("var(--storefront-text, #1C1C1C)", "12") }}>
             <Quote className="mx-auto h-6 w-6 mb-4 opacity-20" style={{ color: "var(--storefront-primary, #C8A96A)" }} />
             <p className="text-sm leading-relaxed italic opacity-70">"{review.text}"</p>
             <div className="mt-6 flex items-center justify-center gap-0.5">
