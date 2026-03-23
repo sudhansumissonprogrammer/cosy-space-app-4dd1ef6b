@@ -756,10 +756,20 @@ export default {
     const slug = await resolveDomain(cleanDomain);
 
     if (slug) {
-      const seoResponse = await handleSeoFiles(url, slug);
-      if (seoResponse) return seoResponse;
+      // Redirect www to naked custom domain for canonical SEO
+      if (hostname !== cleanDomain) {
+        return Response.redirect(
+          `https://${cleanDomain}${url.pathname}${url.search}`,
+          301
+        );
+      }
 
-      const botResponse = await handleBot(request, slug, url, true);
+      // Run SEO + bot checks in parallel
+      const [seoResponse, botResponse] = await Promise.all([
+        handleSeoFiles(url, slug),
+        handleBot(request, slug, url, true),
+      ]);
+      if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx, true);
