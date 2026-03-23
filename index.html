@@ -45,6 +45,22 @@
       .sf-skel-card-txt div{height:10px;margin-bottom:6px;border-radius:4px}
       @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr);gap:16px;padding:24px}}
     </style>
+    <!-- Preload storefront API data: starts fetch DURING JS parse so data is ready when React mounts -->
+    <script>
+      (function(){
+        var slug;
+        var p=location.pathname;
+        if(p.indexOf('/store/')===0){slug=p.split('/store/')[1];if(slug)slug=slug.split('/')[0];}
+        if(!slug)return;
+        var url='https://kzvfjknnslgcwumzlwkb.supabase.co/rest/v1/rpc/get_storefront_data';
+        var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg';
+        window.__STOREFRONT_PREFETCH__=fetch(url,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
+          body:JSON.stringify({_slug:slug,_product_limit:50})
+        }).then(function(r){return r.json()}).catch(function(){return null});
+      })();
+    </script>
   </head>
   <body>
     <div id="root">

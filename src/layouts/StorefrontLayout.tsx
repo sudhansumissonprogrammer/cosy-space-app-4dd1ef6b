@@ -98,7 +98,29 @@ export function useStorefront(slugOverride?: string) {
         return injected;
       }
 
-      // 2. Fetch from API
+      // 2. Use prefetched promise from index.html (started during JS parse)
+      const prefetch = (window as any).__STOREFRONT_PREFETCH__;
+      if (prefetch) {
+        delete (window as any).__STOREFRONT_PREFETCH__;
+        const result = await prefetch;
+        if (result) {
+          const store = result?.store as StoreData | null;
+          if (store) {
+            queryClient.setQueryData(["storefront", slug], store);
+            queryClient.setQueryData(["storefront-products", store.id], result.products || []);
+            queryClient.setQueryData(["storefront-categories", store.id], result.categories || []);
+            queryClient.setQueryData(["storefront-total-products", store.id], result.total_products || 0);
+            if (result.theme_config) {
+              queryClient.setQueryData(["storefront-theme-config", store.id], result.theme_config);
+            }
+            try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
+            cacheToLocalStorage(slug!, result);
+          }
+          return result;
+        }
+      }
+
+      // 3. Fetch from API (fallback)
       const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
       if (error) throw error;
       const result = data as any;
