@@ -461,8 +461,8 @@ function buildServerRenderedShell(storefrontData) {
     const cards = products.map((p, idx) => {
       const name = escapeHtml(p.name || "");
       const rawImgUrl = p.image_url || "";
-      // Use CF Image CDN for optimized delivery (AVIF/WebP auto-negotiation + resize)
-      const imgUrl = escapeHtml(rawImgUrl ? cfImageUrl(rawImgUrl, 400, 70) : "");
+      // Normalize: handle comma-separated URLs + external host safety
+      const imgUrl = escapeHtml(rawImgUrl ? normalizeProductImage(rawImgUrl, 400, 70) : "");
       const price = p.sale_price || p.price || 0;
       const originalPrice = p.sale_price ? p.price : null;
       const discount = originalPrice ? Math.round((1 - price / originalPrice) * 100) : 0;
