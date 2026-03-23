@@ -288,7 +288,7 @@ async function proxyToOrigin(request) {
 <p>Please wait, retrying...</p>
 </body></html>`,
       {
-        status: 200,
+        status: 503,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
