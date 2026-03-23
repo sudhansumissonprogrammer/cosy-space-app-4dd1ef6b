@@ -288,7 +288,7 @@ async function proxyToOrigin(request) {
 <p>Please wait, retrying...</p>
 </body></html>`,
       {
-        status: 200,
+        status: 503,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
@@ -301,6 +301,13 @@ async function proxyToOrigin(request) {
 /* ============== PREFETCH STOREFRONT DATA ============== */
 
 async function prefetchStorefrontData(slug) {
+  const cacheKey = new Request(`https://cache/storefront-data-${slug}`);
+
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    try { return await cached.json(); } catch { /* fall through */ }
+  }
+
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
@@ -315,7 +322,16 @@ async function prefetchStorefrontData(slug) {
       }
     );
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json();
+
+    await cache.put(
+      cacheKey,
+      new Response(JSON.stringify(data), {
+        headers: { "Cache-Control": "public, max-age=300" },
+      })
+    );
+
+    return data;
   } catch {
     return null;
   }
@@ -628,7 +644,7 @@ export default {
     }
 
     // ─── RATE LIMIT CLEANUP ───
-    cleanRateLimitMap();
+    if (Math.random() < 0.01) cleanRateLimitMap();
 
     // ─── FIX #1: STATIC ASSETS → PROXY TO ORIGIN ───
     const isStaticAsset =
@@ -707,19 +723,20 @@ export default {
         return cachedFetch(request, "", ctx);
       }
 
-      // 301 redirect to custom domain if one exists
-      const customDomain = await getCustomDomainForSlug(slug);
+      // Run independent checks in parallel
+      const [customDomain, seoResponse, botResponse] = await Promise.all([
+        getCustomDomainForSlug(slug),
+        handleSeoFiles(url, slug),
+        handleBot(request, slug, url, false),
+      ]);
+
       if (customDomain) {
         return Response.redirect(
           `https://${customDomain}${url.pathname}${url.search}`,
           301
         );
       }
-
-      const seoResponse = await handleSeoFiles(url, slug);
       if (seoResponse) return seoResponse;
-
-      const botResponse = await handleBot(request, slug, url, false);
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx);
@@ -739,10 +756,20 @@ export default {
     const slug = await resolveDomain(cleanDomain);
 
     if (slug) {
-      const seoResponse = await handleSeoFiles(url, slug);
-      if (seoResponse) return seoResponse;
+      // Redirect www to naked custom domain for canonical SEO
+      if (hostname !== cleanDomain) {
+        return Response.redirect(
+          `https://${cleanDomain}${url.pathname}${url.search}`,
+          301
+        );
+      }
 
-      const botResponse = await handleBot(request, slug, url, true);
+      // Run SEO + bot checks in parallel
+      const [seoResponse, botResponse] = await Promise.all([
+        handleSeoFiles(url, slug),
+        handleBot(request, slug, url, true),
+      ]);
+      if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx, true);
