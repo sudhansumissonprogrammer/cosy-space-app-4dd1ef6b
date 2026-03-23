@@ -67,6 +67,7 @@ export default function StorefrontHome() {
     setLoadingMore(true);
     try {
       const currentCount = products?.length ?? 0;
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("products")
         .select("*")

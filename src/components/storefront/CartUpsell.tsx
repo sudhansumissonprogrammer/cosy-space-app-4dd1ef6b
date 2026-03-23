@@ -21,6 +21,7 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
   const { data: products } = useQuery({
     queryKey: ["cart-upsell", storeId],
     queryFn: async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("products")
         .select("id, name, price, sale_price, image_url, category, slug, is_best_selling")

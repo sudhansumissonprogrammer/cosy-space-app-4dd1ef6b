@@ -273,6 +273,7 @@ async function proxyToOrigin(request) {
         "public, max-age=600, stale-while-revalidate=86400"
       );
       newRes.headers.set("Vary", "Accept-Encoding");
+    }
 
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
       newRes.headers.set(k, v);

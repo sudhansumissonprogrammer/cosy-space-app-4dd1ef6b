@@ -44,6 +44,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
   const handleAddToOrder = async (product: any) => {
     setAdding(product.id);
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
       const price = product.sale_price && product.sale_price < product.price ? product.sale_price : product.price;
       
       // Insert the item directly into order_items and update order total

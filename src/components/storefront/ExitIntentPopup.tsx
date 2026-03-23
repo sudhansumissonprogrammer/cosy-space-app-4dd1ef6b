@@ -20,6 +20,7 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
   const { data: coupon } = useQuery({
     queryKey: ["exit-intent-coupon", storeId],
     queryFn: async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("coupons")
         .select("*")

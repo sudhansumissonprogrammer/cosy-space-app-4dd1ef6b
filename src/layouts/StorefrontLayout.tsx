@@ -100,7 +100,8 @@ export function useStorefront(slugOverride?: string) {
         return injected;
       }
 
-      // 2. Fetch from API
+      // 2. Fetch from API (lazy-load Supabase — not needed on cache hit)
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
       if (error) throw error;
       const result = data as any;
