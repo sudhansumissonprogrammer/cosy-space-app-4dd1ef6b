@@ -364,6 +364,24 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     trackPageView(store.id);
   }, [store?.id]);
 
+  // Preconnect to product image CDN origin for faster LCP
+  useEffect(() => {
+    if (!store) return;
+    const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+    const firstImage = products?.[0]?.image_url;
+    if (!firstImage) return;
+    try {
+      const origin = new URL(firstImage).origin;
+      if (origin && !document.querySelector(`link[rel="preconnect"][href="${origin}"]`)) {
+        const link = document.createElement("link");
+        link.rel = "preconnect";
+        link.href = origin;
+        link.crossOrigin = "anonymous";
+        document.head.appendChild(link);
+      }
+    } catch {}
+  }, [store?.id, queryClient]);
+
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
   // Load Google Font dynamically

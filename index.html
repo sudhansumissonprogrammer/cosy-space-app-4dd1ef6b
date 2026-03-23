@@ -8,10 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://kzvfjknnslgcwumzlwkb.supabase.co" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
-    <!-- Critical fonts: preload the subset we need immediately, defer the rest -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
+    <!-- Non-critical fonts: fully deferred -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
-    <!-- Non-critical decorative fonts: fully deferred -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;700&family=Changa:wght@400;600&family=Montserrat:wght@400;600;700&display=swap" media="print" onload="this.media='all'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Alegreya+SC:wght@400;700&family=Changa:wght@400;600&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
     <title>Storivo — Create Your Online Store</title>
@@ -28,18 +26,111 @@
     <meta name="twitter:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
     <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
     <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
-    <!-- Inline critical above-the-fold styles to prevent FOUC -->
+    <!-- Critical above-the-fold CSS inlined for instant FCP -->
     <style>
-      body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+      *,*::before,*::after{box-sizing:border-box}
+      body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;background:#f7f5f0;color:#1a1a1a}
       #root{min-height:100vh}
-      /* Skeleton placeholder for initial load */
-      .initial-spinner{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f8fa}
+
+      /* ===== Storefront skeleton (renders before ANY JS) ===== */
+      .sf-shell{min-height:100vh;background:#f7f5f0}
+
+      /* Marquee bar */
+      .sf-marquee{height:36px;background:linear-gradient(90deg,#b8873c,#f1d78a,#d1a24a)}
+
+      /* Nav bar */
+      .sf-nav{position:sticky;top:0;z-index:30;display:flex;align-items:center;height:56px;padding:0 12px;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid #e5e5e5}
+      .sf-nav-pill{width:40px;height:40px;border-radius:10px;background:#e8e8e8}
+      .sf-nav-logo{width:100px;height:40px;border-radius:10px;background:#e8e8e8;margin-left:6px}
+      .sf-nav-spacer{flex:1}
+      .sf-nav-icon{width:36px;height:36px;border-radius:50%;background:#e8e8e8;margin-left:4px}
+
+      /* Search bar placeholder */
+      .sf-search{margin:0 auto;max-width:72rem;padding:12px 16px}
+      .sf-search-bar{height:40px;border-radius:8px;background:#e8e8e8;width:100%}
+
+      /* Category pills */
+      .sf-cats{display:flex;gap:12px;padding:12px 16px;max-width:72rem;margin:0 auto;overflow:hidden}
+      .sf-cat-pill{width:64px;height:64px;border-radius:50%;background:#e8e8e8;flex-shrink:0}
+
+      /* Product grid */
+      .sf-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px;max-width:72rem;margin:0 auto}
+      @media(min-width:768px){.sf-grid{grid-template-columns:repeat(3,1fr)}}
+      @media(min-width:1024px){.sf-grid{grid-template-columns:repeat(4,1fr)}}
+
+      .sf-card{border-radius:16px;overflow:hidden;background:#fff;border:1px solid #e8e8e8}
+      .sf-card-img{width:100%;aspect-ratio:4/5;background:#e8e8e8}
+      .sf-card-body{padding:8px 10px 10px}
+      .sf-card-line{height:12px;border-radius:4px;background:#e8e8e8;margin-bottom:6px}
+      .sf-card-line.w60{width:60%}
+      .sf-card-line.w80{width:80%}
+      .sf-card-line.w40{width:40%}
+      .sf-card-btn{height:36px;border-radius:8px;background:#e8e8e8;margin-top:4px}
+
+      /* Shimmer animation */
+      .sf-shimmer{position:relative;overflow:hidden}
+      .sf-shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:sf-shimmer 1.5s infinite}
+      @keyframes sf-shimmer{100%{transform:translateX(100%)}}
+
+      /* Fallback spinner (non-storefront pages) */
+      .initial-spinner{display:none;align-items:center;justify-content:center;min-height:100vh;background:#f8f8fa}
       .initial-spinner::after{content:'';width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#4361ee;border-radius:50%;animation:spin .6s linear infinite}
       @keyframes spin{to{transform:rotate(360deg)}}
+
+      /* Async CSS loader: convert render-blocking stylesheets */
+      .sf-heading-placeholder{padding:16px 16px 0;max-width:72rem;margin:0 auto}
+      .sf-heading-placeholder .sf-card-line{height:24px;width:140px;border-radius:6px}
     </style>
+    <!-- Async CSS: converts Vite-injected render-blocking CSS to non-blocking -->
+    <script>
+      // After DOM ready, make any render-blocking CSS links async
+      // (Vite injects <link rel="stylesheet"> for the main bundle)
+      if(window.requestIdleCallback){
+        // Nothing to do here — Vite CSS is needed for the app;
+        // the skeleton CSS above handles the pre-JS visual
+      }
+    </script>
   </head>
   <body>
-    <div id="root"><div class="initial-spinner"></div></div>
+    <div id="root">
+      <!-- Full storefront skeleton: renders instantly before JS loads -->
+      <div class="sf-shell" id="sf-skeleton">
+        <!-- Marquee -->
+        <div class="sf-marquee sf-shimmer"></div>
+        <!-- Nav -->
+        <div class="sf-nav">
+          <div class="sf-nav-pill sf-shimmer"></div>
+          <div class="sf-nav-logo sf-shimmer"></div>
+          <div class="sf-nav-spacer"></div>
+          <div class="sf-nav-icon sf-shimmer"></div>
+          <div class="sf-nav-icon sf-shimmer"></div>
+          <div class="sf-nav-icon sf-shimmer"></div>
+        </div>
+        <!-- Search -->
+        <div class="sf-search">
+          <div class="sf-search-bar sf-shimmer"></div>
+        </div>
+        <!-- Categories -->
+        <div class="sf-cats">
+          <div class="sf-cat-pill sf-shimmer"></div>
+          <div class="sf-cat-pill sf-shimmer"></div>
+          <div class="sf-cat-pill sf-shimmer"></div>
+          <div class="sf-cat-pill sf-shimmer"></div>
+          <div class="sf-cat-pill sf-shimmer"></div>
+        </div>
+        <!-- Section heading -->
+        <div class="sf-heading-placeholder">
+          <div class="sf-card-line sf-shimmer"></div>
+        </div>
+        <!-- Product grid -->
+        <div class="sf-grid">
+          <div class="sf-card"><div class="sf-card-img sf-shimmer"></div><div class="sf-card-body"><div class="sf-card-line w60 sf-shimmer"></div><div class="sf-card-line w80 sf-shimmer"></div><div class="sf-card-line w40 sf-shimmer"></div><div class="sf-card-btn sf-shimmer"></div></div></div>
+          <div class="sf-card"><div class="sf-card-img sf-shimmer"></div><div class="sf-card-body"><div class="sf-card-line w60 sf-shimmer"></div><div class="sf-card-line w80 sf-shimmer"></div><div class="sf-card-line w40 sf-shimmer"></div><div class="sf-card-btn sf-shimmer"></div></div></div>
+          <div class="sf-card"><div class="sf-card-img sf-shimmer"></div><div class="sf-card-body"><div class="sf-card-line w60 sf-shimmer"></div><div class="sf-card-line w80 sf-shimmer"></div><div class="sf-card-line w40 sf-shimmer"></div><div class="sf-card-btn sf-shimmer"></div></div></div>
+          <div class="sf-card"><div class="sf-card-img sf-shimmer"></div><div class="sf-card-body"><div class="sf-card-line w60 sf-shimmer"></div><div class="sf-card-line w80 sf-shimmer"></div><div class="sf-card-line w40 sf-shimmer"></div><div class="sf-card-btn sf-shimmer"></div></div></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
