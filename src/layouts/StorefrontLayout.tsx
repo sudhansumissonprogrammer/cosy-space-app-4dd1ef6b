@@ -165,7 +165,8 @@ export function useStorefront(slugOverride?: string) {
     // Always treat localStorage cache as stale — ensures a background
     // refetch on every page load so theme / product changes appear instantly
     // while the cached version renders immediately (true SWR).
-    initialDataUpdatedAt: 0,
+    // NOTE: Must use 1 (not 0) because 0 is falsy and React Query ignores it.
+    initialDataUpdatedAt: 1,
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
