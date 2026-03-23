@@ -1,98 +1,87 @@
 
 
-## Plan: Edge-Level Performance Optimizations for Sub-2s LCP
+## Plan: Reduce Render-Blocking CSS & JS Payload
 
-Most of the requested optimizations are already implemented. This plan adds the remaining gaps: HTML streaming, Cloudflare Image CDN routing, enhanced priority hints, and connection warmup at the edge.
+### Analysis Summary
 
----
+**Current state:**
+- Single monolithic `index.css` (207 lines) compiled by Tailwind into one large CSS bundle — loaded for ALL contexts (storefront, admin, dashboard)
+- `App.css` (42 lines) is **dead code** — not imported anywhere
+- `App.tsx` eagerly imports `Toaster`, `Sonner`, `TooltipProvider`, `QueryClient`, `react-router-dom`, `ErrorBoundary`, `logError`, and `subdomain` — all parsed before first paint
+- `main.tsx` eagerly imports `App.tsx` + `index.css` + `logError` (includes `initGlobalErrorHandlers` with fetch setup)
+- JS entry chain: `main.tsx` → `App.tsx` → eagerly pulls in `@tanstack/react-query`, `react-router-dom`, `@radix-ui/tooltip`, toast UI components — all render-blocking
+- Theme JS is already lazy-loaded (good), but the CSS for all themes shares the same monolithic stylesheet
 
-### What's Already Done (No Changes Needed)
-
-| Request | Status |
-|---------|--------|
-| LCP image preload with `fetchpriority="high"` + srcset | Done in Worker |
-| Preconnect to image CDN + API origin at edge | Done in Worker |
-| Cache fully injected HTML (SSR output) | Done in `cachedFetch` |
-| Stale-while-revalidate pattern | Done via `ctx.waitUntil` background refresh |
-| DNS-prefetch in index.html | Done |
-| Skeleton UI for instant visual feedback | Done — real SSR content injected at edge |
-| Self-hosted fonts | Done |
-| Lazy loading non-critical components | Done |
-
----
-
-### Remaining Changes
-
-#### 1. HTML Streaming via TransformStream (Worker)
-
-**File:** `docs/cloudflare-worker-fixed.js`
-
-Replace the current "read full HTML → string replace → respond" flow with a **streaming approach** using `TransformStream`. The `<head>` and above-the-fold SSR content are flushed immediately, while the rest of the HTML streams progressively. This reduces TTFB by ~200ms since we don't wait for origin HTML to fully download before starting the response.
-
-Implementation:
-- Create a `streamInjectedResponse()` function that uses `TransformStream`
-- On first chunk (containing `<head>`): inject `__STORE_SLUG__`, `__STOREFRONT_DATA__`, LCP preload, and preconnect links
-- On chunk containing `sf-skeleton`: replace with server-rendered HTML
-- Pass through all other chunks immediately
-- Used for cache misses; cached responses still serve from Cache API directly
-
-#### 2. Cloudflare Image CDN Pipeline (`/cdn-cgi/image/`)
-
-**File:** `src/lib/imageOptimize.ts`
-
-Add a new optimization path for images served through the Cloudflare zone (storivo.in). Route product images through `/cdn-cgi/image/width=W,quality=70,format=auto/ORIGINAL_URL` which enables:
-- Automatic AVIF/WebP negotiation
-- Server-side resizing (no oversized images to small screens)
-- Edge-cached transformed images
-
-Add this as priority #2 in `optimizeImageUrl()`, after pipeline variants but before Supabase/Shopify checks. Only activate for images served from the storivo.in domain or known storage origins.
-
-**File:** `docs/cloudflare-worker-fixed.js`
-
-Update the server-rendered product card image URLs in `buildServerRenderedShell()` to route through `/cdn-cgi/image/` for Cloudflare-proxied origins. This ensures the SSR HTML serves optimally-sized images from the first byte.
-
-#### 3. Enhanced Priority Hints at Edge (Worker)
-
-**File:** `docs/cloudflare-worker-fixed.js`
-
-Add additional `<link>` tags in the `<head>` injection:
-- `<link rel="preload" as="style" href="/assets/index-*.css" fetchpriority="high">` — preload the critical CSS bundle
-- `<link rel="preload" as="font" href="/fonts/inter-latin.woff2" type="font/woff2" crossorigin fetchpriority="high">` — ensure the self-hosted font starts loading immediately
-- `<link rel="dns-prefetch" href="https://fonts.googleapis.com">` — for optional theme fonts
-
-#### 4. Tiered Cache Headers (Worker)
-
-**File:** `docs/cloudflare-worker-fixed.js`
-
-Update `proxyToOrigin()` HTML cache headers to use proper tiered caching directives:
-- Add `CDN-Cache-Control: public, max-age=600` (tells Cloudflare edge to cache longer than browser)
-- Add `Vary: Accept-Encoding` to ensure proper GZIP/Brotli cache variants
-- For SSR HTML from `fetchAndInjectSlug`: set `Cache-Control: public, max-age=300, stale-while-revalidate=86400` and `CDN-Cache-Control: public, max-age=600, stale-while-revalidate=86400`
-
-#### 5. Connection Warmup at Edge (Worker)
-
-**File:** `docs/cloudflare-worker-fixed.js`
-
-Expand the `<head>` injection to include comprehensive connection warmup:
-- `<link rel="preconnect" href="https://kzvfjknnslgcwumzlwkb.supabase.co">` (already done)
-- `<link rel="dns-prefetch" href="https://fonts.gstatic.com">` (for theme fonts)
-- Dynamic `<link rel="preconnect">` for the store's image CDN origin (already done)
-- `<link rel="preconnect" href="https://storivo.in">` for Cloudflare Image CDN if different from current domain
+**Key bottlenecks:**
+1. One CSS file for all contexts — storefront loads admin/dashboard vars, dark mode, sidebar vars it never uses
+2. Eager imports of toast/tooltip UI components in App.tsx add to critical bundle
+3. `App.css` is dead weight in the repo
+4. No CSS code splitting by route context despite `cssCodeSplit: true` in Vite (only works when CSS is imported in lazy chunks)
 
 ---
 
-### Files to Update
+### Changes
 
-| File | Changes |
-|------|---------|
-| `docs/cloudflare-worker-fixed.js` | Add HTML streaming, CDN image URLs in SSR, font/CSS preload hints, tiered cache headers |
-| `src/lib/imageOptimize.ts` | Add Cloudflare `/cdn-cgi/image/` path for storivo.in-origin images |
+#### 1. Delete Dead `App.css`
+- **File:** `src/App.css` — delete entirely
+- Contains unused `.logo`, `.read-the-docs`, `.card` styles from Vite boilerplate
+- Not imported anywhere — pure dead code
+
+#### 2. Lazy-Load Toast & Sonner Components
+- **File:** `src/App.tsx`
+- Move `Toaster` and `Sonner` to lazy imports — they are never visible on first paint (only appear on user interactions)
+- This removes `@radix-ui/react-toast` and `sonner` from the critical JS bundle
+
+```
+Before (eager):  import { Toaster } from "@/components/ui/toaster";
+After (lazy):    const Toaster = lazy(() => import("@/components/ui/toaster").then(m => ({ default: m.Toaster })));
+```
+
+#### 3. Split CSS: Storefront vs Dashboard/Admin
+- **File:** `src/index.css` — keep only shared base styles (CSS variables, reset, body, border-border)
+- **New file:** `src/styles/storefront.css` — move storefront-specific styles (`.storefront-font`, `.btn-gold`, `.animate-marquee`, `.safe-area-bottom`, storefront CSS custom properties, keyframes for `marquee`, `bounce-once`, `confetti-fall`, `float-particle`)
+- **New file:** `src/styles/dashboard.css` — move sidebar CSS variables, dark mode overrides, `.scrollbar-hide`
+- Import `storefront.css` inside storefront layout components (lazy-loaded → CSS only loads for storefront visitors)
+- Import `dashboard.css` inside `DashboardLayout` / `AdminLayout` (lazy-loaded → CSS only loads for dashboard users)
+- This leverages Vite's `cssCodeSplit: true` to emit separate CSS chunks per route
+
+#### 4. Remove Dark Mode & Sidebar Vars from Storefront Critical Path
+- The `.dark { ... }` block and `--sidebar-*` variables in `index.css` are only used by admin/dashboard
+- Move them to `src/styles/dashboard.css`
+- Storefront users save ~50 lines of unused CSS parsing
+
+#### 5. Defer `initGlobalErrorHandlers` 
+- **File:** `src/main.tsx`
+- Move `initGlobalErrorHandlers()` into the existing `postInteractiveSetup()` callback
+- Error handlers are not needed before first paint — deferring removes the eager import chain of `logError.ts` (which references `import.meta.env` variables and sets up fetch endpoints)
+- The `logError` import in `App.tsx` (used by QueryClient `onError`) is already only triggered on mutations, not on load
+
+#### 6. Trim `index.css` Keyframes
+- Remove `confetti-fall`, `float-particle`, `progress-grow` keyframes from `index.css` — these are only used in specific components and should be colocated or moved to `storefront.css`
+- Keeps the critical CSS file minimal
+
+---
+
+### Files to Modify
+
+| File | Action |
+|------|--------|
+| `src/App.css` | **Delete** (dead code) |
+| `src/index.css` | Slim down to shared base only (~70 lines) |
+| `src/styles/storefront.css` | **Create** — storefront-specific styles |
+| `src/styles/dashboard.css` | **Create** — dashboard/admin-specific styles |
+| `src/App.tsx` | Lazy-load Toaster + Sonner |
+| `src/main.tsx` | Defer `initGlobalErrorHandlers` to idle callback |
+| `src/layouts/StorefrontLayout.tsx` | Add `import "@/styles/storefront.css"` |
+| `src/layouts/DashboardLayout.tsx` | Add `import "@/styles/dashboard.css"` |
+| `src/layouts/AdminLayout.tsx` | Add `import "@/styles/dashboard.css"` |
 
 ### Expected Impact
 
-| Metric | Current | After |
-|--------|---------|-------|
-| TTFB | ~600ms | ~350ms (streaming) |
-| LCP | ~2.0s | ~1.6s (CDN-resized images + font preload) |
-| Image payload | Variable | -30% avg (AVIF auto-negotiation) |
+| Metric | Before | After |
+|--------|--------|-------|
+| Critical CSS | ~119KB (monolithic) | ~40KB (base only) |
+| Storefront CSS | Includes dashboard/admin vars | Only storefront styles |
+| Initial JS (storefront) | Includes toast + sonner + error setup | Deferred to idle/interaction |
+| Dead CSS files | `App.css` loaded by Vite | Removed |
 
