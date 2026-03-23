@@ -244,7 +244,7 @@ export default function StorefrontSearchOverlay({
                       style={{
                         backgroundColor: priceRange?.[0] === pr.range[0]
                           ? "var(--storefront-text, hsl(var(--foreground)))"
-                          : "var(--storefront-text, hsl(var(--foreground)))10",
+                          : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
                         color: priceRange?.[0] === pr.range[0]
                           ? "var(--storefront-bg, hsl(var(--background)))"
                           : "var(--storefront-text, hsl(var(--foreground)))",
