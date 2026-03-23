@@ -223,7 +223,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
                 </div>
                 <span
                   className="text-[10px] font-semibold"
-                  style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))45" }}
+                  style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "45") }}
                 >
                   {tab.label}
                 </span>
