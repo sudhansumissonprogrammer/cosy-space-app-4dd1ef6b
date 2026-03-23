@@ -8,31 +8,62 @@ import { getSubdomainSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
 
-// Storefront layouts — lazy load all except V1 (most common default)
-import StorefrontLayout from "./layouts/StorefrontLayout";
-const StorefrontLayoutV2 = lazy(() => import("./layouts/StorefrontLayoutV2"));
-const StorefrontLayoutV3 = lazy(() => import("./layouts/StorefrontLayoutV3"));
-const StorefrontLayoutV4 = lazy(() => import("./layouts/StorefrontLayoutV4"));
-const StorefrontLayoutV6 = lazy(() => import("./layouts/StorefrontLayoutV6"));
-const StorefrontLayoutV7 = lazy(() => import("./layouts/StorefrontLayoutV7"));
-const StorefrontLayoutV8 = lazy(() => import("./layouts/StorefrontLayoutV8"));
-const StorefrontLayoutV10 = lazy(() => import("./layouts/StorefrontLayoutV10"));
-const StorefrontLayoutV11 = lazy(() => import("./layouts/StorefrontLayoutV11"));
-const StorefrontLayoutV12 = lazy(() => import("./layouts/StorefrontLayoutV12"));
-const StorefrontLayoutV13 = lazy(() => import("./layouts/StorefrontLayoutV13"));
+// Theme registry — each theme lazy-loaded independently; only the active theme is ever downloaded
+const themeRegistry: Record<string, {
+  layout: React.LazyExoticComponent<React.ComponentType<{ slugOverride?: string }>>;
+  home: React.LazyExoticComponent<React.ComponentType>;
+}> = {
+  "theme-1": {
+    layout: lazy(() => import("./layouts/StorefrontLayout")),
+    home: lazy(() => import("./pages/StorefrontHome")),
+  },
+  "theme-2": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV2")),
+    home: lazy(() => import("./pages/StorefrontHomeV2")),
+  },
+  "theme-3": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV3")),
+    home: lazy(() => import("./pages/StorefrontHomeV3")),
+  },
+  "theme-4": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV4")),
+    home: lazy(() => import("./pages/StorefrontHomeV4")),
+  },
+  "theme-6": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV6")),
+    home: lazy(() => import("./pages/StorefrontHomeV6")),
+  },
+  "theme-7": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV7")),
+    home: lazy(() => import("./pages/StorefrontHomeV7")),
+  },
+  "theme-8": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV8")),
+    home: lazy(() => import("./pages/StorefrontHomeV8")),
+  },
+  "theme-10": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV10")),
+    home: lazy(() => import("./pages/StorefrontHomeV10")),
+  },
+  "theme-11": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV11")),
+    home: lazy(() => import("./pages/StorefrontHomeV11")),
+  },
+  "theme-12": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV12")),
+    home: lazy(() => import("./pages/StorefrontHomeV12")),
+  },
+  "theme-13": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV13")),
+    home: lazy(() => import("./pages/StorefrontHomeV13")),
+  },
+};
 
-// Storefront home pages — lazy load all except V1
-import StorefrontHome from "./pages/StorefrontHome";
-const StorefrontHomeV2 = lazy(() => import("./pages/StorefrontHomeV2"));
-const StorefrontHomeV3 = lazy(() => import("./pages/StorefrontHomeV3"));
-const StorefrontHomeV4 = lazy(() => import("./pages/StorefrontHomeV4"));
-const StorefrontHomeV6 = lazy(() => import("./pages/StorefrontHomeV6"));
-const StorefrontHomeV7 = lazy(() => import("./pages/StorefrontHomeV7"));
-const StorefrontHomeV8 = lazy(() => import("./pages/StorefrontHomeV8"));
-const StorefrontHomeV10 = lazy(() => import("./pages/StorefrontHomeV10"));
-const StorefrontHomeV11 = lazy(() => import("./pages/StorefrontHomeV11"));
-const StorefrontHomeV12 = lazy(() => import("./pages/StorefrontHomeV12"));
-const StorefrontHomeV13 = lazy(() => import("./pages/StorefrontHomeV13"));
+const defaultThemeEntry = themeRegistry["theme-1"];
+
+function getThemeEntry(theme: string) {
+  return themeRegistry[theme] || defaultThemeEntry;
+}
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
 const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
@@ -94,8 +125,7 @@ const LoadingSpinner = () => (
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
 
 /** Shared child routes for all layout themes */
-const storefrontChildRoutes = (theme: string) => {
-  const HomeComponent = theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV11 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-8" ? StorefrontHomeV8 : theme === "theme-7" ? StorefrontHomeV7 : theme === "theme-6" ? StorefrontHomeV6 : theme === "theme-4" ? StorefrontHomeV4 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+const storefrontChildRoutes = (HomeComponent: React.ComponentType) => {
   return (
     <>
       <Route index element={<HomeComponent />} />
@@ -141,21 +171,6 @@ function getInstantTheme(slug: string | undefined): string {
   return "theme-1";
 }
 
-function getLayoutComponent(theme: string) {
-  switch (theme) {
-    case "theme-13": return StorefrontLayoutV13;
-    case "theme-12": return StorefrontLayoutV12;
-    case "theme-11": return StorefrontLayoutV11;
-    case "theme-10": return StorefrontLayoutV10;
-    case "theme-8": return StorefrontLayoutV8;
-    case "theme-7": return StorefrontLayoutV7;
-    case "theme-6": return StorefrontLayoutV6;
-    case "theme-4": return StorefrontLayoutV4;
-    case "theme-3": return StorefrontLayoutV3;
-    case "theme-2": return StorefrontLayoutV2;
-    default: return StorefrontLayout;
-  }
-}
 
 /**
  * Renders storefront directly using cached/injected theme — NO spinner, NO waterfall.
@@ -169,12 +184,12 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   // Get theme INSTANTLY from cache/injected data — no API call, no spinner
   const theme = useMemo(() => getInstantTheme(effectiveSlug), [effectiveSlug]);
   const basePath = slugOverride ? "/" : "/store/:slug";
-  const LayoutComponent = getLayoutComponent(theme);
+  const { layout: LayoutComponent, home: HomeComponent } = getThemeEntry(theme);
 
   return (
     <Routes>
       <Route path={basePath} element={<LayoutComponent slugOverride={slugOverride} />}>
-        {storefrontChildRoutes(theme)}
+        {storefrontChildRoutes(HomeComponent)}
       </Route>
     </Routes>
   );
