@@ -1,0 +1,59 @@
+/* Dashboard & Admin specific styles — loaded only for dashboard/admin visitors */
+
+:root {
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 220 10% 46%;
+  --sidebar-primary: 230 75% 57%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 230 75% 95%;
+  --sidebar-accent-foreground: 230 75% 57%;
+  --sidebar-border: 220 16% 93%;
+  --sidebar-ring: 230 75% 57%;
+}
+
+.dark {
+  --background: 224 30% 8%;
+  --foreground: 220 16% 93%;
+
+  --card: 224 25% 12%;
+  --card-foreground: 220 16% 93%;
+
+  --popover: 224 25% 12%;
+  --popover-foreground: 220 16% 93%;
+
+  --primary: 230 75% 57%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 224 20% 18%;
+  --secondary-foreground: 220 16% 93%;
+
+  --muted: 224 20% 18%;
+  --muted-foreground: 220 10% 55%;
+
+  --accent: 230 40% 20%;
+  --accent-foreground: 230 75% 70%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 224 20% 18%;
+  --input: 224 20% 18%;
+  --ring: 230 75% 57%;
+
+  --sidebar-background: 224 25% 10%;
+  --sidebar-foreground: 220 10% 55%;
+  --sidebar-primary: 230 75% 57%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 230 40% 18%;
+  --sidebar-accent-foreground: 230 75% 70%;
+  --sidebar-border: 224 20% 16%;
+  --sidebar-ring: 230 75% 57%;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
