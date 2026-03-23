@@ -50,6 +50,10 @@ interface CAPIEventParams {
  * Non-blocking — errors are silently logged.
  */
 export function fireMetaCAPI(params: CAPIEventParams) {
+  // Skip if store has no pixel configured (cached per store)
+  const cacheKey = `meta_pixel_${params.storeId}`;
+  if (sessionStorage.getItem(cacheKey) === "0") return;
+
   const { fbc, fbp } = getMetaCookies();
 
   // Fire and forget — don't block the UI
@@ -74,7 +78,13 @@ export function fireMetaCAPI(params: CAPIEventParams) {
       },
     })
     .then(({ error }) => {
-      if (error) console.warn("Meta CAPI warning:", error.message);
+      if (error) {
+        // Cache "no pixel" to avoid repeated 422s
+        if (error.message?.includes("not configured")) {
+          sessionStorage.setItem(cacheKey, "0");
+        }
+        console.warn("Meta CAPI warning:", error.message);
+      }
     })
     .catch((err) => {
       console.warn("Meta CAPI fire-and-forget error:", err);
