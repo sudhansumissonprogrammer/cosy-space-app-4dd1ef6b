@@ -208,6 +208,7 @@ export default function StoreOrders() {
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
       toast.success(`${vars.orderIds.length} orders updated to ${vars.status}`);
       setSelectedOrders(new Set());
       setBulkStatus("");
