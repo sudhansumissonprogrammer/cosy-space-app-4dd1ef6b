@@ -180,7 +180,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
                   </div>
                   <span
                     className="text-[10px] font-semibold"
-                    style={{ color: "var(--storefront-text, hsl(var(--foreground)))45" }}
+                    style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "45") }}
                   >
                     {tab.label}
                   </span>
