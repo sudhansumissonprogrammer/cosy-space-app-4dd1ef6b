@@ -1,11 +1,8 @@
-import { useState, Suspense } from "react";
+import { useState, Suspense, lazy } from "react";
 import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Store, ShoppingCart, Home, Tag, Mail, Heart, RotateCcw, User, ArrowLeft, X } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
@@ -16,36 +13,44 @@ import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/Storefront
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
-import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
-import SideCart from "@/components/storefront/SideCart";
-import SmartInstallPrompt from "@/components/SmartInstallPrompt";
-import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import { trackPageView } from "@/lib/trackPageView";
-import ExitIntentPopup from "@/components/storefront/ExitIntentPopup";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 
+// ── Lazy-loaded non-critical components ──
+const SideCart = lazy(() => import("@/components/storefront/SideCart"));
+const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhatsApp"));
+const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
+const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
+const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
+
+// Lazy-load Sheet (heavy Radix Dialog) — only when hamburger menu opens
+const LazySheet = lazy(() => import("@/components/ui/sheet").then(m => ({ default: m.Sheet })));
+const LazySheetContent = lazy(() => import("@/components/ui/sheet").then(m => ({ default: m.SheetContent })));
+const LazySheetTrigger = lazy(() => import("@/components/ui/sheet").then(m => ({ default: m.SheetTrigger })));
+
+// Lazy-load Dialog — only when exit checkout dialog opens
+const LazyDialog = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.Dialog })));
+const LazyDialogContent = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogContent })));
+const LazyDialogHeader = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogHeader })));
+const LazyDialogTitle = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogTitle })));
+const LazyDialogDescription = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogDescription })));
+
 export type StoreData = Tables<"stores">;
 
-/**
- * Single RPC call fetches store + products + categories in one roundtrip.
- * Individual caches are seeded immediately so child pages render instantly.
- */
 /** Save storefront data to localStorage for instant future loads */
 function cacheToLocalStorage(slug: string, result: any) {
   try {
     const store = result?.store;
     if (!store) return;
-    // Cache theme separately for instant theme detection in App.tsx
     localStorage.setItem(`storefront_theme_${slug}`, store.theme || "theme-1");
-    // Cache full data (compact — only essential fields) for SWR
     const compact = {
       store: result.store,
-      products: (result.products || []).slice(0, 20), // first 20 for instant paint
+      products: (result.products || []).slice(0, 20),
       categories: result.categories || [],
       theme_config: result.theme_config || null,
       total_products: result.total_products || 0,
@@ -61,7 +66,6 @@ function readLocalStorageCache(slug: string): any | null {
     const raw = localStorage.getItem(`storefront_data_${slug}`);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Accept cache up to 10 minutes old
     if (parsed._cachedAt && Date.now() - parsed._cachedAt < 10 * 60 * 1000) {
       return parsed;
     }
@@ -78,7 +82,7 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      // 1. Use pre-fetched data injected by Cloudflare Worker (eliminates API waterfall)
+      // 1. Use pre-fetched data injected by Cloudflare Worker
       const injected = (window as any).__STOREFRONT_DATA__;
       if (injected) {
         delete (window as any).__STOREFRONT_DATA__;
@@ -97,7 +101,8 @@ export function useStorefront(slugOverride?: string) {
         return injected;
       }
 
-      // 2. Fetch from API
+      // 2. Dynamic import Supabase SDK — only when actually needed (cache miss)
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
       if (error) throw error;
       const result = data as any;
@@ -115,16 +120,12 @@ export function useStorefront(slugOverride?: string) {
       }
       return result;
     },
-    // 3. Use localStorage cache as initialData for instant render (SWR pattern)
     initialData: () => {
       if (!slug) return undefined;
-      // Check injected data first
       const injected = (window as any).__STOREFRONT_DATA__;
-      if (injected) return undefined; // let queryFn handle it
-      // Check localStorage cache
+      if (injected) return undefined;
       const cached = readLocalStorageCache(slug);
       if (cached) {
-        // Seed individual caches immediately
         const store = cached.store;
         if (store) {
           queryClient.setQueryData(["storefront", slug], store);
@@ -139,7 +140,6 @@ export function useStorefront(slugOverride?: string) {
       }
       return undefined;
     },
-    // Mark initialData as stale so it revalidates in background
     initialDataUpdatedAt: () => {
       if (!slug) return undefined;
       const cached = readLocalStorageCache(slug);
@@ -201,98 +201,73 @@ function AccountBadge({ slug }: { slug: string }) {
 function HamburgerMenu({ store }: { store: StoreData }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
-
-  // Read from pre-seeded cache — no extra fetch
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-10 w-10 p-0" aria-label="Open menu">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-            <line x1="6" y1="7" x2="18" y2="7" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="6" y1="17" x2="18" y2="17" />
-          </svg>
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="storefront-font w-[280px] p-0">
-        <div className="flex flex-col">
-          <div className="border-b bg-card p-4">
-            {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} width={160} height={40} className="h-10 w-auto max-w-[160px] object-contain" loading="eager" />
-            ) : (
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                  <Store className="h-4 w-4 text-primary-foreground" />
+    <Suspense fallback={
+      <Button variant="ghost" size="icon" className="h-10 w-10 p-0" aria-label="Open menu">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+          <line x1="6" y1="7" x2="18" y2="7" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+          <line x1="6" y1="17" x2="18" y2="17" />
+        </svg>
+      </Button>
+    }>
+      <LazySheet open={open} onOpenChange={setOpen}>
+        <LazySheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-10 w-10 p-0" aria-label="Open menu">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+              <line x1="6" y1="7" x2="18" y2="7" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="6" y1="17" x2="18" y2="17" />
+            </svg>
+          </Button>
+        </LazySheetTrigger>
+        <LazySheetContent side="left" className="storefront-font w-[280px] p-0">
+          <div className="flex flex-col">
+            <div className="border-b bg-card p-4">
+              {store.logo_url ? (
+                <img src={store.logo_url} alt={store.name} width={160} height={40} className="h-10 w-auto max-w-[160px] object-contain" loading="eager" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+                    <Store className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <span className="text-lg font-bold text-foreground">{store.name}</span>
                 </div>
-                <span className="text-lg font-bold text-foreground">{store.name}</span>
-              </div>
-            )}
+              )}
+            </div>
+            <nav className="flex flex-col gap-1 p-4">
+              <Link to={storefrontPath(store.slug)} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                <Home className="h-4 w-4" /> Home
+              </Link>
+              <Link to={storefrontPath(store.slug, "account")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                <User className="h-4 w-4" /> My Account
+              </Link>
+              <Link to={storefrontPath(store.slug, "wishlist")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                <Heart className="h-4 w-4" /> Wishlist
+              </Link>
+              <Link to={storefrontPath(store.slug, "contact")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                <Mail className="h-4 w-4" /> Contact Us
+              </Link>
+              <Link to={storefrontPath(store.slug, "return-policy")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                <RotateCcw className="h-4 w-4" /> Return, Refund & Cancellation
+              </Link>
+              {categories && categories.length > 0 && (
+                <>
+                  <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categories</div>
+                  {categories.map((cat: any) => (
+                    <Link key={cat.id} to={storefrontPath(store.slug, `category/${cat.slug}`)} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                      <Tag className="h-4 w-4" /> {cat.name}
+                    </Link>
+                  ))}
+                </>
+              )}
+            </nav>
           </div>
-          <nav className="flex flex-col gap-1 p-4">
-            <Link
-              to={storefrontPath(store.slug)}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <Home className="h-4 w-4" />
-              Home
-            </Link>
-            <Link
-              to={storefrontPath(store.slug, "account")}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <User className="h-4 w-4" />
-              My Account
-            </Link>
-            <Link
-              to={storefrontPath(store.slug, "wishlist")}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <Heart className="h-4 w-4" />
-              Wishlist
-            </Link>
-            <Link
-              to={storefrontPath(store.slug, "contact")}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <Mail className="h-4 w-4" />
-              Contact Us
-            </Link>
-            <Link
-              to={storefrontPath(store.slug, "return-policy")}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Return, Refund & Cancellation
-            </Link>
-            {categories && categories.length > 0 && (
-              <>
-                <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Categories
-                </div>
-                {categories.map((cat: any) => (
-                  <Link
-                    key={cat.id}
-                    to={storefrontPath(store.slug, `category/${cat.slug}`)}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-                  >
-                    <Tag className="h-4 w-4" />
-                    {cat.name}
-                  </Link>
-                ))}
-              </>
-            )}
-          </nav>
-        </div>
-      </SheetContent>
-    </Sheet>
+        </LazySheetContent>
+      </LazySheet>
+    </Suspense>
   );
 }
 
@@ -400,7 +375,6 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
   }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
-  // Listen for live theme preview messages from admin dashboard iframe parent
   const previewOverride = useThemePreview(store?.id);
 
   if (isLoading) {
@@ -420,7 +394,6 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     );
   }
 
-  // Compute a lighter tint of the primary color for gradients
   const computePrimaryLight = (hex: string) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -440,7 +413,6 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   const primaryLight = computePrimaryLight(primaryColor);
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
-  // Build CSS variable style object from theme config
   const themeStyle: React.CSSProperties = (previewOverride || (themeConfig
     ? {
         "--storefront-primary": themeConfig.primary_color,
@@ -481,7 +453,6 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
     return () => window.removeEventListener("order-placed", handler);
   }, []);
 
-  // Reset orderPlaced when leaving checkout
   useEffect(() => {
     if (!isCheckout) setOrderPlaced(false);
   }, [isCheckout]);
@@ -536,8 +507,11 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
         </div>
       </nav>
 
-      <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-      <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
+      <Suspense fallback={null}>
+        <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+        <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
+      </Suspense>
+
       <main>
         <Suspense fallback={<StorefrontContentSkeleton />}>
           <Outlet context={store} />
@@ -545,48 +519,55 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
       </main>
       
       <StorefrontFooter store={store} />
-      <SideCart store={store} />
-      <FloatingWhatsApp store={store} />
-      <ExitIntentPopup storeId={store.id} storeName={store.name} />
 
-      {/* Exit Checkout Confirmation Dialog */}
-      <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <DialogContent className="max-w-[320px] rounded-2xl p-0 overflow-hidden">
-          <button
-            onClick={() => setShowExitDialog(false)}
-            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-accent/80 text-muted-foreground hover:text-foreground hover:scale-110 active:scale-95 transition-all"
-            aria-label="Close dialog"
-          >
-            <X className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
-          </button>
-          <div className="p-6 pt-8 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
-              <ArrowLeft className="h-5 w-5 text-warning" />
-            </div>
-            <DialogHeader className="space-y-1">
-              <DialogTitle className="text-base font-bold text-foreground">Exit checkout?</DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                Are you sure you want to leave? Your order details won't be saved.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="mt-5 flex flex-col gap-2">
-              <Button
-                variant="outline"
-                className="w-full border-destructive/30 text-destructive hover:bg-destructive/5 font-semibold text-xs"
-                onClick={handleExitConfirm}
-              >
-                Yes, exit checkout
-              </Button>
-              <Button
-                className="w-full font-semibold text-xs"
+      <Suspense fallback={null}>
+        <SideCart store={store} />
+        <FloatingWhatsApp store={store} />
+        <ExitIntentPopup storeId={store.id} storeName={store.name} />
+      </Suspense>
+
+      {/* Exit Checkout Confirmation Dialog — lazy loaded */}
+      {showExitDialog && (
+        <Suspense fallback={null}>
+          <LazyDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+            <LazyDialogContent className="max-w-[320px] rounded-2xl p-0 overflow-hidden">
+              <button
                 onClick={() => setShowExitDialog(false)}
+                className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-accent/80 text-muted-foreground hover:text-foreground hover:scale-110 active:scale-95 transition-all"
+                aria-label="Close dialog"
               >
-                No, continue checkout
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+                <X className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
+              </button>
+              <div className="p-6 pt-8 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
+                  <ArrowLeft className="h-5 w-5 text-warning" />
+                </div>
+                <LazyDialogHeader className="space-y-1">
+                  <LazyDialogTitle className="text-base font-bold text-foreground">Exit checkout?</LazyDialogTitle>
+                  <LazyDialogDescription className="text-xs text-muted-foreground">
+                    Are you sure you want to leave? Your order details won't be saved.
+                  </LazyDialogDescription>
+                </LazyDialogHeader>
+                <div className="mt-5 flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    className="w-full border-destructive/30 text-destructive hover:bg-destructive/5 font-semibold text-xs"
+                    onClick={handleExitConfirm}
+                  >
+                    Yes, exit checkout
+                  </Button>
+                  <Button
+                    className="w-full font-semibold text-xs"
+                    onClick={() => setShowExitDialog(false)}
+                  >
+                    No, continue checkout
+                  </Button>
+                </div>
+              </div>
+            </LazyDialogContent>
+          </LazyDialog>
+        </Suspense>
+      )}
     </div>
   );
 }
