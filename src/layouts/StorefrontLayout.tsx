@@ -371,6 +371,9 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   const viewTracked = useRef(false);
   const queryClient = useQueryClient();
 
+  // Prefetch storefront route chunks during idle time
+  useEffect(() => { prefetchStorefrontRoutes(); }, []);
+
   useFacebookPixel((store as any)?.facebook_pixel_id);
 
   useMetaTags({
