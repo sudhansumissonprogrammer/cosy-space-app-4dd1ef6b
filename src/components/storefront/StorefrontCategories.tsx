@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
-import { Skeleton } from "@/components/ui/skeleton";
-import { storefrontPath } from "@/lib/subdomain";
 
 interface Category {
   id: string;
