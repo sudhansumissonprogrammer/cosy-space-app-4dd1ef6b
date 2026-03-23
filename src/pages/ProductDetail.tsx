@@ -653,28 +653,44 @@ export default function ProductDetail() {
             </button>
           </div>
 
-          {/* Delivery & Trust — clean list */}
-          <div className="mt-5 rounded-xl border border-border divide-y divide-border">
-            <div className="flex items-center gap-3 px-4 py-3">
-              <Truck className="h-4 w-4 shrink-0 text-primary" />
-              <div>
-                <p className="text-xs font-bold text-foreground">Free & Express Delivery</p>
-                <p className="text-[10px] text-muted-foreground">Get it by <strong className="text-foreground">{deliveryDate}</strong></p>
-              </div>
+          {/* Trust Badges — large icons like Shopify */}
+          <div className="mt-6 grid grid-cols-3 gap-3 text-center">
+            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+              {/* Free Shipping truck icon */}
+              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="18" width="34" height="24" rx="2" />
+                <path d="M38 26h10l8 10v6h-18V26z" />
+                <circle cx="16" cy="44" r="4" />
+                <circle cx="48" cy="44" r="4" />
+                <path d="M20 44h20" />
+                <path d="M4 44h8" />
+                <path d="M52 44h8" />
+                <text x="14" y="35" fontSize="9" fontWeight="bold" fill="currentColor" stroke="none">FREE</text>
+              </svg>
+              <span className="text-xs font-semibold text-foreground">Free Shipping</span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3">
-              <RotateCcw className="h-4 w-4 shrink-0 text-primary" />
-              <div>
-                <p className="text-xs font-bold text-foreground">Easy Returns</p>
-                <p className="text-[10px] text-muted-foreground">7-day hassle-free return policy</p>
-              </div>
+            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+              {/* 7 Days Return badge/checkmark */}
+              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M32 6l6 3 7-1 4 6 6 3 1 7 3 6-3 6-1 7-6 4-3 6-7 1-6 3-6-3-7 1-4-6-6-3-1-7-3-6 3-6 1-7 6-4 3-6 7-1z" />
+                <path d="M22 33l7 7 13-14" strokeWidth="3" />
+              </svg>
+              <span className="text-xs font-semibold text-foreground">7 Days Return Policy</span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3">
-              <Shield className="h-4 w-4 shrink-0 text-primary" />
-              <div>
-                <p className="text-xs font-bold text-foreground">Secure Checkout</p>
-                <p className="text-[10px] text-muted-foreground">100% secure payment processing</p>
-              </div>
+            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+              {/* Support/helpdesk icon */}
+              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="32" cy="28" r="10" />
+                <path d="M22 28c0-5.5 4.5-10 10-10s10 4.5 10 10" />
+                <path d="M18 28v6a4 4 0 004 4h0" />
+                <path d="M46 28v6a4 4 0 01-4 4h0" />
+                <rect x="14" y="26" width="6" height="12" rx="3" />
+                <rect x="44" y="26" width="6" height="12" rx="3" />
+                <path d="M42 38v4a6 6 0 01-6 6h-4" />
+                <path d="M24 52h8" />
+                <text x="23" y="60" fontSize="7" fontWeight="bold" fill="currentColor" stroke="none">SUPPORT</text>
+              </svg>
+              <span className="text-xs font-semibold text-foreground">Devoted Help Desk</span>
             </div>
           </div>
 
