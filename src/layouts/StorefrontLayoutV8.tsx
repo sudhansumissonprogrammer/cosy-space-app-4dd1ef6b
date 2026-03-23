@@ -209,7 +209,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
                   >
                     <TabIcon
                       className="h-[18px] w-[18px] transition-colors"
-                      style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))50" }}
+                      style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "50") }}
                     />
                   </div>
                   {tab.badge && tab.badge > 0 && (
