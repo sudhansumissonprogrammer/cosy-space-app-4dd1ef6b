@@ -171,21 +171,6 @@ function getInstantTheme(slug: string | undefined): string {
   return "theme-1";
 }
 
-function getLayoutComponent(theme: string) {
-  switch (theme) {
-    case "theme-13": return StorefrontLayoutV13;
-    case "theme-12": return StorefrontLayoutV12;
-    case "theme-11": return StorefrontLayoutV11;
-    case "theme-10": return StorefrontLayoutV10;
-    case "theme-8": return StorefrontLayoutV8;
-    case "theme-7": return StorefrontLayoutV7;
-    case "theme-6": return StorefrontLayoutV6;
-    case "theme-4": return StorefrontLayoutV4;
-    case "theme-3": return StorefrontLayoutV3;
-    case "theme-2": return StorefrontLayoutV2;
-    default: return StorefrontLayout;
-  }
-}
 
 /**
  * Renders storefront directly using cached/injected theme — NO spinner, NO waterfall.
