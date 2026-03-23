@@ -294,7 +294,7 @@ function MenuSearchBar({
           className="absolute left-4 right-4 z-50 mt-1 overflow-hidden rounded-xl shadow-lg"
           style={{
             backgroundColor: "var(--storefront-bg, #ffffff)",
-            border: "1px solid var(--storefront-text, #1a1a1a)15",
+            border: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "15")}`,
           }}
         >
           {suggestions.map((p: any) => (
