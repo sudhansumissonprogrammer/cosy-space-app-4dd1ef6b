@@ -169,7 +169,9 @@ export default function DashboardLayout() {
   const { signOut, user } = useAuth();
   const isMobile = useIsMobile();
 
-  const { data: store, isLoading: storeLoading } = useQuery({
+  // Prefetch all dashboard page chunks on mount (covers mobile layout)
+  useEffect(() => { prefetchDashboardRoutes(); }, []);
+
     queryKey: ["my-store", user?.id],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
