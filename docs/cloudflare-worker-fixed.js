@@ -410,51 +410,45 @@ function buildServerRenderedShell(storefrontData) {
   return `<div id="sf-skeleton" data-server-rendered="true">${marqueeHtml}${navHtml}${catsHtml}${gridHtml}</div>`;
 }
 
-/* ============== INJECT STORE SLUG INTO HTML ============== */
+/* ============== STREAMING HTML INJECTION ============== */
+
 /**
- * FIX #2: For custom domains, the SPA running in the browser has no way
- * to detect which store to load.
- *
- * PERF: Also injects window.__STOREFRONT_DATA__ with pre-fetched storefront
- * data so the SPA renders instantly without an API waterfall.
- * PERF: Server-renders real store content into the HTML shell at the edge.
+ * Streams HTML from origin while injecting store data, preloads, and SSR content.
+ * Uses TransformStream so the browser receives <head> bytes immediately
+ * without waiting for the full origin response to buffer.
  */
-async function fetchAndInjectSlug(request, slug) {
-  // Fetch origin HTML and storefront data in parallel
-  const [response, storefrontData] = await Promise.all([
-    proxyToOrigin(request),
-    prefetchStorefrontData(slug),
-  ]);
+async function streamInjectedResponse(request, slug, storefrontData) {
+  const originResponse = await proxyToOrigin(request);
+  const contentType = originResponse.headers.get("content-type") || "";
 
-  const contentType = response.headers.get("content-type") || "";
-
-  if (!contentType.includes("text/html") || !response.ok) {
-    return response;
+  if (!contentType.includes("text/html") || !originResponse.ok) {
+    return originResponse;
   }
 
-  let html = await response.text();
-
-  let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
+  // Build injection payloads
+  let headInjection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
-    injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
+    headInjection += `window.__STOREFRONT_DATA__=${jsonStr};`;
   }
-  injection += `</script>
-<link rel="preconnect" href="${SUPABASE_URL}" />`;
+  headInjection += `</script>
+<link rel="preconnect" href="${SUPABASE_URL}" />
+<link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+<link rel="preconnect" href="https://${ROOT_DOMAIN}" crossorigin />
+<link rel="preload" as="font" href="/fonts/inter-latin.woff2" type="font/woff2" crossorigin fetchpriority="high" />`;
 
-  // LCP optimization: preload the first product image with srcset for responsive sizes
+  // LCP image preload with srcset
   let lcpPreload = "";
   if (storefrontData) {
     const products = storefrontData.products || [];
     const firstImage = products[0]?.image_url;
     if (firstImage) {
       const safeUrl = escapeHtml(firstImage);
-      // Generate srcset with multiple widths for responsive preloading
+      // Use CF Image CDN for LCP preload variants
       const widths = [200, 400, 600, 800];
-      const srcsetParts = widths.map(w => `${safeUrl} ${w}w`);
+      const srcsetParts = widths.map(w => `${cfImageUrl(safeUrl, w, 70)} ${w}w`);
       const srcsetAttr = srcsetParts.join(", ");
-      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" imagesrcset="${srcsetAttr}" imagesizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" fetchpriority="high" />`;
-      // Preconnect to the image CDN origin
+      lcpPreload += `<link rel="preload" as="image" href="${cfImageUrl(safeUrl, 400, 70)}" imagesrcset="${srcsetAttr}" imagesizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" fetchpriority="high" />`;
       try {
         const imgOrigin = new URL(firstImage).origin;
         if (imgOrigin && !imgOrigin.includes("supabase")) {
@@ -464,24 +458,91 @@ async function fetchAndInjectSlug(request, slug) {
     }
   }
 
-  html = html.replace("<head>", `<head>${injection}${lcpPreload}`);
+  const serverHtml = storefrontData?.store ? buildServerRenderedShell(storefrontData) : "";
 
-  // Server-render real store content into the HTML shell
-  if (storefrontData?.store) {
-    const serverHtml = buildServerRenderedShell(storefrontData);
-    if (serverHtml) {
-      // Replace the generic skeleton with real server-rendered content
-      html = html.replace(
-        /<div class="sf-shell" id="sf-skeleton">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/,
-        serverHtml
-      );
+  // Stream with TransformStream — inject on the fly
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const reader = originResponse.body.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+
+  let buffer = "";
+  let headInjected = false;
+  let skeletonInjected = false;
+
+  (async () => {
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          // Flush remaining buffer
+          if (buffer) {
+            await writer.write(encoder.encode(buffer));
+          }
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Inject into <head> as soon as we see it
+        if (!headInjected && buffer.includes("<head>")) {
+          buffer = buffer.replace("<head>", `<head>${headInjection}${lcpPreload}`);
+          headInjected = true;
+        }
+
+        // Replace skeleton with SSR content
+        if (!skeletonInjected && serverHtml && buffer.includes("sf-skeleton")) {
+          const skeletonMatch = buffer.match(/<div class="sf-shell" id="sf-skeleton">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/);
+          if (skeletonMatch) {
+            buffer = buffer.replace(skeletonMatch[0], serverHtml);
+            skeletonInjected = true;
+          }
+        }
+
+        // Flush processed content — keep only last 2KB in buffer for cross-chunk matching
+        if (buffer.length > 4096) {
+          const flushTo = buffer.length - 2048;
+          await writer.write(encoder.encode(buffer.substring(0, flushTo)));
+          buffer = buffer.substring(flushTo);
+        }
+      }
+    } catch (err) {
+      // On error, flush whatever we have
+      if (buffer) {
+        try { await writer.write(encoder.encode(buffer)); } catch {}
+      }
+    } finally {
+      try { await writer.close(); } catch {}
     }
+  })();
+
+  const headers = new Headers(originResponse.headers);
+  headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
+  headers.set("CDN-Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
+  headers.set("Vary", "Accept-Encoding");
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+    headers.set(k, v);
   }
 
-  return new Response(html, {
-    status: response.status,
-    headers: response.headers,
+  return new Response(readable, {
+    status: originResponse.status,
+    headers,
   });
+}
+
+/* ============== INJECT STORE SLUG INTO HTML (STREAMING) ============== */
+/**
+ * FIX #2: For custom domains, the SPA running in the browser has no way
+ * to detect which store to load.
+ *
+ * PERF: Uses streaming injection — <head> content flushes immediately.
+ * PERF: Injects __STOREFRONT_DATA__ + server-rendered HTML at the edge.
+ */
+async function fetchAndInjectSlug(request, slug) {
+  // Fetch storefront data first (needed for SSR), origin streams in parallel
+  const storefrontData = await prefetchStorefrontData(slug);
+  return streamInjectedResponse(request, slug, storefrontData);
 }
 
 /* ============== CACHED FETCH ============== */
