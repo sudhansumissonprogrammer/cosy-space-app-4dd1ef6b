@@ -386,22 +386,7 @@ export default function ProductDetail() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-3 sm:py-8">
-      {/* Breadcrumb — minimal */}
-      <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Link to={storefrontPath(store.slug)} className="hover:text-primary transition-colors">
-          Home
-        </Link>
-        {product.category && (
-          <>
-            <span className="opacity-40">/</span>
-            <Link to={storefrontPath(store.slug, `category/${product.category}`)} className="hover:text-primary transition-colors">
-              {product.category}
-            </Link>
-          </>
-        )}
-        <span className="opacity-40">/</span>
-        <span className="text-foreground font-medium line-clamp-1">{product.name}</span>
-      </nav>
+      {/* Breadcrumb — hidden */}
 
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
         {/* Image Gallery */}
