@@ -301,6 +301,13 @@ async function proxyToOrigin(request) {
 /* ============== PREFETCH STOREFRONT DATA ============== */
 
 async function prefetchStorefrontData(slug) {
+  const cacheKey = new Request(`https://cache/storefront-data-${slug}`);
+
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    try { return await cached.json(); } catch { /* fall through */ }
+  }
+
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
@@ -315,7 +322,16 @@ async function prefetchStorefrontData(slug) {
       }
     );
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json();
+
+    await cache.put(
+      cacheKey,
+      new Response(JSON.stringify(data), {
+        headers: { "Cache-Control": "public, max-age=300" },
+      })
+    );
+
+    return data;
   } catch {
     return null;
   }
