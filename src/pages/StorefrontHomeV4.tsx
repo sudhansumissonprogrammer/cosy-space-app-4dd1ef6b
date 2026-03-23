@@ -387,7 +387,7 @@ export default function StorefrontHomeV4() {
         {!products ? (
           <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:gap-8">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="border" style={{ borderColor: "var(--storefront-text, #1C1C1C)10" }}>
+              <div key={i} className="border" style={{ borderColor: withAlpha("var(--storefront-text, #1C1C1C)", "10") }}>
                 <Skeleton className="w-full" style={{ aspectRatio: "3/4" }} />
                 <div className="p-4 space-y-2">
                   <Skeleton className="h-3 w-20" />
