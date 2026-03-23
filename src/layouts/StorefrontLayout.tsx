@@ -29,6 +29,7 @@ import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
+import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 
 export type StoreData = Tables<"stores">;
 
@@ -369,6 +370,9 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
   const { store, isLoading, slug } = useStorefront(slugOverride);
   const viewTracked = useRef(false);
   const queryClient = useQueryClient();
+
+  // Prefetch storefront route chunks during idle time
+  useEffect(() => { prefetchStorefrontRoutes(); }, []);
 
   useFacebookPixel((store as any)?.facebook_pixel_id);
 

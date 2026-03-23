@@ -1,4 +1,5 @@
 import { useState, useEffect, Suspense } from "react";
+import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -167,6 +168,9 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const isMobile = useIsMobile();
+
+  // Prefetch all dashboard page chunks on mount (covers mobile layout)
+  useEffect(() => { prefetchDashboardRoutes(); }, []);
 
   const { data: store, isLoading: storeLoading } = useQuery({
     queryKey: ["my-store", user?.id],
