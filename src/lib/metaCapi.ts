@@ -78,7 +78,13 @@ export function fireMetaCAPI(params: CAPIEventParams) {
       },
     })
     .then(({ error }) => {
-      if (error) console.warn("Meta CAPI warning:", error.message);
+      if (error) {
+        // Cache "no pixel" to avoid repeated 422s
+        if (error.message?.includes("not configured")) {
+          sessionStorage.setItem(cacheKey, "0");
+        }
+        console.warn("Meta CAPI warning:", error.message);
+      }
     })
     .catch((err) => {
       console.warn("Meta CAPI fire-and-forget error:", err);
