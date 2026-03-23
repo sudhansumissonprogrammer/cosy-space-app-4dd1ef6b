@@ -1,8 +1,8 @@
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense, useMemo, useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { getSubdomainSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -183,11 +183,29 @@ function getLayoutComponent(theme: string) {
  */
 function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const pathSlug = !slugOverride ? location.pathname.split("/store/")[1]?.split("/")[0] : undefined;
   const effectiveSlug = slugOverride || pathSlug;
   
-  // Get theme INSTANTLY from cache/injected data — no API call, no spinner
-  const theme = useMemo(() => getInstantTheme(effectiveSlug), [effectiveSlug]);
+  // Start with cached/injected theme instantly (no spinner)
+  const [theme, setTheme] = useState(() => getInstantTheme(effectiveSlug));
+
+  // Subscribe to query cache — when fresh data arrives with a different theme, switch instantly
+  useEffect(() => {
+    if (!effectiveSlug) return;
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (event?.query?.queryKey?.[0] === "storefront-bulk" && event?.query?.queryKey?.[1] === effectiveSlug) {
+        const freshData = event.query.state.data as any;
+        const freshTheme = freshData?.store?.theme;
+        if (freshTheme && freshTheme !== theme) {
+          setTheme(freshTheme);
+          try { localStorage.setItem(`storefront_theme_${effectiveSlug}`, freshTheme); } catch {}
+        }
+      }
+    });
+    return unsubscribe;
+  }, [effectiveSlug, queryClient, theme]);
+
   const basePath = slugOverride ? "/" : "/store/:slug";
   const LayoutComponent = getLayoutComponent(theme);
 
