@@ -5,6 +5,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Store, ShoppingCart, Heart, User, Search, Menu, Home, LayoutGrid, X } from "lucide-react";
+import { withAlpha } from "@/lib/storefrontColors";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout";
@@ -41,15 +42,15 @@ function MobileAppHeader({ store }: { store: StoreData }) {
       <header
         className="sticky top-0 z-40 border-b backdrop-blur-md"
         style={{
-          backgroundColor: "var(--storefront-bg, hsl(var(--background)))ee",
-          borderColor: "var(--storefront-text, hsl(var(--foreground)))08",
+          backgroundColor: withAlpha("var(--storefront-bg, hsl(var(--background)))", "ee"),
+          borderColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "08"),
         }}
       >
         <div className="flex items-center gap-2 px-3 py-2">
           {/* Hamburger */}
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
-              <button className="flex h-9 w-9 items-center justify-center rounded-2xl transition-all active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label="Open menu">
+              <button className="flex h-9 w-9 items-center justify-center rounded-2xl transition-all active:scale-95" style={{ backgroundColor: withAlpha("var(--storefront-primary, hsl(var(--primary)))", "10") }} aria-label="Open menu">
                 <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
               </button>
             </SheetTrigger>
@@ -94,17 +95,17 @@ function MobileAppHeader({ store }: { store: StoreData }) {
             onClick={() => setSearchOpen(true)}
             className="flex flex-1 items-center gap-2 rounded-full px-4 py-2 text-sm transition-all active:scale-[0.98]"
             style={{
-              backgroundColor: "var(--storefront-text, hsl(var(--foreground)))06",
-              border: "1.5px solid var(--storefront-text, hsl(var(--foreground)))10",
+              backgroundColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "06"),
+              border: `1.5px solid ${withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10")}`,
             }}
             aria-label="Search products"
           >
-            <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }} aria-hidden="true" />
-            <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))35" }}>Search products...</span>
+            <Search className="h-4 w-4 shrink-0" style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "40") }} aria-hidden="true" />
+            <span style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "35") }}>Search products...</span>
           </button>
 
           {/* Cart */}
-          <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-2xl transition-all active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
+          <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-2xl transition-all active:scale-95" style={{ backgroundColor: withAlpha("var(--storefront-primary, hsl(var(--primary)))", "10") }} aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
             <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
             {cartCount > 0 && (
               <span
@@ -146,8 +147,8 @@ function BottomTabBar({ store }: { store: StoreData }) {
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 border-t md:hidden"
         style={{
-          backgroundColor: "var(--storefront-bg, hsl(var(--background)))f8",
-          borderColor: "var(--storefront-text, hsl(var(--foreground)))08",
+          backgroundColor: withAlpha("var(--storefront-bg, hsl(var(--background)))", "f8"),
+          borderColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "08"),
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
         }}
@@ -173,13 +174,13 @@ function BottomTabBar({ store }: { store: StoreData }) {
                     >
                       <TabIcon
                         className="h-[18px] w-[18px] transition-colors"
-                        style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }}
+                        style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "50") }}
                       />
                     </div>
                   </div>
                   <span
                     className="text-[10px] font-semibold"
-                    style={{ color: "var(--storefront-text, hsl(var(--foreground)))45" }}
+                    style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "45") }}
                   >
                     {tab.label}
                   </span>
@@ -203,12 +204,12 @@ function BottomTabBar({ store }: { store: StoreData }) {
                     style={{
                       width: "36px",
                       height: "28px",
-                      backgroundColor: isActive ? "var(--storefront-primary, hsl(var(--primary)))15" : "transparent",
+                      backgroundColor: isActive ? withAlpha("var(--storefront-primary, hsl(var(--primary)))", "15") : "transparent",
                     }}
                   >
                     <TabIcon
                       className="h-[18px] w-[18px] transition-colors"
-                      style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))50" }}
+                      style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "50") }}
                     />
                   </div>
                   {tab.badge && tab.badge > 0 && (
@@ -222,7 +223,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
                 </div>
                 <span
                   className="text-[10px] font-semibold"
-                  style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))45" }}
+                  style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "45") }}
                 >
                   {tab.label}
                 </span>

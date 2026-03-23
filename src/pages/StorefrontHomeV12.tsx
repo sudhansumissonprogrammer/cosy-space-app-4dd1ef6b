@@ -3,6 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
+import { withAlpha } from "@/lib/storefrontColors";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import LazyRender from "@/components/storefront/LazyRender";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
@@ -145,14 +146,14 @@ function V12Categories({ categories, slug }: { categories: any[] | undefined; sl
           >
             <div
               className="h-[72px] w-[72px] rounded-full overflow-hidden border-2 sm:h-20 sm:w-20"
-              style={{ borderColor: "var(--storefront-primary, #FF3F6C)40" }}
+              style={{ borderColor: withAlpha("var(--storefront-primary, #FF3F6C)", "40") }}
             >
               {cat.image_url ? (
                 <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
               ) : (
                 <div
                   className="h-full w-full flex items-center justify-center"
-                  style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)10" }}
+                  style={{ backgroundColor: withAlpha("var(--storefront-primary, #FF3F6C)", "10") }}
                 >
                   <Tag className="h-5 w-5" style={{ color: "var(--storefront-primary, #FF3F6C)" }} />
                 </div>
@@ -208,10 +209,10 @@ function TrustBadges() {
           <div
             key={label}
             className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl"
-            style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)08" }}
+            style={{ backgroundColor: withAlpha("var(--storefront-primary, #FF3F6C)", "08") }}
           >
             <Icon className="h-5 w-5" style={{ color: "var(--storefront-primary, #FF3F6C)" }} />
-            <span className="text-[10px] font-semibold text-center" style={{ color: "var(--storefront-text, #1a1a1a)80" }}>
+            <span className="text-[10px] font-semibold text-center" style={{ color: withAlpha("var(--storefront-text, #1a1a1a)", "80") }}>
               {label}
             </span>
           </div>

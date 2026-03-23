@@ -3,6 +3,7 @@ import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { Tables } from "@/integrations/supabase/types";
 import { optimizeImageUrl, getImageSrcSet, splitImageUrls } from "@/lib/imageOptimize";
+import { withAlpha } from "@/lib/storefrontColors";
 
 /* ── Veg / Non-Veg indicator ── */
 function DietBadge({ category }: { category: string | null }) {
@@ -66,8 +67,8 @@ export default function ProductCardStyle4({ product, slug, store }: Props) {
     <div
       className="flex gap-3 rounded-2xl p-3 transition-all"
       style={{
-        backgroundColor: "var(--storefront-text, #1a1a1a)06",
-        border: "1px solid var(--storefront-text, #1a1a1a)08",
+        backgroundColor: withAlpha("var(--storefront-text, #1a1a1a)", "06"),
+        border: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "08")}`,
       }}
     >
       {(() => {
@@ -139,15 +140,15 @@ export default function ProductCardStyle4({ product, slug, store }: Props) {
             )}
           </div>
 
-          {/* Quantity Controls */}
+          {/* Quantity Controls — uses theme primary color */}
           {qty === 0 ? (
             <button
               onClick={handleAdd}
               className="rounded-xl px-4 py-1.5 text-xs font-bold transition-all active:scale-95"
               style={{
-                backgroundColor: "#25D36615",
-                color: "#25D366",
-                border: "1.5px solid #25D36640",
+                backgroundColor: withAlpha("var(--storefront-primary, #25D366)", "15"),
+                color: "var(--storefront-primary, #25D366)",
+                border: `1.5px solid ${withAlpha("var(--storefront-primary, #25D366)", "40")}`,
               }}
               aria-label={`Add ${product.name} to cart`}
             >
@@ -157,8 +158,8 @@ export default function ProductCardStyle4({ product, slug, store }: Props) {
             <div
               className="flex items-center gap-0 rounded-xl overflow-hidden"
               style={{
-                backgroundColor: "#25D366",
-                color: "#ffffff",
+                backgroundColor: "var(--storefront-primary, #25D366)",
+                color: "var(--storefront-btn-text, #ffffff)",
               }}
             >
               <button

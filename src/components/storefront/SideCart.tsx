@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { Minus, Plus, Trash2, ShoppingCart, ShoppingBag, MessageCircle, Package, X } from "lucide-react";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import CartUpsell from "@/components/storefront/CartUpsell";
@@ -63,7 +64,7 @@ export default function SideCart({ store }: SideCartProps) {
                   >
                     {item.image ? (
                       <img
-                        src={item.image}
+                        src={optimizeImageUrl(item.image, 200)}
                         alt={item.name}
                         className="h-20 w-20 shrink-0 rounded-lg border object-cover"
                       />

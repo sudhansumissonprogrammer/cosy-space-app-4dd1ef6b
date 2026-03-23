@@ -4,6 +4,7 @@ import { Search, X, Package, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { withAlpha } from "@/lib/storefrontColors";
 import type { Tables } from "@/integrations/supabase/types";
 
 type SortOption = "popular" | "price_asc" | "price_desc" | "newest";
@@ -177,7 +178,7 @@ export default function StorefrontSearchOverlay({
               style={{
                 backgroundColor: activeFilterCount > 0 || showFilters
                   ? "var(--storefront-text, hsl(var(--foreground)))"
-                  : "var(--storefront-text, hsl(var(--foreground)))10",
+                   : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
                 color: activeFilterCount > 0 || showFilters
                   ? "var(--storefront-bg, hsl(var(--background)))"
                   : "var(--storefront-text, hsl(var(--foreground)))",
@@ -202,7 +203,7 @@ export default function StorefrontSearchOverlay({
                 style={{
                   backgroundColor: sortBy === opt.value
                     ? "var(--storefront-text, hsl(var(--foreground)))"
-                    : "var(--storefront-text, hsl(var(--foreground)))10",
+                    : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
                   color: sortBy === opt.value
                     ? "var(--storefront-bg, hsl(var(--background)))"
                     : "var(--storefront-text, hsl(var(--foreground)))",
@@ -216,7 +217,7 @@ export default function StorefrontSearchOverlay({
           {/* Expandable filter panel */}
           {showFilters && (
             <div className="px-4 py-3 space-y-3 border-t animate-in slide-in-from-top-2 duration-200"
-              style={{ borderColor: "var(--storefront-text, hsl(var(--foreground)))10" }}
+              style={{ borderColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10") }}
             >
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider mb-2 opacity-50">Price Range</p>
@@ -227,7 +228,7 @@ export default function StorefrontSearchOverlay({
                     style={{
                       backgroundColor: !priceRange
                         ? "var(--storefront-text, hsl(var(--foreground)))"
-                        : "var(--storefront-text, hsl(var(--foreground)))10",
+                        : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
                       color: !priceRange
                         ? "var(--storefront-bg, hsl(var(--background)))"
                         : "var(--storefront-text, hsl(var(--foreground)))",
@@ -243,7 +244,7 @@ export default function StorefrontSearchOverlay({
                       style={{
                         backgroundColor: priceRange?.[0] === pr.range[0]
                           ? "var(--storefront-text, hsl(var(--foreground)))"
-                          : "var(--storefront-text, hsl(var(--foreground)))10",
+                          : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
                         color: priceRange?.[0] === pr.range[0]
                           ? "var(--storefront-bg, hsl(var(--background)))"
                           : "var(--storefront-text, hsl(var(--foreground)))",
