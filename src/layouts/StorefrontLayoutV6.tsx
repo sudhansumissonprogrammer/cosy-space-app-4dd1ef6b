@@ -94,7 +94,7 @@ function CleanHeader({ store }: { store: StoreData }) {
         height: "72px",
         backgroundColor: "var(--storefront-bg, #F8FAFC)",
         borderBottom: "1px solid",
-        borderColor: scrolled ? "var(--storefront-text, #1e293b)10" : "var(--storefront-text, #1e293b)08",
+        borderColor: scrolled ? withAlpha("var(--storefront-text, #1e293b)", "10") : withAlpha("var(--storefront-text, #1e293b)", "08"),
         boxShadow: scrolled ? "0 1px 3px rgba(0,0,0,0.04)" : "none",
       }}
     >
