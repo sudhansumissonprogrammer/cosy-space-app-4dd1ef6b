@@ -653,28 +653,44 @@ export default function ProductDetail() {
             </button>
           </div>
 
-          {/* Delivery & Trust — clean list */}
-          <div className="mt-5 rounded-xl border border-border divide-y divide-border">
-            <div className="flex items-center gap-3 px-4 py-3">
-              <Truck className="h-4 w-4 shrink-0 text-primary" />
-              <div>
-                <p className="text-xs font-bold text-foreground">Free & Express Delivery</p>
-                <p className="text-[10px] text-muted-foreground">Get it by <strong className="text-foreground">{deliveryDate}</strong></p>
-              </div>
+          {/* Trust Badges — large icons like Shopify */}
+          <div className="mt-6 grid grid-cols-3 gap-3 text-center">
+            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+              {/* Free Shipping truck icon */}
+              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="18" width="34" height="24" rx="2" />
+                <path d="M38 26h10l8 10v6h-18V26z" />
+                <circle cx="16" cy="44" r="4" />
+                <circle cx="48" cy="44" r="4" />
+                <path d="M20 44h20" />
+                <path d="M4 44h8" />
+                <path d="M52 44h8" />
+                <text x="14" y="35" fontSize="9" fontWeight="bold" fill="currentColor" stroke="none">FREE</text>
+              </svg>
+              <span className="text-xs font-semibold text-foreground">Free Shipping</span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3">
-              <RotateCcw className="h-4 w-4 shrink-0 text-primary" />
-              <div>
-                <p className="text-xs font-bold text-foreground">Easy Returns</p>
-                <p className="text-[10px] text-muted-foreground">7-day hassle-free return policy</p>
-              </div>
+            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+              {/* 7 Days Return badge/checkmark */}
+              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M32 6l6 3 7-1 4 6 6 3 1 7 3 6-3 6-1 7-6 4-3 6-7 1-6 3-6-3-7 1-4-6-6-3-1-7-3-6 3-6 1-7 6-4 3-6 7-1z" />
+                <path d="M22 33l7 7 13-14" strokeWidth="3" />
+              </svg>
+              <span className="text-xs font-semibold text-foreground">7 Days Return Policy</span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3">
-              <Shield className="h-4 w-4 shrink-0 text-primary" />
-              <div>
-                <p className="text-xs font-bold text-foreground">Secure Checkout</p>
-                <p className="text-[10px] text-muted-foreground">100% secure payment processing</p>
-              </div>
+            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+              {/* Support/helpdesk icon */}
+              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="32" cy="28" r="10" />
+                <path d="M22 28c0-5.5 4.5-10 10-10s10 4.5 10 10" />
+                <path d="M18 28v6a4 4 0 004 4h0" />
+                <path d="M46 28v6a4 4 0 01-4 4h0" />
+                <rect x="14" y="26" width="6" height="12" rx="3" />
+                <rect x="44" y="26" width="6" height="12" rx="3" />
+                <path d="M42 38v4a6 6 0 01-6 6h-4" />
+                <path d="M24 52h8" />
+                <text x="23" y="60" fontSize="7" fontWeight="bold" fill="currentColor" stroke="none">SUPPORT</text>
+              </svg>
+              <span className="text-xs font-semibold text-foreground">Devoted Help Desk</span>
             </div>
           </div>
 
@@ -1043,7 +1059,7 @@ function FrequentlyBoughtTogether({
   );
 }
 
-/* ── Customer Reviews Section ── */
+/* ── Customer Reviews Section — matching reference design ── */
 function CustomerReviews({
   reviews,
   rating,
@@ -1054,78 +1070,133 @@ function CustomerReviews({
   reviewCount: number;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const [activeTab, setActiveTab] = useState<"reviews" | "description" | "returns">("reviews");
   const displayed = showAll ? reviews : reviews.slice(0, 3);
 
+  // Compute review count per star
+  const starCounts = useMemo(() => {
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach(r => { if (counts[r.rating as keyof typeof counts] !== undefined) counts[r.rating as keyof typeof counts]++; });
+    return counts;
+  }, [reviews]);
+
   return (
-    <section className="mt-10 pt-8 border-t border-border">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h2 className="text-lg font-bold text-foreground">Customer Reviews</h2>
-          <div className="mt-1 flex items-center gap-2">
-            <div className="flex items-center gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className={`h-3.5 w-3.5 ${i < Math.floor(rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"}`} />
-              ))}
-            </div>
-            <span className="text-sm font-bold text-foreground">{rating}</span>
-            <span className="text-xs text-muted-foreground">({reviewCount} reviews)</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Rating bars */}
-      <div className="mb-5 space-y-1">
-        {[5, 4, 3, 2, 1].map((stars) => {
-          const pct = stars === 5 ? 68 : stars === 4 ? 22 : stars === 3 ? 7 : stars === 2 ? 2 : 1;
-          return (
-            <div key={stars} className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground w-3">{stars}</span>
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-              <div className="flex-1 h-1.5 rounded-full bg-accent overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500" style={{ width: `${pct}%` }} />
-              </div>
-              <span className="text-[10px] text-muted-foreground w-8 text-right">{pct}%</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Review cards */}
-      <div className="space-y-3">
-        {displayed.map((review) => (
-          <div key={review.id} className="rounded-xl border border-border p-4 transition-all hover:shadow-sm">
-            <div className="flex items-start gap-3">
-              <img src={review.avatar} alt={review.name} className="h-9 w-9 rounded-full bg-accent" loading="lazy" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-foreground">{review.name}</span>
-                  {review.verified && (
-                    <span className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600">
-                      <Check className="h-3 w-3" /> Verified
-                    </span>
-                  )}
-                  <span className="text-[10px] text-muted-foreground ml-auto">{review.daysAgo}d ago</span>
-                </div>
-                <div className="flex items-center gap-0.5 mt-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`h-3 w-3 ${i < review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"}`} />
-                  ))}
-                </div>
-                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{review.text}</p>
-                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <ThumbsUp className="h-3 w-3" />
-                  <span>{review.helpful} found this helpful</span>
-                </div>
-              </div>
-            </div>
-          </div>
+    <section className="mt-10 pt-6 border-t border-border">
+      {/* Tab navigation */}
+      <div className="flex items-center gap-6 mb-6 border-b border-border">
+        {(["reviews", "description", "returns"] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-2.5 text-sm font-semibold transition-colors border-b-2 ${
+              activeTab === tab
+                ? "border-foreground text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab === "reviews" ? "Reviews" : tab === "description" ? "Description" : "Return Policy"}
+          </button>
         ))}
       </div>
 
-      {reviews.length > 3 && !showAll && (
-        <button onClick={() => setShowAll(true)} className="mt-3 text-sm font-semibold text-primary hover:underline">
-          View all {reviews.length} reviews →
-        </button>
+      {activeTab === "reviews" && (
+        <div>
+          {/* Review summary card */}
+          <div className="rounded-xl border border-border p-5 mb-6">
+            <h2 className="text-2xl font-bold text-foreground mb-2">Customer Reviews</h2>
+            <div className="flex items-center gap-1 mb-1">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className={`h-5 w-5 ${i < Math.floor(rating) ? "fill-foreground text-foreground" : i < rating ? "fill-foreground/50 text-foreground" : "text-muted-foreground/30"}`} />
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">Based on {reviewCount} reviews</p>
+
+            <button
+              onClick={() => toast("Review submission coming soon!", { dismissible: true })}
+              className="w-full rounded-lg border border-border py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+            >
+              Write a review
+            </button>
+
+            {/* Rating breakdown with counts */}
+            <div className="mt-5 space-y-2">
+              {[5, 4, 3, 2, 1].map((stars) => {
+                const count = starCounts[stars as keyof typeof starCounts];
+                const pct = reviewCount > 0 ? Math.round((count / reviews.length) * 100) : 0;
+                return (
+                  <div key={stars} className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-0.5 w-24 shrink-0">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`h-4 w-4 ${i < stars ? "fill-foreground text-foreground" : "text-muted-foreground/20"}`} />
+                      ))}
+                    </div>
+                    <div className="flex-1 h-3 rounded-sm bg-accent overflow-hidden border border-border">
+                      <div
+                        className="h-full bg-amber-400 transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground w-8 text-right">{pct}%</span>
+                    <span className="text-xs text-muted-foreground w-6 text-right">({count})</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Review cards */}
+          <div className="space-y-3">
+            {displayed.map((review) => (
+              <div key={review.id} className="rounded-xl border border-border p-4 transition-all hover:shadow-sm">
+                <div className="flex items-start gap-3">
+                  <img src={review.avatar} alt={review.name} className="h-9 w-9 rounded-full bg-accent" loading="lazy" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-foreground">{review.name}</span>
+                      {review.verified && (
+                        <span className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600">
+                          <Check className="h-3 w-3" /> Verified
+                        </span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground ml-auto">{review.daysAgo}d ago</span>
+                    </div>
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`h-3 w-3 ${i < review.rating ? "fill-foreground text-foreground" : "text-muted-foreground/20"}`} />
+                      ))}
+                    </div>
+                    <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{review.text}</p>
+                    <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <ThumbsUp className="h-3 w-3" />
+                      <span>{review.helpful} found this helpful</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {reviews.length > 3 && !showAll && (
+            <button onClick={() => setShowAll(true)} className="mt-3 text-sm font-semibold text-primary hover:underline">
+              View all {reviews.length} reviews →
+            </button>
+          )}
+        </div>
+      )}
+
+      {activeTab === "description" && (
+        <div className="text-sm text-muted-foreground leading-relaxed">
+          <p>Product details and specifications are listed above in the product description section.</p>
+        </div>
+      )}
+
+      {activeTab === "returns" && (
+        <div className="text-sm text-muted-foreground leading-relaxed space-y-2">
+          <p>• 7-day easy return policy</p>
+          <p>• Product must be unused and in original packaging</p>
+          <p>• Refund processed within 5-7 business days</p>
+          <p>• Exchange available for size/color variants</p>
+        </div>
       )}
     </section>
   );
