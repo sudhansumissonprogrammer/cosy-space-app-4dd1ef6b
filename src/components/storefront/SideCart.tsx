@@ -64,7 +64,7 @@ export default function SideCart({ store }: SideCartProps) {
                   >
                     {item.image ? (
                       <img
-                        src={item.image}
+                        src={optimizeImageUrl(item.image, 200)}
                         alt={item.name}
                         className="h-20 w-20 shrink-0 rounded-lg border object-cover"
                       />
