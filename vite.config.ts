@@ -69,15 +69,22 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true,
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks(id) {
           // Vendor chunks — split large libraries
-          "vendor-react": ["react", "react-dom"],
-          "vendor-router": ["react-router-dom"],
-          "vendor-query": ["@tanstack/react-query"],
-          "vendor-supabase": ["@supabase/supabase-js"],
-          "vendor-ui-core": ["@radix-ui/react-dialog", "@radix-ui/react-popover", "@radix-ui/react-select"],
-          "vendor-ui-extra": ["@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs", "@radix-ui/react-toast"],
-          "vendor-icons": ["lucide-react"],
+          if (id.includes("node_modules/react-dom")) return "vendor-react";
+          if (id.includes("node_modules/react/")) return "vendor-react";
+          if (id.includes("node_modules/react-router")) return "vendor-router";
+          if (id.includes("node_modules/@tanstack/react-query")) return "vendor-query";
+          if (id.includes("node_modules/@supabase")) return "vendor-supabase";
+          if (id.includes("node_modules/lucide-react")) return "vendor-icons";
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) return "vendor-charts";
+          if (id.includes("node_modules/@radix-ui")) return "vendor-ui";
+          if (id.includes("node_modules/embla-carousel")) return "vendor-carousel";
+
+          // Route-based splitting: admin, dashboard, storefront
+          if (id.includes("/pages/admin/") || id.includes("/AdminSidebar") || id.includes("/AdminRoute")) return "route-admin";
+          if (id.includes("/pages/Dashboard") || id.includes("/layouts/DashboardLayout") || id.includes("/pages/StoreSettings") || id.includes("/pages/ProductsList") || id.includes("/pages/StoreOrders") || id.includes("/pages/StoreAnalytics")) return "route-dashboard";
+          if (id.includes("/pages/Storefront") || id.includes("/layouts/Storefront")) return "route-storefront";
         },
       },
     },

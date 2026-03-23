@@ -8,18 +8,25 @@ initGlobalErrorHandlers();
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Defer Service Worker registration until after the page is interactive
-// This prevents registerSW.js from blocking the critical rendering path (~160ms saving)
-function registerSW() {
+// ── Post-interactive setup: deferred to avoid blocking first paint ──
+
+function postInteractiveSetup() {
+  // 1. Register Service Worker
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
       .catch(() => {});
   }
+
+  // 2. Set up hover-based link prefetching + idle route prefetch
+  import("@/lib/prefetch").then(({ setupHoverPrefetch, prefetchCriticalRoutes }) => {
+    setupHoverPrefetch();
+    prefetchCriticalRoutes();
+  });
 }
 
 if ("requestIdleCallback" in window) {
-  (window as any).requestIdleCallback(registerSW);
+  (window as any).requestIdleCallback(postInteractiveSetup, { timeout: 4000 });
 } else {
-  setTimeout(registerSW, 3000);
+  setTimeout(postInteractiveSetup, 3000);
 }
