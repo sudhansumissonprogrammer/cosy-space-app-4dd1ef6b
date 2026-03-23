@@ -415,7 +415,7 @@ export default function StorefrontHomeV4() {
             )}
           </>
         ) : (
-          <div className="flex min-h-[200px] items-center justify-center border" style={{ borderColor: "var(--storefront-text, #1C1C1C)10" }}>
+          <div className="flex min-h-[200px] items-center justify-center border" style={{ borderColor: withAlpha("var(--storefront-text, #1C1C1C)", "10") }}>
             <p className="text-sm opacity-50">No products available yet.</p>
           </div>
         )}

@@ -379,8 +379,8 @@ function MenuSearchBar({
                   onClick={() => onDietChange(opt.value)}
                   className="rounded-full px-3 py-1 text-[11px] font-semibold transition-all"
                   style={{
-                    backgroundColor: dietFilter === opt.value ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
-                    color: dietFilter === opt.value ? "#fff" : "var(--storefront-text, #1a1a1a)80",
+                    backgroundColor: dietFilter === opt.value ? "#25D366" : withAlpha("var(--storefront-text, #1a1a1a)", "08"),
+                    color: dietFilter === opt.value ? "#fff" : withAlpha("var(--storefront-text, #1a1a1a)", "80"),
                   }}
                 >
                   {opt.label}
