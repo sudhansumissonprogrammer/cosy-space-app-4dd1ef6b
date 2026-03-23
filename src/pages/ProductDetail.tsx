@@ -1321,6 +1321,17 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             </div>
           )}
 
+          {/* Share button — top right */}
+          {onShare && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onShare(); }}
+              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-all hover:bg-black/70 active:scale-90"
+              aria-label="Share product"
+            >
+              <Share2 className="h-4 w-4" />
+            </button>
+          )}
+
           {/* Skeleton */}
           {!isMainLoaded && <Skeleton className="aspect-square w-full rounded-none" />}
           <img
