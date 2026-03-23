@@ -88,7 +88,7 @@ const queryClient = new QueryClient({
 
 const LoadingSpinner = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
-    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-muted border-t-foreground" />
   </div>
 );
 
