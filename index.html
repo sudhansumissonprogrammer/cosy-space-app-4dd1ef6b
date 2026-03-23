@@ -65,7 +65,8 @@
         if(!slug)return;
 
         // Preconnect to image hosts we'll likely need
-        var pc=document.createElement('link');pc.rel='preconnect';pc.href='https://overlaysnow.com';document.head.appendChild(pc);
+        var imgOrigins={};
+        function addPreconnect(origin){if(imgOrigins[origin])return;imgOrigins[origin]=1;var pc=document.createElement('link');pc.rel='preconnect';pc.href=origin;document.head.appendChild(pc);}
 
         var url='https://kzvfjknnslgcwumzlwkb.supabase.co/rest/v1/rpc/get_storefront_data';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg';
