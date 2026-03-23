@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useCart } from "@/contexts/CartContext";
 import { Plus, Star, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
