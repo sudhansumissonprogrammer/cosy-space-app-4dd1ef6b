@@ -305,11 +305,11 @@ export default function StorefrontSearchOverlay({
                             <p className="text-xs mt-0.5">
                               {p.sale_price && p.sale_price < p.price ? (
                                 <>
-                                  <span className="font-semibold">₹{Number(p.sale_price).toFixed(0)}</span>
-                                  <span className="ml-1 line-through opacity-40">₹{Number(p.price).toFixed(0)}</span>
+                                  <span className="font-semibold">{currency}{Number(p.sale_price).toFixed(0)}</span>
+                                  <span className="ml-1 line-through opacity-40">{currency}{Number(p.price).toFixed(0)}</span>
                                 </>
                               ) : (
-                                <span className="font-semibold">₹{Number(p.price).toFixed(0)}</span>
+                                <span className="font-semibold">{currency}{Number(p.price).toFixed(0)}</span>
                               )}
                             </p>
                           </div>
