@@ -26,6 +26,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
   const { data: upsellProducts } = useQuery({
     queryKey: ["post-purchase-upsell", storeId, orderedProductIds],
     queryFn: async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("products")
         .select("*")
