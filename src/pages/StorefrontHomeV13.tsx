@@ -353,8 +353,8 @@ function MenuSearchBar({
                   onClick={() => onSortChange(opt.value)}
                   className="rounded-full px-3 py-1 text-[11px] font-semibold transition-all"
                   style={{
-                    backgroundColor: sortBy === opt.value ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
-                    color: sortBy === opt.value ? "#fff" : "var(--storefront-text, #1a1a1a)80",
+                    backgroundColor: sortBy === opt.value ? "#25D366" : withAlpha("var(--storefront-text, #1a1a1a)", "08"),
+                    color: sortBy === opt.value ? "#fff" : withAlpha("var(--storefront-text, #1a1a1a)", "80"),
                   }}
                 >
                   {opt.label}
