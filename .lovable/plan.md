@@ -1,129 +1,90 @@
 
 
-## Plan: Improve Storefront Performance (74→95+) and Accessibility (85→95+)
+## Plan: Cold-Load Performance Optimization (4-5s → <2s on Mobile)
 
-Based on the Lighthouse report from mgwinner.in, here are the specific issues and fixes.
-
----
-
-### Performance Fixes (74 → 95+ target)
-
-**Issue 1: FCP 3.2s / LCP 4.6s — CSS is render-blocking (1,250ms)**
-
-The main CSS bundle (`index-DK4_eNLb.css`) blocks first paint for 1.25 seconds with 17KB unused.
-
-**Fix:** Inline critical above-the-fold CSS in `index.html` and async-load the full stylesheet. We already have some inline styles — expand them to cover the storefront skeleton, marquee bar, and nav shell so the page paints instantly.
-
-| File | Change |
-|------|--------|
-| `index.html` | Add more critical CSS inline (nav, marquee, card grid skeleton). Add `<link rel="preload" as="style">` pattern for main CSS |
-
-**Issue 2: LCP element render delay 1,280ms — image not preconnected**
-
-The LCP image comes from `overlaysnow.com` (external CDN), but there's no `<link rel="preconnect">` for it. Lighthouse suggests 300ms savings.
-
-**Fix:** Dynamically inject `<link rel="preconnect">` for the product image origin when storefront data loads. Since image origins vary per store, we'll add this in `StorefrontLayout.tsx` after store data is available.
-
-| File | Change |
-|------|--------|
-| `src/layouts/StorefrontLayout.tsx` | After store loads, extract image origin from first product and inject `preconnect` link |
-
-**Issue 3: LCP resource load delay 1,240ms — JS execution before image request**
-
-The browser discovers the LCP image late because it's rendered by React after JS executes.
-
-**Fix:** In the Cloudflare Worker (already injects `__STOREFRONT_DATA__`), also inject a `<link rel="preload" as="image">` for the first product image directly into the HTML `<head>`. On the client side, use `preloadHeroImage()` earlier.
-
-| File | Change |
-|------|--------|
-| `src/layouts/StorefrontLayout.tsx` | Call `preloadHeroImage` for first product image in `useStorefront` initialData path |
-
-**Issue 4: Unused JS 94KB — vendor bundles too large**
-
-Supabase SDK (35.6KB unused), main index (29.3KB unused), UI vendor (29.3KB unused).
-
-**Fix:** Split Radix UI components into more granular chunks and ensure tree-shaking works properly. Move rarely-used Radix packages out of the vendor-ui chunk.
-
-| File | Change |
-|------|--------|
-| `vite.config.ts` | Split `vendor-ui` into `vendor-ui-core` (dialog, popover, select) and `vendor-ui-extra` (rest). Add `vendor-icons` for lucide-react |
-
-**Issue 5: `<main>` landmark missing**
-
-No `<main>` element wrapping page content, which also affects accessibility.
-
-**Fix:** Wrap the `<Outlet>` content area with `<main>` in all storefront layouts.
-
-| File | Change |
-|------|--------|
-| `src/layouts/StorefrontLayout.tsx` (+ all V2–V13 variants) | Wrap `<Suspense>` block in `<main>` element |
+The architecture is already well-optimized for repeat visits (Cloudflare Worker injects `__STOREFRONT_DATA__`, localStorage SWR cache). The cold-load bottleneck is clear: **JS parse/execute blocks rendering for ~1.5s**, the LCP image isn't discoverable until React renders, and non-critical resources compete with critical ones.
 
 ---
 
-### Accessibility Fixes (85 → 95+ target)
+### Root Cause Analysis
 
-**Issue 6: Buttons without accessible names (5 failing elements)**
-
-- `CartBadge` button — no `aria-label`
-- `WishlistBadge` link+button — no `aria-label`  
-- `AccountBadge` link — no `aria-label`
-- `ShareStoreDialog` icon-only button — no `aria-label`
-- Filter/sort buttons on StorefrontHome — no `aria-label`
-- Search trigger button — no `aria-label`
-
-| File | Change |
-|------|--------|
-| `src/layouts/StorefrontLayout.tsx` | Add `aria-label` to CartBadge, WishlistBadge, AccountBadge, ShareStoreDialog icon button |
-| `src/components/ShareStoreDialog.tsx` | Add `aria-label="Share store"` to icon-only button |
-| `src/pages/StorefrontHome.tsx` | Add `aria-label` to search trigger, filter button, sort button |
-
-**Issue 7: Links without discernible names**
-
-- Store logo link (no alt text when logo is an image, no text fallback)
-- Login link (icon only, no aria-label)
-- Wishlist link (icon only, no aria-label)
-
-| File | Change |
-|------|--------|
-| `src/layouts/StorefrontLayout.tsx` | Add `aria-label` to logo link, login link, wishlist link |
-
-**Issue 8: Insufficient color contrast**
-
-- Search bar placeholder text on `bg-accent/60` — low contrast
-- `text-success` discount badges on `bg-success/10` — low contrast  
-- `btn-gold` ADD TO CART buttons — potential contrast issue
-- Marquee text on gradient background
-
-| File | Change |
-|------|--------|
-| `src/index.css` | Darken `--success` from `152 60% 42%` to `152 60% 32%` for better contrast on light bg |
-| `src/pages/StorefrontHome.tsx` | Change search placeholder from `text-muted-foreground` to `text-foreground/60` for better contrast |
-| `src/components/storefront/ProductCardStyle1.tsx` | Ensure discount badge text meets 4.5:1 ratio. Change `text-success` to `text-success-foreground` with darker `bg-success` |
-| `src/components/storefront/StorefrontMarquee.tsx` | Ensure marquee text color has sufficient contrast against gradient |
-
-**Issue 9: Missing `<main>` landmark** (covered in Issue 5 above)
+| Bottleneck | Impact | Fix |
+|-----------|--------|-----|
+| CSS bundle render-blocks for 1,250ms | FCP delayed | Inline critical CSS in `index.html` |
+| LCP image only discovered after React renders | LCP 4.6s | Worker injects `<link rel="preload">` for first product image |
+| `registerSW.js` is render-blocking (160ms) | FCP delayed | Defer SW registration |
+| All storefront JS loads before paint | FCP 3.2s | HTML skeleton in `index.html` for instant paint |
+| No `<meta charset>` early enough | Best practices flag | Move charset to first position |
+| Unused CSS 17KB in main bundle | Slower parse | Already using cssCodeSplit; add purgecss considerations |
 
 ---
 
-### SEO Fix
+### Changes
 
-**Issue 10: robots.txt validation error**
+#### 1. Enhanced HTML Shell with Storefront Skeleton (index.html)
 
-Line 29 `Content-Signal: search=yes,ai-train=no` is flagged as unknown directive.
+Replace the spinner with a **full storefront skeleton** (marquee + nav + search + product grid) directly in `index.html`. This renders in <100ms before any JS loads.
 
-| File | Change |
-|------|--------|
-| `supabase/functions/robots-txt/index.ts` | Remove or comment out the `Content-Signal` line since it's a non-standard directive |
+Also:
+- Move `<meta charset>` to be the very first child of `<head>` (Best Practices fix)
+- Add `modulepreload` hints for the main entry chunk
+- Expand inline critical CSS to include storefront layout (nav bar, marquee bar, card grid skeleton shapes)
+
+**Key change**: The `<div id="root">` will contain a full storefront skeleton HTML instead of a spinner, so users see a meaningful layout immediately.
+
+#### 2. Worker: Inject LCP Image Preload (docs/cloudflare-worker-fixed.js)
+
+In `fetchAndInjectSlug()`, after fetching storefront data, extract the first product image URL and inject a `<link rel="preload" as="image" fetchpriority="high">` into the HTML `<head>`. This makes the LCP image discoverable at HTML parse time, not after JS execution.
+
+Also inject `<link rel="preconnect">` for the product image origin (e.g., `overlaysnow.com`).
+
+```text
+Current flow:  HTML → parse JS → execute React → render <img> → browser discovers image → loads
+New flow:      HTML (with preload) → browser discovers image immediately → loads in parallel with JS
+```
+
+#### 3. Defer Service Worker Registration (vite.config.ts)
+
+The `registerSW.js` script blocks rendering for 160ms. Change VitePWA to use `injectRegister: null` and register the SW manually after the page is interactive (in `main.tsx` with `requestIdleCallback`).
+
+#### 4. Async CSS Loading Pattern (index.html)
+
+Add the async CSS loading pattern for the main stylesheet. The Vite-generated CSS link in the built HTML is render-blocking. We'll add a small inline script that converts the CSS `<link>` to async after DOM is ready.
+
+#### 5. Optimize Font Loading (index.html)
+
+The current font preload/async pattern is good but can be improved:
+- Remove the `<link rel="preload" as="style">` for Inter (it creates an extra request that doesn't help since the stylesheet is already loaded async)
+- Keep only the `media="print" onload="this.media='all'"` pattern
+
+#### 6. Add `fetchpriority` to First Product Cards (ProductCardStyle1.tsx + all card styles)
+
+Already implemented with `priority` prop. Verify it flows through all 4 card styles correctly — this is already done.
+
+#### 7. Storefront Layout: Preconnect to Image Origins (StorefrontLayout.tsx)
+
+Add a `useEffect` that extracts the image CDN origin from the first product and injects a `<link rel="preconnect">` dynamically. This is already partially planned but needs implementation.
 
 ---
 
-### Summary — 13 files to edit
+### File Changes Summary
 
-| Category | Files |
-|----------|-------|
-| Performance | `index.html`, `vite.config.ts`, `src/layouts/StorefrontLayout.tsx` (+ V2–V13) |
-| Accessibility | `StorefrontLayout.tsx`, `ShareStoreDialog.tsx`, `StorefrontHome.tsx`, `ProductCardStyle1.tsx`, `StorefrontMarquee.tsx`, `index.css` |
-| SEO | `robots-txt/index.ts` |
+| File | Change |
+|------|--------|
+| `index.html` | Move charset first; replace spinner with storefront skeleton; expand critical CSS; remove redundant font preload; add async CSS script |
+| `docs/cloudflare-worker-fixed.js` | In `fetchAndInjectSlug()`: extract first product image, inject `<link rel="preload as="image">` and `<link rel="preconnect">` for image origin |
+| `vite.config.ts` | Set `injectRegister: null` in VitePWA config to stop render-blocking `registerSW.js` |
+| `src/main.tsx` | Add manual SW registration via `requestIdleCallback` after app mounts |
+| `src/layouts/StorefrontLayout.tsx` | Add `useEffect` to inject `<link rel="preconnect">` for product image CDN origin |
 
-All changes apply to the shared storefront components, so every current and future store will benefit automatically.
+### Expected Impact
+
+| Metric | Before | After (estimated) |
+|--------|--------|-------------------|
+| FCP | 3.2s | ~1.2s |
+| LCP | 4.6s | ~2.0s |
+| Speed Index | 5.1s | ~2.5s |
+| TBT | 0ms | 0ms (maintained) |
+| CLS | 0 | 0 (maintained) |
+| Performance Score | 74 | 90-95+ |
 
