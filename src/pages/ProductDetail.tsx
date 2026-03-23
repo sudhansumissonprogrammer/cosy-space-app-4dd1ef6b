@@ -390,41 +390,28 @@ export default function ProductDetail() {
 
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
         {/* Image Gallery */}
-        <ImageGallery key={product.id} images={allImages} productName={product.name} hasDiscount={hasDiscount} discountPct={discountPct} />
+        <ImageGallery
+          key={product.id}
+          images={allImages}
+          productName={product.name}
+          hasDiscount={hasDiscount}
+          discountPct={discountPct}
+          onShare={async () => {
+            const baseShareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
+            const shareUrl = `${baseShareUrl}&v=${Date.now()}`;
+            if (navigator.share) {
+              try { await navigator.share({ title: product.name, url: shareUrl }); } catch {}
+            } else {
+              try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); } catch { toast.error("Failed to copy"); }
+            }
+          }}
+        />
 
-        {/* Product Info — clean hierarchy */}
+        {/* Product Info */}
         <div className="flex flex-col gap-0">
-          {/* Category — small subtle tag, visually hidden slug area */}
-          {product.category && (
-            <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70 mb-1.5">
-              {product.category}
-            </span>
-          )}
 
-          {/* Title + Share */}
-          <div className="flex items-start gap-2">
-            <h1 className="flex-1 text-xl font-semibold text-foreground leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), 'Alegreya SC', serif" }}>
-              {product.name}
-            </h1>
-            <button
-              onClick={async () => {
-                const baseShareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
-                const shareUrl = `${baseShareUrl}&v=${Date.now()}`;
-                if (navigator.share) {
-                  try { await navigator.share({ title: product.name, url: shareUrl }); } catch {}
-                } else {
-                  try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); } catch { toast.error("Failed to copy"); }
-                }
-              }}
-              className="mt-0.5 shrink-0 rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              title="Share"
-            >
-              <Share2 className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Rating & Social Proof — single clean row */}
-          <div className="mt-2 flex items-center gap-2.5 flex-wrap">
+          {/* Rating & Social Proof */}
+          <div className="flex items-center gap-2.5 flex-wrap">
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
                 <Star
@@ -440,8 +427,8 @@ export default function ProductDetail() {
             </span>
           </div>
 
-          {/* Price Block — clean card */}
-          <div className="mt-4 rounded-xl border p-4" style={{ background: `color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 6%, transparent)`, borderColor: `color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 15%, transparent)` }}>
+          {/* Price Block */}
+          <div className="mt-3 rounded-xl border p-4" style={{ background: `color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 6%, transparent)`, borderColor: `color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 15%, transparent)` }}>
             <div className="flex items-baseline gap-2.5 flex-wrap">
               <span className="text-2xl font-extrabold text-foreground sm:text-3xl">
                 {currency} {Number(variantPrice).toFixed(2)}
@@ -462,14 +449,11 @@ export default function ProductDetail() {
                 You save {currency} {(product.price - product.sale_price!).toFixed(2)} on this order
               </p>
             )}
-
-            {/* Countdown Timer for sale items */}
             {hasDiscount && <CountdownTimer productId={product.id} />}
-
             <p className="mt-2 text-[10px] text-muted-foreground uppercase tracking-wide">Inclusive of all taxes</p>
           </div>
 
-          {/* Live viewers — subtle */}
+          {/* Live viewers */}
           <div className="mt-3 flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
@@ -557,20 +541,10 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Trust Badges — compact */}
-          {!isOutOfStock && (
-            <div className="mt-4 flex items-center justify-start gap-4 flex-wrap">
-              <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                <Lock className="h-3 w-3 text-emerald-500" /> Secure
-              </span>
-              <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                <Truck className="h-3 w-3 text-emerald-500" /> Free Delivery
-              </span>
-              <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                <RotateCcw className="h-3 w-3 text-emerald-500" /> Easy Returns
-              </span>
-            </div>
-          )}
+          {/* Product Title — below quantity */}
+          <h1 className="mt-4 text-xl font-semibold text-foreground leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), 'Alegreya SC', serif" }}>
+            {product.name}
+          </h1>
 
           {/* CTA Buttons — clean, well-spaced */}
           {!isOutOfStock && (
