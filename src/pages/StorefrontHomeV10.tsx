@@ -95,7 +95,7 @@ function MilanoCategories({ categories, slug }: { categories: any[] | undefined;
           >
             <div
               className="h-[72px] w-[72px] rounded-full overflow-hidden border-2 sm:h-20 sm:w-20"
-              style={{ borderColor: "var(--storefront-primary, #1a1a1a)40" }}
+              style={{ borderColor: withAlpha("var(--storefront-primary, #1a1a1a)", "40") }}
             >
               {cat.image_url ? (
                 <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
