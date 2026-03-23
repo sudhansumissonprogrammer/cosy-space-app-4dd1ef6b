@@ -10,8 +10,8 @@ import { logError } from "@/lib/logError";
 
 // Theme registry — each theme lazy-loaded independently; only the active theme is ever downloaded
 const themeRegistry: Record<string, {
-  layout: React.LazyExoticComponent<any>;
-  home: React.LazyExoticComponent<any>;
+  layout: React.LazyExoticComponent<React.ComponentType<{ slugOverride?: string }>>;
+  home: React.LazyExoticComponent<React.ComponentType>;
 }> = {
   "theme-1": {
     layout: lazy(() => import("./layouts/StorefrontLayout")),
