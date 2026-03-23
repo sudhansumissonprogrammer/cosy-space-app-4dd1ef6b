@@ -206,7 +206,7 @@ function FlashDeals({ products, slug }: { products: any[]; slug: string }) {
               key={product.id}
               to={storefrontPath(slug, `product/${product.slug || product.id}`)}
               className="flex-shrink-0 w-36 overflow-hidden rounded-2xl shadow-sm transition-all active:scale-[0.97]"
-              style={{ scrollSnapAlign: "start", backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: "1px solid var(--storefront-text, hsl(var(--foreground)))08" }}
+              style={{ scrollSnapAlign: "start", backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: `1px solid ${withAlpha("var(--storefront-text, hsl(var(--foreground)))", "08")}` }}
             >
               <div className="relative" style={{ aspectRatio: "1/1" }}>
                 {product.image_url ? (
