@@ -304,9 +304,16 @@ async function proxyToOrigin(request) {
   }
 }
 
-/* ============== PREFETCH STOREFRONT DATA ============== */
+/* ============== PREFETCH STOREFRONT DATA (EDGE-CACHED) ============== */
 
 async function prefetchStorefrontData(slug) {
+  // Check edge cache first (avoids hitting Supabase on background revalidations)
+  const cacheKey = new Request(`https://cache/storefront-data/${slug}`);
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    try { return await cached.json(); } catch {}
+  }
+
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
@@ -321,7 +328,22 @@ async function prefetchStorefrontData(slug) {
       }
     );
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json();
+
+    // Cache the raw data at the edge for 5 min
+    if (data?.store) {
+      await cache.put(
+        cacheKey,
+        new Response(JSON.stringify(data), {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+          },
+        })
+      );
+    }
+
+    return data;
   } catch {
     return null;
   }
