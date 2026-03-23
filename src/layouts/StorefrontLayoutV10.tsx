@@ -271,7 +271,7 @@ function MilanoTabBar({ store }: { store: StoreData }) {
               </div>
               <span
                 className="text-[10px] font-medium"
-                style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : "var(--storefront-text, #1a1a1a)60" }}
+                style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : withAlpha("var(--storefront-text, #1a1a1a)", "60") }}
               >
                 {tab.label}
               </span>
