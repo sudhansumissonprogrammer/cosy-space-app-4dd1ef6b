@@ -193,7 +193,7 @@ function CleanHeader({ store }: { store: StoreData }) {
                 Categories
               </span>
               <div className="absolute top-full left-0 mt-2 min-w-[180px] rounded-xl border p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-lg"
-                style={{ backgroundColor: "var(--storefront-bg, #F8FAFC)", borderColor: "var(--storefront-text, #1e293b)10" }}>
+                style={{ backgroundColor: "var(--storefront-bg, #F8FAFC)", borderColor: withAlpha("var(--storefront-text, #1e293b)", "10") }}>
                 {categories.map((cat: any) => (
                   <Link
                     key={cat.id}

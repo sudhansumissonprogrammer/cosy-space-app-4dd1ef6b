@@ -130,7 +130,7 @@ function EditorialHeader({ store }: { store: StoreData }) {
                   className="flex flex-col h-full"
                   style={{ backgroundColor: "var(--storefront-bg, #fff)", color: "var(--storefront-text, #1a1a1a)" }}
                 >
-                  <div className="border-b p-6" style={{ borderColor: "var(--storefront-text, #1a1a1a)08" }}>
+                  <div className="border-b p-6" style={{ borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "08") }}>
                     <span
                       className="text-lg font-bold tracking-tight uppercase"
                       style={{ fontFamily: "var(--storefront-heading-font, 'Playfair Display')" }}
