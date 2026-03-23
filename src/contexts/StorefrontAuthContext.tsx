@@ -1,6 +1,14 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+
+// Lazy singleton — Supabase SDK is not loaded until first auth interaction
+let _supabasePromise: Promise<any> | null = null;
+function getSupabase() {
+  if (!_supabasePromise) {
+    _supabasePromise = import("@/integrations/supabase/client").then(m => m.supabase);
+  }
+  return _supabasePromise;
+}
 
 interface StorefrontCustomer {
   id: string;
@@ -37,8 +45,9 @@ export function StorefrontAuthProvider({
 
   const fetchOrCreateCustomer = useCallback(
     async (userId: string, email?: string) => {
+      const supabase = await getSupabase();
       // Try to fetch existing customer record
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("storefront_customers")
         .select("*")
         .eq("user_id", userId)
@@ -65,33 +74,41 @@ export function StorefrontAuthProvider({
   );
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, sess) => {
-      setSession(sess);
-      setUser(sess?.user ?? null);
-      if (sess?.user) {
-        // defer to avoid Supabase deadlock
-        setTimeout(() => fetchOrCreateCustomer(sess.user.id, sess.user.email), 0);
-      } else {
-        setCustomer(null);
-      }
-      setLoading(false);
+    let subscription: any = null;
+
+    // Lazy-init: load Supabase and set up auth listeners
+    getSupabase().then((supabase) => {
+      const {
+        data: { subscription: sub },
+      } = supabase.auth.onAuthStateChange((_event: string, sess: Session | null) => {
+        setSession(sess);
+        setUser(sess?.user ?? null);
+        if (sess?.user) {
+          setTimeout(() => fetchOrCreateCustomer(sess.user.id, sess.user.email), 0);
+        } else {
+          setCustomer(null);
+        }
+        setLoading(false);
+      });
+      subscription = sub;
+
+      supabase.auth.getSession().then(({ data: { session: sess } }: any) => {
+        setSession(sess);
+        setUser(sess?.user ?? null);
+        if (sess?.user) {
+          fetchOrCreateCustomer(sess.user.id, sess.user.email);
+        }
+        setLoading(false);
+      });
     });
 
-    supabase.auth.getSession().then(({ data: { session: sess } }) => {
-      setSession(sess);
-      setUser(sess?.user ?? null);
-      if (sess?.user) {
-        fetchOrCreateCustomer(sess.user.id, sess.user.email);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, [fetchOrCreateCustomer]);
 
   const signUp = async (email: string, password: string, name?: string) => {
+    const supabase = await getSupabase();
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -101,11 +118,13 @@ export function StorefrontAuthProvider({
   };
 
   const signIn = async (email: string, password: string) => {
+    const supabase = await getSupabase();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
 
   const signOut = async () => {
+    const supabase = await getSupabase();
     await supabase.auth.signOut();
     setCustomer(null);
   };

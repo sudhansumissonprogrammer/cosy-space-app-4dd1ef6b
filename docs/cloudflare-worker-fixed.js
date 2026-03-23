@@ -273,6 +273,7 @@ async function proxyToOrigin(request) {
         "public, max-age=600, stale-while-revalidate=86400"
       );
       newRes.headers.set("Vary", "Accept-Encoding");
+    }
 
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
       newRes.headers.set(k, v);
@@ -421,8 +422,7 @@ function buildServerRenderedShell(storefrontData) {
  * Uses TransformStream so the browser receives <head> bytes immediately
  * without waiting for the full origin response to buffer.
  */
-async function streamInjectedResponse(request, slug, storefrontData) {
-  const originResponse = await proxyToOrigin(request);
+async function streamInjectedResponse(request, slug, storefrontData, originResponse) {
   const contentType = originResponse.headers.get("content-type") || "";
 
   if (!contentType.includes("text/html") || !originResponse.ok) {
@@ -544,9 +544,12 @@ async function streamInjectedResponse(request, slug, storefrontData) {
  * PERF: Injects __STOREFRONT_DATA__ + server-rendered HTML at the edge.
  */
 async function fetchAndInjectSlug(request, slug) {
-  // Fetch storefront data first (needed for SSR), origin streams in parallel
-  const storefrontData = await prefetchStorefrontData(slug);
-  return streamInjectedResponse(request, slug, storefrontData);
+  // Run both in parallel — origin fetch starts immediately alongside data fetch
+  const [storefrontData, originResponse] = await Promise.all([
+    prefetchStorefrontData(slug),
+    proxyToOrigin(request),
+  ]);
+  return streamInjectedResponse(request, slug, storefrontData, originResponse);
 }
 
 /* ============== CACHED FETCH ============== */

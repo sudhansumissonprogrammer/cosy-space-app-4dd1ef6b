@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, ShoppingBag, X } from "lucide-react";
@@ -26,6 +26,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
   const { data: upsellProducts } = useQuery({
     queryKey: ["post-purchase-upsell", storeId, orderedProductIds],
     queryFn: async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -43,6 +44,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
   const handleAddToOrder = async (product: any) => {
     setAdding(product.id);
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
       const price = product.sale_price && product.sale_price < product.price ? product.sale_price : product.price;
       
       // Insert the item directly into order_items and update order total

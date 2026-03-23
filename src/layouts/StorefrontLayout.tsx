@@ -3,7 +3,7 @@ import { useState, Suspense, lazy } from "react";
 import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -100,7 +100,8 @@ export function useStorefront(slugOverride?: string) {
         return injected;
       }
 
-      // 2. Fetch from API
+      // 2. Fetch from API (lazy-load Supabase — not needed on cache hit)
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
       if (error) throw error;
       const result = data as any;
