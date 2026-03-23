@@ -65,30 +65,51 @@ export function StorefrontAuthProvider({
   );
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, sess) => {
-      setSession(sess);
-      setUser(sess?.user ?? null);
-      if (sess?.user) {
-        // defer to avoid Supabase deadlock
-        setTimeout(() => fetchOrCreateCustomer(sess.user.id, sess.user.email), 0);
-      } else {
-        setCustomer(null);
-      }
-      setLoading(false);
+    // Defer auth initialization to avoid blocking first paint.
+    // Anonymous visitors (majority) should not wait for auth SDK.
+    const initAuth = () => {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, sess) => {
+        setSession(sess);
+        setUser(sess?.user ?? null);
+        if (sess?.user) {
+          setTimeout(() => fetchOrCreateCustomer(sess.user.id, sess.user.email), 0);
+        } else {
+          setCustomer(null);
+        }
+        setLoading(false);
+      });
+
+      supabase.auth.getSession().then(({ data: { session: sess } }) => {
+        setSession(sess);
+        setUser(sess?.user ?? null);
+        if (sess?.user) {
+          fetchOrCreateCustomer(sess.user.id, sess.user.email);
+        }
+        setLoading(false);
+      });
+
+      return subscription;
+    };
+
+    // Use requestIdleCallback to defer auth init after first paint
+    let subscription: any;
+    const schedule = typeof requestIdleCallback !== "undefined" ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 100);
+    const handle = schedule(() => {
+      subscription = initAuth();
     });
 
-    supabase.auth.getSession().then(({ data: { session: sess } }) => {
-      setSession(sess);
-      setUser(sess?.user ?? null);
-      if (sess?.user) {
-        fetchOrCreateCustomer(sess.user.id, sess.user.email);
-      }
-      setLoading(false);
-    });
+    // If still loading after 2s (safety net), mark as done
+    const safetyTimeout = setTimeout(() => setLoading(false), 2000);
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription?.unsubscribe();
+      clearTimeout(safetyTimeout);
+      if (typeof cancelIdleCallback !== "undefined" && typeof handle === "number") {
+        cancelIdleCallback(handle);
+      }
+    };
   }, [fetchOrCreateCustomer]);
 
   const signUp = async (email: string, password: string, name?: string) => {

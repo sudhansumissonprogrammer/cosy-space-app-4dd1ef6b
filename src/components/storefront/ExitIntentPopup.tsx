@@ -16,7 +16,10 @@ interface ExitIntentPopupProps {
 export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupProps) {
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [activated, setActivated] = useState(false);
 
+  // Only fetch coupon after exit intent is first detected (5s delay + mouseleave)
+  // This prevents an unnecessary API call on every page load
   const { data: coupon } = useQuery({
     queryKey: ["exit-intent-coupon", storeId],
     queryFn: async () => {
@@ -32,15 +35,28 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
       return data;
     },
     staleTime: 10 * 60 * 1000,
+    enabled: activated, // Only fetch when exit intent system activates
   });
 
+  // Activate coupon fetch after 5s delay (don't block initial load)
+  useEffect(() => {
+    const alreadyShown = sessionStorage.getItem(`exit_popup_${storeId}`);
+    if (alreadyShown) return;
+
+    const timer = setTimeout(() => {
+      setActivated(true);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [storeId]);
+
+  // Set up exit intent listeners once coupon is available
   useEffect(() => {
     if (!coupon) return;
 
     const alreadyShown = sessionStorage.getItem(`exit_popup_${storeId}`);
     if (alreadyShown) return;
 
-    // Desktop: mouseleave
     const handleMouseLeave = (e: MouseEvent) => {
       if (e.clientY <= 0) {
         sessionStorage.setItem(`exit_popup_${storeId}`, "1");
@@ -48,22 +64,10 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
       }
     };
 
-    // Mobile: back/scroll-up detection (simplified — use visibilitychange)
-    const handleVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        // Don't show popup on visibility hidden, only on mouseleave
-      }
-    };
-
-    const timer = setTimeout(() => {
-      document.addEventListener("mouseleave", handleMouseLeave);
-      document.addEventListener("visibilitychange", handleVisibility);
-    }, 5000); // Wait 5s before enabling
+    document.addEventListener("mouseleave", handleMouseLeave);
 
     return () => {
-      clearTimeout(timer);
       document.removeEventListener("mouseleave", handleMouseLeave);
-      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [coupon, storeId]);
 

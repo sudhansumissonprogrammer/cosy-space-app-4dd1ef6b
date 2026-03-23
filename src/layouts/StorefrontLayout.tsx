@@ -1,4 +1,4 @@
-import { useState, Suspense } from "react";
+import { useState, Suspense, lazy } from "react";
 import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -15,14 +15,15 @@ import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import SideCart from "@/components/storefront/SideCart";
-import SmartInstallPrompt from "@/components/SmartInstallPrompt";
-import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import { trackPageView } from "@/lib/trackPageView";
-import ExitIntentPopup from "@/components/storefront/ExitIntentPopup";
+
+// Lazy-load non-critical components to reduce initial JS parse time
+const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
+const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
+const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
@@ -518,8 +519,10 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
         </div>
       </nav>
 
-      <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-      <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
+      <Suspense fallback={null}>
+        <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+        <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
+      </Suspense>
       <main>
         <Suspense fallback={<StorefrontContentSkeleton />}>
           <Outlet context={store} />
@@ -529,7 +532,9 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
       <StorefrontFooter store={store} />
       <SideCart store={store} />
       <FloatingWhatsApp store={store} />
-      <ExitIntentPopup storeId={store.id} storeName={store.name} />
+      <Suspense fallback={null}>
+        <ExitIntentPopup storeId={store.id} storeName={store.name} />
+      </Suspense>
 
       {/* Exit Checkout Confirmation Dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
