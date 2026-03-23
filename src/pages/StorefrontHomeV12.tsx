@@ -153,7 +153,7 @@ function V12Categories({ categories, slug }: { categories: any[] | undefined; sl
               ) : (
                 <div
                   className="h-full w-full flex items-center justify-center"
-                  style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)10" }}
+                  style={{ backgroundColor: withAlpha("var(--storefront-primary, #FF3F6C)", "10") }}
                 >
                   <Tag className="h-5 w-5" style={{ color: "var(--storefront-primary, #FF3F6C)" }} />
                 </div>
