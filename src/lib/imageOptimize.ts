@@ -14,6 +14,7 @@ import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
 import type { VariantWidth } from "./imageCompression";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
+const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
 
 /** Standard widths for srcSet that match our stored variants */
 const PIPELINE_WIDTHS: VariantWidth[] = [200, 400, 800];
@@ -79,15 +80,13 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 5. External URL — edge function proxy ──
+  // ── 5. External URL ──
+  // Default to direct URL for fastest first paint. Optional proxy can be enabled via env.
   if (url.startsWith("https://") || url.startsWith("http://")) {
-    try {
-      if (SUPABASE_PROJECT_ID) {
-        return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-resize?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
-      }
-    } catch {
-      // Invalid URL, return as-is
+    if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
+      return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-resize?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }
+    return url;
   }
 
   return url;
