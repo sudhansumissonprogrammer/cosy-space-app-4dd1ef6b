@@ -217,7 +217,7 @@ function StorySection({ store }: { store: StoreData }) {
         to={storefrontPath(store.slug, "contact")}
         className="inline-flex items-center gap-1 mt-4 px-5 py-2 text-xs font-semibold uppercase tracking-wider border transition-all active:scale-95"
         style={{
-          borderColor: "var(--storefront-bg, #f7f5f0)40",
+          borderColor: withAlpha("var(--storefront-bg, #f7f5f0)", "40"),
           color: "var(--storefront-bg, #f7f5f0)",
           borderRadius: "var(--storefront-button-radius, 0.5rem)",
         }}
