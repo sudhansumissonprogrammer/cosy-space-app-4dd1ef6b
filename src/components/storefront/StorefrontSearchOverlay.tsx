@@ -17,12 +17,14 @@ interface StorefrontSearchOverlayProps {
   currency?: string;
 }
 
-const PRICE_RANGES: { label: string; range: [number, number] }[] = [
-  { label: "Under ₹500", range: [0, 500] },
-  { label: "₹500 – ₹1000", range: [500, 1000] },
-  { label: "₹1000 – ₹2000", range: [1000, 2000] },
-  { label: "₹2000+", range: [2000, Infinity] },
-];
+function getPriceRanges(currency: string) {
+  return [
+    { label: `Under ${currency}500`, range: [0, 500] as [number, number] },
+    { label: `${currency}500 – ${currency}1000`, range: [500, 1000] as [number, number] },
+    { label: `${currency}1000 – ${currency}2000`, range: [1000, 2000] as [number, number] },
+    { label: `${currency}2000+`, range: [2000, Infinity] as [number, number] },
+  ];
+}
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "popular", label: "Popular" },
