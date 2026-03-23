@@ -352,26 +352,7 @@ async function fetchAndInjectSlug(request, slug) {
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" />`;
 
-  // LCP optimization: preload the first product image so the browser discovers it
-  // at HTML parse time instead of waiting for React to render.
-  let lcpPreload = "";
-  if (storefrontData) {
-    const products = storefrontData.products || [];
-    const firstImage = products[0]?.image_url;
-    if (firstImage) {
-      const safeUrl = escapeHtml(firstImage);
-      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" />`;
-      // Preconnect to the image CDN origin
-      try {
-        const imgOrigin = new URL(firstImage).origin;
-        if (imgOrigin && !imgOrigin.includes("supabase")) {
-          lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
-        }
-      } catch {}
-    }
-  }
-
-  html = html.replace("<head>", `<head>${injection}${lcpPreload}`);
+  html = html.replace("<head>", `<head>${injection}`);
 
   return new Response(html, {
     status: response.status,
