@@ -204,7 +204,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
                     style={{
                       width: "36px",
                       height: "28px",
-                      backgroundColor: isActive ? "var(--storefront-primary, hsl(var(--primary)))15" : "transparent",
+                      backgroundColor: isActive ? withAlpha("var(--storefront-primary, hsl(var(--primary)))", "15") : "transparent",
                     }}
                   >
                     <TabIcon
