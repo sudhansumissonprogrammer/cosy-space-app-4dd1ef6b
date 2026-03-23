@@ -147,8 +147,8 @@ function BottomTabBar({ store }: { store: StoreData }) {
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 border-t md:hidden"
         style={{
-          backgroundColor: "var(--storefront-bg, hsl(var(--background)))f8",
-          borderColor: "var(--storefront-text, hsl(var(--foreground)))08",
+          backgroundColor: withAlpha("var(--storefront-bg, hsl(var(--background)))", "f8"),
+          borderColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "08"),
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
         }}
