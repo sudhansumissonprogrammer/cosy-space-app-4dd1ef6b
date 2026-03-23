@@ -561,12 +561,24 @@ async function streamInjectedResponse(request, slug, storefrontData, originRespo
           headInjected = true;
         }
 
-        // Replace skeleton with SSR content
-        if (!skeletonInjected && serverHtml && buffer.includes("sf-skeleton")) {
-          const skeletonMatch = buffer.match(/<div class="sf-shell" id="sf-skeleton">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/);
-          if (skeletonMatch) {
-            buffer = buffer.replace(skeletonMatch[0], serverHtml);
+        // Replace skeleton with SSR content using marker-based approach
+        if (!skeletonInjected && serverHtml) {
+          // Primary: look for marker-based skeleton
+          const markerStart = "<!-- sf-skeleton-start -->";
+          const markerEnd = "<!-- sf-skeleton-end -->";
+          const startIdx = buffer.indexOf(markerStart);
+          const endIdx = buffer.indexOf(markerEnd);
+
+          if (startIdx !== -1 && endIdx !== -1) {
+            buffer = buffer.substring(0, startIdx) + serverHtml + buffer.substring(endIdx + markerEnd.length);
             skeletonInjected = true;
+          } else if (buffer.includes("sf-skeleton")) {
+            // Fallback: regex-based replacement for old HTML without markers
+            const skeletonMatch = buffer.match(/<div[^>]*id="sf-skeleton"[^>]*>[\s\S]*?<\/div>\s*(?:<\/div>\s*)*<\/div>/);
+            if (skeletonMatch) {
+              buffer = buffer.replace(skeletonMatch[0], serverHtml);
+              skeletonInjected = true;
+            }
           }
         }
 
