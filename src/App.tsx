@@ -184,12 +184,12 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   // Get theme INSTANTLY from cache/injected data — no API call, no spinner
   const theme = useMemo(() => getInstantTheme(effectiveSlug), [effectiveSlug]);
   const basePath = slugOverride ? "/" : "/store/:slug";
-  const LayoutComponent = getLayoutComponent(theme);
+  const { layout: LayoutComponent, home: HomeComponent } = getThemeEntry(theme);
 
   return (
     <Routes>
       <Route path={basePath} element={<LayoutComponent slugOverride={slugOverride} />}>
-        {storefrontChildRoutes(theme)}
+        {storefrontChildRoutes(HomeComponent)}
       </Route>
     </Routes>
   );

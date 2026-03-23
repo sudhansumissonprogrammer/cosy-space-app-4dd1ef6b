@@ -81,10 +81,17 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("node_modules/@radix-ui")) return "vendor-ui";
           if (id.includes("node_modules/embla-carousel")) return "vendor-carousel";
 
-          // Route-based splitting: admin, dashboard, storefront
+          // Route-based splitting: admin, dashboard
           if (id.includes("/pages/admin/") || id.includes("/AdminSidebar") || id.includes("/AdminRoute")) return "route-admin";
           if (id.includes("/pages/Dashboard") || id.includes("/layouts/DashboardLayout") || id.includes("/pages/StoreSettings") || id.includes("/pages/ProductsList") || id.includes("/pages/StoreOrders") || id.includes("/pages/StoreAnalytics")) return "route-dashboard";
-          if (id.includes("/pages/Storefront") || id.includes("/layouts/Storefront")) return "route-storefront";
+
+          // Per-theme chunks — each theme layout + home isolated into its own file
+          if (id.includes("/layouts/StorefrontLayout") || id.includes("/pages/StorefrontHome")) {
+            const vMatch = id.match(/V(\d+)/);
+            return `theme-${vMatch ? vMatch[1] : "1"}`;
+          }
+          // Shared storefront components + pages (cart, checkout, product detail, etc.)
+          if (id.includes("/components/storefront/") || id.includes("/pages/Storefront")) return "storefront-shared";
         },
       },
     },
