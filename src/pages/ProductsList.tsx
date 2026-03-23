@@ -124,9 +124,12 @@ export default function ProductsList() { // v2
 
   const { data: allProducts, isLoading } = useQuery({
     queryKey: ["products-all", storeId],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("products").select("*").eq("store_id", storeId!)
+        .from("products")
+        .select("id, name, slug, image_url, price, sale_price, stock_quantity, is_active, is_best_selling, category, sku, currency, created_at")
+        .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
         .limit(1000);
       if (error) throw error;

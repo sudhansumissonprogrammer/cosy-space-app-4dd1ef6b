@@ -121,7 +121,7 @@ export function useStorefront(slugOverride?: string) {
       }
 
       // 3. Fetch from API (fallback)
-      const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 50 });
+      const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 20 });
       if (error) throw error;
       const result = data as any;
       const store = result?.store as StoreData | null;

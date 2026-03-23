@@ -105,6 +105,7 @@ export default function StoreOrders() {
   const filteredOrders = useMemo(() => {
     if (!allOrders) return [];
     let result = [...allOrders];
+    // Search is client-side on current page
     if (search.trim()) {
       const q = search.toLowerCase().trim();
       result = result.filter(o => {
@@ -114,9 +115,7 @@ export default function StoreOrders() {
           (o.customer_phone && o.customer_phone.includes(q));
       });
     }
-    if (statusFilter) {
-      result = result.filter(o => o.status === statusFilter);
-    }
+    // Date filters are client-side on current page
     if (dateFrom) {
       const fromStart = new Date(dateFrom);
       fromStart.setHours(0, 0, 0, 0);
@@ -128,10 +127,9 @@ export default function StoreOrders() {
       result = result.filter(o => new Date(o.created_at) <= toEnd);
     }
     return result;
-  }, [allOrders, search, statusFilter, dateFrom, dateTo]);
+  }, [allOrders, search, dateFrom, dateTo]);
 
-  const pagination = usePagination(filteredOrders.length);
-  const paginatedOrders = filteredOrders.slice(pagination.from, pagination.to + 1);
+  const paginatedOrders = filteredOrders;
 
   const hasActiveFilters = !!search || !!statusFilter || !!dateFrom || !!dateTo;
   const clearAllFilters = () => {
