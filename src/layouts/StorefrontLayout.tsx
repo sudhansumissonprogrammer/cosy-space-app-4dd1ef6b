@@ -519,8 +519,10 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
         </div>
       </nav>
 
-      <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
-      <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
+      <Suspense fallback={null}>
+        <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
+        <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
+      </Suspense>
       <main>
         <Suspense fallback={<StorefrontContentSkeleton />}>
           <Outlet context={store} />
@@ -530,7 +532,9 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
       <StorefrontFooter store={store} />
       <SideCart store={store} />
       <FloatingWhatsApp store={store} />
-      <ExitIntentPopup storeId={store.id} storeName={store.name} />
+      <Suspense fallback={null}>
+        <ExitIntentPopup storeId={store.id} storeName={store.name} />
+      </Suspense>
 
       {/* Exit Checkout Confirmation Dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
