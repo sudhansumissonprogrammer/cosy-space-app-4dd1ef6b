@@ -932,14 +932,29 @@ export default {
       });
     }
 
-    const cleanDomain = hostname.replace(/^www\./, "").toLowerCase().trim();
+    // Redirect www → non-www for custom domains
+    const rawDomain = (hostname || "").toLowerCase().trim();
+    const isWww = rawDomain.startsWith("www.");
+    const cleanDomain = isWww ? rawDomain.slice(4) : rawDomain;
+
     const slug = await resolveDomain(cleanDomain);
 
     if (slug) {
-      const seoResponse = await handleSeoFiles(url, slug);
-      if (seoResponse) return seoResponse;
+      // Canonical redirect: www.melleto.shop → melleto.shop
+      if (isWww) {
+        return Response.redirect(
+          `https://${cleanDomain}${url.pathname}${url.search}`,
+          301
+        );
+      }
 
-      const botResponse = await handleBot(request, slug, url, true);
+      // Run SEO and bot checks in parallel
+      const [seoResponse, botResponse] = await Promise.all([
+        handleSeoFiles(url, slug),
+        handleBot(request, slug, url, true),
+      ]);
+
+      if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx, true);
