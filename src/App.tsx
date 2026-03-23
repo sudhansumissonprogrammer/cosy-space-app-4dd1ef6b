@@ -227,8 +227,8 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
+        <Suspense fallback={null}><Toaster /></Suspense>
+        <Suspense fallback={null}><Sonner /></Suspense>
         <BrowserRouter>
           <Suspense fallback={<LoadingSpinner />}>
             <ErrorBoundary fallbackMessage="This page encountered an error">

@@ -1,0 +1,92 @@
+/* Storefront-specific styles — loaded only for storefront visitors */
+
+:root {
+  --font-storefront: 'Alegreya SC', serif;
+
+  /* Storefront theme defaults (overridden by inline CSS vars) */
+  --storefront-primary: #b8873c;
+  --storefront-accent: #000000;
+  --storefront-text: #1a1a1a;
+  --storefront-bg: #f7f5f0;
+  --storefront-heading-font: 'Alegreya SC';
+  --storefront-body-font: 'Inter';
+  --storefront-button-radius: 0.5rem;
+  --storefront-marquee-gradient: linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a);
+}
+
+/* Storefront display font — headings, labels, nav, badges, buttons (not inputs) */
+.storefront-font,
+.storefront-font h1, .storefront-font h2, .storefront-font h3, .storefront-font h4,
+.storefront-font p, .storefront-font span, .storefront-font a, .storefront-font label,
+.storefront-font button, .storefront-font th, .storefront-font td, .storefront-font li {
+  font-family: var(--font-storefront);
+}
+
+/* Inputs and textareas always use normal font */
+.storefront-font input,
+.storefront-font textarea,
+.storefront-font select,
+input, textarea, select {
+  font-family: 'Inter', 'Segoe UI', sans-serif !important;
+}
+
+/* Search placeholder uses storefront font */
+.storefront-font input[placeholder="Search products..."]::placeholder {
+  font-family: var(--font-storefront) !important;
+}
+
+.btn-gold {
+  background: var(--storefront-primary, hsl(40 70% 55%));
+  color: var(--storefront-btn-text, #ffffff);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: none;
+  transition: filter 0.2s;
+}
+.btn-gold:hover {
+  filter: brightness(1.08);
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
+
+.safe-area-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes bounce-once {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.08); }
+  50% { transform: scale(0.95); }
+  70% { transform: scale(1.03); }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.5s ease-out;
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(60vh) rotate(720deg) scale(0.3); opacity: 0; }
+}
+
+@keyframes float-particle {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+  50% { transform: translateY(-20px) scale(1.3); opacity: 0.7; }
+}
+
+@keyframes progress-grow {
+  0% { width: 0%; }
+  100% { width: 85%; }
+}
