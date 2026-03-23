@@ -14,6 +14,7 @@ import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
 import type { VariantWidth } from "./imageCompression";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
+const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
 
 /** Standard widths for srcSet that match our stored variants */
 const PIPELINE_WIDTHS: VariantWidth[] = [200, 400, 800];
