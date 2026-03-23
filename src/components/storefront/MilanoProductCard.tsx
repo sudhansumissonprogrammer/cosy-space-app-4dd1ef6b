@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { withAlpha } from "@/lib/storefrontColors";
 import { Heart, ShoppingCart, Tag } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, PRODUCT_CARD_SIZES } from "@/lib/imageOptimize";

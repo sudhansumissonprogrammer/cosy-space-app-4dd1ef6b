@@ -1,4 +1,5 @@
 import "@/styles/storefront.css";
+import { withAlpha } from "@/lib/storefrontColors";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { Link, Outlet, useSearchParams } from "react-router-dom";
