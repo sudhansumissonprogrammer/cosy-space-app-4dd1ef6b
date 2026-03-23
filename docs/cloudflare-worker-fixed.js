@@ -352,22 +352,36 @@ async function fetchAndInjectSlug(request, slug) {
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" />`;
 
-  // LCP optimization: preload the first product image so the browser discovers it
-  // at HTML parse time instead of waiting for React to render.
+  // LCP optimization: responsive preload with imagesrcset for the first product image
   let lcpPreload = "";
   if (storefrontData) {
     const products = storefrontData.products || [];
     const firstImage = products[0]?.image_url;
     if (firstImage) {
       const safeUrl = escapeHtml(firstImage);
-      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" />`;
+
+      // If image is from a CDN that supports resizing, add responsive srcset
+      if (safeUrl.includes("supabase.co/storage")) {
+        // Supabase storage — use render/image for responsive sizes
+        lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" imagesrcset="${safeUrl}?width=400 400w, ${safeUrl}?width=600 600w, ${safeUrl}?width=800 800w" imagesizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />`;
+      } else {
+        lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" />`;
+      }
+
       // Preconnect to the image CDN origin
       try {
         const imgOrigin = new URL(firstImage).origin;
         if (imgOrigin && !imgOrigin.includes("supabase")) {
-          lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
+          lcpPreload += `\n<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
         }
       } catch {}
+    }
+
+    // Preload store logo for nav LCP
+    const logoUrl = storefrontData.store?.logo_url;
+    if (logoUrl) {
+      const safeLogo = escapeHtml(logoUrl);
+      lcpPreload += `\n<link rel="preload" as="image" href="${safeLogo}" />`;
     }
   }
 
