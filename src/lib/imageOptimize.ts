@@ -15,6 +15,35 @@ import type { VariantWidth } from "./imageCompression";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 
+/** Origins that sit behind Cloudflare and support /cdn-cgi/image/ transforms */
+const CF_IMAGE_ORIGINS = ["storivo.in", "supabase.co"];
+
+/**
+ * Check if a URL is served through a Cloudflare-proxied origin that supports
+ * the /cdn-cgi/image/ transformation pipeline.
+ */
+function isCfImageEligible(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+    return CF_IMAGE_ORIGINS.some((o) => hostname.endsWith(o));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Build a Cloudflare Image Resizing URL.
+ * Docs: https://developers.cloudflare.com/images/transform-images/transform-via-url/
+ */
+function cfImageUrl(
+  originUrl: string,
+  width: number,
+  quality: number,
+): string {
+  // /cdn-cgi/image/width=W,quality=Q,format=auto/FULL_ORIGINAL_URL
+  return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${originUrl}`;
+}
+
 /** Standard widths for srcSet that match our stored variants */
 const PIPELINE_WIDTHS: VariantWidth[] = [200, 400, 800];
 
@@ -43,6 +72,11 @@ export function optimizeImageUrl(
     // Pick the best matching stored variant
     const best = pickBestVariant(width);
     return resolveVariantUrl(url, best);
+  }
+
+  // ── 1b. Cloudflare Image CDN (format=auto → AVIF/WebP) ──
+  if (isCfImageEligible(url)) {
+    return cfImageUrl(url, width, quality);
   }
 
   // ── 2. Shopify CDN ──
