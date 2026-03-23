@@ -279,7 +279,7 @@ function MenuSearchBar({
             backgroundColor: showFilters || activeFilterCount > 0 ? "#25D36620" : "transparent",
           }}
         >
-          <SlidersHorizontal className="h-4 w-4" style={{ color: activeFilterCount > 0 ? "#25D366" : "var(--storefront-text, #1a1a1a)80" }} />
+          <SlidersHorizontal className="h-4 w-4" style={{ color: activeFilterCount > 0 ? "#25D366" : withAlpha("var(--storefront-text, #1a1a1a)", "80") }} />
           {activeFilterCount > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: "#25D366" }}>
               {activeFilterCount}
