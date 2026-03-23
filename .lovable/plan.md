@@ -1,64 +1,96 @@
 
 
-## Plan: Reduce Render-Blocking CSS & JS Payload
+## Plan: Optimize Backend/Client Data Flow
 
-### Analysis Summary
+### Current State Analysis
 
-**Current state:**
-- Single monolithic `index.css` (207 lines) compiled by Tailwind into one large CSS bundle — loaded for ALL contexts (storefront, admin, dashboard)
-- `App.css` (42 lines) is **dead code** — not imported anywhere
-- `App.tsx` eagerly imports `Toaster`, `Sonner`, `TooltipProvider`, `QueryClient`, `react-router-dom`, `ErrorBoundary`, `logError`, and `subdomain` — all parsed before first paint
-- `main.tsx` eagerly imports `App.tsx` + `index.css` + `logError` (includes `initGlobalErrorHandlers` with fetch setup)
-- JS entry chain: `main.tsx` → `App.tsx` → eagerly pulls in `@tanstack/react-query`, `react-router-dom`, `@radix-ui/tooltip`, toast UI components — all render-blocking
-- Theme JS is already lazy-loaded (good), but the CSS for all themes shares the same monolithic stylesheet
+**Supabase on storefront critical path:**
+- `StorefrontLayout.tsx` (line 6) directly imports `supabase` client — pulls `vendor-supabase` chunk (~40KB gzip) into every storefront page load
+- `StorefrontAuthContext.tsx` (line 3) imports supabase — wraps the entire storefront tree
+- `StorefrontHome.tsx` (line 6) imports supabase directly
+- On cache-hit loads (injected data from Worker), the supabase client is **never called** — the `queryFn` returns the injected data immediately. Yet the entire SDK is still downloaded and parsed.
 
-**Key bottlenecks:**
-1. One CSS file for all contexts — storefront loads admin/dashboard vars, dark mode, sidebar vars it never uses
-2. Eager imports of toast/tooltip UI components in App.tsx add to critical bundle
-3. `App.css` is dead weight in the repo
-4. No CSS code splitting by route context despite `cssCodeSplit: true` in Vite (only works when CSS is imported in lazy chunks)
+**Worker sequential fetching (line 546-549 of cloudflare-worker-fixed.js):**
+```javascript
+async function fetchAndInjectSlug(request, slug) {
+  const storefrontData = await prefetchStorefrontData(slug);  // waits...
+  return streamInjectedResponse(request, slug, storefrontData); // then fetches origin
+}
+```
+`prefetchStorefrontData` completes BEFORE `proxyToOrigin` starts inside `streamInjectedResponse`. On cache miss, this adds ~200-400ms TTFB.
 
 ---
 
 ### Changes
 
-#### 1. Delete Dead `App.css`
-- **File:** `src/App.css` — delete entirely
-- Contains unused `.logo`, `.read-the-docs`, `.card` styles from Vite boilerplate
-- Not imported anywhere — pure dead code
+#### 1. Lazy-load Supabase in storefront `useStorefront` hook
+**File:** `src/layouts/StorefrontLayout.tsx`
 
-#### 2. Lazy-Load Toast & Sonner Components
-- **File:** `src/App.tsx`
-- Move `Toaster` and `Sonner` to lazy imports — they are never visible on first paint (only appear on user interactions)
-- This removes `@radix-ui/react-toast` and `sonner` from the critical JS bundle
+Remove the top-level `import { supabase }` (line 6). In the `queryFn` of `useStorefront`, use dynamic `import()` only when the injected/cached data path is NOT taken (i.e., only on API fallback):
 
-```
-Before (eager):  import { Toaster } from "@/components/ui/toaster";
-After (lazy):    const Toaster = lazy(() => import("@/components/ui/toaster").then(m => ({ default: m.Toaster })));
+```typescript
+// Remove: import { supabase } from "@/integrations/supabase/client";
+
+// Inside queryFn, after checking injected + localStorage:
+const { supabase } = await import("@/integrations/supabase/client");
+const { data, error } = await supabase.rpc("get_storefront_data", ...);
 ```
 
-#### 3. Split CSS: Storefront vs Dashboard/Admin
-- **File:** `src/index.css` — keep only shared base styles (CSS variables, reset, body, border-border)
-- **New file:** `src/styles/storefront.css` — move storefront-specific styles (`.storefront-font`, `.btn-gold`, `.animate-marquee`, `.safe-area-bottom`, storefront CSS custom properties, keyframes for `marquee`, `bounce-once`, `confetti-fall`, `float-particle`)
-- **New file:** `src/styles/dashboard.css` — move sidebar CSS variables, dark mode overrides, `.scrollbar-hide`
-- Import `storefront.css` inside storefront layout components (lazy-loaded → CSS only loads for storefront visitors)
-- Import `dashboard.css` inside `DashboardLayout` / `AdminLayout` (lazy-loaded → CSS only loads for dashboard users)
-- This leverages Vite's `cssCodeSplit: true` to emit separate CSS chunks per route
+This means on first load with Worker-injected data, the `vendor-supabase` chunk is **never downloaded**. It only loads when a background revalidation actually fires the API call.
 
-#### 4. Remove Dark Mode & Sidebar Vars from Storefront Critical Path
-- The `.dark { ... }` block and `--sidebar-*` variables in `index.css` are only used by admin/dashboard
-- Move them to `src/styles/dashboard.css`
-- Storefront users save ~50 lines of unused CSS parsing
+#### 2. Lazy-load Supabase in StorefrontAuthContext
+**File:** `src/contexts/StorefrontAuthContext.tsx`
 
-#### 5. Defer `initGlobalErrorHandlers` 
-- **File:** `src/main.tsx`
-- Move `initGlobalErrorHandlers()` into the existing `postInteractiveSetup()` callback
-- Error handlers are not needed before first paint — deferring removes the eager import chain of `logError.ts` (which references `import.meta.env` variables and sets up fetch endpoints)
-- The `logError` import in `App.tsx` (used by QueryClient `onError`) is already only triggered on mutations, not on load
+Replace the static import with a lazy initialization pattern:
 
-#### 6. Trim `index.css` Keyframes
-- Remove `confetti-fall`, `float-particle`, `progress-grow` keyframes from `index.css` — these are only used in specific components and should be colocated or moved to `storefront.css`
-- Keeps the critical CSS file minimal
+```typescript
+// Remove: import { supabase } from "@/integrations/supabase/client";
+
+let _supabase: any = null;
+async function getSupabase() {
+  if (!_supabase) {
+    const mod = await import("@/integrations/supabase/client");
+    _supabase = mod.supabase;
+  }
+  return _supabase;
+}
+```
+
+Use `getSupabase()` in `useEffect`, `signUp`, `signIn`, `signOut`, and `fetchOrCreateCustomer`. The auth state listener setup becomes async but still fires before any user interaction.
+
+#### 3. Lazy-load Supabase in StorefrontHome
+**File:** `src/pages/StorefrontHome.tsx`
+
+Same pattern — remove the static import, use dynamic import only in the specific `queryFn` that needs it (for loading more products). The initial product display uses pre-seeded React Query cache, not a supabase call.
+
+#### 4. Lazy-load Supabase in storefront components
+**Files:** `src/components/storefront/CartUpsell.tsx`, `PostPurchaseUpsell.tsx`, `ExitIntentPopup.tsx`
+
+Same dynamic import pattern in their `queryFn` callbacks. These are already lazy-loaded components, so this is a minor win but ensures zero supabase in the initial bundle.
+
+#### 5. Parallelize Worker data + origin fetches
+**File:** `docs/cloudflare-worker-fixed.js`
+
+Refactor `fetchAndInjectSlug` to run both operations concurrently:
+
+```javascript
+async function fetchAndInjectSlug(request, slug) {
+  // Run both in parallel — origin fetch starts immediately
+  const [storefrontData, originResponse] = await Promise.all([
+    prefetchStorefrontData(slug),
+    proxyToOrigin(request),
+  ]);
+  // Then inject into the already-fetched origin HTML
+  return injectIntoResponse(originResponse, slug, storefrontData);
+}
+```
+
+Refactor `streamInjectedResponse` to accept an already-fetched `originResponse` instead of calling `proxyToOrigin` internally. This eliminates the sequential wait (~200-400ms savings on cache miss).
+
+#### 6. Fix unclosed brace bug in `proxyToOrigin`
+**File:** `docs/cloudflare-worker-fixed.js` (lines 266-281)
+
+The `else if` block for HTML content-type is missing a closing brace before the security headers loop — the security headers only apply to HTML responses instead of all responses. Fix the brace placement.
 
 ---
 
@@ -66,22 +98,26 @@ After (lazy):    const Toaster = lazy(() => import("@/components/ui/toaster").th
 
 | File | Action |
 |------|--------|
-| `src/App.css` | **Delete** (dead code) |
-| `src/index.css` | Slim down to shared base only (~70 lines) |
-| `src/styles/storefront.css` | **Create** — storefront-specific styles |
-| `src/styles/dashboard.css` | **Create** — dashboard/admin-specific styles |
-| `src/App.tsx` | Lazy-load Toaster + Sonner |
-| `src/main.tsx` | Defer `initGlobalErrorHandlers` to idle callback |
-| `src/layouts/StorefrontLayout.tsx` | Add `import "@/styles/storefront.css"` |
-| `src/layouts/DashboardLayout.tsx` | Add `import "@/styles/dashboard.css"` |
-| `src/layouts/AdminLayout.tsx` | Add `import "@/styles/dashboard.css"` |
+| `src/layouts/StorefrontLayout.tsx` | Remove static supabase import, use dynamic import in queryFn |
+| `src/contexts/StorefrontAuthContext.tsx` | Lazy-init supabase with cached singleton pattern |
+| `src/pages/StorefrontHome.tsx` | Dynamic import in queryFn |
+| `src/components/storefront/CartUpsell.tsx` | Dynamic import in queryFn |
+| `src/components/storefront/PostPurchaseUpsell.tsx` | Dynamic import in queryFn |
+| `src/components/storefront/ExitIntentPopup.tsx` | Dynamic import in queryFn |
+| `docs/cloudflare-worker-fixed.js` | Parallelize fetches + fix brace bug |
+
+### What NOT to change
+- `src/integrations/supabase/client.ts` — auto-generated, never edit
+- Cart/Wishlist contexts — no supabase dependency
+- Dashboard/Admin paths — already isolated in separate chunks
+- `vite.config.ts` — chunk splitting already correct
 
 ### Expected Impact
 
 | Metric | Before | After |
 |--------|--------|-------|
-| Critical CSS | ~119KB (monolithic) | ~40KB (base only) |
-| Storefront CSS | Includes dashboard/admin vars | Only storefront styles |
-| Initial JS (storefront) | Includes toast + sonner + error setup | Deferred to idle/interaction |
-| Dead CSS files | `App.css` loaded by Vite | Removed |
+| Storefront initial JS (with injected data) | Includes ~40KB vendor-supabase | Deferred until needed |
+| Worker TTFB on cache miss | Sequential (~600ms) | Parallel (~350ms) |
+| TTI on cold load | Blocked by supabase parse | Supabase loads async after paint |
+| Auth/checkout flows | Unchanged | Unchanged (supabase loads on demand) |
 
