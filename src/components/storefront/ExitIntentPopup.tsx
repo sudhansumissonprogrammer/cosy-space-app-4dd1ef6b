@@ -16,7 +16,10 @@ interface ExitIntentPopupProps {
 export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupProps) {
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [activated, setActivated] = useState(false);
 
+  // Only fetch coupon after exit intent is first detected (5s delay + mouseleave)
+  // This prevents an unnecessary API call on every page load
   const { data: coupon } = useQuery({
     queryKey: ["exit-intent-coupon", storeId],
     queryFn: async () => {
@@ -32,6 +35,7 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
       return data;
     },
     staleTime: 10 * 60 * 1000,
+    enabled: activated, // Only fetch when exit intent system activates
   });
 
   useEffect(() => {
