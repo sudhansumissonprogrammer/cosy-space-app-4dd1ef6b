@@ -178,7 +178,7 @@ export default function StorefrontSearchOverlay({
               style={{
                 backgroundColor: activeFilterCount > 0 || showFilters
                   ? "var(--storefront-text, hsl(var(--foreground)))"
-                  : "var(--storefront-text, hsl(var(--foreground)))10",
+                   : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
                 color: activeFilterCount > 0 || showFilters
                   ? "var(--storefront-bg, hsl(var(--background)))"
                   : "var(--storefront-text, hsl(var(--foreground)))",
