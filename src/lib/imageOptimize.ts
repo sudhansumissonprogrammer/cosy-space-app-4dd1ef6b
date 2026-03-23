@@ -74,6 +74,11 @@ export function optimizeImageUrl(
     return resolveVariantUrl(url, best);
   }
 
+  // ── 1b. Cloudflare Image CDN (format=auto → AVIF/WebP) ──
+  if (isCfImageEligible(url)) {
+    return cfImageUrl(url, width, quality);
+  }
+
   // ── 2. Shopify CDN ──
   if (url.includes("cdn/shop/") || url.includes("cdn.shopify.com")) {
     const u = new URL(url);
