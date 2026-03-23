@@ -226,7 +226,7 @@ function BrandStory({ store }: { store: StoreData }) {
             <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${withAlpha("var(--storefront-primary, #C8A96A)", "15")}, ${withAlpha("var(--storefront-accent, #1C1C1C)", "15")})` }} />
           )}
           {/* Decorative border */}
-          <div className="absolute -bottom-3 -right-3 h-full w-full border-2 -z-10 hidden sm:block" style={{ borderColor: "var(--storefront-primary, #C8A96A)30" }} />
+          <div className="absolute -bottom-3 -right-3 h-full w-full border-2 -z-10 hidden sm:block" style={{ borderColor: withAlpha("var(--storefront-primary, #C8A96A)", "30") }} />
         </div>
       </div>
     </section>
