@@ -318,8 +318,8 @@ export default function StorefrontHomeV10() {
         ) : (
           <div className="flex min-h-[40vh] items-center justify-center">
             <div className="text-center space-y-2">
-              <Tag className="h-12 w-12 mx-auto" style={{ color: "var(--storefront-text, #1a1a1a)20" }} />
-              <p className="text-sm" style={{ color: "var(--storefront-text, #1a1a1a)60" }}>No products available yet.</p>
+              <Tag className="h-12 w-12 mx-auto" style={{ color: withAlpha("var(--storefront-text, #1a1a1a)", "20") }} />
+              <p className="text-sm" style={{ color: withAlpha("var(--storefront-text, #1a1a1a)", "60") }}>No products available yet.</p>
             </div>
           </div>
         )}
