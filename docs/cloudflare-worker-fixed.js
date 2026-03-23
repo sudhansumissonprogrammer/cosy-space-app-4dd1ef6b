@@ -693,20 +693,19 @@ export default {
         return cachedFetch(request, "", ctx);
       }
 
-      // Parallelize independent checks for lower TTFB
-      const [customDomain, seoResponse, botResponse] = await Promise.all([
-        getCustomDomainForSlug(slug),
-        handleSeoFiles(url, slug),
-        handleBot(request, slug, url, false),
-      ]);
-
+      // 301 redirect to custom domain if one exists
+      const customDomain = await getCustomDomainForSlug(slug);
       if (customDomain) {
         return Response.redirect(
           `https://${customDomain}${url.pathname}${url.search}`,
           301
         );
       }
+
+      const seoResponse = await handleSeoFiles(url, slug);
       if (seoResponse) return seoResponse;
+
+      const botResponse = await handleBot(request, slug, url, false);
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx);

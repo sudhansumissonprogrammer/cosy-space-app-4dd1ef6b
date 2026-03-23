@@ -64,45 +64,19 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    // Tree-shaking: ensure dead code is removed
     target: "es2020",
     cssCodeSplit: true,
     rollupOptions: {
       output: {
-        manualChunks(id: string) {
-          // ── Vendor splits ──
-          if (id.includes("node_modules")) {
-            if (id.includes("react-dom")) return "vendor-react";
-            if (id.includes("/react/")) return "vendor-react";
-            if (id.includes("react-router-dom")) return "vendor-router";
-            if (id.includes("@tanstack/react-query")) return "vendor-query";
-            if (id.includes("@supabase/supabase-js")) return "vendor-supabase";
-            if (id.includes("lucide-react")) return "vendor-icons";
-            if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
-            if (id.includes("embla-carousel")) return "vendor-carousel";
-            if (id.includes("@radix-ui/react-dialog") || id.includes("@radix-ui/react-popover") || id.includes("@radix-ui/react-select"))
-              return "vendor-ui-core";
-            if (id.includes("@radix-ui/react-dropdown-menu") || id.includes("@radix-ui/react-tabs") || id.includes("@radix-ui/react-toast"))
-              return "vendor-ui-extra";
-            if (id.includes("@radix-ui/")) return "vendor-ui-misc";
-            return undefined;
-          }
-
-          // ── Per-theme chunks (each theme gets its own bundle) ──
-          const themeMatch = id.match(/Storefront(?:Layout|Home)(V\d+)\./);
-          if (themeMatch) {
-            return `theme-${themeMatch[1].replace("V", "")}`;
-          }
-          // Default storefront layout/home (theme-1, no suffix)
-          if (id.includes("/StorefrontLayout.tsx") || id.includes("/StorefrontHome.tsx")) {
-            return "theme-1";
-          }
-
-          // ── Route-based splits ──
-          if (id.includes("/pages/admin/") || id.includes("/layouts/AdminLayout")) return "route-admin";
-          if (id.includes("/pages/Dashboard") || id.includes("/layouts/DashboardLayout") || id.includes("/pages/StoreSettings") || id.includes("/pages/ProductsList") || id.includes("/pages/StoreOrders"))
-            return "route-dashboard";
-
-          return undefined;
+        manualChunks: {
+          // Vendor chunks — split large libraries
+          "vendor-react": ["react", "react-dom"],
+          "vendor-router": ["react-router-dom"],
+          "vendor-query": ["@tanstack/react-query"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-ui-core": ["@radix-ui/react-dialog", "@radix-ui/react-popover", "@radix-ui/react-select"],
+          "vendor-ui-extra": ["@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs", "@radix-ui/react-toast"],
         },
       },
     },
