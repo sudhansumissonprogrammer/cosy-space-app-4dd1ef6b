@@ -543,9 +543,12 @@ async function streamInjectedResponse(request, slug, storefrontData, originRespo
  * PERF: Injects __STOREFRONT_DATA__ + server-rendered HTML at the edge.
  */
 async function fetchAndInjectSlug(request, slug) {
-  // Fetch storefront data first (needed for SSR), origin streams in parallel
-  const storefrontData = await prefetchStorefrontData(slug);
-  return streamInjectedResponse(request, slug, storefrontData);
+  // Run both in parallel — origin fetch starts immediately alongside data fetch
+  const [storefrontData, originResponse] = await Promise.all([
+    prefetchStorefrontData(slug),
+    proxyToOrigin(request),
+  ]);
+  return streamInjectedResponse(request, slug, storefrontData, originResponse);
 }
 
 /* ============== CACHED FETCH ============== */
