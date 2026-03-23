@@ -40,6 +40,7 @@ export function AdminSidebar() {
   ];
 
   const settingsItems = [
+    { title: "Menu Control", url: "/admin/menu-config", icon: Menu },
     { title: "Settings", url: "/admin/settings", icon: Settings },
   ];
 

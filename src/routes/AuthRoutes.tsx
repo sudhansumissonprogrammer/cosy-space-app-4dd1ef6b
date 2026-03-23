@@ -85,6 +85,7 @@ export default function AuthRoutes() {
           <Route path="usage" element={<AdminUsageMonitoring />} />
           <Route path="error-logs" element={<AdminErrorLogs />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="menu-config" element={<AdminMenuConfig />} />
         </Route>
 
         <Route
