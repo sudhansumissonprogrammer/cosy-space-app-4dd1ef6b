@@ -432,8 +432,9 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   const cached = await cache.match(key);
 
   if (cached) {
+    // SWR: background revalidation must re-inject storefront data
     ctx.waitUntil(
-      proxyToOrigin(request)
+      (slug ? fetchAndInjectSlug(request, slug) : proxyToOrigin(request))
         .then((res) => {
           const ct = res.headers.get("content-type") || "";
           if (res.ok && ct.includes("text/html")) {
