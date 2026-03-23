@@ -693,7 +693,9 @@ async function handleBot(request, slug, url, isCustom) {
     ? `${url.origin}${url.pathname}${url.search}`
     : buildSubdomainUrl(slug, url.pathname, url.search);
 
-  if (SEARCH_BOT_REGEX.test(ua)) {
+  const isSearchBot = SEARCH_BOT_REGEX.test(ua);
+
+  if (isSearchBot) {
     try {
       const domainType = isCustom ? "custom" : "sub";
       const botCacheKey = new Request(
@@ -723,11 +725,12 @@ async function handleBot(request, slug, url, isCustom) {
         return response;
       }
     } catch {
-      // Fall through
+      // Fall through to OG meta
     }
   }
 
-  if (SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua)) {
+  // Social bots or search bot fallback (bot-render failed)
+  if (SOCIAL_BOT_REGEX.test(ua) || isSearchBot) {
     try {
       const res = await callEdgeFunction("og-meta", {
         slug,
