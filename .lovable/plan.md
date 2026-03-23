@@ -1,53 +1,70 @@
 
 
-## Performance Fix Plan: Image Delivery + LCP Optimization
+# Performance & Scaling Optimization Plan
 
-### Problem Summary
-Lighthouse reports **1,684 KiB** wasted on images. The root causes:
+## Summary
+Safe, high-impact optimizations targeting RPC payload size, dashboard query efficiency, and SELECT column pruning. No breaking changes — only tightening existing queries.
 
-1. **Hover/secondary images** in ProductCardStyle1/2/3 lack `srcSet` — browsers load full-size originals even though `optimizeImageUrl` is called, the single `src` doesn't provide responsive sizing hints
-2. **Carousel dot animations** use `width` and `background-color` (non-composited CSS properties) causing layout thrash
-3. **Duplicate preconnect** for Supabase origin and missing `crossorigin` attribute on overlaysnow.com preconnect
+---
 
-### Changes
+## What Gets Fixed
 
-#### 1. Add `srcSet` to hover images in all product cards (~1,500 KiB savings)
+### 1. Limit RPC product payload (homepage → 20 products)
+The `get_storefront_data` RPC currently defaults to `_product_limit = 50`. The storefront layout calls it with 50. Most homepages display 8–16 products.
 
-**Files**: `ProductCardStyle1.tsx`, `ProductCardStyle2.tsx`, `ProductCardStyle3.tsx`
+**Change:** Reduce the default call in `StorefrontLayout.tsx` from `_product_limit: 50` to `_product_limit: 20`. The Shop page already uses infinite scroll with its own paginated query, so this is safe.
 
-Add `srcSet` and `sizes` to the secondary (hover) `<img>` tag in each file. Currently these only have `src={optimizeImageUrl(images[1], 400)}`. Add:
-```tsx
-srcSet={getImageSrcSet(images[1], [300, 400, 600])}
-sizes={PRODUCT_CARD_SIZES}
-```
+**Impact:** ~60% smaller API response for homepage loads.
 
-Also add `decoding="async"` to each hover image for consistency.
+### 2. Prune SELECT columns in dashboard queries
+`Dashboard.tsx` fetches orders with `select("created_at, total, status, order_items(product_name, quantity, total)")` — this is already good. But `StoreOrders.tsx` uses `select("*, order_items(*)")` loading all columns. `ProductsList.tsx` uses `select("*")`.
 
-#### 2. Fix carousel dot non-composited animations
+**Changes:**
+- **StoreOrders.tsx:** Replace `select("*")` with specific columns: `id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, order_items(id, product_name, quantity, unit_price, total, product_id)`
+- **ProductsList.tsx:** Replace `select("*")` with: `id, name, slug, image_url, price, sale_price, stock_quantity, is_active, is_best_selling, category, sku, currency, created_at`
+- **Dashboard.tsx stats query:** Already uses `head: true` counts — no change needed.
 
-**File**: `BestSellingCarousel.tsx`
+### 3. Add server-side pagination to StoreOrders
+Currently fetches up to 1000 orders client-side. Convert to server-side pagination like StoreCustomers already does.
 
-Replace `transition-all` on dot buttons with `transition-colors` and use `scale` transform instead of animating `width`:
-- Active dot: use fixed width with `scale-x-[2.5]` transform instead of toggling between `w-2` and `w-5`
-- Or simpler: just remove width animation entirely, keep only opacity/background-color changes using `transition-opacity`
+**Changes:**
+- Add count query for total orders (with filters applied server-side)
+- Use `usePagination` hook + `range(from, to)` 
+- Move status filter to server-side `.eq("status", filter)` when active
+- Keep search as client-side filter on the current page (search across all orders would need a DB function)
 
-#### 3. Fix preconnect issues
+### 4. Add staleTime to dashboard & orders queries
+Several queries lack `staleTime`, causing unnecessary refetches on component re-mount.
 
-**File**: `index.html`
+**Changes:**
+- `StoreOrders` queries: add `staleTime: 2 * 60 * 1000` (2 min)
+- `ProductsList` queries: add `staleTime: 2 * 60 * 1000`
+- `Dashboard` orders analytics: already has 5 min — keep
 
-- Remove duplicate Supabase preconnect (currently appears twice)
-- Remove `crossorigin` from overlaysnow.com preconnect (same-origin cookies not needed, and the mismatch causes it to be "unused")
-- Keep only 4 preconnects max (Supabase, fonts.googleapis.com, fonts.gstatic.com, overlaysnow.com)
+### 5. Limit Dashboard orders analytics query
+Currently fetches 500 orders for chart data. Reduce to last 200 (charts only show monthly aggregates, 200 is plenty).
 
-#### 4. Fix robots.txt SEO error
+**Change:** `.limit(500)` → `.limit(200)` in Dashboard.tsx
 
-**File**: `public/robots.txt`
+---
 
-Add proper `Sitemap:` directive or ensure the file validates. The edge function version is correct but the static fallback in `public/robots.txt` lacks it.
+## What We Are NOT Changing (Safe)
+- No database schema changes
+- No RLS policy changes  
+- No edge function changes
+- No new tables or migrations
+- Connection pooling is managed by Cloud — no action needed
+- Image optimization already in place (WebP, lazy loading, srcSet)
+- StorefrontShop already uses infinite scroll pagination
 
-### Expected Impact
-- **Image delivery**: ~1,500-1,684 KiB savings from responsive hover images
-- **CLS**: Reduced from non-composited animation fix
-- **LCP**: Minor improvement from fixing preconnect
-- **SEO**: Fix robots.txt validation error (92→100)
+---
+
+## Files Modified
+1. `src/layouts/StorefrontLayout.tsx` — reduce product limit 50→20
+2. `src/pages/StoreOrders.tsx` — server-side pagination + column pruning
+3. `src/pages/ProductsList.tsx` — column pruning + staleTime
+4. `src/pages/Dashboard.tsx` — reduce analytics limit 500→200
+
+## Risk Assessment
+**Low risk.** All changes are query optimizations that reduce data transfer. No UI changes, no new features, no schema modifications.
 
