@@ -109,7 +109,7 @@ function LuxuryNav({ store, scrolled }: { store: StoreData; scrolled: boolean })
               <nav className="flex flex-col gap-0 px-8 py-6">
                 {[
                   { to: storefrontPath(store.slug), label: "Home" },
-                  { to: storefrontPath(store.slug, "best-sellers"), label: "Best Sellers" },
+                  { to: storefrontPath(store.slug, "shop"), label: "Best Sellers" },
                   { to: storefrontPath(store.slug, "account"), label: "Account" },
                   { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
                   { to: storefrontPath(store.slug, "contact"), label: "Contact" },

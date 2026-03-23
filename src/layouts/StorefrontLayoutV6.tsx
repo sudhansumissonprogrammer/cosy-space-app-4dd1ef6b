@@ -82,7 +82,7 @@ function CleanHeader({ store }: { store: StoreData }) {
 
   const navLinks = [
     { to: storefrontPath(store.slug), label: "Home" },
-    { to: storefrontPath(store.slug, "best-sellers"), label: "Shop" },
+    { to: storefrontPath(store.slug, "shop"), label: "Shop" },
     { to: storefrontPath(store.slug, "contact"), label: "About" },
   ];
 
@@ -247,7 +247,7 @@ function CleanFooter({ store }: { store: StoreData }) {
             <div className="flex flex-col gap-2.5">
               {[
                 { to: storefrontPath(store.slug), label: "Home" },
-                { to: storefrontPath(store.slug, "best-sellers"), label: "Best Sellers" },
+                { to: storefrontPath(store.slug, "shop"), label: "Best Sellers" },
               ].map((l) => (
                 <Link key={l.label} to={l.to} className="text-sm opacity-50 hover:opacity-80 transition-opacity">{l.label}</Link>
               ))}

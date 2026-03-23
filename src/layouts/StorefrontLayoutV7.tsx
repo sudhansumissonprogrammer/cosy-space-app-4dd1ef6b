@@ -140,7 +140,7 @@ function EditorialHeader({ store }: { store: StoreData }) {
                   <nav className="flex flex-col p-4">
                     {[
                       { to: storefrontPath(store.slug), label: "Home" },
-                      { to: storefrontPath(store.slug, "best-sellers"), label: "Collection" },
+                      { to: storefrontPath(store.slug, "shop"), label: "Collection" },
                       { to: storefrontPath(store.slug, "contact"), label: "Contact" },
                       { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
                       { to: storefrontPath(store.slug, "account"), label: "Account" },
@@ -178,7 +178,7 @@ function EditorialHeader({ store }: { store: StoreData }) {
           {/* Desktop left nav */}
           <nav className="hidden lg:flex items-center gap-8 mr-auto">
             {[
-              { to: storefrontPath(store.slug, "best-sellers"), label: "Collection" },
+              { to: storefrontPath(store.slug, "shop"), label: "Collection" },
               { to: storefrontPath(store.slug, "contact"), label: "About" },
             ].map((link) => (
               <Link
@@ -263,7 +263,7 @@ function EditorialFooter({ store }: { store: StoreData }) {
               <div className="flex flex-col gap-2.5">
                 {[
                   { to: storefrontPath(store.slug), label: "Home" },
-                  { to: storefrontPath(store.slug, "best-sellers"), label: "Collection" },
+                  { to: storefrontPath(store.slug, "shop"), label: "Collection" },
                   { to: storefrontPath(store.slug, "contact"), label: "Contact" },
                 ].map((l) => (
                   <Link key={l.label} to={l.to} className="text-sm opacity-50 hover:opacity-80 transition-opacity">
