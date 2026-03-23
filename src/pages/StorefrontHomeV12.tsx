@@ -209,7 +209,7 @@ function TrustBadges() {
           <div
             key={label}
             className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl"
-            style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)08" }}
+            style={{ backgroundColor: withAlpha("var(--storefront-primary, #FF3F6C)", "08") }}
           >
             <Icon className="h-5 w-5" style={{ color: "var(--storefront-primary, #FF3F6C)" }} />
             <span className="text-[10px] font-semibold text-center" style={{ color: "var(--storefront-text, #1a1a1a)80" }}>
