@@ -100,8 +100,8 @@ function MobileAppHeader({ store }: { store: StoreData }) {
             }}
             aria-label="Search products"
           >
-            <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }} aria-hidden="true" />
-            <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))35" }}>Search products...</span>
+            <Search className="h-4 w-4 shrink-0" style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "40") }} aria-hidden="true" />
+            <span style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "35") }}>Search products...</span>
           </button>
 
           {/* Cart */}
