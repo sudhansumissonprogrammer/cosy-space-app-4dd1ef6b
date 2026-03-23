@@ -113,7 +113,7 @@ function EditorialHeader({ store }: { store: StoreData }) {
         style={{
           height: "56px",
           backgroundColor: "var(--storefront-bg, #ffffff)",
-          borderColor: "var(--storefront-text, #1a1a1a)10",
+          borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "10"),
         }}
       >
         <div className="mx-auto flex h-full max-w-7xl items-center px-4 lg:px-8">
