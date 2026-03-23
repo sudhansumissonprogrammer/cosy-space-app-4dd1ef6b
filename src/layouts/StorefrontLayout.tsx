@@ -15,14 +15,15 @@ import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import SideCart from "@/components/storefront/SideCart";
-import SmartInstallPrompt from "@/components/SmartInstallPrompt";
-import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import { trackPageView } from "@/lib/trackPageView";
-import ExitIntentPopup from "@/components/storefront/ExitIntentPopup";
+
+// Lazy-load non-critical components to reduce initial JS parse time
+const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
+const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
+const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
