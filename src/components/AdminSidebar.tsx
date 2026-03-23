@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Settings, LogOut, Users, ShoppingBag,
-  CreditCard, BarChart3, MessageSquare, Shield, Activity, AlertTriangle,
+  CreditCard, BarChart3, MessageSquare, Shield, Activity, AlertTriangle, Menu,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -40,6 +40,7 @@ export function AdminSidebar() {
   ];
 
   const settingsItems = [
+    { title: "Menu Control", url: "/admin/menu-config", icon: Menu },
     { title: "Settings", url: "/admin/settings", icon: Settings },
   ];
 

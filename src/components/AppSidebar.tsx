@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
   ShoppingCart, Palette, BarChart3, MessageSquare, FolderOpen, Image as ImageIcon,
+  Clock,
 } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
@@ -10,6 +11,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useMenuConfig } from "@/hooks/useMenuConfig";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -48,6 +50,7 @@ export function AppSidebar() {
 
   const storeId = store?.id;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
+  const { isVisible, isComingSoon } = useMenuConfig();
 
   // Fetch initial pending order count
   useEffect(() => {
@@ -90,49 +93,48 @@ export function AppSidebar() {
 
   const catalogItems = storeId
     ? [
-        { title: "Products", url: `/dashboard/stores/${storeId}/products`, icon: Package },
-        { title: "Categories", url: `/dashboard/stores/${storeId}/categories`, icon: FolderOpen },
-        { title: "Media Library", url: `/dashboard/stores/${storeId}/media`, icon: ImageIcon },
-        { title: "Bulk Upload", url: `/dashboard/stores/${storeId}/products/bulk-upload`, icon: Upload },
-      ]
+        { title: "Products", url: `/dashboard/stores/${storeId}/products`, icon: Package, menuKey: "products" },
+        { title: "Categories", url: `/dashboard/stores/${storeId}/categories`, icon: FolderOpen, menuKey: "categories" },
+        { title: "Media Library", url: `/dashboard/stores/${storeId}/media`, icon: ImageIcon, menuKey: "media_library" },
+        { title: "Bulk Upload", url: `/dashboard/stores/${storeId}/products/bulk-upload`, icon: Upload, menuKey: "bulk_upload" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const salesItems = storeId && !isWhatsAppOnly
     ? [
-        { title: "Orders", url: `/dashboard/stores/${storeId}/orders`, icon: ShoppingBag, badge: pendingOrders },
-        { title: "Customers", url: `/dashboard/stores/${storeId}/customers`, icon: Users },
-        { title: "Abandoned Carts", url: `/dashboard/stores/${storeId}/abandoned-carts`, icon: ShoppingCart },
-      ]
+        { title: "Orders", url: `/dashboard/stores/${storeId}/orders`, icon: ShoppingBag, badge: pendingOrders, menuKey: "orders" },
+        { title: "Customers", url: `/dashboard/stores/${storeId}/customers`, icon: Users, menuKey: "customers" },
+        { title: "Abandoned Carts", url: `/dashboard/stores/${storeId}/abandoned-carts`, icon: ShoppingCart, menuKey: "abandoned_carts" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const paymentItems = storeId
     ? [
-        { title: "Payments", url: `/dashboard/stores/${storeId}/payments`, icon: CreditCard },
-        ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeId}/coupons`, icon: Tag }] : []),
-        { title: "Shipping", url: `/dashboard/stores/${storeId}/shipping`, icon: Truck },
-        { title: "Tax / GST", url: `/dashboard/stores/${storeId}/tax`, icon: Receipt },
-      ]
+        { title: "Payments", url: `/dashboard/stores/${storeId}/payments`, icon: CreditCard, menuKey: "payments" },
+        ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeId}/coupons`, icon: Tag, menuKey: "coupons" }] : []),
+        { title: "Shipping", url: `/dashboard/stores/${storeId}/shipping`, icon: Truck, menuKey: "shipping" },
+        { title: "Tax / GST", url: `/dashboard/stores/${storeId}/tax`, icon: Receipt, menuKey: "tax_gst" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const marketingItems = storeId
     ? [
-        ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeId}/whatsapp`, icon: MessageSquare }] : []),
-        
-        { title: "Tracking & Analytics", url: `/dashboard/stores/${storeId}/tracking`, icon: BarChart3 },
-      ]
+        ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeId}/whatsapp`, icon: MessageSquare, menuKey: "whatsapp_marketing" }] : []),
+        { title: "Tracking & Analytics", url: `/dashboard/stores/${storeId}/tracking`, icon: BarChart3, menuKey: "tracking_analytics" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const settingsItems = storeId
     ? [
-        { title: "Theme", url: `/dashboard/stores/${storeId}/theme`, icon: Palette },
-        { title: "Domain", url: `/dashboard/stores/${storeId}/domain`, icon: Globe },
-        { title: "Store Settings", url: `/dashboard/stores/${storeId}/settings`, icon: Settings },
-      ]
+        { title: "Theme", url: `/dashboard/stores/${storeId}/theme`, icon: Palette, menuKey: "theme" },
+        { title: "Domain", url: `/dashboard/stores/${storeId}/domain`, icon: Globe, menuKey: "domain" },
+        { title: "Store Settings", url: `/dashboard/stores/${storeId}/settings`, icon: Settings, menuKey: "store_settings" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const renderGroup = (
     label: string,
-    items: { title: string; url: string; icon: React.ElementType; badge?: number }[]
+    items: { title: string; url: string; icon: React.ElementType; badge?: number; menuKey?: string }[]
   ) => {
     if (items.length === 0) return null;
     return (
@@ -140,32 +142,53 @@ export function AppSidebar() {
         <SidebarGroupLabel>{label}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {items.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                  <NavLink
-                    to={item.url}
-                    end
-                    instant
-                    className="hover:bg-accent/50"
-                    activeClassName="bg-accent text-accent-foreground font-medium"
+            {items.map((item) => {
+              const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild={!comingSoon}
+                    isActive={!comingSoon && isActive(item.url)}
+                    className={comingSoon ? "opacity-50 cursor-not-allowed" : ""}
                   >
-                    <item.icon className="mr-2 h-4 w-4" />
-                    {!collapsed && <span>{item.title}</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <SidebarMenuBadge>
-                    <Badge
-                      variant="destructive"
-                      className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full"
-                    >
-                      {item.badge > 99 ? "99+" : item.badge}
-                    </Badge>
-                  </SidebarMenuBadge>
-                )}
-              </SidebarMenuItem>
-            ))}
+                    {comingSoon ? (
+                      <div className="flex items-center w-full hover:bg-transparent">
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && (
+                          <>
+                            <span>{item.title}</span>
+                            <Badge variant="outline" className="ml-auto text-[9px] px-1 py-0 h-4 border-amber-300 text-amber-600 shrink-0">
+                              Soon
+                            </Badge>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <NavLink
+                        to={item.url}
+                        end
+                        instant
+                        className="hover:bg-accent/50"
+                        activeClassName="bg-accent text-accent-foreground font-medium"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    )}
+                  </SidebarMenuButton>
+                  {!comingSoon && item.badge !== undefined && item.badge > 0 && (
+                    <SidebarMenuBadge>
+                      <Badge
+                        variant="destructive"
+                        className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full"
+                      >
+                        {item.badge > 99 ? "99+" : item.badge}
+                      </Badge>
+                    </SidebarMenuBadge>
+                  )}
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>

@@ -23,6 +23,7 @@ const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminWhatsApp = lazy(() => import("@/pages/admin/AdminWhatsApp"));
 const AdminUsageMonitoring = lazy(() => import("@/pages/admin/AdminUsageMonitoring"));
 const AdminErrorLogs = lazy(() => import("@/pages/admin/AdminErrorLogs"));
+const AdminMenuConfig = lazy(() => import("@/pages/admin/AdminMenuConfig"));
 
 // Dashboard
 const DashboardLayout = lazy(() => import("@/layouts/DashboardLayout"));
@@ -84,6 +85,7 @@ export default function AuthRoutes() {
           <Route path="usage" element={<AdminUsageMonitoring />} />
           <Route path="error-logs" element={<AdminErrorLogs />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="menu-config" element={<AdminMenuConfig />} />
         </Route>
 
         <Route

@@ -12,7 +12,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
   Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
-  Search, User, Bell, X, BarChart3, MessageSquare,
+  Search, User, Bell, X, BarChart3, MessageSquare, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { useMenuConfig } from "@/hooks/useMenuConfig";
 
 function MobileMenu({
   open,
@@ -39,6 +40,7 @@ function MobileMenu({
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { isVisible, isComingSoon } = useMenuConfig();
 
   const go = (path: string) => {
     navigate(path);
@@ -48,8 +50,11 @@ function MobileMenu({
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
-  type MenuItem = { label: string; icon: React.ElementType; path: string; exact?: boolean; badge?: number };
+  type MenuItem = { label: string; icon: React.ElementType; path: string; exact?: boolean; badge?: number; menuKey?: string };
   type MenuSection = { title?: string; items: MenuItem[] };
+
+  const filterItems = (items: MenuItem[]) =>
+    items.filter((i) => !i.menuKey || isVisible(i.menuKey));
 
   const menuSections: MenuSection[] = storeId
     ? [
@@ -57,42 +62,41 @@ function MobileMenu({
           ? [
               {
                 title: "Customers",
-                items: [
-                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
-                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
-                ],
+                items: filterItems([
+                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers`, menuKey: "customers" },
+                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts`, menuKey: "abandoned_carts" },
+                ]),
               },
               {
                 title: "Marketing",
-                items: [
-                  { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeId}/whatsapp` },
-                  { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
-                  
-                  { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
-                ],
+                items: filterItems([
+                  { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeId}/whatsapp`, menuKey: "whatsapp_marketing" },
+                  { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons`, menuKey: "coupons" },
+                  { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics`, menuKey: "analytics" },
+                ]),
               },
             ]
           : []),
         {
           title: "Payments & Shipping",
-          items: [
-            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeId}/payments` },
-            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeId}/shipping` },
-            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeId}/tax` },
-          ],
+          items: filterItems([
+            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeId}/payments`, menuKey: "payments" },
+            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeId}/shipping`, menuKey: "shipping" },
+            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeId}/tax`, menuKey: "tax_gst" },
+          ]),
         },
         {
           title: "Store",
-          items: [
-            { label: "Categories", icon: Package, path: `/dashboard/stores/${storeId}/categories` },
-            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeId}/media` },
-            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload` },
-            { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme` },
-            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain` },
-            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeId}/settings` },
-          ],
+          items: filterItems([
+            { label: "Categories", icon: Package, path: `/dashboard/stores/${storeId}/categories`, menuKey: "categories" },
+            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeId}/media`, menuKey: "media_library" },
+            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload`, menuKey: "bulk_upload" },
+            { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme`, menuKey: "theme" },
+            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain`, menuKey: "domain" },
+            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeId}/settings`, menuKey: "store_settings" },
+          ]),
         },
-      ]
+      ].filter((s) => s.items.length > 0)
     : [
         { items: [{ label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true }] },
       ];
@@ -114,20 +118,29 @@ function MobileMenu({
               <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const active = isActive(item.path, item.exact);
+                  const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
                   return (
                     <button
                       key={item.path}
-                      onClick={() => go(item.path)}
+                      onClick={() => !comingSoon && go(item.path)}
+                      disabled={comingSoon}
                       className={cn(
                         "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-[15px] transition-colors",
-                        active
-                          ? "bg-white/10 text-white font-medium"
-                          : "text-[#b0b0b0] active:bg-white/5"
+                        comingSoon
+                          ? "opacity-40 cursor-not-allowed text-[#888]"
+                          : active
+                            ? "bg-white/10 text-white font-medium"
+                            : "text-[#b0b0b0] active:bg-white/5"
                       )}
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
                       <span className="flex-1 text-left">{item.label}</span>
-                      {item.badge !== undefined && item.badge > 0 && (
+                      {comingSoon && (
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-400/50 text-amber-400 shrink-0">
+                          Soon
+                        </Badge>
+                      )}
+                      {!comingSoon && item.badge !== undefined && item.badge > 0 && (
                         <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
                           {item.badge > 99 ? "99+" : item.badge}
                         </Badge>
