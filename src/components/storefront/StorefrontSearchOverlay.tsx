@@ -37,6 +37,7 @@ export default function StorefrontSearchOverlay({
   products,
   slug,
   initialFiltersOpen = false,
+  currency = "₹",
 }: StorefrontSearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
