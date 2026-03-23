@@ -321,6 +321,83 @@ async function prefetchStorefrontData(slug) {
   }
 }
 
+/* ============== SERVER-RENDER CRITICAL HTML ============== */
+
+/**
+ * Generates real storefront HTML at the edge using prefetched data.
+ * This replaces the generic skeleton with actual store content (marquee,
+ * nav bar, product cards) so users see real content before JS loads.
+ */
+function buildServerRenderedShell(storefrontData) {
+  const store = storefrontData?.store;
+  if (!store) return "";
+
+  const products = (storefrontData.products || []).filter(p => p.is_active).slice(0, 4);
+  const categories = (storefrontData.categories || []).slice(0, 6);
+  const themeConfig = storefrontData.theme_config;
+  const storeName = escapeHtml(store.name || "");
+  const currency = store.currency || "INR";
+  const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
+
+  // Marquee
+  const marqueeEnabled = themeConfig?.marquee_enabled !== false;
+  const marqueeGradient = themeConfig?.marquee_gradient || "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)";
+  const marqueeText = themeConfig?.marquee_text || "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
+  const marqueeSegments = marqueeText.split(" • ").filter(Boolean);
+  const marqueeItemsHtml = marqueeSegments.map(s => `<span style="white-space:nowrap">${escapeHtml(s.trim())}</span>`).join('<span style="opacity:.7">•</span>');
+
+  const marqueeHtml = marqueeEnabled ? `<div style="width:100%;overflow:hidden;padding:10px 0;font-size:13px;font-weight:500;background:${escapeHtml(marqueeGradient)};color:#000;font-variant:small-caps"><div class="flex w-max animate-marquee" style="display:flex;gap:35px;padding-right:35px">${marqueeItemsHtml}${marqueeItemsHtml}</div></div>` : "";
+
+  // Nav bar with real logo/store name
+  const logoHtml = store.logo_url
+    ? `<img src="${escapeHtml(store.logo_url)}" alt="${storeName}" width="160" height="48" style="height:40px;width:auto;max-width:160px;object-fit:contain" />`
+    : `<div style="display:flex;align-items:center;gap:8px"><div style="width:36px;height:36px;border-radius:8px;background:#4361ee;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><span style="font-size:18px;font-weight:700">${storeName}</span></div>`;
+
+  const navHtml = `<div style="position:sticky;top:0;z-index:30;display:flex;align-items:center;height:56px;padding:0 12px;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid #e5e5e5"><div style="width:40px;height:40px;border-radius:10px;background:#e8e8e8"></div><div style="margin-left:6px">${logoHtml}</div><div style="flex:1"></div><div style="width:36px;height:36px;border-radius:50%;background:#e8e8e8;margin-left:4px"></div><div style="width:36px;height:36px;border-radius:50%;background:#e8e8e8;margin-left:4px"></div><div style="width:36px;height:36px;border-radius:50%;background:#e8e8e8;margin-left:4px"></div></div>`;
+
+  // Categories
+  let catsHtml = "";
+  if (categories.length > 0) {
+    const catItems = categories.map(cat => {
+      const catImg = cat.image_url
+        ? `<img src="${escapeHtml(cat.image_url)}" alt="${escapeHtml(cat.name)}" width="64" height="64" style="width:64px;height:64px;border-radius:50%;object-fit:cover" loading="lazy" />`
+        : `<div style="width:64px;height:64px;border-radius:50%;background:#e8e8e8" class="sf-shimmer"></div>`;
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0"><div style="border-radius:50%;overflow:hidden">${catImg}</div><span style="font-size:11px;text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(cat.name)}</span></div>`;
+    }).join("");
+    catsHtml = `<div style="display:flex;gap:12px;padding:12px 16px;max-width:72rem;margin:0 auto;overflow-x:auto">${catItems}</div>`;
+  }
+
+  // Product cards
+  let gridHtml = "";
+  if (products.length > 0) {
+    const primaryColor = themeConfig?.primary_color || "#b8873c";
+    const isLight = (hex) => {
+      const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+      return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+    };
+    const btnText = isLight(primaryColor) ? "#1a1a1a" : "#ffffff";
+
+    const cards = products.map((p, idx) => {
+      const name = escapeHtml(p.name || "");
+      const imgUrl = escapeHtml(p.image_url || "");
+      const price = p.sale_price || p.price || 0;
+      const originalPrice = p.sale_price ? p.price : null;
+      const discount = originalPrice ? Math.round((1 - price / originalPrice) * 100) : 0;
+      const loadAttr = idx < 2 ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
+
+      const priceHtml = originalPrice
+        ? `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:15px;font-weight:700">${currencySymbol}${price}</span><span style="font-size:12px;text-decoration:line-through;opacity:.5">${currencySymbol}${originalPrice}</span>${discount > 0 ? `<span style="font-size:11px;font-weight:600;color:#16a34a">${discount}% off</span>` : ""}</div>`
+        : `<span style="font-size:15px;font-weight:700">${currencySymbol}${price}</span>`;
+
+      return `<div style="border-radius:16px;overflow:hidden;background:#fff;border:1px solid #e8e8e8"><img src="${imgUrl}" alt="${name}" width="400" height="500" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block" ${loadAttr} /><div style="padding:8px 10px 10px"><div style="font-size:12px;opacity:.5;margin-bottom:2px">${escapeHtml(p.category || "")}</div><div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${name}</div>${priceHtml}<div style="height:36px;border-radius:8px;margin-top:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:${primaryColor};color:${btnText};cursor:pointer">Add to Cart</div></div></div>`;
+    }).join("");
+
+    gridHtml = `<div style="padding:16px 16px 0;max-width:72rem;margin:0 auto"><div style="font-size:18px;font-weight:700;margin-bottom:12px">All Products</div></div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 16px 16px;max-width:72rem;margin:0 auto">${cards}</div>`;
+  }
+
+  return `<div id="sf-skeleton" data-server-rendered="true">${marqueeHtml}${navHtml}${catsHtml}${gridHtml}</div>`;
+}
+
 /* ============== INJECT STORE SLUG INTO HTML ============== */
 /**
  * FIX #2: For custom domains, the SPA running in the browser has no way
@@ -328,6 +405,7 @@ async function prefetchStorefrontData(slug) {
  *
  * PERF: Also injects window.__STOREFRONT_DATA__ with pre-fetched storefront
  * data so the SPA renders instantly without an API waterfall.
+ * PERF: Server-renders real store content into the HTML shell at the edge.
  */
 async function fetchAndInjectSlug(request, slug) {
   // Fetch origin HTML and storefront data in parallel
@@ -352,15 +430,18 @@ async function fetchAndInjectSlug(request, slug) {
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" />`;
 
-  // LCP optimization: preload the first product image so the browser discovers it
-  // at HTML parse time instead of waiting for React to render.
+  // LCP optimization: preload the first product image with srcset for responsive sizes
   let lcpPreload = "";
   if (storefrontData) {
     const products = storefrontData.products || [];
     const firstImage = products[0]?.image_url;
     if (firstImage) {
       const safeUrl = escapeHtml(firstImage);
-      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" />`;
+      // Generate srcset with multiple widths for responsive preloading
+      const widths = [200, 400, 600, 800];
+      const srcsetParts = widths.map(w => `${safeUrl} ${w}w`);
+      const srcsetAttr = srcsetParts.join(", ");
+      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" imagesrcset="${srcsetAttr}" imagesizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" fetchpriority="high" />`;
       // Preconnect to the image CDN origin
       try {
         const imgOrigin = new URL(firstImage).origin;
@@ -372,6 +453,18 @@ async function fetchAndInjectSlug(request, slug) {
   }
 
   html = html.replace("<head>", `<head>${injection}${lcpPreload}`);
+
+  // Server-render real store content into the HTML shell
+  if (storefrontData?.store) {
+    const serverHtml = buildServerRenderedShell(storefrontData);
+    if (serverHtml) {
+      // Replace the generic skeleton with real server-rendered content
+      html = html.replace(
+        /<div class="sf-shell" id="sf-skeleton">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/,
+        serverHtml
+      );
+    }
+  }
 
   return new Response(html, {
     status: response.status,
@@ -402,15 +495,22 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   const cached = await cache.match(key);
 
   if (cached) {
+    // Background revalidation: re-fetch and re-inject for fresh cache
     ctx.waitUntil(
-      proxyToOrigin(request)
-        .then((res) => {
-          const ct = res.headers.get("content-type") || "";
-          if (res.ok && ct.includes("text/html")) {
-            return cache.put(key, res.clone());
+      (async () => {
+        try {
+          let freshRes;
+          if (slug) {
+            freshRes = await fetchAndInjectSlug(request, slug);
+          } else {
+            freshRes = await proxyToOrigin(request);
           }
-        })
-        .catch(() => {})
+          const ct = freshRes.headers.get("content-type") || "";
+          if (freshRes.ok && ct.includes("text/html")) {
+            await cache.put(key, freshRes.clone());
+          }
+        } catch {}
+      })()
     );
     return cached;
   }
@@ -430,6 +530,8 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
     return new Response("Server Error", { status: 500 });
   }
 
+  // Cache the fully injected HTML (with SSR content + __STOREFRONT_DATA__)
+  // so subsequent first-visit requests from the same edge POP get pre-rendered HTML
   const contentType = res.headers.get("content-type") || "";
   if (res.ok && contentType.includes("text/html")) {
     ctx.waitUntil(cache.put(key, res.clone()));
