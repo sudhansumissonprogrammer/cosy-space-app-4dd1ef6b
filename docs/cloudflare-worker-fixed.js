@@ -723,19 +723,20 @@ export default {
         return cachedFetch(request, "", ctx);
       }
 
-      // 301 redirect to custom domain if one exists
-      const customDomain = await getCustomDomainForSlug(slug);
+      // Run independent checks in parallel
+      const [customDomain, seoResponse, botResponse] = await Promise.all([
+        getCustomDomainForSlug(slug),
+        handleSeoFiles(url, slug),
+        handleBot(request, slug, url, false),
+      ]);
+
       if (customDomain) {
         return Response.redirect(
           `https://${customDomain}${url.pathname}${url.search}`,
           301
         );
       }
-
-      const seoResponse = await handleSeoFiles(url, slug);
       if (seoResponse) return seoResponse;
-
-      const botResponse = await handleBot(request, slug, url, false);
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx);
