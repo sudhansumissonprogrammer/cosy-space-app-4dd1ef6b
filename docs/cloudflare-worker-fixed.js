@@ -321,6 +321,16 @@ async function prefetchStorefrontData(slug) {
   }
 }
 
+/* ============== CLOUDFLARE IMAGE CDN ============== */
+
+/**
+ * Route an image URL through Cloudflare's /cdn-cgi/image/ pipeline.
+ * Provides automatic AVIF/WebP, server-side resizing, edge caching.
+ */
+function cfImageUrl(originUrl, width = 400, quality = 70) {
+  return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${originUrl}`;
+}
+
 /* ============== SERVER-RENDER CRITICAL HTML ============== */
 
 /**
@@ -367,7 +377,7 @@ function buildServerRenderedShell(storefrontData) {
     catsHtml = `<div style="display:flex;gap:12px;padding:12px 16px;max-width:72rem;margin:0 auto;overflow-x:auto">${catItems}</div>`;
   }
 
-  // Product cards
+  // Product cards — route images through CF Image CDN for auto AVIF/WebP + resize
   let gridHtml = "";
   if (products.length > 0) {
     const primaryColor = themeConfig?.primary_color || "#b8873c";
@@ -379,7 +389,9 @@ function buildServerRenderedShell(storefrontData) {
 
     const cards = products.map((p, idx) => {
       const name = escapeHtml(p.name || "");
-      const imgUrl = escapeHtml(p.image_url || "");
+      const rawImgUrl = p.image_url || "";
+      // Use CF Image CDN for optimized delivery (AVIF/WebP auto-negotiation + resize)
+      const imgUrl = escapeHtml(rawImgUrl ? cfImageUrl(rawImgUrl, 400, 70) : "");
       const price = p.sale_price || p.price || 0;
       const originalPrice = p.sale_price ? p.price : null;
       const discount = originalPrice ? Math.round((1 - price / originalPrice) * 100) : 0;
