@@ -203,7 +203,7 @@ export default function StorefrontSearchOverlay({
                 style={{
                   backgroundColor: sortBy === opt.value
                     ? "var(--storefront-text, hsl(var(--foreground)))"
-                    : "var(--storefront-text, hsl(var(--foreground)))10",
+                    : withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10"),
                   color: sortBy === opt.value
                     ? "var(--storefront-bg, hsl(var(--background)))"
                     : "var(--storefront-text, hsl(var(--foreground)))",
