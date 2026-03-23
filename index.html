@@ -4,10 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Preconnect to critical origins -->
-    <link rel="preconnect" href="https://kzvfjknnslgcwumzlwkb.supabase.co" />
+    <link rel="preconnect" href="https://kzvfjknnslgcwumzlwkb.supabase.co" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="dns-prefetch" href="https://images.unsplash.com" />
     <!-- Critical fonts: preload the subset we need immediately, defer the rest -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
@@ -66,7 +65,8 @@
         if(!slug)return;
 
         // Preconnect to image hosts we'll likely need
-        var pc=document.createElement('link');pc.rel='preconnect';pc.href='https://overlaysnow.com';document.head.appendChild(pc);
+        var imgOrigins={};
+        function addPreconnect(origin){if(imgOrigins[origin])return;imgOrigins[origin]=1;var pc=document.createElement('link');pc.rel='preconnect';pc.href=origin;document.head.appendChild(pc);}
 
         var url='https://kzvfjknnslgcwumzlwkb.supabase.co/rest/v1/rpc/get_storefront_data';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg';
@@ -97,12 +97,19 @@
               lnk.rel='preload';lnk.as='image';lnk.href=optUrl;
               lnk.setAttribute('fetchpriority','high');
               document.head.appendChild(lnk);
+              try{addPreconnect(new URL(optUrl).origin);}catch(e){}
+            }
+            // Also preconnect to product image origins
+            if(data.products&&data.products.length){
+              var firstImg=data.products[0].image_url;
+              if(firstImg){try{addPreconnect(new URL(firstImg.split(',')[0].trim()).origin);}catch(e){}}
             }
             // Also preload logo
             if(data.store.logo_url){
               var logoLnk=document.createElement('link');
               logoLnk.rel='preload';logoLnk.as='image';logoLnk.href=data.store.logo_url;
               document.head.appendChild(logoLnk);
+              try{addPreconnect(new URL(data.store.logo_url).origin);}catch(e){}
             }
           }
           return data;
