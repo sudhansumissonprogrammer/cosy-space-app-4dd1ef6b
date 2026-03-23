@@ -8,31 +8,62 @@ import { getSubdomainSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
 
-// Storefront layouts — lazy load all except V1 (most common default)
-import StorefrontLayout from "./layouts/StorefrontLayout";
-const StorefrontLayoutV2 = lazy(() => import("./layouts/StorefrontLayoutV2"));
-const StorefrontLayoutV3 = lazy(() => import("./layouts/StorefrontLayoutV3"));
-const StorefrontLayoutV4 = lazy(() => import("./layouts/StorefrontLayoutV4"));
-const StorefrontLayoutV6 = lazy(() => import("./layouts/StorefrontLayoutV6"));
-const StorefrontLayoutV7 = lazy(() => import("./layouts/StorefrontLayoutV7"));
-const StorefrontLayoutV8 = lazy(() => import("./layouts/StorefrontLayoutV8"));
-const StorefrontLayoutV10 = lazy(() => import("./layouts/StorefrontLayoutV10"));
-const StorefrontLayoutV11 = lazy(() => import("./layouts/StorefrontLayoutV11"));
-const StorefrontLayoutV12 = lazy(() => import("./layouts/StorefrontLayoutV12"));
-const StorefrontLayoutV13 = lazy(() => import("./layouts/StorefrontLayoutV13"));
+// Theme registry — each theme lazy-loaded independently; only the active theme is ever downloaded
+const themeRegistry: Record<string, {
+  layout: React.LazyExoticComponent<any>;
+  home: React.LazyExoticComponent<any>;
+}> = {
+  "theme-1": {
+    layout: lazy(() => import("./layouts/StorefrontLayout")),
+    home: lazy(() => import("./pages/StorefrontHome")),
+  },
+  "theme-2": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV2")),
+    home: lazy(() => import("./pages/StorefrontHomeV2")),
+  },
+  "theme-3": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV3")),
+    home: lazy(() => import("./pages/StorefrontHomeV3")),
+  },
+  "theme-4": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV4")),
+    home: lazy(() => import("./pages/StorefrontHomeV4")),
+  },
+  "theme-6": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV6")),
+    home: lazy(() => import("./pages/StorefrontHomeV6")),
+  },
+  "theme-7": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV7")),
+    home: lazy(() => import("./pages/StorefrontHomeV7")),
+  },
+  "theme-8": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV8")),
+    home: lazy(() => import("./pages/StorefrontHomeV8")),
+  },
+  "theme-10": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV10")),
+    home: lazy(() => import("./pages/StorefrontHomeV10")),
+  },
+  "theme-11": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV11")),
+    home: lazy(() => import("./pages/StorefrontHomeV11")),
+  },
+  "theme-12": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV12")),
+    home: lazy(() => import("./pages/StorefrontHomeV12")),
+  },
+  "theme-13": {
+    layout: lazy(() => import("./layouts/StorefrontLayoutV13")),
+    home: lazy(() => import("./pages/StorefrontHomeV13")),
+  },
+};
 
-// Storefront home pages — lazy load all except V1
-import StorefrontHome from "./pages/StorefrontHome";
-const StorefrontHomeV2 = lazy(() => import("./pages/StorefrontHomeV2"));
-const StorefrontHomeV3 = lazy(() => import("./pages/StorefrontHomeV3"));
-const StorefrontHomeV4 = lazy(() => import("./pages/StorefrontHomeV4"));
-const StorefrontHomeV6 = lazy(() => import("./pages/StorefrontHomeV6"));
-const StorefrontHomeV7 = lazy(() => import("./pages/StorefrontHomeV7"));
-const StorefrontHomeV8 = lazy(() => import("./pages/StorefrontHomeV8"));
-const StorefrontHomeV10 = lazy(() => import("./pages/StorefrontHomeV10"));
-const StorefrontHomeV11 = lazy(() => import("./pages/StorefrontHomeV11"));
-const StorefrontHomeV12 = lazy(() => import("./pages/StorefrontHomeV12"));
-const StorefrontHomeV13 = lazy(() => import("./pages/StorefrontHomeV13"));
+const defaultThemeEntry = themeRegistry["theme-1"];
+
+function getThemeEntry(theme: string) {
+  return themeRegistry[theme] || defaultThemeEntry;
+}
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
 const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
