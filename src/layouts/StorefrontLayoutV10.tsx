@@ -244,7 +244,7 @@ function MilanoTabBar({ store }: { store: StoreData }) {
         className="flex items-center justify-around py-1.5 border-t"
         style={{
           backgroundColor: "var(--storefront-bg, #f7f5f0)",
-          borderColor: "var(--storefront-text, #1a1a1a)10",
+          borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "10"),
         }}
       >
         {tabs.map((tab) => {
