@@ -274,8 +274,8 @@ export default function StorefrontLayoutV4({ slugOverride }: { slugOverride?: st
         "--storefront-accent": themeConfig.accent_color,
         "--storefront-text": themeConfig.text_color,
         "--storefront-bg": themeConfig.background_color,
-        "--storefront-heading-font": themeConfig.heading_font,
-        "--storefront-body-font": themeConfig.body_font,
+        "--storefront-heading-font": `'${themeConfig.heading_font}'`,
+        "--storefront-body-font": `'${themeConfig.body_font}'`,
         "--storefront-button-radius":
           themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : "0.5rem",
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,

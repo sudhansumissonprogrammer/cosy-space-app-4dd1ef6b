@@ -36,8 +36,8 @@ export function useThemePreview(storeId?: string) {
           "--storefront-accent": c.accent_color,
           "--storefront-text": c.text_color,
           "--storefront-bg": c.background_color,
-          "--storefront-heading-font": c.heading_font,
-          "--storefront-body-font": c.body_font,
+          "--storefront-heading-font": `'${c.heading_font}'`,
+          "--storefront-body-font": `'${c.body_font}'`,
           "--storefront-button-radius":
             c.button_style === "pill" ? "9999px" : c.button_style === "square" ? "0px" : "0.5rem",
           "--storefront-marquee-gradient": c.marquee_gradient,
