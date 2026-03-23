@@ -306,7 +306,7 @@ function MenuSearchBar({
                 onChange(p.name);
                 setShowSuggestions(false);
               }}
-              style={{ borderBottom: "1px solid var(--storefront-text, #1a1a1a)08" }}
+              style={{ borderBottom: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "08")}` }}
             >
               {p.image_url && (
                 <img src={optimizeImageUrl(p.image_url, 80)} alt="" className="h-8 w-8 rounded-lg object-cover" />
