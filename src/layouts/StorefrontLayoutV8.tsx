@@ -42,8 +42,8 @@ function MobileAppHeader({ store }: { store: StoreData }) {
       <header
         className="sticky top-0 z-40 border-b backdrop-blur-md"
         style={{
-          backgroundColor: "var(--storefront-bg, hsl(var(--background)))ee",
-          borderColor: "var(--storefront-text, hsl(var(--foreground)))08",
+          backgroundColor: withAlpha("var(--storefront-bg, hsl(var(--background)))", "ee"),
+          borderColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "08"),
         }}
       >
         <div className="flex items-center gap-2 px-3 py-2">
