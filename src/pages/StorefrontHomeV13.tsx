@@ -187,9 +187,9 @@ function CategoryTabs({
             onClick={() => onSelect(cat)}
             className="shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-all active:scale-95"
             style={{
-              backgroundColor: isActive ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
-              color: isActive ? "#ffffff" : "var(--storefront-text, #1a1a1a)90",
-              border: isActive ? "none" : "1px solid var(--storefront-text, #1a1a1a)12",
+               backgroundColor: isActive ? "#25D366" : withAlpha("var(--storefront-text, #1a1a1a)", "08"),
+               color: isActive ? "#ffffff" : withAlpha("var(--storefront-text, #1a1a1a)", "90"),
+               border: isActive ? "none" : `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "12")}`,
             }}
           >
             {cat}
