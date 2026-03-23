@@ -22,6 +22,10 @@ import { Badge } from "@/components/ui/badge";
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+
+  // Prefetch all dashboard page chunks on mount
+  useEffect(() => { prefetchDashboardRoutes(); }, []);
+  const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut, user } = useAuth();
   const [pendingOrders, setPendingOrders] = useState(0);
