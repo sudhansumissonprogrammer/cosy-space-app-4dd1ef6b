@@ -59,9 +59,10 @@ function isRateLimited(ip) {
   return false;
 }
 
-// Periodically clean stale entries (runs on every request, lightweight)
+// Periodically clean stale entries (runs probabilistically, not every request)
 function cleanRateLimitMap() {
-  if (rateLimitMap.size < 1000) return;
+  if (rateLimitMap.size < 100) return;
+  if (Math.random() > 0.01) return; // Only clean ~1% of requests
   const now = Date.now();
   for (const [key, val] of rateLimitMap) {
     if (now > val.resetAt) rateLimitMap.delete(key);
