@@ -258,7 +258,7 @@ function MilanoTabBar({ store }: { store: StoreData }) {
               <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
                 <TabIcon
                   className="h-[22px] w-[22px] transition-colors"
-                  style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : "var(--storefront-text, #1a1a1a)60" }}
+                  style={{ color: isActive ? "var(--storefront-text, #1a1a1a)" : withAlpha("var(--storefront-text, #1a1a1a)", "60") }}
                 />
                 {tab.badge != null && tab.badge > 0 && (
                   <span
