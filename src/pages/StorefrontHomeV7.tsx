@@ -88,7 +88,7 @@ function SplitHero({ store }: { store: StoreData }) {
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
-              to={storefrontPath(store.slug, "best-sellers")}
+              to={storefrontPath(store.slug, "shop")}
               className="inline-flex items-center gap-2.5 px-8 py-4 text-sm font-semibold uppercase tracking-wider transition-all duration-300 hover:opacity-80"
               style={{
                 backgroundColor: "var(--storefront-primary, #1a1a1a)",
@@ -503,7 +503,7 @@ function AllProductsGrid({ store, slug }: { store: StoreData; slug: string }) {
             </h2>
           </div>
           <Link
-            to={storefrontPath(store.slug, "best-sellers")}
+            to={storefrontPath(store.slug, "shop")}
             className="text-sm font-medium flex items-center gap-1 transition-opacity hover:opacity-60"
             style={{ color: "var(--storefront-primary, #1a1a1a)" }}
           >
@@ -619,7 +619,7 @@ export default function StorefrontHomeV7() {
         imageUrl={editorialImage2 || undefined}
         imageRight={true}
         ctaLabel="Shop Bestsellers"
-        ctaTo={storefrontPath(store.slug, "best-sellers")}
+        ctaTo={storefrontPath(store.slug, "shop")}
       />
 
       {/* All Products */}

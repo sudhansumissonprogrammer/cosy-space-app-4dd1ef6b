@@ -51,7 +51,7 @@ function HeroSection({ store }: { store: StoreData }) {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link
-              to={storefrontPath(store.slug, "best-sellers")}
+              to={storefrontPath(store.slug, "shop")}
               className="inline-flex items-center gap-2 px-8 py-4 text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
               style={{
                 backgroundColor: "var(--storefront-primary, #2563EB)",
@@ -366,7 +366,7 @@ export default function StorefrontHomeV6() {
             Featured Products
           </h2>
           <Link
-            to={storefrontPath(store.slug, "best-sellers")}
+            to={storefrontPath(store.slug, "shop")}
             className="text-sm font-medium flex items-center gap-1 transition-opacity hover:opacity-70"
             style={{ color: "var(--storefront-primary, #2563EB)" }}
           >
