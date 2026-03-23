@@ -2117,6 +2117,24 @@ export default function StoreThemeSettings() {
       queryClient.invalidateQueries({ queryKey: ["store-detail", storeId] });
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+
+      // Update localStorage so the iframe preview (same origin) picks up the
+      // new theme instantly without waiting for a background refetch.
+      if (store?.slug) {
+        try {
+          localStorage.setItem(`storefront_theme_${store.slug}`, themeId);
+          const raw = localStorage.getItem(`storefront_data_${store.slug}`);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.store) {
+              parsed.store.theme = themeId;
+              parsed._cachedAt = Date.now();
+              localStorage.setItem(`storefront_data_${store.slug}`, JSON.stringify(parsed));
+            }
+          }
+        } catch {}
+      }
+
       setConfig(newConfig);
       setDirty(false);
       setIframeKey((k) => k + 1);
