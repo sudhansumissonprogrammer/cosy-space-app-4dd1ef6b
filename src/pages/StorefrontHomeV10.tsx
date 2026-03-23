@@ -102,7 +102,7 @@ function MilanoCategories({ categories, slug }: { categories: any[] | undefined;
               ) : (
                 <div
                   className="h-full w-full flex items-center justify-center"
-                  style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)10" }}
+                  style={{ backgroundColor: withAlpha("var(--storefront-primary, #1a1a1a)", "10") }}
                 >
                   <Tag className="h-5 w-5" style={{ color: "var(--storefront-primary, #1a1a1a)" }} />
                 </div>
