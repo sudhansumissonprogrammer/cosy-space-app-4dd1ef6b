@@ -644,7 +644,7 @@ export default {
     }
 
     // ─── RATE LIMIT CLEANUP ───
-    cleanRateLimitMap();
+    if (Math.random() < 0.01) cleanRateLimitMap();
 
     // ─── FIX #1: STATIC ASSETS → PROXY TO ORIGIN ───
     const isStaticAsset =
