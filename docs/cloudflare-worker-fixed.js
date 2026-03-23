@@ -354,9 +354,52 @@ async function prefetchStorefrontData(slug) {
 /**
  * Route an image URL through Cloudflare's /cdn-cgi/image/ pipeline.
  * Provides automatic AVIF/WebP, server-side resizing, edge caching.
+ *
+ * IMPORTANT: Only use for images on domains we control or know support CF resizing.
+ * External hosts (shopify CDN, wordpress, custom domains) may block or fail.
  */
+const TRUSTED_IMAGE_HOSTS = [
+  "supabase.co",
+  "supabase.in",
+  "storivo.in",
+  "lovable.app",
+];
+
+function isTrustedImageHost(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    return TRUSTED_IMAGE_HOSTS.some(h => hostname.endsWith(h));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Normalize product image URL:
+ * - Handle comma-separated image lists (take first)
+ * - Only apply CF Image CDN for trusted hosts
+ */
+function normalizeProductImage(rawUrl, width = 400, quality = 70) {
+  if (!rawUrl) return "";
+  // Handle comma-separated image URLs — take the first one
+  const firstUrl = rawUrl.split(",")[0].trim();
+  if (!firstUrl) return "";
+  // Only use CF Image CDN for trusted origins
+  if (isTrustedImageHost(firstUrl)) {
+    return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${firstUrl}`;
+  }
+  // External hosts: return original URL (avoid broken images from CF proxy failures)
+  return firstUrl;
+}
+
 function cfImageUrl(originUrl, width = 400, quality = 70) {
-  return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${originUrl}`;
+  if (!originUrl) return "";
+  const firstUrl = originUrl.split(",")[0].trim();
+  if (!firstUrl) return "";
+  if (isTrustedImageHost(firstUrl)) {
+    return `/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${firstUrl}`;
+  }
+  return firstUrl;
 }
 
 /* ============== SERVER-RENDER CRITICAL HTML ============== */
