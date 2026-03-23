@@ -1269,7 +1269,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
   if (images.length === 0) {
     return (
       <div className="overflow-hidden rounded-2xl bg-accent">
-        <div className="flex aspect-square w-full items-center justify-center">
+        <div className="flex aspect-[3/4] sm:aspect-square w-full items-center justify-center">
           <Package className="h-16 w-16 text-muted-foreground/30" />
         </div>
       </div>
@@ -1282,7 +1282,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
     <>
       <div className="space-y-2 lg:sticky lg:top-4">
         <div
-          className="relative overflow-hidden rounded-2xl bg-accent cursor-zoom-in select-none"
+          className="relative overflow-hidden rounded-none sm:rounded-2xl bg-accent cursor-zoom-in select-none -mx-4 sm:mx-0"
           onClick={() => setLightboxOpen(true)}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -1308,12 +1308,12 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           )}
 
           {/* Skeleton */}
-          {!isMainLoaded && <Skeleton className="aspect-square w-full rounded-none" />}
+          {!isMainLoaded && <Skeleton className="aspect-[3/4] sm:aspect-square w-full rounded-none" />}
           <img
             key={`${activeIndex}-${images[activeIndex]}`}
             src={optimizeImageUrl(images[activeIndex], 800)}
             alt={productName}
-            className={`aspect-square w-full object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+            className={`aspect-[3/4] sm:aspect-square w-full object-cover sm:object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
             decoding="async"
             fetchPriority="high"
             draggable={false}
