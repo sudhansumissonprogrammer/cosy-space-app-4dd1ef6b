@@ -89,9 +89,14 @@ Deno.serve(async (req) => {
       .single();
 
     if (storeErr || !store?.facebook_pixel_id || !store?.meta_access_token) {
+      // Store has not enabled Meta CAPI yet — treat as no-op instead of error.
       return new Response(
-        JSON.stringify({ error: "Meta Pixel or Access Token not configured for this store" }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason: "meta_not_configured",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
