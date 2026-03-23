@@ -50,6 +50,10 @@ interface CAPIEventParams {
  * Non-blocking — errors are silently logged.
  */
 export function fireMetaCAPI(params: CAPIEventParams) {
+  // Skip if store has no pixel configured (cached per store)
+  const cacheKey = `meta_pixel_${params.storeId}`;
+  if (sessionStorage.getItem(cacheKey) === "0") return;
+
   const { fbc, fbp } = getMetaCookies();
 
   // Fire and forget — don't block the UI
