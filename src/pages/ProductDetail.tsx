@@ -546,10 +546,6 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Product Title — below quantity */}
-          <h1 className="mt-4 text-xl font-semibold text-foreground leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), 'Alegreya SC', serif" }}>
-            {product.name}
-          </h1>
 
           {/* CTA Buttons — clean, well-spaced */}
           {!isOutOfStock && (
