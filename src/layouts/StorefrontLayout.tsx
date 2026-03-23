@@ -388,7 +388,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
-  // Load Google Font dynamically — use display=optional to prevent FOUT and CLS
+  // Load Google Font dynamically — use display=swap so fonts render once loaded
   useEffect(() => {
     if (!themeConfig) return;
     const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
@@ -507,7 +507,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
     <div className="storefront-font min-h-screen font-sans" style={{ ...themeStyle, backgroundColor: "var(--storefront-bg, hsl(var(--background)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
       {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
       
-      <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
+      <nav className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
           {isCheckout ? (
             <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick} aria-label="Go back">
