@@ -134,7 +134,7 @@ export function AppSidebar() {
 
   const renderGroup = (
     label: string,
-    items: { title: string; url: string; icon: React.ElementType; badge?: number }[]
+    items: { title: string; url: string; icon: React.ElementType; badge?: number; menuKey?: string }[]
   ) => {
     if (items.length === 0) return null;
     return (
@@ -142,32 +142,53 @@ export function AppSidebar() {
         <SidebarGroupLabel>{label}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {items.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                  <NavLink
-                    to={item.url}
-                    end
-                    instant
-                    className="hover:bg-accent/50"
-                    activeClassName="bg-accent text-accent-foreground font-medium"
+            {items.map((item) => {
+              const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild={!comingSoon}
+                    isActive={!comingSoon && isActive(item.url)}
+                    className={comingSoon ? "opacity-50 cursor-not-allowed" : ""}
                   >
-                    <item.icon className="mr-2 h-4 w-4" />
-                    {!collapsed && <span>{item.title}</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <SidebarMenuBadge>
-                    <Badge
-                      variant="destructive"
-                      className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full"
-                    >
-                      {item.badge > 99 ? "99+" : item.badge}
-                    </Badge>
-                  </SidebarMenuBadge>
-                )}
-              </SidebarMenuItem>
-            ))}
+                    {comingSoon ? (
+                      <div className="flex items-center w-full hover:bg-transparent">
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && (
+                          <>
+                            <span>{item.title}</span>
+                            <Badge variant="outline" className="ml-auto text-[9px] px-1 py-0 h-4 border-amber-300 text-amber-600 shrink-0">
+                              Soon
+                            </Badge>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <NavLink
+                        to={item.url}
+                        end
+                        instant
+                        className="hover:bg-accent/50"
+                        activeClassName="bg-accent text-accent-foreground font-medium"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    )}
+                  </SidebarMenuButton>
+                  {!comingSoon && item.badge !== undefined && item.badge > 0 && (
+                    <SidebarMenuBadge>
+                      <Badge
+                        variant="destructive"
+                        className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full"
+                      >
+                        {item.badge > 99 ? "99+" : item.badge}
+                      </Badge>
+                    </SidebarMenuBadge>
+                  )}
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
