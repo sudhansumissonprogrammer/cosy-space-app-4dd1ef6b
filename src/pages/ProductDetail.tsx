@@ -403,7 +403,7 @@ export default function ProductDetail() {
 
           {/* Title + Share */}
           <div className="flex items-start gap-2">
-            <h1 className="flex-1 text-xl font-semibold text-foreground leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', sans-serif)" }}>
+            <h1 className="flex-1 text-xl font-semibold text-foreground leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), 'Alegreya SC', serif" }}>
               {product.name}
             </h1>
             <button
