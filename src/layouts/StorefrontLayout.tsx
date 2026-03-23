@@ -29,6 +29,7 @@ import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
 import { useThemePreview } from "@/hooks/useThemePreview";
+import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 
 export type StoreData = Tables<"stores">;
 
