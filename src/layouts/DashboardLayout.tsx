@@ -40,6 +40,7 @@ function MobileMenu({
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { isVisible, isComingSoon } = useMenuConfig();
 
   const go = (path: string) => {
     navigate(path);
@@ -49,8 +50,11 @@ function MobileMenu({
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
-  type MenuItem = { label: string; icon: React.ElementType; path: string; exact?: boolean; badge?: number };
+  type MenuItem = { label: string; icon: React.ElementType; path: string; exact?: boolean; badge?: number; menuKey?: string };
   type MenuSection = { title?: string; items: MenuItem[] };
+
+  const filterItems = (items: MenuItem[]) =>
+    items.filter((i) => !i.menuKey || isVisible(i.menuKey));
 
   const menuSections: MenuSection[] = storeId
     ? [
@@ -58,42 +62,41 @@ function MobileMenu({
           ? [
               {
                 title: "Customers",
-                items: [
-                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers` },
-                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts` },
-                ],
+                items: filterItems([
+                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers`, menuKey: "customers" },
+                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts`, menuKey: "abandoned_carts" },
+                ]),
               },
               {
                 title: "Marketing",
-                items: [
-                  { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeId}/whatsapp` },
-                  { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons` },
-                  
-                  { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics` },
-                ],
+                items: filterItems([
+                  { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeId}/whatsapp`, menuKey: "whatsapp_marketing" },
+                  { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons`, menuKey: "coupons" },
+                  { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics`, menuKey: "analytics" },
+                ]),
               },
             ]
           : []),
         {
           title: "Payments & Shipping",
-          items: [
-            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeId}/payments` },
-            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeId}/shipping` },
-            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeId}/tax` },
-          ],
+          items: filterItems([
+            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeId}/payments`, menuKey: "payments" },
+            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeId}/shipping`, menuKey: "shipping" },
+            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeId}/tax`, menuKey: "tax_gst" },
+          ]),
         },
         {
           title: "Store",
-          items: [
-            { label: "Categories", icon: Package, path: `/dashboard/stores/${storeId}/categories` },
-            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeId}/media` },
-            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload` },
-            { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme` },
-            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain` },
-            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeId}/settings` },
-          ],
+          items: filterItems([
+            { label: "Categories", icon: Package, path: `/dashboard/stores/${storeId}/categories`, menuKey: "categories" },
+            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeId}/media`, menuKey: "media_library" },
+            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload`, menuKey: "bulk_upload" },
+            { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme`, menuKey: "theme" },
+            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain`, menuKey: "domain" },
+            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeId}/settings`, menuKey: "store_settings" },
+          ]),
         },
-      ]
+      ].filter((s) => s.items.length > 0)
     : [
         { items: [{ label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true }] },
       ];
