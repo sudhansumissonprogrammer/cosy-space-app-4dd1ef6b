@@ -80,10 +80,18 @@ export function optimizeImageUrl(
   }
 
   // ── 2. Shopify CDN ──
-  if (url.includes("cdn/shop/") || url.includes("cdn.shopify.com")) {
+  if (url.includes("cdn.shopify.com")) {
     const u = new URL(url);
     u.searchParams.set("width", String(width));
     u.searchParams.set("format", "webp");
+    return u.toString();
+  }
+
+  // ── 2b. Shopify custom domain CDN (e.g. customstore.com/cdn/shop/) ──
+  // Only set width — custom domains may not support format=webp
+  if (url.includes("/cdn/shop/")) {
+    const u = new URL(url);
+    u.searchParams.set("width", String(width));
     return u.toString();
   }
 
