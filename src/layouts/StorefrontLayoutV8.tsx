@@ -95,8 +95,8 @@ function MobileAppHeader({ store }: { store: StoreData }) {
             onClick={() => setSearchOpen(true)}
             className="flex flex-1 items-center gap-2 rounded-full px-4 py-2 text-sm transition-all active:scale-[0.98]"
             style={{
-              backgroundColor: "var(--storefront-text, hsl(var(--foreground)))06",
-              border: "1.5px solid var(--storefront-text, hsl(var(--foreground)))10",
+              backgroundColor: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "06"),
+              border: `1.5px solid ${withAlpha("var(--storefront-text, hsl(var(--foreground)))", "10")}`,
             }}
             aria-label="Search products"
           >
