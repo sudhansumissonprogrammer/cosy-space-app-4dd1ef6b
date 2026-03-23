@@ -11,9 +11,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 // Defer SW registration until page is idle to avoid render-blocking
 if ('serviceWorker' in navigator) {
   const registerSW = () => {
-    import('virtual:pwa-register').then(({ registerSW: reg }) => {
-      reg({ immediate: true });
-    }).catch(() => {});
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
   };
   if ('requestIdleCallback' in window) {
     (window as any).requestIdleCallback(registerSW, { timeout: 5000 });
