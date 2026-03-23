@@ -288,7 +288,7 @@ async function proxyToOrigin(request) {
 <p>Please wait, retrying...</p>
 </body></html>`,
       {
-        status: 503,
+        status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
@@ -301,13 +301,6 @@ async function proxyToOrigin(request) {
 /* ============== PREFETCH STOREFRONT DATA ============== */
 
 async function prefetchStorefrontData(slug) {
-  const cacheKey = new Request(`https://cache/storefront-data-${slug}`);
-
-  const cached = await cache.match(cacheKey);
-  if (cached) {
-    try { return await cached.json(); } catch { /* fall through */ }
-  }
-
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
@@ -322,16 +315,7 @@ async function prefetchStorefrontData(slug) {
       }
     );
     if (!res.ok) return null;
-    const data = await res.json();
-
-    await cache.put(
-      cacheKey,
-      new Response(JSON.stringify(data), {
-        headers: { "Cache-Control": "public, max-age=300" },
-      })
-    );
-
-    return data;
+    return await res.json();
   } catch {
     return null;
   }
@@ -368,36 +352,22 @@ async function fetchAndInjectSlug(request, slug) {
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" />`;
 
-  // LCP optimization: responsive preload with imagesrcset for the first product image
+  // LCP optimization: preload the first product image so the browser discovers it
+  // at HTML parse time instead of waiting for React to render.
   let lcpPreload = "";
   if (storefrontData) {
     const products = storefrontData.products || [];
     const firstImage = products[0]?.image_url;
     if (firstImage) {
       const safeUrl = escapeHtml(firstImage);
-
-      // If image is from a CDN that supports resizing, add responsive srcset
-      if (safeUrl.includes("supabase.co/storage")) {
-        // Supabase storage — use render/image for responsive sizes
-        lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" imagesrcset="${safeUrl}?width=400 400w, ${safeUrl}?width=600 600w, ${safeUrl}?width=800 800w" imagesizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />`;
-      } else {
-        lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" />`;
-      }
-
+      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" />`;
       // Preconnect to the image CDN origin
       try {
         const imgOrigin = new URL(firstImage).origin;
         if (imgOrigin && !imgOrigin.includes("supabase")) {
-          lcpPreload += `\n<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
+          lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
         }
       } catch {}
-    }
-
-    // Preload store logo for nav LCP
-    const logoUrl = storefrontData.store?.logo_url;
-    if (logoUrl) {
-      const safeLogo = escapeHtml(logoUrl);
-      lcpPreload += `\n<link rel="preload" as="image" href="${safeLogo}" />`;
     }
   }
 
@@ -432,9 +402,8 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   const cached = await cache.match(key);
 
   if (cached) {
-    // SWR: background revalidation must re-inject storefront data
     ctx.waitUntil(
-      (slug ? fetchAndInjectSlug(request, slug) : proxyToOrigin(request))
+      proxyToOrigin(request)
         .then((res) => {
           const ct = res.headers.get("content-type") || "";
           if (res.ok && ct.includes("text/html")) {
@@ -645,7 +614,7 @@ export default {
     }
 
     // ─── RATE LIMIT CLEANUP ───
-    if (Math.random() < 0.01) cleanRateLimitMap();
+    cleanRateLimitMap();
 
     // ─── FIX #1: STATIC ASSETS → PROXY TO ORIGIN ───
     const isStaticAsset =
@@ -724,20 +693,19 @@ export default {
         return cachedFetch(request, "", ctx);
       }
 
-      // Run independent checks in parallel
-      const [customDomain, seoResponse, botResponse] = await Promise.all([
-        getCustomDomainForSlug(slug),
-        handleSeoFiles(url, slug),
-        handleBot(request, slug, url, false),
-      ]);
-
+      // 301 redirect to custom domain if one exists
+      const customDomain = await getCustomDomainForSlug(slug);
       if (customDomain) {
         return Response.redirect(
           `https://${customDomain}${url.pathname}${url.search}`,
           301
         );
       }
+
+      const seoResponse = await handleSeoFiles(url, slug);
       if (seoResponse) return seoResponse;
+
+      const botResponse = await handleBot(request, slug, url, false);
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx);
@@ -757,20 +725,10 @@ export default {
     const slug = await resolveDomain(cleanDomain);
 
     if (slug) {
-      // Redirect www to naked custom domain for canonical SEO
-      if (hostname !== cleanDomain) {
-        return Response.redirect(
-          `https://${cleanDomain}${url.pathname}${url.search}`,
-          301
-        );
-      }
-
-      // Run SEO + bot checks in parallel
-      const [seoResponse, botResponse] = await Promise.all([
-        handleSeoFiles(url, slug),
-        handleBot(request, slug, url, true),
-      ]);
+      const seoResponse = await handleSeoFiles(url, slug);
       if (seoResponse) return seoResponse;
+
+      const botResponse = await handleBot(request, slug, url, true);
       if (botResponse) return botResponse;
 
       return cachedFetch(request, slug, ctx, true);

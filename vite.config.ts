@@ -67,30 +67,16 @@ export default defineConfig(({ mode }) => ({
     // Tree-shaking: ensure dead code is removed
     target: "es2020",
     cssCodeSplit: true,
-      rollupOptions: {
+    rollupOptions: {
       output: {
-        manualChunks(id) {
+        manualChunks: {
           // Vendor chunks — split large libraries
-          if (id.includes("node_modules/react-dom")) return "vendor-react";
-          if (id.includes("node_modules/react/")) return "vendor-react";
-          if (id.includes("node_modules/react-router")) return "vendor-router";
-          if (id.includes("node_modules/@tanstack/react-query")) return "vendor-query";
-          if (id.includes("node_modules/@supabase")) return "vendor-supabase";
-          if (id.includes("node_modules/lucide-react")) return "vendor-icons";
-          if (id.includes("node_modules/@radix-ui/react-dialog") ||
-              id.includes("node_modules/@radix-ui/react-popover") ||
-              id.includes("node_modules/@radix-ui/react-select")) return "vendor-ui-core";
-          if (id.includes("node_modules/@radix-ui/react-dropdown") ||
-              id.includes("node_modules/@radix-ui/react-tabs") ||
-              id.includes("node_modules/@radix-ui/react-toast")) return "vendor-ui-extra";
-
-          // Theme isolation: each theme layout+home → own chunk
-          // Vite's dynamic import() already creates separate chunks,
-          // but this ensures shared internal modules don't pull themes together
-          if (id.includes("/layouts/StorefrontLayoutV") || id.includes("/pages/StorefrontHomeV")) {
-            const match = id.match(/V(\d+)/);
-            if (match) return `theme-${match[1]}`;
-          }
+          "vendor-react": ["react", "react-dom"],
+          "vendor-router": ["react-router-dom"],
+          "vendor-query": ["@tanstack/react-query"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-ui-core": ["@radix-ui/react-dialog", "@radix-ui/react-popover", "@radix-ui/react-select"],
+          "vendor-ui-extra": ["@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs", "@radix-ui/react-toast"],
         },
       },
     },
