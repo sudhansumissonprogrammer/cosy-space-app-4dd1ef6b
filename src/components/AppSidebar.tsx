@@ -93,44 +93,43 @@ export function AppSidebar() {
 
   const catalogItems = storeId
     ? [
-        { title: "Products", url: `/dashboard/stores/${storeId}/products`, icon: Package },
-        { title: "Categories", url: `/dashboard/stores/${storeId}/categories`, icon: FolderOpen },
-        { title: "Media Library", url: `/dashboard/stores/${storeId}/media`, icon: ImageIcon },
-        { title: "Bulk Upload", url: `/dashboard/stores/${storeId}/products/bulk-upload`, icon: Upload },
-      ]
+        { title: "Products", url: `/dashboard/stores/${storeId}/products`, icon: Package, menuKey: "products" },
+        { title: "Categories", url: `/dashboard/stores/${storeId}/categories`, icon: FolderOpen, menuKey: "categories" },
+        { title: "Media Library", url: `/dashboard/stores/${storeId}/media`, icon: ImageIcon, menuKey: "media_library" },
+        { title: "Bulk Upload", url: `/dashboard/stores/${storeId}/products/bulk-upload`, icon: Upload, menuKey: "bulk_upload" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const salesItems = storeId && !isWhatsAppOnly
     ? [
-        { title: "Orders", url: `/dashboard/stores/${storeId}/orders`, icon: ShoppingBag, badge: pendingOrders },
-        { title: "Customers", url: `/dashboard/stores/${storeId}/customers`, icon: Users },
-        { title: "Abandoned Carts", url: `/dashboard/stores/${storeId}/abandoned-carts`, icon: ShoppingCart },
-      ]
+        { title: "Orders", url: `/dashboard/stores/${storeId}/orders`, icon: ShoppingBag, badge: pendingOrders, menuKey: "orders" },
+        { title: "Customers", url: `/dashboard/stores/${storeId}/customers`, icon: Users, menuKey: "customers" },
+        { title: "Abandoned Carts", url: `/dashboard/stores/${storeId}/abandoned-carts`, icon: ShoppingCart, menuKey: "abandoned_carts" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const paymentItems = storeId
     ? [
-        { title: "Payments", url: `/dashboard/stores/${storeId}/payments`, icon: CreditCard },
-        ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeId}/coupons`, icon: Tag }] : []),
-        { title: "Shipping", url: `/dashboard/stores/${storeId}/shipping`, icon: Truck },
-        { title: "Tax / GST", url: `/dashboard/stores/${storeId}/tax`, icon: Receipt },
-      ]
+        { title: "Payments", url: `/dashboard/stores/${storeId}/payments`, icon: CreditCard, menuKey: "payments" },
+        ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeId}/coupons`, icon: Tag, menuKey: "coupons" }] : []),
+        { title: "Shipping", url: `/dashboard/stores/${storeId}/shipping`, icon: Truck, menuKey: "shipping" },
+        { title: "Tax / GST", url: `/dashboard/stores/${storeId}/tax`, icon: Receipt, menuKey: "tax_gst" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const marketingItems = storeId
     ? [
-        ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeId}/whatsapp`, icon: MessageSquare }] : []),
-        
-        { title: "Tracking & Analytics", url: `/dashboard/stores/${storeId}/tracking`, icon: BarChart3 },
-      ]
+        ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeId}/whatsapp`, icon: MessageSquare, menuKey: "whatsapp_marketing" }] : []),
+        { title: "Tracking & Analytics", url: `/dashboard/stores/${storeId}/tracking`, icon: BarChart3, menuKey: "tracking_analytics" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const settingsItems = storeId
     ? [
-        { title: "Theme", url: `/dashboard/stores/${storeId}/theme`, icon: Palette },
-        { title: "Domain", url: `/dashboard/stores/${storeId}/domain`, icon: Globe },
-        { title: "Store Settings", url: `/dashboard/stores/${storeId}/settings`, icon: Settings },
-      ]
+        { title: "Theme", url: `/dashboard/stores/${storeId}/theme`, icon: Palette, menuKey: "theme" },
+        { title: "Domain", url: `/dashboard/stores/${storeId}/domain`, icon: Globe, menuKey: "domain" },
+        { title: "Store Settings", url: `/dashboard/stores/${storeId}/settings`, icon: Settings, menuKey: "store_settings" },
+      ].filter((i) => isVisible(i.menuKey))
     : [];
 
   const renderGroup = (
