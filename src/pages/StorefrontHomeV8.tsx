@@ -333,7 +333,7 @@ export default function StorefrontHomeV8() {
                     key={opt.value}
                     onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
                     className={`block w-full px-4 py-2.5 text-left text-xs transition-colors ${sortBy === opt.value ? "font-bold" : ""}`}
-                    style={{ backgroundColor: sortBy === opt.value ? "var(--storefront-primary, hsl(var(--primary)))08" : "transparent" }}
+                    style={{ backgroundColor: sortBy === opt.value ? withAlpha("var(--storefront-primary, hsl(var(--primary)))", "08") : "transparent" }}
                   >
                     {opt.label}
                   </button>
