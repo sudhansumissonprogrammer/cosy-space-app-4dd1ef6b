@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Preconnect to critical origins -->
+    <link rel="preconnect" href="https://kzvfjknnslgcwumzlwkb.supabase.co" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://kzvfjknnslgcwumzlwkb.supabase.co" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
     <!-- Critical fonts: preload the subset we need immediately, defer the rest -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
@@ -45,20 +45,68 @@
       .sf-skel-card-txt div{height:10px;margin-bottom:6px;border-radius:4px}
       @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr);gap:16px;padding:24px}}
     </style>
-    <!-- Preload storefront API data: starts fetch DURING JS parse so data is ready when React mounts -->
+    <!--
+      Preload storefront API data + LCP hero image:
+      Starts fetch DURING JS parse so data is ready when React mounts.
+      Also injects <link rel=preload> for the hero banner image to eliminate LCP delay.
+    -->
     <script>
       (function(){
         var slug;
         var p=location.pathname;
         if(p.indexOf('/store/')===0){slug=p.split('/store/')[1];if(slug)slug=slug.split('/')[0];}
+        if(!slug){
+          // Try subdomain
+          var h=location.hostname;
+          if(h.endsWith('.storivo.in')&&h!=='storivo.in'&&h!=='www.storivo.in'){
+            var sub=h.replace('.storivo.in','');
+            if(sub&&sub.indexOf('.')===-1)slug=sub;
+          }
+        }
         if(!slug)return;
+
+        // Preconnect to image hosts we'll likely need
+        var pc=document.createElement('link');pc.rel='preconnect';pc.href='https://overlaysnow.com';document.head.appendChild(pc);
+
         var url='https://kzvfjknnslgcwumzlwkb.supabase.co/rest/v1/rpc/get_storefront_data';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg';
         window.__STOREFRONT_PREFETCH__=fetch(url,{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
           body:JSON.stringify({_slug:slug,_product_limit:50})
-        }).then(function(r){return r.json()}).catch(function(){return null});
+        }).then(function(r){return r.json()}).then(function(data){
+          // Inject <link rel=preload> for LCP hero image immediately
+          if(data&&data.store){
+            var heroUrl=data.store.mobile_hero_url;
+            // Try mobile_hero_images array first
+            var heroImages=data.store.mobile_hero_images;
+            if(heroImages){
+              try{
+                var arr=typeof heroImages==='string'?JSON.parse(heroImages):heroImages;
+                if(Array.isArray(arr)&&arr[0])heroUrl=arr[0];
+              }catch(e){}
+            }
+            if(heroUrl){
+              // Optimize URL for Supabase storage
+              var optUrl=heroUrl;
+              if(heroUrl.indexOf('supabase.co/storage')>-1){
+                optUrl=heroUrl.replace('/storage/v1/object/','/storage/v1/render/image/');
+                optUrl+=(optUrl.indexOf('?')>-1?'&':'?')+'width=800&quality=75';
+              }
+              var lnk=document.createElement('link');
+              lnk.rel='preload';lnk.as='image';lnk.href=optUrl;
+              lnk.setAttribute('fetchpriority','high');
+              document.head.appendChild(lnk);
+            }
+            // Also preload logo
+            if(data.store.logo_url){
+              var logoLnk=document.createElement('link');
+              logoLnk.rel='preload';logoLnk.as='image';logoLnk.href=data.store.logo_url;
+              document.head.appendChild(logoLnk);
+            }
+          }
+          return data;
+        }).catch(function(){return null});
       })();
     </script>
   </head>
