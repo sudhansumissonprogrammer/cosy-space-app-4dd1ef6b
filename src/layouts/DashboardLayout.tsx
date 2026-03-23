@@ -118,20 +118,29 @@ function MobileMenu({
               <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const active = isActive(item.path, item.exact);
+                  const comingSoon = item.menuKey ? isComingSoon(item.menuKey) : false;
                   return (
                     <button
                       key={item.path}
-                      onClick={() => go(item.path)}
+                      onClick={() => !comingSoon && go(item.path)}
+                      disabled={comingSoon}
                       className={cn(
                         "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-[15px] transition-colors",
-                        active
-                          ? "bg-white/10 text-white font-medium"
-                          : "text-[#b0b0b0] active:bg-white/5"
+                        comingSoon
+                          ? "opacity-40 cursor-not-allowed text-[#888]"
+                          : active
+                            ? "bg-white/10 text-white font-medium"
+                            : "text-[#b0b0b0] active:bg-white/5"
                       )}
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
                       <span className="flex-1 text-left">{item.label}</span>
-                      {item.badge !== undefined && item.badge > 0 && (
+                      {comingSoon && (
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-400/50 text-amber-400 shrink-0">
+                          Soon
+                        </Badge>
+                      )}
+                      {!comingSoon && item.badge !== undefined && item.badge > 0 && (
                         <Badge className="h-5 min-w-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white border-0">
                           {item.badge > 99 ? "99+" : item.badge}
                         </Badge>
