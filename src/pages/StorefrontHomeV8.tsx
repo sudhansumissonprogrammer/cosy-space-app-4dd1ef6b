@@ -246,9 +246,9 @@ function TrustBadges() {
     <div className="px-4 py-3">
       <div className="flex gap-2 justify-between">
         {badges.map(({ icon: Icon, label }) => (
-          <div key={label} className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))06" }}>
+          <div key={label} className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl" style={{ backgroundColor: withAlpha("var(--storefront-primary, hsl(var(--primary)))", "06") }}>
             <Icon className="h-5 w-5" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />
-            <span className="text-[10px] font-semibold text-center" style={{ color: "var(--storefront-text, hsl(var(--foreground)))80" }}>{label}</span>
+            <span className="text-[10px] font-semibold text-center" style={{ color: withAlpha("var(--storefront-text, hsl(var(--foreground)))", "80") }}>{label}</span>
           </div>
         ))}
       </div>
