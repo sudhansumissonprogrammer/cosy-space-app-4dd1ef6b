@@ -81,7 +81,7 @@ function CategoryTicker({ store }: { store: StoreData }) {
       className="w-full overflow-hidden border-b py-2"
       style={{
         backgroundColor: "var(--storefront-bg, #ffffff)",
-        borderColor: "var(--storefront-text, #1a1a1a)08",
+        borderColor: withAlpha("var(--storefront-text, #1a1a1a)", "08"),
       }}
     >
       <div className="flex w-max animate-marquee items-center gap-8">
