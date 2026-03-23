@@ -45,7 +45,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
         className="sticky top-0 z-40 flex items-center justify-between px-4 py-3"
         style={{
           backgroundColor: "var(--storefront-bg, #f7f5f0)",
-          borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a",
+          borderBottom: `1px solid ${withAlpha("var(--storefront-text, #1a1a1a)", "0a")}`,
         }}
       >
         {/* Left: Hamburger */}
