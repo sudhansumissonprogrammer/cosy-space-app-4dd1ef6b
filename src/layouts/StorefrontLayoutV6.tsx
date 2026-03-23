@@ -112,7 +112,7 @@ function CleanHeader({ store }: { store: StoreData }) {
                 className="flex flex-col h-full"
                 style={{ backgroundColor: "var(--storefront-bg, #F8FAFC)", color: "var(--storefront-text, #1e293b)" }}
               >
-                <div className="border-b p-6" style={{ borderColor: "var(--storefront-text, #1e293b)10" }}>
+                <div className="border-b p-6" style={{ borderColor: withAlpha("var(--storefront-text, #1e293b)", "10") }}>
                   {store.logo_url ? (
                     <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[160px] object-contain" />
                   ) : (
