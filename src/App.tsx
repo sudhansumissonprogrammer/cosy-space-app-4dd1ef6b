@@ -189,7 +189,7 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   
   // Start with cached/injected theme instantly (no spinner)
   const [theme, setTheme] = useState(() => getInstantTheme(effectiveSlug));
-  const themeRef = React.useRef(theme);
+  const themeRef = useRef(theme);
   themeRef.current = theme;
 
   // Subscribe to query cache — when fresh data arrives with a different theme, switch instantly
