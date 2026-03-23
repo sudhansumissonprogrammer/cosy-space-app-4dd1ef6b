@@ -410,8 +410,13 @@ export default function ProductDetail() {
         {/* Product Info */}
         <div className="flex flex-col gap-0">
 
+          {/* Product Title — right under image */}
+          <h1 className="text-xl font-semibold text-foreground leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), 'Alegreya SC', serif" }}>
+            {product.name}
+          </h1>
+
           {/* Rating & Social Proof */}
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="mt-2 flex items-center gap-2.5 flex-wrap">
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
                 <Star
@@ -427,8 +432,8 @@ export default function ProductDetail() {
             </span>
           </div>
 
-          {/* Price Block */}
-          <div className="mt-3 rounded-xl border p-4" style={{ background: `color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 6%, transparent)`, borderColor: `color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 15%, transparent)` }}>
+          {/* Price — simple, no border/background */}
+          <div className="mt-4">
             <div className="flex items-baseline gap-2.5 flex-wrap">
               <span className="text-2xl font-extrabold text-foreground sm:text-3xl">
                 {currency} {Number(variantPrice).toFixed(2)}
@@ -445,12 +450,12 @@ export default function ProductDetail() {
               )}
             </div>
             {hasDiscount && (
-              <p className="mt-1.5 text-xs font-semibold text-emerald-600">
+              <p className="mt-1 text-xs font-semibold text-emerald-600">
                 You save {currency} {(product.price - product.sale_price!).toFixed(2)} on this order
               </p>
             )}
             {hasDiscount && <CountdownTimer productId={product.id} />}
-            <p className="mt-2 text-[10px] text-muted-foreground uppercase tracking-wide">Inclusive of all taxes</p>
+            <p className="mt-1.5 text-[10px] text-muted-foreground uppercase tracking-wide">Inclusive of all taxes</p>
           </div>
 
           {/* Live viewers */}
