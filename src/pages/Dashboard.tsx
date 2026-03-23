@@ -118,7 +118,7 @@ export default function Dashboard() {
         .eq("store_id", storeId!)
         .neq("status", "cancelled")
         .order("created_at", { ascending: true })
-        .limit(500);
+        .limit(200);
       if (error) throw error;
       return data as any[];
     },

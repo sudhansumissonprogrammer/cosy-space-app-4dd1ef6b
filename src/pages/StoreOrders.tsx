@@ -65,15 +65,37 @@ export default function StoreOrders() {
 
   const { data: store } = useStoreData(storeId);
 
-  const { data: allOrders, isLoading } = useQuery({
-    queryKey: ["website-orders-all", storeId],
+  // Count query for server-side pagination
+  const { data: orderCount } = useQuery({
+    queryKey: ["website-orders-count", storeId, statusFilter],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      let query = supabase
         .from("orders")
-        .select("*, order_items(*), order_number")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", storeId!);
+      if (statusFilter) query = query.eq("status", statusFilter);
+      const { count, error } = await query;
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!storeId,
+  });
+
+  const pagination = usePagination(orderCount);
+
+  const { data: allOrders, isLoading } = useQuery({
+    queryKey: ["website-orders-all", storeId, statusFilter, pagination.from, pagination.to],
+    staleTime: 2 * 60 * 1000,
+    queryFn: async () => {
+      let query = supabase
+        .from("orders")
+        .select("id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, order_items(id, product_name, quantity, unit_price, total, product_id)")
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
-        .limit(1000);
+        .range(pagination.from, pagination.to);
+      if (statusFilter) query = query.eq("status", statusFilter);
+      const { data, error } = await query;
       if (error) throw error;
       return data as any[];
     },
@@ -83,6 +105,7 @@ export default function StoreOrders() {
   const filteredOrders = useMemo(() => {
     if (!allOrders) return [];
     let result = [...allOrders];
+    // Search is client-side on current page
     if (search.trim()) {
       const q = search.toLowerCase().trim();
       result = result.filter(o => {
@@ -92,9 +115,7 @@ export default function StoreOrders() {
           (o.customer_phone && o.customer_phone.includes(q));
       });
     }
-    if (statusFilter) {
-      result = result.filter(o => o.status === statusFilter);
-    }
+    // Date filters are client-side on current page
     if (dateFrom) {
       const fromStart = new Date(dateFrom);
       fromStart.setHours(0, 0, 0, 0);
@@ -106,10 +127,9 @@ export default function StoreOrders() {
       result = result.filter(o => new Date(o.created_at) <= toEnd);
     }
     return result;
-  }, [allOrders, search, statusFilter, dateFrom, dateTo]);
+  }, [allOrders, search, dateFrom, dateTo]);
 
-  const pagination = usePagination(filteredOrders.length);
-  const paginatedOrders = filteredOrders.slice(pagination.from, pagination.to + 1);
+  const paginatedOrders = filteredOrders;
 
   const hasActiveFilters = !!search || !!statusFilter || !!dateFrom || !!dateTo;
   const clearAllFilters = () => {
@@ -131,6 +151,7 @@ export default function StoreOrders() {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
       toast.success("Order updated");
 
       if (storeId && result) {
@@ -169,6 +190,7 @@ export default function StoreOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
       toast.success("Order deleted");
       setMobileDetailOrder(null);
     },
@@ -186,6 +208,7 @@ export default function StoreOrders() {
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
       toast.success(`${vars.orderIds.length} orders updated to ${vars.status}`);
       setSelectedOrders(new Set());
       setBulkStatus("");
