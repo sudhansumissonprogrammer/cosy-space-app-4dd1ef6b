@@ -1,90 +1,110 @@
 
 
-## Plan: Cold-Load Performance Optimization (4-5s → <2s on Mobile)
+## Plan: Cloudflare Worker Latency & Correctness Fixes
 
-The architecture is already well-optimized for repeat visits (Cloudflare Worker injects `__STOREFRONT_DATA__`, localStorage SWR cache). The cold-load bottleneck is clear: **JS parse/execute blocks rendering for ~1.5s**, the LCP image isn't discoverable until React renders, and non-critical resources compete with critical ones.
-
----
-
-### Root Cause Analysis
-
-| Bottleneck | Impact | Fix |
-|-----------|--------|-----|
-| CSS bundle render-blocks for 1,250ms | FCP delayed | Inline critical CSS in `index.html` |
-| LCP image only discovered after React renders | LCP 4.6s | Worker injects `<link rel="preload">` for first product image |
-| `registerSW.js` is render-blocking (160ms) | FCP delayed | Defer SW registration |
-| All storefront JS loads before paint | FCP 3.2s | HTML skeleton in `index.html` for instant paint |
-| No `<meta charset>` early enough | Best practices flag | Move charset to first position |
-| Unused CSS 17KB in main bundle | Slower parse | Already using cssCodeSplit; add purgecss considerations |
+8 targeted fixes to the production worker (`docs/cloudflare-worker-fixed.js`), ordered by impact.
 
 ---
 
 ### Changes
 
-#### 1. Enhanced HTML Shell with Storefront Skeleton (index.html)
+#### 🔴 Fix 1: Parallelize subdomain checks (lines 711-725)
 
-Replace the spinner with a **full storefront skeleton** (marquee + nav + search + product grid) directly in `index.html`. This renders in <100ms before any JS loads.
+Replace sequential `getCustomDomainForSlug → handleSeoFiles → handleBot → cachedFetch` with `Promise.all` for the first three:
 
-Also:
-- Move `<meta charset>` to be the very first child of `<head>` (Best Practices fix)
-- Add `modulepreload` hints for the main entry chunk
-- Expand inline critical CSS to include storefront layout (nav bar, marquee bar, card grid skeleton shapes)
-
-**Key change**: The `<div id="root">` will contain a full storefront skeleton HTML instead of a spinner, so users see a meaningful layout immediately.
-
-#### 2. Worker: Inject LCP Image Preload (docs/cloudflare-worker-fixed.js)
-
-In `fetchAndInjectSlug()`, after fetching storefront data, extract the first product image URL and inject a `<link rel="preload" as="image" fetchpriority="high">` into the HTML `<head>`. This makes the LCP image discoverable at HTML parse time, not after JS execution.
-
-Also inject `<link rel="preconnect">` for the product image origin (e.g., `overlaysnow.com`).
-
-```text
-Current flow:  HTML → parse JS → execute React → render <img> → browser discovers image → loads
-New flow:      HTML (with preload) → browser discovers image immediately → loads in parallel with JS
+```js
+const [customDomain, seoResponse, botResponse] = await Promise.all([
+  getCustomDomainForSlug(slug),
+  handleSeoFiles(url, slug),
+  handleBot(request, slug, url, false),
+]);
+if (customDomain) return Response.redirect(`https://${customDomain}${url.pathname}${url.search}`, 301);
+if (seoResponse) return seoResponse;
+if (botResponse) return botResponse;
+return cachedFetch(request, slug, ctx);
 ```
 
-#### 3. Defer Service Worker Registration (vite.config.ts)
+Also parallelize the custom domain path (lines 742-748) for SEO + bot checks.
 
-The `registerSW.js` script blocks rendering for 160ms. Change VitePWA to use `injectRegister: null` and register the SW manually after the page is interactive (in `main.tsx` with `requestIdleCallback`).
+**Impact**: Saves ~50-150ms on every subdomain request by running independent checks concurrently.
 
-#### 4. Async CSS Loading Pattern (index.html)
+#### 🔴 Fix 2: Cache prefetchStorefrontData independently (lines 303-322)
 
-Add the async CSS loading pattern for the main stylesheet. The Vite-generated CSS link in the built HTML is render-blocking. We'll add a small inline script that converts the CSS `<link>` to async after DOM is ready.
+POST bypasses CF edge cache. Add manual edge caching keyed by slug with 5-min TTL:
 
-#### 5. Optimize Font Loading (index.html)
+```js
+async function prefetchStorefrontData(slug) {
+  const cacheKey = new Request(`https://cache/storefront-data-${slug}`);
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached.json();
 
-The current font preload/async pattern is good but can be improved:
-- Remove the `<link rel="preload" as="style">` for Inter (it creates an extra request that doesn't help since the stylesheet is already loaded async)
-- Keep only the `media="print" onload="this.media='all'"` pattern
+  // ... existing POST fetch ...
+  const data = await res.json();
+  await cache.put(cacheKey, new Response(JSON.stringify(data), {
+    headers: { "Cache-Control": "public, max-age=300" },
+  }));
+  return data;
+}
+```
 
-#### 6. Add `fetchpriority` to First Product Cards (ProductCardStyle1.tsx + all card styles)
+**Impact**: Eliminates redundant Supabase RPC calls on cache-miss HTML revalidations.
 
-Already implemented with `priority` prop. Verify it flows through all 4 card styles correctly — this is already done.
+#### 🔴 Fix 3: Cache negative domain lookups in getCustomDomainForSlug (lines 187-222)
 
-#### 7. Storefront Layout: Preconnect to Image Origins (StorefrontLayout.tsx)
+Currently, stores without custom domains hit Supabase on every cache miss. The function already caches results, but `custom_domain: null` is cached as `null` which is returned correctly. However, the cache TTL should use a shorter TTL for nulls to speed up activation when a domain IS added:
 
-Add a `useEffect` that extracts the image CDN origin from the first product and injects a `<link rel="preconnect">` dynamically. This is already partially planned but needs implementation.
+Already working correctly — the `null` case is cached for 300s. No code change needed here; the parallelization in Fix 1 eliminates the blocking impact.
+
+#### 🟡 Fix 4: Probabilistic rate limit cleanup (line 631)
+
+Replace `cleanRateLimitMap()` with:
+```js
+if (Math.random() < 0.01) cleanRateLimitMap();
+```
+
+#### 🟡 Fix 5: Remove redundant bot regex test (line 539)
+
+Change `if (SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua))` to just `if (SOCIAL_BOT_REGEX.test(ua))` since search bots already returned from the block above (line 505). If the search bot block failed/fell through, they should still get OG tags, so keep the combined check but restructure:
+
+```js
+// OG fallback for social bots AND search bots whose bot-render failed
+try { ... }
+```
+
+Actually the current logic is correct as a fallback — search bots that fail `bot-render` fall through to get OG tags. The redundant regex is fine as-is for clarity. Skip this.
+
+#### 🟡 Fix 6: Skip escapeHtml on CSS gradient values
+
+In any SSR shell injection, don't escape values destined for `style` attributes. Minor CPU savings — will note but not change since the SSR shell is in `index.html` not the worker.
+
+#### 🟢 Fix 7: Return 503 instead of 200 on origin timeout (line 291)
+
+Change `status: 200` to `status: 503` in the proxyToOrigin error fallback. The meta-refresh retry still works with 503.
+
+#### 🟢 Fix 8: Redirect www custom domains to naked domain (after line 738)
+
+After resolving the slug for a custom domain, check if the original hostname started with `www.` and redirect:
+
+```js
+if (slug) {
+  if (hostname !== cleanDomain) {
+    return Response.redirect(`https://${cleanDomain}${url.pathname}${url.search}`, 301);
+  }
+  // ... rest of custom domain handling
+}
+```
 
 ---
 
-### File Changes Summary
+### Files Modified
 
-| File | Change |
-|------|--------|
-| `index.html` | Move charset first; replace spinner with storefront skeleton; expand critical CSS; remove redundant font preload; add async CSS script |
-| `docs/cloudflare-worker-fixed.js` | In `fetchAndInjectSlug()`: extract first product image, inject `<link rel="preload as="image">` and `<link rel="preconnect">` for image origin |
-| `vite.config.ts` | Set `injectRegister: null` in VitePWA config to stop render-blocking `registerSW.js` |
-| `src/main.tsx` | Add manual SW registration via `requestIdleCallback` after app mounts |
-| `src/layouts/StorefrontLayout.tsx` | Add `useEffect` to inject `<link rel="preconnect">` for product image CDN origin |
+| File | Changes |
+|------|---------|
+| `docs/cloudflare-worker-fixed.js` | All 6 fixes above |
 
-### Expected Impact
-
-| Metric | Before | After (estimated) |
-|--------|--------|-------------------|
-| FCP | 3.2s | ~1.2s |
-| LCP | 4.6s | ~2.0s |
-| Speed Index | 5.1s | ~2.5s |
-| TBT | 0ms | 0ms (maintained) |
-| CLS | 0 | 0 (maintained) |
-| Performance Score | 74 | 90-95+ |
+### No Risk Areas
+- No frontend code changes
+- No database changes
+- No edge function changes
+- All fixes are backward-compatible
 
