@@ -200,8 +200,8 @@ function getInstantTheme(slug: string | undefined): string {
   return "theme-1";
 }
 
-/** Shared child routes for all layout themes */
-function StorefrontChildRoutes({ HomeComponent }: { HomeComponent: ComponentType }) {
+/** Shared child routes for all layout themes — returns Route elements directly */
+function storefrontChildRoutes(HomeComponent: ComponentType) {
   return (
     <>
       <Route index element={<HomeComponent />} />
@@ -244,7 +244,7 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   return (
     <Routes>
       <Route path={basePath} element={<LayoutComponent slugOverride={slugOverride} />}>
-        <StorefrontChildRoutes HomeComponent={HomeComponent} />
+        {storefrontChildRoutes(HomeComponent)}
       </Route>
     </Routes>
   );
