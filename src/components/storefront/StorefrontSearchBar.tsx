@@ -102,15 +102,15 @@ export default function StorefrontSearchBar({
                         {p.sale_price && p.sale_price < p.price ? (
                           <>
                             <span className="font-semibold text-foreground">
-                              ₹{Number(p.sale_price).toFixed(0)}
+                              {currency}{Number(p.sale_price).toFixed(0)}
                             </span>
                             <span className="ml-1 line-through">
-                              ₹{Number(p.price).toFixed(0)}
+                              {currency}{Number(p.price).toFixed(0)}
                             </span>
                           </>
                         ) : (
                           <span className="font-semibold text-foreground">
-                            ₹{Number(p.price).toFixed(0)}
+                            {currency}{Number(p.price).toFixed(0)}
                           </span>
                         )}
                       </p>

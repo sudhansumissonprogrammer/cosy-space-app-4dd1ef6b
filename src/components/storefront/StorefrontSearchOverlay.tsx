@@ -235,7 +235,7 @@ export default function StorefrontSearchOverlay({
                   >
                     Any
                   </button>
-                  {PRICE_RANGES.map((pr) => (
+                  {getPriceRanges(currency).map((pr) => (
                     <button
                       key={pr.label}
                       onClick={() => setPriceRange(pr.range)}

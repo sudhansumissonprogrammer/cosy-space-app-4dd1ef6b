@@ -388,7 +388,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
-  // Load Google Font dynamically — use display=optional to prevent FOUT and CLS
+  // Load Google Font dynamically — use display=swap so fonts render once loaded
   useEffect(() => {
     if (!themeConfig) return;
     const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
