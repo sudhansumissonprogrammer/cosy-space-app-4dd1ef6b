@@ -243,16 +243,14 @@ export default function StorefrontHome() {
                   </div>
                 </LazyRender>
                )}
-               {hasMore && (
+               {(products?.length ?? 0) > 8 && (
                  <div className="flex justify-center pt-4">
-                   <button
-                     onClick={loadMoreProducts}
-                     disabled={loadingMore}
-                     className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
+                   <Link
+                     to={storefrontPath(slug!, "shop")}
+                     className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
                    >
-                     {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                     {loadingMore ? "Loading..." : "Load More Products"}
-                   </button>
+                     View All Products
+                   </Link>
                  </div>
                )}
             </>
