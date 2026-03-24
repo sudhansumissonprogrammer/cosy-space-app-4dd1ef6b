@@ -383,7 +383,7 @@ export default function BulkUpload() {
               result.skipped++;
               continue;
             }
-            const { error } = await supabase.from("products").insert({
+            const { data: insertedProduct, error } = await supabase.from("products").insert({
               store_id: storeId!,
               name: mapped.name,
               slug: generateSlug(mapped.name),
@@ -396,10 +396,14 @@ export default function BulkUpload() {
               sku: mapped.sku || null,
               image_url: mapped.image_url || null,
               is_active: mapped.is_active,
-            });
+            }).select("id").single();
             if (error) throw error;
             result.created++;
             createdCount++;
+            // Track for background image copy
+            if (insertedProduct && mapped.image_url) {
+              createdProducts.push({ id: insertedProduct.id, image_url: mapped.image_url });
+            }
           } else {
             result.skipped++;
           }
