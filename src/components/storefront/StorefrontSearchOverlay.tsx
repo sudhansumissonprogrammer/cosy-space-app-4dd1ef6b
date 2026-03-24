@@ -62,9 +62,11 @@ export default function StorefrontSearchOverlay({
     }
   }, [open, initialFiltersOpen]);
 
+  const resolvedStoreId = storeId || products?.[0]?.store_id || "";
+
   // Server-side search with debounce
   const searchServer = useCallback(async (q: string, price: [number, number] | null, sort: SortOption) => {
-    if (!storeId) return;
+    if (!resolvedStoreId) return;
     setSearching(true);
     try {
       let qb = supabase
