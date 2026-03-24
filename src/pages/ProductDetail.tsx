@@ -397,7 +397,7 @@ export default function ProductDetail() {
           hasDiscount={hasDiscount}
           discountPct={discountPct}
           onShare={async () => {
-            const baseShareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
+            const baseShareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=share&slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
             const shareUrl = `${baseShareUrl}&v=${Date.now()}`;
             if (navigator.share) {
               try { await navigator.share({ title: product.name, url: shareUrl }); } catch {}
