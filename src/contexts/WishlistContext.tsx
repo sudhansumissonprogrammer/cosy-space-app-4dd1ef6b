@@ -61,8 +61,17 @@ export function WishlistProvider({ children, slug }: { children: ReactNode; slug
   );
 }
 
+const WISHLIST_FALLBACK: WishlistContextType = {
+  items: [],
+  isWishlisted: () => false,
+  toggleWishlist: () => {},
+  removeFromWishlist: () => {},
+  wishlistCount: 0,
+};
+
 export function useWishlist() {
   const ctx = useContext(WishlistContext);
-  if (!ctx) throw new Error("useWishlist must be used within WishlistProvider");
-  return ctx;
+  // Return safe fallback instead of throwing — prevents crashes when
+  // components render briefly outside the provider (e.g. during error recovery)
+  return ctx ?? WISHLIST_FALLBACK;
 }

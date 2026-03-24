@@ -115,8 +115,22 @@ export function CartProvider({ slug, children }: { slug: string; children: React
   );
 }
 
+const CART_FALLBACK: CartContextType = {
+  items: [],
+  addToCart: () => {},
+  removeFromCart: () => {},
+  updateQuantity: () => {},
+  clearCart: () => {},
+  cartTotal: 0,
+  cartCount: 0,
+  isCartOpen: false,
+  openCart: () => {},
+  closeCart: () => {},
+};
+
 export function useCart() {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within CartProvider");
-  return ctx;
+  // Return safe fallback instead of throwing — prevents crashes when
+  // components render briefly outside the provider (e.g. during error recovery)
+  return ctx ?? CART_FALLBACK;
 }

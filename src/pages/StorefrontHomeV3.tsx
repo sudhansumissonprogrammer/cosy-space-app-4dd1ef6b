@@ -63,7 +63,7 @@ function BannerSlider({ store }: { store: StoreData }) {
     }
   };
 
-  const slide = slides[current];
+  const slide = slides[current] ?? slides[0] ?? { image: "", title: store.name, link: undefined };
 
   return (
     <div className="px-3 pt-3 pb-1">
