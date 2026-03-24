@@ -9,8 +9,7 @@ import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useMyStore } from "@/hooks/useMyStore";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
