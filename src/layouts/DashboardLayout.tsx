@@ -190,19 +190,23 @@ export default function DashboardLayout() {
   const storeId = store?.id;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
 
-  // Pending orders count (manual fetch, no realtime)
-  useEffect(() => {
-    if (!storeId || isWhatsAppOnly) return;
-    const fetchCount = async () => {
-      const { count } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("store_id", storeId)
-        .eq("status", "pending");
-      setPendingOrders(count ?? 0);
-    };
-    fetchCount();
-  }, [storeId, isWhatsAppOnly]);
+  // Pending orders count — shared with PendingActions via React Query
+  const { data: pendingCount } = useQuery({
+    queryKey: ["pending-actions", storeId],
+    staleTime: 2 * 60 * 1000,
+    queryFn: async () => {
+      const [pendingOrders, carts] = await Promise.all([
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("store_id", storeId!).eq("status", "pending"),
+        supabase.from("abandoned_carts").select("id", { count: "exact", head: true }).eq("store_id", storeId!).eq("recovered", false),
+      ]);
+      return {
+        pendingOrders: pendingOrders.count ?? 0,
+        abandonedCarts: carts.count ?? 0,
+      };
+    },
+    enabled: !!storeId && !isWhatsAppOnly,
+  });
+  const pendingOrders = pendingCount?.pendingOrders ?? 0;
 
   // Clear app badge when visiting orders page
   useEffect(() => {
