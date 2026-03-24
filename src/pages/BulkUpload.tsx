@@ -420,19 +420,26 @@ export default function BulkUpload() {
         result.skipped++;
       });
 
-      return result;
+      return { ...result, _createdProducts: createdProducts };
     },
     onSuccess: (data) => {
-      setImportResult(data);
+      const { _createdProducts, ...importResult } = data;
+      setImportResult(importResult);
       setStep("result");
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products-count", storeId] });
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
+
+      // Background-copy external images to our storage
+      if (_createdProducts.length > 0 && storeId) {
+        copyExternalImagesForProducts(_createdProducts, storeId);
+      }
+
       const msg = [];
-      if (data.created > 0) msg.push(`${data.created} created`);
-      if (data.updated > 0) msg.push(`${data.updated} updated`);
+      if (importResult.created > 0) msg.push(`${importResult.created} created`);
+      if (importResult.updated > 0) msg.push(`${importResult.updated} updated`);
       toast.success(`Import complete: ${msg.join(", ")}`);
     },
     onError: (err: any) => toast.error(err.message || "Import failed"),
