@@ -318,6 +318,7 @@ export default function BulkUpload() {
   const importMutation = useMutation({
     mutationFn: async (): Promise<ImportResult> => {
       const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
+      const createdProducts: Array<{ id: string; image_url: string }> = [];
       if (validRows.length === 0) throw new Error("No valid products to import");
 
       const remaining = limitInfo?.product_limit ? limitInfo.product_limit - limitInfo.current_count : Infinity;
