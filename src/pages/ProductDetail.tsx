@@ -195,33 +195,53 @@ export default function ProductDetail() {
 
   const productId = product?.id;
 
+  // Use cached product_images from RPC data as initialData
+  const getCachedImages = () => {
+    const cached = getCachedProduct();
+    if (cached?.product_images && Array.isArray(cached.product_images)) {
+      return cached.product_images as { id: string; image_url: string; display_order: number }[];
+    }
+    return undefined;
+  };
+
   const { data: extraImages } = useQuery({
     queryKey: ["product-images", productId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("product_images")
-        .select("*")
+        .select("id, image_url, display_order")
         .eq("product_id", productId!)
         .order("display_order");
       if (error) throw error;
       return data as { id: string; image_url: string; display_order: number }[];
     },
+    initialData: getCachedImages,
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Use cached product_variants from RPC data as initialData
+  const getCachedVariants = () => {
+    const cached = getCachedProduct();
+    if (cached?.product_variants && Array.isArray(cached.product_variants)) {
+      return cached.product_variants as Variant[];
+    }
+    return undefined;
+  };
 
   const { data: variants } = useQuery({
     queryKey: ["product-variants", productId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("product_variants")
-        .select("*")
+        .select("id, name, price, sku, stock_quantity, display_order")
         .eq("product_id", productId!)
         .eq("is_active", true)
         .order("display_order");
       if (error) throw error;
       return data as Variant[];
     },
+    initialData: getCachedVariants,
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
   });

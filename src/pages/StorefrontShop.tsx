@@ -44,7 +44,7 @@ export default function StorefrontShop() {
       const to = from + PAGE_SIZE - 1;
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("*, product_images(id, image_url, display_order), product_variants(id, name, price, sku, stock_quantity, display_order)")
         .eq("store_id", store.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false })

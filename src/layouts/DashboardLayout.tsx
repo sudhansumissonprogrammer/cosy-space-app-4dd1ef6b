@@ -3,7 +3,7 @@ import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useMyStore } from "@/hooks/useMyStore";
 import { supabase } from "@/integrations/supabase/client";
 
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
@@ -185,22 +185,7 @@ export default function DashboardLayout() {
   // Prefetch all dashboard page chunks on mount (covers mobile layout)
   useEffect(() => { prefetchDashboardRoutes(); }, []);
 
-  const { data: store, isLoading: storeLoading } = useQuery({
-    queryKey: ["my-store", user?.id],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("id, name, logo_url, slug, order_mode")
-        .eq("owner_id", user!.id)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
+  const { data: store, isLoading: storeLoading } = useMyStore();
 
   const storeId = store?.id;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
