@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+import { copyExternalImageInBackground, isExternalImageUrl } from "@/lib/externalImageCopy";
 
 import { cn } from "@/lib/utils";
 
