@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+import { copyExternalImageInBackground, isExternalImageUrl } from "@/lib/externalImageCopy";
 
 import { cn } from "@/lib/utils";
 
@@ -414,6 +415,20 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
             await (supabase as any).from("product_variants").update(variantData).eq("id", v.id);
           } else {
             await (supabase as any).from("product_variants").insert(variantData);
+          }
+        }
+      }
+
+      // Background-copy external images to our storage
+      if (savedProductId && storeId) {
+        const mainImg = imagePreview;
+        if (isExternalImageUrl(mainImg)) {
+          copyExternalImageInBackground(mainImg!, storeId, savedProductId);
+        }
+        // Also copy external additional image URLs
+        for (const preview of additionalPreviews) {
+          if (!preview.isExisting && isExternalImageUrl(preview.url)) {
+            copyExternalImageInBackground(preview.url, storeId, savedProductId);
           }
         }
       }

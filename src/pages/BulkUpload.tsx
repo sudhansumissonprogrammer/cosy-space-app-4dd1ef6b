@@ -20,6 +20,7 @@ import {
   ArrowLeft, Upload, FileText, Download, CheckCircle2, XCircle,
   Loader2, AlertTriangle, FileDown, ArrowRight, Columns3,
 } from "lucide-react";
+import { copyExternalImagesForProducts } from "@/lib/externalImageCopy";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ImportMode = "create" | "update" | "both";
@@ -50,6 +51,7 @@ interface ImportResult {
   updated: number;
   skipped: number;
   errors: { row: number; error: string }[];
+  _createdProducts?: Array<{ id: string; image_url: string }>;
 }
 
 // ── Product fields for mapping ─────────────────────────────────────────────
@@ -318,6 +320,7 @@ export default function BulkUpload() {
   const importMutation = useMutation({
     mutationFn: async (): Promise<ImportResult> => {
       const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
+      const createdProducts: Array<{ id: string; image_url: string }> = [];
       if (validRows.length === 0) throw new Error("No valid products to import");
 
       const remaining = limitInfo?.product_limit ? limitInfo.product_limit - limitInfo.current_count : Infinity;
@@ -383,7 +386,7 @@ export default function BulkUpload() {
               result.skipped++;
               continue;
             }
-            const { error } = await supabase.from("products").insert({
+            const { data: insertedProduct, error } = await supabase.from("products").insert({
               store_id: storeId!,
               name: mapped.name,
               slug: generateSlug(mapped.name),
@@ -396,10 +399,14 @@ export default function BulkUpload() {
               sku: mapped.sku || null,
               image_url: mapped.image_url || null,
               is_active: mapped.is_active,
-            });
+            }).select("id").single();
             if (error) throw error;
             result.created++;
             createdCount++;
+            // Track for background image copy
+            if (insertedProduct && mapped.image_url) {
+              createdProducts.push({ id: insertedProduct.id, image_url: mapped.image_url });
+            }
           } else {
             result.skipped++;
           }
@@ -415,19 +422,26 @@ export default function BulkUpload() {
         result.skipped++;
       });
 
-      return result;
+      return { ...result, _createdProducts: createdProducts };
     },
     onSuccess: (data) => {
-      setImportResult(data);
+      const { _createdProducts, ...importResult } = data;
+      setImportResult(importResult);
       setStep("result");
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products-count", storeId] });
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
+
+      // Background-copy external images to our storage
+      if (_createdProducts.length > 0 && storeId) {
+        copyExternalImagesForProducts(_createdProducts, storeId);
+      }
+
       const msg = [];
-      if (data.created > 0) msg.push(`${data.created} created`);
-      if (data.updated > 0) msg.push(`${data.updated} updated`);
+      if (importResult.created > 0) msg.push(`${importResult.created} created`);
+      if (importResult.updated > 0) msg.push(`${importResult.updated} updated`);
       toast.success(`Import complete: ${msg.join(", ")}`);
     },
     onError: (err: any) => toast.error(err.message || "Import failed"),
