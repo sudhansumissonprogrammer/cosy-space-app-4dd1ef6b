@@ -1,4 +1,5 @@
 import { useState, useEffect, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
