@@ -1,24 +1,26 @@
-import { useMemo } from "react";
-import { Link, useOutletContext, useParams, useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useOutletContext, useParams, useNavigate } from "react-router-dom";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
+import { useEffect, useRef, useCallback } from "react";
+
+const PAGE_SIZE = 20;
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const storeTheme = (store as any)?.theme || "starter";
   const cardStyle = themeConfig?.product_card_style || (storeTheme === "theme-13" ? "style-4" : "style-1");
   const isMenuStyle = cardStyle === "style-4";
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
@@ -35,21 +37,55 @@ export default function CategoryDetail() {
     enabled: !!store.id && !!categorySlug,
   });
 
-  const { data: products, isLoading: productsLoading } = useQuery({
+  const {
+    data,
+    isLoading: productsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["category-products", store.id, category?.name],
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("*, product_images(id, image_url, display_order), product_variants(id, name, price, sku, stock_quantity, display_order)")
         .eq("store_id", store.id)
         .eq("category", category!.name)
         .eq("is_active", true)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(from, to);
       if (error) throw error;
-      return data;
+      return { products: data || [], page: pageParam };
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.products.length === PAGE_SIZE ? lastPage.page + 1 : undefined,
     enabled: !!store.id && !!category?.name,
+    staleTime: 5 * 60 * 1000,
   });
+
+  const products = data?.pages.flatMap((p) => p.products) || [];
+
+  // Intersection Observer for infinite scroll
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage]
+  );
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(handleObserver, { rootMargin: "200px" });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [handleObserver]);
 
   if (!categoryLoading && !category) {
     return (
@@ -66,11 +102,20 @@ export default function CategoryDetail() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <Button variant="outline" size="sm" onClick={() => navigate(storefrontPath(slug!, ""))} className="mb-4 rounded-full bg-background text-foreground shadow-sm hover:shadow-md">
-        <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back
-      </Button>
+      <div className="mb-5 flex items-center gap-3">
+        <button
+          onClick={() => navigate(storefrontPath(slug!, ""))}
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card hover:bg-accent transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <h1 className="text-xl font-bold text-foreground">{category?.name || "Category"}</h1>
+        {products.length > 0 && (
+          <span className="text-sm text-muted-foreground">({products.length} products)</span>
+        )}
+      </div>
 
-      {categoryLoading || productsLoading || !products ? (
+      {categoryLoading || productsLoading ? (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -83,11 +128,8 @@ export default function CategoryDetail() {
             </div>
           ))}
         </div>
-      ) : products && products.length > 0 ? (
+      ) : products.length > 0 ? (
         <>
-          <p className="mb-5 text-sm text-muted-foreground">
-            {products.length} {products.length === 1 ? "product" : "products"}
-          </p>
           {isMenuStyle ? (
             <div className="flex flex-col gap-2.5">
               {products.map((product, idx) => (
@@ -102,7 +144,7 @@ export default function CategoryDetail() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {products.map((product, idx) => (
                 <UniversalProductCard
                   key={product.id}
@@ -115,6 +157,13 @@ export default function CategoryDetail() {
               ))}
             </div>
           )}
+
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="flex justify-center py-8">
+            {isFetchingNextPage && (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            )}
+          </div>
         </>
       ) : (
         <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
