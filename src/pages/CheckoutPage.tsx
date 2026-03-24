@@ -317,10 +317,16 @@ export default function CheckoutPage() {
     });
   }, []);
 
-  // Save abandoned cart on checkout entry
+  // Save abandoned cart on checkout entry (deduplicated via sessionStorage)
   const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
   useEffect(() => {
     if (checkoutItems.length === 0) return;
+    const sessionKey = `ac_${store.id}`;
+    const existingId = sessionStorage.getItem(sessionKey);
+    if (existingId) {
+      setAbandonedCartId(existingId);
+      return;
+    }
     const saveAbandonedCart = async () => {
       try {
         const { data } = await (supabase as any).from("abandoned_carts").insert({
@@ -329,7 +335,10 @@ export default function CheckoutPage() {
           customer_phone: phone || null,
           cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
         }).select("id").single();
-        if (data?.id) setAbandonedCartId(data.id);
+        if (data?.id) {
+          setAbandonedCartId(data.id);
+          sessionStorage.setItem(sessionKey, data.id);
+        }
       } catch {}
     };
     saveAbandonedCart();
