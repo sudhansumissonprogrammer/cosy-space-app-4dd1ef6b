@@ -1,9 +1,11 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Search, X, Package, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type SortOption = "popular" | "price_asc" | "price_desc" | "newest";
@@ -13,6 +15,7 @@ interface StorefrontSearchOverlayProps {
   onClose: () => void;
   products: Tables<"products">[] | undefined;
   slug: string;
+  storeId?: string;
   initialFiltersOpen?: boolean;
 }
 
@@ -35,14 +38,18 @@ export default function StorefrontSearchOverlay({
   onClose,
   products,
   slug,
+  storeId,
   initialFiltersOpen = false,
 }: StorefrontSearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [showFilters, setShowFilters] = useState(false);
+  const [serverResults, setServerResults] = useState<Tables<"products">[] | null>(null);
+  const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (open) {
@@ -50,9 +57,70 @@ export default function StorefrontSearchOverlay({
       setPriceRange(null);
       setSortBy("popular");
       setShowFilters(initialFiltersOpen);
+      setServerResults(null);
       setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [open, initialFiltersOpen]);
+
+  const resolvedStoreId = storeId || products?.[0]?.store_id || "";
+
+  // Server-side search with debounce
+  const searchServer = useCallback(async (q: string, price: [number, number] | null, sort: SortOption) => {
+    if (!resolvedStoreId) return;
+    setSearching(true);
+    try {
+      let qb = supabase
+        .from("products")
+        .select("id, name, slug, price, sale_price, image_url, category, created_at, is_best_selling")
+        .eq("store_id", resolvedStoreId)
+        .eq("is_active", true);
+
+      if (q.trim()) {
+        qb = qb.or(`name.ilike.%${q.trim()}%,category.ilike.%${q.trim()}%,description.ilike.%${q.trim()}%`);
+      }
+
+      if (price) {
+        qb = qb.gte("price", price[0]);
+        if (price[1] !== Infinity) {
+          qb = qb.lt("price", price[1]);
+        }
+      }
+
+      switch (sort) {
+        case "price_asc":
+          qb = qb.order("price", { ascending: true });
+          break;
+        case "price_desc":
+          qb = qb.order("price", { ascending: false });
+          break;
+        case "newest":
+          qb = qb.order("created_at", { ascending: false });
+          break;
+        default:
+          qb = qb.order("is_best_selling", { ascending: false }).order("created_at", { ascending: false });
+      }
+
+      const { data } = await qb.limit(30);
+      setServerResults((data as Tables<"products">[]) || []);
+    } finally {
+      setSearching(false);
+    }
+  }, [resolvedStoreId]);
+
+  // Debounced search trigger
+  useEffect(() => {
+    if (!open) return;
+    const hasInput = query.trim().length > 0 || priceRange !== null;
+    if (!hasInput) {
+      setServerResults(null);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      searchServer(query, priceRange, sortBy);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query, priceRange, sortBy, open, searchServer]);
 
   // Close on click outside
   useEffect(() => {
@@ -76,36 +144,7 @@ export default function StorefrontSearchOverlay({
 
   const activeFilterCount = [priceRange].filter(Boolean).length;
   const hasInput = query.trim().length > 0 || activeFilterCount > 0;
-
-  const results = useMemo(() => {
-    if (!products) return [];
-    let filtered = products.filter((p) => {
-      const q = query.toLowerCase();
-      const matchesSearch =
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q);
-      const effectivePrice = p.sale_price ?? p.price;
-      const matchesPrice =
-        !priceRange || (effectivePrice >= priceRange[0] && effectivePrice < priceRange[1]);
-      return matchesSearch && matchesPrice;
-    });
-
-    switch (sortBy) {
-      case "price_asc":
-        filtered.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price));
-        break;
-      case "price_desc":
-        filtered.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price));
-        break;
-      case "newest":
-        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        break;
-    }
-
-    return filtered;
-  }, [products, query, priceRange, sortBy]);
+  const results = serverResults || [];
 
   if (!open) return null;
 
@@ -264,14 +303,18 @@ export default function StorefrontSearchOverlay({
 
           {/* Results */}
           <div className="overflow-y-auto flex-1" style={{ maxHeight: "55vh" }}>
-            {hasInput ? (
+            {searching ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin opacity-40" />
+              </div>
+            ) : hasInput ? (
               results.length > 0 ? (
                 <div className="px-3 py-2">
                   <p className="text-[11px] opacity-50 mb-1.5 font-medium">
                     {results.length} result{results.length !== 1 ? "s" : ""}
                   </p>
                   <ul className="space-y-0.5">
-                    {results.slice(0, 20).map((p) => (
+                    {results.map((p) => (
                       <li key={p.id}>
                         <Link
                           to={storefrontPath(slug, `product/${p.slug || p.id}`)}
