@@ -60,7 +60,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
   const prev = () => setCurrent((c) => (c - 1 + slideCount) % slideCount);
   const next = () => setCurrent((c) => (c + 1) % slideCount);
 
-  const slide = slides[current];
+  const slide = slides[current] ?? slides[0] ?? { image: "", title: store.name, subtitle: store.description || "" };
 
   return (
     <div className="relative w-full overflow-hidden h-[60vh] sm:h-[85vh]" style={{ minHeight: "350px", maxHeight: "800px" }}>
