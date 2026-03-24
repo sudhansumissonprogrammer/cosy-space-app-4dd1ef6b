@@ -73,7 +73,7 @@
         window.__STOREFRONT_PREFETCH__=fetch(url,{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
-          body:JSON.stringify({_slug:slug,_product_limit:50})
+          body:JSON.stringify({_slug:slug,_product_limit:20})
         }).then(function(r){return r.json()}).then(function(data){
           // Inject <link rel=preload> for LCP hero image immediately
           if(data&&data.store){
