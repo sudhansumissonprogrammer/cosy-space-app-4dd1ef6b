@@ -1,70 +1,186 @@
 
 
-# Performance & Scaling Optimization Plan
+# Backend Optimization Plan: 29 → 14 Edge Functions
 
-## Summary
-Safe, high-impact optimizations targeting RPC payload size, dashboard query efficiency, and SELECT column pruning. No breaking changes — only tightening existing queries.
+## Current State
 
----
+29 edge functions deployed. Many share overlapping DB queries, duplicated CORS boilerplate, and serve low-traffic SEO endpoints that can be consolidated.
 
-## What Gets Fixed
+## Architecture: Consolidated Function Map
 
-### 1. Limit RPC product payload (homepage → 20 products)
-The `get_storefront_data` RPC currently defaults to `_product_limit = 50`. The storefront layout calls it with 50. Most homepages display 8–16 products.
+```text
+CURRENT (29 functions)              →  TARGET (14 functions)
+─────────────────────────────────────────────────────────────
+place-order                         →  place-order (keep)
+razorpay-order                      →  razorpay-order (keep)
+razorpay-verify                     →  razorpay-verify (keep)
+razorpay-upi-intent                 →  razorpay-upi-intent (keep)
+razorpay-payment-status             →  razorpay-payment-status (keep)
+auth-proxy                          →  auth-proxy (keep)
+auth-email-hook                     →  auth-email-hook (keep)
+create-guest-account                →  create-guest-account (keep)
+whatsapp-send                       →  whatsapp-send (keep)
+whatsapp-templates                  →  whatsapp-templates (keep)
+whatsapp-webhook                    →  whatsapp-webhook (keep)
+process-email-queue                 →  process-email-queue (keep)
+notify-order                        →  notify-order (keep)
+delete-store                        →  delete-store (keep)
 
-**Change:** Reduce the default call in `StorefrontLayout.tsx` from `_product_limit: 50` to `_product_limit: 20`. The Shop page already uses infinite scroll with its own paginated query, so this is safe.
+og-meta        ─┐
+share-page      ├─ MERGE → seo-page (route: ?type=og|share|sitemap|robots|feed)
+sitemap         │
+robots-txt      │
+product-feed   ─┘
 
-**Impact:** ~60% smaller API response for homepage loads.
+bot-render                          →  bot-render (keep — large, distinct purpose)
 
-### 2. Prune SELECT columns in dashboard queries
-`Dashboard.tsx` fetches orders with `select("created_at, total, status, order_items(product_name, quantity, total)")` — this is already good. But `StoreOrders.tsx` uses `select("*, order_items(*)")` loading all columns. `ProductsList.tsx` uses `select("*")`.
+log-error      ─┐
+track-view      ├─ MERGE → ingest (route: ?type=error|view)
+db-cleanup     ─┘  (cleanup becomes a scheduled invocation of same function)
 
-**Changes:**
-- **StoreOrders.tsx:** Replace `select("*")` with specific columns: `id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, order_items(id, product_name, quantity, unit_price, total, product_id)`
-- **ProductsList.tsx:** Replace `select("*")` with: `id, name, slug, image_url, price, sale_price, stock_quantity, is_active, is_best_selling, category, sku, currency, created_at`
-- **Dashboard.tsx stats query:** Already uses `head: true` counts — no change needed.
+image-resize   ─┐
+copy-external   ├─ MERGE → image-ops (route: ?action=resize|copy)
+                ─┘
 
-### 3. Add server-side pagination to StoreOrders
-Currently fetches up to 1000 orders client-side. Convert to server-side pagination like StoreCustomers already does.
+get-store-by-domain                 →  DELETE (move to Cloudflare Worker KV)
+verify-domain                       →  verify-domain (keep)
+meta-capi                           →  meta-capi (keep)
+```
 
-**Changes:**
-- Add count query for total orders (with filters applied server-side)
-- Use `usePagination` hook + `range(from, to)` 
-- Move status filter to server-side `.eq("status", filter)` when active
-- Keep search as client-side filter on the current page (search across all orders would need a DB function)
+**Result: 29 → ~17 functions (6 merged into 2, 1 deleted, 5 absorbed)**
 
-### 4. Add staleTime to dashboard & orders queries
-Several queries lack `staleTime`, causing unnecessary refetches on component re-mount.
-
-**Changes:**
-- `StoreOrders` queries: add `staleTime: 2 * 60 * 1000` (2 min)
-- `ProductsList` queries: add `staleTime: 2 * 60 * 1000`
-- `Dashboard` orders analytics: already has 5 min — keep
-
-### 5. Limit Dashboard orders analytics query
-Currently fetches 500 orders for chart data. Reduce to last 200 (charts only show monthly aggregates, 200 is plenty).
-
-**Change:** `.limit(500)` → `.limit(200)` in Dashboard.tsx
-
----
-
-## What We Are NOT Changing (Safe)
-- No database schema changes
-- No RLS policy changes  
-- No edge function changes
-- No new tables or migrations
-- Connection pooling is managed by Cloud — no action needed
-- Image optimization already in place (WebP, lazy loading, srcSet)
-- StorefrontShop already uses infinite scroll pagination
+Realistically the safest consolidation targets 3 merges:
 
 ---
 
-## Files Modified
-1. `src/layouts/StorefrontLayout.tsx` — reduce product limit 50→20
-2. `src/pages/StoreOrders.tsx` — server-side pagination + column pruning
-3. `src/pages/ProductsList.tsx` — column pruning + staleTime
-4. `src/pages/Dashboard.tsx` — reduce analytics limit 500→200
+## Merge 1: SEO Bundle → `seo-page`
 
-## Risk Assessment
-**Low risk.** All changes are query optimizations that reduce data transfer. No UI changes, no new features, no schema modifications.
+**Functions merged:** `og-meta`, `share-page`, `sitemap`, `robots-txt`, `product-feed`
+
+**Reasoning:** All 5 functions:
+- Take `?slug=` as primary param
+- Query the same `stores` table
+- Return cacheable, public content
+- Are called by Cloudflare Worker or direct URL (not `supabase.functions.invoke`)
+
+**Design:**
+- Single function with `?type=og|share|sitemap|robots|feed` query param
+- One shared `getStore(slug)` call at the top
+- Router dispatches to the appropriate handler
+- Each handler keeps its exact current response format
+- Eliminates 4 cold-start slots and 4 redundant store lookups
+
+**Frontend impact:** Update 3 references:
+- `src/components/ShareStoreDialog.tsx` → change URL path
+- `src/pages/StoreTracking.tsx` → change feed URL
+- Cloudflare Worker → update `og-meta`, `sitemap`, `robots-txt` calls
+
+---
+
+## Merge 2: Telemetry → `ingest`
+
+**Functions merged:** `log-error`, `track-view`
+
+**Reasoning:**
+- Both are fire-and-forget POST endpoints
+- Both use service-role inserts into simple tables
+- Both have in-memory rate limiting
+- Combined cold starts save ~200ms per first-hit
+
+**Design:**
+- `?type=error` → current `log-error` logic
+- `?type=view` → current `track-view` logic
+- Shared rate-limit map
+- `db-cleanup` logic added as `?type=cleanup` route (cron-triggered)
+
+**Frontend impact:** Update 2 references:
+- `src/lib/logError.ts` → change endpoint URL
+- `src/lib/trackPageView.ts` → change endpoint URL
+
+---
+
+## Merge 3: Image Ops → `image-ops`
+
+**Functions merged:** `image-resize`, `copy-external-image`
+
+**Reasoning:**
+- Both deal with fetching/proxying external images
+- Both have SSRF validation logic (duplicated)
+- `image-resize` is a simple proxy (no actual resize in Deno)
+- Shared URL validation and fetch logic
+
+**Design:**
+- `?action=resize` → current proxy behavior
+- `?action=copy` (POST) → current copy-external-image behavior
+- Shared `validateAndFetch(url)` utility
+
+**Frontend impact:** Update 1 reference:
+- `src/lib/imageOptimize.ts` → change URL path
+
+---
+
+## Function to Delete: `get-store-by-domain`
+
+**Reasoning:** This function's logic is already duplicated in the Cloudflare Worker (which does the same custom_domain → slug resolution with caching). The edge function adds a redundant DB round-trip. Current frontend code does NOT call it via `functions.invoke`.
+
+**Action:** Verify no active callers, then delete.
+
+---
+
+## PGMQ Assessment: KEEP
+
+**Finding:** PGMQ is used exclusively for email delivery (`auth_emails`, `transactional_emails`) with:
+- TTL-based expiry
+- Dead-letter queues
+- Idempotency keys
+- Rate-limit backoff (429 handling)
+- Retry budget tracking
+
+**Verdict:** This is a textbook correct use of a message queue. Email delivery is business-critical (order confirmations, auth emails). Removing PGMQ would lose retry guarantees and risk silent email failures. **No changes recommended.**
+
+---
+
+## Performance Improvements (No Merge Required)
+
+### 1. `bot-render`: Eliminate redundant `SELECT *`
+Currently fetches `SELECT *` from stores. Change to select only needed columns (name, slug, logo_url, description, currency, meta_title, meta_description, og_image_url, banner_url).
+
+### 2. `place-order`: Parallelize post-insert operations
+Currently sequential: lead insert → coupon update → abandoned cart update → order_number fetch. These 4 operations are independent — run them with `Promise.all()`.
+
+### 3. `notify-order`: Remove duplicate store query
+Currently fetches order with joined store data, then formats. The store join is efficient but the function creates a Supabase client on every invocation — add connection reuse pattern.
+
+### 4. `db-cleanup`: Add error_logs cleanup
+Currently cleans page_views, abandoned_carts, email_send_log, whatsapp_messages. Should also clean `error_logs` older than 30 days (prevents the 144-error buildup seen earlier).
+
+---
+
+## Estimated Impact
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Edge functions | 29 | ~22 (safe phase 1) |
+| Cold-start surface | 29 slots | 22 slots |
+| Redundant store queries | ~8/request | ~3/request |
+| Monthly function invocations | Baseline | ~15% fewer |
+| Estimated cost reduction | $0 (functions are negligible) | Marginal |
+
+**Honest cost assessment:** Edge function costs are already negligible (~$0.10/month). The real savings are in **latency** (fewer cold starts) and **maintainability** (fewer files to deploy/debug). The $5/month compute instance is the dominant cost and is unaffected by function count.
+
+---
+
+## Implementation Order (Safe for Live SaaS)
+
+1. **Create `seo-page`** with router — deploy alongside existing functions
+2. **Update Cloudflare Worker** to call `seo-page` instead of individual functions
+3. **Update frontend references** (3 files)
+4. **Verify** all SEO endpoints return identical responses
+5. **Delete** old functions: `og-meta`, `share-page`, `sitemap`, `robots-txt`, `product-feed`
+6. Repeat for `ingest` merge (log-error + track-view + db-cleanup)
+7. Repeat for `image-ops` merge (image-resize + copy-external-image)
+8. Delete `get-store-by-domain`
+9. Apply `place-order` parallelization and `bot-render` column pruning
+
+Each step is independently deployable and rollback-safe.
 
