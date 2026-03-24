@@ -505,7 +505,8 @@ async function handleBot(request, slug, url, isCustom) {
 
   if (SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua)) {
     try {
-      const res = await callEdgeFunction("og-meta", {
+      const res = await callEdgeFunction("seo-page", {
+        type: "og",
         slug,
         ...(product ? { product } : {}),
       });
