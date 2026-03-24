@@ -7,12 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
  * Uses a shared query key ["store", storeId] so all pages
  * that need store data share the same cached result.
  * 
- * Cache is pre-seeded by useMyStore() in DashboardLayout,
- * so most child pages get an instant cache hit.
- *
- * Uses SELECT * because child pages (StoreSettings, StoreDomain, etc.)
- * need varying sets of columns.
- *
  * staleTime is set high (10 min) since store settings rarely change
  * and are invalidated on mutation.
  */

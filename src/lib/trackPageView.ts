@@ -53,7 +53,7 @@ export function trackPageView(storeId: string, path?: string): void {
   if (!projectId) return;
 
   setTimeout(() => {
-    fetch(`https://${projectId}.supabase.co/functions/v1/ingest?type=view`, {
+    fetch(`https://${projectId}.supabase.co/functions/v1/track-view`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ store_id: storeId, path: resolvedPath }),

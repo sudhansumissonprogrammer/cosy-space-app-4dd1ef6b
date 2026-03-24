@@ -28,7 +28,7 @@ export default function StoreTracking() {
     queryFn: async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=feed&slug=${store!.slug}&format=xml`
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed?slug=${store!.slug}&format=xml`
         );
         if (!res.ok) return { ok: false, count: 0, error: `HTTP ${res.status}` };
         const text = await res.text();
@@ -68,7 +68,7 @@ export default function StoreTracking() {
   });
 
   const feedBaseUrl = store?.slug
-    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=feed&slug=${store.slug}`
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed?slug=${store.slug}`
     : "";
 
   const copyToClipboard = (text: string, label: string) => {

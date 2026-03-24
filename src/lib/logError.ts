@@ -4,7 +4,7 @@
  * Fire-and-forget — never blocks UI or throws.
  */
 
-const LOG_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest?type=error`;
+const LOG_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/log-error`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 // Throttle: max 10 errors per minute to prevent spam

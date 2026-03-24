@@ -143,15 +143,8 @@ export function useStorefront(slugOverride?: string) {
       }
       return undefined;
     },
-    // Use Date.now() for fresh injected data (< 5s old) to skip redundant refetch;
-    // use 1 for localStorage cache so a background refetch always happens
-    initialDataUpdatedAt: (() => {
-      if (!slug) return undefined;
-      if (injectedRef.current) return Date.now();
-      const cached = readLocalStorageCache(slug);
-      if (cached?._cachedAt && Date.now() - cached._cachedAt < 5000) return Date.now();
-      return 1;
-    })(),
+    // Always treat cached/injected data as stale so a background refetch happens
+    initialDataUpdatedAt: 1,
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

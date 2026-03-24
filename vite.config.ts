@@ -69,31 +69,14 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          // Vendor chunks
-          if (id.includes("node_modules/react-dom")) return "vendor-react";
-          if (id.includes("node_modules/react/")) return "vendor-react";
-          if (id.includes("node_modules/react-router")) return "vendor-router";
-          if (id.includes("node_modules/@tanstack/react-query")) return "vendor-query";
-          if (id.includes("node_modules/@supabase")) return "vendor-supabase";
-          if (id.includes("node_modules/@radix-ui/react-dialog") || id.includes("node_modules/@radix-ui/react-popover") || id.includes("node_modules/@radix-ui/react-select")) return "vendor-ui-core";
-          if (id.includes("node_modules/@radix-ui/react-dropdown-menu") || id.includes("node_modules/@radix-ui/react-tabs") || id.includes("node_modules/@radix-ui/react-toast")) return "vendor-ui-extra";
-
-          // Theme-specific chunks — each theme layout+home isolated
-          if (id.includes("/layouts/StorefrontLayoutV13") || id.includes("/pages/StorefrontHomeV13")) return "theme-13";
-          if (id.includes("/layouts/StorefrontLayoutV12") || id.includes("/pages/StorefrontHomeV12")) return "theme-12";
-          if (id.includes("/layouts/StorefrontLayoutV11") || id.includes("/pages/StorefrontHomeV11")) return "theme-11";
-          if (id.includes("/layouts/StorefrontLayoutV10") || id.includes("/pages/StorefrontHomeV10")) return "theme-10";
-          if (id.includes("/layouts/StorefrontLayoutV8") || id.includes("/pages/StorefrontHomeV8")) return "theme-8";
-          if (id.includes("/layouts/StorefrontLayoutV7") || id.includes("/pages/StorefrontHomeV7")) return "theme-7";
-          if (id.includes("/layouts/StorefrontLayoutV6") || id.includes("/pages/StorefrontHomeV6")) return "theme-6";
-          if (id.includes("/layouts/StorefrontLayoutV4") || id.includes("/pages/StorefrontHomeV4")) return "theme-4";
-          if (id.includes("/layouts/StorefrontLayoutV3") || id.includes("/pages/StorefrontHomeV3")) return "theme-3";
-          if (id.includes("/layouts/StorefrontLayoutV2") || id.includes("/pages/StorefrontHomeV2")) return "theme-2";
-          if (id.includes("/layouts/StorefrontLayout.") || id.includes("/pages/StorefrontHome.")) return "theme-1";
-
-          // Admin/Dashboard isolation
-          if (id.includes("/layouts/AdminLayout") || id.includes("/layouts/DashboardLayout") || id.includes("/pages/admin/")) return "admin";
+        manualChunks: {
+          // Vendor chunks — split large libraries
+          "vendor-react": ["react", "react-dom"],
+          "vendor-router": ["react-router-dom"],
+          "vendor-query": ["@tanstack/react-query"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-ui-core": ["@radix-ui/react-dialog", "@radix-ui/react-popover", "@radix-ui/react-select"],
+          "vendor-ui-extra": ["@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs", "@radix-ui/react-toast"],
         },
       },
     },

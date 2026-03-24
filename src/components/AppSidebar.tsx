@@ -9,7 +9,7 @@ import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMyStore } from "@/hooks/useMyStore";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
 import {
@@ -31,7 +31,22 @@ export function AppSidebar() {
   useEffect(() => { prefetchDashboardRoutes(); }, []);
   const [pendingOrders, setPendingOrders] = useState(0);
 
-  const { data: store } = useMyStore();
+  const { data: store } = useQuery({
+    queryKey: ["my-store", user?.id],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stores")
+        .select("id, name, logo_url, slug, order_mode")
+        .eq("owner_id", user!.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const storeId = store?.id;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
