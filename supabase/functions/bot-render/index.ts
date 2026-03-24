@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
   // Fetch store
   const { data: store, error: storeErr } = await supabase
     .from("stores")
-    .select("*")
+    .select("id, name, slug, description, logo_url, banner_url, currency, meta_title, meta_description, og_image_url, custom_domain, whatsapp_number, instagram_url, facebook_url, order_mode, theme, features, best_selling_carousel, location, city, state, business_hours, return_policy, shipping_policy, is_suspended, is_verified, created_at, updated_at, mobile_hero_url, mobile_hero_images, facebook_pixel_id")
     .eq("slug", slug)
     .single();
 
@@ -302,7 +302,7 @@ Deno.serve(async (req) => {
     let product: any = null;
     const { data: bySlug } = await supabase
       .from("products")
-      .select("*")
+      .select("id, name, slug, description, price, sale_price, currency, image_url, stock_quantity, category, is_active")
       .eq("store_id", store.id)
       .eq("slug", productSlug)
       .eq("is_active", true)
@@ -313,7 +313,7 @@ Deno.serve(async (req) => {
     if (!product) {
       const { data: byId } = await supabase
         .from("products")
-        .select("*")
+        .select("id, name, slug, description, price, sale_price, currency, image_url, stock_quantity, category, is_active")
         .eq("store_id", store.id)
         .eq("id", productSlug)
         .eq("is_active", true)

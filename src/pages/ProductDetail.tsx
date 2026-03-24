@@ -397,7 +397,7 @@ export default function ProductDetail() {
           hasDiscount={hasDiscount}
           discountPct={discountPct}
           onShare={async () => {
-            const baseShareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
+            const baseShareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=share&slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
             const shareUrl = `${baseShareUrl}&v=${Date.now()}`;
             if (navigator.share) {
               try { await navigator.share({ title: product.name, url: shareUrl }); } catch {}
@@ -1211,7 +1211,7 @@ function AccordionItem({
 
 /* ── Share Buttons ── */
 function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName: string; storeSlug: string; productSlugOrId: string }) {
-  const shareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-page?slug=${encodeURIComponent(storeSlug)}&product=${encodeURIComponent(productSlugOrId)}&v=${Date.now()}`;
+  const shareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=share&slug=${encodeURIComponent(storeSlug)}&product=${encodeURIComponent(productSlugOrId)}&v=${Date.now()}`;
   const text = `Check out ${productName}!`;
   const copyLink = async () => {
     try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); } catch { toast.error("Failed to copy"); }

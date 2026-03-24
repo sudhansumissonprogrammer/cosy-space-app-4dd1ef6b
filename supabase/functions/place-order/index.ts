@@ -182,46 +182,63 @@ Deno.serve(async (req) => {
       totalProfit = Number(order.total) * (defaultMargin / 100);
     }
 
+    // Parallelize independent post-insert operations
+    const postInsertOps: Promise<any>[] = [];
+
     if (lead) {
-      await supabase.from("customer_leads").insert({
-        store_id,
-        name: lead.name,
-        phone: lead.phone,
-        product_name: lead.product_name,
-        product_id: lead.product_id,
-        source: lead.source,
-      });
+      postInsertOps.push(
+        supabase.from("customer_leads").insert({
+          store_id,
+          name: lead.name,
+          phone: lead.phone,
+          product_name: lead.product_name,
+          product_id: lead.product_id,
+          source: lead.source,
+        })
+      );
     }
 
     if (coupon_id) {
-      const { data: coupon } = await supabase
-        .from("coupons")
-        .select("used_count")
-        .eq("id", coupon_id)
-        .maybeSingle();
-
-      if (coupon) {
-        await supabase
+      postInsertOps.push(
+        supabase
           .from("coupons")
-          .update({ used_count: (coupon.used_count || 0) + 1 })
-          .eq("id", coupon_id);
-      }
+          .select("used_count")
+          .eq("id", coupon_id)
+          .maybeSingle()
+          .then(({ data: coupon }) => {
+            if (coupon) {
+              return supabase
+                .from("coupons")
+                .update({ used_count: (coupon.used_count || 0) + 1 })
+                .eq("id", coupon_id);
+            }
+          })
+      );
     }
 
     if (abandoned_cart_id) {
-      await supabase
-        .from("abandoned_carts")
-        .update({ recovered: true })
-        .eq("id", abandoned_cart_id);
+      postInsertOps.push(
+        supabase
+          .from("abandoned_carts")
+          .update({ recovered: true })
+          .eq("id", abandoned_cart_id)
+      );
     }
 
-    // Fetch the auto-generated order_number
-    const { data: orderRow } = await supabase
+    // Fetch order_number in parallel with other ops
+    const orderNumberPromise = supabase
       .from("orders")
       .select("order_number")
       .eq("id", createdOrder.id)
       .single();
 
+    postInsertOps.push(orderNumberPromise);
+
+    const results = await Promise.all(postInsertOps);
+
+    // Extract order_number from the last result
+    const orderNumberResult = results[results.length - 1];
+    const orderRow = orderNumberResult?.data;
     const orderNumber = orderRow?.order_number
       ? `#${1000 + orderRow.order_number}`
       : `#${createdOrder.id.slice(0, 8).toUpperCase()}`;
