@@ -64,6 +64,33 @@ export default function CategoryManagement() {
     setDialogOpen(true);
   };
 
+  /** Center-crop an image to a 1:1 square via canvas */
+  const cropToSquare = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const size = Math.min(img.width, img.height);
+        const sx = (img.width - size) / 2;
+        const sy = (img.height - size) / 2;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error("Canvas export failed"));
+            resolve(new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
+          },
+          "image/webp",
+          0.85
+        );
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -80,8 +107,10 @@ export default function CategoryManagement() {
       let image_url: string | null = imagePreview;
 
       if (imageFile) {
+        // Crop to square first so it looks perfect in circles
+        const squareFile = await cropToSquare(imageFile);
         const basePath = generateUploadPath(storeId!, "categories");
-        const result = await uploadOptimizedImage(imageFile, "product-images", basePath);
+        const result = await uploadOptimizedImage(squareFile, "product-images", basePath);
         if (result.compressionMessage) toast.success(result.compressionMessage);
         image_url = result.mainUrl;
       }
