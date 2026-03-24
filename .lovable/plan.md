@@ -95,3 +95,24 @@ seo-page, ingest, image-ops
 | ProductDetail DB queries | 3 on first nav | 1 (images/variants from cache) |
 | PostPurchaseUpsell payload | ~2KB | ~0.5KB |
 | DB query plans | Sequential scans | Index scans on 7 paths |
+
+---
+
+# Performance Audit Round 2 — Completed
+
+## Fixes Applied
+
+### 1. Duplicate pending orders query eliminated
+- `DashboardLayout` had a manual `useEffect` fetching pending orders with `select("*")`
+- `PendingActions` component had its own React Query for the same data
+- **Fix:** DashboardLayout now uses React Query with the same `["pending-actions", storeId]` key as PendingActions — single query, shared cache
+- **Impact:** -1 DB query per dashboard load, changed `select("*")` → `select("id")` for HEAD request
+
+### 2. StorefrontBestSellers: added product_images/variants joins
+- Was using `SELECT *` without image/variant data
+- **Fix:** Added `product_images(id, image_url, display_order), product_variants(...)` joins
+- **Impact:** Product cards now have image gallery and variant data without additional queries
+
+### 3. DashboardLayout count query: select("*") → select("id")
+- HEAD requests for count queries were sending `select=*` unnecessarily
+- **Fix:** Changed to `select("id")` reducing response parsing overhead
