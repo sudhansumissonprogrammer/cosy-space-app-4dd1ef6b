@@ -2,11 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
+const STORE_COLUMNS = "id, name, slug, currency, whatsapp_number, order_mode, logo_url, theme, features, is_suspended" as const;
+
 /**
  * Centralized hook for fetching store data by storeId.
  * Uses a shared query key ["store", storeId] so all pages
  * that need store data share the same cached result.
  * 
+ * Cache is pre-seeded by useMyStore() in DashboardLayout,
+ * so most child pages get an instant cache hit.
+ *
  * staleTime is set high (10 min) since store settings rarely change
  * and are invalidated on mutation.
  */
@@ -20,7 +25,7 @@ export function useStoreData(storeId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("*")
+        .select(STORE_COLUMNS)
         .eq("id", storeId!)
         .eq("owner_id", user!.id)
         .single();
