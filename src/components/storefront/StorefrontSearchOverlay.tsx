@@ -15,7 +15,7 @@ interface StorefrontSearchOverlayProps {
   onClose: () => void;
   products: Tables<"products">[] | undefined;
   slug: string;
-  storeId: string;
+  storeId?: string;
   initialFiltersOpen?: boolean;
 }
 
