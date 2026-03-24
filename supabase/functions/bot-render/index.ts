@@ -313,7 +313,7 @@ Deno.serve(async (req) => {
     if (!product) {
       const { data: byId } = await supabase
         .from("products")
-        .select("*")
+        .select("id, name, slug, description, price, sale_price, currency, image_url, stock_quantity, category, is_active")
         .eq("store_id", store.id)
         .eq("id", productSlug)
         .eq("is_active", true)
