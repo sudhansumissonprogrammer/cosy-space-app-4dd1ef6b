@@ -56,22 +56,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { navigate } = useNavigateTransition();
 
-  const { data: store, isLoading: storeLoading, isError: storeError, refetch: refetchStore } = useQuery({
-    queryKey: ["my-store", user?.id],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("id, currency, slug, name, order_mode")
-        .eq("owner_id", user!.id)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
+  const { data: store, isLoading: storeLoading, isError: storeError, refetch: refetchStore } = useMyStore();
 
   const storeId = store?.id;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";

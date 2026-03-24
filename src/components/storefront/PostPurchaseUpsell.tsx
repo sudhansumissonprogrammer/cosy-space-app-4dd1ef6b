@@ -28,7 +28,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("id, name, slug, price, sale_price, image_url, currency, is_best_selling")
         .eq("store_id", storeId)
         .eq("is_active", true)
         .not("id", "in", `(${orderedProductIds.join(",")})`)

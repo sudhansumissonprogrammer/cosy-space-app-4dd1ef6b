@@ -36,7 +36,7 @@ export default function StorefrontBestSellers() {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("*")
+        .select("id, name, slug, price, sale_price, image_url, currency, stock_quantity, is_best_selling, category")
         .eq("store_id", store.id)
         .eq("is_active", true);
 

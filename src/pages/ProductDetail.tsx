@@ -220,18 +220,28 @@ export default function ProductDetail() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Use cached product_variants from RPC data as initialData
+  const getCachedVariants = () => {
+    const cached = getCachedProduct();
+    if (cached?.product_variants && Array.isArray(cached.product_variants)) {
+      return cached.product_variants as Variant[];
+    }
+    return undefined;
+  };
+
   const { data: variants } = useQuery({
     queryKey: ["product-variants", productId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("product_variants")
-        .select("*")
+        .select("id, name, price, sku, stock_quantity, display_order")
         .eq("product_id", productId!)
         .eq("is_active", true)
         .order("display_order");
       if (error) throw error;
       return data as Variant[];
     },
+    initialData: getCachedVariants,
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
   });
