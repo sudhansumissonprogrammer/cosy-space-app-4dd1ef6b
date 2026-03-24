@@ -8,8 +8,8 @@ import { getSubdomainSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
 
-// Storefront layouts — lazy load all except V1 (most common default)
-import StorefrontLayout from "./layouts/StorefrontLayout";
+// Storefront layouts — ALL lazy loaded for clean chunk isolation
+const StorefrontLayout = lazy(() => import("./layouts/StorefrontLayout"));
 const StorefrontLayoutV2 = lazy(() => import("./layouts/StorefrontLayoutV2"));
 const StorefrontLayoutV3 = lazy(() => import("./layouts/StorefrontLayoutV3"));
 const StorefrontLayoutV4 = lazy(() => import("./layouts/StorefrontLayoutV4"));
@@ -21,8 +21,8 @@ const StorefrontLayoutV11 = lazy(() => import("./layouts/StorefrontLayoutV11"));
 const StorefrontLayoutV12 = lazy(() => import("./layouts/StorefrontLayoutV12"));
 const StorefrontLayoutV13 = lazy(() => import("./layouts/StorefrontLayoutV13"));
 
-// Storefront home pages — lazy load all except V1
-import StorefrontHome from "./pages/StorefrontHome";
+// Storefront home pages — ALL lazy loaded
+const StorefrontHome = lazy(() => import("./pages/StorefrontHome"));
 const StorefrontHomeV2 = lazy(() => import("./pages/StorefrontHomeV2"));
 const StorefrontHomeV3 = lazy(() => import("./pages/StorefrontHomeV3"));
 const StorefrontHomeV4 = lazy(() => import("./pages/StorefrontHomeV4"));
