@@ -119,16 +119,26 @@
   </head>
   <body>
     <div id="root">
-      <div class="sf-skel">
-        <div class="sf-skel-nav"><div class="sk sk-shimmer" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk sk-shimmer" style="width:28px;height:28px;border-radius:50%"></div></div>
-        <div class="sf-skel-hero sk-shimmer"></div>
-        <div class="sf-skel-grid">
-          <div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:60%"></div><div class="sk sk-shimmer" style="width:40%"></div></div></div>
-          <div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:70%"></div><div class="sk sk-shimmer" style="width:35%"></div></div></div>
-          <div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:55%"></div><div class="sk sk-shimmer" style="width:45%"></div></div></div>
-          <div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:65%"></div><div class="sk sk-shimmer" style="width:38%"></div></div></div>
-        </div>
-      </div>
+      <script>
+        // Only show storefront skeleton on storefront routes, not dashboard/admin/auth
+        (function(){
+          var p=location.pathname;
+          var isStorefront=p.indexOf('/store/')===0;
+          // Also check subdomain mode
+          var h=location.hostname;
+          if(!isStorefront && h.endsWith('.storivo.in') && h!=='storivo.in' && h!=='www.storivo.in'){
+            var sub=h.replace('.storivo.in','');
+            if(sub && sub.indexOf('.')===-1) isStorefront=true;
+          }
+          // Custom domain mode (not lovable.app, not storivo.in root, not dashboard/admin paths)
+          if(!isStorefront && !h.endsWith('.lovable.app') && h!=='localhost' && !p.startsWith('/dashboard') && !p.startsWith('/admin') && !p.startsWith('/login') && !p.startsWith('/signup')){
+            if(window.__STORE_SLUG__) isStorefront=true;
+          }
+          if(isStorefront){
+            document.write('<div class="sf-skel"><div class="sf-skel-nav"><div class="sk sk-shimmer" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk sk-shimmer" style="width:28px;height:28px;border-radius:50%"></div></div><div class="sf-skel-hero sk-shimmer"></div><div class="sf-skel-grid"><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:60%"></div><div class="sk sk-shimmer" style="width:40%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:70%"></div><div class="sk sk-shimmer" style="width:35%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:55%"></div><div class="sk sk-shimmer" style="width:45%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:65%"></div><div class="sk sk-shimmer" style="width:38%"></div></div></div></div></div>');
+          }
+        })();
+      </script>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
