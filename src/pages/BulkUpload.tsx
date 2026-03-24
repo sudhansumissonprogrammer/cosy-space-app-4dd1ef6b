@@ -51,6 +51,7 @@ interface ImportResult {
   updated: number;
   skipped: number;
   errors: { row: number; error: string }[];
+  _createdProducts?: Array<{ id: string; image_url: string }>;
 }
 
 // ── Product fields for mapping ─────────────────────────────────────────────
