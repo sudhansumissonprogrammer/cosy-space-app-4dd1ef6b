@@ -26,11 +26,11 @@ Deno.serve(async (req) => {
 
     const results: Record<string, number> = {};
 
-    // 1. Delete page_views older than 7 days
+    // 1. Delete page_views older than 90 days
     const { count: pvCount } = await supabase
       .from("page_views")
       .delete({ count: "exact" })
-      .lt("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+      .lt("created_at", new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
     results.page_views_deleted = pvCount ?? 0;
 
     // 2. Delete abandoned_carts older than 7 days (unrecovered only)

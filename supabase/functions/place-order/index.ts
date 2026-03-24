@@ -19,6 +19,35 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Rate limiting: max 5 orders per IP per 10 minutes
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") || "unknown";
+    const rateLimitKey = `order_rl:${clientIp}`;
+    const now = Date.now();
+
+    // Use in-memory rate limiting (resets per cold start, lightweight)
+    if (!globalThis.__orderRateLimit) globalThis.__orderRateLimit = new Map();
+    const rlMap = globalThis.__orderRateLimit as Map<string, number[]>;
+    const timestamps = rlMap.get(rateLimitKey) || [];
+    const windowStart = now - 10 * 60 * 1000;
+    const recentTimestamps = timestamps.filter((t: number) => t > windowStart);
+
+    if (recentTimestamps.length >= 5) {
+      return new Response(JSON.stringify({ error: "Too many orders. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    recentTimestamps.push(now);
+    rlMap.set(rateLimitKey, recentTimestamps);
+
+    // Prune old entries periodically
+    if (rlMap.size > 1000) {
+      for (const [key, vals] of rlMap) {
+        if (vals.every((t: number) => t < windowStart)) rlMap.delete(key);
+      }
+    }
+
     const {
       store_id,
       order,
