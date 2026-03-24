@@ -105,7 +105,7 @@ export default function StorefrontSearchOverlay({
     } finally {
       setSearching(false);
     }
-  }, [storeId]);
+  }, [resolvedStoreId]);
 
   // Debounced search trigger
   useEffect(() => {
