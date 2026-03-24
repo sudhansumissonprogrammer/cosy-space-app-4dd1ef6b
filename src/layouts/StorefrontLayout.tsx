@@ -101,30 +101,7 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-
-      // 2. Use prefetched promise from index.html (started during JS parse)
-      const prefetch = (window as any).__STOREFRONT_PREFETCH__;
-      if (prefetch) {
-        delete (window as any).__STOREFRONT_PREFETCH__;
-        const result = await prefetch;
-        if (result) {
-          const store = result?.store as StoreData | null;
-          if (store) {
-            queryClient.setQueryData(["storefront", slug], store);
-            queryClient.setQueryData(["storefront-products", store.id], result.products || []);
-            queryClient.setQueryData(["storefront-categories", store.id], result.categories || []);
-            queryClient.setQueryData(["storefront-total-products", store.id], result.total_products || 0);
-            if (result.theme_config) {
-              queryClient.setQueryData(["storefront-theme-config", store.id], result.theme_config);
-            }
-            try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
-            cacheToLocalStorage(slug!, result);
-          }
-          return result;
-        }
-      }
-
-      // 3. Fetch from API (fallback)
+      // Fetch from API (fallback — only runs if no injected/cached data)
       const { data, error } = await supabase.rpc("get_storefront_data", { _slug: slug!, _product_limit: 20 });
       if (error) throw error;
       const result = data as any;
@@ -142,16 +119,16 @@ export function useStorefront(slugOverride?: string) {
       }
       return result;
     },
-    // 3. Use localStorage cache as initialData for instant render (SWR pattern)
+    // Use injected data or localStorage cache as initialData for instant render
     initialData: () => {
       if (!slug) return undefined;
-      // Check injected data first
-      const injected = (window as any).__STOREFRONT_DATA__;
-      if (injected) return undefined; // let queryFn handle it
+      // Check injected data (set by main.tsx from prefetch or Cloudflare Worker)
+      if (injectedRef.current) {
+        return injectedRef.current;
+      }
       // Check localStorage cache
       const cached = readLocalStorageCache(slug);
       if (cached) {
-        // Seed individual caches immediately
         const store = cached.store;
         if (store) {
           queryClient.setQueryData(["storefront", slug], store);
@@ -166,10 +143,7 @@ export function useStorefront(slugOverride?: string) {
       }
       return undefined;
     },
-    // Always treat localStorage cache as stale — ensures a background
-    // refetch on every page load so theme / product changes appear instantly
-    // while the cached version renders immediately (true SWR).
-    // NOTE: Must use 1 (not 0) because 0 is falsy and React Query ignores it.
+    // Always treat cached/injected data as stale so a background refetch happens
     initialDataUpdatedAt: 1,
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
