@@ -77,27 +77,30 @@ export function useStorefront(slugOverride?: string) {
   const slug = slugOverride || paramSlug;
   const queryClient = useQueryClient();
 
+  // Consume injected data (from Cloudflare Worker OR main.tsx prefetch) as initialData
+  // This is synchronous — no loading state, no skeleton flash
+  const injectedRef = useRef<any>(null);
+  if (!injectedRef.current && slug) {
+    const injected = (window as any).__STOREFRONT_DATA__;
+    if (injected?.store) {
+      injectedRef.current = injected;
+      delete (window as any).__STOREFRONT_DATA__;
+      const store = injected.store as StoreData;
+      queryClient.setQueryData(["storefront", slug], store);
+      queryClient.setQueryData(["storefront-products", store.id], injected.products || []);
+      queryClient.setQueryData(["storefront-categories", store.id], injected.categories || []);
+      queryClient.setQueryData(["storefront-total-products", store.id], injected.total_products || 0);
+      if (injected.theme_config) {
+        queryClient.setQueryData(["storefront-theme-config", store.id], injected.theme_config);
+      }
+      try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
+      cacheToLocalStorage(slug!, injected);
+    }
+  }
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      // 1. Use pre-fetched data injected by Cloudflare Worker (eliminates API waterfall)
-      const injected = (window as any).__STOREFRONT_DATA__;
-      if (injected) {
-        delete (window as any).__STOREFRONT_DATA__;
-        const store = injected?.store as StoreData | null;
-        if (store) {
-          queryClient.setQueryData(["storefront", slug], store);
-          queryClient.setQueryData(["storefront-products", store.id], injected.products || []);
-          queryClient.setQueryData(["storefront-categories", store.id], injected.categories || []);
-          queryClient.setQueryData(["storefront-total-products", store.id], injected.total_products || 0);
-          if (injected.theme_config) {
-            queryClient.setQueryData(["storefront-theme-config", store.id], injected.theme_config);
-          }
-          try { localStorage.setItem(`store_id_${slug}`, store.id); } catch {}
-          cacheToLocalStorage(slug!, injected);
-        }
-        return injected;
-      }
 
       // 2. Use prefetched promise from index.html (started during JS parse)
       const prefetch = (window as any).__STOREFRONT_PREFETCH__;
