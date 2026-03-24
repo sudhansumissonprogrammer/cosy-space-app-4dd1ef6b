@@ -419,6 +419,20 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         }
       }
 
+      // Background-copy external images to our storage
+      if (savedProductId && storeId) {
+        const mainImg = imagePreview;
+        if (isExternalImageUrl(mainImg)) {
+          copyExternalImageInBackground(mainImg!, storeId, savedProductId);
+        }
+        // Also copy external additional image URLs
+        for (const preview of additionalPreviews) {
+          if (!preview.isExisting && isExternalImageUrl(preview.url)) {
+            copyExternalImageInBackground(preview.url, storeId, savedProductId);
+          }
+        }
+      }
+
       toast.success(isEditing ? "Product updated!" : "Product created!");
       if (onClose) {
         onClose();
