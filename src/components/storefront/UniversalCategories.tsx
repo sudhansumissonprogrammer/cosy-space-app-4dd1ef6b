@@ -77,7 +77,7 @@ function SquareCarousel({ categories, storeSlug }: { categories: Category[]; sto
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex-shrink-0 group">
           <div className="h-20 w-20 sm:h-[88px] sm:w-[88px] rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
             {cat.image_url ? (
-              <img src={optimizeImageUrl(cat.image_url, 88)} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" width={88} height={88} />
+              <img src={optimizeImageUrl(cat.image_url, 176)} alt={cat.name} className="h-full w-full object-contain p-1 transition-transform duration-300 group-hover:scale-105" loading="lazy" width={88} height={88} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-6 w-6 text-muted-foreground" /></div>
             )}
