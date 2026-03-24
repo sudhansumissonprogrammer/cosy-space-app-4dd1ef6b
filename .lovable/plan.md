@@ -1,70 +1,53 @@
 
 
-# Performance & Scaling Optimization Plan
+# Backend Optimization — Completed
 
 ## Summary
-Safe, high-impact optimizations targeting RPC payload size, dashboard query efficiency, and SELECT column pruning. No breaking changes — only tightening existing queries.
+Consolidated 29 edge functions into 18 by merging 11 functions into 3 new unified functions, deleting 1 redundant function, and applying performance optimizations.
 
----
+## What Changed
 
-## What Gets Fixed
+### Merge 1: `seo-page` (replaces 5 functions)
+- `og-meta` → `seo-page?type=og`
+- `share-page` → `seo-page?type=share`
+- `sitemap` → `seo-page?type=sitemap`
+- `robots-txt` → `seo-page?type=robots`
+- `product-feed` → `seo-page?type=feed`
 
-### 1. Limit RPC product payload (homepage → 20 products)
-The `get_storefront_data` RPC currently defaults to `_product_limit = 50`. The storefront layout calls it with 50. Most homepages display 8–16 products.
+### Merge 2: `ingest` (replaces 3 functions)
+- `log-error` → `ingest?type=error`
+- `track-view` → `ingest?type=view`
+- `db-cleanup` → `ingest?type=cleanup` (also now cleans error_logs > 30 days)
 
-**Change:** Reduce the default call in `StorefrontLayout.tsx` from `_product_limit: 50` to `_product_limit: 20`. The Shop page already uses infinite scroll with its own paginated query, so this is safe.
+### Merge 3: `image-ops` (replaces 2 functions)
+- `image-resize` → `image-ops?action=resize`
+- `copy-external-image` → `image-ops?action=copy`
 
-**Impact:** ~60% smaller API response for homepage loads.
+### Deleted
+- `get-store-by-domain` — logic handled by Cloudflare Worker
 
-### 2. Prune SELECT columns in dashboard queries
-`Dashboard.tsx` fetches orders with `select("created_at, total, status, order_items(product_name, quantity, total)")` — this is already good. But `StoreOrders.tsx` uses `select("*, order_items(*)")` loading all columns. `ProductsList.tsx` uses `select("*")`.
+### Performance Optimizations
+- `bot-render`: SELECT * → specific columns only
+- `place-order`: Sequential post-insert ops → Promise.all() parallelization
 
-**Changes:**
-- **StoreOrders.tsx:** Replace `select("*")` with specific columns: `id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, order_items(id, product_name, quantity, unit_price, total, product_id)`
-- **ProductsList.tsx:** Replace `select("*")` with: `id, name, slug, image_url, price, sale_price, stock_quantity, is_active, is_best_selling, category, sku, currency, created_at`
-- **Dashboard.tsx stats query:** Already uses `head: true` counts — no change needed.
+### Frontend Files Updated
+- `src/lib/logError.ts` → uses `ingest?type=error`
+- `src/lib/trackPageView.ts` → uses `ingest?type=view`
+- `src/lib/imageOptimize.ts` → uses `image-ops?action=resize`
+- `src/lib/externalImageCopy.ts` → uses `image-ops?action=copy`
+- `src/components/ShareStoreDialog.tsx` → uses `seo-page?type=share`
+- `src/pages/StoreTracking.tsx` → uses `seo-page?type=feed`
+- `src/pages/ProductDetail.tsx` → uses `seo-page?type=share`
 
-### 3. Add server-side pagination to StoreOrders
-Currently fetches up to 1000 orders client-side. Convert to server-side pagination like StoreCustomers already does.
+## ⚠️ Cloudflare Worker Update Required
+The Cloudflare Worker (managed outside this repo in Cloudflare dashboard) must be updated to call:
+- `seo-page?type=og` instead of `og-meta`
+- `seo-page?type=sitemap` instead of `sitemap`
+- `seo-page?type=robots` instead of `robots-txt`
 
-**Changes:**
-- Add count query for total orders (with filters applied server-side)
-- Use `usePagination` hook + `range(from, to)` 
-- Move status filter to server-side `.eq("status", filter)` when active
-- Keep search as client-side filter on the current page (search across all orders would need a DB function)
-
-### 4. Add staleTime to dashboard & orders queries
-Several queries lack `staleTime`, causing unnecessary refetches on component re-mount.
-
-**Changes:**
-- `StoreOrders` queries: add `staleTime: 2 * 60 * 1000` (2 min)
-- `ProductsList` queries: add `staleTime: 2 * 60 * 1000`
-- `Dashboard` orders analytics: already has 5 min — keep
-
-### 5. Limit Dashboard orders analytics query
-Currently fetches 500 orders for chart data. Reduce to last 200 (charts only show monthly aggregates, 200 is plenty).
-
-**Change:** `.limit(500)` → `.limit(200)` in Dashboard.tsx
-
----
-
-## What We Are NOT Changing (Safe)
-- No database schema changes
-- No RLS policy changes  
-- No edge function changes
-- No new tables or migrations
-- Connection pooling is managed by Cloud — no action needed
-- Image optimization already in place (WebP, lazy loading, srcSet)
-- StorefrontShop already uses infinite scroll pagination
-
----
-
-## Files Modified
-1. `src/layouts/StorefrontLayout.tsx` — reduce product limit 50→20
-2. `src/pages/StoreOrders.tsx` — server-side pagination + column pruning
-3. `src/pages/ProductsList.tsx` — column pruning + staleTime
-4. `src/pages/Dashboard.tsx` — reduce analytics limit 500→200
-
-## Risk Assessment
-**Low risk.** All changes are query optimizations that reduce data transfer. No UI changes, no new features, no schema modifications.
-
+## Final Function Count: 18
+place-order, razorpay-order, razorpay-verify, razorpay-upi-intent, razorpay-payment-status,
+auth-proxy, auth-email-hook, create-guest-account, process-email-queue,
+whatsapp-send, whatsapp-templates, whatsapp-webhook,
+notify-order, delete-store, verify-domain, meta-capi, bot-render,
+seo-page, ingest, image-ops
