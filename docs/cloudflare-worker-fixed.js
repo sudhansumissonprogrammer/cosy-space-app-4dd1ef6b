@@ -531,7 +531,7 @@ async function handleBot(request, slug, url, isCustom) {
 
 async function handleSeoFiles(url, slug) {
   if (url.pathname === "/sitemap.xml") {
-    const res = await callEdgeFunction("sitemap", { slug });
+    const res = await callEdgeFunction("seo-page", { type: "sitemap", slug });
     return new Response(await res.text(), {
       status: res.ok ? 200 : 500,
       headers: {
@@ -542,7 +542,7 @@ async function handleSeoFiles(url, slug) {
   }
 
   if (url.pathname === "/robots.txt") {
-    const res = await callEdgeFunction("robots-txt", { slug });
+    const res = await callEdgeFunction("seo-page", { type: "robots", slug });
     return new Response(await res.text(), {
       status: res.ok ? 200 : 500,
       headers: {
