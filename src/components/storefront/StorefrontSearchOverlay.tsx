@@ -72,7 +72,7 @@ export default function StorefrontSearchOverlay({
       let qb = supabase
         .from("products")
         .select("id, name, slug, price, sale_price, image_url, category, created_at, is_best_selling")
-        .eq("store_id", storeId)
+        .eq("store_id", resolvedStoreId)
         .eq("is_active", true);
 
       if (q.trim()) {
