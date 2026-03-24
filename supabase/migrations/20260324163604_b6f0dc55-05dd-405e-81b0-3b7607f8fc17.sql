@@ -1,0 +1,1 @@
+DELETE FROM error_logs WHERE created_at < now() - interval '1 hour';
