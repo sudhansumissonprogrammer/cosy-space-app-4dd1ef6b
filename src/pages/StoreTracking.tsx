@@ -68,7 +68,7 @@ export default function StoreTracking() {
   });
 
   const feedBaseUrl = store?.slug
-    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed?slug=${store.slug}`
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=feed&slug=${store.slug}`
     : "";
 
   const copyToClipboard = (text: string, label: string) => {

@@ -24,9 +24,9 @@ export function copyExternalImageInBackground(
 ): void {
   if (!isExternalImageUrl(url)) return;
 
-  // Fire-and-forget
+  // Fire-and-forget — uses merged image-ops function
   supabase.functions
-    .invoke("copy-external-image", {
+    .invoke("image-ops?action=copy", {
       body: { url, store_id: storeId, product_id: productId },
     })
     .then(({ data, error }) => {

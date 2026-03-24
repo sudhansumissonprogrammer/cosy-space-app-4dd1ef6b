@@ -84,7 +84,7 @@ export function optimizeImageUrl(
   // Default to direct URL for fastest first paint. Optional proxy can be enabled via env.
   if (url.startsWith("https://") || url.startsWith("http://")) {
     if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
-      return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-resize?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
+      return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-ops?action=resize&url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }
     return url;
   }
