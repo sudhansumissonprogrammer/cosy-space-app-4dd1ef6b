@@ -3,7 +3,6 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Search, ArrowUpDown, SlidersHorizontal } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
