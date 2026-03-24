@@ -55,9 +55,9 @@ function CircleCarousel({ categories, storeSlug }: { categories: Category[]; sto
     <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
       {categories.map((cat) => (
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all">
-          <div className="h-16 w-16 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
+          <div className="h-[72px] w-[72px] rounded-full border-2 overflow-hidden transition-all sm:h-[88px] sm:w-[88px] border-border bg-secondary/30" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
             {cat.image_url ? (
-              <img src={optimizeImageUrl(cat.image_url, 160)} alt={cat.name} className="h-full w-full object-contain p-1" loading="lazy" width={80} height={80} />
+              <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" width={176} height={176} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" /></div>
             )}
@@ -77,7 +77,7 @@ function SquareCarousel({ categories, storeSlug }: { categories: Category[]; sto
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex-shrink-0 group">
           <div className="h-20 w-20 sm:h-[88px] sm:w-[88px] rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
             {cat.image_url ? (
-              <img src={optimizeImageUrl(cat.image_url, 176)} alt={cat.name} className="h-full w-full object-contain p-1 transition-transform duration-300 group-hover:scale-105" loading="lazy" width={88} height={88} />
+              <img src={optimizeImageUrl(cat.image_url, 176)} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" width={88} height={88} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-6 w-6 text-muted-foreground" /></div>
             )}
@@ -145,7 +145,7 @@ function PillCarousel({ categories, storeSlug }: { categories: Category[]; store
         >
           <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
             {cat.image_url ? (
-              <img src={optimizeImageUrl(cat.image_url, 64)} alt={cat.name} className="h-full w-full object-contain p-0.5" loading="lazy" width={32} height={32} />
+              <img src={optimizeImageUrl(cat.image_url, 64)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" width={32} height={32} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-3.5 w-3.5 text-muted-foreground" /></div>
             )}
