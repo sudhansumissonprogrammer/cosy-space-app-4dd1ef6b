@@ -14,6 +14,7 @@ import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import LazyRender from "@/components/storefront/LazyRender";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import { storefrontPath } from "@/lib/subdomain";
 
 function ProductCardSkeleton() {
   return (
