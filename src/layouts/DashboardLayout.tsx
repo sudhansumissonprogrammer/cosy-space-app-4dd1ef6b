@@ -177,7 +177,7 @@ function MobileMenu({
 
 export default function DashboardLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [pendingOrders, setPendingOrders] = useState(0);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
