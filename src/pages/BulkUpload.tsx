@@ -20,6 +20,7 @@ import {
   ArrowLeft, Upload, FileText, Download, CheckCircle2, XCircle,
   Loader2, AlertTriangle, FileDown, ArrowRight, Columns3,
 } from "lucide-react";
+import { copyExternalImagesForProducts } from "@/lib/externalImageCopy";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ImportMode = "create" | "update" | "both";
