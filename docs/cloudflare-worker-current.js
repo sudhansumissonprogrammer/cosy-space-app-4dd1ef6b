@@ -490,13 +490,13 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
 
 /* ============== CACHED FETCH (HARDENED) ============== */
 
-async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
+async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env = {}) {
   const url = new URL(request.url);
 
   // Only cache GET requests — all others bypass to origin
   if (request.method !== "GET") {
     if (isCustomDomain && slug) {
-      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx), { slug, cacheStatus: "BYPASS" });
+      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx, env), { slug, cacheStatus: "BYPASS" });
     }
     return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
   }
@@ -511,7 +511,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
     request.headers.get("cookie")?.includes("auth")
   ) {
     if (isCustomDomain && slug) {
-      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx), { slug, cacheStatus: "BYPASS" });
+      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx, env), { slug, cacheStatus: "BYPASS" });
     }
     return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
   }
@@ -528,7 +528,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
         // If the cached response doesn't have the slug header, treat as MISS
         if (!cachedSlugHeader || cachedSlugHeader !== slug) {
           // Cache is stale/invalid — fetch fresh with injection
-          const fresh = await fetchAndInjectSlug(request, slug, ctx);
+          const fresh = await fetchAndInjectSlug(request, slug, ctx, env);
           const freshCt = fresh.headers.get("content-type") || "";
           if (fresh.ok && freshCt.includes("text/html")) {
             ctx.waitUntil(cache.put(key, fresh.clone()));
@@ -540,7 +540,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
 
     // Background revalidate
     ctx.waitUntil(
-      (slug ? fetchAndInjectSlug(request, slug, ctx) : proxyToOrigin(request))
+      (slug ? fetchAndInjectSlug(request, slug, ctx, env) : proxyToOrigin(request))
         .then((res) => {
           const ct = res.headers.get("content-type") || "";
           if (res.ok && ct.includes("text/html")) {
@@ -560,7 +560,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   let res;
   try {
     if (slug) {
-      res = await fetchAndInjectSlug(request, slug, ctx);
+      res = await fetchAndInjectSlug(request, slug, ctx, env);
     } else {
       res = await proxyToOrigin(request);
     }
@@ -840,7 +840,7 @@ export default {
         );
       }
 
-      return cachedFetch(request, "", ctx);
+      return cachedFetch(request, "", ctx, false, env);
     }
 
     // ─── SUBDOMAIN ───
@@ -848,7 +848,7 @@ export default {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
 
       if (!slug || slug.includes(".") || slug === "www") {
-        return cachedFetch(request, "", ctx);
+        return cachedFetch(request, "", ctx, false, env);
       }
 
       // Parallelize: custom domain check + SEO files + bot detection + main fetch
@@ -869,7 +869,7 @@ export default {
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      return cachedFetch(request, slug, ctx);
+      return cachedFetch(request, slug, ctx, false, env);
     }
 
     // ─── CUSTOM DOMAIN ───
@@ -902,7 +902,7 @@ export default {
       const botResponse = await handleBot(request, slug, url, true);
       if (botResponse) return botResponse;
 
-      return cachedFetch(request, slug, ctx, true);
+      return cachedFetch(request, slug, ctx, true, env);
     }
 
     // ─── UNKNOWN DOMAIN → 404 (strict tenant resolution) ───
