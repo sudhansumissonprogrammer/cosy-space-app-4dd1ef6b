@@ -406,7 +406,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
     request.headers.get("cookie")?.includes("auth")
   ) {
     if (isCustomDomain && slug) {
-      return fetchAndInjectSlug(request, slug);
+      return fetchAndInjectSlug(request, slug, ctx);
     }
     return proxyToOrigin(request);
   }
