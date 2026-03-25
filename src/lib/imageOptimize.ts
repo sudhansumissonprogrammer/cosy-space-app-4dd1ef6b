@@ -131,9 +131,13 @@ export function getImageSrcSet(
   const firstUrl = url.includes(",") ? url.split(",")[0].trim() : url.trim();
   if (!firstUrl) return "";
 
-  // For our pipeline images, only emit the 3 stored widths
+  // For our pipeline images, only emit stored widths up to the max requested size
   if (isOptimizedUrl(firstUrl)) {
-    return PIPELINE_WIDTHS
+    const maxRequested = Math.max(...sizes);
+    const filtered = PIPELINE_WIDTHS.filter((w) => w <= maxRequested);
+    // Always include at least one variant
+    const variants = filtered.length > 0 ? filtered : [PIPELINE_WIDTHS[0]];
+    return variants
       .map((w) => `${resolveVariantUrl(firstUrl, w)} ${w}w`)
       .join(", ");
   }
