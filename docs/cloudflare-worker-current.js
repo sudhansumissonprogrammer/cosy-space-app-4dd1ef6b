@@ -14,7 +14,7 @@
  *   - custom domains (melleto.shop, mgwinner.in, etc.)
  */
 
-const WORKER_VERSION = "2.1";
+const WORKER_VERSION = "2.2";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "true-path-panel.lovable.app";
 
