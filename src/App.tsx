@@ -333,7 +333,11 @@ function AppRouter() {
   }
 
   // ── AUTH/DASHBOARD: Only reachable on root domain, preview, or localhost ──
-  return <LazyAuthRoutes />;
+  return (
+    <AuthProvider>
+      <LazyAuthRoutes />
+    </AuthProvider>
+  );
 }
 
 const App = () => (
