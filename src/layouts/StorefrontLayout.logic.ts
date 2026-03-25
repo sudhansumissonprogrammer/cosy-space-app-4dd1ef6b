@@ -7,6 +7,8 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export type StoreData = Tables<"stores">;
 
+const PREFETCH_BRIDGE_TIMEOUT_MS = 1500;
+
 /**
  * Core storefront data-fetching hook.
  *
@@ -39,18 +41,26 @@ export function useStorefront(slugOverride?: string) {
       const wd = (window as any).__STOREFRONT_DATA__;
       if (wd?.store) return wd;
 
-      // 2. Await the index.html prefetch promise if still in flight
+      // 2. Await the index.html prefetch promise if still in flight,
+      // but never block forever (prevents infinite shimmer state).
       const prefetch = (window as any).__STOREFRONT_PREFETCH__;
       if (prefetch) {
         try {
-          const result = await prefetch;
-          if (result?.store) {
+          const result = await Promise.race([
+            Promise.resolve(prefetch),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("storefront_prefetch_timeout")), PREFETCH_BRIDGE_TIMEOUT_MS)
+            ),
+          ]);
+
+          if ((result as any)?.store) {
             (window as any).__STOREFRONT_DATA__ = result;
             delete (window as any).__STOREFRONT_PREFETCH__;
-            return result;
+            return result as any;
           }
         } catch {
-          // prefetch failed, fall through to fresh call
+          delete (window as any).__STOREFRONT_PREFETCH__;
+          // prefetch failed/timed out, fall through to fresh call
         }
       }
 
