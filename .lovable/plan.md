@@ -1,84 +1,104 @@
 
 
-# Storefront Performance Optimization Plan
+# Honest Performance Assessment + Actionable Plan
 
-## Root Cause Analysis
+## The Truth About Your 2-Second Target
 
-The current ~10s load has three main bottlenecks:
+**Your Cloudflare Worker edge caching is already correctly implemented.** It has cache-first with stale-while-revalidate, tenant validation, background refresh — all properly done. The 1.9s TTFB you measured was a **cache MISS** (first visit or after 60s TTL expires). On a cache HIT, TTFB should already be ~50-200ms.
 
-1. **Wasted prefetch — data fetched twice**: `index.html` fires an API call and stores the promise in `window.__STOREFRONT_PREFETCH__`, but the React app never reads it. It only checks `window.__STOREFRONT_DATA__` (which is only set by Cloudflare Worker injection). So React Query fires the same API call again — doubling network time.
+**The Recharts problem doesn't exist.** Dashboard.tsx imports recharts, but it's behind two lazy() boundaries (App → AuthRoutes → Dashboard). It never loads on storefront. The previous audit was incorrect.
 
-2. **Sequential waterfall still exists**: Even with the parallel prefetch in `App.tsx`, the flow is: parse HTML → start JS download → execute JS → mount React → start layout chunk download → mount layout → `useStorefront` fires API call. The index.html prefetch was supposed to fix this but is broken (see #1).
+**Realistic targets:**
+- Cache HIT (repeat visitors, warm edge): **~1.5-2s total load** — achievable now
+- Cache MISS (cold, first visitor to that edge node): **~3-4s** — this is physics (origin round-trip)
+- Sub-2s on cold MISS: **not achievable** without SSR or moving to edge rendering, which is an architecture change far beyond scope
 
-3. **3 image variants uploaded per image**: Each product image upload creates 200w, 400w, and 800w variants. This triples upload time and storage, with minimal benefit (the 200w variant is rarely useful at 60KB).
+## What's Actually Slow (and Fixable)
 
-## Changes (4 files)
+There are **3 real remaining wins**, totaling ~800-1200ms savings:
 
-### 1. Fix the broken prefetch bridge (`index.html` + `StorefrontLayout.logic.ts`)
+### Fix 1: Increase HTML Cache TTL (saves ~1.5s on more requests)
 
-The index.html script already fetches data early. Fix the handoff:
-- In `index.html`: when the fetch resolves, store the result in `window.__STOREFRONT_DATA__` (not `__STOREFRONT_PREFETCH__`). This is the variable React already checks.
-- In `StorefrontLayout.logic.ts`: also check `window.__STOREFRONT_PREFETCH__` as a fallback — if the promise exists but hasn't resolved yet, `await` it in the queryFn before making a new API call.
+**Problem:** `max-age=60` means cache expires every minute. Most visitors hit a MISS.
+**Fix:** Increase to `max-age=300, stale-while-revalidate=3600` in the Worker. The HTML is an SPA shell — it's identical for all visitors. Stale-while-revalidate keeps serving cached while refreshing in background.
 
-This single fix eliminates the duplicate API call and ensures data is available before React even mounts in many cases.
+**File:** `docs/cloudflare-worker-production.js`
+- Line 280: Change `max-age=60` → `max-age=300, stale-while-revalidate=3600`
+- Line 421: Same change
+- This means 5 minutes of guaranteed cache HIT instead of 1 minute, with 1-hour stale serving
 
-### 2. Reduce image variants from 3 to 2 (`imageCompression.ts` + `uploadOptimizedImage.ts` + `imageOptimize.ts`)
+**Impact:** Converts 80%+ of MISS requests into HITs. TTFB drops from 1.9s to ~100ms for most visitors.
 
-- Drop the 200w variant entirely. Product cards on mobile at 50vw on a 375px screen = 188px logical, but with 2x DPR the browser picks the 400w variant anyway. The 200w file is almost never served.
-- Keep only **400w** and **800w** variants.
-- Update `IMAGE_VARIANT_WIDTHS` from `[200, 400, 800]` to `[400, 800]`.
-- Update `PIPELINE_WIDTHS` in `imageOptimize.ts` to match.
-- Update `pickBestVariant` to only choose from `[400, 800]`.
-- Update srcSet generation to emit 2 entries instead of 3.
+### Fix 2: Prefetch Storefront Data in Worker with Longer Cache (saves ~500ms)
 
-This cuts upload time by ~33% and reduces storage per image by ~33%.
+**Problem:** The Worker prefetches storefront data but with a 1.5s timeout. If it times out, React has to fetch again.
+**Fix:** Cache the storefront data response at the edge separately with a 5-minute TTL, so the Worker can inject it from cache instantly without hitting Supabase.
 
-### 3. Consume prefetch promise in React Query (`StorefrontLayout.logic.ts`)
-
-Update the `queryFn` in `useStorefront`:
+**File:** `docs/cloudflare-worker-production.js` — `prefetchStorefrontData` function
+- Add Cache API lookup before hitting Supabase
+- Cache successful responses for 300 seconds
+- On cache HIT: inject data instantly (0ms vs 500-1500ms)
 
 ```text
-queryFn: async () => {
-  // 1. Use injected data (Cloudflare Worker)
-  if (injected?.store) return injected;
+async function prefetchStorefrontData(slug, ctx) {
+  const cacheKey = new Request(`https://cache/storefront-data/${slug}`);
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached.json();
 
-  // 2. Await the index.html prefetch if still in flight
-  const prefetch = (window as any).__STOREFRONT_PREFETCH__;
-  if (prefetch) {
-    const result = await prefetch;
-    if (result?.store) {
-      (window as any).__STOREFRONT_DATA__ = result;
-      delete (window as any).__STOREFRONT_PREFETCH__;
-      return result;
-    }
+  // Fresh fetch with timeout...
+  const data = await fetchFromSupabase(slug);
+  if (data) {
+    ctx.waitUntil(cache.put(cacheKey, new Response(
+      JSON.stringify(data),
+      { headers: { 'Cache-Control': 'public, max-age=300' } }
+    )));
   }
-
-  // 3. Fresh RPC call (fallback)
-  const { data, error } = await supabase.rpc(...);
-  ...
+  return data;
 }
 ```
 
-### 4. Also consume prefetch in `App.tsx` usePrefetchStorefrontData
+**Impact:** Storefront data injection goes from 500-1500ms to ~0ms on warm cache.
 
-The `usePrefetchStorefrontData` hook in App.tsx also fires a duplicate call. Add a check: if `__STOREFRONT_PREFETCH__` or `__STOREFRONT_DATA__` exists, skip the prefetch entirely.
+### Fix 3: Add `modulepreload` for Theme-Specific Chunks (saves ~300ms)
 
-## Files Modified
+**Problem:** The Worker already extracts the entry JS file for modulepreload, but doesn't preload the framework/router/supabase chunks. Browser discovers them only after parsing the entry chunk.
+**Fix:** Extract all chunk references from the HTML and add modulepreload hints in the Worker injection.
 
-| File | Change |
-|------|--------|
-| `index.html` | Store resolved data in `__STOREFRONT_DATA__` instead of only `__STOREFRONT_PREFETCH__` |
-| `src/layouts/StorefrontLayout.logic.ts` | Consume `__STOREFRONT_PREFETCH__` promise in queryFn |
-| `src/App.tsx` | Skip prefetch when index.html prefetch is already in flight |
-| `src/lib/imageCompression.ts` | Remove 200w variant, keep [400, 800] |
-| `src/lib/uploadOptimizedImage.ts` | Upload 2 variants instead of 3 |
-| `src/lib/imageOptimize.ts` | Update PIPELINE_WIDTHS to [400, 800], update srcSet |
-| `src/components/storefront/OptimizedImage.tsx` | Update default srcSetSizes |
+**File:** `docs/cloudflare-worker-production.js` — `fetchAndInjectSlug` function (around line 411-417)
+```text
+// Extract ALL script chunks, not just entry
+const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
+let modulePreloads = "";
+for (const m of chunkMatches) {
+  modulePreloads += `<link rel="modulepreload" href="${m[1]}" />\n`;
+}
+```
 
-## Expected Impact
+**Impact:** Browser starts downloading all chunks in parallel from the first byte of HTML, saving ~300ms of discovery time.
 
-- **Eliminates duplicate API call**: saves 500ms–2s depending on network
-- **Data available before React mounts**: when index.html prefetch resolves first, React gets instant cache hit — no loading state
-- **Fewer image uploads**: 2 variants instead of 3, faster product creation
-- **No architectural risk**: all changes are additive fixes to existing patterns
+## Files to Modify
+
+| File | Change | Impact |
+|------|--------|--------|
+| `docs/cloudflare-worker-production.js` | Increase HTML cache TTL to 300s/3600s SWR | 80% fewer cache MISSes |
+| `docs/cloudflare-worker-production.js` | Cache prefetched storefront data at edge | 0ms data injection on warm |
+| `docs/cloudflare-worker-production.js` | Modulepreload all JS chunks | ~300ms faster chunk loading |
+
+## Expected Results After Fixes
+
+| Scenario | Before | After |
+|----------|--------|-------|
+| Cache HIT (most visitors) | ~3-4s | **~1.5-2s** |
+| Cache MISS (cold edge) | ~5s | **~3-3.5s** |
+| Repeat visitor (same session) | ~2s | **~1s** |
+
+## What Won't Help (Don't Waste Time On)
+
+- **Removing Recharts** — it doesn't load on storefront already
+- **More bundle splitting** — chunks are already well-split at 5 pieces
+- **CSS splitting** — Vite already does cssCodeSplit, and your CSS is Tailwind (already optimized)
+- **Image optimization** — already done with 400/800 variants
+- **More prefetch/preconnect** — Worker already injects these
+
+The single highest-impact change is **Fix 1** (longer cache TTL). After deploying the updated Worker, most real users will see ~1.5-2s loads because they'll hit cached HTML at the edge.
 
