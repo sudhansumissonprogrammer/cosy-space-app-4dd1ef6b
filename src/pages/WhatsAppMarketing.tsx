@@ -3052,7 +3052,7 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
 
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function WhatsAppMarketing() {
-  const { storeId } = useParams();
+  const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<"loading" | "select" | "storivo" | "own">("loading");
 
