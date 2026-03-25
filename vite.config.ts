@@ -92,6 +92,9 @@ export default defineConfig(({ mode }) => ({
             id.includes("/contexts/StorefrontAuthContext") ||
             id.includes("/hooks/useStorefrontThemeConfig") ||
             id.includes("/hooks/useThemePreview") ||
+            id.includes("/hooks/useFacebookPixel") ||
+            id.includes("/hooks/useMetaTags") ||
+            id.includes("/lib/trackPageView") ||
             id.includes("/lib/subdomain")
           ) {
             return "storefront-core";
@@ -125,11 +128,8 @@ export default defineConfig(({ mode }) => ({
             id.includes("/components/storefront/StarRating") ||
             id.includes("/components/ShareStoreDialog") ||
             id.includes("/components/ContentSkeleton") ||
-            id.includes("/hooks/useFacebookPixel") ||
-            id.includes("/hooks/useMetaTags") ||
             id.includes("/hooks/useJsonLd") ||
             id.includes("/hooks/useProductCardActions") ||
-            id.includes("/lib/trackPageView") ||
             id.includes("/lib/prefetchStorefrontRoutes") ||
             id.includes("/lib/productUtils")
           ) {
