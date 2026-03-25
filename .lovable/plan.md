@@ -116,3 +116,38 @@ seo-page, ingest, image-ops
 ### 3. DashboardLayout count query: select("*") → select("id")
 - HEAD requests for count queries were sending `select=*` unnecessarily
 - **Fix:** Changed to `select("id")` reducing response parsing overhead
+
+---
+
+# Fix: Multi-Tenant Storefront Rendering Inconsistencies — Completed
+
+## Root Cause
+Service Worker (Workbox) precached bare `index.html` without `__STORE_SLUG__` injection, intercepting navigation requests and serving empty shell → login page or infinite skeleton.
+
+## Changes Made
+
+### 1. Service Worker Config (`vite.config.ts`)
+- Removed `html` from `globPatterns` → bare HTML no longer precached
+- Added `navigateFallback: null` → SW never serves fallback HTML
+- Added `NetworkFirst` runtime caching for navigation requests → always tries network first
+
+### 2. Stale SW Cleanup (`src/main.tsx`)
+- On storefront domains without `__STORE_SLUG__`, unregisters old SW + clears caches + reloads once
+- `sessionStorage` flag prevents infinite reload loops
+
+### 3. Custom Domain Fallback (`src/App.tsx`)
+- Added `useCustomDomainSlug()` hook — detects custom domains and resolves slug from DB
+- Acts as safety net when Worker injection fails — shows loading instead of login
+
+### 4. index.html Prefetch Enhancement
+- Added `__STORE_SLUG__` detection for custom domains in prefetch script
+- Skips prefetch if `__STOREFRONT_DATA__` already injected by Worker
+
+### 5. Cloudflare Worker Cache Tuning (`docs/cloudflare-worker-current.js`)
+- Reduced `stale-while-revalidate` from 86400 (24h) → 3600 (1h) for HTML
+- `fetchAndInjectSlug` now sets `Cache-Control: public, max-age=120, stale-while-revalidate=3600`
+- Added `X-Store-Slug` header to injected responses for debugging
+
+## ⚠️ Action Required
+1. Deploy updated Cloudflare Worker from `docs/cloudflare-worker-current.js`
+2. Purge Cloudflare cache ("Purge Everything") to clear stale bare HTML
