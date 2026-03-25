@@ -216,6 +216,73 @@ export default defineConfig(({ mode }) => ({
           ) {
             return "storefront-core";
           }
+
+          // ── 18. Dashboard pages (non-admin) → single chunk ──
+          // These are lazy-loaded and never on storefront critical path.
+          if (
+            id.includes("src/pages/Dashboard") ||
+            id.includes("src/pages/StoreSettings") ||
+            id.includes("src/pages/StoreOrders") ||
+            id.includes("src/pages/StoreAnalytics") ||
+            id.includes("src/pages/StoreDomain") ||
+            id.includes("src/pages/StorePayments") ||
+            id.includes("src/pages/StoreShipping") ||
+            id.includes("src/pages/StoreTaxSettings") ||
+            id.includes("src/pages/StoreTracking") ||
+            id.includes("src/pages/StoreCustomers") ||
+            id.includes("src/pages/StoreCoupons") ||
+            id.includes("src/pages/StoreAbandonedCarts") ||
+            id.includes("src/pages/CustomerLeads") ||
+            id.includes("src/pages/StoreThemeSettings") ||
+            id.includes("src/pages/MediaLibrary") ||
+            id.includes("src/pages/UserSettings") ||
+            id.includes("src/pages/ProductsList") ||
+            id.includes("src/pages/CreateProduct") ||
+            id.includes("src/pages/EditProduct") ||
+            id.includes("src/pages/CreateStore") ||
+            id.includes("src/pages/BulkUpload") ||
+            id.includes("src/pages/CategoryManagement") ||
+            id.includes("src/pages/StoresList")
+          ) {
+            return "dashboard-pages";
+          }
+
+          // ── 19. Storefront static pages → single chunk ──
+          if (
+            id.includes("src/pages/StorefrontContact") ||
+            id.includes("src/pages/StorefrontReturnPolicy") ||
+            id.includes("src/pages/StorefrontShippingPolicy") ||
+            id.includes("src/pages/StorefrontTerms") ||
+            id.includes("src/pages/StorefrontPrivacyPolicy") ||
+            id.includes("src/pages/StorefrontBestSellers") ||
+            id.includes("src/pages/StorefrontShop") ||
+            id.includes("src/pages/StorefrontLogin") ||
+            id.includes("src/pages/StorefrontSignup") ||
+            id.includes("src/pages/StorefrontAccount") ||
+            id.includes("src/pages/WishlistPage") ||
+            id.includes("src/pages/InstallApp") ||
+            id.includes("src/pages/OrderTrackingPage")
+          ) {
+            return "storefront-pages";
+          }
+
+          // ── 20. Auth pages → single chunk ──
+          if (
+            id.includes("src/pages/Login") ||
+            id.includes("src/pages/Signup") ||
+            id.includes("src/pages/ForgotPassword") ||
+            id.includes("src/pages/ResetPassword") ||
+            id.includes("src/pages/AuthCallback") ||
+            id.includes("src/pages/AdminLogin") ||
+            id.includes("src/routes/AuthRoutes")
+          ) {
+            return "auth-pages";
+          }
+
+          // ── 21. Shared non-UI components → single chunk ──
+          if (id.includes("src/components/")) {
+            return "shared-components";
+          }
         },
       },
     },
