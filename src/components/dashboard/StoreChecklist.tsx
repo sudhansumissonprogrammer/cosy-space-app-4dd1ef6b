@@ -8,6 +8,7 @@ import { Check, ChevronRight, Image, FileText, Package, CreditCard, Truck, Palet
 
 interface StoreChecklistProps {
   storeId: string;
+  storeSlug: string;
 }
 
 interface CheckItem {
@@ -18,7 +19,7 @@ interface CheckItem {
   icon: React.ElementType;
 }
 
-const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(function StoreChecklist({ storeId }, ref) {
+const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(function StoreChecklist({ storeId, storeSlug }, ref) {
   const { navigate } = useNavigateTransition();
 
   const { data: checks } = useQuery({
@@ -41,21 +42,21 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
           label: "Add store logo",
           hint: "Go to Settings → Media section",
           done: !!store?.logo_url,
-          url: `/dashboard/stores/${storeId}/settings`,
+          url: `/dashboard/stores/${storeSlug}/settings`,
           icon: Image,
         },
         {
           label: "Add store description",
           hint: "Go to Settings → Basic Info",
           done: !!store?.description,
-          url: `/dashboard/stores/${storeId}/settings`,
+          url: `/dashboard/stores/${storeSlug}/settings`,
           icon: FileText,
         },
         {
           label: "Add your first product",
           hint: "Products → Create Product",
           done: (productsRes.count ?? 0) > 0,
-          url: `/dashboard/stores/${storeId}/products/create`,
+          url: `/dashboard/stores/${storeSlug}/products/create`,
           icon: Package,
         },
         ...(!isWhatsAppOnly ? [
@@ -63,14 +64,14 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
             label: "Set up payments",
             hint: "Payments page in sidebar",
             done: !!paymentsRes.data,
-            url: `/dashboard/stores/${storeId}/payments`,
+            url: `/dashboard/stores/${storeSlug}/payments`,
             icon: CreditCard,
           },
           {
             label: "Set up shipping",
             hint: "Shipping page in sidebar",
             done: !!shippingRes.data,
-            url: `/dashboard/stores/${storeId}/shipping`,
+            url: `/dashboard/stores/${storeSlug}/shipping`,
             icon: Truck,
           },
         ] : []),
@@ -78,14 +79,14 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
           label: "Customize theme",
           hint: "Theme page in sidebar",
           done: !!themeRes.data,
-          url: `/dashboard/stores/${storeId}/theme`,
+          url: `/dashboard/stores/${storeSlug}/theme`,
           icon: Palette,
         },
         {
           label: "Add WhatsApp number",
           hint: "Go to Settings → Basic Info",
           done: !!store?.whatsapp_number,
-          url: `/dashboard/stores/${storeId}/settings`,
+          url: `/dashboard/stores/${storeSlug}/settings`,
           icon: Phone,
         },
       ];
