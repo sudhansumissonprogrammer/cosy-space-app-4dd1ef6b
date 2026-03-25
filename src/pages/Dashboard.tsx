@@ -212,7 +212,7 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       {storeId && (
-        <QuickActions storeId={storeId} storeSlug={store?.slug} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} />
+        <QuickActions storeId={storeId} storeSlug={store?.slug || ""} storeSlug={store?.slug} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} />
       )}
 
       {isLoading ? (
@@ -240,7 +240,7 @@ export default function Dashboard() {
           {storeId && !isWhatsAppOnly && <TodaySummary storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Pending Actions */}
-          {storeId && !isWhatsAppOnly && <PendingActions storeId={storeId} />}
+          {storeId && !isWhatsAppOnly && <PendingActions storeId={storeId} storeSlug={store?.slug || ""} />}
 
           {/* Store Checklist */}
           {storeId && <StoreChecklist storeId={storeId} />}
