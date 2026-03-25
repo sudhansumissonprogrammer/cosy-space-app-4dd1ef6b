@@ -266,7 +266,7 @@ async function proxyToOrigin(request) {
     } else if (contentType.includes("text/html")) {
       newRes.headers.set(
         "Cache-Control",
-        "public, max-age=300, stale-while-revalidate=86400"
+        "public, max-age=300, stale-while-revalidate=3600"
       );
     }
 
@@ -300,7 +300,15 @@ async function proxyToOrigin(request) {
 
 /* ============== PREFETCH STOREFRONT DATA ============== */
 
-async function prefetchStorefrontData(slug) {
+async function prefetchStorefrontData(slug, ctx) {
+  // Check edge cache first (0ms vs 500-1500ms)
+  const cacheKey = new Request(`https://cache/storefront-data/${slug}`);
+  try {
+    const cached = await cache.match(cacheKey);
+    if (cached) return await cached.json();
+  } catch {}
+
+  // Cache miss — fetch from Supabase
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
@@ -315,7 +323,21 @@ async function prefetchStorefrontData(slug) {
       }
     );
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json();
+
+    // Cache at edge for 5 minutes (background, non-blocking)
+    if (data && ctx) {
+      ctx.waitUntil(
+        cache.put(
+          cacheKey,
+          new Response(JSON.stringify(data), {
+            headers: { "Cache-Control": "public, max-age=300" },
+          })
+        )
+      );
+    }
+
+    return data;
   } catch {
     return null;
   }
@@ -329,11 +351,11 @@ async function prefetchStorefrontData(slug) {
  * PERF: Also injects window.__STOREFRONT_DATA__ with pre-fetched storefront
  * data so the SPA renders instantly without an API waterfall.
  */
-async function fetchAndInjectSlug(request, slug) {
+async function fetchAndInjectSlug(request, slug, ctx) {
   // Fetch origin HTML and storefront data in parallel
   const [response, storefrontData] = await Promise.all([
     proxyToOrigin(request),
-    prefetchStorefrontData(slug),
+    prefetchStorefrontData(slug, ctx),
   ]);
 
   const contentType = response.headers.get("content-type") || "";
@@ -344,13 +366,23 @@ async function fetchAndInjectSlug(request, slug) {
 
   let html = await response.text();
 
+  // Extract ALL JS chunks for modulepreload (Fix #3)
+  const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
+  let modulePreloads = "";
+  const seen = new Set();
+  for (const m of chunkMatches) {
+    if (!seen.has(m[1])) {
+      seen.add(m[1]);
+      modulePreloads += `<link rel="modulepreload" href="${m[1]}" />\n`;
+    }
+  }
+
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
   }
-  injection += `</script>
-<link rel="preconnect" href="${SUPABASE_URL}" />`;
+  injection += `</script>\n${modulePreloads}<link rel="preconnect" href="${SUPABASE_URL}" />`;
 
   html = html.replace("<head>", `<head>${injection}`);
 
@@ -374,7 +406,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
     request.headers.get("cookie")?.includes("auth")
   ) {
     if (isCustomDomain && slug) {
-      return fetchAndInjectSlug(request, slug);
+      return fetchAndInjectSlug(request, slug, ctx);
     }
     return proxyToOrigin(request);
   }
@@ -401,7 +433,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   try {
     if (slug) {
       // Inject storefront data for both subdomains and custom domains
-      res = await fetchAndInjectSlug(request, slug);
+      res = await fetchAndInjectSlug(request, slug, ctx);
     } else {
       res = await proxyToOrigin(request);
     }
