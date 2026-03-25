@@ -402,8 +402,11 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   const cached = await cache.match(key);
 
   if (cached) {
+    // ✅ FIX: Revalidate with slug injection so cached HTML always has
+    // __STORE_SLUG__ and __STOREFRONT_DATA__. Previously used proxyToOrigin()
+    // which stripped the injected data, causing skeleton-only pages.
     ctx.waitUntil(
-      proxyToOrigin(request)
+      (slug ? fetchAndInjectSlug(request, slug) : proxyToOrigin(request))
         .then((res) => {
           const ct = res.headers.get("content-type") || "";
           if (res.ok && ct.includes("text/html")) {
