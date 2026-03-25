@@ -74,9 +74,41 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Let Vite/Rollup choose a stable chunk graph automatically.
-    // Manual chunking caused framework↔vendor init cycles on storefront domains.
     target: "es2020",
     cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // ── Framework core (react + react-dom) ──
+          // ~45KB gzip — smallest, loads fastest, needed by everything
+          if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/")) {
+            return "framework";
+          }
+
+          // ── Router + Query ──
+          // ~25KB gzip — needed early for routing + data
+          if (id.includes("node_modules/react-router") || id.includes("node_modules/@tanstack/react-query")) {
+            return "router-query";
+          }
+
+          // ── Supabase client ──
+          // ~20KB gzip — needed for API calls
+          if (id.includes("node_modules/@supabase")) {
+            return "supabase";
+          }
+
+          // ── Radix UI primitives ──
+          // ~30KB gzip — UI components, can load slightly later
+          if (id.includes("node_modules/@radix-ui")) {
+            return "radix";
+          }
+
+          // ── Recharts (only for dashboard analytics) ──
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
+            return "charts";
+          }
+        },
+      },
+    },
   },
 }));
