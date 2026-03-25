@@ -18,40 +18,51 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
     // Don't inject twice
     if (document.getElementById("fb-pixel-script")) return;
 
-    // fbq shim
-    const f: any = window;
-    const n = "fbq";
-    if (!f[n]) {
-      const q: any = function (...args: any[]) {
-        q.callMethod ? q.callMethod.apply(q, args) : q.queue.push(args);
-      };
-      if (!f._fbq) f._fbq = q;
-      q.push = q;
-      q.loaded = true;
-      q.version = "2.0";
-      q.queue = [];
-      f[n] = q;
-    }
+    // Defer pixel injection to idle time so it doesn't block first paint
+    const schedule =
+      typeof requestIdleCallback !== "undefined"
+        ? (cb: () => void) => requestIdleCallback(cb, { timeout: 4000 })
+        : (cb: () => void) => setTimeout(cb, 2000);
 
-    const script = document.createElement("script");
-    script.id = "fb-pixel-script";
-    script.async = true;
-    script.src = "https://connect.facebook.net/en_US/fbevents.js";
-    document.head.appendChild(script);
+    const idleHandle = schedule(() => {
+      // Re-check after idle delay
+      if (document.getElementById("fb-pixel-script")) return;
 
-    window.fbq("init", pixelId);
-    window.fbq("track", "PageView");
+      // fbq shim
+      const f: any = window;
+      const n = "fbq";
+      if (!f[n]) {
+        const q: any = function (...args: any[]) {
+          q.callMethod ? q.callMethod.apply(q, args) : q.queue.push(args);
+        };
+        if (!f._fbq) f._fbq = q;
+        q.push = q;
+        q.loaded = true;
+        q.version = "2.0";
+        q.queue = [];
+        f[n] = q;
+      }
 
-    // noscript pixel
-    const noscript = document.createElement("noscript");
-    noscript.id = "fb-pixel-noscript";
-    const img = document.createElement("img");
-    img.height = 1;
-    img.width = 1;
-    img.style.display = "none";
-    img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`;
-    noscript.appendChild(img);
-    document.head.appendChild(noscript);
+      const script = document.createElement("script");
+      script.id = "fb-pixel-script";
+      script.async = true;
+      script.src = "https://connect.facebook.net/en_US/fbevents.js";
+      document.head.appendChild(script);
+
+      window.fbq("init", pixelId);
+      window.fbq("track", "PageView");
+
+      // noscript pixel
+      const noscript = document.createElement("noscript");
+      noscript.id = "fb-pixel-noscript";
+      const img = document.createElement("img");
+      img.height = 1;
+      img.width = 1;
+      img.style.display = "none";
+      img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`;
+      noscript.appendChild(img);
+      document.head.appendChild(noscript);
+    });
 
     return () => {
       document.getElementById("fb-pixel-script")?.remove();

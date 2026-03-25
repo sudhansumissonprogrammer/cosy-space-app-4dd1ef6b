@@ -8,37 +8,12 @@ import { isCustomDomainHost, isSubdomainHost, isRootDomainHost, isPreviewHost, i
 initGlobalErrorHandlers();
 
 /**
- * Wait for the storefront prefetch (started in index.html) to complete
- * BEFORE mounting React. This ensures data is available synchronously,
- * eliminating the double-skeleton flash (HTML skeleton → React skeleton).
- * The HTML skeleton stays visible during this wait, giving a single smooth transition.
- * Timeout after 4s to avoid blocking forever on slow networks.
+ * Mount React immediately — no blocking await.
+ * If Worker injected __STOREFRONT_DATA__, useStorefront picks it up as initialData.
+ * If a prefetch promise is in flight, let it resolve in the background;
+ * useStorefront will use it when ready (or fetch via RPC as fallback).
  */
-async function boot() {
-  // If Worker already injected data, skip the prefetch await entirely (saves 0-4s)
-  if (!(window as any).__STOREFRONT_DATA__) {
-    const prefetch = (window as any).__STOREFRONT_PREFETCH__;
-    if (prefetch) {
-      try {
-        const result = await Promise.race([
-          prefetch,
-          new Promise((resolve) => setTimeout(() => resolve(null), 3000)),
-        ]);
-        if (result) {
-          (window as any).__STOREFRONT_DATA__ = result;
-        }
-      } catch {}
-      delete (window as any).__STOREFRONT_PREFETCH__;
-    }
-  } else {
-    // Data already present — clean up any in-flight prefetch
-    delete (window as any).__STOREFRONT_PREFETCH__;
-  }
-
-  createRoot(document.getElementById("root")!).render(<App />);
-}
-
-boot();
+createRoot(document.getElementById("root")!).render(<App />);
 
 /**
  * Determine if current host is a storefront (custom domain or subdomain).

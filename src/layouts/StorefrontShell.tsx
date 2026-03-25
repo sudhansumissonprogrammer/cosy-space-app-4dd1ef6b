@@ -133,9 +133,14 @@ export default function StorefrontShell({
   // Theme config (reactive — updates when cache changes via live preview)
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
-  // Load Google Fonts when theme config changes
+  // Defer Google Fonts loading to idle time so it doesn't block first paint
   useEffect(() => {
-    loadGoogleFonts(themeConfig);
+    if (!themeConfig) return;
+    const schedule =
+      typeof requestIdleCallback !== "undefined"
+        ? (cb: () => void) => requestIdleCallback(cb, { timeout: 3000 })
+        : (cb: () => void) => setTimeout(cb, 1000);
+    schedule(() => loadGoogleFonts(themeConfig));
   }, [themeConfig?.heading_font, themeConfig?.body_font]);
 
   // Listen for live theme preview messages
