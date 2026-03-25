@@ -493,7 +493,9 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
 
   return (
     <div className="storefront-font min-h-screen font-sans" style={{ ...themeStyle, backgroundColor: "var(--storefront-bg, hsl(var(--background)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-      {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
+      <Suspense fallback={null}>
+        {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
+      </Suspense>
       
       <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
@@ -538,10 +540,10 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
         </Suspense>
       </main>
       
-      <StorefrontFooter store={store} />
-      <SideCart store={store} />
-      <FloatingWhatsApp store={store} />
       <Suspense fallback={null}>
+        <StorefrontFooter store={store} />
+        <SideCart store={store} />
+        <FloatingWhatsApp store={store} />
         <ExitIntentPopup storeId={store.id} storeName={store.name} />
       </Suspense>
 
