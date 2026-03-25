@@ -245,7 +245,7 @@ async function fetchOrigin(request, slug = null, rewritePath = null) {
 }
 
 
-async function cachedFetch(request, slug = "", rewritePath = null) {
+async function cachedFetch(request, ctx, slug = "", rewritePath = null) {
   const key = getCacheKey(request, slug);
   const url = new URL(request.url);
 
@@ -263,7 +263,7 @@ async function cachedFetch(request, slug = "", rewritePath = null) {
 
   if (cached) {
     // Background refresh (stale-while-revalidate)
-    event.waitUntil(
+    ctx.waitUntil(
       fetchOrigin(request, slug, rewritePath).then((res) => {
         const contentType = res.headers.get("content-type") || "";
 
@@ -392,7 +392,7 @@ async function handleBot(request, slug, url, isCustom) {
 /* ---------------- MAIN ---------------- */
 
 export default {
-  async fetch(request) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const hostname = url.hostname;
 
@@ -416,7 +416,7 @@ export default {
         );
       }
 
-      return cachedFetch(request);
+      return cachedFetch(request, ctx);
     }
 
     // SUBDOMAIN
@@ -424,7 +424,7 @@ export default {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
 
       if (!slug || slug.includes(".")) {
-        return cachedFetch(request);
+        return cachedFetch(request, ctx);
       }
 
       if (url.pathname === "/sitemap.xml") {
@@ -438,7 +438,7 @@ export default {
       const bot = await handleBot(request, slug, url, false);
       if (bot) return bot;
 
-      return cachedFetch(request, slug);
+      return cachedFetch(request, ctx, slug);
     }
 
     // CUSTOM DOMAIN
@@ -456,10 +456,10 @@ export default {
       const bot = await handleBot(request, slug, url, true);
       if (bot) return bot;
 
-      return cachedFetch(request, slug);
+      return cachedFetch(request, ctx, slug);
     }
 
     // FALLBACK
-    return cachedFetch(request);
+    return cachedFetch(request, ctx);
   },
 };
