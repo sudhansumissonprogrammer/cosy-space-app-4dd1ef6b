@@ -8,6 +8,7 @@ import { getSubdomainSlug, ROOT_DOMAIN, isCustomDomainHost, isSubdomainHost } fr
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // Storefront layouts — ALL lazy loaded for clean chunk isolation
 const StorefrontLayout = lazy(() => import("./layouts/StorefrontLayout"));
