@@ -80,9 +80,11 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // ── Shared framework/vendor first ──
-          // Prevents storefront chunks from importing admin chunk for React/runtime,
-          // which caused createContext undefined on storefront boot.
+          // Keep manual chunking conservative to avoid circular chunk graphs.
+          // Root-cause fix: storefront/admin circular imports were causing
+          // `Cannot read properties of undefined (reading 'createContext')`.
+
+          // ── Framework/runtime ──
           if (id.includes("node_modules")) {
             if (
               id.includes("/react/") ||
@@ -108,90 +110,14 @@ export default defineConfig(({ mode }) => ({
             return "vendor";
           }
 
-          // ── Shared app primitives used by BOTH storefront and admin ──
-          // Keep these out of theme/admin chunks to avoid cross-chunk cycles.
+          // ── Optional app-level split for admin area ──
           if (
-            id.includes("/components/ui/") ||
-            id.includes("/hooks/use-mobile") ||
-            id.includes("/hooks/use-toast") ||
-            id.includes("/lib/utils") ||
-            id.includes("/components/ErrorBoundary") ||
-            id.includes("/lib/logError")
+            id.includes("/layouts/AdminLayout") ||
+            id.includes("/layouts/DashboardLayout") ||
+            id.includes("/pages/admin/")
           ) {
-            return "app-shared";
+            return "admin";
           }
-
-          // ── Storefront critical core — Shell, providers, data hooks ──
-          // Loaded immediately for every storefront visitor.
-          if (
-            id.includes("/layouts/StorefrontShell") ||
-            id.includes("/layouts/StorefrontLayout.logic") ||
-            id.includes("/lib/themeUtils") ||
-            id.includes("/components/storefront/StorefrontNotFound") ||
-            id.includes("/contexts/CartContext") ||
-            id.includes("/contexts/WishlistContext") ||
-            id.includes("/contexts/StorefrontAuthContext") ||
-            id.includes("/hooks/useStorefrontThemeConfig") ||
-            id.includes("/hooks/useThemePreview") ||
-            id.includes("/hooks/useFacebookPixel") ||
-            id.includes("/hooks/useMetaTags") ||
-            id.includes("/lib/trackPageView") ||
-            id.includes("/lib/subdomain")
-          ) {
-            return "storefront-core";
-          }
-
-          // ── Storefront UI — deferred, loaded by themes when needed ──
-          // Heavy components, analytics, overlays — NOT needed for first paint.
-          if (
-            id.includes("/components/storefront/StorefrontFooter") ||
-            id.includes("/components/storefront/SideCart") ||
-            id.includes("/components/storefront/FloatingWhatsApp") ||
-            id.includes("/components/storefront/StorefrontMarquee") ||
-            id.includes("/components/storefront/ExitIntentPopup") ||
-            id.includes("/components/storefront/DynamicPwaManifest") ||
-            id.includes("/components/storefront/PwaInstallBanner") ||
-            id.includes("/components/SmartInstallPrompt") ||
-            id.includes("/components/storefront/UniversalProductCard") ||
-            id.includes("/components/storefront/UniversalCategories") ||
-            id.includes("/components/storefront/BestSellingCarousel") ||
-            id.includes("/components/storefront/StorefrontSearchOverlay") ||
-            id.includes("/components/storefront/StorefrontSearchBar") ||
-            id.includes("/components/storefront/StorefrontMobileHero") ||
-            id.includes("/components/storefront/StorefrontInstagramSection") ||
-            id.includes("/components/storefront/LazyRender") ||
-            id.includes("/components/storefront/StorefrontHero") ||
-            id.includes("/components/storefront/HeroBannerCarousel") ||
-            id.includes("/components/storefront/StorefrontAbout") ||
-            id.includes("/components/storefront/StorefrontCategories") ||
-            id.includes("/components/storefront/ProductCardStyle") ||
-            id.includes("/components/storefront/OptimizedImage") ||
-            id.includes("/components/storefront/StarRating") ||
-            id.includes("/components/ShareStoreDialog") ||
-            id.includes("/components/ContentSkeleton") ||
-            id.includes("/hooks/useJsonLd") ||
-            id.includes("/hooks/useProductCardActions") ||
-            id.includes("/lib/prefetchStorefrontRoutes")
-          ) {
-            return "storefront-ui";
-          }
-
-          // ── Theme-specific chunks — each theme layout+home isolated ──
-          if (id.includes("/layouts/StorefrontLayoutV13") || id.includes("/pages/StorefrontHomeV13")) return "theme-13";
-          if (id.includes("/layouts/StorefrontLayoutV12") || id.includes("/pages/StorefrontHomeV12")) return "theme-12";
-          if (id.includes("/layouts/StorefrontLayoutV11") || id.includes("/pages/StorefrontHomeV11")) return "theme-11";
-          if (id.includes("/layouts/StorefrontLayoutV10") || id.includes("/pages/StorefrontHomeV10")) return "theme-10";
-          if (id.includes("/layouts/StorefrontLayoutV8") || id.includes("/pages/StorefrontHomeV8")) return "theme-8";
-          if (id.includes("/layouts/StorefrontLayoutV7") || id.includes("/pages/StorefrontHomeV7")) return "theme-7";
-          if (id.includes("/layouts/StorefrontLayoutV6") || id.includes("/pages/StorefrontHomeV6")) return "theme-6";
-          if (id.includes("/layouts/StorefrontLayoutV4") || id.includes("/pages/StorefrontHomeV4")) return "theme-4";
-          if (id.includes("/layouts/StorefrontLayoutV3") || id.includes("/pages/StorefrontHomeV3")) return "theme-3";
-          if (id.includes("/layouts/StorefrontLayoutV2") || id.includes("/pages/StorefrontHomeV2")) return "theme-2";
-          // theme-1: match layout + home but NOT .logic (already in storefront-core)
-          if (id.includes("/layouts/StorefrontLayout.tsx") || id.includes("/pages/StorefrontHome.tsx")) return "theme-1";
-
-          // ── Admin/Dashboard isolation ──
-          if (id.includes("/layouts/AdminLayout") || id.includes("/layouts/DashboardLayout") || id.includes("/pages/admin/")) return "admin";
         },
       },
     },
