@@ -35,6 +35,7 @@ const BOT_UA_REGEX =
 
 const ORIGIN_TIMEOUT_MS = 15_000;
 const EDGE_FN_TIMEOUT_MS = 10_000;
+const STOREFRONT_PREFETCH_TIMEOUT_MS = 1_500;
 
 const cache = caches.default;
 
@@ -311,6 +312,9 @@ async function proxyToOrigin(request) {
 /* ============== PREFETCH STOREFRONT DATA ============== */
 
 async function prefetchStorefrontData(slug) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), STOREFRONT_PREFETCH_TIMEOUT_MS);
+
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
@@ -321,12 +325,15 @@ async function prefetchStorefrontData(slug) {
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify({ _slug: slug, _product_limit: 50 }),
       }
     );
+    clearTimeout(timeout);
     if (!res.ok) return null;
     return await res.json();
   } catch {
+    clearTimeout(timeout);
     return null;
   }
 }
