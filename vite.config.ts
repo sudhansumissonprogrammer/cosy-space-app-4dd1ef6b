@@ -84,17 +84,29 @@ export default defineConfig(({ mode }) => ({
         // that can crash with "createContext of undefined" on storefront hosts.
         onlyExplicitManualChunks: true,
         manualChunks(id) {
-          // ── Storefront shared core — loaded ONCE for all themes ──
-          // Includes Shell, data hooks, providers, and shared UI components
-          // used across multiple theme home pages.
+          // ── Storefront critical core — Shell, providers, data hooks ──
+          // Loaded immediately for every storefront visitor.
           if (
             id.includes("/layouts/StorefrontShell") ||
             id.includes("/layouts/StorefrontLayout.logic") ||
             id.includes("/lib/themeUtils") ||
+            id.includes("/components/storefront/StorefrontNotFound") ||
+            id.includes("/contexts/CartContext") ||
+            id.includes("/contexts/WishlistContext") ||
+            id.includes("/contexts/StorefrontAuthContext") ||
+            id.includes("/hooks/useStorefrontThemeConfig") ||
+            id.includes("/hooks/useThemePreview") ||
+            id.includes("/lib/subdomain")
+          ) {
+            return "storefront-core";
+          }
+
+          // ── Storefront UI — deferred, loaded by themes when needed ──
+          // Heavy components, analytics, overlays — NOT needed for first paint.
+          if (
             id.includes("/components/storefront/StorefrontFooter") ||
             id.includes("/components/storefront/SideCart") ||
             id.includes("/components/storefront/FloatingWhatsApp") ||
-            id.includes("/components/storefront/StorefrontNotFound") ||
             id.includes("/components/storefront/StorefrontMarquee") ||
             id.includes("/components/storefront/ExitIntentPopup") ||
             id.includes("/components/storefront/DynamicPwaManifest") ||
@@ -117,21 +129,15 @@ export default defineConfig(({ mode }) => ({
             id.includes("/components/storefront/StarRating") ||
             id.includes("/components/ShareStoreDialog") ||
             id.includes("/components/ContentSkeleton") ||
-            id.includes("/contexts/CartContext") ||
-            id.includes("/contexts/WishlistContext") ||
-            id.includes("/contexts/StorefrontAuthContext") ||
-            id.includes("/hooks/useStorefrontThemeConfig") ||
-            id.includes("/hooks/useThemePreview") ||
             id.includes("/hooks/useFacebookPixel") ||
             id.includes("/hooks/useMetaTags") ||
             id.includes("/hooks/useJsonLd") ||
             id.includes("/hooks/useProductCardActions") ||
             id.includes("/lib/trackPageView") ||
-            id.includes("/lib/subdomain") ||
             id.includes("/lib/prefetchStorefrontRoutes") ||
             id.includes("/lib/productUtils")
           ) {
-            return "storefront-core";
+            return "storefront-ui";
           }
 
           // ── Theme-specific chunks — each theme layout+home isolated ──
