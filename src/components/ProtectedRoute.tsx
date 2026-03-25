@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
+  console.log("[ProtectedRoute] loading:", loading, "hasSession:", !!session);
 
   if (loading) {
     return (

@@ -291,6 +291,7 @@ function useCustomDomainSlug() {
 
 function AppRouter() {
   const location = useLocation();
+  console.log("[AppRouter] path:", location.pathname, "hostname:", window.location.hostname);
   const subdomainSlug = getSubdomainSlug();
   const { slug: customDomainSlug, loading: customDomainLoading, isCustomDomain } = useCustomDomainSlug();
 
@@ -333,6 +334,7 @@ function AppRouter() {
   }
 
   // ── AUTH/DASHBOARD: Only reachable on root domain, preview, or localhost ──
+  console.log("[AppRouter] rendering AUTH/DASHBOARD branch");
   return (
     <AuthProvider>
       <LazyAuthRoutes />
