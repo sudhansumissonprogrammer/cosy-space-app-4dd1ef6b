@@ -80,11 +80,9 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Keep manual chunking conservative to avoid circular chunk graphs.
-          // Root-cause fix: storefront/admin circular imports were causing
-          // `Cannot read properties of undefined (reading 'createContext')`.
-
-          // ── Framework/runtime ──
+          // Conservative chunking only for framework/runtime.
+          // Avoid forcing app-level/ui vendor split because it can create
+          // initialization cycles in production bundles.
           if (id.includes("node_modules")) {
             if (
               id.includes("/react/") ||
@@ -95,28 +93,7 @@ export default defineConfig(({ mode }) => ({
             ) {
               return "framework";
             }
-
-            if (
-              id.includes("@radix-ui") ||
-              id.includes("lucide-react") ||
-              id.includes("class-variance-authority") ||
-              id.includes("tailwind-merge") ||
-              id.includes("clsx") ||
-              id.includes("sonner")
-            ) {
-              return "ui-vendor";
-            }
-
             return "vendor";
-          }
-
-          // ── Optional app-level split for admin area ──
-          if (
-            id.includes("/layouts/AdminLayout") ||
-            id.includes("/layouts/DashboardLayout") ||
-            id.includes("/pages/admin/")
-          ) {
-            return "admin";
           }
         },
       },
