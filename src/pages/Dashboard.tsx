@@ -169,6 +169,7 @@ export default function Dashboard() {
       {storeId && (
         <OnboardingWalkthrough
           storeId={storeId}
+          storeSlug={store?.slug || ""}
           open={showOnboarding}
           onOpenChange={setShowOnboarding}
         />
@@ -243,10 +244,10 @@ export default function Dashboard() {
           {storeId && !isWhatsAppOnly && <PendingActions storeId={storeId} storeSlug={store?.slug || ""} />}
 
           {/* Store Checklist */}
-          {storeId && <StoreChecklist storeId={storeId} />}
+          {storeId && <StoreChecklist storeId={storeId} storeSlug={store?.slug || ""} />}
 
           {/* Recent Orders */}
-          {storeId && !isWhatsAppOnly && <RecentOrders storeId={storeId} currencySymbol={currencySymbol} />}
+          {storeId && !isWhatsAppOnly && <RecentOrders storeId={storeId} storeSlug={store?.slug || ""} currencySymbol={currencySymbol} />}
 
           {/* Top Products */}
           {storeId && !isWhatsAppOnly && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
