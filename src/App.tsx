@@ -4,11 +4,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { getSubdomainSlug, ROOT_DOMAIN, isCustomDomainHost } from "@/lib/subdomain";
+import { getSubdomainSlug, ROOT_DOMAIN, isCustomDomainHost, isSubdomainHost } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { isCustomDomainHost, isSubdomainHost } from "@/lib/subdomain";
 
 // Storefront layouts — ALL lazy loaded for clean chunk isolation
 const StorefrontLayout = lazy(() => import("./layouts/StorefrontLayout"));

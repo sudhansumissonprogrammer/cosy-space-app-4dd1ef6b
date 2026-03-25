@@ -56,7 +56,7 @@ const InstallApp = lazy(() => import("@/pages/InstallApp"));
 
 export default function AuthRoutes() {
   return (
-    <AuthProvider>
+    <>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<Login />} />
