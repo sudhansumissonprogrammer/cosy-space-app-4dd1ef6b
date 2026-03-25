@@ -124,6 +124,6 @@ export default function AuthRoutes() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </AuthProvider>
+    </>
   );
 }
