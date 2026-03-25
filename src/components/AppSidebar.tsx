@@ -77,44 +77,44 @@ export function AppSidebar() {
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
-  const catalogItems = storeId
+  const catalogItems = storeSlug
     ? [
-        { title: "Products", url: `/dashboard/stores/${storeId}/products`, icon: Package, menuKey: "products" },
-        { title: "Categories", url: `/dashboard/stores/${storeId}/categories`, icon: FolderOpen, menuKey: "categories" },
-        { title: "Media Library", url: `/dashboard/stores/${storeId}/media`, icon: ImageIcon, menuKey: "media_library" },
-        { title: "Bulk Upload", url: `/dashboard/stores/${storeId}/products/bulk-upload`, icon: Upload, menuKey: "bulk_upload" },
+        { title: "Products", url: `/dashboard/stores/${storeSlug}/products`, icon: Package, menuKey: "products" },
+        { title: "Categories", url: `/dashboard/stores/${storeSlug}/categories`, icon: FolderOpen, menuKey: "categories" },
+        { title: "Media Library", url: `/dashboard/stores/${storeSlug}/media`, icon: ImageIcon, menuKey: "media_library" },
+        { title: "Bulk Upload", url: `/dashboard/stores/${storeSlug}/products/bulk-upload`, icon: Upload, menuKey: "bulk_upload" },
       ].filter((i) => isVisible(i.menuKey))
     : [];
 
-  const salesItems = storeId && !isWhatsAppOnly
+  const salesItems = storeSlug && !isWhatsAppOnly
     ? [
-        { title: "Orders", url: `/dashboard/stores/${storeId}/orders`, icon: ShoppingBag, badge: pendingOrders, menuKey: "orders" },
-        { title: "Customers", url: `/dashboard/stores/${storeId}/customers`, icon: Users, menuKey: "customers" },
-        { title: "Abandoned Carts", url: `/dashboard/stores/${storeId}/abandoned-carts`, icon: ShoppingCart, menuKey: "abandoned_carts" },
+        { title: "Orders", url: `/dashboard/stores/${storeSlug}/orders`, icon: ShoppingBag, badge: pendingOrders, menuKey: "orders" },
+        { title: "Customers", url: `/dashboard/stores/${storeSlug}/customers`, icon: Users, menuKey: "customers" },
+        { title: "Abandoned Carts", url: `/dashboard/stores/${storeSlug}/abandoned-carts`, icon: ShoppingCart, menuKey: "abandoned_carts" },
       ].filter((i) => isVisible(i.menuKey))
     : [];
 
-  const paymentItems = storeId
+  const paymentItems = storeSlug
     ? [
-        { title: "Payments", url: `/dashboard/stores/${storeId}/payments`, icon: CreditCard, menuKey: "payments" },
-        ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeId}/coupons`, icon: Tag, menuKey: "coupons" }] : []),
-        { title: "Shipping", url: `/dashboard/stores/${storeId}/shipping`, icon: Truck, menuKey: "shipping" },
-        { title: "Tax / GST", url: `/dashboard/stores/${storeId}/tax`, icon: Receipt, menuKey: "tax_gst" },
+        { title: "Payments", url: `/dashboard/stores/${storeSlug}/payments`, icon: CreditCard, menuKey: "payments" },
+        ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeSlug}/coupons`, icon: Tag, menuKey: "coupons" }] : []),
+        { title: "Shipping", url: `/dashboard/stores/${storeSlug}/shipping`, icon: Truck, menuKey: "shipping" },
+        { title: "Tax / GST", url: `/dashboard/stores/${storeSlug}/tax`, icon: Receipt, menuKey: "tax_gst" },
       ].filter((i) => isVisible(i.menuKey))
     : [];
 
-  const marketingItems = storeId
+  const marketingItems = storeSlug
     ? [
-        ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeId}/whatsapp`, icon: MessageSquare, menuKey: "whatsapp_marketing" }] : []),
-        { title: "Tracking & Analytics", url: `/dashboard/stores/${storeId}/tracking`, icon: BarChart3, menuKey: "tracking_analytics" },
+        ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeSlug}/whatsapp`, icon: MessageSquare, menuKey: "whatsapp_marketing" }] : []),
+        { title: "Tracking & Analytics", url: `/dashboard/stores/${storeSlug}/tracking`, icon: BarChart3, menuKey: "tracking_analytics" },
       ].filter((i) => isVisible(i.menuKey))
     : [];
 
-  const settingsItems = storeId
+  const settingsItems = storeSlug
     ? [
-        { title: "Theme", url: `/dashboard/stores/${storeId}/theme`, icon: Palette, menuKey: "theme" },
-        { title: "Domain", url: `/dashboard/stores/${storeId}/domain`, icon: Globe, menuKey: "domain" },
-        { title: "Store Settings", url: `/dashboard/stores/${storeId}/settings`, icon: Settings, menuKey: "store_settings" },
+        { title: "Theme", url: `/dashboard/stores/${storeSlug}/theme`, icon: Palette, menuKey: "theme" },
+        { title: "Domain", url: `/dashboard/stores/${storeSlug}/domain`, icon: Globe, menuKey: "domain" },
+        { title: "Store Settings", url: `/dashboard/stores/${storeSlug}/settings`, icon: Settings, menuKey: "store_settings" },
       ].filter((i) => isVisible(i.menuKey))
     : [];
 
