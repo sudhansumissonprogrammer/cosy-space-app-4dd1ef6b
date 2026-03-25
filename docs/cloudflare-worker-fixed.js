@@ -433,7 +433,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   try {
     if (slug) {
       // Inject storefront data for both subdomains and custom domains
-      res = await fetchAndInjectSlug(request, slug);
+      res = await fetchAndInjectSlug(request, slug, ctx);
     } else {
       res = await proxyToOrigin(request);
     }
