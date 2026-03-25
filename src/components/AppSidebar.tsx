@@ -34,6 +34,7 @@ export function AppSidebar() {
   const { data: store } = useMyStore();
 
   const storeId = store?.id;
+  const storeSlug = store?.slug;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const { isVisible, isComingSoon } = useMenuConfig();
 
