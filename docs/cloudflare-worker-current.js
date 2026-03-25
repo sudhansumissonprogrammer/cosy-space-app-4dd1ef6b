@@ -424,8 +424,17 @@ async function fetchAndInjectSlug(request, slug) {
 /* ============== CACHED FETCH (HARDENED) ============== */
 
 async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
-  const key = getCacheKey(request, slug);
   const url = new URL(request.url);
+
+  // Only cache GET requests — all others bypass to origin
+  if (request.method !== "GET") {
+    if (isCustomDomain && slug) {
+      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug), { slug, cacheStatus: "BYPASS" });
+    }
+    return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
+  }
+
+  const key = getCacheKey(request, slug);
 
   // Skip cache for admin, API, dashboard, and authenticated requests
   if (
