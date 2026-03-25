@@ -51,11 +51,16 @@
     -->
     <script>
       (function(){
+        // Skip if Cloudflare Worker already injected full data
+        if(window.__STOREFRONT_DATA__)return;
+
         var slug;
-        var p=location.pathname;
-        if(p.indexOf('/store/')===0){slug=p.split('/store/')[1];if(slug)slug=slug.split('/')[0];}
+        // 1. Try Worker-injected slug (custom domains)
+        if(window.__STORE_SLUG__){slug=window.__STORE_SLUG__;}
+        // 2. Try /store/ path
+        if(!slug){var p=location.pathname;if(p.indexOf('/store/')===0){slug=p.split('/store/')[1];if(slug)slug=slug.split('/')[0];}}
+        // 3. Try subdomain
         if(!slug){
-          // Try subdomain
           var h=location.hostname;
           if(h.endsWith('.storivo.in')&&h!=='storivo.in'&&h!=='www.storivo.in'){
             var sub=h.replace('.storivo.in','');
