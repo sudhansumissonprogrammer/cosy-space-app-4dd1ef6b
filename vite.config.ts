@@ -79,6 +79,10 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true,
     rollupOptions: {
       output: {
+        // Prevent Rollup from pulling transitive/shared helpers into unrelated manual chunks.
+        // This avoids runtime cycles like vendor-react -> admin -> vendor-router -> vendor-react
+        // that can crash with "createContext of undefined" on storefront hosts.
+        onlyExplicitManualChunks: true,
         manualChunks(id) {
           // Vendor chunks
           if (id.includes("node_modules/react-dom")) return "vendor-react";
