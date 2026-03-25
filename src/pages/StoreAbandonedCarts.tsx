@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +30,7 @@ const QUICK_FILTERS = [
 ];
 
 export default function StoreAbandonedCarts() {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
 
   const [dateFrom, setDateFrom] = useState<Date | undefined>();

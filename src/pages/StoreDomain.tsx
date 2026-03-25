@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -57,7 +58,7 @@ function DnsRecordRow({ record, onCopy }: { record: DnsRecord; onCopy: (v: strin
 }
 
 export default function StoreDomain() {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -178,7 +179,7 @@ export default function StoreDomain() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link to={`/dashboard/stores/${storeId}/settings`}>
+          <Link to={`/dashboard/stores/${storeSlug}/settings`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -19,7 +20,7 @@ import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 
 export default function StoreCustomers() {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
 

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +32,7 @@ interface MediaItem {
 }
 
 export default function MediaLibrary() {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: store } = useStoreData(storeId);

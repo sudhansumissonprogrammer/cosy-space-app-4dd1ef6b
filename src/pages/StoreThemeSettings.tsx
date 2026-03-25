@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -1950,7 +1950,7 @@ function FashionRunwayPreview({ config, storeName, products: propProducts, categ
 }
 
 export default function StoreThemeSettings() {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
 
   const { data: store } = useQuery({

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -44,7 +45,7 @@ const statusColor = (status: string) => {
 };
 
 export default function StoreOrders() {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export default function CategoryManagement() {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
   const { data: store } = useStoreData(storeId);
 
