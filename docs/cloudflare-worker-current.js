@@ -1,12 +1,12 @@
 /**
- * STORIVO PRODUCTION ROUTER v2.1 — HARDENED
+ * STORIVO PRODUCTION ROUTER v2.2 — EDGE CACHING
  *
- * Fixes from v2.0:
- * 1. Cache only "tenant-complete" HTML (contains __STORE_SLUG__)
- * 2. Diagnostic headers on every response (X-Worker-Version, X-Cache-Status, X-Store-Slug)
- * 3. Reduced stale-while-revalidate for HTML (600s instead of 3600s)
- * 4. Never cache origin HTML that lacks tenant marker for tenant routes
- * 5. www→apex canonical redirect for custom domains
+ * Changes from v2.1:
+ * 1. Only cache GET requests — non-GET bypasses to origin
+ * 2. Standardized Cache-Control: max-age=60, stale-while-revalidate=600
+ * 3. Tightened cache eligibility to status === 200 (not just res.ok)
+ * 4. Consistent X-Cache-Status on all exit paths (HIT, MISS, BYPASS, STALE-FALLBACK, MISS-INVALID)
+ * 5. X-Worker-Version: 2.2 on every response
  *
  * Routes:
  *   - *.storivo.in/*
@@ -14,7 +14,7 @@
  *   - custom domains (melleto.shop, mgwinner.in, etc.)
  */
 
-const WORKER_VERSION = "2.1";
+const WORKER_VERSION = "2.2";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "true-path-panel.lovable.app";
 
@@ -274,10 +274,9 @@ async function proxyToOrigin(request) {
         );
       }
     } else if (contentType.includes("text/html")) {
-      // Shorter stale window for HTML — 600s instead of 3600s
       newRes.headers.set(
         "Cache-Control",
-        "public, max-age=120, stale-while-revalidate=600"
+        "public, max-age=60, stale-while-revalidate=600"
       );
     }
 
@@ -413,7 +412,7 @@ async function fetchAndInjectSlug(request, slug) {
   html = html.replace("<head>", `<head>${injection}${lcpPreload}${modulePreloads}`);
 
   const newHeaders = new Headers(response.headers);
-  newHeaders.set("Cache-Control", "public, max-age=120, stale-while-revalidate=600");
+  newHeaders.set("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
   newHeaders.set("X-Store-Slug", slug);
 
   return new Response(html, {
@@ -425,8 +424,17 @@ async function fetchAndInjectSlug(request, slug) {
 /* ============== CACHED FETCH (HARDENED) ============== */
 
 async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
-  const key = getCacheKey(request, slug);
   const url = new URL(request.url);
+
+  // Only cache GET requests — all others bypass to origin
+  if (request.method !== "GET") {
+    if (isCustomDomain && slug) {
+      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug), { slug, cacheStatus: "BYPASS" });
+    }
+    return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
+  }
+
+  const key = getCacheKey(request, slug);
 
   // Skip cache for admin, API, dashboard, and authenticated requests
   if (
@@ -496,7 +504,8 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   }
 
   const contentType = res.headers.get("content-type") || "";
-  if (res.ok && contentType.includes("text/html")) {
+  // Only cache 200 HTML responses (not 204, 206, etc.)
+  if (res.status === 200 && contentType.includes("text/html")) {
     // HARDENED: Only cache if HTML has tenant marker for tenant routes
     if (slug) {
       const htmlSlugHeader = res.headers.get("X-Store-Slug");
@@ -757,7 +766,7 @@ export default {
         );
       }
 
-      return addDiagnosticHeaders(await cachedFetch(request, "", ctx), { slug: "", cacheStatus: "ROOT" });
+      return cachedFetch(request, "", ctx);
     }
 
     // ─── SUBDOMAIN ───
