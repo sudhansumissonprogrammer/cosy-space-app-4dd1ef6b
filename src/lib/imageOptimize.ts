@@ -30,7 +30,7 @@ const PIPELINE_WIDTHS: VariantWidth[] = [200, 400, 800];
 export function optimizeImageUrl(
   url: string | null | undefined,
   width: number = 400,
-  quality: number = 75,
+  quality: number = 85,
 ): string {
   if (!url) return "";
 
@@ -64,8 +64,14 @@ export function optimizeImageUrl(
     return u.toString();
   }
 
-  // ── 4. Supabase Storage: use render/image transform API ──
+  // ── 4. Supabase Storage ──
   if (url.includes("supabase.co/storage")) {
+    // Pipeline-optimized images: serve directly (no re-encoding)
+    if (isOptimizedUrl(url)) {
+      const best = pickBestVariant(width);
+      return resolveVariantUrl(url, best);
+    }
+    // Non-pipeline images: use render/image transform API
     try {
       const u = new URL(url);
       u.pathname = u.pathname.replace(
@@ -124,7 +130,7 @@ export function splitImageUrls(url: string | null | undefined): string[] {
 export function getImageSrcSet(
   url: string | null | undefined,
   sizes: number[] = [200, 400, 800],
-  quality: number = 75,
+  quality: number = 85,
 ): string {
   if (!url) return "";
 
