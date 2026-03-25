@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Preconnect to critical origins -->
     <link rel="preconnect" href="https://kzvfjknnslgcwumzlwkb.supabase.co" crossorigin />
+    <!-- Self-hosted Inter font — eliminates 2 external connections -->
+    <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Non-critical decorative fonts: fully deferred -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Critical fonts: preload the subset we need immediately, defer the rest -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
-    <!-- Non-critical decorative fonts: fully deferred -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;700&family=Changa:wght@400;600&family=Changa+One:ital@0;1&family=Montserrat:wght@400;600;700&display=swap" media="print" onload="this.media='all'" />
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Alegreya+SC:wght@400;700&family=Changa:wght@400;600&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;700&family=Changa:wght@400;600&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
     <title>Storivo — Create Your Online Store</title>
     <meta name="description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
     <meta name="author" content="Storivo" />
@@ -46,20 +45,16 @@
     </style>
     <!--
       Preload storefront API data + LCP hero image:
-      Starts fetch DURING JS parse so data is ready when React mounts.
-      Also injects <link rel=preload> for the hero banner image to eliminate LCP delay.
+      Only runs if Worker hasn't already injected __STOREFRONT_DATA__.
     -->
     <script>
       (function(){
-        // Skip if Cloudflare Worker already injected full data
+        // Skip entirely if Cloudflare Worker already injected full data
         if(window.__STOREFRONT_DATA__)return;
 
         var slug;
-        // 1. Try Worker-injected slug (custom domains)
         if(window.__STORE_SLUG__){slug=window.__STORE_SLUG__;}
-        // 2. Try /store/ path
         if(!slug){var p=location.pathname;if(p.indexOf('/store/')===0){slug=p.split('/store/')[1];if(slug)slug=slug.split('/')[0];}}
-        // 3. Try subdomain
         if(!slug){
           var h=location.hostname;
           if(h.endsWith('.storivo.in')&&h!=='storivo.in'&&h!=='www.storivo.in'){
@@ -69,9 +64,7 @@
         }
         if(!slug)return;
 
-        // Preconnect to image hosts we'll likely need
-        var imgOrigins={};
-        function addPreconnect(origin){if(imgOrigins[origin])return;imgOrigins[origin]=1;var pc=document.createElement('link');pc.rel='preconnect';pc.href=origin;document.head.appendChild(pc);}
+        function addPreconnect(origin){var pc=document.createElement('link');pc.rel='preconnect';pc.href=origin;document.head.appendChild(pc);}
 
         var url='https://kzvfjknnslgcwumzlwkb.supabase.co/rest/v1/rpc/get_storefront_data';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg';
@@ -80,10 +73,8 @@
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
           body:JSON.stringify({_slug:slug,_product_limit:20})
         }).then(function(r){return r.json()}).then(function(data){
-          // Inject <link rel=preload> for LCP hero image immediately
           if(data&&data.store){
             var heroUrl=data.store.mobile_hero_url;
-            // Try mobile_hero_images array first
             var heroImages=data.store.mobile_hero_images;
             if(heroImages){
               try{
@@ -92,7 +83,6 @@
               }catch(e){}
             }
             if(heroUrl){
-              // Optimize URL for Supabase storage
               var optUrl=heroUrl;
               if(heroUrl.indexOf('supabase.co/storage')>-1){
                 optUrl=heroUrl.replace('/storage/v1/object/','/storage/v1/render/image/');
@@ -104,17 +94,10 @@
               document.head.appendChild(lnk);
               try{addPreconnect(new URL(optUrl).origin);}catch(e){}
             }
-            // Also preconnect to product image origins
-            if(data.products&&data.products.length){
-              var firstImg=data.products[0].image_url;
-              if(firstImg){try{addPreconnect(new URL(firstImg.split(',')[0].trim()).origin);}catch(e){}}
-            }
-            // Also preload logo
             if(data.store.logo_url){
               var logoLnk=document.createElement('link');
               logoLnk.rel='preload';logoLnk.as='image';logoLnk.href=data.store.logo_url;
               document.head.appendChild(logoLnk);
-              try{addPreconnect(new URL(data.store.logo_url).origin);}catch(e){}
             }
           }
           return data;
@@ -125,17 +108,14 @@
   <body>
     <div id="root">
       <script>
-        // Only show storefront skeleton on storefront routes, not dashboard/admin/auth
         (function(){
           var p=location.pathname;
           var isStorefront=p.indexOf('/store/')===0;
-          // Also check subdomain mode
           var h=location.hostname;
           if(!isStorefront && h.endsWith('.storivo.in') && h!=='storivo.in' && h!=='www.storivo.in'){
             var sub=h.replace('.storivo.in','');
             if(sub && sub.indexOf('.')===-1) isStorefront=true;
           }
-          // Custom domain mode (not lovable.app, not storivo.in root, not dashboard/admin paths)
           if(!isStorefront && !h.endsWith('.lovable.app') && h!=='localhost' && !p.startsWith('/dashboard') && !p.startsWith('/admin') && !p.startsWith('/login') && !p.startsWith('/signup')){
             if(window.__STORE_SLUG__) isStorefront=true;
           }

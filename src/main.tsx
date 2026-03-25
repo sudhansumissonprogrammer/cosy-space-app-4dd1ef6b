@@ -15,17 +15,23 @@ initGlobalErrorHandlers();
  * Timeout after 4s to avoid blocking forever on slow networks.
  */
 async function boot() {
-  const prefetch = (window as any).__STOREFRONT_PREFETCH__;
-  if (prefetch) {
-    try {
-      const result = await Promise.race([
-        prefetch,
-        new Promise((resolve) => setTimeout(() => resolve(null), 4000)),
-      ]);
-      if (result) {
-        (window as any).__STOREFRONT_DATA__ = result;
-      }
-    } catch {}
+  // If Worker already injected data, skip the prefetch await entirely (saves 0-4s)
+  if (!(window as any).__STOREFRONT_DATA__) {
+    const prefetch = (window as any).__STOREFRONT_PREFETCH__;
+    if (prefetch) {
+      try {
+        const result = await Promise.race([
+          prefetch,
+          new Promise((resolve) => setTimeout(() => resolve(null), 3000)),
+        ]);
+        if (result) {
+          (window as any).__STOREFRONT_DATA__ = result;
+        }
+      } catch {}
+      delete (window as any).__STOREFRONT_PREFETCH__;
+    }
+  } else {
+    // Data already present — clean up any in-flight prefetch
     delete (window as any).__STOREFRONT_PREFETCH__;
   }
 

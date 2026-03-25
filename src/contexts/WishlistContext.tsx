@@ -25,18 +25,38 @@ function getStorageKey(storeSlug: string) {
 }
 
 export function WishlistProvider({ children, slug }: { children: ReactNode; slug: string }) {
-  const [items, setItems] = useState<WishlistItem[]>(() => {
-    try {
-      const stored = localStorage.getItem(getStorageKey(slug));
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Start empty — defer localStorage read to avoid blocking first paint
+  const [items, setItems] = useState<WishlistItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
+  // Deferred hydration from localStorage
   useEffect(() => {
-    localStorage.setItem(getStorageKey(slug), JSON.stringify(items));
-  }, [items, slug]);
+    const hydrate = () => {
+      try {
+        const stored = localStorage.getItem(getStorageKey(slug));
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setItems(parsed);
+          }
+        }
+      } catch {}
+      setHydrated(true);
+    };
+
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(hydrate, { timeout: 200 });
+    } else {
+      setTimeout(hydrate, 0);
+    }
+  }, [slug]);
+
+  // Persist after hydration
+  useEffect(() => {
+    if (hydrated) {
+      localStorage.setItem(getStorageKey(slug), JSON.stringify(items));
+    }
+  }, [items, slug, hydrated]);
 
   const isWishlisted = useCallback((productId: string) => {
     return items.some((i) => i.productId === productId);
@@ -71,7 +91,5 @@ const WISHLIST_FALLBACK: WishlistContextType = {
 
 export function useWishlist() {
   const ctx = useContext(WishlistContext);
-  // Return safe fallback instead of throwing — prevents crashes when
-  // components render briefly outside the provider (e.g. during error recovery)
   return ctx ?? WISHLIST_FALLBACK;
 }
