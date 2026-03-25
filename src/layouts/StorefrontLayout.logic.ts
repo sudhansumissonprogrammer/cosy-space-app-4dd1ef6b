@@ -84,10 +84,10 @@ export function useStorefront(slugOverride?: string) {
       : {}),
   });
 
-  // Seed individual cache keys so child pages get instant cache hits
+  // Seed individual cache keys so child pages get instant cache hits.
+  // Re-seeds on every data change so theme/config updates propagate.
   useEffect(() => {
-    if (!data || seeded.current) return;
-    seeded.current = true;
+    if (!data) return;
 
     const { store, products, categories, theme_config } = data as any;
 
@@ -108,9 +108,12 @@ export function useStorefront(slugOverride?: string) {
       queryClient.setQueryData(["storefront-theme-config", store.id], theme_config);
     }
 
-    // Clear injected data after seeding — prevents stale data on SPA navigation
-    if ((window as any).__STOREFRONT_DATA__) {
-      delete (window as any).__STOREFRONT_DATA__;
+    // Clear injected data after first seed — prevents stale data on SPA navigation
+    if (!seeded.current) {
+      seeded.current = true;
+      if ((window as any).__STOREFRONT_DATA__) {
+        delete (window as any).__STOREFRONT_DATA__;
+      }
     }
   }, [data, queryClient]);
 
