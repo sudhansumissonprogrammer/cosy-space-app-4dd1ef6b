@@ -277,7 +277,7 @@ async function proxyToOrigin(request) {
     } else if (contentType.includes("text/html")) {
       newRes.headers.set(
         "Cache-Control",
-        "public, max-age=60, stale-while-revalidate=600"
+        "public, max-age=300, stale-while-revalidate=3600"
       );
     }
 
@@ -310,7 +310,15 @@ async function proxyToOrigin(request) {
 
 /* ============== PREFETCH STOREFRONT DATA ============== */
 
-async function prefetchStorefrontData(slug) {
+async function prefetchStorefrontData(slug, ctx) {
+  // Check edge cache first (0ms vs 500-1500ms)
+  const dataCacheKey = new Request(`https://cache/storefront-data/${slug}`);
+  try {
+    const cached = await cache.match(dataCacheKey);
+    if (cached) return await cached.json();
+  } catch {}
+
+  // Cache miss — fetch from Supabase with timeout
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), STOREFRONT_PREFETCH_TIMEOUT_MS);
 
@@ -330,7 +338,21 @@ async function prefetchStorefrontData(slug) {
     );
     clearTimeout(timeout);
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json();
+
+    // Cache at edge for 5 minutes (background, non-blocking)
+    if (data && ctx) {
+      ctx.waitUntil(
+        cache.put(
+          dataCacheKey,
+          new Response(JSON.stringify(data), {
+            headers: { "Cache-Control": "public, max-age=300" },
+          })
+        )
+      );
+    }
+
+    return data;
   } catch {
     clearTimeout(timeout);
     return null;
@@ -339,10 +361,10 @@ async function prefetchStorefrontData(slug) {
 
 /* ============== INJECT STORE SLUG INTO HTML ============== */
 
-async function fetchAndInjectSlug(request, slug) {
+async function fetchAndInjectSlug(request, slug, ctx) {
   const [response, storefrontData] = await Promise.all([
     proxyToOrigin(request),
-    prefetchStorefrontData(slug),
+    prefetchStorefrontData(slug, ctx),
   ]);
 
   const contentType = response.headers.get("content-type") || "";
@@ -408,17 +430,21 @@ async function fetchAndInjectSlug(request, slug) {
     }
   }
 
-  // Extract modulepreload hints from existing HTML
+  // Extract ALL JS chunks for modulepreload (not just entry)
+  const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
   let modulePreloads = "";
-  const entryMatch = html.match(/src="(\/assets\/index-[^"]+\.js)"/);
-  if (entryMatch) {
-    modulePreloads += `<link rel="modulepreload" href="${entryMatch[1]}" />`;
+  const seen = new Set();
+  for (const m of chunkMatches) {
+    if (!seen.has(m[1])) {
+      seen.add(m[1]);
+      modulePreloads += `<link rel="modulepreload" href="${m[1]}" />\n`;
+    }
   }
 
   html = html.replace("<head>", `<head>${injection}${lcpPreload}${modulePreloads}`);
 
   const newHeaders = new Headers(response.headers);
-  newHeaders.set("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
+  newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
   newHeaders.set("X-Store-Slug", slug);
 
   return new Response(html, {
@@ -435,7 +461,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   // Only cache GET requests — all others bypass to origin
   if (request.method !== "GET") {
     if (isCustomDomain && slug) {
-      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug), { slug, cacheStatus: "BYPASS" });
+      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx), { slug, cacheStatus: "BYPASS" });
     }
     return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
   }
@@ -450,7 +476,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
     request.headers.get("cookie")?.includes("auth")
   ) {
     if (isCustomDomain && slug) {
-      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug), { slug, cacheStatus: "BYPASS" });
+      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx), { slug, cacheStatus: "BYPASS" });
     }
     return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
   }
@@ -467,7 +493,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
         // If the cached response doesn't have the slug header, treat as MISS
         if (!cachedSlugHeader || cachedSlugHeader !== slug) {
           // Cache is stale/invalid — fetch fresh with injection
-          const fresh = await fetchAndInjectSlug(request, slug);
+          const fresh = await fetchAndInjectSlug(request, slug, ctx);
           const freshCt = fresh.headers.get("content-type") || "";
           if (fresh.ok && freshCt.includes("text/html")) {
             ctx.waitUntil(cache.put(key, fresh.clone()));
@@ -479,7 +505,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
 
     // Background revalidate
     ctx.waitUntil(
-      (slug ? fetchAndInjectSlug(request, slug) : proxyToOrigin(request))
+      (slug ? fetchAndInjectSlug(request, slug, ctx) : proxyToOrigin(request))
         .then((res) => {
           const ct = res.headers.get("content-type") || "";
           if (res.ok && ct.includes("text/html")) {
@@ -499,7 +525,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   let res;
   try {
     if (slug) {
-      res = await fetchAndInjectSlug(request, slug);
+      res = await fetchAndInjectSlug(request, slug, ctx);
     } else {
       res = await proxyToOrigin(request);
     }
