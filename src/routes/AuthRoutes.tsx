@@ -1,6 +1,5 @@
 import { lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 
@@ -57,7 +56,7 @@ const InstallApp = lazy(() => import("@/pages/InstallApp"));
 
 export default function AuthRoutes() {
   return (
-    <AuthProvider>
+    <>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<Login />} />
@@ -125,6 +124,6 @@ export default function AuthRoutes() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </AuthProvider>
+    </>
   );
 }
