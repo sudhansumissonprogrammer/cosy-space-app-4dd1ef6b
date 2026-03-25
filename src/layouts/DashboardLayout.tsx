@@ -28,13 +28,13 @@ import { useMenuConfig } from "@/hooks/useMenuConfig";
 function MobileMenu({
   open,
   onClose,
-  storeId,
+  storeSlug,
   pendingOrders,
   isWhatsAppOnly,
 }: {
   open: boolean;
   onClose: () => void;
-  storeId: string | undefined;
+  storeSlug: string | undefined;
   pendingOrders: number;
   isWhatsAppOnly: boolean;
 }) {
@@ -64,16 +64,16 @@ function MobileMenu({
               {
                 title: "Customers",
                 items: filterItems([
-                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeId}/customers`, menuKey: "customers" },
-                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeId}/abandoned-carts`, menuKey: "abandoned_carts" },
+                  { label: "Customers", icon: Users, path: `/dashboard/stores/${storeSlug}/customers`, menuKey: "customers" },
+                  { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeSlug}/abandoned-carts`, menuKey: "abandoned_carts" },
                 ]),
               },
               {
                 title: "Marketing",
                 items: filterItems([
-                  { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeId}/whatsapp`, menuKey: "whatsapp_marketing" },
-                  { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeId}/coupons`, menuKey: "coupons" },
-                  { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeId}/analytics`, menuKey: "analytics" },
+                  { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeSlug}/whatsapp`, menuKey: "whatsapp_marketing" },
+                  { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeSlug}/coupons`, menuKey: "coupons" },
+                  { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeSlug}/analytics`, menuKey: "analytics" },
                 ]),
               },
             ]
@@ -81,20 +81,20 @@ function MobileMenu({
         {
           title: "Payments & Shipping",
           items: filterItems([
-            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeId}/payments`, menuKey: "payments" },
-            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeId}/shipping`, menuKey: "shipping" },
-            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeId}/tax`, menuKey: "tax_gst" },
+            { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeSlug}/payments`, menuKey: "payments" },
+            { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping`, menuKey: "shipping" },
+            { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeSlug}/tax`, menuKey: "tax_gst" },
           ]),
         },
         {
           title: "Store",
           items: filterItems([
-            { label: "Categories", icon: Package, path: `/dashboard/stores/${storeId}/categories`, menuKey: "categories" },
-            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeId}/media`, menuKey: "media_library" },
-            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeId}/products/bulk-upload`, menuKey: "bulk_upload" },
-            { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeId}/theme`, menuKey: "theme" },
-            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeId}/domain`, menuKey: "domain" },
-            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeId}/settings`, menuKey: "store_settings" },
+            { label: "Categories", icon: Package, path: `/dashboard/stores/${storeSlug}/categories`, menuKey: "categories" },
+            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeSlug}/media`, menuKey: "media_library" },
+            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeSlug}/products/bulk-upload`, menuKey: "bulk_upload" },
+            { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeSlug}/theme`, menuKey: "theme" },
+            { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeSlug}/domain`, menuKey: "domain" },
+            { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeSlug}/settings`, menuKey: "store_settings" },
           ]),
         },
       ].filter((s) => s.items.length > 0)
@@ -189,6 +189,7 @@ export default function DashboardLayout() {
   const { data: store, isLoading: storeLoading } = useMyStore();
 
   const storeId = store?.id;
+  const storeSlug = store?.slug;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
 
   // Pending orders count — shared with PendingActions via React Query
@@ -270,11 +271,11 @@ export default function DashboardLayout() {
   }
 
   // Mobile bottom nav items
-  const bottomNav = storeId
+  const bottomNav = storeSlug
     ? [
         { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
-        ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeId}/orders`, exact: false, badge: pendingOrders }] : []),
-        { label: "Products", icon: Package, path: `/dashboard/stores/${storeId}/products`, exact: false },
+        ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, exact: false, badge: pendingOrders }] : []),
+        { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, exact: false },
         { label: "More", icon: Menu, path: "__menu__", exact: false },
         { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
       ]
@@ -395,7 +396,7 @@ export default function DashboardLayout() {
       <MobileMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        storeId={storeId}
+        storeSlug={storeSlug}
         pendingOrders={pendingOrders}
         isWhatsAppOnly={isWhatsAppOnly}
       />

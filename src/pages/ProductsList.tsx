@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -49,7 +50,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export default function ProductsList() { // v2
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -341,7 +342,7 @@ export default function ProductsList() { // v2
                 <BulkEditDialog products={allProducts} storeId={storeId!} />
               )}
               <Button variant="outline" size="sm" asChild>
-                <Link to={`/dashboard/stores/${storeId}/products/bulk-upload`}><Upload className="mr-1.5 h-3.5 w-3.5" />Import</Link>
+                <Link to={`/dashboard/stores/${storeSlug}/products/bulk-upload`}><Upload className="mr-1.5 h-3.5 w-3.5" />Import</Link>
               </Button>
             </>
           )}
@@ -351,7 +352,7 @@ export default function ProductsList() { // v2
             </Button>
           ) : (
             <Button size="sm" asChild disabled={limitInfo && !limitInfo.can_create}>
-              <Link to={`/dashboard/stores/${storeId}/products/create`}><Plus className="mr-1 h-4 w-4" />Add Product</Link>
+              <Link to={`/dashboard/stores/${storeSlug}/products/create`}><Plus className="mr-1 h-4 w-4" />Add Product</Link>
             </Button>
           )}
         </div>
@@ -701,7 +702,7 @@ export default function ProductsList() { // v2
                         <TableCell>
                           <div className="flex gap-1">
                             <Button variant="ghost" size="icon" asChild>
-                              <Link to={`/dashboard/stores/${storeId}/products/${product.id}/edit`}><Pencil className="h-4 w-4" /></Link>
+                              <Link to={`/dashboard/stores/${storeSlug}/products/${product.id}/edit`}><Pencil className="h-4 w-4" /></Link>
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
@@ -740,7 +741,7 @@ export default function ProductsList() { // v2
                 : "No products yet"}
             </p>
             {!search && statusFilter === "all" && activeFilterCount === 0 && (
-              <Button asChild><Link to={`/dashboard/stores/${storeId}/products/create`}><Plus className="mr-2 h-4 w-4" />Add your first product</Link></Button>
+              <Button asChild><Link to={`/dashboard/stores/${storeSlug}/products/create`}><Plus className="mr-2 h-4 w-4" />Add your first product</Link></Button>
             )}
           </CardContent>
         </Card>

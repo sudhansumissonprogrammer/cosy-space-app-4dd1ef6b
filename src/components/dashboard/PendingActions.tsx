@@ -6,9 +6,10 @@ import { ShoppingBag, ShoppingCart } from "lucide-react";
 
 interface PendingActionsProps {
   storeId: string;
+  storeSlug: string;
 }
 
-export default function PendingActions({ storeId }: PendingActionsProps) {
+export default function PendingActions({ storeId, storeSlug }: PendingActionsProps) {
   const { navigate } = useNavigateTransition();
 
   const { data } = useQuery({
@@ -28,8 +29,8 @@ export default function PendingActions({ storeId }: PendingActionsProps) {
   });
 
   const items = [
-    { label: "Pending Orders", count: data?.pendingOrders ?? 0, icon: ShoppingBag, color: "bg-amber-100 text-amber-700", url: `/dashboard/stores/${storeId}/orders` },
-    { label: "Abandoned Carts", count: data?.abandonedCarts ?? 0, icon: ShoppingCart, color: "bg-red-100 text-red-700", url: `/dashboard/stores/${storeId}/abandoned-carts` },
+    { label: "Pending Orders", count: data?.pendingOrders ?? 0, icon: ShoppingBag, color: "bg-amber-100 text-amber-700", url: `/dashboard/stores/${storeSlug}/orders` },
+    { label: "Abandoned Carts", count: data?.abandonedCarts ?? 0, icon: ShoppingCart, color: "bg-red-100 text-red-700", url: `/dashboard/stores/${storeSlug}/abandoned-carts` },
   ];
 
   const hasAny = items.some((i) => i.count > 0);

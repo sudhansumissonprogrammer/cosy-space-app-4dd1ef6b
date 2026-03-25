@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -37,7 +37,7 @@ interface Feature {
 }
 
 export default function StoreSettings() {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -522,7 +522,7 @@ export default function StoreSettings() {
                 ) : "No custom domain configured"}
               </div>
               <Button variant="outline" asChild>
-                <Link to={`/dashboard/stores/${storeId}/domain`}>
+                <Link to={`/dashboard/stores/${storeSlug}/domain`}>
                   <Globe className="mr-2 h-4 w-4" /> Configure
                 </Link>
               </Button>

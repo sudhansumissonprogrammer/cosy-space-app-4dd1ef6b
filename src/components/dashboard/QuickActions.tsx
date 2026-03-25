@@ -5,7 +5,7 @@ import ShareStoreDialog from "@/components/ShareStoreDialog";
 
 interface QuickActionsProps {
   storeId: string;
-  storeSlug?: string;
+  storeSlug: string;
   storeName?: string;
   isWhatsAppOnly?: boolean;
 }
@@ -14,8 +14,8 @@ export default function QuickActions({ storeId, storeSlug, storeName, isWhatsApp
   const { navigate } = useNavigateTransition();
 
   const actions = [
-    { label: "Theme", icon: Palette, onClick: () => navigate(`/dashboard/stores/${storeId}/theme`) },
-    { label: "Settings", icon: Settings, onClick: () => navigate(`/dashboard/stores/${storeId}/settings`) },
+    { label: "Theme", icon: Palette, onClick: () => navigate(`/dashboard/stores/${storeSlug}/theme`) },
+    { label: "Settings", icon: Settings, onClick: () => navigate(`/dashboard/stores/${storeSlug}/settings`) },
     { label: "Analytics", icon: BarChart3, onClick: () => navigate(`/dashboard/analytics`) },
   ];
 

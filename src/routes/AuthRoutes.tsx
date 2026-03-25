@@ -98,25 +98,25 @@ export default function AuthRoutes() {
           <Route index element={<Dashboard />} />
           <Route path="stores" element={<StoresList />} />
           <Route path="stores/create" element={<CreateStore />} />
-          <Route path="stores/:storeId/products" element={<ProductsList />} />
-          <Route path="stores/:storeId/products/create" element={<CreateProduct />} />
-          <Route path="stores/:storeId/products/:productId/edit" element={<EditProduct />} />
-          <Route path="stores/:storeId/products/bulk-upload" element={<BulkUpload />} />
-          <Route path="stores/:storeId/categories" element={<CategoryManagement />} />
-          <Route path="stores/:storeId/media" element={<MediaLibrary />} />
-          <Route path="stores/:storeId/orders" element={<StoreOrders />} />
-          <Route path="stores/:storeId/customers" element={<StoreCustomers />} />
-          <Route path="stores/:storeId/settings" element={<StoreSettings />} />
-          <Route path="stores/:storeId/domain" element={<StoreDomain />} />
-          <Route path="stores/:storeId/leads" element={<CustomerLeads />} />
-          <Route path="stores/:storeId/payments" element={<StorePayments />} />
-          <Route path="stores/:storeId/coupons" element={<StoreCoupons />} />
-          <Route path="stores/:storeId/shipping" element={<StoreShipping />} />
-          <Route path="stores/:storeId/tax" element={<StoreTaxSettings />} />
-          <Route path="stores/:storeId/abandoned-carts" element={<StoreAbandonedCarts />} />
-          <Route path="stores/:storeId/theme" element={<StoreThemeSettings />} />
-          <Route path="stores/:storeId/whatsapp" element={<WhatsAppMarketing />} />
-          <Route path="stores/:storeId/tracking" element={<StoreTracking />} />
+          <Route path="stores/:storeSlug/products" element={<ProductsList />} />
+          <Route path="stores/:storeSlug/products/create" element={<CreateProduct />} />
+          <Route path="stores/:storeSlug/products/:productId/edit" element={<EditProduct />} />
+          <Route path="stores/:storeSlug/products/bulk-upload" element={<BulkUpload />} />
+          <Route path="stores/:storeSlug/categories" element={<CategoryManagement />} />
+          <Route path="stores/:storeSlug/media" element={<MediaLibrary />} />
+          <Route path="stores/:storeSlug/orders" element={<StoreOrders />} />
+          <Route path="stores/:storeSlug/customers" element={<StoreCustomers />} />
+          <Route path="stores/:storeSlug/settings" element={<StoreSettings />} />
+          <Route path="stores/:storeSlug/domain" element={<StoreDomain />} />
+          <Route path="stores/:storeSlug/leads" element={<CustomerLeads />} />
+          <Route path="stores/:storeSlug/payments" element={<StorePayments />} />
+          <Route path="stores/:storeSlug/coupons" element={<StoreCoupons />} />
+          <Route path="stores/:storeSlug/shipping" element={<StoreShipping />} />
+          <Route path="stores/:storeSlug/tax" element={<StoreTaxSettings />} />
+          <Route path="stores/:storeSlug/abandoned-carts" element={<StoreAbandonedCarts />} />
+          <Route path="stores/:storeSlug/theme" element={<StoreThemeSettings />} />
+          <Route path="stores/:storeSlug/whatsapp" element={<WhatsAppMarketing />} />
+          <Route path="stores/:storeSlug/tracking" element={<StoreTracking />} />
           
           <Route path="analytics" element={<StoreAnalytics />} />
           <Route path="settings" element={<UserSettings />} />

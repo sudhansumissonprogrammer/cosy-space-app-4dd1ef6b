@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -180,7 +181,7 @@ function autoMapColumns(csvHeaders: string[]): Record<string, ProductFieldKey | 
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export default function BulkUpload() {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -512,7 +513,7 @@ export default function BulkUpload() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link to={`/dashboard/stores/${storeId}/products`}><ArrowLeft className="h-4 w-4" /></Link>
+          <Link to={`/dashboard/stores/${storeSlug}/products`}><ArrowLeft className="h-4 w-4" /></Link>
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-semibold text-foreground">Import / Export Products</h1>
@@ -783,7 +784,7 @@ export default function BulkUpload() {
 
             <div className="flex justify-center gap-3">
               <Button asChild variant="outline">
-                <Link to={`/dashboard/stores/${storeId}/products`}>View Products</Link>
+                <Link to={`/dashboard/stores/${storeSlug}/products`}>View Products</Link>
               </Button>
               <Button onClick={resetAll}>Import More</Button>
             </div>

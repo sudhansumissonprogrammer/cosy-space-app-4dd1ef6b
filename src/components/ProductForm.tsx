@@ -35,7 +35,7 @@ interface ProductFormProps {
 }
 
 export default function ProductForm({ productId, onClose }: ProductFormProps) {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -437,7 +437,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       if (onClose) {
         onClose();
       } else {
-        navigate(`/dashboard/stores/${storeId}/products`);
+        navigate(`/dashboard/stores/${storeSlug}/products`);
       }
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
@@ -459,7 +459,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       {!onClose && (
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
-            <Link to={`/dashboard/stores/${storeId}/products`}>
+            <Link to={`/dashboard/stores/${storeSlug}/products`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -495,7 +495,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                         if (error) throw error;
                         queryClient.invalidateQueries({ queryKey: ["products", storeId] });
                         toast.success("Product deleted");
-                        if (onClose) { onClose(); } else { navigate(`/dashboard/stores/${storeId}/products`); }
+                        if (onClose) { onClose(); } else { navigate(`/dashboard/stores/${storeSlug}/products`); }
                       } catch (err: any) {
                         toast.error(err.message || "Failed to delete product");
                       }
