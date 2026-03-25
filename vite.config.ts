@@ -84,10 +84,57 @@ export default defineConfig(({ mode }) => ({
         // that can crash with "createContext of undefined" on storefront hosts.
         onlyExplicitManualChunks: true,
         manualChunks(id) {
-          // Keep stable route-level chunking only; let Vite handle vendor splitting.
-          // This avoids brittle vendor cross-import cycles in production caches.
+          // ── Storefront shared core — loaded ONCE for all themes ──
+          // Includes Shell, data hooks, providers, and shared UI components
+          // used across multiple theme home pages.
+          if (
+            id.includes("/layouts/StorefrontShell") ||
+            id.includes("/layouts/StorefrontLayout.logic") ||
+            id.includes("/lib/themeUtils") ||
+            id.includes("/components/storefront/StorefrontFooter") ||
+            id.includes("/components/storefront/SideCart") ||
+            id.includes("/components/storefront/FloatingWhatsApp") ||
+            id.includes("/components/storefront/StorefrontNotFound") ||
+            id.includes("/components/storefront/StorefrontMarquee") ||
+            id.includes("/components/storefront/ExitIntentPopup") ||
+            id.includes("/components/storefront/DynamicPwaManifest") ||
+            id.includes("/components/storefront/PwaInstallBanner") ||
+            id.includes("/components/SmartInstallPrompt") ||
+            id.includes("/components/storefront/UniversalProductCard") ||
+            id.includes("/components/storefront/UniversalCategories") ||
+            id.includes("/components/storefront/BestSellingCarousel") ||
+            id.includes("/components/storefront/StorefrontSearchOverlay") ||
+            id.includes("/components/storefront/StorefrontSearchBar") ||
+            id.includes("/components/storefront/StorefrontMobileHero") ||
+            id.includes("/components/storefront/StorefrontInstagramSection") ||
+            id.includes("/components/storefront/LazyRender") ||
+            id.includes("/components/storefront/StorefrontHero") ||
+            id.includes("/components/storefront/HeroBannerCarousel") ||
+            id.includes("/components/storefront/StorefrontAbout") ||
+            id.includes("/components/storefront/StorefrontCategories") ||
+            id.includes("/components/storefront/ProductCardStyle") ||
+            id.includes("/components/storefront/OptimizedImage") ||
+            id.includes("/components/storefront/StarRating") ||
+            id.includes("/components/ShareStoreDialog") ||
+            id.includes("/components/ContentSkeleton") ||
+            id.includes("/contexts/CartContext") ||
+            id.includes("/contexts/WishlistContext") ||
+            id.includes("/contexts/StorefrontAuthContext") ||
+            id.includes("/hooks/useStorefrontThemeConfig") ||
+            id.includes("/hooks/useThemePreview") ||
+            id.includes("/hooks/useFacebookPixel") ||
+            id.includes("/hooks/useMetaTags") ||
+            id.includes("/hooks/useJsonLd") ||
+            id.includes("/hooks/useProductCardActions") ||
+            id.includes("/lib/trackPageView") ||
+            id.includes("/lib/subdomain") ||
+            id.includes("/lib/prefetchStorefrontRoutes") ||
+            id.includes("/lib/productUtils")
+          ) {
+            return "storefront-core";
+          }
 
-          // Theme-specific chunks — each theme layout+home isolated
+          // ── Theme-specific chunks — each theme layout+home isolated ──
           if (id.includes("/layouts/StorefrontLayoutV13") || id.includes("/pages/StorefrontHomeV13")) return "theme-13";
           if (id.includes("/layouts/StorefrontLayoutV12") || id.includes("/pages/StorefrontHomeV12")) return "theme-12";
           if (id.includes("/layouts/StorefrontLayoutV11") || id.includes("/pages/StorefrontHomeV11")) return "theme-11";
@@ -98,9 +145,10 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("/layouts/StorefrontLayoutV4") || id.includes("/pages/StorefrontHomeV4")) return "theme-4";
           if (id.includes("/layouts/StorefrontLayoutV3") || id.includes("/pages/StorefrontHomeV3")) return "theme-3";
           if (id.includes("/layouts/StorefrontLayoutV2") || id.includes("/pages/StorefrontHomeV2")) return "theme-2";
-          if (id.includes("/layouts/StorefrontLayout.") || id.includes("/pages/StorefrontHome.")) return "theme-1";
+          // theme-1: match layout + home but NOT .logic (already in storefront-core)
+          if (id.includes("/layouts/StorefrontLayout.tsx") || id.includes("/pages/StorefrontHome.tsx")) return "theme-1";
 
-          // Admin/Dashboard isolation
+          // ── Admin/Dashboard isolation ──
           if (id.includes("/layouts/AdminLayout") || id.includes("/layouts/DashboardLayout") || id.includes("/pages/admin/")) return "admin";
         },
       },
