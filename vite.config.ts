@@ -84,14 +84,8 @@ export default defineConfig(({ mode }) => ({
         // that can crash with "createContext of undefined" on storefront hosts.
         onlyExplicitManualChunks: true,
         manualChunks(id) {
-          // Vendor chunks
-          if (id.includes("node_modules/react-dom")) return "vendor-react";
-          if (id.includes("node_modules/react/")) return "vendor-react";
-          if (id.includes("node_modules/react-router")) return "vendor-router";
-          if (id.includes("node_modules/@tanstack/react-query")) return "vendor-query";
-          if (id.includes("node_modules/@supabase")) return "vendor-supabase";
-          if (id.includes("node_modules/@radix-ui/react-dialog") || id.includes("node_modules/@radix-ui/react-popover") || id.includes("node_modules/@radix-ui/react-select")) return "vendor-ui-core";
-          if (id.includes("node_modules/@radix-ui/react-dropdown-menu") || id.includes("node_modules/@radix-ui/react-tabs") || id.includes("node_modules/@radix-ui/react-toast")) return "vendor-ui-extra";
+          // Keep stable route-level chunking only; let Vite handle vendor splitting.
+          // This avoids brittle vendor cross-import cycles in production caches.
 
           // Theme-specific chunks — each theme layout+home isolated
           if (id.includes("/layouts/StorefrontLayoutV13") || id.includes("/pages/StorefrontHomeV13")) return "theme-13";
