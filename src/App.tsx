@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { getSubdomainSlug, ROOT_DOMAIN } from "@/lib/subdomain";
+import { getSubdomainSlug, ROOT_DOMAIN, isCustomDomainHost } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
 
@@ -90,7 +90,7 @@ const queryClient = new QueryClient({
 const LoadingSpinner = () => {
   const path = window.location.pathname;
   const hostname = window.location.hostname;
-  const isStorefront = path.startsWith("/store/") || 
+  const isStorefront = path.startsWith("/store/") ||
     (hostname.endsWith(".storivo.in") && hostname !== "storivo.in" && hostname !== "www.storivo.in") ||
     !!(window as any).__STORE_SLUG__;
 
@@ -142,19 +142,19 @@ const storefrontChildRoutes = (theme: string) => {
  */
 function getInstantTheme(slug: string | undefined): string {
   if (!slug) return "theme-1";
-  
+
   // 1. Check Cloudflare Worker injected data (instant, no API call)
   const injected = (window as any).__STOREFRONT_DATA__;
   if (injected?.store?.theme) {
     return injected.store.theme;
   }
-  
+
   // 2. Check localStorage cache (instant, from previous visit)
   try {
     const cached = localStorage.getItem(`storefront_theme_${slug}`);
     if (cached) return cached;
   } catch {}
-  
+
   return "theme-1";
 }
 
@@ -183,7 +183,7 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   const queryClient = useQueryClient();
   const pathSlug = !slugOverride ? location.pathname.split("/store/")[1]?.split("/")[0] : undefined;
   const effectiveSlug = slugOverride || pathSlug;
-  
+
   // Start with cached/injected theme instantly (no spinner)
   const [theme, setTheme] = useState(() => getInstantTheme(effectiveSlug));
   const themeRef = useRef(theme);
@@ -218,54 +218,80 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   );
 }
 
+function CustomDomainNotFound() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-4 text-center">
+      <h1 className="text-2xl font-semibold text-foreground">Store not found</h1>
+      <p className="max-w-md text-sm text-muted-foreground">
+        This domain is not connected to an active storefront yet.
+      </p>
+    </div>
+  );
+}
+
 /**
- * Detects if the current hostname is a custom domain (not storivo.in, not lovable.app, not localhost).
- * Returns slug from DB lookup if found, or null.
+ * Detects if the current hostname is a custom domain and resolves slug from DB.
  */
 function useCustomDomainSlug() {
   const [slug, setSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const attempted = useRef(false);
+  const hostname = window.location.hostname;
+  const customHost = isCustomDomainHost(hostname);
 
   useEffect(() => {
-    const hostname = window.location.hostname;
-    const isKnownHost =
-      hostname === 'localhost' ||
-      /^\d+\.\d+\.\d+\.\d+$/.test(hostname) ||
-      hostname.endsWith('.lovable.app') ||
-      hostname.endsWith(`.${ROOT_DOMAIN}`) ||
-      hostname === ROOT_DOMAIN;
+    if (!customHost || attempted.current) return;
 
-    if (isKnownHost || attempted.current) return;
     attempted.current = true;
     setLoading(true);
 
-    // Custom domain — resolve slug from database
-    const domain = hostname.replace(/^www\./, '').toLowerCase();
+    const normalizedDomain = hostname.replace(/^www\./, "").toLowerCase();
+    const domainCandidates = [normalizedDomain, `www.${normalizedDomain}`];
+
+    let cancelled = false;
+
     import("@/integrations/supabase/client").then(async ({ supabase }) => {
       try {
-        const { data } = (await (supabase as any)
-          .from("stores")
-          .select("slug")
-          .eq("custom_domain", domain)
-          .limit(1)) as { data: any[] | null };
-        const foundSlug = data?.[0]?.slug;
-        if (foundSlug) {
-          (window as any).__STORE_SLUG__ = foundSlug;
-          setSlug(foundSlug);
-        }
-      } catch {}
-      setLoading(false);
-    });
-  }, []);
+        const sources = ["stores_public", "stores"];
 
-  return { slug, loading };
+        for (const source of sources) {
+          for (const domain of domainCandidates) {
+            const { data, error } = await (supabase as any)
+              .from(source)
+              .select("slug")
+              .eq("custom_domain", domain)
+              .limit(1);
+
+            if (!error && data?.[0]?.slug) {
+              if (!cancelled) {
+                (window as any).__STORE_SLUG__ = data[0].slug;
+                setSlug(data[0].slug);
+              }
+              return;
+            }
+          }
+        }
+      } catch {
+        // noop: leave slug as null and show not-found for custom hosts
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [customHost, hostname]);
+
+  return { slug, loading, isCustomDomain: customHost };
 }
 
 function AppRouter() {
   const location = useLocation();
   const subdomainSlug = getSubdomainSlug();
-  const { slug: customDomainSlug, loading: customDomainLoading } = useCustomDomainSlug();
+  const { slug: customDomainSlug, loading: customDomainLoading, isCustomDomain } = useCustomDomainSlug();
 
   if (subdomainSlug) {
     return <ThemeAwareStorefront slugOverride={subdomainSlug} />;
@@ -276,9 +302,12 @@ function AppRouter() {
     return <ThemeAwareStorefront slugOverride={customDomainSlug} />;
   }
 
-  // Still resolving custom domain — show loading instead of login
-  if (customDomainLoading) {
-    return <LoadingSpinner />;
+  // Custom domain must never fall back to auth routes.
+  if (isCustomDomain) {
+    if (customDomainLoading) {
+      return <LoadingSpinner />;
+    }
+    return <CustomDomainNotFound />;
   }
 
   if (location.pathname.startsWith("/store/")) {
