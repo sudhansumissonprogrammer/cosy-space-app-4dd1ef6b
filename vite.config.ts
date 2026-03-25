@@ -120,18 +120,8 @@ export default defineConfig(({ mode }) => ({
             return "icons";
           }
 
-          // === Charts (recharts + d3-*) — dashboard-only, large ===
-          if (
-            id.includes("node_modules/recharts") ||
-            id.includes("node_modules/d3-")
-          ) {
-            return "charts";
-          }
-
-          // === Carousel (embla) — storefront-only ===
-          if (id.includes("node_modules/embla-carousel")) {
-            return "carousel";
-          }
+          // Charts (recharts/d3) left to Vite's default splitting
+          // to avoid circular dep with framework chunk
 
           // === Form utilities ===
           if (
