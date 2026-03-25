@@ -218,12 +218,68 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   );
 }
 
+/**
+ * Detects if the current hostname is a custom domain (not storivo.in, not lovable.app, not localhost).
+ * Returns slug from DB lookup if found, or null.
+ */
+function useCustomDomainSlug() {
+  const [slug, setSlug] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const attempted = useRef(false);
+
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const isKnownHost =
+      hostname === 'localhost' ||
+      /^\d+\.\d+\.\d+\.\d+$/.test(hostname) ||
+      hostname.endsWith('.lovable.app') ||
+      hostname.endsWith(`.${ROOT_DOMAIN}`) ||
+      hostname === ROOT_DOMAIN;
+
+    if (isKnownHost || attempted.current) return;
+    attempted.current = true;
+    setLoading(true);
+
+    // Custom domain — resolve slug from database
+    const domain = hostname.replace(/^www\./, '').toLowerCase();
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase
+        .from("stores" as any)
+        .select("slug")
+        .eq("custom_domain", domain)
+        .limit(1)
+        .single()
+        .then(({ data }) => {
+          if (data?.slug) {
+            (window as any).__STORE_SLUG__ = data.slug;
+            setSlug(data.slug);
+          }
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    });
+  }, []);
+
+  return { slug, loading };
+}
+
 function AppRouter() {
   const location = useLocation();
   const subdomainSlug = getSubdomainSlug();
+  const { slug: customDomainSlug, loading: customDomainLoading } = useCustomDomainSlug();
 
   if (subdomainSlug) {
     return <ThemeAwareStorefront slugOverride={subdomainSlug} />;
+  }
+
+  // Custom domain resolved from DB lookup (safety net when Worker injection failed)
+  if (customDomainSlug) {
+    return <ThemeAwareStorefront slugOverride={customDomainSlug} />;
+  }
+
+  // Still resolving custom domain — show loading instead of login
+  if (customDomainLoading) {
+    return <LoadingSpinner />;
   }
 
   if (location.pathname.startsWith("/store/")) {

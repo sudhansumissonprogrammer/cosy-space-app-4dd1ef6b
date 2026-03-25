@@ -266,7 +266,7 @@ async function proxyToOrigin(request) {
     } else if (contentType.includes("text/html")) {
       newRes.headers.set(
         "Cache-Control",
-        "public, max-age=300, stale-while-revalidate=86400"
+        "public, max-age=300, stale-while-revalidate=3600"
       );
     }
 

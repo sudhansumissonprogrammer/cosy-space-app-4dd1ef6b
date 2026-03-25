@@ -33,14 +33,51 @@ async function boot() {
 
 boot();
 
-// Defer SW registration until page is idle to avoid render-blocking
+/**
+ * Service Worker registration with stale-SW cleanup.
+ *
+ * Problem: Old Workbox SWs precached the bare index.html (without __STORE_SLUG__).
+ * When users visit a storefront, the old SW intercepts navigation and serves this
+ * empty shell instead of the Cloudflare Worker-injected HTML → login page or skeleton.
+ *
+ * Fix: If we detect we're on a storefront route (custom domain / subdomain) and
+ * __STORE_SLUG__ is missing while an SW is active, unregister it and reload once.
+ * A sessionStorage flag prevents infinite reload loops.
+ */
 if ('serviceWorker' in navigator) {
-  const registerSW = () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
-  };
-  if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(registerSW, { timeout: 5000 });
+  const hostname = window.location.hostname;
+  const isCustomDomainOrSubdomain =
+    !hostname.endsWith('.lovable.app') &&
+    hostname !== 'localhost' &&
+    !/^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+
+  const hasStoreContext = !!(window as any).__STORE_SLUG__;
+  const swCleanupDone = sessionStorage.getItem('sw_cleanup_v1');
+
+  // If on a storefront domain without store context and an old SW may be serving stale HTML
+  if (isCustomDomainOrSubdomain && !hasStoreContext && !swCleanupDone) {
+    sessionStorage.setItem('sw_cleanup_v1', '1');
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      if (registrations.length > 0) {
+        Promise.all(registrations.map((r) => r.unregister())).then(() => {
+          // Clear all caches left by the old SW
+          caches.keys().then((keys) => {
+            Promise.all(keys.map((k) => caches.delete(k))).then(() => {
+              window.location.reload();
+            });
+          });
+        });
+      }
+    });
   } else {
-    setTimeout(registerSW, 3000);
+    // Normal SW registration — deferred until idle
+    const registerSW = () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+    };
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(registerSW, { timeout: 5000 });
+    } else {
+      setTimeout(registerSW, 3000);
+    }
   }
 }
