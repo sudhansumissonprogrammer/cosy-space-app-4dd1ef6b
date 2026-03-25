@@ -8,6 +8,7 @@ import { getSubdomainSlug, ROOT_DOMAIN, isCustomDomainHost, isSubdomainHost } fr
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // Storefront layouts — ALL lazy loaded for clean chunk isolation
 const StorefrontLayout = lazy(() => import("./layouts/StorefrontLayout"));
@@ -179,6 +180,55 @@ function getLayoutComponent(theme: string) {
  * Renders storefront directly using cached/injected theme — NO spinner, NO waterfall.
  * The layout itself handles data fetching and shows its own skeleton if needed.
  */
+/**
+ * Prefetch storefront data immediately so it loads IN PARALLEL with layout/home chunks.
+ * Without this, the waterfall is: layout chunk → API call → home chunk (serial).
+ * With this, all three start simultaneously.
+ */
+function usePrefetchStorefrontData(slug: string | undefined) {
+  const queryClient = useQueryClient();
+  const prefetched = useRef(false);
+
+  useEffect(() => {
+    if (!slug || prefetched.current) return;
+    // Don't prefetch if we already have injected data
+    if ((window as any).__STOREFRONT_DATA__?.store) return;
+    // Don't prefetch if already in cache
+    if (queryClient.getQueryData(["storefront-bulk", slug])) return;
+
+    prefetched.current = true;
+    queryClient.prefetchQuery({
+      queryKey: ["storefront-bulk", slug],
+      queryFn: async () => {
+        const { data, error } = await supabase.rpc("get_storefront_data" as any, {
+          _slug: slug,
+          _product_limit: 20,
+        });
+        if (error) throw error;
+        return data;
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  }, [slug, queryClient]);
+}
+
+/** Eagerly start loading the home page chunk so it downloads alongside the layout */
+function prefetchHomeChunk(theme: string) {
+  switch (theme) {
+    case "theme-13": return import("./pages/StorefrontHomeV13");
+    case "theme-12": return import("./pages/StorefrontHomeV12");
+    case "theme-11": return import("./pages/StorefrontHomeV11");
+    case "theme-10": return import("./pages/StorefrontHomeV10");
+    case "theme-8": return import("./pages/StorefrontHomeV8");
+    case "theme-7": return import("./pages/StorefrontHomeV7");
+    case "theme-6": return import("./pages/StorefrontHomeV6");
+    case "theme-4": return import("./pages/StorefrontHomeV4");
+    case "theme-3": return import("./pages/StorefrontHomeV3");
+    case "theme-2": return import("./pages/StorefrontHomeV2");
+    default: return import("./pages/StorefrontHome");
+  }
+}
+
 function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -189,6 +239,16 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   const [theme, setTheme] = useState(() => getInstantTheme(effectiveSlug));
   const themeRef = useRef(theme);
   themeRef.current = theme;
+
+  // 🚀 KEY OPTIMIZATION: Start data fetch IMMEDIATELY, in parallel with chunk loading
+  usePrefetchStorefrontData(effectiveSlug);
+
+  // 🚀 Eagerly start loading the home page chunk (don't wait for layout to mount)
+  const homeChunkStarted = useRef(false);
+  if (!homeChunkStarted.current) {
+    homeChunkStarted.current = true;
+    prefetchHomeChunk(theme).catch(() => {});
+  }
 
   // Subscribe to query cache — when fresh data arrives with a different theme, switch instantly
   useEffect(() => {
