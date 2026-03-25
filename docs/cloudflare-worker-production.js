@@ -11,10 +11,10 @@
  */
 
 const ROOT_DOMAIN = "storivo.in";
-const ORIGIN_HOST = "true-path-panel.lovable.app";
+const ORIGIN_HOST = "core-gleam-hub.lovable.app";
 
-const SUPABASE_URL = "https://kzvfjknnslgcwumzlwkb.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg";
+const SUPABASE_URL = "https://vjjlxmqgqtquggdajjvi.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqamx4bXFncXRxdWdnZGFqanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjEyNjgsImV4cCI6MjA4OTk5NzI2OH0.AjNH7zdzlAhmQnjwvhCOvDVac356sA04_ORb2j5rA2k";
 
 /* ---------------- BOT DETECTION ---------------- */
 
@@ -122,7 +122,40 @@ async function resolveDomain(hostname) {
   }
 }
 
-/* ---------------- ORIGIN FETCH (SAFE + OPTIMIZED) ---------------- */
+/* ---------------- CUSTOM DOMAIN LOOKUP BY SLUG ---------------- */
+
+async function getCustomDomainForSlug(slug) {
+  const key = new Request(`https://cache/slug-domain-${slug}`);
+  const cached = await cache.match(key);
+  if (cached) {
+    const data = await cached.json();
+    return data.custom_domain || null;
+  }
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/stores?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const customDomain = data[0]?.custom_domain || null;
+    await cache.put(
+      key,
+      new Response(JSON.stringify({ custom_domain: customDomain }), {
+        headers: { "Cache-Control": "public, max-age=300" },
+      })
+    );
+    return customDomain;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchOrigin(request, slug = null, rewritePath = null) {
   const url = new URL(request.url);
   url.hostname = ORIGIN_HOST;
@@ -368,8 +401,17 @@ export default {
       const match = url.pathname.match(/^\/store\/([a-zA-Z0-9_-]+)(\/.*)?$/);
 
       if (match) {
+        const redirectSlug = match[1];
+        const remainingPath = match[2] || "";
+        const customDomain = await getCustomDomainForSlug(redirectSlug);
+        if (customDomain) {
+          return Response.redirect(
+            `https://${customDomain}${remainingPath}${url.search}`,
+            301
+          );
+        }
         return Response.redirect(
-          `https://${match[1]}.${ROOT_DOMAIN}${match[2] || ""}${url.search}`,
+          `https://${redirectSlug}.${ROOT_DOMAIN}${remainingPath}${url.search}`,
           301
         );
       }
