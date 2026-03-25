@@ -6,12 +6,11 @@ import ShareStoreDialog from "@/components/ShareStoreDialog";
 interface QuickActionsProps {
   storeId: string;
   storeSlug: string;
-  storeSlug?: string;
   storeName?: string;
   isWhatsAppOnly?: boolean;
 }
 
-export default function QuickActions({ storeId, storeSlug, storeSlug, storeName, isWhatsAppOnly }: QuickActionsProps) {
+export default function QuickActions({ storeId, storeSlug, storeName, isWhatsAppOnly }: QuickActionsProps) {
   const { navigate } = useNavigateTransition();
 
   const actions = [

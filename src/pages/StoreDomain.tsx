@@ -58,7 +58,7 @@ function DnsRecordRow({ record, onCopy }: { record: DnsRecord; onCopy: (v: strin
 }
 
 export default function StoreDomain() {
-  const { storeId } = useStoreSlugParam();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
