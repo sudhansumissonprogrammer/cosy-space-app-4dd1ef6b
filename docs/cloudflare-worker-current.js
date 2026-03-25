@@ -1,13 +1,20 @@
 /**
- * STORIVO PRODUCTION ROUTER v2.3 — EDGE CACHING
+ * STORIVO PRODUCTION ROUTER v2.4 — KV + EDGE CACHING
  *
  * Routes:
  *   - *.storivo.in/*
  *   - storivo.in/*
  *   - custom domains (melleto.shop, mgwinner.in, etc.)
+ *
+ * KV Binding (optional but recommended):
+ *   - STORE_KV: Cloudflare KV namespace for global storefront data cache
+ *     Create via: wrangler kv:namespace create STORE_KV
+ *     Add to wrangler.toml: [[kv_namespaces]]
+ *       binding = "STORE_KV"
+ *       id = "<your-namespace-id>"
  */
 
-const WORKER_VERSION = "2.3";
+const WORKER_VERSION = "2.4";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "core-gleam-hub.lovable.app";
 
@@ -301,17 +308,39 @@ async function proxyToOrigin(request) {
   }
 }
 
-/* ============== PREFETCH STOREFRONT DATA ============== */
+/* ============== PREFETCH STOREFRONT DATA (KV + Cache API) ============== */
 
-async function prefetchStorefrontData(slug, ctx) {
-  // Check edge cache first (0ms vs 500-1500ms)
+const KV_STOREFRONT_TTL = 120; // 2 minutes in KV (global, all colos)
+const CACHE_STOREFRONT_TTL = 300; // 5 minutes in Cache API (per-colo)
+
+async function prefetchStorefrontData(slug, ctx, env) {
+  const kvKey = `storefront:${slug}`;
   const dataCacheKey = new Request(`https://cache/storefront-data/${slug}`);
+
+  // 1. Try KV first (global, ~5ms read latency)
+  if (env?.STORE_KV) {
+    try {
+      const kvData = await env.STORE_KV.get(kvKey, { type: "json" });
+      if (kvData) return kvData;
+    } catch {}
+  }
+
+  // 2. Try per-colo Cache API (~0ms if warm)
   try {
     const cached = await cache.match(dataCacheKey);
-    if (cached) return await cached.json();
+    if (cached) {
+      const data = await cached.json();
+      // Backfill KV if it was a KV miss but cache hit (background)
+      if (env?.STORE_KV && data && ctx) {
+        ctx.waitUntil(
+          env.STORE_KV.put(kvKey, JSON.stringify(data), { expirationTtl: KV_STOREFRONT_TTL })
+        );
+      }
+      return data;
+    }
   } catch {}
 
-  // Cache miss — fetch from Supabase with timeout
+  // 3. Cache miss — fetch from Supabase with timeout
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), STOREFRONT_PREFETCH_TIMEOUT_MS);
 
@@ -333,15 +362,22 @@ async function prefetchStorefrontData(slug, ctx) {
     if (!res.ok) return null;
     const data = await res.json();
 
-    // Cache at edge for 5 minutes (background, non-blocking)
+    // Write to both KV (global) and Cache API (per-colo) in background
     if (data && ctx) {
       ctx.waitUntil(
-        cache.put(
-          dataCacheKey,
-          new Response(JSON.stringify(data), {
-            headers: { "Cache-Control": "public, max-age=300" },
-          })
-        )
+        Promise.all([
+          // KV: global cache, all Cloudflare colos benefit
+          env?.STORE_KV
+            ? env.STORE_KV.put(kvKey, JSON.stringify(data), { expirationTtl: KV_STOREFRONT_TTL })
+            : Promise.resolve(),
+          // Cache API: per-colo, instant for repeat visitors in same colo
+          cache.put(
+            dataCacheKey,
+            new Response(JSON.stringify(data), {
+              headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` },
+            })
+          ),
+        ])
       );
     }
 
@@ -354,10 +390,10 @@ async function prefetchStorefrontData(slug, ctx) {
 
 /* ============== INJECT STORE SLUG INTO HTML ============== */
 
-async function fetchAndInjectSlug(request, slug, ctx) {
+async function fetchAndInjectSlug(request, slug, ctx, env) {
   const [response, storefrontData] = await Promise.all([
     proxyToOrigin(request),
-    prefetchStorefrontData(slug, ctx),
+    prefetchStorefrontData(slug, ctx, env),
   ]);
 
   const contentType = response.headers.get("content-type") || "";
@@ -374,7 +410,10 @@ async function fetchAndInjectSlug(request, slug, ctx) {
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
   }
   injection += `</script>
-<link rel="preconnect" href="${SUPABASE_URL}" />`;
+<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />
+<link rel="dns-prefetch" href="${SUPABASE_URL}" />
+<link rel="preconnect" href="${SUPABASE_URL}/storage/v1" crossorigin />
+<link rel="dns-prefetch" href="${SUPABASE_URL}/storage/v1" />`;
 
   let lcpPreload = "";
   if (storefrontData) {
