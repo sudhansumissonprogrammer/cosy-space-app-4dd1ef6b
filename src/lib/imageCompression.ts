@@ -175,6 +175,19 @@ export async function processImageMultiSize(
     throw new Error(`Image too large (${formatSize(file.size)}). Maximum allowed is 5MB.`);
   }
 
+  // Skip compression for images already under 100KB — preserve original quality
+  if (file.size <= SKIP_THRESHOLD_KB * 1024) {
+    const variants = new Map<VariantWidth, File>();
+    // Use the original file as-is for all variants
+    for (const w of IMAGE_VARIANT_WIDTHS) {
+      variants.set(w, file);
+    }
+    return {
+      main: { file, originalSize, compressedSize: file.size, skipped: true },
+      variants,
+    };
+  }
+
   const img = await loadImage(file);
   const variants = new Map<VariantWidth, File>();
   let mainResult: CompressionResult | null = null;
