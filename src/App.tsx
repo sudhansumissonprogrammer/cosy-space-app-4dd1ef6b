@@ -191,8 +191,9 @@ function usePrefetchStorefrontData(slug: string | undefined) {
 
   useEffect(() => {
     if (!slug || prefetched.current) return;
-    // Don't prefetch if we already have injected data
+    // Don't prefetch if index.html prefetch already provided data or is in flight
     if ((window as any).__STOREFRONT_DATA__?.store) return;
+    if ((window as any).__STOREFRONT_PREFETCH__) return;
     // Don't prefetch if already in cache
     if (queryClient.getQueryData(["storefront-bulk", slug])) return;
 

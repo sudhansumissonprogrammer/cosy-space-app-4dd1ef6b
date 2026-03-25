@@ -14,7 +14,7 @@ const DEFAULT_MAX_DIMENSION = 1200;
 const DEFAULT_QUALITY = 0.92; // near-lossless
 const MIN_QUALITY = 0.75; // never go below this
 
-export const IMAGE_VARIANT_WIDTHS = [200, 400, 800] as const;
+export const IMAGE_VARIANT_WIDTHS = [400, 800] as const;
 export type VariantWidth = (typeof IMAGE_VARIANT_WIDTHS)[number];
 
 export interface CompressionResult {
@@ -181,7 +181,6 @@ export async function processImageMultiSize(
 
   // Higher KB targets per variant to preserve quality
   const variantTargetKB: Record<VariantWidth, number> = {
-    200: 60,
     400: 90,
     800: MAX_OUTPUT_KB,
   };

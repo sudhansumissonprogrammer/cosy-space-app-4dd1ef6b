@@ -49,7 +49,7 @@ function OptimizedImageInner({
   aspectRatio,
   fallback,
   quality = 85,
-  srcSetSizes = [300, 400, 600, 800],
+  srcSetSizes = [400, 800],
   onError,
 }: OptimizedImageProps) {
   const [loaded, setLoaded] = useState(priority); // priority images start visible
