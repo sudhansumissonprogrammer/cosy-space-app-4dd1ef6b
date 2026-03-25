@@ -13,17 +13,17 @@ import { useMetaTags } from "@/hooks/useMetaTags";
 import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
+import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
+import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import SideCart from "@/components/storefront/SideCart";
 import { trackPageView } from "@/lib/trackPageView";
 
-// Lazy-load below-fold and non-critical components
+// Lazy-load non-critical components to reduce initial JS parse time
 const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
 const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
 const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
-const StorefrontMarquee = lazy(() => import("@/components/storefront/StorefrontMarquee"));
-const StorefrontFooter = lazy(() => import("@/components/storefront/StorefrontFooter"));
-const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhatsApp"));
-const SideCart = lazy(() => import("@/components/storefront/SideCart"));
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
@@ -493,9 +493,7 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
 
   return (
     <div className="storefront-font min-h-screen font-sans" style={{ ...themeStyle, backgroundColor: "var(--storefront-bg, hsl(var(--background)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-      <Suspense fallback={null}>
-        {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
-      </Suspense>
+      {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
       
       <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
@@ -540,10 +538,10 @@ function CheckoutAwareLayout({ store, themeStyle, primaryColor, btnTextColor, ma
         </Suspense>
       </main>
       
+      <StorefrontFooter store={store} />
+      <SideCart store={store} />
+      <FloatingWhatsApp store={store} />
       <Suspense fallback={null}>
-        <StorefrontFooter store={store} />
-        <SideCart store={store} />
-        <FloatingWhatsApp store={store} />
         <ExitIntentPopup storeId={store.id} storeName={store.name} />
       </Suspense>
 
