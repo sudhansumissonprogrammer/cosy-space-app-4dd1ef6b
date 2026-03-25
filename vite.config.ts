@@ -103,10 +103,7 @@ export default defineConfig(({ mode }) => ({
             return "radix";
           }
 
-          // ── Recharts (only for dashboard analytics) ──
-          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
-            return "charts";
-          }
+          // Recharts + d3 left in default chunk to avoid circular init errors
         },
       },
     },
