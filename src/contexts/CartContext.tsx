@@ -32,19 +32,39 @@ function getStorageKey(slug: string) {
 }
 
 export function CartProvider({ slug, children }: { slug: string; children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    try {
-      const stored = localStorage.getItem(getStorageKey(slug));
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Start empty — defer localStorage read to avoid blocking first paint
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
+  // Deferred hydration from localStorage
   useEffect(() => {
-    localStorage.setItem(getStorageKey(slug), JSON.stringify(items));
-  }, [items, slug]);
+    const hydrate = () => {
+      try {
+        const stored = localStorage.getItem(getStorageKey(slug));
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setItems(parsed);
+          }
+        }
+      } catch {}
+      setHydrated(true);
+    };
+
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(hydrate, { timeout: 200 });
+    } else {
+      setTimeout(hydrate, 0);
+    }
+  }, [slug]);
+
+  // Persist to localStorage after hydration
+  useEffect(() => {
+    if (hydrated) {
+      localStorage.setItem(getStorageKey(slug), JSON.stringify(items));
+    }
+  }, [items, slug, hydrated]);
 
   const openCart = useCallback(() => setIsCartOpen(true), []);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
@@ -69,7 +89,6 @@ export function CartProvider({ slug, children }: { slug: string; children: React
       value: item.price,
       currency: "INR",
     });
-    // Server-side CAPI - need store ID from slug
     try {
       const storeId = localStorage.getItem(`store_id_${slug}`);
       if (storeId) {
@@ -130,7 +149,5 @@ const CART_FALLBACK: CartContextType = {
 
 export function useCart() {
   const ctx = useContext(CartContext);
-  // Return safe fallback instead of throwing — prevents crashes when
-  // components render briefly outside the provider (e.g. during error recovery)
   return ctx ?? CART_FALLBACK;
 }
