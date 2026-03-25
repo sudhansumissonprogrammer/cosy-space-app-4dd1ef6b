@@ -244,11 +244,11 @@ function useCustomDomainSlug() {
     const domain = hostname.replace(/^www\./, '').toLowerCase();
     import("@/integrations/supabase/client").then(async ({ supabase }) => {
       try {
-        const { data } = await supabase
-          .from("stores_public")
+        const { data } = (await (supabase as any)
+          .from("stores")
           .select("slug")
-          .eq("custom_domain" as any, domain)
-          .limit(1) as any;
+          .eq("custom_domain", domain)
+          .limit(1)) as { data: any[] | null };
         const foundSlug = data?.[0]?.slug;
         if (foundSlug) {
           (window as any).__STORE_SLUG__ = foundSlug;
