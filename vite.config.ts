@@ -80,30 +80,46 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks(id) {
           // ── Framework core (react + react-dom) ──
-          // ~45KB gzip — smallest, loads fastest, needed by everything
           if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/")) {
             return "framework";
           }
 
           // ── Router + Query ──
-          // ~25KB gzip — needed early for routing + data
           if (id.includes("node_modules/react-router") || id.includes("node_modules/@tanstack/react-query")) {
             return "router-query";
           }
 
           // ── Supabase client ──
-          // ~20KB gzip — needed for API calls
           if (id.includes("node_modules/@supabase")) {
             return "supabase";
           }
 
-          // ── Radix UI primitives ──
-          // ~30KB gzip — UI components, can load slightly later
+          // ── Radix UI primitives — consolidate into ONE chunk ──
           if (id.includes("node_modules/@radix-ui")) {
             return "radix";
           }
 
-          // Recharts + d3 left in default chunk to avoid circular init errors
+          // ── Lucide icons — consolidate ALL icons into one chunk ──
+          // Prevents 30+ individual 1KB icon files that each cost 500ms+ in latency
+          if (id.includes("node_modules/lucide-react")) {
+            return "icons";
+          }
+
+          // ── Embla carousel ──
+          if (id.includes("node_modules/embla-carousel")) {
+            return "embla";
+          }
+
+          // ── Recharts + d3 — dashboard only, keep separate to avoid storefront bloat ──
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
+            return "charts";
+          }
+
+          // ── All other node_modules — single vendor chunk ──
+          // Prevents dozens of tiny chunks from class-variance-authority, clsx, cmdk, etc.
+          if (id.includes("node_modules/")) {
+            return "vendor";
+          }
         },
       },
     },
