@@ -17,7 +17,7 @@ const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
 
 /** Standard widths for srcSet that match our stored variants */
-const PIPELINE_WIDTHS: VariantWidth[] = [200, 400, 800];
+const PIPELINE_WIDTHS: VariantWidth[] = [400, 800];
 
 /**
  * Returns an optimised URL for a given image.
@@ -129,7 +129,7 @@ export function splitImageUrls(url: string | null | undefined): string[] {
  */
 export function getImageSrcSet(
   url: string | null | undefined,
-  sizes: number[] = [200, 400, 800],
+  sizes: number[] = [400, 800],
   quality: number = 85,
 ): string {
   if (!url) return "";
@@ -187,7 +187,7 @@ export function preloadHeroImage(
   link.href = optimized;
   link.setAttribute("fetchpriority", "high");
   // Add srcset for responsive preload
-  const srcSet = getImageSrcSet(url, [200, 400, 800], 75);
+  const srcSet = getImageSrcSet(url, [400, 800], 75);
   if (srcSet) {
     link.setAttribute("imagesrcset", srcSet);
     link.setAttribute("imagesizes", HERO_IMAGE_SIZES);
