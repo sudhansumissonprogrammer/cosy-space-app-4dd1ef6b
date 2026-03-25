@@ -17,9 +17,9 @@
  */
 
 const ROOT_DOMAIN = "storivo.in";
-const ORIGIN_HOST = "core-sparkle-suite.lovable.app";
-const SUPABASE_URL = "https://dtwmmuzmepdltroiypgu.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0d21tdXptZXBkbHRyb2l5cGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDM4MjMsImV4cCI6MjA4OTIxOTgyM30.Kq4jRUeelihhqyRWLodiQIhhSi0AANQ7PletSjS4NlU";
+const ORIGIN_HOST = "core-gleam-hub.lovable.app";
+const SUPABASE_URL = "https://vjjlxmqgqtquggdajjvi.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqamx4bXFncXRxdWdnZGFqanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjEyNjgsImV4cCI6MjA4OTk5NzI2OH0.AjNH7zdzlAhmQnjwvhCOvDVac356sA04_ORb2j5rA2k";
 
 const BOT_UA_REGEX = /WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|OpenGraphIO|opengraph\.xyz|Embedly|Iframely|MetaInspector|PetalBot|Bingbot|YandexBot|curl|wget|HeadlessChrome|Lighthouse|Prerender/i;
 
@@ -116,14 +116,24 @@ export default {
       if (match) {
         const slug = match[1];
         const remainingPath = match[2] || "";
-        const redirectUrl = `https://${slug}.${ROOT_DOMAIN}${remainingPath}${url.search}${url.hash}`;
-        return new Response(null, {
-          status: 301,
-          headers: {
-            Location: redirectUrl,
-            "Cache-Control": "public, max-age=31536000, immutable",
-          },
-        });
+        // Check if store has a custom domain — redirect there instead
+        try {
+          const domainRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/stores?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+          );
+          if (domainRes.ok) {
+            const data = await domainRes.json();
+            const customDomain = data[0]?.custom_domain;
+            if (customDomain) {
+              return Response.redirect(`https://${customDomain}${remainingPath}${url.search}`, 301);
+            }
+          }
+        } catch {}
+        return Response.redirect(
+          `https://${slug}.${ROOT_DOMAIN}${remainingPath}${url.search}`,
+          301
+        );
       }
       return proxyToOrigin(request);
     }

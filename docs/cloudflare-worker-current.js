@@ -14,13 +14,13 @@
  *   - custom domains (melleto.shop, mgwinner.in, etc.)
  */
 
-const WORKER_VERSION = "2.2";
+const WORKER_VERSION = "2.3";
 const ROOT_DOMAIN = "storivo.in";
-const ORIGIN_HOST = "true-path-panel.lovable.app";
+const ORIGIN_HOST = "core-gleam-hub.lovable.app";
 
-const SUPABASE_URL = "https://kzvfjknnslgcwumzlwkb.supabase.co";
+const SUPABASE_URL = "https://vjjlxmqgqtquggdajjvi.supabase.co";
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dmZqa25uc2xnY3d1bXpsd2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDU1NzEsImV4cCI6MjA4OTQyMTU3MX0.c6TPp3cHVEF2JHYtFcfrCZTlp712eG6t6DwqMaHCAMg";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqamx4bXFncXRxdWdnZGFqanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjEyNjgsImV4cCI6MjA4OTk5NzI2OH0.AjNH7zdzlAhmQnjwvhCOvDVac356sA04_ORb2j5rA2k";
 
 /* ============== BOT DETECTION ============== */
 
@@ -753,6 +753,13 @@ export default {
       if (storeMatch) {
         const redirectSlug = storeMatch[1];
         const remainingPath = storeMatch[2] || "";
+        const customDomain = await getCustomDomainForSlug(redirectSlug);
+        if (customDomain) {
+          return Response.redirect(
+            `https://${customDomain}${remainingPath}${url.search}`,
+            301
+          );
+        }
         return Response.redirect(
           `https://${redirectSlug}.${ROOT_DOMAIN}${remainingPath}${url.search}`,
           301
