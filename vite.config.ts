@@ -80,6 +80,47 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // ── Shared framework/vendor first ──
+          // Prevents storefront chunks from importing admin chunk for React/runtime,
+          // which caused createContext undefined on storefront boot.
+          if (id.includes("node_modules")) {
+            if (
+              id.includes("/react/") ||
+              id.includes("react-dom") ||
+              id.includes("react-router") ||
+              id.includes("@tanstack/react-query") ||
+              id.includes("scheduler")
+            ) {
+              return "framework";
+            }
+
+            if (
+              id.includes("@radix-ui") ||
+              id.includes("lucide-react") ||
+              id.includes("class-variance-authority") ||
+              id.includes("tailwind-merge") ||
+              id.includes("clsx") ||
+              id.includes("sonner")
+            ) {
+              return "ui-vendor";
+            }
+
+            return "vendor";
+          }
+
+          // ── Shared app primitives used by BOTH storefront and admin ──
+          // Keep these out of theme/admin chunks to avoid cross-chunk cycles.
+          if (
+            id.includes("/components/ui/") ||
+            id.includes("/hooks/use-mobile") ||
+            id.includes("/hooks/use-toast") ||
+            id.includes("/lib/utils") ||
+            id.includes("/components/ErrorBoundary") ||
+            id.includes("/lib/logError")
+          ) {
+            return "app-shared";
+          }
+
           // ── Storefront critical core — Shell, providers, data hooks ──
           // Loaded immediately for every storefront visitor.
           if (
@@ -130,8 +171,7 @@ export default defineConfig(({ mode }) => ({
             id.includes("/components/ContentSkeleton") ||
             id.includes("/hooks/useJsonLd") ||
             id.includes("/hooks/useProductCardActions") ||
-            id.includes("/lib/prefetchStorefrontRoutes") ||
-            id.includes("/lib/productUtils")
+            id.includes("/lib/prefetchStorefrontRoutes")
           ) {
             return "storefront-ui";
           }
