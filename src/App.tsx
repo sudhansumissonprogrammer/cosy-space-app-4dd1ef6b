@@ -293,16 +293,19 @@ function AppRouter() {
   const subdomainSlug = getSubdomainSlug();
   const { slug: customDomainSlug, loading: customDomainLoading, isCustomDomain } = useCustomDomainSlug();
 
+  // ── STOREFRONT: Subdomain (slug.storivo.in) ──
   if (subdomainSlug) {
     return <ThemeAwareStorefront slugOverride={subdomainSlug} />;
   }
 
-  // Custom domain resolved from DB lookup (safety net when Worker injection failed)
+  // ── STOREFRONT: Custom domain resolved from DB (safety net) ──
   if (customDomainSlug) {
     return <ThemeAwareStorefront slugOverride={customDomainSlug} />;
   }
 
-  // Custom domain must never fall back to auth routes.
+  // ── STOREFRONT: Custom domain — NEVER fall through to auth routes ──
+  // This is the critical guard: custom domains must always resolve to
+  // storefront or show "not found" — never show login/dashboard.
   if (isCustomDomain) {
     if (customDomainLoading) {
       return <LoadingSpinner />;
@@ -310,6 +313,7 @@ function AppRouter() {
     return <CustomDomainNotFound />;
   }
 
+  // ── STOREFRONT: Path-based (/store/:slug) ──
   if (location.pathname.startsWith("/store/")) {
     const hostname = window.location.hostname;
     const isProduction = hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`;
@@ -327,6 +331,7 @@ function AppRouter() {
     return <ThemeAwareStorefront />;
   }
 
+  // ── AUTH/DASHBOARD: Only reachable on root domain, preview, or localhost ──
   return <LazyAuthRoutes />;
 }
 

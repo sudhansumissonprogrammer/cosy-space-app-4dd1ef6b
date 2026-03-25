@@ -1,20 +1,20 @@
 /**
- * STORIVO PRODUCTION ROUTER — FIXED
+ * STORIVO PRODUCTION ROUTER v2.1 — HARDENED
  *
- * 3 bugs fixed from previous version:
- * 1. Asset bypass did fetch(request) → looped back to custom domain → 403
- *    Now: all assets proxy through to origin with correct Host header
- * 2. Custom domains had no slug injection → SPA showed auth/login page
- *    Now: injects window.__STORE_SLUG__ into HTML for custom domains
- * 3. Subdomain path rewrite was redundant (SPA detects subdomain itself)
- *    Now: just proxies to origin, SPA handles slug detection
+ * Fixes from v2.0:
+ * 1. Cache only "tenant-complete" HTML (contains __STORE_SLUG__)
+ * 2. Diagnostic headers on every response (X-Worker-Version, X-Cache-Status, X-Store-Slug)
+ * 3. Reduced stale-while-revalidate for HTML (600s instead of 3600s)
+ * 4. Never cache origin HTML that lacks tenant marker for tenant routes
+ * 5. www→apex canonical redirect for custom domains
  *
  * Routes:
  *   - *.storivo.in/*
  *   - storivo.in/*
- *   - custom domains (melleto.shop, etc.)
+ *   - custom domains (melleto.shop, mgwinner.in, etc.)
  */
 
+const WORKER_VERSION = "2.1";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "true-path-panel.lovable.app";
 
@@ -40,9 +40,9 @@ const cache = caches.default;
 
 /* ============== RATE LIMITING ============== */
 
-const rateLimitMap = new Map(); // key → { count, resetAt }
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 60; // max domain lookups per IP per minute
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 60;
 
 function isRateLimited(ip) {
   if (!ip) return false;
@@ -59,7 +59,6 @@ function isRateLimited(ip) {
   return false;
 }
 
-// Periodically clean stale entries (runs on every request, lightweight)
 function cleanRateLimitMap() {
   if (rateLimitMap.size < 1000) return;
   const now = Date.now();
@@ -109,6 +108,25 @@ function getCacheKey(request, slug = "") {
   return new Request(`https://cache/${host}/${slug}${url.pathname}${url.search}`);
 }
 
+/**
+ * Add diagnostic headers to every response.
+ */
+function addDiagnosticHeaders(response, { slug, cacheStatus }) {
+  const res = new Response(response.body, response);
+  res.headers.set("X-Worker-Version", WORKER_VERSION);
+  if (slug) res.headers.set("X-Store-Slug", slug);
+  res.headers.set("X-Cache-Status", cacheStatus);
+  return res;
+}
+
+/**
+ * Verify that an HTML response contains the tenant marker.
+ * Used to prevent caching bare/un-injected HTML for tenant routes.
+ */
+function htmlContainsTenantMarker(htmlText) {
+  return htmlText.includes("__STORE_SLUG__");
+}
+
 /* ============== SUPABASE EDGE FUNCTION CALLS ============== */
 
 async function callEdgeFunction(name, params = {}) {
@@ -151,7 +169,6 @@ async function resolveDomain(hostname) {
   }
 
   try {
-    // ✅ FIX: Query exact domain instead of fetching ALL stores
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/stores?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
       {
@@ -166,7 +183,6 @@ async function resolveDomain(hostname) {
     const data = await res.json();
     const slug = data[0]?.slug || null;
 
-    // Cache hits for 5 min, misses for 60s (faster activation)
     const ttl = slug ? 300 : 60;
 
     await cache.put(
@@ -222,12 +238,7 @@ async function getCustomDomainForSlug(slug) {
 }
 
 /* ============== PROXY TO ORIGIN ============== */
-/**
- * FIX #1: ALL requests proxy to origin via this function.
- * Previously, static assets used fetch(request) which sent the request
- * back to the custom domain (melleto.shop) instead of the origin,
- * causing 403 errors and infinite loading.
- */
+
 async function proxyToOrigin(request) {
   const url = new URL(request.url);
   url.hostname = ORIGIN_HOST;
@@ -250,7 +261,6 @@ async function proxyToOrigin(request) {
     const newRes = new Response(res.body, res);
     const contentType = newRes.headers.get("content-type") || "";
 
-    // Cache static assets aggressively
     if (
       contentType.includes("image") ||
       contentType.includes("javascript") ||
@@ -264,9 +274,10 @@ async function proxyToOrigin(request) {
         );
       }
     } else if (contentType.includes("text/html")) {
+      // Shorter stale window for HTML — 600s instead of 3600s
       newRes.headers.set(
         "Cache-Control",
-        "public, max-age=300, stale-while-revalidate=3600"
+        "public, max-age=120, stale-while-revalidate=600"
       );
     }
 
@@ -322,15 +333,8 @@ async function prefetchStorefrontData(slug) {
 }
 
 /* ============== INJECT STORE SLUG INTO HTML ============== */
-/**
- * FIX #2: For custom domains, the SPA running in the browser has no way
- * to detect which store to load.
- *
- * PERF: Also injects window.__STOREFRONT_DATA__ with pre-fetched storefront
- * data so the SPA renders instantly without an API waterfall.
- */
+
 async function fetchAndInjectSlug(request, slug) {
-  // Fetch origin HTML and storefront data in parallel
   const [response, storefrontData] = await Promise.all([
     proxyToOrigin(request),
     prefetchStorefrontData(slug),
@@ -352,8 +356,6 @@ async function fetchAndInjectSlug(request, slug) {
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" />`;
 
-  // LCP optimization: preload the first product image so the browser discovers it
-  // at HTML parse time instead of waiting for React to render.
   let lcpPreload = "";
   if (storefrontData) {
     const products = storefrontData.products || [];
@@ -361,7 +363,6 @@ async function fetchAndInjectSlug(request, slug) {
     if (firstImage) {
       const safeUrl = escapeHtml(firstImage);
       lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" />`;
-      // Preconnect to the image CDN origin
       try {
         const imgOrigin = new URL(firstImage).origin;
         if (imgOrigin && !imgOrigin.includes("supabase")) {
@@ -374,7 +375,8 @@ async function fetchAndInjectSlug(request, slug) {
   html = html.replace("<head>", `<head>${injection}${lcpPreload}`);
 
   const newHeaders = new Headers(response.headers);
-  newHeaders.set("Cache-Control", "public, max-age=120, stale-while-revalidate=3600");
+  // Shorter stale window
+  newHeaders.set("Cache-Control", "public, max-age=120, stale-while-revalidate=600");
   newHeaders.set("X-Store-Slug", slug);
 
   return new Response(html, {
@@ -383,13 +385,13 @@ async function fetchAndInjectSlug(request, slug) {
   });
 }
 
-/* ============== CACHED FETCH ============== */
+/* ============== CACHED FETCH (HARDENED) ============== */
 
 async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   const key = getCacheKey(request, slug);
   const url = new URL(request.url);
 
-  // Skip cache for admin, API, and authenticated requests
+  // Skip cache for admin, API, dashboard, and authenticated requests
   if (
     url.pathname.startsWith("/admin") ||
     url.pathname.startsWith("/api") ||
@@ -397,52 +399,80 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
     request.headers.get("cookie")?.includes("auth")
   ) {
     if (isCustomDomain && slug) {
-      return fetchAndInjectSlug(request, slug);
+      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug), { slug, cacheStatus: "BYPASS" });
     }
-    return proxyToOrigin(request);
+    return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
   }
 
   // Try cache first
   const cached = await cache.match(key);
 
   if (cached) {
-    // ✅ FIX: Revalidate with slug injection so cached HTML always has
-    // __STORE_SLUG__ and __STOREFRONT_DATA__. Previously used proxyToOrigin()
-    // which stripped the injected data, causing skeleton-only pages.
+    // HARDENED: Validate cached HTML has tenant marker if slug is expected
+    if (slug) {
+      const ct = cached.headers.get("content-type") || "";
+      if (ct.includes("text/html")) {
+        const cachedSlugHeader = cached.headers.get("X-Store-Slug");
+        // If the cached response doesn't have the slug header, treat as MISS
+        if (!cachedSlugHeader || cachedSlugHeader !== slug) {
+          // Cache is stale/invalid — fetch fresh with injection
+          const fresh = await fetchAndInjectSlug(request, slug);
+          const freshCt = fresh.headers.get("content-type") || "";
+          if (fresh.ok && freshCt.includes("text/html")) {
+            ctx.waitUntil(cache.put(key, fresh.clone()));
+          }
+          return addDiagnosticHeaders(fresh, { slug, cacheStatus: "MISS-INVALID" });
+        }
+      }
+    }
+
+    // Background revalidate
     ctx.waitUntil(
       (slug ? fetchAndInjectSlug(request, slug) : proxyToOrigin(request))
         .then((res) => {
           const ct = res.headers.get("content-type") || "";
           if (res.ok && ct.includes("text/html")) {
+            // HARDENED: Only cache if tenant marker is present for tenant routes
+            if (slug && !res.headers.get("X-Store-Slug")) {
+              return; // Don't cache HTML without tenant context
+            }
             return cache.put(key, res.clone());
           }
         })
         .catch(() => {})
     );
-    return cached;
+    return addDiagnosticHeaders(cached, { slug, cacheStatus: "HIT" });
   }
 
-  // Cache miss
+  // Cache miss — fetch fresh
   let res;
   try {
     if (slug) {
-      // Inject storefront data for both subdomains and custom domains
       res = await fetchAndInjectSlug(request, slug);
     } else {
       res = await proxyToOrigin(request);
     }
   } catch {
     const fallback = await cache.match(key);
-    if (fallback) return fallback;
+    if (fallback) return addDiagnosticHeaders(fallback, { slug, cacheStatus: "STALE-FALLBACK" });
     return new Response("Server Error", { status: 500 });
   }
 
   const contentType = res.headers.get("content-type") || "";
   if (res.ok && contentType.includes("text/html")) {
-    ctx.waitUntil(cache.put(key, res.clone()));
+    // HARDENED: Only cache if HTML has tenant marker for tenant routes
+    if (slug) {
+      const htmlSlugHeader = res.headers.get("X-Store-Slug");
+      if (htmlSlugHeader === slug) {
+        ctx.waitUntil(cache.put(key, res.clone()));
+      }
+      // else: skip caching — this prevents bare HTML from polluting the cache
+    } else {
+      ctx.waitUntil(cache.put(key, res.clone()));
+    }
   }
 
-  return res;
+  return addDiagnosticHeaders(res, { slug, cacheStatus: "MISS" });
 }
 
 /* ============== OG HTML ============== */
@@ -606,6 +636,7 @@ export default {
           JSON.stringify({
             status: originCheck.ok ? "healthy" : "degraded",
             origin: originCheck.status,
+            workerVersion: WORKER_VERSION,
             timestamp: new Date().toISOString(),
           }),
           {
@@ -615,7 +646,7 @@ export default {
         );
       } catch {
         return new Response(
-          JSON.stringify({ status: "unhealthy", origin: "timeout", timestamp: new Date().toISOString() }),
+          JSON.stringify({ status: "unhealthy", origin: "timeout", workerVersion: WORKER_VERSION, timestamp: new Date().toISOString() }),
           { status: 503, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }
         );
       }
@@ -624,7 +655,7 @@ export default {
     // ─── RATE LIMIT CLEANUP ───
     cleanRateLimitMap();
 
-    // ─── FIX #1: STATIC ASSETS → PROXY TO ORIGIN ───
+    // ─── STATIC ASSETS → PROXY TO ORIGIN ───
     const isStaticAsset =
       url.pathname.startsWith("/assets/") ||
       url.pathname.startsWith("/static/") ||
@@ -643,9 +674,8 @@ export default {
       return proxyToOrigin(request);
     }
 
-    // ─── SUPABASE API → pass through (with edge caching for read-only storefront RPCs) ───
+    // ─── SUPABASE API → pass through ───
     if (url.pathname.startsWith("/api") || url.pathname.startsWith("/rest")) {
-      // Cache GET requests to storefront data RPC at the edge for 5 min
       const isStorefrontRpc =
         request.method === "GET" &&
         url.pathname.includes("/rpc/get_storefront_data");
@@ -690,7 +720,7 @@ export default {
         );
       }
 
-      return cachedFetch(request, "", ctx);
+      return addDiagnosticHeaders(await cachedFetch(request, "", ctx), { slug: "", cacheStatus: "ROOT" });
     }
 
     // ─── SUBDOMAIN ───
@@ -720,6 +750,16 @@ export default {
     }
 
     // ─── CUSTOM DOMAIN ───
+
+    // Canonical redirect: www → apex for custom domains
+    if (hostname.startsWith("www.")) {
+      const apex = hostname.slice(4);
+      return Response.redirect(
+        `https://${apex}${url.pathname}${url.search}`,
+        301
+      );
+    }
+
     // Rate limit domain resolution lookups
     const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for");
     if (isRateLimited(clientIP)) {
@@ -751,7 +791,11 @@ export default {
 </body></html>`,
       {
         status: 404,
-        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=60" },
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=60",
+          "X-Worker-Version": WORKER_VERSION,
+        },
       }
     );
   },
