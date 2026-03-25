@@ -85,6 +85,8 @@ export default defineConfig(({ mode }) => ({
         onlyExplicitManualChunks: true,
         manualChunks(id) {
           // ── Storefront shared core — loaded ONCE for all themes ──
+          // Includes Shell, data hooks, providers, and shared UI components
+          // used across multiple theme home pages.
           if (
             id.includes("/layouts/StorefrontShell") ||
             id.includes("/layouts/StorefrontLayout.logic") ||
@@ -98,6 +100,23 @@ export default defineConfig(({ mode }) => ({
             id.includes("/components/storefront/DynamicPwaManifest") ||
             id.includes("/components/storefront/PwaInstallBanner") ||
             id.includes("/components/SmartInstallPrompt") ||
+            id.includes("/components/storefront/UniversalProductCard") ||
+            id.includes("/components/storefront/UniversalCategories") ||
+            id.includes("/components/storefront/BestSellingCarousel") ||
+            id.includes("/components/storefront/StorefrontSearchOverlay") ||
+            id.includes("/components/storefront/StorefrontSearchBar") ||
+            id.includes("/components/storefront/StorefrontMobileHero") ||
+            id.includes("/components/storefront/StorefrontInstagramSection") ||
+            id.includes("/components/storefront/LazyRender") ||
+            id.includes("/components/storefront/StorefrontHero") ||
+            id.includes("/components/storefront/HeroBannerCarousel") ||
+            id.includes("/components/storefront/StorefrontAbout") ||
+            id.includes("/components/storefront/StorefrontCategories") ||
+            id.includes("/components/storefront/ProductCardStyle") ||
+            id.includes("/components/storefront/OptimizedImage") ||
+            id.includes("/components/storefront/StarRating") ||
+            id.includes("/components/ShareStoreDialog") ||
+            id.includes("/components/ContentSkeleton") ||
             id.includes("/contexts/CartContext") ||
             id.includes("/contexts/WishlistContext") ||
             id.includes("/contexts/StorefrontAuthContext") ||
@@ -105,9 +124,12 @@ export default defineConfig(({ mode }) => ({
             id.includes("/hooks/useThemePreview") ||
             id.includes("/hooks/useFacebookPixel") ||
             id.includes("/hooks/useMetaTags") ||
+            id.includes("/hooks/useJsonLd") ||
+            id.includes("/hooks/useProductCardActions") ||
             id.includes("/lib/trackPageView") ||
             id.includes("/lib/subdomain") ||
-            id.includes("/lib/prefetchStorefrontRoutes")
+            id.includes("/lib/prefetchStorefrontRoutes") ||
+            id.includes("/lib/productUtils")
           ) {
             return "storefront-core";
           }
