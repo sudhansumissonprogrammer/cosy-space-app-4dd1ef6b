@@ -100,44 +100,8 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("/layouts/StorefrontLayoutV2") || id.includes("/pages/StorefrontHomeV2")) return "theme-2";
           if (id.includes("/layouts/StorefrontLayout.") || id.includes("/pages/StorefrontHome.")) return "theme-1";
 
-          // Admin/Dashboard isolation — keep all dashboard code out of storefront bundles
-          if (
-            id.includes("/layouts/AdminLayout") ||
-            id.includes("/layouts/DashboardLayout") ||
-            id.includes("/pages/admin/") ||
-            id.includes("/pages/Dashboard") ||
-            id.includes("/pages/ProductsList") ||
-            id.includes("/pages/CreateProduct") ||
-            id.includes("/pages/EditProduct") ||
-            id.includes("/pages/BulkUpload") ||
-            id.includes("/pages/StoreSettings") ||
-            id.includes("/pages/StoreOrders") ||
-            id.includes("/pages/StorePayments") ||
-            id.includes("/pages/StoreShipping") ||
-            id.includes("/pages/StoreTaxSettings") ||
-            id.includes("/pages/StoreThemeSettings") ||
-            id.includes("/pages/StoreDomain") ||
-            id.includes("/pages/StoreTracking") ||
-            id.includes("/pages/StoreAnalytics") ||
-            id.includes("/pages/StoreCoupons") ||
-            id.includes("/pages/StoreCustomers") ||
-            id.includes("/pages/StoreAbandonedCarts") ||
-            id.includes("/pages/StoresList") ||
-            id.includes("/pages/CustomerLeads") ||
-            id.includes("/pages/CategoryManagement") ||
-            id.includes("/pages/MediaLibrary") ||
-            id.includes("/pages/UserSettings") ||
-            id.includes("/pages/WhatsAppMarketing") ||
-            id.includes("/pages/CreateStore") ||
-            id.includes("/components/ProductForm") ||
-            id.includes("/components/AdminSidebar") ||
-            id.includes("/components/AppSidebar") ||
-            id.includes("/components/BulkEditDialog") ||
-            id.includes("/components/OrderInvoice") ||
-            id.includes("/components/AdminRoute") ||
-            id.includes("/components/ProtectedRoute") ||
-            id.includes("/contexts/AuthContext")
-          ) return "admin";
+          // Admin/Dashboard isolation
+          if (id.includes("/layouts/AdminLayout") || id.includes("/layouts/DashboardLayout") || id.includes("/pages/admin/")) return "admin";
         },
       },
     },
