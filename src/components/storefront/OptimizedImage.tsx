@@ -48,7 +48,7 @@ function OptimizedImageInner({
   style,
   aspectRatio,
   fallback,
-  quality = 75,
+  quality = 85,
   srcSetSizes = [300, 400, 600, 800],
   onError,
 }: OptimizedImageProps) {
