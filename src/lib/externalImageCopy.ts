@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 /**
  * Check if an image URL is external (not hosted on our storage).
  */
@@ -24,16 +22,21 @@ export function copyExternalImageInBackground(
 ): void {
   if (!isExternalImageUrl(url)) return;
 
-  // Fire-and-forget
-  supabase.functions
-    .invoke("copy-external-image", {
-      body: { url, store_id: storeId, product_id: productId },
-    })
-    .then(({ data, error }) => {
-      if (error) {
-        console.warn("[copy-external-image] Failed:", error.message);
-      } else if (data?.success && !data?.skipped) {
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  if (!projectId) return;
+
+  // Fire-and-forget — uses merged image-ops function
+  fetch(`https://${projectId}.supabase.co/functions/v1/image-ops?action=copy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, store_id: storeId, product_id: productId }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && !data?.skipped) {
         console.info("[copy-external-image] Copied to:", data.new_url);
+      } else if (!data?.success) {
+        console.warn("[copy-external-image] Failed:", data?.error);
       }
     })
     .catch((err) => {

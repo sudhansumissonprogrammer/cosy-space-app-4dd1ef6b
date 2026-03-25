@@ -505,7 +505,8 @@ async function handleBot(request, slug, url, isCustom) {
 
   if (SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua)) {
     try {
-      const res = await callEdgeFunction("og-meta", {
+      const res = await callEdgeFunction("seo-page", {
+        type: "og",
         slug,
         ...(product ? { product } : {}),
       });
@@ -530,7 +531,7 @@ async function handleBot(request, slug, url, isCustom) {
 
 async function handleSeoFiles(url, slug) {
   if (url.pathname === "/sitemap.xml") {
-    const res = await callEdgeFunction("sitemap", { slug });
+    const res = await callEdgeFunction("seo-page", { type: "sitemap", slug });
     return new Response(await res.text(), {
       status: res.ok ? 200 : 500,
       headers: {
@@ -541,7 +542,7 @@ async function handleSeoFiles(url, slug) {
   }
 
   if (url.pathname === "/robots.txt") {
-    const res = await callEdgeFunction("robots-txt", { slug });
+    const res = await callEdgeFunction("seo-page", { type: "robots", slug });
     return new Response(await res.text(), {
       status: res.ok ? 200 : 500,
       headers: {
