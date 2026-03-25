@@ -189,6 +189,7 @@ export default function DashboardLayout() {
   const { data: store, isLoading: storeLoading } = useMyStore();
 
   const storeId = store?.id;
+  const storeSlug = store?.slug;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
 
   // Pending orders count — shared with PendingActions via React Query
