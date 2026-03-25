@@ -79,10 +79,6 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true,
     rollupOptions: {
       output: {
-        // Prevent Rollup from pulling transitive/shared helpers into unrelated manual chunks.
-        // This avoids runtime cycles like vendor-react -> admin -> vendor-router -> vendor-react
-        // that can crash with "createContext of undefined" on storefront hosts.
-        onlyExplicitManualChunks: true,
         manualChunks(id) {
           // ── Storefront critical core — Shell, providers, data hooks ──
           // Loaded immediately for every storefront visitor.
