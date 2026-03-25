@@ -242,21 +242,20 @@ function useCustomDomainSlug() {
 
     // Custom domain — resolve slug from database
     const domain = hostname.replace(/^www\./, '').toLowerCase();
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      (supabase
-        .from("stores_public")
-        .select("slug")
-        .eq("custom_domain" as any, domain)
-        .limit(1)
-        .single() as any)
-        .then(({ data }: any) => {
-          if (data?.slug) {
-            (window as any).__STORE_SLUG__ = data.slug;
-            setSlug(data.slug);
-          }
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
+    import("@/integrations/supabase/client").then(async ({ supabase }) => {
+      try {
+        const { data } = await supabase
+          .from("stores_public")
+          .select("slug")
+          .eq("custom_domain" as any, domain)
+          .limit(1) as any;
+        const foundSlug = data?.[0]?.slug;
+        if (foundSlug) {
+          (window as any).__STORE_SLUG__ = foundSlug;
+          setSlug(foundSlug);
+        }
+      } catch {}
+      setLoading(false);
     });
   }, []);
 
