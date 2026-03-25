@@ -109,12 +109,14 @@ const STEPS: OnboardingStep[] = [
 
 interface OnboardingWalkthroughProps {
   storeId: string;
+  storeSlug: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export default function OnboardingWalkthrough({
   storeId,
+  storeSlug,
   open,
   onOpenChange,
 }: OnboardingWalkthroughProps) {
@@ -146,7 +148,7 @@ export default function OnboardingWalkthrough({
       localStorage.setItem(`onboarding-done-${storeId}`, "true");
       onOpenChange(false);
       const path = step.route
-        ? `/dashboard/stores/${storeId}/${step.route}`
+        ? `/dashboard/stores/${storeSlug}/${step.route}`
         : `/dashboard`;
       navigate(path);
     }

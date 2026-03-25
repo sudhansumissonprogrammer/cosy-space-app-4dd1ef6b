@@ -9,6 +9,7 @@ import { ArrowRight } from "lucide-react";
 
 interface RecentOrdersProps {
   storeId: string;
+  storeSlug: string;
   currencySymbol: string;
 }
 
@@ -20,7 +21,7 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-red-100 text-red-800",
 };
 
-const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(function RecentOrders({ storeId, currencySymbol }, ref) {
+const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(function RecentOrders({ storeId, storeSlug, currencySymbol }, ref) {
   const { navigate } = useNavigateTransition();
 
   const { data: orders } = useQuery({
@@ -59,7 +60,7 @@ const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(functio
             variant="ghost"
             size="sm"
             className="h-6 text-[10px] text-muted-foreground px-2"
-            onClick={() => navigate(`/dashboard/stores/${storeId}/orders`)}
+            onClick={() => navigate(`/dashboard/stores/${storeSlug}/orders`)}
           >
             View all <ArrowRight className="ml-1 h-3 w-3" />
           </Button>
@@ -68,7 +69,7 @@ const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(functio
           {orders.map((order) => (
             <button
               key={order.id}
-              onClick={() => navigate(`/dashboard/stores/${storeId}/orders`)}
+              onClick={() => navigate(`/dashboard/stores/${storeSlug}/orders`)}
               className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-accent/50"
             >
               <div className="flex-1 min-w-0">
