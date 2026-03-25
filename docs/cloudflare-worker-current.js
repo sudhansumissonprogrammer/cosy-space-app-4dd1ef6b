@@ -291,15 +291,14 @@ async function proxyToOrigin(request) {
     return new Response(
       `<!DOCTYPE html>
 <html><head>
-<title>Loading...</title>
-<meta http-equiv="refresh" content="3">
+<title>Store Temporarily Unavailable</title>
 </head>
 <body style="font-family:sans-serif;text-align:center;padding:50px">
-<h2>Loading your store...</h2>
-<p>Please wait, retrying...</p>
+<h2>Store Temporarily Unavailable</h2>
+<p>The storefront origin timed out. Please retry in a few seconds.</p>
 </body></html>`,
       {
-        status: 200,
+        status: 503,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
