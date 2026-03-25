@@ -245,7 +245,7 @@ async function fetchOrigin(request, slug = null, rewritePath = null) {
 }
 
 
-async function cachedFetch(request, slug = "", rewritePath = null) {
+async function cachedFetch(request, ctx, slug = "", rewritePath = null) {
   const key = getCacheKey(request, slug);
   const url = new URL(request.url);
 
@@ -263,7 +263,7 @@ async function cachedFetch(request, slug = "", rewritePath = null) {
 
   if (cached) {
     // Background refresh (stale-while-revalidate)
-    event.waitUntil(
+    ctx.waitUntil(
       fetchOrigin(request, slug, rewritePath).then((res) => {
         const contentType = res.headers.get("content-type") || "";
 
