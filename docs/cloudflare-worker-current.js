@@ -766,7 +766,7 @@ export default {
         );
       }
 
-      return addDiagnosticHeaders(await cachedFetch(request, "", ctx), { slug: "", cacheStatus: "ROOT" });
+      return cachedFetch(request, "", ctx);
     }
 
     // ─── SUBDOMAIN ───
