@@ -413,7 +413,7 @@ async function fetchAndInjectSlug(request, slug) {
   html = html.replace("<head>", `<head>${injection}${lcpPreload}${modulePreloads}`);
 
   const newHeaders = new Headers(response.headers);
-  newHeaders.set("Cache-Control", "public, max-age=120, stale-while-revalidate=600");
+  newHeaders.set("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
   newHeaders.set("X-Store-Slug", slug);
 
   return new Response(html, {
