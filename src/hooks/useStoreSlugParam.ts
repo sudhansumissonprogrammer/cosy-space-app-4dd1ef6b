@@ -13,8 +13,12 @@ export function useStoreSlugParam() {
   const { storeSlug } = useParams<{ storeSlug: string }>();
   const { data: store } = useMyStore();
 
-  // The slug from URL should match the cached store's slug
-  const storeId = store?.slug === storeSlug ? store.id : undefined;
+  // Match by slug first, then fall back to UUID match for backward compatibility
+  const storeId = store?.slug === storeSlug
+    ? store.id
+    : store?.id === storeSlug
+      ? store.id
+      : undefined;
 
-  return { storeId, storeSlug, store };
+  return { storeId, storeSlug: store?.slug || storeSlug, store };
 }

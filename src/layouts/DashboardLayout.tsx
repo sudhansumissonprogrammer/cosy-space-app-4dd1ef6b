@@ -57,7 +57,7 @@ function MobileMenu({
   const filterItems = (items: MenuItem[]) =>
     items.filter((i) => !i.menuKey || isVisible(i.menuKey));
 
-  const menuSections: MenuSection[] = storeId
+  const menuSections: MenuSection[] = storeSlug
     ? [
         ...(!isWhatsAppOnly
           ? [
