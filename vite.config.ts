@@ -74,29 +74,9 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Tree-shaking: ensure dead code is removed
+    // Let Vite/Rollup choose a stable chunk graph automatically.
+    // Manual chunking caused framework↔vendor init cycles on storefront domains.
     target: "es2020",
     cssCodeSplit: true,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          // Conservative chunking only for framework/runtime.
-          // Avoid forcing app-level/ui vendor split because it can create
-          // initialization cycles in production bundles.
-          if (id.includes("node_modules")) {
-            if (
-              id.includes("/react/") ||
-              id.includes("react-dom") ||
-              id.includes("react-router") ||
-              id.includes("@tanstack/react-query") ||
-              id.includes("scheduler")
-            ) {
-              return "framework";
-            }
-            return "vendor";
-          }
-        },
-      },
-    },
   },
 }));
