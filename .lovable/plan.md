@@ -1,155 +1,127 @@
 
 
-## Optimize Theme Architecture: Eliminate Duplication, Reduce Bundle Size
+## Optimize Storefront Execution: Reduce Blocking and Defer Non-Critical Work
 
-### Current State (confirmed by code inspection)
+### Analysis of Current Bottlenecks
 
-Every layout file (11 total, 280-590 lines each) copy-pastes:
-- `useStorefront()` call + loading/error handling (~10 lines)
-- `useFacebookPixel`, `useMetaTags`, `trackPageView` (~15 lines)
-- `useStorefrontThemeConfig` + Google Fonts useEffect (~15 lines)
-- `useThemePreview` + `computePrimaryLight` + `isLightColor` + CSS var builder (~40 lines)
-- Provider wrapping: `CartProvider > WishlistProvider > StorefrontAuthProvider` (~6 lines)
-- Skeleton component (~30 lines)
-- Store-not-found fallback (~10 lines)
-- Badge components (CartBadge, WishlistBadge, AccountBadge) — renamed per theme but identical logic (~50 lines)
+After inspecting the code, here is what actually blocks first paint and interactivity:
 
-**Total duplicated: ~4,500 lines across 11 files.**
+**HIGH IMPACT (real blockers):**
 
-Each theme also eagerly imports `SideCart`, `FloatingWhatsApp`, `StorefrontFooter`, `DynamicPwaManifest`, `SmartInstallPrompt` — all bundled into the theme chunk instead of shared.
+1. **`main.tsx` boot sequence** — Awaits `__STOREFRONT_PREFETCH__` up to 3 seconds before mounting React. On non-Worker paths without injected data, users stare at the HTML skeleton for up to 3s before React even starts.
 
-### Architecture Change
+2. **Storefront-core chunk is 120KB (36KB gz)** — Contains ~15 heavy UI components (UniversalProductCard, BestSellingCarousel, HeroBannerCarousel, SearchOverlay, etc.) that are NOT needed for first paint. Only the Shell + data hook + providers are critical.
+
+3. **Facebook Pixel injection** — `useFacebookPixel` synchronously injects a 3rd-party script into `<head>` during render. This competes with main thread during initial paint.
+
+**LOW IMPACT (already optimized):**
+- `StorefrontAuthProvider` — already defers via `requestIdleCallback`
+- `trackPageView` — already uses `setTimeout(3000)`
+- `useStorefront` — already non-blocking (shows skeleton during fetch)
+- CartProvider/WishlistProvider — lightweight (localStorage read), cannot be lazy-loaded since child components depend on context immediately
+
+### Plan
+
+**Step 1: Remove boot blocking in `main.tsx`**
+
+Current code awaits prefetch up to 3s before `createRoot`. Change to mount React immediately and let `useStorefront` consume `__STOREFRONT_DATA__` if available.
 
 ```text
-BEFORE: App.tsx → ThemeLayout (heavy, 300-500 lines, all logic inside)
-
-AFTER:  App.tsx → StorefrontShell (shared logic, providers, overlays)
-                    → ThemeLayout (thin, 50-80 lines, header/nav only)
+BEFORE: await prefetch (up to 3s) → createRoot → render
+AFTER:  createRoot → render immediately → useStorefront reads injected data if present
 ```
 
-### Implementation Plan
+The `useStorefront` hook already checks `window.__STOREFRONT_DATA__` and uses it as `initialData`. The boot await is redundant — it was added to avoid a "double skeleton" flash, but the Shell already handles loading state gracefully.
 
-**Step 1: Create `src/lib/themeUtils.ts`**
+Changes to `src/main.tsx`:
+- Remove async `boot()` function
+- Call `createRoot().render(<App />)` synchronously
+- Keep SW cleanup logic unchanged
 
-Extract pure functions duplicated in every layout:
-- `computePrimaryLight(hex)`
-- `isLightColor(hex)`
-- `buildThemeStyle(themeConfig, previewOverride)`
+**Step 2: Split storefront-core into critical + deferred chunks**
 
-~25 lines, imported by Shell.
+Split the Vite `manualChunks` config into two chunks:
 
-**Step 2: Create shared badge components**
+`storefront-core` (critical, ~40KB → ~12KB gz):
+- StorefrontShell
+- StorefrontLayout.logic
+- themeUtils
+- CartContext, WishlistContext, StorefrontAuthContext
+- StorefrontNotFound
+- subdomain utils
+- useStorefrontThemeConfig, useThemePreview
 
-New files:
-- `src/components/storefront/StorefrontCartBadge.tsx` — accepts `className` and `iconSize` props
-- `src/components/storefront/StorefrontWishlistBadge.tsx`
-- `src/components/storefront/StorefrontAccountBadge.tsx`
+`storefront-ui` (deferred, loaded by themes when needed, ~80KB → ~24KB gz):
+- UniversalProductCard
+- UniversalCategories
+- BestSellingCarousel
+- StorefrontSearchOverlay, StorefrontSearchBar
+- StorefrontMobileHero, StorefrontHero, HeroBannerCarousel
+- StorefrontFooter, StorefrontMarquee
+- StorefrontAbout, StorefrontCategories, StorefrontInstagramSection
+- ProductCardStyle*, OptimizedImage, StarRating
+- SideCart, FloatingWhatsApp, ExitIntentPopup
+- DynamicPwaManifest, SmartInstallPrompt, PwaInstallBanner
+- ShareStoreDialog, ContentSkeleton, LazyRender
+- useFacebookPixel, useMetaTags, useJsonLd
+- useProductCardActions, trackPageView, productUtils, prefetchStorefrontRoutes
 
-Each is ~20 lines. Themes import with style props instead of copy-pasting.
+This works because Shell already lazy-imports SideCart, FloatingWhatsApp, etc. The UI components are only imported by theme home pages and child pages — not by the Shell itself.
 
-**Step 3: Create `src/layouts/StorefrontShell.tsx`**
+**Step 3: Defer Facebook Pixel to idle time**
 
-This is the core change (~150 lines). It handles:
-1. `useStorefront(slugOverride)` — data loading
-2. Loading skeleton + store-not-found fallback
-3. Provider wrapping (Cart, Wishlist, Auth)
-4. Theme CSS variable computation via `buildThemeStyle()`
-5. Google Fonts loading useEffect
-6. `useFacebookPixel`, `useMetaTags`, `trackPageView`
-7. `useThemePreview`
-8. Lazy overlays: `SideCart`, `FloatingWhatsApp`, `ExitIntentPopup`, `DynamicPwaManifest`, `SmartInstallPrompt`
-9. `StorefrontFooter` (shared across all themes except V13)
+Wrap the `useFacebookPixel` script injection in `requestIdleCallback` so it doesn't compete with first paint:
 
-Renders children via render prop:
 ```tsx
-children({ store, slug, themeConfig, primaryColor, btnTextColor })
+// In useFacebookPixel.ts
+useEffect(() => {
+  if (!pixelId) return;
+  const schedule = typeof requestIdleCallback !== 'undefined' 
+    ? requestIdleCallback 
+    : (cb: () => void) => setTimeout(cb, 2000);
+  const handle = schedule(() => {
+    // existing pixel injection code
+  });
+  return () => { /* cleanup */ };
+}, [pixelId]);
 ```
 
-**Step 4: Convert theme layouts to thin wrappers**
+**Step 4: Defer Google Fonts loading**
 
-Each layout shrinks to ~50-80 lines containing ONLY:
-- Theme-specific header/nav component
-- `<Outlet />`
-- Any truly unique UI (e.g., V13's WhatsApp order bar, V1's checkout exit dialog)
+In `StorefrontShell`, wrap the `loadGoogleFonts` call in `requestIdleCallback`:
 
-Example (StorefrontLayoutV2 after):
 ```tsx
-export default function StorefrontLayoutV2({ slugOverride }) {
-  return (
-    <StorefrontShell slugOverride={slugOverride} showFooter>
-      {({ store }) => (
-        <>
-          <TransparentNav store={store} />
-          <main><Suspense fallback={...}><Outlet context={store} /></Suspense></main>
-        </>
-      )}
-    </StorefrontShell>
-  );
-}
+useEffect(() => {
+  if (!themeConfig) return;
+  const schedule = typeof requestIdleCallback !== 'undefined'
+    ? requestIdleCallback
+    : (cb: () => void) => setTimeout(cb, 1000);
+  schedule(() => loadGoogleFonts(themeConfig));
+}, [themeConfig?.heading_font, themeConfig?.body_font]);
 ```
 
-V2 drops from 304 lines → ~80 lines.
-
-**Step 5: Handle V13 (restaurant theme) specially**
-
-V13 is unique — no WishlistProvider, no SideCart, has WhatsApp order bar instead. Shell accepts props:
-- `showWishlist?: boolean` (default true, false for V13)
-- `showSideCart?: boolean` (default true, false for V13)
-- `showFooter?: boolean` (default true)
-
-V13 renders its own `WhatsAppOrderBar` inside children.
-
-**Step 6: Update `App.tsx`**
-
-No changes needed — `ThemeAwareStorefront` already lazy-loads layout components. The Shell is imported by each layout, so it goes into the `storefront-core` chunk automatically.
-
-**Step 7: Update Vite `manualChunks`**
-
-```js
-manualChunks(id) {
-  // Storefront shared core — loaded once
-  if (id.includes("/layouts/StorefrontShell") ||
-      id.includes("/lib/themeUtils") ||
-      id.includes("/components/storefront/StorefrontFooter") ||
-      id.includes("/components/storefront/SideCart") ||
-      id.includes("/components/storefront/FloatingWhatsApp") ||
-      id.includes("/components/storefront/StorefrontCartBadge") ||
-      id.includes("/components/storefront/StorefrontWishlistBadge") ||
-      id.includes("/components/storefront/StorefrontAccountBadge") ||
-      id.includes("/contexts/CartContext") ||
-      id.includes("/contexts/WishlistContext") ||
-      id.includes("/contexts/StorefrontAuthContext")) {
-    return "storefront-core";
-  }
-  // Existing theme chunks (now much smaller)
-  // ... keep existing theme chunking
-}
-```
-
-### Migration Order (safe, incremental)
-
-1. `themeUtils.ts` + badge components (no breaking changes, just new files)
-2. `StorefrontShell.tsx` (new file, not used yet)
-3. Convert `StorefrontLayout.tsx` (theme-1) to use Shell — validate
-4. Convert remaining themes one by one (V2, V3, V4, V6, V7, V8, V10, V11, V12, V13)
-5. Update Vite manualChunks
-6. Remove dead code (old badge functions, duplicated utils)
-
-### Expected Results
+### Expected Impact
 
 | Metric | Before | After |
 |---|---|---|
-| Per-theme chunk | 80-124KB | 20-40KB |
-| Shared core (new) | N/A | ~80KB (loaded once) |
-| Total cold-load JS | ~160KB gz | ~100KB gz |
-| Duplicated lines | ~4,500 | 0 |
-| Files changed | 0 | 15 (11 layouts + 4 new) |
+| Boot blocking | Up to 3s (prefetch await) | 0ms (sync mount) |
+| Critical JS (gz) | ~36KB (all of storefront-core) | ~12KB (core only) |
+| First Paint | ~2-3s | ~0.8-1.2s |
+| Time to Interactive | ~4-6s | ~2-3s |
+| Facebook Pixel | Blocks main thread at render | Deferred to idle |
+| Google Fonts | Blocks at render | Deferred to idle |
 
-### What This Does NOT Do (intentionally)
+### Files Changed
 
-- Does NOT change any visual output — same components render
-- Does NOT touch `useStorefront()` logic — it moves into Shell unchanged
-- Does NOT require SSR or framework changes
-- Does NOT break Cloudflare Worker integration
-- Does NOT change routing in App.tsx
+1. `src/main.tsx` — Remove async boot, mount synchronously
+2. `vite.config.ts` — Split `storefront-core` into `storefront-core` + `storefront-ui`
+3. `src/hooks/useFacebookPixel.ts` — Defer script injection to idle
+4. `src/layouts/StorefrontShell.tsx` — Defer Google Fonts to idle
+
+### Safety
+
+- No functional changes — same data flow, same components render
+- `useStorefront` already handles missing `__STOREFRONT_DATA__` gracefully (fetches via RPC)
+- Providers remain eagerly loaded (required by child components)
+- Overlay components already lazy-loaded in Shell
 
