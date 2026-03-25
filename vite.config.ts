@@ -110,13 +110,26 @@ export default defineConfig(({ mode }) => ({
             return "embla";
           }
 
-          // ── Recharts + d3 — dashboard only, keep separate to avoid storefront bloat ──
+          // ── Recharts + d3 — dashboard only ──
           if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
             return "charts";
           }
 
-          // ── All other node_modules — single vendor chunk ──
-          // Prevents dozens of tiny chunks from class-variance-authority, clsx, cmdk, etc.
+          // ── Heavy dashboard-only libs — keep out of storefront critical path ──
+          if (
+            id.includes("node_modules/date-fns") ||
+            id.includes("node_modules/react-day-picker") ||
+            id.includes("node_modules/qrcode") ||
+            id.includes("node_modules/react-hook-form") ||
+            id.includes("node_modules/@hookform") ||
+            id.includes("node_modules/react-resizable-panels") ||
+            id.includes("node_modules/input-otp") ||
+            id.includes("node_modules/zod")
+          ) {
+            return "dash-vendor";
+          }
+
+          // ── Remaining node_modules — lightweight vendor ──
           if (id.includes("node_modules/")) {
             return "vendor";
           }
