@@ -358,11 +358,42 @@ async function fetchAndInjectSlug(request, slug) {
 
   let lcpPreload = "";
   if (storefrontData) {
+    // Preload hero banner (LCP element)
+    const store = storefrontData.store;
+    if (store) {
+      let heroUrl = store.mobile_hero_url;
+      const heroImages = store.mobile_hero_images;
+      if (heroImages) {
+        try {
+          const arr = typeof heroImages === "string" ? JSON.parse(heroImages) : heroImages;
+          if (Array.isArray(arr) && arr[0]) heroUrl = arr[0];
+        } catch {}
+      }
+      if (heroUrl) {
+        let optUrl = heroUrl;
+        if (heroUrl.includes("supabase.co/storage")) {
+          optUrl = heroUrl.replace("/storage/v1/object/", "/storage/v1/render/image/");
+          optUrl += (optUrl.includes("?") ? "&" : "?") + "width=800&quality=75";
+        }
+        const safeHeroUrl = escapeHtml(optUrl);
+        lcpPreload += `<link rel="preload" as="image" href="${safeHeroUrl}" fetchpriority="high" />`;
+        try {
+          const heroOrigin = new URL(optUrl).origin;
+          lcpPreload += `<link rel="preconnect" href="${heroOrigin}" crossorigin />`;
+        } catch {}
+      }
+      // Preload logo
+      if (store.logo_url) {
+        lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(store.logo_url)}" />`;
+      }
+    }
+
+    // Also preload first product image
     const products = storefrontData.products || [];
     const firstImage = products[0]?.image_url;
     if (firstImage) {
       const safeUrl = escapeHtml(firstImage);
-      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high" />`;
+      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" />`;
       try {
         const imgOrigin = new URL(firstImage).origin;
         if (imgOrigin && !imgOrigin.includes("supabase")) {
@@ -372,10 +403,16 @@ async function fetchAndInjectSlug(request, slug) {
     }
   }
 
-  html = html.replace("<head>", `<head>${injection}${lcpPreload}`);
+  // Extract modulepreload hints from existing HTML
+  let modulePreloads = "";
+  const entryMatch = html.match(/src="(\/assets\/index-[^"]+\.js)"/);
+  if (entryMatch) {
+    modulePreloads += `<link rel="modulepreload" href="${entryMatch[1]}" />`;
+  }
+
+  html = html.replace("<head>", `<head>${injection}${lcpPreload}${modulePreloads}`);
 
   const newHeaders = new Headers(response.headers);
-  // Shorter stale window
   newHeaders.set("Cache-Control", "public, max-age=120, stale-while-revalidate=600");
   newHeaders.set("X-Store-Slug", slug);
 
