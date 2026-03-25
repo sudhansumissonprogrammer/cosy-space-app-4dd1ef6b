@@ -1,33 +1,61 @@
 
 
-# Edge HTML Caching Upgrade to v2.2
+## Update Cloudflare Worker: Clean Domain Strategy
 
-## What's Changing
+### Summary
+The current worker (`docs/cloudflare-worker-current.js`) already implements ~90% of the requirements. Two changes are needed:
 
-The current Worker (v2.1) already implements edge caching via `cachedFetch()`, but it has some inconsistencies. This upgrade cleans up the caching flow for clarity, correctness, and the specified TTL.
+### What's Already Working
+- Subdomain → custom domain 301 redirect (line 781-793) ✓
+- Custom domain resolution + serving (line 822-831) ✓
+- www → apex redirect for custom domains (line 804-809) ✓
+- 404 for unknown domains (line 835-849) ✓
+- Parallel lookups with `Promise.all` (line 781) ✓
 
-## Changes in `docs/cloudflare-worker-current.js`
+### Changes Required
 
-### 1. Bump version
-- `WORKER_VERSION` → `"2.2"`
+**1. Update credentials (lines 17-23)**
+Replace old Supabase URL/key and origin host with current project values:
+- `ORIGIN_HOST` → `core-gleam-hub.lovable.app`
+- `SUPABASE_URL` → `https://vjjlxmqgqtquggdajjvi.supabase.co`
+- `SUPABASE_ANON_KEY` → current anon key
 
-### 2. Guard: only cache GET requests
-- Add `request.method !== "GET"` check at the top of `cachedFetch()` — non-GET requests bypass cache entirely and go straight to origin/injection.
+**2. Fix root domain `/store/:slug` redirect (lines 748-759)**
+Currently, `storivo.in/store/mystore` always redirects to `mystore.storivo.in`. It should first check if a custom domain exists and redirect there instead.
 
-### 3. Standardize Cache-Control TTL
-- All cached HTML responses get: `public, max-age=60, stale-while-revalidate=600`
-- Update `fetchAndInjectSlug` (line 416) which currently uses `max-age=120` → change to `max-age=60`
-- Update `proxyToOrigin` (line 279-281) HTML cache-control from `max-age=120` → `max-age=60`
+Current:
+```
+if (storeMatch) {
+  return redirect → slug.storivo.in
+}
+```
 
-### 4. Ensure X-Cache-Status on all paths
-- The current code already adds diagnostic headers via `addDiagnosticHeaders()`, but `cachedFetch` returns from some paths without them (e.g., the root domain call on line 760 double-wraps). Clean up so every exit path from `cachedFetch` consistently returns `HIT`, `MISS`, `MISS-INVALID`, `BYPASS`, or `STALE-FALLBACK`.
+Updated logic:
+```
+if (storeMatch) {
+  const customDomain = await getCustomDomainForSlug(slug);
+  if (customDomain) → redirect to https://customDomain/path
+  else → redirect to https://slug.storivo.in/path
+}
+```
 
-### 5. Prevent body stream double-consumption
-- In the cache-miss path (lines 498-512), the current code already uses `res.clone()` correctly. No change needed, but add a safety comment.
+**3. Update all three worker doc files**
+Apply the same credential + routing fix to:
+- `docs/cloudflare-worker-current.js` (primary/production)
+- `docs/cloudflare-worker-production.js` (reference)
+- `docs/cloudflare-worker-unified.js` (reference)
 
-### 6. Skip caching non-200 responses
-- Add explicit `res.status === 200` check (currently uses `res.ok` which covers 200-299; tighten to exactly 200 for HTML).
+### Behavior After Changes
 
-### Summary of file edits
-- **`docs/cloudflare-worker-current.js`**: ~15 lines changed across 4 locations (version bump, GET guard, TTL standardization, status tightening)
+| Scenario | Result |
+|---|---|
+| `mystore.storivo.in` (no custom domain) | Serves store |
+| `mystore.storivo.in` (has `mybrand.com`) | 301 → `https://mybrand.com` |
+| `mybrand.com` | Serves store |
+| `www.mybrand.com` | 301 → `https://mybrand.com` |
+| `storivo.in/store/mystore` (no custom domain) | 301 → `https://mystore.storivo.in` |
+| `storivo.in/store/mystore` (has `mybrand.com`) | 301 → `https://mybrand.com` |
+| `unknown.com` | 404 |
+
+No infinite redirect loops possible — custom domain path never checks for another redirect.
 
