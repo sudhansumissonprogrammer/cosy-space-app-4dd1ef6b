@@ -504,7 +504,8 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   }
 
   const contentType = res.headers.get("content-type") || "";
-  if (res.ok && contentType.includes("text/html")) {
+  // Only cache 200 HTML responses (not 204, 206, etc.)
+  if (res.status === 200 && contentType.includes("text/html")) {
     // HARDENED: Only cache if HTML has tenant marker for tenant routes
     if (slug) {
       const htmlSlugHeader = res.headers.get("X-Store-Slug");
