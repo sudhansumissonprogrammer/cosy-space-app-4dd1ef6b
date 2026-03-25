@@ -74,7 +74,9 @@ export function useStorefront(slugOverride?: string) {
       return result as any;
     },
     enabled: !!slug,
-    staleTime: 5 * 60 * 1000,
+    // Short staleTime so background revalidation happens quickly after page refresh,
+    // ensuring theme/config changes are picked up without waiting 5 minutes.
+    staleTime: 30_000,
     gcTime: 10 * 60 * 1000,
     // If we have injected data, use it as initialData for instant render
     ...(injected?.store && slug && !seeded.current
