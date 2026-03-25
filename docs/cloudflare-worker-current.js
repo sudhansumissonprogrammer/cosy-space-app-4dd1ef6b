@@ -274,10 +274,9 @@ async function proxyToOrigin(request) {
         );
       }
     } else if (contentType.includes("text/html")) {
-      // Shorter stale window for HTML — 600s instead of 3600s
       newRes.headers.set(
         "Cache-Control",
-        "public, max-age=120, stale-while-revalidate=600"
+        "public, max-age=60, stale-while-revalidate=600"
       );
     }
 
