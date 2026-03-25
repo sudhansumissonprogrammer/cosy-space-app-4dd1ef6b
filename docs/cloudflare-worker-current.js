@@ -1,12 +1,12 @@
 /**
- * STORIVO PRODUCTION ROUTER v2.1 — HARDENED
+ * STORIVO PRODUCTION ROUTER v2.2 — EDGE CACHING
  *
- * Fixes from v2.0:
- * 1. Cache only "tenant-complete" HTML (contains __STORE_SLUG__)
- * 2. Diagnostic headers on every response (X-Worker-Version, X-Cache-Status, X-Store-Slug)
- * 3. Reduced stale-while-revalidate for HTML (600s instead of 3600s)
- * 4. Never cache origin HTML that lacks tenant marker for tenant routes
- * 5. www→apex canonical redirect for custom domains
+ * Changes from v2.1:
+ * 1. Only cache GET requests — non-GET bypasses to origin
+ * 2. Standardized Cache-Control: max-age=60, stale-while-revalidate=600
+ * 3. Tightened cache eligibility to status === 200 (not just res.ok)
+ * 4. Consistent X-Cache-Status on all exit paths (HIT, MISS, BYPASS, STALE-FALLBACK, MISS-INVALID)
+ * 5. X-Worker-Version: 2.2 on every response
  *
  * Routes:
  *   - *.storivo.in/*
