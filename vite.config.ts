@@ -79,8 +79,7 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         /**
-         * Safe chunk strategy — only split node_modules to avoid
-         * circular initialization errors from src/* splitting.
+         * Keep chunking minimal and explicit to avoid circular init/TDZ runtime errors.
          */
         manualChunks(id) {
           if (
@@ -90,36 +89,20 @@ export default defineConfig(({ mode }) => ({
           ) {
             return "framework";
           }
+
           if (
             id.includes("node_modules/react-router") ||
-            id.includes("node_modules/@tanstack/react-query") ||
-            id.includes("node_modules/clsx") ||
-            id.includes("node_modules/class-variance-authority") ||
-            id.includes("node_modules/tailwind-merge")
+            id.includes("node_modules/@tanstack/react-query")
           ) {
             return "router-query";
           }
+
           if (id.includes("node_modules/@supabase")) {
             return "supabase";
           }
+
           if (id.includes("node_modules/@radix-ui")) {
             return "radix";
-          }
-          if (id.includes("node_modules/lucide-react")) {
-            return "icons";
-          }
-          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
-            return "charts";
-          }
-          if (
-            id.includes("node_modules/date-fns") ||
-            id.includes("node_modules/react-day-picker") ||
-            id.includes("node_modules/qrcode") ||
-            id.includes("node_modules/react-hook-form") ||
-            id.includes("node_modules/@hookform") ||
-            id.includes("node_modules/zod")
-          ) {
-            return "dash-vendor";
           }
         },
       },
