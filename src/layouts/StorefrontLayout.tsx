@@ -13,17 +13,17 @@ import { useMetaTags } from "@/hooks/useMetaTags";
 import { CartProvider, useCart } from "@/contexts/CartContext";
 import { WishlistProvider, useWishlist } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider, useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
-import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
-import StorefrontFooter from "@/components/storefront/StorefrontFooter";
-import FloatingWhatsApp from "@/components/storefront/FloatingWhatsApp";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
-import SideCart from "@/components/storefront/SideCart";
 import { trackPageView } from "@/lib/trackPageView";
 
-// Lazy-load non-critical components to reduce initial JS parse time
+// Lazy-load below-fold and non-critical components
 const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
 const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
 const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
+const StorefrontMarquee = lazy(() => import("@/components/storefront/StorefrontMarquee"));
+const StorefrontFooter = lazy(() => import("@/components/storefront/StorefrontFooter"));
+const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhatsApp"));
+const SideCart = lazy(() => import("@/components/storefront/SideCart"));
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";

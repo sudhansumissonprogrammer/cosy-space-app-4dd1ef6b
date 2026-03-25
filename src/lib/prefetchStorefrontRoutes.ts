@@ -1,16 +1,16 @@
 /**
  * Prefetch storefront page chunks during idle time.
  * Called once when the storefront layout mounts.
+ * 
+ * Delay: 5s after mount to avoid competing with critical render path.
+ * Only prefetch high-probability navigation targets (product, category, shop).
+ * Heavy pages (Checkout, Wishlist) are loaded on-demand.
  */
 const storefrontImports = [
-  () => import("@/pages/CategoryDetail"),
   () => import("@/pages/ProductDetail"),
-  () => import("@/pages/CartPage"),
-  () => import("@/pages/CheckoutPage"),
+  () => import("@/pages/CategoryDetail"),
   () => import("@/pages/StorefrontShop"),
-  () => import("@/pages/WishlistPage"),
-  () => import("@/pages/StorefrontContact"),
-  () => import("@/pages/StorefrontBestSellers"),
+  () => import("@/pages/CartPage"),
 ];
 
 let prefetched = false;
@@ -21,7 +21,7 @@ export function prefetchStorefrontRoutes() {
 
   const schedule = typeof requestIdleCallback === "function"
     ? requestIdleCallback
-    : (cb: () => void) => setTimeout(cb, 100);
+    : (cb: () => void) => setTimeout(cb, 200);
 
   let idx = 0;
   function loadNext() {
@@ -31,6 +31,6 @@ export function prefetchStorefrontRoutes() {
     schedule(loadNext);
   }
 
-  // Start after page is interactive
-  setTimeout(() => schedule(loadNext), 1500);
+  // Start well after first paint to avoid network contention
+  setTimeout(() => schedule(loadNext), 5000);
 }
