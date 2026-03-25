@@ -92,6 +92,9 @@ export default defineConfig(({ mode }) => ({
             id.includes("/contexts/StorefrontAuthContext") ||
             id.includes("/hooks/useStorefrontThemeConfig") ||
             id.includes("/hooks/useThemePreview") ||
+            id.includes("/hooks/useFacebookPixel") ||
+            id.includes("/hooks/useMetaTags") ||
+            id.includes("/lib/trackPageView") ||
             id.includes("/lib/subdomain")
           ) {
             return "storefront-core";
