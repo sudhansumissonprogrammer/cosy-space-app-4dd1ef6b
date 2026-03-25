@@ -74,7 +74,9 @@ export function useStorefront(slugOverride?: string) {
       return result as any;
     },
     enabled: !!slug,
-    staleTime: 5 * 60 * 1000,
+    // Short staleTime so background revalidation happens quickly after page refresh,
+    // ensuring theme/config changes are picked up without waiting 5 minutes.
+    staleTime: 30_000,
     gcTime: 10 * 60 * 1000,
     // If we have injected data, use it as initialData for instant render
     ...(injected?.store && slug && !seeded.current
@@ -82,10 +84,10 @@ export function useStorefront(slugOverride?: string) {
       : {}),
   });
 
-  // Seed individual cache keys so child pages get instant cache hits
+  // Seed individual cache keys so child pages get instant cache hits.
+  // Re-seeds on every data change so theme/config updates propagate.
   useEffect(() => {
-    if (!data || seeded.current) return;
-    seeded.current = true;
+    if (!data) return;
 
     const { store, products, categories, theme_config } = data as any;
 
@@ -106,9 +108,12 @@ export function useStorefront(slugOverride?: string) {
       queryClient.setQueryData(["storefront-theme-config", store.id], theme_config);
     }
 
-    // Clear injected data after seeding — prevents stale data on SPA navigation
-    if ((window as any).__STOREFRONT_DATA__) {
-      delete (window as any).__STOREFRONT_DATA__;
+    // Clear injected data after first seed — prevents stale data on SPA navigation
+    if (!seeded.current) {
+      seeded.current = true;
+      if ((window as any).__STOREFRONT_DATA__) {
+        delete (window as any).__STOREFRONT_DATA__;
+      }
     }
   }, [data, queryClient]);
 
