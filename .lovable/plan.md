@@ -1,127 +1,45 @@
 
 
-## Optimize Storefront Execution: Reduce Blocking and Defer Non-Critical Work
+# Image Quality Preservation Plan
 
-### Analysis of Current Bottlenecks
+## Problem
 
-After inspecting the code, here is what actually blocks first paint and interactivity:
+The current pipeline has three issues causing quality loss:
 
-**HIGH IMPACT (real blockers):**
+1. **Every image gets compressed** regardless of size -- even images already under 100KB are re-encoded through canvas (lossy), degrading quality for no benefit
+2. **Double compression** -- images uploaded through the pipeline get compressed at upload time, then again at display time via the Supabase `render/image` transform API (which re-encodes the already-compressed WebP)
+3. **Aggressive quality targets** -- the 200w variant targets 30KB, 400w targets 60KB, and quality iteratively drops as low as 0.15, causing visible artifacts
 
-1. **`main.tsx` boot sequence** — Awaits `__STOREFRONT_PREFETCH__` up to 3 seconds before mounting React. On non-Worker paths without injected data, users stare at the HTML skeleton for up to 3s before React even starts.
+## Changes
 
-2. **Storefront-core chunk is 120KB (36KB gz)** — Contains ~15 heavy UI components (UniversalProductCard, BestSellingCarousel, HeroBannerCarousel, SearchOverlay, etc.) that are NOT needed for first paint. Only the Shell + data hook + providers are critical.
+### 1. Skip compression for small images (`imageCompression.ts`)
 
-3. **Facebook Pixel injection** — `useFacebookPixel` synchronously injects a 3rd-party script into `<head>` during render. This competes with main thread during initial paint.
+- In `processImage()`: skip compression for ANY image under 100KB (not just WebP). Return the original file untouched
+- In `processImageMultiSize()`: for each variant, if the rendered canvas output at high quality (0.92) is already under 120KB, use it directly without iterative quality reduction
+- Raise minimum quality floor from 0.15 to 0.75 so quality never drops to visible-artifact levels
 
-**LOW IMPACT (already optimized):**
-- `StorefrontAuthProvider` — already defers via `requestIdleCallback`
-- `trackPageView` — already uses `setTimeout(3000)`
-- `useStorefront` — already non-blocking (shows skeleton during fetch)
-- CartProvider/WishlistProvider — lightweight (localStorage read), cannot be lazy-loaded since child components depend on context immediately
+### 2. Use higher quality settings (`imageCompression.ts`)
 
-### Plan
+- Change default quality from 0.8 to 0.92 (near-lossless WebP)
+- Set variant KB targets: 200w = 60KB, 400w = 90KB, 800w = 120KB (up from 30/60/120)
+- Remove the aggressive dimension-reduction fallback (the 0.7x scale-down loop) -- if quality 0.75 at full size can't hit the target, accept the slightly larger file
 
-**Step 1: Remove boot blocking in `main.tsx`**
+### 3. Prevent double compression (`imageOptimize.ts`)
 
-Current code awaits prefetch up to 3s before `createRoot`. Change to mount React immediately and let `useStorefront` consume `__STOREFRONT_DATA__` if available.
+- For Supabase Storage URLs that match our pipeline naming convention (`-200w.webp`, `-400w.webp`, `-800w.webp`), serve the file directly via `/storage/v1/object/` (NOT `/storage/v1/render/image/`)
+- Only apply the render/image transform to non-pipeline Supabase images
+- This eliminates the re-encoding step that degrades already-optimized images
 
-```text
-BEFORE: await prefetch (up to 3s) → createRoot → render
-AFTER:  createRoot → render immediately → useStorefront reads injected data if present
-```
+### 4. Higher display quality (`imageOptimize.ts` + `OptimizedImage.tsx`)
 
-The `useStorefront` hook already checks `window.__STOREFRONT_DATA__` and uses it as `initialData`. The boot await is redundant — it was added to avoid a "double skeleton" flash, but the Shell already handles loading state gracefully.
+- Raise default display quality from 75 to 85 in `optimizeImageUrl()` and `getImageSrcSet()`
+- Update `OptimizedImage.tsx` default quality prop from 75 to 85
 
-Changes to `src/main.tsx`:
-- Remove async `boot()` function
-- Call `createRoot().render(<App />)` synchronously
-- Keep SW cleanup logic unchanged
+### Files Modified
 
-**Step 2: Split storefront-core into critical + deferred chunks**
-
-Split the Vite `manualChunks` config into two chunks:
-
-`storefront-core` (critical, ~40KB → ~12KB gz):
-- StorefrontShell
-- StorefrontLayout.logic
-- themeUtils
-- CartContext, WishlistContext, StorefrontAuthContext
-- StorefrontNotFound
-- subdomain utils
-- useStorefrontThemeConfig, useThemePreview
-
-`storefront-ui` (deferred, loaded by themes when needed, ~80KB → ~24KB gz):
-- UniversalProductCard
-- UniversalCategories
-- BestSellingCarousel
-- StorefrontSearchOverlay, StorefrontSearchBar
-- StorefrontMobileHero, StorefrontHero, HeroBannerCarousel
-- StorefrontFooter, StorefrontMarquee
-- StorefrontAbout, StorefrontCategories, StorefrontInstagramSection
-- ProductCardStyle*, OptimizedImage, StarRating
-- SideCart, FloatingWhatsApp, ExitIntentPopup
-- DynamicPwaManifest, SmartInstallPrompt, PwaInstallBanner
-- ShareStoreDialog, ContentSkeleton, LazyRender
-- useFacebookPixel, useMetaTags, useJsonLd
-- useProductCardActions, trackPageView, productUtils, prefetchStorefrontRoutes
-
-This works because Shell already lazy-imports SideCart, FloatingWhatsApp, etc. The UI components are only imported by theme home pages and child pages — not by the Shell itself.
-
-**Step 3: Defer Facebook Pixel to idle time**
-
-Wrap the `useFacebookPixel` script injection in `requestIdleCallback` so it doesn't compete with first paint:
-
-```tsx
-// In useFacebookPixel.ts
-useEffect(() => {
-  if (!pixelId) return;
-  const schedule = typeof requestIdleCallback !== 'undefined' 
-    ? requestIdleCallback 
-    : (cb: () => void) => setTimeout(cb, 2000);
-  const handle = schedule(() => {
-    // existing pixel injection code
-  });
-  return () => { /* cleanup */ };
-}, [pixelId]);
-```
-
-**Step 4: Defer Google Fonts loading**
-
-In `StorefrontShell`, wrap the `loadGoogleFonts` call in `requestIdleCallback`:
-
-```tsx
-useEffect(() => {
-  if (!themeConfig) return;
-  const schedule = typeof requestIdleCallback !== 'undefined'
-    ? requestIdleCallback
-    : (cb: () => void) => setTimeout(cb, 1000);
-  schedule(() => loadGoogleFonts(themeConfig));
-}, [themeConfig?.heading_font, themeConfig?.body_font]);
-```
-
-### Expected Impact
-
-| Metric | Before | After |
-|---|---|---|
-| Boot blocking | Up to 3s (prefetch await) | 0ms (sync mount) |
-| Critical JS (gz) | ~36KB (all of storefront-core) | ~12KB (core only) |
-| First Paint | ~2-3s | ~0.8-1.2s |
-| Time to Interactive | ~4-6s | ~2-3s |
-| Facebook Pixel | Blocks main thread at render | Deferred to idle |
-| Google Fonts | Blocks at render | Deferred to idle |
-
-### Files Changed
-
-1. `src/main.tsx` — Remove async boot, mount synchronously
-2. `vite.config.ts` — Split `storefront-core` into `storefront-core` + `storefront-ui`
-3. `src/hooks/useFacebookPixel.ts` — Defer script injection to idle
-4. `src/layouts/StorefrontShell.tsx` — Defer Google Fonts to idle
-
-### Safety
-
-- No functional changes — same data flow, same components render
-- `useStorefront` already handles missing `__STOREFRONT_DATA__` gracefully (fetches via RPC)
-- Providers remain eagerly loaded (required by child components)
-- Overlay components already lazy-loaded in Shell
+| File | What changes |
+|------|-------------|
+| `src/lib/imageCompression.ts` | Skip under-100KB files, raise quality floor to 0.75, raise variant KB targets, remove aggressive dimension reduction |
+| `src/lib/imageOptimize.ts` | Skip render/image transform for pipeline URLs, raise default quality to 85 |
+| `src/components/storefront/OptimizedImage.tsx` | Default quality 75 → 85 |
 
