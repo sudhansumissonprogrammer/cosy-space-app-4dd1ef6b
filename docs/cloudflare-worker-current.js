@@ -423,12 +423,15 @@ async function fetchAndInjectSlug(request, slug, ctx) {
     }
   }
 
-  // Extract ALL JS chunks for modulepreload (not just entry)
+  // Extract JS chunks for modulepreload — ONLY storefront-relevant ones
+  // Dashboard-only chunks (charts, dash-vendor, admin, dashboard-pages, etc.)
+  // are excluded to save bandwidth and reduce connection overhead on storefront.
+  const DASHBOARD_CHUNK_PATTERN = /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
   const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
   let modulePreloads = "";
   const seen = new Set();
   for (const m of chunkMatches) {
-    if (!seen.has(m[1])) {
+    if (!seen.has(m[1]) && !DASHBOARD_CHUNK_PATTERN.test(m[1])) {
       seen.add(m[1]);
       modulePreloads += `<link rel="modulepreload" href="${m[1]}" />\n`;
     }
