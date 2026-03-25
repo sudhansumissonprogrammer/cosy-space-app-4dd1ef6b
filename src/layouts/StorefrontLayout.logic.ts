@@ -35,11 +35,26 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      // Use injected data if available (first load only)
-      if (injected?.store && !seeded.current) {
-        return injected;
+      // 1. Use injected data (Cloudflare Worker or resolved index.html prefetch)
+      const wd = (window as any).__STOREFRONT_DATA__;
+      if (wd?.store) return wd;
+
+      // 2. Await the index.html prefetch promise if still in flight
+      const prefetch = (window as any).__STOREFRONT_PREFETCH__;
+      if (prefetch) {
+        try {
+          const result = await prefetch;
+          if (result?.store) {
+            (window as any).__STOREFRONT_DATA__ = result;
+            delete (window as any).__STOREFRONT_PREFETCH__;
+            return result;
+          }
+        } catch {
+          // prefetch failed, fall through to fresh call
+        }
       }
 
+      // 3. Fresh RPC call (fallback)
       const { data: result, error } = await supabase.rpc("get_storefront_data" as any, {
         _slug: slug!,
         _product_limit: 20,

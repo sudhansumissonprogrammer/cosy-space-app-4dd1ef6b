@@ -68,12 +68,14 @@
 
         var url='https://vjjlxmqgqtquggdajjvi.supabase.co/rest/v1/rpc/get_storefront_data';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqamx4bXFncXRxdWdnZGFqanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjEyNjgsImV4cCI6MjA4OTk5NzI2OH0.AjNH7zdzlAhmQnjwvhCOvDVac356sA04_ORb2j5rA2k';
-        window.__STOREFRONT_PREFETCH__=fetch(url,{
+        var p_=fetch(url,{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
           body:JSON.stringify({_slug:slug,_product_limit:20})
         }).then(function(r){return r.json()}).then(function(data){
           if(data&&data.store){
+            // Store resolved data so React can use it instantly
+            window.__STOREFRONT_DATA__=data;
             var heroUrl=data.store.mobile_hero_url;
             var heroImages=data.store.mobile_hero_images;
             if(heroImages){
@@ -102,6 +104,8 @@
           }
           return data;
         }).catch(function(){return null});
+        // Keep promise reference as fallback for React if data hasn't resolved yet
+        window.__STOREFRONT_PREFETCH__=p_;
       })();
     </script>
     <meta property="og:title" content="Storivo — Create Your Online Store">
