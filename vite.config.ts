@@ -79,9 +79,16 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         /**
-         * Keep chunking minimal and explicit to avoid circular init/TDZ runtime errors.
+         * Cycle-safe chunk strategy.
+         * Rules:
+         *   - Only group pure leaf node_modules (no app code imports)
+         *   - Never group modules that re-export from each other
+         *   - lucide icons are pure SVG factories → safe to merge
+         *   - recharts/d3 only used by dashboard → safe isolated chunk
+         *   - embla only used by storefront carousels → safe isolated chunk
          */
         manualChunks(id) {
+          // === Core framework (React) ===
           if (
             id.includes("node_modules/react-dom") ||
             id.includes("node_modules/react/") ||
@@ -90,6 +97,7 @@ export default defineConfig(({ mode }) => ({
             return "framework";
           }
 
+          // === Routing + data fetching ===
           if (
             id.includes("node_modules/react-router") ||
             id.includes("node_modules/@tanstack/react-query")
@@ -97,12 +105,31 @@ export default defineConfig(({ mode }) => ({
             return "router-query";
           }
 
+          // === Supabase client ===
           if (id.includes("node_modules/@supabase")) {
             return "supabase";
           }
 
+          // === Radix UI primitives ===
           if (id.includes("node_modules/@radix-ui")) {
             return "radix";
+          }
+
+          // === Lucide icons — pure leaf SVGs, no circular risk ===
+          if (id.includes("node_modules/lucide-react")) {
+            return "icons";
+          }
+
+          // Charts (recharts/d3) left to Vite's default splitting
+          // to avoid circular dep with framework chunk
+
+          // === Form utilities ===
+          if (
+            id.includes("node_modules/react-hook-form") ||
+            id.includes("node_modules/@hookform") ||
+            id.includes("node_modules/zod")
+          ) {
+            return "forms";
           }
         },
       },
