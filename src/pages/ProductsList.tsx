@@ -50,7 +50,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export default function ProductsList() { // v2
-  const { storeId } = useStoreSlugParam();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();

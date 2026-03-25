@@ -181,7 +181,7 @@ function autoMapColumns(csvHeaders: string[]): Record<string, ProductFieldKey | 
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export default function BulkUpload() {
-  const { storeId } = useStoreSlugParam();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);

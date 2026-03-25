@@ -37,7 +37,7 @@ interface Feature {
 }
 
 export default function StoreSettings() {
-  const { storeId } = useStoreSlugParam();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
