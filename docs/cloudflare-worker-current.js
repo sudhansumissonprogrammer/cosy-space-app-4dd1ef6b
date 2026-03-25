@@ -1,13 +1,20 @@
 /**
- * STORIVO PRODUCTION ROUTER v2.3 — EDGE CACHING
+ * STORIVO PRODUCTION ROUTER v2.4 — KV + EDGE CACHING
  *
  * Routes:
  *   - *.storivo.in/*
  *   - storivo.in/*
  *   - custom domains (melleto.shop, mgwinner.in, etc.)
+ *
+ * KV Binding (optional but recommended):
+ *   - STORE_KV: Cloudflare KV namespace for global storefront data cache
+ *     Create via: wrangler kv:namespace create STORE_KV
+ *     Add to wrangler.toml: [[kv_namespaces]]
+ *       binding = "STORE_KV"
+ *       id = "<your-namespace-id>"
  */
 
-const WORKER_VERSION = "2.3";
+const WORKER_VERSION = "2.4";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "core-gleam-hub.lovable.app";
 
@@ -301,17 +308,39 @@ async function proxyToOrigin(request) {
   }
 }
 
-/* ============== PREFETCH STOREFRONT DATA ============== */
+/* ============== PREFETCH STOREFRONT DATA (KV + Cache API) ============== */
 
-async function prefetchStorefrontData(slug, ctx) {
-  // Check edge cache first (0ms vs 500-1500ms)
+const KV_STOREFRONT_TTL = 120; // 2 minutes in KV (global, all colos)
+const CACHE_STOREFRONT_TTL = 300; // 5 minutes in Cache API (per-colo)
+
+async function prefetchStorefrontData(slug, ctx, env) {
+  const kvKey = `storefront:${slug}`;
   const dataCacheKey = new Request(`https://cache/storefront-data/${slug}`);
+
+  // 1. Try KV first (global, ~5ms read latency)
+  if (env?.STORE_KV) {
+    try {
+      const kvData = await env.STORE_KV.get(kvKey, { type: "json" });
+      if (kvData) return kvData;
+    } catch {}
+  }
+
+  // 2. Try per-colo Cache API (~0ms if warm)
   try {
     const cached = await cache.match(dataCacheKey);
-    if (cached) return await cached.json();
+    if (cached) {
+      const data = await cached.json();
+      // Backfill KV if it was a KV miss but cache hit (background)
+      if (env?.STORE_KV && data && ctx) {
+        ctx.waitUntil(
+          env.STORE_KV.put(kvKey, JSON.stringify(data), { expirationTtl: KV_STOREFRONT_TTL })
+        );
+      }
+      return data;
+    }
   } catch {}
 
-  // Cache miss — fetch from Supabase with timeout
+  // 3. Cache miss — fetch from Supabase with timeout
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), STOREFRONT_PREFETCH_TIMEOUT_MS);
 
@@ -333,15 +362,22 @@ async function prefetchStorefrontData(slug, ctx) {
     if (!res.ok) return null;
     const data = await res.json();
 
-    // Cache at edge for 5 minutes (background, non-blocking)
+    // Write to both KV (global) and Cache API (per-colo) in background
     if (data && ctx) {
       ctx.waitUntil(
-        cache.put(
-          dataCacheKey,
-          new Response(JSON.stringify(data), {
-            headers: { "Cache-Control": "public, max-age=300" },
-          })
-        )
+        Promise.all([
+          // KV: global cache, all Cloudflare colos benefit
+          env?.STORE_KV
+            ? env.STORE_KV.put(kvKey, JSON.stringify(data), { expirationTtl: KV_STOREFRONT_TTL })
+            : Promise.resolve(),
+          // Cache API: per-colo, instant for repeat visitors in same colo
+          cache.put(
+            dataCacheKey,
+            new Response(JSON.stringify(data), {
+              headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` },
+            })
+          ),
+        ])
       );
     }
 
@@ -354,10 +390,10 @@ async function prefetchStorefrontData(slug, ctx) {
 
 /* ============== INJECT STORE SLUG INTO HTML ============== */
 
-async function fetchAndInjectSlug(request, slug, ctx) {
+async function fetchAndInjectSlug(request, slug, ctx, env) {
   const [response, storefrontData] = await Promise.all([
     proxyToOrigin(request),
-    prefetchStorefrontData(slug, ctx),
+    prefetchStorefrontData(slug, ctx, env),
   ]);
 
   const contentType = response.headers.get("content-type") || "";
@@ -374,7 +410,10 @@ async function fetchAndInjectSlug(request, slug, ctx) {
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
   }
   injection += `</script>
-<link rel="preconnect" href="${SUPABASE_URL}" />`;
+<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />
+<link rel="dns-prefetch" href="${SUPABASE_URL}" />
+<link rel="preconnect" href="${SUPABASE_URL}/storage/v1" crossorigin />
+<link rel="dns-prefetch" href="${SUPABASE_URL}/storage/v1" />`;
 
   let lcpPreload = "";
   if (storefrontData) {
@@ -451,13 +490,13 @@ async function fetchAndInjectSlug(request, slug, ctx) {
 
 /* ============== CACHED FETCH (HARDENED) ============== */
 
-async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
+async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env = {}) {
   const url = new URL(request.url);
 
   // Only cache GET requests — all others bypass to origin
   if (request.method !== "GET") {
     if (isCustomDomain && slug) {
-      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx), { slug, cacheStatus: "BYPASS" });
+      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx, env), { slug, cacheStatus: "BYPASS" });
     }
     return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
   }
@@ -472,7 +511,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
     request.headers.get("cookie")?.includes("auth")
   ) {
     if (isCustomDomain && slug) {
-      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx), { slug, cacheStatus: "BYPASS" });
+      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx, env), { slug, cacheStatus: "BYPASS" });
     }
     return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
   }
@@ -489,7 +528,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
         // If the cached response doesn't have the slug header, treat as MISS
         if (!cachedSlugHeader || cachedSlugHeader !== slug) {
           // Cache is stale/invalid — fetch fresh with injection
-          const fresh = await fetchAndInjectSlug(request, slug, ctx);
+          const fresh = await fetchAndInjectSlug(request, slug, ctx, env);
           const freshCt = fresh.headers.get("content-type") || "";
           if (fresh.ok && freshCt.includes("text/html")) {
             ctx.waitUntil(cache.put(key, fresh.clone()));
@@ -501,7 +540,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
 
     // Background revalidate
     ctx.waitUntil(
-      (slug ? fetchAndInjectSlug(request, slug, ctx) : proxyToOrigin(request))
+      (slug ? fetchAndInjectSlug(request, slug, ctx, env) : proxyToOrigin(request))
         .then((res) => {
           const ct = res.headers.get("content-type") || "";
           if (res.ok && ct.includes("text/html")) {
@@ -521,7 +560,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false) {
   let res;
   try {
     if (slug) {
-      res = await fetchAndInjectSlug(request, slug, ctx);
+      res = await fetchAndInjectSlug(request, slug, ctx, env);
     } else {
       res = await proxyToOrigin(request);
     }
@@ -801,7 +840,7 @@ export default {
         );
       }
 
-      return cachedFetch(request, "", ctx);
+      return cachedFetch(request, "", ctx, false, env);
     }
 
     // ─── SUBDOMAIN ───
@@ -809,7 +848,7 @@ export default {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
 
       if (!slug || slug.includes(".") || slug === "www") {
-        return cachedFetch(request, "", ctx);
+        return cachedFetch(request, "", ctx, false, env);
       }
 
       // Parallelize: custom domain check + SEO files + bot detection + main fetch
@@ -830,7 +869,7 @@ export default {
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      return cachedFetch(request, slug, ctx);
+      return cachedFetch(request, slug, ctx, false, env);
     }
 
     // ─── CUSTOM DOMAIN ───
@@ -863,7 +902,7 @@ export default {
       const botResponse = await handleBot(request, slug, url, true);
       if (botResponse) return botResponse;
 
-      return cachedFetch(request, slug, ctx, true);
+      return cachedFetch(request, slug, ctx, true, env);
     }
 
     // ─── UNKNOWN DOMAIN → 404 (strict tenant resolution) ───
