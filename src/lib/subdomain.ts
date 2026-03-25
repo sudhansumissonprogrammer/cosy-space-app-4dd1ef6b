@@ -6,59 +6,66 @@ declare global {
   }
 }
 
+const IPV4_REGEX = /^\d+\.\d+\.\d+\.\d+$/;
+const PREVIEW_HOST_SUFFIXES = [".lovable.app", ".lovableproject.com"];
+
+export function isLocalHost(hostname: string = window.location.hostname): boolean {
+  return hostname === "localhost" || IPV4_REGEX.test(hostname);
+}
+
+export function isPreviewHost(hostname: string = window.location.hostname): boolean {
+  return PREVIEW_HOST_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
+}
+
+export function isRootDomainHost(hostname: string = window.location.hostname): boolean {
+  const normalized = hostname.replace(/^www\./, "").toLowerCase();
+  return normalized === ROOT_DOMAIN;
+}
+
+export function isSubdomainHost(hostname: string = window.location.hostname): boolean {
+  if (!hostname.endsWith(`.${ROOT_DOMAIN}`)) return false;
+  const subdomain = hostname.slice(0, hostname.length - ROOT_DOMAIN.length - 1);
+  return !!subdomain && subdomain !== "www" && !subdomain.includes(".");
+}
+
+export function isCustomDomainHost(hostname: string = window.location.hostname): boolean {
+  return (
+    !isLocalHost(hostname) &&
+    !isPreviewHost(hostname) &&
+    !isRootDomainHost(hostname) &&
+    !isSubdomainHost(hostname)
+  );
+}
+
 /**
  * Extract the store slug using multiple strategies:
- * 1. window.__STORE_SLUG__ (injected by Cloudflare worker for custom domains)
+ * 1. window.__STORE_SLUG__ (injected by edge worker for custom domains)
  * 2. ?store= query param fallback
  * 3. Subdomain extraction from hostname
- * Returns null for root domain, www, localhost, and Lovable preview URLs.
+ * Returns null for root domain, www, localhost, and preview URLs.
  */
 export function getSubdomainSlug(): string | null {
-  // 1. Try from header/worker-injected global (custom domain)
   if (window.__STORE_SLUG__) {
     return window.__STORE_SLUG__;
   }
 
-  // 2. Try query param fallback
   const params = new URLSearchParams(window.location.search);
   const slugFromQuery = params.get("store");
   if (slugFromQuery) {
     return slugFromQuery;
   }
 
-  // 3. Fall back to subdomain extraction
   const hostname = window.location.hostname;
 
-  // Ignore localhost and IP addresses
-  if (hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+  if (isLocalHost(hostname) || isPreviewHost(hostname) || isRootDomainHost(hostname)) {
     return null;
   }
 
-  // Ignore Lovable preview/published URLs (*.lovable.app)
-  if (hostname.endsWith(".lovable.app")) {
+  if (!isSubdomainHost(hostname)) {
     return null;
   }
 
-  // Must end with our root domain
-  if (!hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-    if (hostname === ROOT_DOMAIN) return null;
-    return null;
-  }
-
-  // Extract the subdomain part
-  const subdomain = hostname.slice(0, hostname.length - ROOT_DOMAIN.length - 1);
-
-  // Ignore www or empty
-  if (!subdomain || subdomain === "www") {
-    return null;
-  }
-
-  // Only allow single-level subdomains
-  if (subdomain.includes(".")) {
-    return null;
-  }
-
-  return subdomain;
+  return hostname.slice(0, hostname.length - ROOT_DOMAIN.length - 1);
 }
 
 /**
