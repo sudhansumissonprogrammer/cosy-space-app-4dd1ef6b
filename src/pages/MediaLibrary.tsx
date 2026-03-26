@@ -198,33 +198,37 @@ export default function MediaLibrary() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {filteredMedia.map((item) => {
             const isSelected = selected.has(item.id);
+            const isCopied = copiedId === item.id;
             return (
-              <div
-                key={item.id}
-                className={`group relative aspect-square overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
-                  isSelected ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-border"
-                }`}
-              >
-                <img src={item.file_url} alt={item.file_name} className="h-full w-full object-cover" loading="lazy" />
-                <div className={`absolute left-2 top-2 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => toggleSelect(item.id)}
-                    className="h-5 w-5 border-2 border-white bg-black/40 data-[state=checked]:bg-primary"
-                  />
+              <div key={item.id} className="flex flex-col gap-1.5">
+                <div
+                  className={`group relative aspect-square overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
+                    isSelected ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-border"
+                  }`}
+                >
+                  <img src={item.file_url} alt={item.file_name} className="h-full w-full object-cover" loading="lazy" />
+                  <div className={`absolute left-2 top-2 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleSelect(item.id)}
+                      className="h-5 w-5 border-2 border-white bg-black/40 data-[state=checked]:bg-primary"
+                    />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="truncate text-[10px] text-white block">{item.file_name}</span>
+                  </div>
                 </div>
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
-                  <span className="truncate text-[10px] text-white max-w-[70%]">{item.file_name}</span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); copyUrl(item.id, item.file_url); }}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40"
-                  >
-                    {copiedId === item.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                  </button>
-                </div>
+                <Button
+                  size="sm"
+                  variant={isCopied ? "default" : "outline"}
+                  className="h-7 text-xs w-full"
+                  onClick={() => copyUrl(item.id, item.file_url)}
+                >
+                  {isCopied ? <><Check className="mr-1 h-3 w-3" /> Copied</> : <><Copy className="mr-1 h-3 w-3" /> Copy URL</>}
+                </Button>
               </div>
             );
           })}
