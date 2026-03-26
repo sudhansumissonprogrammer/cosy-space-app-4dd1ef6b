@@ -25,6 +25,7 @@ function getMetaCookies() {
 interface CAPIEventParams {
   storeId: string;
   eventName: string;
+  eventId?: string; // For pixel↔CAPI deduplication
   userEmail?: string;
   userPhone?: string;
   externalId?: string;
@@ -62,6 +63,7 @@ export function fireMetaCAPI(params: CAPIEventParams) {
       body: {
         store_id: params.storeId,
         event_name: params.eventName,
+        event_id: params.eventId || undefined,
         event_source_url: window.location.href,
         user_email: params.userEmail || undefined,
         user_phone: params.userPhone || undefined,
