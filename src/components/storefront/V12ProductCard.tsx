@@ -5,6 +5,7 @@ import { optimizeImageUrl, getImageSrcSet, PRODUCT_CARD_SIZES } from "@/lib/imag
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
+import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 
 interface V12ProductCardProps {
   product: any;
