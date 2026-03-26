@@ -463,8 +463,10 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
     const data = await res.json();
 
     // Write to both KV (global) and Cache API (per-colo) in background
+    // ALSO pre-warm first page of products so frontend gets instant cache hit
     if (data && ctx) {
       const dataStr = JSON.stringify(data);
+      const storeId = data?.store?.id;
       ctx.waitUntil(
         Promise.all([
           env?.STORE_KV
@@ -478,6 +480,11 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
           ),
         ])
       );
+
+      // Pre-warm products into Supabase REST cache (background, non-blocking)
+      if (storeId) {
+        ctx.waitUntil(_prewarmProducts(storeId, env));
+      }
     }
 
     return data;
