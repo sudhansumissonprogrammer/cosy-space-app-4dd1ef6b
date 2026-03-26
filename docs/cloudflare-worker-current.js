@@ -463,8 +463,10 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
     const data = await res.json();
 
     // Write to both KV (global) and Cache API (per-colo) in background
+    // ALSO pre-warm first page of products so frontend gets instant cache hit
     if (data && ctx) {
       const dataStr = JSON.stringify(data);
+      const storeId = data?.store?.id;
       ctx.waitUntil(
         Promise.all([
           env?.STORE_KV
@@ -478,12 +480,52 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
           ),
         ])
       );
+
+      // Pre-warm products into Supabase REST cache (background, non-blocking)
+      if (storeId) {
+        ctx.waitUntil(_prewarmProducts(storeId, env));
+      }
     }
 
     return data;
   } catch {
     clearTimeout(timeout);
     return null;
+  }
+}
+
+const PRODUCT_PREWARM_COLUMNS = "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+const PRODUCT_PREWARM_TTL = 300; // 5 minutes
+
+/**
+ * Pre-warm first page of products into Cache API so the frontend's
+ * Supabase REST call gets a near-instant response on the next request.
+ * This runs in background via waitUntil — never blocks the main response.
+ */
+async function _prewarmProducts(storeId, env) {
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/products?select=${encodeURIComponent(PRODUCT_PREWARM_COLUMNS)}&store_id=eq.${storeId}&is_active=eq.true&order=is_best_selling.desc.nullslast,created_at.desc.nullslast,id.asc&limit=20`;
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+    });
+    if (!res.ok) return;
+
+    // Cache the raw REST response so Supabase SDK cache picks it up
+    const productCacheKey = new Request(url);
+    await cache.put(
+      productCacheKey,
+      new Response(await res.text(), {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": `public, max-age=${PRODUCT_PREWARM_TTL}`,
+        },
+      })
+    );
+  } catch {
+    // Non-critical — silently fail
   }
 }
 
@@ -541,19 +583,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
       }
     }
 
-    const products = storefrontData.products || [];
-    const firstImage = products[0]?.image_url;
-    if (firstImage) {
-      const safeUrl = escapeHtml(firstImage);
-      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" />`;
-      try {
-        const imgOrigin = new URL(firstImage).origin;
-        if (!preconnectedOrigins.has(imgOrigin)) {
-          preconnectedOrigins.add(imgOrigin);
-          lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
-        }
-      } catch {}
-    }
+    // Products are no longer in shell — preconnect to Supabase REST is enough
   }
 
   // CSS preload — discover Vite's generated CSS bundle for parallel fetch

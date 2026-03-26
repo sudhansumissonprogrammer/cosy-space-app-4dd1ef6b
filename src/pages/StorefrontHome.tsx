@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQueryClient, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,12 +16,7 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 
-const INITIAL_LIMIT = 20;
-const PAGE_SIZE = 20;
-
-/** Lightweight column list — avoids fetching heavy fields */
-const PRODUCT_COLUMNS =
-  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+const INITIAL_LIMIT = PAGE_SIZE;
 
 function ProductCardSkeleton() {
   return (
@@ -60,26 +56,9 @@ export default function StorefrontHome() {
   });
 
   // Fetch initial products independently (shell no longer includes products)
-  const { data: initialProducts, isLoading: isInitialLoading } = useQuery({
-    queryKey: ["storefront-products", store.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(PRODUCT_COLUMNS)
-        .eq("store_id", store.id)
-        .eq("is_active", true)
-        .order("is_best_selling", { ascending: false })
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: true })
-        .limit(INITIAL_LIMIT);
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000,
-    enabled: !!store.id,
-  });
+  const { products: initialProducts, isLoading: isInitialLoading } = useStorefrontProducts(store.id);
 
-  const allCachedProducts = initialProducts || [];
+  const allCachedProducts = initialProducts;
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
