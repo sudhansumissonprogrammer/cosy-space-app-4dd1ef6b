@@ -510,7 +510,7 @@ async function _prewarmProducts(storeId, slug, ctx, env) {
   } catch {}
 
   try {
-    const data = await _fetchProductsFromDb(storeId, {});
+    const data = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
     await Promise.all([
       cache.put(
