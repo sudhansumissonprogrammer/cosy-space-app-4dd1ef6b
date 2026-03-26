@@ -172,7 +172,7 @@ export async function processImage(
  */
 export async function processImageMultiSize(
   file: File,
-  quality = DEFAULT_QUALITY,
+  quality?: number,
 ): Promise<MultiSizeResult> {
   const originalSize = file.size;
 
@@ -183,7 +183,6 @@ export async function processImageMultiSize(
   // Skip compression for images already under 100KB — preserve original quality
   if (file.size <= SKIP_THRESHOLD_KB * 1024) {
     const variants = new Map<VariantWidth, File>();
-    // Use the original file as-is for all variants
     for (const w of IMAGE_VARIANT_WIDTHS) {
       variants.set(w, file);
     }
@@ -193,24 +192,26 @@ export async function processImageMultiSize(
     };
   }
 
+  // Determine compression tier based on input size
+  const isHeavy = file.size > HEAVY_THRESHOLD_KB * 1024;
+  const effectiveQuality = quality ?? (isHeavy ? HEAVY_QUALITY : DEFAULT_QUALITY);
+
   const img = await loadImage(file);
   const variants = new Map<VariantWidth, File>();
   let mainResult: CompressionResult | null = null;
 
-  // Higher KB targets per variant to preserve quality
-  const variantTargetKB: Record<VariantWidth, number> = {
-    400: 90,
-    800: MAX_OUTPUT_KB,
-  };
+  // Tighter targets for heavy compression
+  const variantTargetKB: Record<VariantWidth, number> = isHeavy
+    ? { 400: 60, 800: HEAVY_OUTPUT_KB }
+    : { 400: 90, 800: MAX_OUTPUT_KB };
 
   for (const targetWidth of IMAGE_VARIANT_WIDTHS) {
-    // Skip variants larger than the original
     const effectiveWidth = Math.min(targetWidth, img.width);
     const { width, height } = scaleDimensions(img.width, img.height, effectiveWidth);
     const canvas = renderToCanvas(img, width, height);
 
     const targetKB = variantTargetKB[targetWidth];
-    const { blob, ext } = await compressCanvas(canvas, quality, targetKB);
+    const { blob, ext } = await compressCanvas(canvas, effectiveQuality, targetKB);
 
     const baseName = file.name.replace(/\.[^/.]+$/, "");
     const variantFile = new File([blob], `${baseName}-${targetWidth}w.${ext}`, { type: blob.type });
