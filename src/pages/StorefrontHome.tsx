@@ -286,6 +286,16 @@ export default function StorefrontHome() {
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
+          ) : isPaginatedError && displayProducts.length === 0 ? (
+            <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-lg border bg-card">
+              <p className="text-muted-foreground">Failed to load products</p>
+              <button
+                onClick={() => refetchPaginated()}
+                className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
           ) : displayProducts.length > 0 ? (
             <>
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
