@@ -1251,6 +1251,24 @@ export default {
       }
     }
 
+    // ─── /api/products → Products API (Cache → KV → DB) ───
+    if (url.pathname === "/api/products" && request.method === "GET") {
+      return handleProductsApi(request, url, ctx, env);
+    }
+
+    // CORS preflight for /api/products
+    if (url.pathname === "/api/products" && request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+
     // ─── SUPABASE API → pass through ───
     if (url.pathname.startsWith("/api") || url.pathname.startsWith("/rest")) {
       const isStorefrontRpc =
