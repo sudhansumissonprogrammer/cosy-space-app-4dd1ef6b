@@ -18,6 +18,10 @@ import { storefrontPath } from "@/lib/subdomain";
 const INITIAL_LIMIT = 20;
 const PAGE_SIZE = 20;
 
+/** Lightweight column list — avoids fetching heavy fields */
+const PRODUCT_COLUMNS =
+  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+
 function ProductCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -62,52 +66,60 @@ export default function StorefrontHome() {
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const categoryStyle = themeConfig?.category_style || "style-1";
 
-  // Split cached products into best-selling and regular
+  // ── Best-selling products (always from cache, shown above Popular) ──
   const bestSellingProducts = useMemo(() => {
     if (!allCachedProducts) return [];
     return allCachedProducts.filter((p: any) => p.is_best_selling);
   }, [allCachedProducts]);
 
-  const initialNonBestSelling = useMemo(() => {
-    if (!allCachedProducts) return [];
-    return allCachedProducts.filter((p: any) => !p.is_best_selling).slice(0, INITIAL_LIMIT);
-  }, [allCachedProducts]);
+  // ── Sort mode determines data strategy ──
+  // "popular" (default): use cached initial products + paginate from offset 20
+  // Any other sort: paginate entirely from API (offset 0) to guarantee consistent ordering
+  const isDefaultSort = sortBy === "popular";
 
-  // Total products count from prefetched data (set by StorefrontLayout)
+  const initialNonBestSelling = useMemo(() => {
+    if (!isDefaultSort || !allCachedProducts) return [];
+    return allCachedProducts.filter((p: any) => !p.is_best_selling).slice(0, INITIAL_LIMIT);
+  }, [allCachedProducts, isDefaultSort]);
+
   const totalProducts = queryClient.getQueryData<number>(["storefront-total-products", store.id]) ?? allCachedProducts?.length ?? 0;
   const totalNonBestSelling = totalProducts - bestSellingProducts.length;
-  const hasMoreBeyondInitial = totalNonBestSelling > INITIAL_LIMIT;
 
-  // Infinite query for products beyond the initial batch
+  // For default sort: skip the first 20 (served from cache)
+  // For custom sorts: start from 0 (full API pagination)
+  const apiOffset = isDefaultSort ? INITIAL_LIMIT : 0;
+  const hasMoreBeyondInitial = isDefaultSort ? totalNonBestSelling > INITIAL_LIMIT : totalNonBestSelling > 0;
+
   const {
     data: paginatedData,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isLoading: isPaginatedLoading,
   } = useInfiniteQuery({
     queryKey: ["storefront-home-more", store.id, sortBy],
     queryFn: async ({ pageParam = 0 }) => {
-      const offset = INITIAL_LIMIT + pageParam * PAGE_SIZE;
+      const offset = apiOffset + pageParam * PAGE_SIZE;
       let query = supabase
         .from("products")
-        .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+        .select(PRODUCT_COLUMNS)
         .eq("store_id", store.id)
         .eq("is_active", true)
         .eq("is_best_selling", false);
 
-      // Apply sort
+      // Apply sort with stable tiebreaker to prevent row flickering
       switch (sortBy) {
         case "price_asc":
-          query = query.order("price", { ascending: true });
+          query = query.order("price", { ascending: true }).order("id", { ascending: true });
           break;
         case "price_desc":
-          query = query.order("price", { ascending: false });
+          query = query.order("price", { ascending: false }).order("id", { ascending: true });
           break;
         case "newest":
-          query = query.order("created_at", { ascending: false });
+          query = query.order("created_at", { ascending: false }).order("id", { ascending: true });
           break;
-        default:
-          query = query.order("created_at", { ascending: false });
+        default: // "popular"
+          query = query.order("created_at", { ascending: false }).order("id", { ascending: true });
       }
 
       const { data, error } = await query.range(offset, offset + PAGE_SIZE - 1);
@@ -123,23 +135,17 @@ export default function StorefrontHome() {
 
   const extraProducts = paginatedData?.pages.flatMap((p) => p.products) || [];
 
-  // Merge initial (from cache) + paginated (from API)
+  // Merge: for default sort, prepend cached initial products
+  // For custom sorts, use only API results (no cache mixing)
   const displayProducts = useMemo(() => {
-    const initial = [...initialNonBestSelling];
-    // Apply client-side sort to the initial batch
-    switch (sortBy) {
-      case "price_asc":
-        initial.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price));
-        break;
-      case "price_desc":
-        initial.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price));
-        break;
-      case "newest":
-        initial.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        break;
+    if (isDefaultSort) {
+      return [...initialNonBestSelling, ...extraProducts];
     }
-    return [...initial, ...extraProducts];
-  }, [initialNonBestSelling, extraProducts, sortBy]);
+    return extraProducts;
+  }, [initialNonBestSelling, extraProducts, isDefaultSort]);
+
+  // Show loading state for custom sorts on first fetch
+  const showSkeleton = !allCachedProducts || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
 
   // Intersection Observer for infinite scroll
   const handleObserver = useCallback(
@@ -271,7 +277,7 @@ export default function StorefrontHome() {
             </div>
           </div>
 
-          {!allCachedProducts ? (
+          {showSkeleton ? (
             <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
@@ -299,7 +305,7 @@ export default function StorefrontHome() {
                 )}
               </div>
 
-              {/* View All link when there are more products */}
+              {/* View All link when infinite scroll is exhausted */}
               {!hasNextPage && totalProducts > 8 && (
                 <div className="flex justify-center pt-2">
                   <Link

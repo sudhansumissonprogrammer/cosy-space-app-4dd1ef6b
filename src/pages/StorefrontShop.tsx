@@ -48,6 +48,7 @@ export default function StorefrontShop() {
         .eq("store_id", store.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .range(from, to);
       if (error) throw error;
       return { products: data || [], page: pageParam };
