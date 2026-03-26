@@ -583,19 +583,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
       }
     }
 
-    const products = storefrontData.products || [];
-    const firstImage = products[0]?.image_url;
-    if (firstImage) {
-      const safeUrl = escapeHtml(firstImage);
-      lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" />`;
-      try {
-        const imgOrigin = new URL(firstImage).origin;
-        if (!preconnectedOrigins.has(imgOrigin)) {
-          preconnectedOrigins.add(imgOrigin);
-          lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
-        }
-      } catch {}
-    }
+    // Products are no longer in shell — preconnect to Supabase REST is enough
   }
 
   // CSS preload — discover Vite's generated CSS bundle for parallel fetch
