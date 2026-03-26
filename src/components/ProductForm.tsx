@@ -434,6 +434,40 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         }
       }
 
+      // ── Sync product images to Media Library ──
+      // Ensures all product images appear in the media library for easy URL copying
+      if (savedProductId && storeId) {
+        const allImageUrls: string[] = [];
+        if (imageUrl) allImageUrls.push(imageUrl);
+        for (const preview of additionalPreviews) {
+          if (preview.url && !preview.url.startsWith("blob:")) allImageUrls.push(preview.url);
+        }
+        // Also include freshly uploaded additional files
+        // (their URLs were already inserted into product_images above)
+
+        if (allImageUrls.length > 0) {
+          // Fetch existing media URLs to avoid duplicates
+          const { data: existingMedia } = await (supabase as any)
+            .from("media_library")
+            .select("file_url")
+            .eq("store_id", storeId)
+            .in("file_url", allImageUrls);
+
+          const existingUrls = new Set((existingMedia || []).map((m: any) => m.file_url));
+          const newUrls = allImageUrls.filter((u) => !existingUrls.has(u));
+
+          if (newUrls.length > 0) {
+            const inserts = newUrls.map((url) => ({
+              store_id: storeId,
+              file_url: url,
+              file_name: name.trim() || "product-image",
+              file_size: 0,
+            }));
+            await (supabase as any).from("media_library").insert(inserts);
+          }
+        }
+      }
+
       toast.success(isEditing ? "Product updated!" : "Product created!");
       if (onClose) {
         onClose();
