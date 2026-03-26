@@ -449,9 +449,11 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
   }
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" crossorigin />
-<link rel="dns-prefetch" href="${SUPABASE_URL}" />
-<link rel="preconnect" href="${SUPABASE_URL}/storage/v1" crossorigin />
-<link rel="dns-prefetch" href="${SUPABASE_URL}/storage/v1" />`;
+<link rel="dns-prefetch" href="${SUPABASE_URL}" />`;
+
+  // Track preconnected origins to avoid duplicates
+  const preconnectedOrigins = new Set();
+  try { preconnectedOrigins.add(new URL(SUPABASE_URL).origin); } catch {}
 
   let lcpPreload = "";
   if (storefrontData) {
@@ -475,7 +477,10 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
         lcpPreload += `<link rel="preload" as="image" href="${safeHeroUrl}" fetchpriority="high" />`;
         try {
           const heroOrigin = new URL(optUrl).origin;
-          lcpPreload += `<link rel="preconnect" href="${heroOrigin}" crossorigin />`;
+          if (!preconnectedOrigins.has(heroOrigin)) {
+            preconnectedOrigins.add(heroOrigin);
+            lcpPreload += `<link rel="preconnect" href="${heroOrigin}" crossorigin />`;
+          }
         } catch {}
       }
       if (store.logo_url) {
@@ -490,11 +495,19 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
       lcpPreload += `<link rel="preload" as="image" href="${safeUrl}" />`;
       try {
         const imgOrigin = new URL(firstImage).origin;
-        if (imgOrigin && !imgOrigin.includes("supabase")) {
+        if (!preconnectedOrigins.has(imgOrigin)) {
+          preconnectedOrigins.add(imgOrigin);
           lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
         }
       } catch {}
     }
+  }
+
+  // CSS preload — discover Vite's generated CSS bundle for parallel fetch
+  const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
+  let cssPreload = "";
+  if (cssMatch) {
+    cssPreload = `<link rel="preload" href="${cssMatch[1]}" as="style" />\n`;
   }
 
   // Extract JS chunks for modulepreload — ONLY storefront-relevant ones
@@ -510,7 +523,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
   }
 
   // ── KEY: Inject data BEFORE <head> content so it's available before inline scripts
-  html = html.replace("<head>", `<head>${injection}${lcpPreload}${modulePreloads}`);
+  html = html.replace("<head>", `<head>${injection}${lcpPreload}${cssPreload}${modulePreloads}`);
 
   const newHeaders = new Headers(response.headers);
   newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");

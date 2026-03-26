@@ -3,15 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Preconnect to critical origins -->
-    <link rel="preconnect" href="https://vjjlxmqgqtquggdajjvi.supabase.co" crossorigin />
-    <!-- Self-hosted Inter font — eliminates 2 external connections -->
+    <!-- Self-hosted Inter font — eliminates external connection latency -->
     <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <!-- Non-critical decorative fonts: fully deferred -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;700&family=Changa:wght@400;600&family=Changa+One:ital@0;1&family=Montserrat:wght@400;600;700&display=swap" media="print" onload="this.media='all'" />
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;700&family=Changa:wght@400;600&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
+    <!-- Decorative fonts (Alegreya SC, Changa, Montserrat) loaded via JS in StorefrontShell -->
     <title>Storivo — Create Your Online Store</title>
     <meta name="description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
     <meta name="author" content="Storivo" />
