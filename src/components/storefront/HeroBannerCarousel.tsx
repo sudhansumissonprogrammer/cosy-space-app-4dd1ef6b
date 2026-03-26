@@ -40,7 +40,7 @@ export default function HeroBannerCarousel({
   if (images.length === 1) {
     const srcSet = getImageSrcSet(images[0], [400, 600, 800, 1200]);
     return (
-      <div className={`relative ${className}`}>
+      <div className={`relative ${className}`} style={{ aspectRatio: "16/7", contain: "layout" }}>
         <img
           src={optimizeImageUrl(images[0], optimizeWidth)}
           srcSet={srcSet || undefined}
@@ -215,7 +215,7 @@ function CarouselInner({
   };
 
   return (
-    <div className={`relative overflow-hidden touch-pan-y group ${className || ""}`} role="region" aria-label={`${storeName} banner slideshow`}>
+    <div className={`relative overflow-hidden touch-pan-y group ${className || ""}`} style={{ aspectRatio: "16/7", contain: "layout" }} role="region" aria-label={`${storeName} banner slideshow`}>
       <div
         className="flex transition-transform duration-500 ease-out select-none"
         style={{ transform: `translateX(-${current * 100}%)`, cursor: "grab" }}
