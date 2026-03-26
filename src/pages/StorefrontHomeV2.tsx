@@ -261,6 +261,7 @@ export default function StorefrontHomeV2() {
         onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
         products={products}
         slug={slug!}
+        storeId={store.id}
         initialFiltersOpen={openFilters}
       />
 
