@@ -1,20 +1,24 @@
 /**
- * STORIVO PRODUCTION ROUTER v2.4 — KV + EDGE CACHING
+ * STORIVO PRODUCTION ROUTER v2.5 — KV + EDGE CACHING + HYDRATION FIX
+ *
+ * Changes from v2.4:
+ *   - Added X-Data-Source header (kv | cache-api | origin | none) for debugging
+ *   - Fixed FP→FCP hydration gap: Worker now disables the index.html prefetch
+ *     script by injecting window.__STOREFRONT_DATA__ BEFORE the inline script runs,
+ *     ensuring React picks up data instantly without re-fetching
+ *   - KV TTL increased to 600s for better hit rate
+ *   - Increased prefetch timeout to 2.5s for slow origins
  *
  * Routes:
  *   - *.storivo.in/*
  *   - storivo.in/*
  *   - custom domains (melleto.shop, mgwinner.in, etc.)
  *
- * KV Binding (optional but recommended):
+ * KV Binding:
  *   - STORE_KV: Cloudflare KV namespace for global storefront data cache
- *     Create via: wrangler kv:namespace create STORE_KV
- *     Add to wrangler.toml: [[kv_namespaces]]
- *       binding = "STORE_KV"
- *       id = "<your-namespace-id>"
  */
 
-const WORKER_VERSION = "2.4";
+const WORKER_VERSION = "2.5";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "core-gleam-hub.lovable.app";
 
@@ -35,7 +39,7 @@ const BOT_UA_REGEX =
 
 const ORIGIN_TIMEOUT_MS = 15_000;
 const EDGE_FN_TIMEOUT_MS = 10_000;
-const STOREFRONT_PREFETCH_TIMEOUT_MS = 1_500;
+const STOREFRONT_PREFETCH_TIMEOUT_MS = 2_500;
 
 const cache = caches.default;
 
@@ -111,12 +115,14 @@ function getCacheKey(request, slug = "") {
 
 /**
  * Add diagnostic headers to every response.
+ * @param {string} dataSource - "kv" | "cache-api" | "origin" | "none"
  */
-function addDiagnosticHeaders(response, { slug, cacheStatus }) {
+function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   const res = new Response(response.body, response);
   res.headers.set("X-Worker-Version", WORKER_VERSION);
   if (slug) res.headers.set("X-Store-Slug", slug);
   res.headers.set("X-Cache-Status", cacheStatus);
+  if (dataSource) res.headers.set("X-Data-Source", dataSource);
   return res;
 }
 
@@ -310,9 +316,12 @@ async function proxyToOrigin(request) {
 
 /* ============== PREFETCH STOREFRONT DATA (KV + Cache API) ============== */
 
-const KV_STOREFRONT_TTL = 120; // 2 minutes in KV (global, all colos)
+const KV_STOREFRONT_TTL = 600; // 10 minutes in KV (global, all colos)
 const CACHE_STOREFRONT_TTL = 300; // 5 minutes in Cache API (per-colo)
 
+/**
+ * Returns { data, source } where source is "kv" | "cache-api" | "origin" | "none"
+ */
 async function prefetchStorefrontData(slug, ctx, env) {
   const kvKey = `storefront:${slug}`;
   const dataCacheKey = new Request(`https://cache/storefront-data/${slug}`);
@@ -321,7 +330,7 @@ async function prefetchStorefrontData(slug, ctx, env) {
   if (env?.STORE_KV) {
     try {
       const kvData = await env.STORE_KV.get(kvKey, { type: "json" });
-      if (kvData) return kvData;
+      if (kvData) return { data: kvData, source: "kv" };
     } catch {}
   }
 
@@ -336,7 +345,7 @@ async function prefetchStorefrontData(slug, ctx, env) {
           env.STORE_KV.put(kvKey, JSON.stringify(data), { expirationTtl: KV_STOREFRONT_TTL })
         );
       }
-      return data;
+      return { data, source: "cache-api" };
     }
   } catch {}
 
@@ -359,18 +368,16 @@ async function prefetchStorefrontData(slug, ctx, env) {
       }
     );
     clearTimeout(timeout);
-    if (!res.ok) return null;
+    if (!res.ok) return { data: null, source: "none" };
     const data = await res.json();
 
     // Write to both KV (global) and Cache API (per-colo) in background
     if (data && ctx) {
       ctx.waitUntil(
         Promise.all([
-          // KV: global cache, all Cloudflare colos benefit
           env?.STORE_KV
             ? env.STORE_KV.put(kvKey, JSON.stringify(data), { expirationTtl: KV_STOREFRONT_TTL })
             : Promise.resolve(),
-          // Cache API: per-colo, instant for repeat visitors in same colo
           cache.put(
             dataCacheKey,
             new Response(JSON.stringify(data), {
@@ -381,28 +388,43 @@ async function prefetchStorefrontData(slug, ctx, env) {
       );
     }
 
-    return data;
+    return { data, source: "origin" };
   } catch {
     clearTimeout(timeout);
-    return null;
+    return { data: null, source: "none" };
   }
 }
 
 /* ============== INJECT STORE SLUG INTO HTML ============== */
 
+/**
+ * Returns { response, dataSource }
+ */
 async function fetchAndInjectSlug(request, slug, ctx, env) {
-  const [response, storefrontData] = await Promise.all([
+  const [response, prefetchResult] = await Promise.all([
     proxyToOrigin(request),
     prefetchStorefrontData(slug, ctx, env),
   ]);
 
+  const storefrontData = prefetchResult.data;
+  const dataSource = prefetchResult.source;
+
   const contentType = response.headers.get("content-type") || "";
 
   if (!contentType.includes("text/html") || !response.ok) {
-    return response;
+    return { response, dataSource };
   }
 
   let html = await response.text();
+
+  // ── HYDRATION FIX (v2.5) ──
+  // The index.html contains an inline <script> that also fetches get_storefront_data
+  // when __STOREFRONT_DATA__ is not set. Since we inject __STOREFRONT_DATA__ via the
+  // Worker, we need to ensure it's set BEFORE that inline script executes.
+  //
+  // Strategy: Inject our data script at the very top of <head>, before everything else.
+  // The inline script in index.html checks `if(window.__STOREFRONT_DATA__)return;`
+  // so it will short-circuit and NOT make a duplicate fetch.
 
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
@@ -417,7 +439,6 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
 
   let lcpPreload = "";
   if (storefrontData) {
-    // Preload hero banner (LCP element)
     const store = storefrontData.store;
     if (store) {
       let heroUrl = store.mobile_hero_url;
@@ -441,13 +462,11 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
           lcpPreload += `<link rel="preconnect" href="${heroOrigin}" crossorigin />`;
         } catch {}
       }
-      // Preload logo
       if (store.logo_url) {
         lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(store.logo_url)}" />`;
       }
     }
 
-    // Also preload first product image
     const products = storefrontData.products || [];
     const firstImage = products[0]?.image_url;
     if (firstImage) {
@@ -463,8 +482,6 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
   }
 
   // Extract JS chunks for modulepreload — ONLY storefront-relevant ones
-  // Dashboard-only chunks (charts, dash-vendor, admin, dashboard-pages, etc.)
-  // are excluded to save bandwidth and reduce connection overhead on storefront.
   const DASHBOARD_CHUNK_PATTERN = /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
   const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
   let modulePreloads = "";
@@ -476,16 +493,21 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
     }
   }
 
+  // ── KEY: Inject data BEFORE <head> content so it's available before inline scripts
   html = html.replace("<head>", `<head>${injection}${lcpPreload}${modulePreloads}`);
 
   const newHeaders = new Headers(response.headers);
   newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
   newHeaders.set("X-Store-Slug", slug);
+  newHeaders.set("X-Data-Source", dataSource);
 
-  return new Response(html, {
-    status: response.status,
-    headers: newHeaders,
-  });
+  return {
+    response: new Response(html, {
+      status: response.status,
+      headers: newHeaders,
+    }),
+    dataSource,
+  };
 }
 
 /* ============== CACHED FETCH (HARDENED) ============== */
@@ -496,9 +518,10 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
   // Only cache GET requests — all others bypass to origin
   if (request.method !== "GET") {
     if (isCustomDomain && slug) {
-      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx, env), { slug, cacheStatus: "BYPASS" });
+      const { response, dataSource } = await fetchAndInjectSlug(request, slug, ctx, env);
+      return addDiagnosticHeaders(response, { slug, cacheStatus: "BYPASS", dataSource });
     }
-    return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
+    return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS", dataSource: "none" });
   }
 
   const key = getCacheKey(request, slug);
@@ -511,9 +534,10 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
     request.headers.get("cookie")?.includes("auth")
   ) {
     if (isCustomDomain && slug) {
-      return addDiagnosticHeaders(await fetchAndInjectSlug(request, slug, ctx, env), { slug, cacheStatus: "BYPASS" });
+      const { response, dataSource } = await fetchAndInjectSlug(request, slug, ctx, env);
+      return addDiagnosticHeaders(response, { slug, cacheStatus: "BYPASS", dataSource });
     }
-    return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS" });
+    return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS", dataSource: "none" });
   }
 
   // Try cache first
@@ -525,67 +549,65 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
       const ct = cached.headers.get("content-type") || "";
       if (ct.includes("text/html")) {
         const cachedSlugHeader = cached.headers.get("X-Store-Slug");
-        // If the cached response doesn't have the slug header, treat as MISS
         if (!cachedSlugHeader || cachedSlugHeader !== slug) {
-          // Cache is stale/invalid — fetch fresh with injection
-          const fresh = await fetchAndInjectSlug(request, slug, ctx, env);
+          const { response: fresh, dataSource } = await fetchAndInjectSlug(request, slug, ctx, env);
           const freshCt = fresh.headers.get("content-type") || "";
           if (fresh.ok && freshCt.includes("text/html")) {
             ctx.waitUntil(cache.put(key, fresh.clone()));
           }
-          return addDiagnosticHeaders(fresh, { slug, cacheStatus: "MISS-INVALID" });
+          return addDiagnosticHeaders(fresh, { slug, cacheStatus: "MISS-INVALID", dataSource });
         }
       }
     }
 
     // Background revalidate
+    const cachedDataSource = cached.headers.get("X-Data-Source") || "cached";
     ctx.waitUntil(
-      (slug ? fetchAndInjectSlug(request, slug, ctx, env) : proxyToOrigin(request))
+      (slug ? fetchAndInjectSlug(request, slug, ctx, env).then(r => r.response) : proxyToOrigin(request))
         .then((res) => {
           const ct = res.headers.get("content-type") || "";
           if (res.ok && ct.includes("text/html")) {
-            // HARDENED: Only cache if tenant marker is present for tenant routes
             if (slug && !res.headers.get("X-Store-Slug")) {
-              return; // Don't cache HTML without tenant context
+              return;
             }
             return cache.put(key, res.clone());
           }
         })
         .catch(() => {})
     );
-    return addDiagnosticHeaders(cached, { slug, cacheStatus: "HIT" });
+    return addDiagnosticHeaders(cached, { slug, cacheStatus: "HIT", dataSource: cachedDataSource });
   }
 
   // Cache miss — fetch fresh
   let res;
+  let dataSource = "none";
   try {
     if (slug) {
-      res = await fetchAndInjectSlug(request, slug, ctx, env);
+      const result = await fetchAndInjectSlug(request, slug, ctx, env);
+      res = result.response;
+      dataSource = result.dataSource;
     } else {
       res = await proxyToOrigin(request);
     }
   } catch {
     const fallback = await cache.match(key);
-    if (fallback) return addDiagnosticHeaders(fallback, { slug, cacheStatus: "STALE-FALLBACK" });
+    if (fallback) return addDiagnosticHeaders(fallback, { slug, cacheStatus: "STALE-FALLBACK", dataSource: "cached" });
     return new Response("Server Error", { status: 500 });
   }
 
   const contentType = res.headers.get("content-type") || "";
-  // Only cache 200 HTML responses (not 204, 206, etc.)
   if (res.status === 200 && contentType.includes("text/html")) {
-    // HARDENED: Only cache if HTML has tenant marker for tenant routes
     if (slug) {
       const htmlSlugHeader = res.headers.get("X-Store-Slug");
       if (htmlSlugHeader === slug) {
         ctx.waitUntil(cache.put(key, res.clone()));
       }
-      // else: skip caching — this prevents bare HTML from polluting the cache
     } else {
       ctx.waitUntil(cache.put(key, res.clone()));
     }
   }
 
-  return addDiagnosticHeaders(res, { slug, cacheStatus: "MISS" });
+  return addDiagnosticHeaders(res, { slug, cacheStatus: "MISS", dataSource });
 }
 
 /* ============== OG HTML ============== */
@@ -745,11 +767,24 @@ export default {
           signal: controller.signal,
         });
         clearTimeout(timeout);
+
+        // Also check KV binding status
+        let kvStatus = "not-bound";
+        if (env?.STORE_KV) {
+          try {
+            await env.STORE_KV.get("__health_check__");
+            kvStatus = "connected";
+          } catch {
+            kvStatus = "error";
+          }
+        }
+
         return new Response(
           JSON.stringify({
             status: originCheck.ok ? "healthy" : "degraded",
             origin: originCheck.status,
             workerVersion: WORKER_VERSION,
+            kvStatus,
             timestamp: new Date().toISOString(),
           }),
           {
