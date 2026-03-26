@@ -139,7 +139,7 @@ function scaleDimensions(
 export async function processImage(
   file: File,
   maxDimension = DEFAULT_MAX_DIMENSION,
-  quality = DEFAULT_QUALITY,
+  quality?: number,
 ): Promise<CompressionResult> {
   const originalSize = file.size;
 
@@ -152,10 +152,14 @@ export async function processImage(
     return { file, originalSize, compressedSize: file.size, skipped: true };
   }
 
+  const isHeavy = file.size > HEAVY_THRESHOLD_KB * 1024;
+  const effectiveQuality = quality ?? (isHeavy ? HEAVY_QUALITY : DEFAULT_QUALITY);
+  const targetKB = isHeavy ? HEAVY_OUTPUT_KB : MAX_OUTPUT_KB;
+
   const img = await loadImage(file);
   const { width, height } = scaleDimensions(img.width, img.height, maxDimension);
   const canvas = renderToCanvas(img, width, height);
-  const { blob, ext } = await compressCanvas(canvas, quality, MAX_OUTPUT_KB);
+  const { blob, ext } = await compressCanvas(canvas, effectiveQuality, targetKB);
 
   URL.revokeObjectURL(img.src);
 
