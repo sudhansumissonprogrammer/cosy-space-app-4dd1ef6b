@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Minus, Plus, Search, UtensilsCrossed, SlidersHorizontal, X, ChevronDown } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { useCart } from "@/contexts/CartContext";
@@ -409,10 +410,8 @@ export default function StorefrontHomeV13() {
   const queryClient = useQueryClient();
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
-  const products =
-    (queryClient.getQueryData<any[]>(["storefront-products", store?.id]) || []).filter(
-      (p: any) => p.is_active
-    );
+  const { products: rawProducts } = useStorefrontProducts(store?.id);
+  const products = rawProducts.filter((p: any) => p.is_active);
 
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]) || [];
 

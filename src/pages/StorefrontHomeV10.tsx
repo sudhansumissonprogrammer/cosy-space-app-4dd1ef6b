@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import LazyRender from "@/components/storefront/LazyRender";
@@ -273,7 +274,7 @@ export default function StorefrontHomeV10() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-2";
