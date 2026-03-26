@@ -439,9 +439,14 @@ function AppRouter() {
   }
 
   // ── AUTH/DASHBOARD: Only reachable on root domain, preview, or localhost ──
+  // Wrap with DashboardProviders (lazy) to load Radix Toaster + TooltipProvider
   return (
     <AuthProvider>
-      <LazyAuthRoutes />
+      <Suspense fallback={<LoadingSpinner />}>
+        <DashboardProviders>
+          <LazyAuthRoutes />
+        </DashboardProviders>
+      </Suspense>
     </AuthProvider>
   );
 }
@@ -449,17 +454,14 @@ function AppRouter() {
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<LoadingSpinner />}>
-            <ErrorBoundary fallbackMessage="This page encountered an error">
-              <AppRouter />
-            </ErrorBoundary>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
+      <Sonner />
+      <BrowserRouter>
+        <Suspense fallback={<LoadingSpinner />}>
+          <ErrorBoundary fallbackMessage="This page encountered an error">
+            <AppRouter />
+          </ErrorBoundary>
+        </Suspense>
+      </BrowserRouter>
     </QueryClientProvider>
   </ErrorBoundary>
 );
