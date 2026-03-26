@@ -435,9 +435,41 @@ export default function BulkUpload() {
       queryClient.invalidateQueries({ queryKey: ["products-count", storeId] });
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
 
-      // Background-copy external images to our storage
-      if (_createdProducts.length > 0 && storeId) {
+      // Background-copy external images to our storage + sync to media library
+      if (_createdProducts && _createdProducts.length > 0 && storeId) {
         copyExternalImagesForProducts(_createdProducts, storeId);
+
+        // Auto-sync product images to media library (fire-and-forget)
+        const imageUrls = _createdProducts
+          .map((p) => p.image_url)
+          .filter((u): u is string => !!u && u.trim() !== "");
+
+        if (imageUrls.length > 0) {
+          supabase
+            .from("media_library")
+            .select("file_url")
+            .eq("store_id", storeId)
+            .in("file_url", imageUrls)
+            .then(({ data: existing }) => {
+              const existingSet = new Set((existing || []).map((m: any) => m.file_url));
+              const newUrls = imageUrls.filter((u) => !existingSet.has(u));
+              if (newUrls.length > 0) {
+                supabase
+                  .from("media_library")
+                  .insert(
+                    newUrls.map((url) => ({
+                      store_id: storeId,
+                      file_url: url,
+                      file_name: url.split("/").pop()?.split("?")[0] || "product-image",
+                      file_size: 0,
+                    }))
+                  )
+                  .then(() =>
+                    console.info(`[media-sync] Synced ${newUrls.length} images to media library`)
+                  );
+              }
+            });
+        }
       }
 
       const msg = [];
