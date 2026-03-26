@@ -30,7 +30,7 @@
  *   - STORE_KV: Cloudflare KV namespace for global storefront data cache
  */
 
-const WORKER_VERSION = "2.7";
+const WORKER_VERSION = "2.8";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "core-gleam-hub.lovable.app";
 
@@ -372,11 +372,17 @@ async function proxyToOrigin(request) {
 
 /* ============== PREFETCH STOREFRONT DATA (KV + Cache API) ============== */
 
-const KV_STOREFRONT_TTL = 600; // 10 minutes in KV (global, all colos)
-const CACHE_STOREFRONT_TTL = 300; // 5 minutes in Cache API (per-colo)
+const KV_STOREFRONT_TTL = 1800; // 30 minutes in KV (shell is tiny ~10KB)
+const CACHE_STOREFRONT_TTL = 600; // 10 minutes in Cache API (per-colo)
+
+/* ============== REQUEST COALESCING ============== */
+// Prevents cache-miss storm: if 100 users hit an uncached store simultaneously,
+// only 1 DB call is made. The other 99 await the same promise.
+const inflightRequests = new Map();
 
 /**
  * Returns { data, source } where source is "kv" | "cache-api" | "origin" | "none"
+ * Uses get_storefront_shell (no products) — payload ~5-15KB, always fits KV.
  */
 async function prefetchStorefrontData(slug, ctx, env) {
   const kvKey = `storefront:${slug}`;
@@ -405,13 +411,42 @@ async function prefetchStorefrontData(slug, ctx, env) {
     }
   } catch {}
 
-  // 3. Cache miss — fetch from Supabase with timeout
+  // 3. Cache miss — use request coalescing to prevent DB storm
+  if (inflightRequests.has(slug)) {
+    try {
+      const data = await inflightRequests.get(slug);
+      return { data, source: "origin" };
+    } catch {
+      return { data: null, source: "none" };
+    }
+  }
+
+  const fetchPromise = _fetchShellFromSupabase(slug, ctx, env);
+  inflightRequests.set(slug, fetchPromise);
+
+  try {
+    const data = await fetchPromise;
+    return { data, source: "origin" };
+  } catch {
+    return { data: null, source: "none" };
+  } finally {
+    inflightRequests.delete(slug);
+  }
+}
+
+/**
+ * Internal: fetch shell data from Supabase and write to cache layers.
+ */
+async function _fetchShellFromSupabase(slug, ctx, env) {
+  const kvKey = `storefront:${slug}`;
+  const dataCacheKey = new Request(`https://cache/storefront-data/${slug}`);
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), STOREFRONT_PREFETCH_TIMEOUT_MS);
 
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/rpc/get_storefront_data`,
+      `${SUPABASE_URL}/rest/v1/rpc/get_storefront_shell`,
       {
         method: "POST",
         headers: {
@@ -420,30 +455,24 @@ async function prefetchStorefrontData(slug, ctx, env) {
           "Content-Type": "application/json",
         },
         signal: controller.signal,
-        body: JSON.stringify({ _slug: slug, _product_limit: 50 }),
+        body: JSON.stringify({ _slug: slug }),
       }
     );
     clearTimeout(timeout);
-    if (!res.ok) return { data: null, source: "none" };
+    if (!res.ok) return null;
     const data = await res.json();
-
-    // SECURITY: Cap storefront data size to prevent oversized HTML injection
-    const dataStr = JSON.stringify(data);
-    if (dataStr.length > 512_000) { // 500KB max
-      console.warn(`Storefront data for ${slug} exceeds 500KB (${dataStr.length} bytes), skipping injection`);
-      return { data: null, source: "none" };
-    }
 
     // Write to both KV (global) and Cache API (per-colo) in background
     if (data && ctx) {
+      const dataStr = JSON.stringify(data);
       ctx.waitUntil(
         Promise.all([
           env?.STORE_KV
-            ? env.STORE_KV.put(kvKey, JSON.stringify(data), { expirationTtl: KV_STOREFRONT_TTL })
+            ? env.STORE_KV.put(kvKey, dataStr, { expirationTtl: KV_STOREFRONT_TTL })
             : Promise.resolve(),
           cache.put(
             dataCacheKey,
-            new Response(JSON.stringify(data), {
+            new Response(dataStr, {
               headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` },
             })
           ),
@@ -451,10 +480,10 @@ async function prefetchStorefrontData(slug, ctx, env) {
       );
     }
 
-    return { data, source: "origin" };
+    return data;
   } catch {
     clearTimeout(timeout);
-    return { data: null, source: "none" };
+    return null;
   }
 }
 
