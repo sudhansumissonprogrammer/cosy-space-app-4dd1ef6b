@@ -307,17 +307,6 @@ export default function StoreSettings() {
               <Label htmlFor="location">Full Address</Label>
               <Input id="location" placeholder="123 Main St, City" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={500} />
             </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Business Hours</Label>
-              <div className="grid gap-2">
-                {Object.entries(businessHours).map(([day, hours]) => (
-                  <div key={day} className="flex items-center gap-2">
-                    <span className="w-10 text-sm font-medium capitalize text-muted-foreground">{day}</span>
-                    <Input placeholder="9:00-18:00 or Closed" value={hours} onChange={(e) => setBusinessHours((prev) => ({ ...prev, [day]: e.target.value }))} maxLength={50} />
-                  </div>
-                ))}
-              </div>
-            </div>
           </CardContent>
         </Card>
 

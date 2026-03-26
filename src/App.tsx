@@ -30,10 +30,6 @@ const DashboardProviders = lazy(() =>
 const StorefrontLayout = lazy(() => import("./layouts/StorefrontLayout"));
 const StorefrontLayoutV2 = lazy(() => import("./layouts/StorefrontLayoutV2"));
 const StorefrontLayoutV3 = lazy(() => import("./layouts/StorefrontLayoutV3"));
-const StorefrontLayoutV4 = lazy(() => import("./layouts/StorefrontLayoutV4"));
-const StorefrontLayoutV6 = lazy(() => import("./layouts/StorefrontLayoutV6"));
-const StorefrontLayoutV7 = lazy(() => import("./layouts/StorefrontLayoutV7"));
-const StorefrontLayoutV8 = lazy(() => import("./layouts/StorefrontLayoutV8"));
 const StorefrontLayoutV10 = lazy(() => import("./layouts/StorefrontLayoutV10"));
 const StorefrontLayoutV11 = lazy(() => import("./layouts/StorefrontLayoutV11"));
 const StorefrontLayoutV12 = lazy(() => import("./layouts/StorefrontLayoutV12"));
@@ -43,10 +39,6 @@ const StorefrontLayoutV13 = lazy(() => import("./layouts/StorefrontLayoutV13"));
 const StorefrontHome = lazy(() => import("./pages/StorefrontHome"));
 const StorefrontHomeV2 = lazy(() => import("./pages/StorefrontHomeV2"));
 const StorefrontHomeV3 = lazy(() => import("./pages/StorefrontHomeV3"));
-const StorefrontHomeV4 = lazy(() => import("./pages/StorefrontHomeV4"));
-const StorefrontHomeV6 = lazy(() => import("./pages/StorefrontHomeV6"));
-const StorefrontHomeV7 = lazy(() => import("./pages/StorefrontHomeV7"));
-const StorefrontHomeV8 = lazy(() => import("./pages/StorefrontHomeV8"));
 const StorefrontHomeV10 = lazy(() => import("./pages/StorefrontHomeV10"));
 const StorefrontHomeV11 = lazy(() => import("./pages/StorefrontHomeV11"));
 const StorefrontHomeV12 = lazy(() => import("./pages/StorefrontHomeV12"));
@@ -160,7 +152,7 @@ const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
 
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
-  const HomeComponent = theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV11 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-8" ? StorefrontHomeV8 : theme === "theme-7" ? StorefrontHomeV7 : theme === "theme-6" ? StorefrontHomeV6 : theme === "theme-4" ? StorefrontHomeV4 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+  const HomeComponent = theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV11 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
   return (
     <>
       <Route index element={<HomeComponent />} />
@@ -213,10 +205,6 @@ function getLayoutComponent(theme: string) {
     case "theme-12": return StorefrontLayoutV12;
     case "theme-11": return StorefrontLayoutV11;
     case "theme-10": return StorefrontLayoutV10;
-    case "theme-8": return StorefrontLayoutV8;
-    case "theme-7": return StorefrontLayoutV7;
-    case "theme-6": return StorefrontLayoutV6;
-    case "theme-4": return StorefrontLayoutV4;
     case "theme-3": return StorefrontLayoutV3;
     case "theme-2": return StorefrontLayoutV2;
     default: return StorefrontLayout;
@@ -268,10 +256,6 @@ function prefetchHomeChunk(theme: string) {
     case "theme-12": return import("./pages/StorefrontHomeV12");
     case "theme-11": return import("./pages/StorefrontHomeV11");
     case "theme-10": return import("./pages/StorefrontHomeV10");
-    case "theme-8": return import("./pages/StorefrontHomeV8");
-    case "theme-7": return import("./pages/StorefrontHomeV7");
-    case "theme-6": return import("./pages/StorefrontHomeV6");
-    case "theme-4": return import("./pages/StorefrontHomeV4");
     case "theme-3": return import("./pages/StorefrontHomeV3");
     case "theme-2": return import("./pages/StorefrontHomeV2");
     default: return import("./pages/StorefrontHome");
