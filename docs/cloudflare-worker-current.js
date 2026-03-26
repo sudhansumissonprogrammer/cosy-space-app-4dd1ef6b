@@ -1465,13 +1465,18 @@ export default {
       return handleProductsApi(request, url, ctx, env);
     }
 
-    // CORS preflight for /api/products
-    if (url.pathname === "/api/products" && request.method === "OPTIONS") {
+    // ─── /api/purge-products → Cache invalidation ───
+    if (url.pathname === "/api/purge-products" && request.method === "POST") {
+      return handlePurgeProducts(request, url, ctx, env);
+    }
+
+    // CORS preflight for /api/*
+    if ((url.pathname === "/api/products" || url.pathname === "/api/purge-products") && request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
           "Access-Control-Max-Age": "86400",
         },
