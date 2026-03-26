@@ -530,20 +530,13 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
 /* ============== STORE RESPONSE IN EDGE CACHE ============== */
 
 /**
- * Write the fully-formed HTML response to Cache API under BOTH:
- *  1. The early-exit key (hostname+path) — used for instant returns before any processing
- *  2. The slug-specific key — used as fallback validation
+ * Write the fully-formed HTML response to Cache API under the early-exit key.
+ * On next request, the main handler returns this instantly before any processing.
  */
 function storeInEdgeCache(ctx, hostname, pathname, slug, response) {
   const earlyKey = getEarlyCacheKey(hostname, pathname);
-  // Clone twice: one for early key, one for slug key
   ctx.waitUntil(
-    Promise.all([
-      cache.put(earlyKey, response.clone()),
-      slug
-        ? cache.put(getCacheKey({ url: `https://${hostname}${pathname}`, headers: { get: () => hostname } }, slug), response.clone())
-        : Promise.resolve(),
-    ]).catch(() => {})
+    cache.put(earlyKey, response.clone()).catch(() => {})
   );
 }
 
