@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { isCustomDomainHost, isSubdomainHost, getSubdomainSlug } from "@/lib/subdomain";
 
 const PAGE_SIZE = 20;
 
@@ -9,32 +8,19 @@ const PRODUCT_COLUMNS =
   "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
 /**
- * Determine the Worker API base URL for product fetches.
- *
- * On production (custom domain or subdomain): current origin serves the Worker.
- * On preview/localhost: falls back to direct Supabase (Worker not available).
- */
-function getWorkerApiBase(): string | null {
-  const hostname = window.location.hostname;
-  if (isCustomDomainHost(hostname) || isSubdomainHost(hostname)) {
-    return window.location.origin;
-  }
-  return null;
-}
-
-/**
- * Fetch products via Worker /api/products (Cache → KV → DB).
- * Falls back to direct Supabase only in preview/localhost environments.
+ * Fetch products via Worker /api/products (domain resolved from Host header).
+ * Falls back to direct Supabase ONLY in preview/localhost environments
+ * where the Worker is not available — using the SAME interface shape.
  */
 async function fetchProducts(storeId: string): Promise<any[]> {
-  const workerBase = getWorkerApiBase();
+  const hostname = window.location.hostname;
+  const isLocal = hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+  const isPreview = hostname.endsWith(".lovable.app") || hostname.endsWith(".lovableproject.com");
 
-  if (workerBase) {
-    // ── Production: call Worker API (no direct DB calls) ──
-    const domain = window.location.hostname.toLowerCase();
-    const url = `${workerBase}/api/products?store_id=${encodeURIComponent(storeId)}&domain=${encodeURIComponent(domain)}`;
-
-    const res = await fetch(url, {
+  if (!isLocal && !isPreview) {
+    // ── Production: call Worker /api/products ──
+    // No store_id sent — Worker resolves it from Host header (secure)
+    const res = await fetch(`${window.location.origin}/api/products`, {
       headers: { Accept: "application/json" },
     });
 
@@ -42,7 +28,7 @@ async function fetchProducts(storeId: string): Promise<any[]> {
     return await res.json();
   }
 
-  // ── Preview/localhost fallback: direct Supabase (Worker not available) ──
+  // ── Preview/localhost fallback: direct Supabase ──
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_COLUMNS)
@@ -61,8 +47,8 @@ async function fetchProducts(storeId: string): Promise<any[]> {
  * Shared hook for fetching the first page of storefront products.
  * Used by ALL home page variants (V1–V13).
  *
- * Production: fetches via Worker /api/products (Cache → KV → DB).
- * Preview: falls back to direct Supabase.
+ * Production: Worker /api/products (Cache → KV → DB, no direct DB).
+ * Preview: Supabase fallback.
  *
  * Returns { products, isLoading } — products is always an array (never undefined).
  */
