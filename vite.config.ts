@@ -110,8 +110,12 @@ export default defineConfig(({ mode }) => ({
             return "supabase";
           }
 
-          // === Radix UI primitives ===
-          if (id.includes("node_modules/@radix-ui")) {
+          // === Radix UI primitives (exclude tiny react-slot to avoid pulling ===
+          // === the entire chunk via Button → ErrorBoundary on every page)    ===
+          if (
+            id.includes("node_modules/@radix-ui") &&
+            !id.includes("react-slot")
+          ) {
             return "radix";
           }
 

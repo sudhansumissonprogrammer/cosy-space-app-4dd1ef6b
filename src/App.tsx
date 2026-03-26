@@ -1,14 +1,30 @@
 import { lazy, Suspense, useMemo, useState, useEffect, useRef } from "react";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { getSubdomainSlug, ROOT_DOMAIN, isCustomDomainHost, isSubdomainHost } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+
+// Radix providers (Toaster + TooltipProvider) and AuthProvider are only needed
+// by dashboard/admin. Lazy-loading them keeps 150KB Radix + 171KB Supabase
+// chunks OFF the storefront critical path (~92KB gzip saved).
+const DashboardProviders = lazy(() =>
+  Promise.all([
+    import("@/components/ui/toaster"),
+    import("@/components/ui/tooltip"),
+    import("@/contexts/AuthContext"),
+  ]).then(([toasterMod, tooltipMod, authMod]) => ({
+    default: ({ children }: { children: React.ReactNode }) => (
+      <authMod.AuthProvider>
+        <tooltipMod.TooltipProvider>
+          <toasterMod.Toaster />
+          {children}
+        </tooltipMod.TooltipProvider>
+      </authMod.AuthProvider>
+    ),
+  }))
+);
 
 // Storefront layouts — ALL lazy loaded for clean chunk isolation
 const StorefrontLayout = lazy(() => import("./layouts/StorefrontLayout"));
@@ -232,6 +248,7 @@ function usePrefetchStorefrontData(slug: string | undefined) {
     queryClient.prefetchQuery({
       queryKey: ["storefront-bulk", slug],
       queryFn: async () => {
+        const { supabase } = await import("@/integrations/supabase/client");
         const { data, error } = await supabase.rpc("get_storefront_data" as any, {
           _slug: slug,
           _product_limit: 20,
@@ -425,27 +442,27 @@ function AppRouter() {
   }
 
   // ── AUTH/DASHBOARD: Only reachable on root domain, preview, or localhost ──
+  // DashboardProviders includes AuthProvider + Radix Toaster + TooltipProvider
   return (
-    <AuthProvider>
-      <LazyAuthRoutes />
-    </AuthProvider>
+    <Suspense fallback={<LoadingSpinner />}>
+      <DashboardProviders>
+        <LazyAuthRoutes />
+      </DashboardProviders>
+    </Suspense>
   );
 }
 
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<LoadingSpinner />}>
-            <ErrorBoundary fallbackMessage="This page encountered an error">
-              <AppRouter />
-            </ErrorBoundary>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
+      <Sonner />
+      <BrowserRouter>
+        <Suspense fallback={<LoadingSpinner />}>
+          <ErrorBoundary fallbackMessage="This page encountered an error">
+            <AppRouter />
+          </ErrorBoundary>
+        </Suspense>
+      </BrowserRouter>
     </QueryClientProvider>
   </ErrorBoundary>
 );
