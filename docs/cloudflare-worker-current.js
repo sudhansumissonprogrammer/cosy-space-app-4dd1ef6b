@@ -824,6 +824,59 @@ export default {
       return proxyToOrigin(request);
     }
 
+    // ─── EARLY EDGE CACHE EXIT ───
+    // Check Cache API BEFORE any slug resolution, bot detection, or origin fetch.
+    // On HIT: return instantly (~1-5ms), zero processing overhead.
+    // Skipped for: bots, non-GET, API routes, admin/dashboard, auth cookies.
+    const isCacheableRequest =
+      request.method === "GET" &&
+      !url.pathname.startsWith("/api") &&
+      !url.pathname.startsWith("/rest") &&
+      !url.pathname.startsWith("/admin") &&
+      !url.pathname.startsWith("/dashboard") &&
+      url.pathname !== "/sitemap.xml" &&
+      url.pathname !== "/robots.txt" &&
+      url.pathname !== "/__health" &&
+      !request.headers.get("cookie")?.includes("auth");
+
+    const ua = request.headers.get("User-Agent") || "";
+    const isBot = BOT_UA_REGEX.test(ua);
+
+    if (isCacheableRequest && !isBot) {
+      const earlyKey = getEarlyCacheKey(hostname, url.pathname);
+      const earlyHit = await cache.match(earlyKey);
+
+      if (earlyHit) {
+        const cachedSlug = earlyHit.headers.get("X-Store-Slug") || "";
+        const cachedDataSource = earlyHit.headers.get("X-Data-Source") || "edge";
+
+        // Background revalidation: refresh cache without blocking response
+        ctx.waitUntil((async () => {
+          try {
+            // Determine slug for revalidation
+            let revalSlug = cachedSlug;
+            if (!revalSlug && !hostname.endsWith(`.${ROOT_DOMAIN}`) && hostname !== ROOT_DOMAIN) {
+              revalSlug = await resolveDomain(hostname.replace(/^www\./, "").toLowerCase().trim());
+            } else if (!revalSlug && hostname.endsWith(`.${ROOT_DOMAIN}`)) {
+              revalSlug = hostname.replace(`.${ROOT_DOMAIN}`, "");
+            }
+            if (revalSlug) {
+              const result = await fetchAndInjectSlug(request, revalSlug, ctx, env);
+              if (result.response.ok) {
+                storeInEdgeCache(ctx, hostname, url.pathname, revalSlug, result.response);
+              }
+            }
+          } catch {}
+        })());
+
+        return addDiagnosticHeaders(earlyHit, {
+          slug: cachedSlug,
+          cacheStatus: "HIT",
+          dataSource: cachedDataSource,
+        });
+      }
+    }
+
     // ─── SUPABASE API → pass through ───
     if (url.pathname.startsWith("/api") || url.pathname.startsWith("/rest")) {
       const isStorefrontRpc =
