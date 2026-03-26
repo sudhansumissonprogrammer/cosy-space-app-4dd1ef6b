@@ -97,7 +97,7 @@ export default function StorefrontHome() {
   const isDefaultSort = sortBy === "popular";
 
   const initialNonBestSelling = useMemo(() => {
-    if (!isDefaultSort || !allCachedProducts) return [];
+    if (!isDefaultSort || !allCachedProducts.length) return [];
     return allCachedProducts.filter((p: any) => !p.is_best_selling).slice(0, INITIAL_LIMIT);
   }, [allCachedProducts, isDefaultSort]);
 
