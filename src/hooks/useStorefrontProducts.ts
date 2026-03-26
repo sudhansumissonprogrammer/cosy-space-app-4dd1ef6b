@@ -13,17 +13,26 @@ const PRODUCT_COLUMNS =
  * where the Worker is not available — using the SAME interface shape.
  */
 async function fetchProducts(storeId: string): Promise<any[]> {
+  // Check if index.html prefetch already has products in flight
+  const prefetchPromise = (window as any).__PRODUCTS_PREFETCH__;
+  if (prefetchPromise) {
+    (window as any).__PRODUCTS_PREFETCH__ = null; // consume once
+    try {
+      const result = await prefetchPromise;
+      if (Array.isArray(result) && result.length > 0) return result;
+    } catch {
+      // fall through to normal fetch
+    }
+  }
+
   const hostname = window.location.hostname;
   const isLocal = hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
   const isPreview = hostname.endsWith(".lovable.app") || hostname.endsWith(".lovableproject.com");
 
   if (!isLocal && !isPreview) {
-    // ── Production: call Worker /api/products ──
-    // No store_id sent — Worker resolves it from Host header (secure)
     const res = await fetch(`${window.location.origin}/api/products`, {
       headers: { Accept: "application/json" },
     });
-
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
     return await res.json();
   }

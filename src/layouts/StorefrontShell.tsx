@@ -123,11 +123,15 @@ export default function StorefrontShell({
     storeSlug: store?.slug,
   });
 
-  // Track page view — fire once per store
+  // Track page view — deferred to idle time to avoid blocking LCP
   useEffect(() => {
     if (!store?.id || viewTracked.current) return;
     viewTracked.current = true;
-    trackPageView(store.id);
+    const schedule =
+      typeof requestIdleCallback !== "undefined"
+        ? (cb: () => void) => requestIdleCallback(cb, { timeout: 5000 })
+        : (cb: () => void) => setTimeout(cb, 2000);
+    schedule(() => trackPageView(store.id));
   }, [store?.id]);
 
   // Theme config (reactive — updates when cache changes via live preview)
