@@ -105,8 +105,39 @@ const LoadingSpinner = () => {
     );
   }
 
-  // Storefront — return null because index.html already has the static skeleton
-  return null;
+  // Storefront — render a lightweight skeleton so users see content structure
+  // while lazy layout/page chunks download. Previously returned null which
+  // caused a blank screen because React already replaced the index.html skeleton.
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+          <div className="h-10 w-10 animate-pulse rounded-lg bg-muted" />
+          <div className="h-10 w-24 animate-pulse rounded-lg bg-muted" />
+          <div className="flex-1" />
+          <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
+          <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
+        </div>
+      </div>
+      <div className="w-full" style={{ aspectRatio: "16/7", background: "hsl(var(--muted))" }}>
+        <div className="h-full w-full animate-pulse" />
+      </div>
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[0,1,2,3].map(i => (
+            <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
+              <div className="w-full animate-pulse bg-muted" style={{ aspectRatio: "4/5" }} />
+              <div className="p-2.5 space-y-2">
+                <div className="h-3 w-16 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
