@@ -9,7 +9,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef, useCallback } from "react";
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 20;
 
 function ProductCardSkeleton() {
   return (
