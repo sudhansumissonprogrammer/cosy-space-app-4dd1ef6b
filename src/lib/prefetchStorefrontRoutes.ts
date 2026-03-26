@@ -3,10 +3,12 @@
  * Called once when the storefront layout mounts.
  */
 const storefrontImports = [
-  () => import("@/pages/CategoryDetail"),
+  // Highest priority — most common navigation targets
   () => import("@/pages/ProductDetail"),
   () => import("@/pages/CartPage"),
   () => import("@/pages/CheckoutPage"),
+  // Lower priority
+  () => import("@/pages/CategoryDetail"),
   () => import("@/pages/StorefrontShop"),
   () => import("@/pages/WishlistPage"),
   () => import("@/pages/StorefrontContact"),
@@ -15,7 +17,7 @@ const storefrontImports = [
 
 let prefetched = false;
 
-const PREFETCH_START_DELAY_MS = 6000;
+const PREFETCH_START_DELAY_MS = 2000;
 
 function shouldPrefetch() {
   const nav = navigator as Navigator & {

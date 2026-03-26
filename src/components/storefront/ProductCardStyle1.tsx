@@ -6,6 +6,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, splitImageUrls } from "@/lib/imageOptimize";
 import { getProductRating, getDiscountPercent } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
+import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 
 interface Props {
   product: Tables<"products">;
