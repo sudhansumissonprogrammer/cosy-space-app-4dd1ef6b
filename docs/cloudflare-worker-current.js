@@ -516,6 +516,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
   newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
   newHeaders.set("X-Store-Slug", slug);
   newHeaders.set("X-Data-Source", dataSource);
+  newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
 
   return {
     response: new Response(html, {
@@ -526,10 +527,31 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
   };
 }
 
+/* ============== STORE RESPONSE IN EDGE CACHE ============== */
+
+/**
+ * Write the fully-formed HTML response to Cache API under BOTH:
+ *  1. The early-exit key (hostname+path) — used for instant returns before any processing
+ *  2. The slug-specific key — used as fallback validation
+ */
+function storeInEdgeCache(ctx, hostname, pathname, slug, response) {
+  const earlyKey = getEarlyCacheKey(hostname, pathname);
+  // Clone twice: one for early key, one for slug key
+  ctx.waitUntil(
+    Promise.all([
+      cache.put(earlyKey, response.clone()),
+      slug
+        ? cache.put(getCacheKey({ url: `https://${hostname}${pathname}`, headers: { get: () => hostname } }, slug), response.clone())
+        : Promise.resolve(),
+    ]).catch(() => {})
+  );
+}
+
 /* ============== CACHED FETCH (HARDENED) ============== */
 
 async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env = {}) {
   const url = new URL(request.url);
+  const hostname = request.headers.get("host") || url.hostname;
 
   // Only cache GET requests — all others bypass to origin
   if (request.method !== "GET") {
@@ -539,8 +561,6 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
     }
     return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS", dataSource: "none" });
   }
-
-  const key = getCacheKey(request, slug);
 
   // Skip cache for admin, API, dashboard, and authenticated requests
   if (
@@ -556,45 +576,9 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
     return addDiagnosticHeaders(await proxyToOrigin(request), { slug, cacheStatus: "BYPASS", dataSource: "none" });
   }
 
-  // Try cache first
-  const cached = await cache.match(key);
+  // NOTE: Cache lookup already happened in main handler (early exit).
+  // If we're here, it was a MISS. Fetch fresh and store.
 
-  if (cached) {
-    // HARDENED: Validate cached HTML has tenant marker if slug is expected
-    if (slug) {
-      const ct = cached.headers.get("content-type") || "";
-      if (ct.includes("text/html")) {
-        const cachedSlugHeader = cached.headers.get("X-Store-Slug");
-        if (!cachedSlugHeader || cachedSlugHeader !== slug) {
-          const { response: fresh, dataSource } = await fetchAndInjectSlug(request, slug, ctx, env);
-          const freshCt = fresh.headers.get("content-type") || "";
-          if (fresh.ok && freshCt.includes("text/html")) {
-            ctx.waitUntil(cache.put(key, fresh.clone()));
-          }
-          return addDiagnosticHeaders(fresh, { slug, cacheStatus: "MISS-INVALID", dataSource });
-        }
-      }
-    }
-
-    // Background revalidate
-    const cachedDataSource = cached.headers.get("X-Data-Source") || "cached";
-    ctx.waitUntil(
-      (slug ? fetchAndInjectSlug(request, slug, ctx, env).then(r => r.response) : proxyToOrigin(request))
-        .then((res) => {
-          const ct = res.headers.get("content-type") || "";
-          if (res.ok && ct.includes("text/html")) {
-            if (slug && !res.headers.get("X-Store-Slug")) {
-              return;
-            }
-            return cache.put(key, res.clone());
-          }
-        })
-        .catch(() => {})
-    );
-    return addDiagnosticHeaders(cached, { slug, cacheStatus: "HIT", dataSource: cachedDataSource });
-  }
-
-  // Cache miss — fetch fresh
   let res;
   let dataSource = "none";
   try {
@@ -606,20 +590,22 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
       res = await proxyToOrigin(request);
     }
   } catch {
-    const fallback = await cache.match(key);
+    const earlyKey = getEarlyCacheKey(hostname, url.pathname);
+    const fallback = await cache.match(earlyKey);
     if (fallback) return addDiagnosticHeaders(fallback, { slug, cacheStatus: "STALE-FALLBACK", dataSource: "cached" });
     return new Response("Server Error", { status: 500 });
   }
 
   const contentType = res.headers.get("content-type") || "";
   if (res.status === 200 && contentType.includes("text/html")) {
+    // Validate tenant marker before caching
     if (slug) {
       const htmlSlugHeader = res.headers.get("X-Store-Slug");
       if (htmlSlugHeader === slug) {
-        ctx.waitUntil(cache.put(key, res.clone()));
+        storeInEdgeCache(ctx, hostname, url.pathname, slug, res);
       }
     } else {
-      ctx.waitUntil(cache.put(key, res.clone()));
+      storeInEdgeCache(ctx, hostname, url.pathname, "", res);
     }
   }
 
