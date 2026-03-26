@@ -11,6 +11,7 @@ const META_GRAPH_URL = "https://graph.facebook.com/v21.0";
 interface CAPIEvent {
   event_name: string;
   event_time: number;
+  event_id?: string;
   event_source_url?: string;
   user_data: {
     em?: string[];
@@ -55,6 +56,7 @@ Deno.serve(async (req) => {
     const {
       store_id,
       event_name,
+      event_id,
       event_source_url,
       user_email,
       user_phone,
@@ -89,7 +91,6 @@ Deno.serve(async (req) => {
       .single();
 
     if (storeErr || !store?.facebook_pixel_id || !store?.meta_access_token) {
-      // Store has not enabled Meta CAPI yet — treat as no-op instead of error.
       return new Response(
         JSON.stringify({
           success: true,
@@ -104,8 +105,8 @@ Deno.serve(async (req) => {
     const accessToken = store.meta_access_token;
 
     const userData: CAPIEvent["user_data"] = {
-      client_ip_address: client_ip || undefined,
-      client_user_agent: user_agent || undefined,
+      client_ip_address: client_ip || req.headers.get("x-forwarded-for") || undefined,
+      client_user_agent: user_agent || req.headers.get("user-agent") || undefined,
       fbc: fbc || undefined,
       fbp: fbp || undefined,
     };
@@ -120,7 +121,6 @@ Deno.serve(async (req) => {
     if (external_id) {
       userData.external_id = [await hashSHA256(external_id)];
     }
-    // Enhanced matching fields
     if (first_name) {
       userData.fn = [await hashSHA256(first_name)];
     }
@@ -140,6 +140,7 @@ Deno.serve(async (req) => {
     const event: CAPIEvent = {
       event_name,
       event_time: Math.floor(Date.now() / 1000),
+      event_id: event_id || undefined,
       event_source_url: event_source_url || undefined,
       user_data: userData,
       custom_data: custom_data || undefined,

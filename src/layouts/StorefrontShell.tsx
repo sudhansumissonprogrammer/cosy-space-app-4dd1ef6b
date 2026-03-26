@@ -208,7 +208,7 @@ export default function StorefrontShell({
   // Wrap with providers
   if (showWishlist) {
     return (
-      <CartProvider slug={store.slug}>
+      <CartProvider slug={store.slug} storeId={store.id}>
         <WishlistProvider slug={store.slug}>
           <StorefrontAuthProvider storeId={store.id}>
             {content}
@@ -220,7 +220,7 @@ export default function StorefrontShell({
 
   // V13 restaurant mode — no wishlist
   return (
-    <CartProvider slug={store.slug}>
+    <CartProvider slug={store.slug} storeId={store.id}>
       <StorefrontAuthProvider storeId={store.id}>
         {content}
       </StorefrontAuthProvider>

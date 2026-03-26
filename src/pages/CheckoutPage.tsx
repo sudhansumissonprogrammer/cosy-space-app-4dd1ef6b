@@ -16,7 +16,7 @@ import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
-import { fbPixelTrack } from "@/hooks/useFacebookPixel";
+import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import PostPurchaseUpsell from "@/components/storefront/PostPurchaseUpsell";
@@ -296,6 +296,7 @@ export default function CheckoutPage() {
   // Facebook Pixel + CAPI: InitiateCheckout
   useEffect(() => {
     if (checkoutItems.length === 0) return;
+    const eid = generateEventId();
     const eventData = {
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
@@ -303,10 +304,11 @@ export default function CheckoutPage() {
       value: subtotal,
       currency,
     };
-    fbPixelTrack("InitiateCheckout", eventData);
+    fbPixelTrack("InitiateCheckout", eventData, eid);
     fireMetaCAPI({
       storeId: store.id,
       eventName: "InitiateCheckout",
+      eventId: eid,
       customData: {
         content_ids: eventData.content_ids,
         contents: eventData.contents,
@@ -534,7 +536,8 @@ export default function CheckoutPage() {
     if (!isSingleMode) clearCart();
     saveExpressInfo();
     window.dispatchEvent(new CustomEvent("order-placed"));
-    fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length });
+    const purchaseEid = generateEventId();
+    fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length }, purchaseEid);
     // Split fullName into first/last for enhanced CAPI matching
     const nameParts = fullName.trim().split(/\s+/);
     const firstName = nameParts[0] || undefined;
@@ -542,6 +545,7 @@ export default function CheckoutPage() {
     fireMetaCAPI({
       storeId: store.id,
       eventName: "Purchase",
+      eventId: purchaseEid,
       userEmail: email.trim() || undefined,
       userPhone: phone.trim() || undefined,
       externalId: customer?.id || undefined,
