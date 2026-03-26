@@ -18,8 +18,8 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 
 /* ── Swipeable Banner Slider ── */
 function BannerSlider({ store }: { store: StoreData }) {
-  const queryClient = useQueryClient();
-  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const { products } = useStorefrontProducts(store.id);
+  const [current, setCurrent] = useState(0);
   const [current, setCurrent] = useState(0);
   const touchStart = useRef(0);
 
@@ -349,7 +349,7 @@ export default function StorefrontHomeV3() {
         </div>
 
         {/* Grid */}
-        {!products ? (
+        {isProductsLoading ? (
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-56 rounded-2xl" />

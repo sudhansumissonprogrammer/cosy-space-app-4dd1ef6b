@@ -17,8 +17,8 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 
 /* ── Hero Carousel ── */
 function HeroCarousel({ store }: { store: StoreData }) {
-  const queryClient = useQueryClient();
-  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const { products } = useStorefrontProducts(store.id);
+  const [current, setCurrent] = useState(0);
   const [current, setCurrent] = useState(0);
 
   // Use banner, mobile hero, and best-selling product images as slides
@@ -319,7 +319,7 @@ export default function StorefrontHomeV2() {
         </div>
 
         {/* Masonry Grid */}
-        {!products ? (
+        {isProductsLoading ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-xl border bg-card">

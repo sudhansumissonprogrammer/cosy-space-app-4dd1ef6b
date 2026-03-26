@@ -254,7 +254,7 @@ export default function StorefrontHomeV12() {
       <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
       <div className="py-4">
         <SectionHeader title="Just For You" slug={effectiveSlug} linkTo="shop" />
-        {!products ? (
+        {isProductsLoading ? (
           <div className="grid grid-cols-2 gap-3 px-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-80 rounded-lg" />
