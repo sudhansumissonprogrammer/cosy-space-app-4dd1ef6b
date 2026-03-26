@@ -395,6 +395,13 @@ async function prefetchStorefrontData(slug, ctx, env) {
     if (!res.ok) return { data: null, source: "none" };
     const data = await res.json();
 
+    // SECURITY: Cap storefront data size to prevent oversized HTML injection
+    const dataStr = JSON.stringify(data);
+    if (dataStr.length > 512_000) { // 500KB max
+      console.warn(`Storefront data for ${slug} exceeds 500KB (${dataStr.length} bytes), skipping injection`);
+      return { data: null, source: "none" };
+    }
+
     // Write to both KV (global) and Cache API (per-colo) in background
     if (data && ctx) {
       ctx.waitUntil(
@@ -670,6 +677,11 @@ ${img ? `<meta name="twitter:image" content="${img}">` : ""}
 async function handleBot(request, slug, url, isCustom) {
   const ua = request.headers.get("User-Agent") || "";
   if (!BOT_UA_REGEX.test(ua)) return null;
+
+  // Rate limit bot requests per IP to prevent UA-spoofing abuse
+  const botIp = request.headers.get("cf-connecting-ip") || "unknown";
+  const botRlKey = `bot:${botIp}`;
+  if (isRateLimited(botRlKey)) return null; // silently fall through to cached HTML
 
   const product = getProductSlug(url.pathname);
   const finalUrl = isCustom
