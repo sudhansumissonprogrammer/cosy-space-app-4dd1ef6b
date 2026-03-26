@@ -24,7 +24,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
 import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 import type { Tables } from "@/integrations/supabase/types";
-import { fbPixelTrack } from "@/hooks/useFacebookPixel";
+import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
 interface Variant {
@@ -256,6 +256,7 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!product) return;
+    const eid = generateEventId();
     const eventData = {
       content_name: product.name,
       content_ids: [product.id],
@@ -263,10 +264,11 @@ export default function ProductDetail() {
       value: product.sale_price && product.sale_price < product.price ? product.sale_price : product.price,
       currency: product.currency || store.currency || "INR",
     };
-    fbPixelTrack("ViewContent", eventData);
+    fbPixelTrack("ViewContent", eventData, eid);
     fireMetaCAPI({
       storeId: store.id,
       eventName: "ViewContent",
+      eventId: eid,
       customData: {
         content_ids: [product.id],
         content_type: "product",
