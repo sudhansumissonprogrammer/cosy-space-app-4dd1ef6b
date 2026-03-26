@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-import { Search, ArrowUpDown, SlidersHorizontal } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
@@ -10,10 +11,12 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
-import LazyRender from "@/components/storefront/LazyRender";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
+
+const INITIAL_LIMIT = 20;
+const PAGE_SIZE = 20;
 
 function ProductCardSkeleton() {
   return (
@@ -41,6 +44,7 @@ export default function StorefrontHome() {
   const [openFilters, setOpenFilters] = useState(false);
   const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
   const [sortOpen, setSortOpen] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useStoreJsonLd({
     storeName: store.name,
@@ -51,35 +55,110 @@ export default function StorefrontHome() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const allCachedProducts = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const categoryStyle = themeConfig?.category_style || "style-1";
 
+  // Split cached products into best-selling and regular
   const bestSellingProducts = useMemo(() => {
-    if (!products) return [];
-    return products.filter((p: any) => p.is_best_selling);
-  }, [products]);
+    if (!allCachedProducts) return [];
+    return allCachedProducts.filter((p: any) => p.is_best_selling);
+  }, [allCachedProducts]);
 
-  const nonBestSellingProducts = useMemo(() => {
-    if (!products) return [];
-    const filtered = products.filter((p) => !(p as any).is_best_selling);
-    const sorted = [...filtered];
+  const initialNonBestSelling = useMemo(() => {
+    if (!allCachedProducts) return [];
+    return allCachedProducts.filter((p: any) => !p.is_best_selling).slice(0, INITIAL_LIMIT);
+  }, [allCachedProducts]);
+
+  // Total products count from prefetched data (set by StorefrontLayout)
+  const totalProducts = queryClient.getQueryData<number>(["storefront-total-products", store.id]) ?? allCachedProducts?.length ?? 0;
+  const totalNonBestSelling = totalProducts - bestSellingProducts.length;
+  const hasMoreBeyondInitial = totalNonBestSelling > INITIAL_LIMIT;
+
+  // Infinite query for products beyond the initial batch
+  const {
+    data: paginatedData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["storefront-home-more", store.id, sortBy],
+    queryFn: async ({ pageParam = 0 }) => {
+      const offset = INITIAL_LIMIT + pageParam * PAGE_SIZE;
+      let query = supabase
+        .from("products")
+        .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .eq("is_best_selling", false);
+
+      // Apply sort
+      switch (sortBy) {
+        case "price_asc":
+          query = query.order("price", { ascending: true });
+          break;
+        case "price_desc":
+          query = query.order("price", { ascending: false });
+          break;
+        case "newest":
+          query = query.order("created_at", { ascending: false });
+          break;
+        default:
+          query = query.order("created_at", { ascending: false });
+      }
+
+      const { data, error } = await query.range(offset, offset + PAGE_SIZE - 1);
+      if (error) throw error;
+      return { products: data || [], page: pageParam };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.products.length === PAGE_SIZE ? lastPage.page + 1 : undefined,
+    enabled: !!store.id && hasMoreBeyondInitial,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const extraProducts = paginatedData?.pages.flatMap((p) => p.products) || [];
+
+  // Merge initial (from cache) + paginated (from API)
+  const displayProducts = useMemo(() => {
+    const initial = [...initialNonBestSelling];
+    // Apply client-side sort to the initial batch
     switch (sortBy) {
       case "price_asc":
-        sorted.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price));
+        initial.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price));
         break;
       case "price_desc":
-        sorted.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price));
+        initial.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price));
         break;
       case "newest":
-        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        initial.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
     }
-    return sorted;
-  }, [products, sortBy]);
+    return [...initial, ...extraProducts];
+  }, [initialNonBestSelling, extraProducts, sortBy]);
+
+  // Intersection Observer for infinite scroll
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage]
+  );
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(handleObserver, { rootMargin: "300px" });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [handleObserver]);
 
   return (
     <>
@@ -107,7 +186,7 @@ export default function StorefrontHome() {
       <StorefrontSearchOverlay
         open={searchOpen}
         onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
-        products={products}
+        products={allCachedProducts}
         slug={slug!}
         storeId={store.id}
         initialFiltersOpen={openFilters}
@@ -115,22 +194,12 @@ export default function StorefrontHome() {
 
       {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (
         <>
-           <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
-          <UniversalCategories
-            categories={storeCategories}
-            storeSlug={slug!}
-            isLoading={!storeCategories}
-            categoryStyle={categoryStyle}
-          />
+          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
+          <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
         </>
       ) : (
         <>
-          <UniversalCategories
-            categories={storeCategories}
-            storeSlug={slug!}
-            isLoading={!storeCategories}
-            categoryStyle={categoryStyle}
-          />
+          <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
           <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
         </>
       )}
@@ -143,21 +212,14 @@ export default function StorefrontHome() {
             <section>
               <div className="flex items-center gap-3 mb-5">
                 <div className="h-px flex-1 bg-border" />
-                 <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>
-                   🔥 Best Selling
-                 </h2>
+                <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>
+                  🔥 Best Selling
+                </h2>
                 <div className="h-px flex-1 bg-border" />
               </div>
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {bestSellingProducts.map((product, idx) => (
-                  <UniversalProductCard
-                    key={product.id}
-                    product={product}
-                    slug={slug!}
-                    store={store}
-                    priority={idx < 4}
-                    cardStyle={cardStyle}
-                  />
+                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
                 ))}
               </div>
             </section>
@@ -208,16 +270,17 @@ export default function StorefrontHome() {
               )}
             </div>
           </div>
-          {!products ? (
+
+          {!allCachedProducts ? (
             <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
-          ) : nonBestSellingProducts.length > 0 ? (
+          ) : displayProducts.length > 0 ? (
             <>
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {nonBestSellingProducts.slice(0, 8).map((product, idx) => (
+                {displayProducts.map((product, idx) => (
                   <UniversalProductCard
                     key={product.id}
                     product={product}
@@ -228,31 +291,25 @@ export default function StorefrontHome() {
                   />
                 ))}
               </div>
-              {nonBestSellingProducts.length > 8 && (
-                <LazyRender rootMargin="400px" minHeight={400}>
-                  <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-                    {nonBestSellingProducts.slice(8).map((product) => (
-                      <UniversalProductCard
-                        key={product.id}
-                        product={product}
-                        slug={slug!}
-                        store={store}
-                        cardStyle={cardStyle}
-                      />
-                    ))}
-                  </div>
-                </LazyRender>
-               )}
-               {(products?.length ?? 0) > 8 && (
-                 <div className="flex justify-center pt-4">
-                   <Link
-                     to={storefrontPath(slug!, "shop")}
-                     className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
-                   >
-                     View All Products
-                   </Link>
-                 </div>
-               )}
+
+              {/* Infinite scroll sentinel */}
+              <div ref={sentinelRef} className="flex justify-center py-6">
+                {isFetchingNextPage && (
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                )}
+              </div>
+
+              {/* View All link when there are more products */}
+              {!hasNextPage && totalProducts > 8 && (
+                <div className="flex justify-center pt-2">
+                  <Link
+                    to={storefrontPath(slug!, "shop")}
+                    className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
+                  >
+                    View All Products
+                  </Link>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">

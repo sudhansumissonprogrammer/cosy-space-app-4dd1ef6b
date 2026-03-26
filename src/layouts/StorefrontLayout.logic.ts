@@ -101,6 +101,10 @@ export function useStorefront(slugOverride?: string) {
     if (products && store) {
       queryClient.setQueryData(["storefront-products", store.id], products);
     }
+    // Seed total product count so home page knows if more exist beyond prefetched batch
+    if (store && (data as any)?.total_products != null) {
+      queryClient.setQueryData(["storefront-total-products", store.id], (data as any).total_products);
+    }
     if (categories && store) {
       queryClient.setQueryData(["storefront-categories", store.id], categories);
     }
