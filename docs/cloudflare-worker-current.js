@@ -467,6 +467,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
     if (data && ctx) {
       const dataStr = JSON.stringify(data);
       const storeId = data?.store?.id;
+      const storeSlug = data?.store?.slug;
       ctx.waitUntil(
         Promise.all([
           env?.STORE_KV
@@ -478,18 +479,54 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
               headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` },
             })
           ),
+          // Pre-warm products by calling our own /api/products endpoint
+          // This ensures Cache API + KV are populated via the same code path
+          storeId ? _prewarmProducts(storeId, storeSlug, ctx, env) : Promise.resolve(),
         ])
       );
-
-      // Note: product pre-warming removed — Supabase JS SDK uses different
-      // URL construction than raw REST, so Cache API entries don't intersect.
-      // Products load via useStorefrontProducts (~100-200ms, cached in React Query).
     }
 
     return data;
   } catch {
     clearTimeout(timeout);
     return null;
+  }
+}
+
+/**
+ * Pre-warm: populate product cache by calling the same DB→Cache+KV pipeline.
+ * Uses the internal fetch function directly (not HTTP self-call to avoid loops).
+ */
+async function _prewarmProducts(storeId, slug, ctx, env) {
+  const domain = slug ? `${slug}.${ROOT_DOMAIN}` : "unknown";
+  const cacheKey = new Request(`https://cache/products:${domain}`);
+  const kvKey = `products:${domain}`;
+
+  // Skip if already cached
+  try {
+    const existing = await cache.match(cacheKey);
+    if (existing) return;
+  } catch {}
+
+  try {
+    const data = await _fetchProductsFromDb(storeId);
+    const body = JSON.stringify(data || []);
+    await Promise.all([
+      cache.put(
+        cacheKey,
+        new Response(body, {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+          },
+        })
+      ).catch(() => {}),
+      env?.STORE_KV
+        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
+        : Promise.resolve(),
+    ]);
+  } catch {
+    // Silent — products will be fetched on first user request
   }
 }
 
