@@ -9,14 +9,10 @@
 
 const MAX_RAW_SIZE = 5 * 1024 * 1024; // 5MB — reject before processing
 const SKIP_THRESHOLD_KB = 100; // Don't compress images already under 100KB
-const HEAVY_THRESHOLD_KB = 200; // Heavy compression for images above 200KB
-const MAX_OUTPUT_KB = 120; // target output size for light compression
-const HEAVY_OUTPUT_KB = 100; // target output size for heavy compression
+const MAX_OUTPUT_KB = 120; // target output size
 const DEFAULT_MAX_DIMENSION = 1200;
 const DEFAULT_QUALITY = 0.92; // near-lossless
-const HEAVY_QUALITY = 0.80; // starting quality for heavy compression
-const MIN_QUALITY = 0.75; // never go below this for light compression
-const HEAVY_MIN_QUALITY = 0.55; // lower floor for heavy compression
+const MIN_QUALITY = 0.75; // never go below this
 
 export const IMAGE_VARIANT_WIDTHS = [400, 800] as const;
 export type VariantWidth = (typeof IMAGE_VARIANT_WIDTHS)[number];
@@ -96,10 +92,9 @@ async function compressCanvas(
     return { blob, ext, mimeType };
   }
 
-  // Iteratively reduce quality, but never below the floor
-  const qualityFloor = quality <= HEAVY_QUALITY ? HEAVY_MIN_QUALITY : MIN_QUALITY;
+  // Iteratively reduce quality, but never below MIN_QUALITY
   let currentQuality = quality - 0.05;
-  while (blob.size > targetKB * 1024 && currentQuality >= qualityFloor) {
+  while (blob.size > targetKB * 1024 && currentQuality >= MIN_QUALITY) {
     const nextBlob = await tryFormat(mimeType, currentQuality);
     if (!nextBlob || nextBlob.size === 0) break;
     blob = nextBlob;
@@ -139,7 +134,7 @@ function scaleDimensions(
 export async function processImage(
   file: File,
   maxDimension = DEFAULT_MAX_DIMENSION,
-  quality?: number,
+  quality = DEFAULT_QUALITY,
 ): Promise<CompressionResult> {
   const originalSize = file.size;
 
@@ -152,14 +147,10 @@ export async function processImage(
     return { file, originalSize, compressedSize: file.size, skipped: true };
   }
 
-  const isHeavy = file.size > HEAVY_THRESHOLD_KB * 1024;
-  const effectiveQuality = quality ?? (isHeavy ? HEAVY_QUALITY : DEFAULT_QUALITY);
-  const targetKB = isHeavy ? HEAVY_OUTPUT_KB : MAX_OUTPUT_KB;
-
   const img = await loadImage(file);
   const { width, height } = scaleDimensions(img.width, img.height, maxDimension);
   const canvas = renderToCanvas(img, width, height);
-  const { blob, ext } = await compressCanvas(canvas, effectiveQuality, targetKB);
+  const { blob, ext } = await compressCanvas(canvas, quality, MAX_OUTPUT_KB);
 
   URL.revokeObjectURL(img.src);
 
@@ -176,7 +167,7 @@ export async function processImage(
  */
 export async function processImageMultiSize(
   file: File,
-  quality?: number,
+  quality = DEFAULT_QUALITY,
 ): Promise<MultiSizeResult> {
   const originalSize = file.size;
 
@@ -187,6 +178,7 @@ export async function processImageMultiSize(
   // Skip compression for images already under 100KB — preserve original quality
   if (file.size <= SKIP_THRESHOLD_KB * 1024) {
     const variants = new Map<VariantWidth, File>();
+    // Use the original file as-is for all variants
     for (const w of IMAGE_VARIANT_WIDTHS) {
       variants.set(w, file);
     }
@@ -196,26 +188,24 @@ export async function processImageMultiSize(
     };
   }
 
-  // Determine compression tier based on input size
-  const isHeavy = file.size > HEAVY_THRESHOLD_KB * 1024;
-  const effectiveQuality = quality ?? (isHeavy ? HEAVY_QUALITY : DEFAULT_QUALITY);
-
   const img = await loadImage(file);
   const variants = new Map<VariantWidth, File>();
   let mainResult: CompressionResult | null = null;
 
-  // Tighter targets for heavy compression
-  const variantTargetKB: Record<VariantWidth, number> = isHeavy
-    ? { 400: 60, 800: HEAVY_OUTPUT_KB }
-    : { 400: 90, 800: MAX_OUTPUT_KB };
+  // Higher KB targets per variant to preserve quality
+  const variantTargetKB: Record<VariantWidth, number> = {
+    400: 90,
+    800: MAX_OUTPUT_KB,
+  };
 
   for (const targetWidth of IMAGE_VARIANT_WIDTHS) {
+    // Skip variants larger than the original
     const effectiveWidth = Math.min(targetWidth, img.width);
     const { width, height } = scaleDimensions(img.width, img.height, effectiveWidth);
     const canvas = renderToCanvas(img, width, height);
 
     const targetKB = variantTargetKB[targetWidth];
-    const { blob, ext } = await compressCanvas(canvas, effectiveQuality, targetKB);
+    const { blob, ext } = await compressCanvas(canvas, quality, targetKB);
 
     const baseName = file.name.replace(/\.[^/.]+$/, "");
     const variantFile = new File([blob], `${baseName}-${targetWidth}w.${ext}`, { type: blob.type });
