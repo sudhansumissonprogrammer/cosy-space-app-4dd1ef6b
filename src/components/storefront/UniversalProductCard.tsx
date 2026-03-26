@@ -3,6 +3,7 @@ import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardStyle2 from "./ProductCardStyle2";
 import ProductCardStyle3 from "./ProductCardStyle3";
 import ProductCardStyle4 from "./ProductCardStyle4";
+import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 
 interface Props {
   product: Tables<"products">;
@@ -15,16 +16,25 @@ interface Props {
 /**
  * Renders the correct product card component based on the store's
  * product_card_style setting from theme config.
+ * Preloads ProductDetail chunk on hover/touch for instant navigation.
  */
 export default function UniversalProductCard({ product, slug, store, priority = false, cardStyle = "style-1" }: Props) {
-  switch (cardStyle) {
-    case "style-2":
-      return <ProductCardStyle2 product={product} slug={slug} store={store} priority={priority} />;
-    case "style-3":
-      return <ProductCardStyle3 product={product} slug={slug} store={store} priority={priority} />;
-    case "style-4":
-      return <ProductCardStyle4 product={product} slug={slug} store={store} priority={priority} />;
-    default:
-      return <ProductCardStyle1 product={product} slug={slug} store={store} priority={priority} />;
-  }
+  const card = (() => {
+    switch (cardStyle) {
+      case "style-2":
+        return <ProductCardStyle2 product={product} slug={slug} store={store} priority={priority} />;
+      case "style-3":
+        return <ProductCardStyle3 product={product} slug={slug} store={store} priority={priority} />;
+      case "style-4":
+        return <ProductCardStyle4 product={product} slug={slug} store={store} priority={priority} />;
+      default:
+        return <ProductCardStyle1 product={product} slug={slug} store={store} priority={priority} />;
+    }
+  })();
+
+  return (
+    <div onMouseEnter={prefetchProductDetail} onTouchStart={prefetchProductDetail}>
+      {card}
+    </div>
+  );
 }
