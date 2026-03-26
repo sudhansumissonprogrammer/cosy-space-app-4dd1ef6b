@@ -16,12 +16,7 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 
-const INITIAL_LIMIT = 20;
-const PAGE_SIZE = 20;
-
-/** Lightweight column list — avoids fetching heavy fields */
-const PRODUCT_COLUMNS =
-  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+const INITIAL_LIMIT = PAGE_SIZE;
 
 function ProductCardSkeleton() {
   return (
