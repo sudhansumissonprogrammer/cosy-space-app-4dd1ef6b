@@ -5,20 +5,23 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { getSubdomainSlug, ROOT_DOMAIN, isCustomDomainHost, isSubdomainHost } from "@/lib/subdomain";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logError } from "@/lib/logError";
-import { AuthProvider } from "@/contexts/AuthContext";
 
-// Radix providers (Toaster + TooltipProvider) are only needed by dashboard/admin.
-// Lazy-loading them keeps the 150KB Radix chunk OFF the storefront critical path.
+// Radix providers (Toaster + TooltipProvider) and AuthProvider are only needed
+// by dashboard/admin. Lazy-loading them keeps 150KB Radix + 171KB Supabase
+// chunks OFF the storefront critical path (~92KB gzip saved).
 const DashboardProviders = lazy(() =>
   Promise.all([
     import("@/components/ui/toaster"),
     import("@/components/ui/tooltip"),
-  ]).then(([toasterMod, tooltipMod]) => ({
+    import("@/contexts/AuthContext"),
+  ]).then(([toasterMod, tooltipMod, authMod]) => ({
     default: ({ children }: { children: React.ReactNode }) => (
-      <tooltipMod.TooltipProvider>
-        <toasterMod.Toaster />
-        {children}
-      </tooltipMod.TooltipProvider>
+      <authMod.AuthProvider>
+        <tooltipMod.TooltipProvider>
+          <toasterMod.Toaster />
+          {children}
+        </tooltipMod.TooltipProvider>
+      </authMod.AuthProvider>
     ),
   }))
 );
