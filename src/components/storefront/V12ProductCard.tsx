@@ -23,6 +23,8 @@ export default function V12ProductCard({ product, slug, index = 0 }: V12ProductC
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
       className="group overflow-hidden bg-card transition-all active:scale-[0.98]"
       style={{ borderRadius: "12px", border: "1px solid #f0f0f0" }}
+      onMouseEnter={prefetchProductDetail}
+      onTouchStart={prefetchProductDetail}
     >
       {/* Image */}
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
