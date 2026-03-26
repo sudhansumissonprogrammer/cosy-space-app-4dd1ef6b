@@ -44,7 +44,8 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
     <div
       className="group rounded-xl bg-card overflow-hidden border border-border/50 transition-all duration-300 ease-out cursor-pointer"
       style={{ boxShadow: cardShadow }}
-      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = cardHoverShadow; e.currentTarget.style.transform = "translateY(-4px)"; }}
+      onMouseEnter={(e) => { prefetchProductDetail(); e.currentTarget.style.boxShadow = cardHoverShadow; e.currentTarget.style.transform = "translateY(-4px)"; }}
+      onTouchStart={prefetchProductDetail}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; e.currentTarget.style.transform = "translateY(0)"; }}
     >
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
