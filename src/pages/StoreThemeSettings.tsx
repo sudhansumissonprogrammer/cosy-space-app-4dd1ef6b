@@ -335,30 +335,6 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "mint-fresh", "electric-violet", "app-red-yellow", "royal-gold", "lux-cream-brown",
     "crimson-royale", "emerald-luxe", "ocean-teal", "lilac-mist", "lux-black-gold",
   ],
-  "theme-4": [
-    "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
-    "lux-black-gold", "lux-cream-brown", "lux-white-champagne", "lux-emerald-gold",
-    "royal-gold", "velvet-merlot", "ocean-teal", "midnight-navy", "emerald-luxe",
-    "saffron-bloom", "crimson-royale", "lilac-mist", "coral-sunset", "mint-fresh",
-  ],
-  "theme-6": [
-    "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
-    "app-blue-orange", "app-teal-cyan", "mint-fresh", "electric-violet",
-    "ocean-teal", "emerald-luxe", "coral-sunset", "royal-gold", "lux-black-gold",
-    "crimson-royale", "midnight-navy", "lilac-mist", "lux-cream-brown", "lux-white-champagne",
-  ],
-  "theme-7": [
-    "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
-    "lux-black-gold", "lux-cream-brown", "velvet-merlot", "royal-gold",
-    "ocean-teal", "lux-white-champagne", "midnight-navy", "lux-emerald-gold", "emerald-luxe",
-    "crimson-royale", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
-  ],
-  "theme-8": [
-    "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
-    "app-blue-orange", "app-teal-cyan", "app-purple-pink", "coral-sunset",
-    "mint-fresh", "electric-violet", "app-red-yellow", "royal-gold", "lux-black-gold",
-    "crimson-royale", "emerald-luxe", "ocean-teal", "lilac-mist", "lux-cream-brown",
-  ],
   "theme-10": [
     "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "coral-sunset", "crimson-royale", "app-purple-pink", "electric-violet",
@@ -432,30 +408,6 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_gradient: "linear-gradient(90deg, #3B82F6, #60a5fa, #F97316)",
     marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1",
   },
-  "theme-4": {
-    primary_color: "#C8A96A", accent_color: "#1C1C1C", text_color: "#1C1C1C", background_color: "#F8F5F0",
-    heading_font: "Playfair Display", body_font: "Inter", button_style: "square",
-    marquee_gradient: "linear-gradient(90deg, #C8A96A, #e8d5a8, #C8A96A)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-2",
-  },
-  "theme-6": {
-    primary_color: "#2563EB", accent_color: "#1e293b", text_color: "#1e293b", background_color: "#F8FAFC",
-    heading_font: "Poppins", body_font: "Inter", button_style: "rounded",
-    marquee_gradient: "linear-gradient(90deg, #2563EB, #60a5fa, #F97316)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1",
-  },
-  "theme-7": {
-    primary_color: "#1a1a1a", accent_color: "#1a1a1a", text_color: "#1a1a1a", background_color: "#ffffff",
-    heading_font: "Playfair Display", body_font: "Inter", button_style: "square",
-    marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555555, #1a1a1a)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-2", category_style: "style-3",
-  },
-  "theme-8": {
-    primary_color: "#6C5CE7", accent_color: "#FD79A8", text_color: "#1e293b", background_color: "#FFFFFF",
-    heading_font: "DM Sans", body_font: "Inter", button_style: "pill",
-    marquee_gradient: "linear-gradient(90deg, #6C5CE7, #a29bfe, #FD79A8)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1",
-  },
   "theme-10": {
     primary_color: "#FF3F6C", accent_color: "#111111", text_color: "#1a1a1a", background_color: "#FFFFFF",
     heading_font: "Poppins", body_font: "Inter", button_style: "pill",
@@ -487,11 +439,6 @@ const THEMES = [
   { id: "theme-1", name: "Classic", description: "Elegant gold & black with serif headings", available: true },
   { id: "theme-2", name: "Bold Modern", description: "Transparent header, carousel hero, masonry grid", available: true },
   { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
-  { id: "theme-4", name: "Luxury", description: "Premium editorial layout with serif typography & elegant spacing", available: true },
-  
-  { id: "theme-6", name: "Pro Clean", description: "Modern startup-style with clean layout, structured grid & premium feel", available: true },
-  { id: "theme-7", name: "Magazine", description: "Editorial storytelling with horizontal scrolls & cinematic imagery", available: true },
-  { id: "theme-8", name: "Mobile App", description: "Native app-style with bottom tabs, flash deals & pill UI", available: true },
   
   { id: "theme-10", name: "Fashion Runway", description: "Myntra-style fashion shopping with editorial collections", available: true },
   { id: "theme-11", name: "Shopping App", description: "Minimal nav with separated cart emphasis for faster conversions", available: true },
