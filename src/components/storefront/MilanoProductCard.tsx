@@ -5,6 +5,7 @@ import { optimizeImageUrl, getImageSrcSet, PRODUCT_CARD_SIZES } from "@/lib/imag
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
+import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 
 interface MilanoProductCardProps {
   product: any;
@@ -26,6 +27,8 @@ export default function MilanoProductCard({ product, slug, index = 0 }: MilanoPr
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
       className="group overflow-hidden transition-all active:scale-[0.98]"
       style={{ borderRadius: "12px", backgroundColor: "var(--storefront-bg, #fff)" }}
+      onMouseEnter={prefetchProductDetail}
+      onTouchStart={prefetchProductDetail}
     >
       {/* Image */}
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4", borderRadius: "12px" }}>
