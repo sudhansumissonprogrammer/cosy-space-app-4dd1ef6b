@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { fbPixelTrack } from "@/hooks/useFacebookPixel";
+import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
 export interface CartItem {
@@ -31,7 +31,7 @@ function getStorageKey(slug: string) {
   return `cart_${slug}`;
 }
 
-export function CartProvider({ slug, children }: { slug: string; children: ReactNode }) {
+export function CartProvider({ slug, storeId, children }: { slug: string; storeId?: string; children: ReactNode }) {
   // Start empty — defer localStorage read to avoid blocking first paint
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -82,29 +82,28 @@ export function CartProvider({ slug, children }: { slug: string; children: React
       return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
     setIsCartOpen(true);
+    const eid = generateEventId();
     fbPixelTrack("AddToCart", {
       content_name: item.name,
       content_ids: [item.productId],
       content_type: "product",
       value: item.price,
       currency: "INR",
-    });
-    try {
-      const storeId = localStorage.getItem(`store_id_${slug}`);
-      if (storeId) {
-        fireMetaCAPI({
-          storeId,
-          eventName: "AddToCart",
-          customData: {
-            content_ids: [item.productId],
-            content_type: "product",
-            value: item.price,
-            currency: "INR",
-          },
-        });
-      }
-    } catch {}
-  }, [slug]);
+    }, eid);
+    if (storeId) {
+      fireMetaCAPI({
+        storeId,
+        eventName: "AddToCart",
+        eventId: eid,
+        customData: {
+          content_ids: [item.productId],
+          content_type: "product",
+          value: item.price,
+          currency: "INR",
+        },
+      });
+    }
+  }, [slug, storeId]);
 
   const removeFromCart = useCallback((productId: string, variantId?: string) => {
     setItems((prev) => prev.filter((i) => !(i.productId === productId && i.variantId === variantId)));
