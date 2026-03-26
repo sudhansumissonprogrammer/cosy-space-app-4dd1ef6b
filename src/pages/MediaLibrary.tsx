@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
-  Upload, Trash2, Loader2, Image as ImageIcon, Search, Copy, Check,
+  Upload, Trash2, Loader2, Image as ImageIcon, Search, Copy, Check, X,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
@@ -42,6 +42,7 @@ export default function MediaLibrary() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const { data: media, isLoading } = useQuery({
@@ -111,11 +112,12 @@ export default function MediaLibrary() {
       const { error } = await (supabase as any).from("media_library").delete().in("id", ids);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, ids) => {
       queryClient.invalidateQueries({ queryKey: ["media-library", storeId] });
-      toast.success(`${selected.size} image${selected.size > 1 ? "s" : ""} deleted`);
+      toast.success(`${ids.length} image${ids.length > 1 ? "s" : ""} deleted`);
       setSelected(new Set());
       setDeleteOpen(false);
+      setSingleDeleteId(null);
     },
     onError: (err: any) => toast.error(err.message || "Delete failed"),
   });
@@ -198,18 +200,25 @@ export default function MediaLibrary() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 sm:gap-3">
           {filteredMedia.map((item) => {
             const isSelected = selected.has(item.id);
             const isCopied = copiedId === item.id;
             return (
-              <div key={item.id} className="flex flex-col gap-1.5">
+              <div key={item.id} className="flex flex-col gap-1">
                 <div
                   className={`group relative aspect-square overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
                     isSelected ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-border"
                   }`}
                 >
                   <img src={item.file_url} alt={item.file_name} className="h-full w-full object-cover" loading="lazy" />
+                  {/* X delete button - always visible on mobile, hover on desktop */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSingleDeleteId(item.id); }}
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-destructive"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                   <div className={`absolute left-2 top-2 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
                     <Checkbox
                       checked={isSelected}
@@ -217,7 +226,7 @@ export default function MediaLibrary() {
                       className="h-5 w-5 border-2 border-white bg-black/40 data-[state=checked]:bg-primary"
                     />
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 sm:p-2 opacity-0 transition-opacity group-hover:opacity-100">
                     <span className="truncate text-[10px] text-white block">{item.file_name}</span>
                   </div>
                 </div>
@@ -235,6 +244,7 @@ export default function MediaLibrary() {
         </div>
       )}
 
+      {/* Bulk delete dialog */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -249,6 +259,26 @@ export default function MediaLibrary() {
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? "Deleting..." : "Delete All"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Single delete dialog */}
+      <AlertDialog open={!!singleDeleteId} onOpenChange={(open) => !open && setSingleDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this image?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove it from storage.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => singleDeleteId && deleteMutation.mutate([singleDeleteId])}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
