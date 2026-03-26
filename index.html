@@ -59,16 +59,17 @@
         if(!slug)return;
 
         function addPreconnect(origin){var pc=document.createElement('link');pc.rel='preconnect';pc.href=origin;document.head.appendChild(pc);}
+        function preloadImg(url){var l=document.createElement('link');l.rel='preload';l.as='image';l.href=url;l.setAttribute('fetchpriority','high');document.head.appendChild(l);}
+        function optimizeSupabaseImg(url,w){if(url.indexOf('supabase.co/storage')>-1){url=url.replace('/storage/v1/object/','/storage/v1/render/image/');url+=(url.indexOf('?')>-1?'&':'?')+'width='+w+'&quality=75';}return url;}
 
-        var url='https://vjjlxmqgqtquggdajjvi.supabase.co/rest/v1/rpc/get_storefront_data';
+        var supaUrl='https://vjjlxmqgqtquggdajjvi.supabase.co';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqamx4bXFncXRxdWdnZGFqanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjEyNjgsImV4cCI6MjA4OTk5NzI2OH0.AjNH7zdzlAhmQnjwvhCOvDVac356sA04_ORb2j5rA2k';
-        var p_=fetch(url,{
+        var p_=fetch(supaUrl+'/rest/v1/rpc/get_storefront_data',{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
           body:JSON.stringify({_slug:slug,_product_limit:20})
         }).then(function(r){return r.json()}).then(function(data){
           if(data&&data.store){
-            // Store resolved data so React can use it instantly
             window.__STOREFRONT_DATA__=data;
             var heroUrl=data.store.mobile_hero_url;
             var heroImages=data.store.mobile_hero_images;
@@ -79,26 +80,59 @@
               }catch(e){}
             }
             if(heroUrl){
-              var optUrl=heroUrl;
-              if(heroUrl.indexOf('supabase.co/storage')>-1){
-                optUrl=heroUrl.replace('/storage/v1/object/','/storage/v1/render/image/');
-                optUrl+=(optUrl.indexOf('?')>-1?'&':'?')+'width=800&quality=75';
-              }
-              var lnk=document.createElement('link');
-              lnk.rel='preload';lnk.as='image';lnk.href=optUrl;
-              lnk.setAttribute('fetchpriority','high');
-              document.head.appendChild(lnk);
-              try{addPreconnect(new URL(optUrl).origin);}catch(e){}
+              preloadImg(optimizeSupabaseImg(heroUrl,800));
+              try{addPreconnect(new URL(heroUrl).origin);}catch(e){}
             }
             if(data.store.logo_url){
               var logoLnk=document.createElement('link');
               logoLnk.rel='preload';logoLnk.as='image';logoLnk.href=data.store.logo_url;
               document.head.appendChild(logoLnk);
             }
+            // Always preload first product image for fast LCP
+            if(data.products&&data.products[0]&&data.products[0].image_url){
+              var firstProdImg=data.products[0].image_url;
+              if(firstProdImg.indexOf(',')>-1)firstProdImg=firstProdImg.split(',')[0].trim();
+              if(firstProdImg)preloadImg(optimizeSupabaseImg(firstProdImg,400));
+              // Also preload second product image
+              if(data.products[1]&&data.products[1].image_url){
+                var secImg=data.products[1].image_url;
+                if(secImg.indexOf(',')>-1)secImg=secImg.split(',')[0].trim();
+                if(secImg){var l2=document.createElement('link');l2.rel='preload';l2.as='image';l2.href=optimizeSupabaseImg(secImg,400);document.head.appendChild(l2);}
+              }
+            }
+            // Inject first 2 real product cards into the skeleton (hybrid rendering)
+            try{
+              var skelGrid=document.querySelector('.sf-skel-grid');
+              if(skelGrid&&data.products&&data.products.length>0){
+                var currency=data.store.currency||'₹';
+                var cards=data.products.slice(0,2);
+                var html='';
+                for(var ci=0;ci<cards.length;ci++){
+                  var pr=cards[ci];
+                  var imgUrl=pr.image_url;
+                  if(imgUrl&&imgUrl.indexOf(',')>-1)imgUrl=imgUrl.split(',')[0].trim();
+                  var optImg=imgUrl?optimizeSupabaseImg(imgUrl,400):'';
+                  var displayPrice=pr.sale_price||pr.price;
+                  html+='<div class="sf-skel-card" style="background:#fff;border:1px solid #eee">';
+                  if(optImg)html+='<img src="'+optImg+'" alt="'+((pr.name||'').replace(/"/g,'&quot;'))+'" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block" loading="eager" fetchpriority="'+(ci===0?'high':'auto')+'" width="400" height="500">';
+                  else html+='<div class="sf-skel-card-img" style="background:#f5f5f5"></div>';
+                  html+='<div style="padding:8px 10px"><div style="font-size:11px;font-weight:700;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((pr.name||'').replace(/</g,'&lt;'))+'</div>';
+                  html+='<div style="font-size:13px;font-weight:800;color:#111;margin-top:4px">'+currency+Math.round(displayPrice)+'</div></div></div>';
+                }
+                // Replace first 2 skeleton cards with real product cards
+                var existingCards=skelGrid.querySelectorAll('.sf-skel-card');
+                for(var ri=0;ri<Math.min(2,existingCards.length);ri++)existingCards[ri].remove();
+                skelGrid.insertAdjacentHTML('afterbegin',html);
+              }
+            }catch(e){}
+            // Start products API fetch early (bridge for useStorefrontProducts)
+            if(data.store.id){
+              var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+data.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=20&select=id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at';
+              window.__PRODUCTS_PREFETCH__=fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){return r.json()}).catch(function(){return null});
+            }
           }
           return data;
         }).catch(function(){return null});
-        // Keep promise reference as fallback for React if data hasn't resolved yet
         window.__STOREFRONT_PREFETCH__=p_;
       })();
     </script>

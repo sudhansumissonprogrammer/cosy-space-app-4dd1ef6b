@@ -1,0 +1,80 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+const PAGE_SIZE = 20;
+
+/** Lightweight column list — avoids fetching heavy fields (product_images, product_variants) */
+const PRODUCT_COLUMNS =
+  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+
+/**
+ * Fetch products via Worker /api/products (domain resolved from Host header).
+ * Falls back to direct Supabase ONLY in preview/localhost environments
+ * where the Worker is not available — using the SAME interface shape.
+ */
+async function fetchProducts(storeId: string): Promise<any[]> {
+  // Check if index.html prefetch already has products in flight
+  const prefetchPromise = (window as any).__PRODUCTS_PREFETCH__;
+  if (prefetchPromise) {
+    (window as any).__PRODUCTS_PREFETCH__ = null; // consume once
+    try {
+      const result = await prefetchPromise;
+      if (Array.isArray(result) && result.length > 0) return result;
+    } catch {
+      // fall through to normal fetch
+    }
+  }
+
+  const hostname = window.location.hostname;
+  const isLocal = hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+  const isPreview = hostname.endsWith(".lovable.app") || hostname.endsWith(".lovableproject.com");
+
+  if (!isLocal && !isPreview) {
+    const res = await fetch(`${window.location.origin}/api/products`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
+    return await res.json();
+  }
+
+  // ── Preview/localhost fallback: direct Supabase ──
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_COLUMNS)
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .order("is_best_selling", { ascending: false })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(PAGE_SIZE);
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Shared hook for fetching the first page of storefront products.
+ * Used by ALL home page variants (V1–V13).
+ *
+ * Production: Worker /api/products (Cache → KV → DB, no direct DB).
+ * Preview: Supabase fallback.
+ *
+ * Returns { products, isLoading } — products is always an array (never undefined).
+ */
+export function useStorefrontProducts(storeId: string | undefined) {
+  // Use products already injected by index.html prefetch as instant initialData
+  const injected = (window as any).__STOREFRONT_DATA__?.products;
+  const initialData = Array.isArray(injected) && injected.length > 0 ? injected : undefined;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["storefront-products", storeId],
+    queryFn: () => fetchProducts(storeId!),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!storeId,
+    initialData,
+  });
+
+  return { products: data || [], isLoading: initialData ? false : isLoading };
+}
+
+export { PRODUCT_COLUMNS, PAGE_SIZE };
