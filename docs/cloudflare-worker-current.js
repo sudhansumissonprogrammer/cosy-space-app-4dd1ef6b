@@ -54,6 +54,7 @@ const cache = caches.default;
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 60;
+const RATE_LIMIT_MAP_MAX = 10_000; // Hard cap to prevent memory exhaustion
 
 function isRateLimited(ip) {
   if (!ip) return false;
@@ -61,6 +62,8 @@ function isRateLimited(ip) {
   const entry = rateLimitMap.get(ip);
 
   if (!entry || now > entry.resetAt) {
+    // If map is at hard cap, reject new IPs (fail-closed under DDoS)
+    if (!entry && rateLimitMap.size >= RATE_LIMIT_MAP_MAX) return true;
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return false;
   }
@@ -70,9 +73,12 @@ function isRateLimited(ip) {
   return false;
 }
 
+let lastCleanup = 0;
 function cleanRateLimitMap() {
-  if (rateLimitMap.size < 1000) return;
   const now = Date.now();
+  // Clean every 30s OR when map exceeds 500 entries (whichever comes first)
+  if (now - lastCleanup < 30_000 && rateLimitMap.size < 500) return;
+  lastCleanup = now;
   for (const [key, val] of rateLimitMap) {
     if (now > val.resetAt) rateLimitMap.delete(key);
   }
@@ -88,6 +94,8 @@ const SECURITY_HEADERS = {
     "max-age=31536000; includeSubDomains; preload",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Content-Security-Policy":
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com; connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://lrcpkt0a.api.lc; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self'; form-action 'self';",
 };
 
 /* ============== HELPERS ============== */
@@ -124,9 +132,9 @@ function getCacheKey(request, slug = "") {
  * Used for the top-of-handler cache check before any slug resolution.
  */
 function getEarlyCacheKey(hostname, pathname) {
-  // Normalize: strip tracking params, lowercase
+  // Normalize: lowercase path, strip tracking params for cache consistency
   const cleanPath = pathname.toLowerCase();
-  return new Request(`https://edge-html/${hostname}${cleanPath}`);
+  return new Request(`https://edge-html/${hostname.toLowerCase()}${cleanPath}`);
 }
 
 /**
@@ -759,10 +767,9 @@ async function handleSeoFiles(url, slug) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const hostname =
-      request.headers.get("x-forwarded-host") ||
-      request.headers.get("host") ||
-      url.hostname;
+    // SECURITY: Never trust x-forwarded-host — it can be spoofed to poison cache.
+    // In Cloudflare Workers, Host header is set by CF edge and is trustworthy.
+    const hostname = (request.headers.get("host") || url.hostname).toLowerCase().trim();
 
     // ─── HEALTH CHECK ENDPOINT ───
     if (url.pathname === "/__health") {
@@ -1014,6 +1021,7 @@ export default {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "public, max-age=60",
           "X-Worker-Version": WORKER_VERSION,
+          ...SECURITY_HEADERS,
         },
       }
     );
