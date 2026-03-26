@@ -535,14 +535,15 @@ async function _prewarmProducts(storeId, slug, ctx, env) {
 
 const PRODUCTS_CACHE_TTL = 60;       // Cache API: 60 seconds
 const PRODUCTS_KV_TTL = 300;         // KV: 5 minutes
-const PRODUCTS_DB_TIMEOUT_MS = 2000; // Hard timeout: 2 seconds
+const PRODUCTS_DB_TIMEOUT_MS = 3000; // Hard timeout: 3 seconds (allows 1 retry)
 const PRODUCTS_PAGE_SIZE = 20;
 const PRODUCT_COLUMNS = "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
-// Separate coalescing map for products (keyed by domain+params hash)
+// Coalescing maps — prevent duplicate DB calls under traffic spikes
 const inflightProductRequests = new Map();
+const inflightDomainResolutions = new Map();
 
-/* ── Domain → store_id resolution (KV-cached) ── */
+/* ── Domain → store_id resolution (coalesced + KV-cached) ── */
 
 const domainStoreIdCache = new Map(); // In-memory per-isolate cache
 
@@ -563,48 +564,55 @@ async function _resolveStoreId(domain, env) {
     } catch {}
   }
 
-  // 3. DB lookup — try slug first (subdomain pattern), then custom_domain
-  let storeId = null;
-  try {
-    // Check if domain looks like a subdomain of ROOT_DOMAIN
-    const isSubdomain = domain.endsWith(`.${ROOT_DOMAIN}`);
-    if (isSubdomain) {
-      const slug = domain.replace(`.${ROOT_DOMAIN}`, "");
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stores?select=id&slug=eq.${encodeURIComponent(slug)}&limit=1`,
-        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-      );
-      if (res.ok) {
-        const rows = await res.json();
-        storeId = rows[0]?.id || null;
-      }
-    } else {
-      // Custom domain lookup
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stores?select=id&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
-        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-      );
-      if (res.ok) {
-        const rows = await res.json();
-        storeId = rows[0]?.id || null;
-      }
+  // 3. Coalesced DB lookup — only 1 call per domain on miss
+  if (inflightDomainResolutions.has(domain)) {
+    try {
+      return await inflightDomainResolutions.get(domain);
+    } catch {
+      return null;
     }
-  } catch {}
-
-  // Cache result (even null, for 60s to prevent repeated lookups)
-  if (storeId) {
-    domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
-    if (env?.STORE_KV) {
-      env.STORE_KV.put(kvKey, storeId, { expirationTtl: 1800 }).catch(() => {});
-    }
-  } else {
-    domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
   }
 
-  return storeId;
+  const resolvePromise = _fetchStoreIdFromDb(domain);
+  inflightDomainResolutions.set(domain, resolvePromise);
+
+  try {
+    const storeId = await resolvePromise;
+
+    // Cache result (even null, for 60s to prevent repeated lookups)
+    if (storeId) {
+      domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
+      if (env?.STORE_KV) {
+        env.STORE_KV.put(kvKey, storeId, { expirationTtl: 1800 }).catch(() => {});
+      }
+    } else {
+      domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
+    }
+
+    return storeId;
+  } catch {
+    return null;
+  } finally {
+    inflightDomainResolutions.delete(domain);
+  }
 }
 
-/* ── Cache key builders (include domain + query params) ── */
+async function _fetchStoreIdFromDb(domain) {
+  const isSubdomain = domain.endsWith(`.${ROOT_DOMAIN}`);
+  const query = isSubdomain
+    ? `slug=eq.${encodeURIComponent(domain.replace(`.${ROOT_DOMAIN}`, ""))}`
+    : `custom_domain=eq.${encodeURIComponent(domain)}`;
+
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/stores?select=id&${query}&limit=1`,
+    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+  );
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return rows[0]?.id || null;
+}
+
+/* ── Cache key builders (include domain + all query params) ── */
 
 function _buildProductsCacheKey(domain, filters) {
   const parts = [`https://cache/products:${domain}`];
@@ -622,15 +630,56 @@ function _buildProductsKvKey(domain, filters) {
   return key;
 }
 
+/* ── Cache invalidation endpoint ── */
+
+/**
+ * POST /api/purge-products
+ * Called by dashboard after product create/update/delete.
+ * Clears all product cache entries for the store's domain.
+ */
+async function handlePurgeProducts(request, url, ctx, env) {
+  const domain = (request.headers.get("host") || url.hostname).toLowerCase().trim();
+
+  // Purge default listing cache (most common)
+  const defaultCacheKey = _buildProductsCacheKey(domain, {});
+  const defaultKvKey = _buildProductsKvKey(domain, {});
+
+  const purgeOps = [
+    cache.delete(defaultCacheKey).catch(() => {}),
+  ];
+
+  if (env?.STORE_KV) {
+    purgeOps.push(env.STORE_KV.delete(defaultKvKey).catch(() => {}));
+  }
+
+  // Also purge known sort variants
+  for (const sort of ["price_asc", "price_desc", "newest"]) {
+    const ck = _buildProductsCacheKey(domain, { sort });
+    purgeOps.push(cache.delete(ck).catch(() => {}));
+    if (env?.STORE_KV) {
+      purgeOps.push(env.STORE_KV.delete(_buildProductsKvKey(domain, { sort })).catch(() => {}));
+    }
+  }
+
+  await Promise.all(purgeOps);
+
+  return addCorsHeaders(
+    new Response(JSON.stringify({ purged: true, domain }), {
+      headers: { "Content-Type": "application/json" },
+    }),
+    "purge"
+  );
+}
+
 /**
  * GET /api/products?category=X&page=N&sort=Y
  *
  * Domain extracted from Host header (NEVER from client params).
- * store_id resolved internally via domain→store_id mapping.
+ * store_id resolved internally via domain→store_id mapping (coalesced).
  *
- * Flow: Cache API → KV → DB (with request coalescing + 2s timeout)
+ * Flow: Cache API → KV → domain→store_id (coalesced) → DB (coalesced + 3s timeout + retry)
  * Stale-while-revalidate: returns cached data immediately, refreshes in background.
- * Fallback: if DB fails or times out, returns stale cached data (never breaks UI).
+ * Fallback: if DB fails or times out, returns last known good cached data.
  */
 async function handleProductsApi(request, url, ctx, env) {
   // ── SECURITY: domain from Host header only ──
@@ -678,7 +727,7 @@ async function handleProductsApi(request, url, ctx, env) {
     } catch {}
   }
 
-  // ── 3. Resolve domain → store_id ──
+  // ── 3. Resolve domain → store_id (coalesced) ──
   const storeId = await _resolveStoreId(domain, env);
   if (!storeId) {
     return addCorsHeaders(
@@ -697,30 +746,46 @@ async function handleProductsApi(request, url, ctx, env) {
       const data = await inflightProductRequests.get(coalesceKey);
       return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced");
     } catch {
-      return await _fallbackProducts(cacheKey, kvKey, env);
+      return await _fallbackProducts(domain, cacheKey, kvKey, env);
     }
   }
 
-  const fetchPromise = _fetchProductsFromDb(storeId, filters);
+  const fetchPromise = _fetchProductsWithRetry(storeId, filters);
   inflightProductRequests.set(coalesceKey, fetchPromise);
 
   try {
     const data = await fetchPromise;
     return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin");
   } catch {
-    // ── DB failure / timeout fallback: try stale KV/Cache data ──
-    return await _fallbackProducts(cacheKey, kvKey, env);
+    return await _fallbackProducts(domain, cacheKey, kvKey, env);
   } finally {
     inflightProductRequests.delete(coalesceKey);
   }
 }
 
 /**
- * Fetch products from Supabase REST API with 2s hard timeout.
+ * Fetch with 1 automatic retry. Total budget: 3s first try + 2s retry = 5s max.
+ * Retry only on timeout/network errors, NOT on 4xx.
  */
-async function _fetchProductsFromDb(storeId, filters) {
+async function _fetchProductsWithRetry(storeId, filters) {
+  try {
+    return await _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS);
+  } catch (firstErr) {
+    // Retry once with shorter timeout
+    try {
+      return await _fetchProductsFromDb(storeId, filters, 2000);
+    } catch {
+      throw firstErr; // Throw original error for fallback handling
+    }
+  }
+}
+
+/**
+ * Fetch products from Supabase REST API with configurable timeout.
+ */
+async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), PRODUCTS_DB_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const params = new URLSearchParams({
@@ -730,12 +795,10 @@ async function _fetchProductsFromDb(storeId, filters) {
       limit: String(PRODUCTS_PAGE_SIZE),
     });
 
-    // Apply category filter
     if (filters.category) {
       params.set("category", `eq.${filters.category}`);
     }
 
-    // Apply sort
     const sort = filters.sort || "popular";
     switch (sort) {
       case "price_asc":
@@ -747,15 +810,13 @@ async function _fetchProductsFromDb(storeId, filters) {
       case "newest":
         params.set("order", "created_at.desc,id.asc");
         break;
-      default: // "popular"
+      default:
         params.set("order", "is_best_selling.desc,created_at.desc,id.asc");
     }
 
-    // Apply pagination offset
     const page = parseInt(filters.page, 10);
     if (page > 0) {
-      const offset = page * PRODUCTS_PAGE_SIZE;
-      params.set("offset", String(offset));
+      params.set("offset", String(page * PRODUCTS_PAGE_SIZE));
     }
 
     const res = await fetch(`${SUPABASE_URL}/rest/v1/products?${params}`, {
@@ -788,7 +849,6 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
     },
   });
 
-  // Write to both Cache API + KV in background
   ctx.waitUntil(
     Promise.all([
       cache.put(cacheKey, response.clone()).catch(() => {}),
@@ -801,24 +861,15 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   return addCorsHeaders(response, source);
 }
 
-function buildEmptyProductResponse(source) {
-  return addCorsHeaders(
-    new Response("[]", {
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-    }),
-    source
-  );
-}
-
 /**
  * Background refresh: resolve store_id, fetch from DB, update Cache + KV.
- * Does NOT throw — failures are silent (stale data continues to serve).
+ * Silent — never throws.
  */
 async function _refreshProductsBackground(domain, filters, cacheKey, kvKey, env) {
   try {
     const storeId = await _resolveStoreId(domain, env);
     if (!storeId) return;
-    const data = await _fetchProductsFromDb(storeId, filters);
+    const data = await _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
     await Promise.all([
       cache.put(
@@ -840,11 +891,22 @@ async function _refreshProductsBackground(domain, filters, cacheKey, kvKey, env)
 }
 
 /**
- * Fallback: return stale data from KV or Cache if DB is down / timed out.
- * NEVER returns an error — always returns valid JSON (empty array worst case).
+ * Fallback chain (STRICT ORDER):
+ *   1. Stale Cache API (any variant for this domain)
+ *   2. Stale KV (exact key)
+ *   3. Stale KV (default listing for domain — better than empty)
+ *   4. Empty array ONLY as absolute last resort
+ *
+ * NEVER returns an error. NEVER breaks UI.
  */
-async function _fallbackProducts(cacheKey, kvKey, env) {
-  // Try stale KV
+async function _fallbackProducts(domain, cacheKey, kvKey, env) {
+  // 1. Try stale Cache (exact match)
+  try {
+    const stale = await cache.match(cacheKey);
+    if (stale) return addCorsHeaders(stale, "cache-stale");
+  } catch {}
+
+  // 2. Try stale KV (exact match)
   if (env?.STORE_KV) {
     try {
       const stale = await env.STORE_KV.get(kvKey, { type: "text" });
@@ -855,20 +917,42 @@ async function _fallbackProducts(cacheKey, kvKey, env) {
         "kv-stale"
       );
     } catch {}
+
+    // 3. Try stale KV default listing (better to show SOME products than none)
+    const defaultKvKey = _buildProductsKvKey(domain, {});
+    if (defaultKvKey !== kvKey) {
+      try {
+        const defaultStale = await env.STORE_KV.get(defaultKvKey, { type: "text" });
+        if (defaultStale) return addCorsHeaders(
+          new Response(defaultStale, {
+            headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          }),
+          "kv-default-stale"
+        );
+      } catch {}
+    }
   }
-  // Try stale Cache
+
+  // 4. Try stale Cache default listing
+  const defaultCacheKey = _buildProductsCacheKey(domain, {});
   try {
-    const stale = await cache.match(cacheKey);
-    if (stale) return addCorsHeaders(stale, "cache-stale");
+    const defaultStale = await cache.match(defaultCacheKey);
+    if (defaultStale) return addCorsHeaders(defaultStale, "cache-default-stale");
   } catch {}
-  // Nothing — return empty array (UI shows skeleton → "no products")
-  return buildEmptyProductResponse("fallback-empty");
+
+  // 5. Absolute last resort — truly nothing cached
+  return addCorsHeaders(
+    new Response("[]", {
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    }),
+    "fallback-empty"
+  );
 }
 
 function addCorsHeaders(response, source) {
   const res = new Response(response.body, response);
   res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.headers.set("Access-Control-Allow-Headers", "Content-Type");
   res.headers.set("X-Products-Source", source || "unknown");
   res.headers.set("X-Worker-Version", WORKER_VERSION);
