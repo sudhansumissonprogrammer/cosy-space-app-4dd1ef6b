@@ -62,14 +62,19 @@ async function fetchProducts(storeId: string): Promise<any[]> {
  * Returns { products, isLoading } — products is always an array (never undefined).
  */
 export function useStorefrontProducts(storeId: string | undefined) {
+  // Use products already injected by index.html prefetch as instant initialData
+  const injected = (window as any).__STOREFRONT_DATA__?.products;
+  const initialData = Array.isArray(injected) && injected.length > 0 ? injected : undefined;
+
   const { data, isLoading } = useQuery({
     queryKey: ["storefront-products", storeId],
     queryFn: () => fetchProducts(storeId!),
     staleTime: 5 * 60 * 1000,
     enabled: !!storeId,
+    initialData,
   });
 
-  return { products: data || [], isLoading };
+  return { products: data || [], isLoading: initialData ? false : isLoading };
 }
 
 export { PRODUCT_COLUMNS, PAGE_SIZE };
