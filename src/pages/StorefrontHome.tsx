@@ -2,7 +2,6 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,23 +15,26 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 
-const INITIAL_LIMIT = PAGE_SIZE;
+const INITIAL_LIMIT = 20;
+const PAGE_SIZE = 20;
+
+/** Lightweight column list — avoids fetching heavy fields */
+const PRODUCT_COLUMNS =
+  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
 function ProductCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
-      <div className="p-1 pb-0">
-        <Skeleton className="w-full rounded-lg" style={{ aspectRatio: "4/5" }} />
-      </div>
-      <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
+      <div className="px-2.5 pb-2.5 pt-2 space-y-2">
         <div className="flex items-center justify-between">
           <Skeleton className="h-2.5 w-16" />
           <Skeleton className="h-2.5 w-10" />
         </div>
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-3/4" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-3/4" />
         <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-7 w-full rounded-lg sm:h-8" />
+        <Skeleton className="h-9 w-full rounded-lg sm:h-10" />
       </div>
     </div>
   );
@@ -57,18 +59,16 @@ export default function StorefrontHome() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  // Fetch initial products independently (shell no longer includes products)
-  const { products: initialProducts, isLoading: isInitialLoading } = useStorefrontProducts(store.id);
-
-  const allCachedProducts = initialProducts;
+  const allCachedProducts = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const categoryStyle = themeConfig?.category_style || "style-1";
 
-  // ── Best-selling products ──
+  // ── Best-selling products (always from cache, shown above Popular) ──
   const bestSellingProducts = useMemo(() => {
+    if (!allCachedProducts) return [];
     return allCachedProducts.filter((p: any) => p.is_best_selling);
   }, [allCachedProducts]);
 
@@ -78,7 +78,7 @@ export default function StorefrontHome() {
   const isDefaultSort = sortBy === "popular";
 
   const initialNonBestSelling = useMemo(() => {
-    if (!isDefaultSort || !allCachedProducts.length) return [];
+    if (!isDefaultSort || !allCachedProducts) return [];
     return allCachedProducts.filter((p: any) => !p.is_best_selling).slice(0, INITIAL_LIMIT);
   }, [allCachedProducts, isDefaultSort]);
 
@@ -147,7 +147,7 @@ export default function StorefrontHome() {
   }, [initialNonBestSelling, extraProducts, isDefaultSort]);
 
   // Show loading state for custom sorts on first fetch
-  const showSkeleton = isInitialLoading || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
+  const showSkeleton = !allCachedProducts || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
 
   // Stable observer — uses refs to avoid recreating IntersectionObserver on every state change
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });

@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Search, ArrowUpDown, ChevronLeft, ChevronRight, Zap, Tag, Clock } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
@@ -18,7 +17,8 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 
 /* ── Swipeable Banner Slider ── */
 function BannerSlider({ store }: { store: StoreData }) {
-  const { products } = useStorefrontProducts(store.id);
+  const queryClient = useQueryClient();
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const [current, setCurrent] = useState(0);
   const touchStart = useRef(0);
 
@@ -266,7 +266,7 @@ export default function StorefrontHomeV3() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
@@ -304,7 +304,6 @@ export default function StorefrontHomeV3() {
         onClose={() => setSearchOpen(false)}
         products={products}
         slug={slug!}
-        storeId={store.id}
         initialFiltersOpen={false}
       />
 
@@ -349,7 +348,7 @@ export default function StorefrontHomeV3() {
         </div>
 
         {/* Grid */}
-        {isProductsLoading ? (
+        {!products ? (
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-56 rounded-2xl" />

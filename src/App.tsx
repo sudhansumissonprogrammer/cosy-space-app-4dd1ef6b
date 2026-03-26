@@ -237,8 +237,9 @@ function usePrefetchStorefrontData(slug: string | undefined) {
       queryKey: ["storefront-bulk", slug],
       queryFn: async () => {
         const { supabase } = await import("@/integrations/supabase/client");
-        const { data, error } = await supabase.rpc("get_storefront_shell" as any, {
+        const { data, error } = await supabase.rpc("get_storefront_data" as any, {
           _slug: slug,
+          _product_limit: 20,
         });
         if (error) throw error;
         return data;

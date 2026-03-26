@@ -2178,7 +2178,6 @@ export type Database = {
       get_storefront_data:
         | { Args: { _slug: string }; Returns: Json }
         | { Args: { _product_limit?: number; _slug: string }; Returns: Json }
-      get_storefront_shell: { Args: { _slug: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

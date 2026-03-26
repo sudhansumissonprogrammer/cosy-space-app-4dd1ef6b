@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Tag, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import LazyRender from "@/components/storefront/LazyRender";
@@ -237,7 +236,7 @@ export default function StorefrontHomeV12() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-3";
@@ -254,7 +253,7 @@ export default function StorefrontHomeV12() {
       <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
       <div className="py-4">
         <SectionHeader title="Just For You" slug={effectiveSlug} linkTo="shop" />
-        {isProductsLoading ? (
+        {!products ? (
           <div className="grid grid-cols-2 gap-3 px-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-80 rounded-lg" />

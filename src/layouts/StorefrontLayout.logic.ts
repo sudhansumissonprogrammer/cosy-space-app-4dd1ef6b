@@ -37,7 +37,7 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      // 1. Use injected data (Cloudflare Worker — now shell-only: store+categories+theme)
+      // 1. Use injected data (Cloudflare Worker or resolved index.html prefetch)
       const wd = (window as any).__STOREFRONT_DATA__;
       if (wd?.store) return wd;
 
@@ -64,15 +64,18 @@ export function useStorefront(slugOverride?: string) {
         }
       }
 
-      // 3. Fresh RPC call — use shell (lightweight, no products)
-      const { data: result, error } = await supabase.rpc("get_storefront_shell" as any, {
+      // 3. Fresh RPC call (fallback)
+      const { data: result, error } = await supabase.rpc("get_storefront_data" as any, {
         _slug: slug!,
+        _product_limit: 20,
       });
 
       if (error) throw error;
       return result as any;
     },
     enabled: !!slug,
+    // Short staleTime so background revalidation happens quickly after page refresh,
+    // ensuring theme/config changes are picked up without waiting 5 minutes.
     staleTime: 30_000,
     gcTime: 10 * 60 * 1000,
     // If we have injected data, use it as initialData for instant render
@@ -86,7 +89,7 @@ export function useStorefront(slugOverride?: string) {
   useEffect(() => {
     if (!data) return;
 
-    const { store, categories, theme_config } = data as any;
+    const { store, products, categories, theme_config } = data as any;
 
     if (store) {
       // Cache the theme in localStorage for instant theme detection on next visit
@@ -95,16 +98,18 @@ export function useStorefront(slugOverride?: string) {
       } catch {}
     }
 
-    // Seed categories into cache so child pages get instant hits
+    if (products && store) {
+      queryClient.setQueryData(["storefront-products", store.id], products);
+    }
+    // Seed total product count so home page knows if more exist beyond prefetched batch
+    if (store && (data as any)?.total_products != null) {
+      queryClient.setQueryData(["storefront-total-products", store.id], (data as any).total_products);
+    }
     if (categories && store) {
       queryClient.setQueryData(["storefront-categories", store.id], categories);
     }
     if (theme_config && store) {
       queryClient.setQueryData(["storefront-theme-config", store.id], theme_config);
-    }
-    // Seed total product count so home page knows pagination state
-    if (store && (data as any)?.total_products != null) {
-      queryClient.setQueryData(["storefront-total-products", store.id], (data as any).total_products);
     }
 
     // Clear injected data after first seed — prevents stale data on SPA navigation

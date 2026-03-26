@@ -1,101 +1,74 @@
 
 
-# Frontend Performance Fix Plan: Lighthouse 47 → 90+
+## CSS & Network Dependency Optimization Plan
 
-## Root Cause Analysis
+### Problem Summary
 
-**Why LCP is ~5.9s:**
-1. Hero images have no intrinsic dimensions — browser can't allocate space until image loads
-2. `StorefrontMobileHero` wrapper has no `aspect-ratio` or `min-height`, so the hero banner pops in
-3. Products wait for `useStorefrontProducts` API call to resolve before rendering anything
-4. The `index.html` prefetch script fetches store data but products are loaded separately after React hydration
+The current setup has three issues slowing down render:
 
-**Why CLS is ~0.7:**
-1. Hero banner has no reserved space (`aspect-ratio` missing on wrapper)
-2. Product grid skeletons and real cards may have slightly different heights
-3. Category bar, marquee, and search bar all load dynamically and push content down
-4. `StorefrontMobileHero` renders `null` initially until images resolve, then pops in
+1. **Duplicate preconnects** — `index.html` has 3 static preconnects (Supabase, Google Fonts x2), and the Worker injects 2-4 more (Supabase again, storage, hero origin, product image origin). That's 5-7 preconnects competing for connections.
+2. **Google Fonts in `index.html`** — Two preconnects + a stylesheet for decorative fonts (Alegreya SC, Changa, Montserrat) block connection negotiation even with `media="print"` trick, because the preconnects are eager.
+3. **CSS preload missing** — Vite's generated CSS file (`/assets/index-*.css`) is discovered only after the JS module graph is parsed, adding ~200-400ms to render.
 
-**Why CSS blocks render (~780ms):**
-1. Tailwind CSS is one large file — no critical CSS extraction
-2. Google Fonts loaded via JS in `StorefrontShell` but `index.css` declares `--font-storefront: 'Alegreya SC'` which may trigger FOIT
+### Changes
 
-## Implementation Plan
+#### 1. Clean up `index.html` preconnects (remove 3 of 4)
 
-### 1. Fix CLS — Reserve Space for Hero Banner
-**File: `src/components/storefront/StorefrontMobileHero.tsx`**
-- Add `aspect-ratio: 16/7` to the wrapper div so space is reserved even before image loads
-- Add `min-height` fallback for browsers without `aspect-ratio` support
+**Remove** these static links since the Worker already injects them dynamically:
+- `<link rel="preconnect" href="https://vjjlxmqgqtquggdajjvi.supabase.co" crossorigin />` (Worker injects this)
+- `<link rel="preconnect" href="https://fonts.googleapis.com" />` (decorative fonts, not critical)
+- `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />` (same)
 
-**File: `src/components/storefront/HeroBannerCarousel.tsx`**
-- Ensure the wrapper div always has `aspect-ratio: 16/7` set, not just on images
-- The `imageClassName` from StorefrontMobileHero uses `h-auto` which causes CLS — change to constrained height within the aspect-ratio container
+**Keep only** the font preload (`/fonts/inter-latin.woff2`) which is critical.
 
-### 2. Fix CLS — Product Card Skeleton Matching
-**File: `src/pages/StorefrontHome.tsx`**
-- Ensure `ProductCardSkeleton` has identical height structure to `ProductCardStyle1`
-- Both must use the same `aspect-ratio: 4/5` for image area and identical padding/spacing
+Result: storefront pages get only Worker-injected preconnects (targeted to actual image origins). Dashboard pages get zero unnecessary preconnects.
 
-### 3. Fix LCP — Inject First Products in HTML via Worker
-**File: `docs/cloudflare-worker-current.js`**
-- In the Worker's HTML injection, add top 2 product image URLs as `<link rel="preload" as="image">` tags
-- The `get_storefront_shell` RPC already returns categories — extend to also return first 2 product `image_url` values (or add a separate field `hero_product_images`)
-- This ensures the LCP image starts downloading before React even loads
+#### 2. Move Google Fonts loading to JS (deferred)
 
-**File: `index.html`**
-- In the existing prefetch script, after resolving `__STOREFRONT_DATA__`, preload the first product image if no hero image exists (some stores don't have hero banners)
+Remove the `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?...">` from `index.html` entirely. These decorative fonts (Alegreya SC, Changa, Montserrat) are only used by storefronts, and the `loadGoogleFonts()` function in `StorefrontShell` already handles this via `requestIdleCallback`. The current setup loads them twice.
 
-### 4. Fix LCP — Preload Product API Call
-**File: `src/hooks/useStorefrontProducts.ts`**
-- Add an early fetch trigger: start the `/api/products` fetch in `index.html` prefetch script (alongside store data) and store the promise as `window.__PRODUCTS_PREFETCH__`
-- In `useStorefrontProducts`, check for this promise first before making a new fetch
+#### 3. Add CSS preload injection in Worker
 
-**File: `index.html`**
-- After the storefront data prefetch resolves, immediately fire a products fetch to `supabase.co/rest/v1/products?...` (for preview) and store as `window.__PRODUCTS_PREFETCH__`
+In `fetchAndInjectSlug`, extract the CSS file path from HTML (like we do for JS modulepreloads) and inject a `<link rel="preload" as="style">` hint:
 
-### 5. Fix Image Loading — Optimize Supabase Image URLs
-**File: `src/components/storefront/ProductCardStyle1.tsx`** (and Style2/3/4)
-- Already using `optimizeImageUrl` — verified working
-- Ensure `width` and `height` attributes are always set on product images (already done: `width={400} height={500}`)
-- Add `content-visibility: auto` to below-fold product cards for rendering optimization
+```javascript
+// After modulePreloads block, add:
+const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
+let cssPreload = "";
+if (cssMatch) {
+  cssPreload = `<link rel="preload" href="${cssMatch[1]}" as="style" />`;
+}
+html = html.replace("<head>", `<head>${injection}${lcpPreload}${cssPreload}${modulePreloads}`);
+```
 
-### 6. Fix CSS Blocking — Inline Critical CSS
-**File: `index.html`**
-- Already has inline critical CSS in `<style>` tag — extend it to include storefront card skeleton styles and hero aspect-ratio
-- Add `aspect-ratio: 16/7` to the inline skeleton hero class `.sf-skel-hero`
+This lets the browser fetch CSS in parallel with JS parsing instead of waiting for discovery.
 
-### 7. Fix JS Execution — Reduce Main Thread Blocking
-**File: `src/App.tsx`**
-- The `LoadingSpinner` component creates 4 skeleton cards with `animate-pulse` — reduce to 2 on mobile (already 4 for desktop grid)
-- Defer `prefetchStorefrontRoutes()` call from `useEffect` to `requestIdleCallback`
+#### 4. Deduplicate Worker preconnects
 
-**File: `src/layouts/StorefrontShell.tsx`**
-- Already defers Google Fonts to `requestIdleCallback` — verified good
-- Move `trackPageView` to `requestIdleCallback` to avoid main thread contention during load
+Currently the Worker injects `preconnect` for Supabase URL AND Supabase storage as separate entries — but they share the same origin (`vjjlxmqgqtquggdajjvi.supabase.co`). Remove the duplicate storage preconnect (lines 453-454).
 
-### 8. Fix Pagination — Direct DB Call in StorefrontHome
-**File: `src/pages/StorefrontHome.tsx`**
-- Lines 91-134: The `useInfiniteQuery` for pagination calls Supabase directly — this is the pagination for "load more" which only fires on scroll, so it's not a performance issue for initial load
-- Leave as-is (only affects subsequent page loads, not LCP/CLS)
+Also: skip adding hero image preconnect if it's a Supabase URL (already preconnected).
 
-## Specific Code Changes
+### Files to Edit
 
-### Changes Summary:
-| File | Change | Impact |
-|------|--------|--------|
-| `StorefrontMobileHero.tsx` | Add `aspect-ratio: 16/7` wrapper + `min-height` | CLS fix |
-| `HeroBannerCarousel.tsx` | Set aspect-ratio on container div, not just image | CLS fix |
-| `StorefrontHome.tsx` | Skeleton height parity with real cards | CLS fix |
-| `index.html` | Preload first product image, extend inline CSS | LCP fix |
-| `useStorefrontProducts.ts` | Bridge `__PRODUCTS_PREFETCH__` promise | LCP fix |
-| `StorefrontShell.tsx` | Defer `trackPageView` to idle | JS blocking fix |
-| `App.tsx` | Defer `prefetchStorefrontRoutes` to idle | JS blocking fix |
-| `ProductCardStyle1.tsx` | Add `content-visibility: auto` to non-priority cards | Rendering perf |
+| File | Change |
+|------|--------|
+| `index.html` | Remove 3 preconnects + Google Fonts stylesheet/noscript block |
+| `docs/cloudflare-worker-current.js` | Add CSS preload injection, deduplicate Supabase preconnects, skip redundant hero origin preconnect |
 
-### Expected Results:
-| Metric | Before | After |
-|--------|--------|-------|
-| LCP | ~5.9s | <2.5s |
-| CLS | ~0.7 | <0.1 |
-| Performance | ~47 | 85-92 |
+### Expected Impact
+
+| Optimization | Savings |
+|---|---|
+| Remove 3 static preconnects | ~100-150ms (fewer TLS handshakes) |
+| Remove duplicate Google Fonts load | ~200-300ms (eliminates render-blocking connection) |
+| CSS preload in Worker | ~200-400ms (parallel CSS discovery) |
+| Deduplicate Worker preconnects | ~50ms (cleaner connection pool) |
+| **Total** | **~500-800ms render improvement** |
+
+### Risks
+
+- **None for FOUC**: Critical above-the-fold styles are already inlined in `index.html`. The CSS preload just makes the full stylesheet arrive sooner.
+- **Dashboard unaffected**: Dashboard doesn't go through the Worker, so it keeps working as-is.
+- **Google Fonts**: Still loaded for storefronts via `loadGoogleFonts()` in JS. The noscript fallback is removed, but storefronts require JS anyway.
 

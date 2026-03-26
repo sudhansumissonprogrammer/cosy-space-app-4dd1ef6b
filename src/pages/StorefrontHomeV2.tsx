@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Search, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -17,7 +16,8 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 
 /* ── Hero Carousel ── */
 function HeroCarousel({ store }: { store: StoreData }) {
-  const { products } = useStorefrontProducts(store.id);
+  const queryClient = useQueryClient();
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const [current, setCurrent] = useState(0);
 
   // Use banner, mobile hero, and best-selling product images as slides
@@ -209,7 +209,7 @@ export default function StorefrontHomeV2() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
@@ -261,7 +261,6 @@ export default function StorefrontHomeV2() {
         onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
         products={products}
         slug={slug!}
-        storeId={store.id}
         initialFiltersOpen={openFilters}
       />
 
@@ -319,7 +318,7 @@ export default function StorefrontHomeV2() {
         </div>
 
         {/* Masonry Grid */}
-        {isProductsLoading ? (
+        {!products ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-xl border bg-card">
