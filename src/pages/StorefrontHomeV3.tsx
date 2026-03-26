@@ -18,8 +18,6 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 
 /* ── Swipeable Banner Slider ── */
 function BannerSlider({ store }: { store: StoreData }) {
-  const { products } = useStorefrontProducts(store.id);
-  const [current, setCurrent] = useState(0);
   const [current, setCurrent] = useState(0);
   const touchStart = useRef(0);
 

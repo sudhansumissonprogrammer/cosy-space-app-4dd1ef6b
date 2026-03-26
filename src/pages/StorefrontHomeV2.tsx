@@ -17,8 +17,6 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 
 /* ── Hero Carousel ── */
 function HeroCarousel({ store }: { store: StoreData }) {
-  const { products } = useStorefrontProducts(store.id);
-  const [current, setCurrent] = useState(0);
   const [current, setCurrent] = useState(0);
 
   // Use banner, mobile hero, and best-selling product images as slides
