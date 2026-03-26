@@ -1,104 +1,74 @@
 
 
-# Honest Performance Assessment + Actionable Plan
+## CSS & Network Dependency Optimization Plan
 
-## The Truth About Your 2-Second Target
+### Problem Summary
 
-**Your Cloudflare Worker edge caching is already correctly implemented.** It has cache-first with stale-while-revalidate, tenant validation, background refresh — all properly done. The 1.9s TTFB you measured was a **cache MISS** (first visit or after 60s TTL expires). On a cache HIT, TTFB should already be ~50-200ms.
+The current setup has three issues slowing down render:
 
-**The Recharts problem doesn't exist.** Dashboard.tsx imports recharts, but it's behind two lazy() boundaries (App → AuthRoutes → Dashboard). It never loads on storefront. The previous audit was incorrect.
+1. **Duplicate preconnects** — `index.html` has 3 static preconnects (Supabase, Google Fonts x2), and the Worker injects 2-4 more (Supabase again, storage, hero origin, product image origin). That's 5-7 preconnects competing for connections.
+2. **Google Fonts in `index.html`** — Two preconnects + a stylesheet for decorative fonts (Alegreya SC, Changa, Montserrat) block connection negotiation even with `media="print"` trick, because the preconnects are eager.
+3. **CSS preload missing** — Vite's generated CSS file (`/assets/index-*.css`) is discovered only after the JS module graph is parsed, adding ~200-400ms to render.
 
-**Realistic targets:**
-- Cache HIT (repeat visitors, warm edge): **~1.5-2s total load** — achievable now
-- Cache MISS (cold, first visitor to that edge node): **~3-4s** — this is physics (origin round-trip)
-- Sub-2s on cold MISS: **not achievable** without SSR or moving to edge rendering, which is an architecture change far beyond scope
+### Changes
 
-## What's Actually Slow (and Fixable)
+#### 1. Clean up `index.html` preconnects (remove 3 of 4)
 
-There are **3 real remaining wins**, totaling ~800-1200ms savings:
+**Remove** these static links since the Worker already injects them dynamically:
+- `<link rel="preconnect" href="https://vjjlxmqgqtquggdajjvi.supabase.co" crossorigin />` (Worker injects this)
+- `<link rel="preconnect" href="https://fonts.googleapis.com" />` (decorative fonts, not critical)
+- `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />` (same)
 
-### Fix 1: Increase HTML Cache TTL (saves ~1.5s on more requests)
+**Keep only** the font preload (`/fonts/inter-latin.woff2`) which is critical.
 
-**Problem:** `max-age=60` means cache expires every minute. Most visitors hit a MISS.
-**Fix:** Increase to `max-age=300, stale-while-revalidate=3600` in the Worker. The HTML is an SPA shell — it's identical for all visitors. Stale-while-revalidate keeps serving cached while refreshing in background.
+Result: storefront pages get only Worker-injected preconnects (targeted to actual image origins). Dashboard pages get zero unnecessary preconnects.
 
-**File:** `docs/cloudflare-worker-production.js`
-- Line 280: Change `max-age=60` → `max-age=300, stale-while-revalidate=3600`
-- Line 421: Same change
-- This means 5 minutes of guaranteed cache HIT instead of 1 minute, with 1-hour stale serving
+#### 2. Move Google Fonts loading to JS (deferred)
 
-**Impact:** Converts 80%+ of MISS requests into HITs. TTFB drops from 1.9s to ~100ms for most visitors.
+Remove the `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?...">` from `index.html` entirely. These decorative fonts (Alegreya SC, Changa, Montserrat) are only used by storefronts, and the `loadGoogleFonts()` function in `StorefrontShell` already handles this via `requestIdleCallback`. The current setup loads them twice.
 
-### Fix 2: Prefetch Storefront Data in Worker with Longer Cache (saves ~500ms)
+#### 3. Add CSS preload injection in Worker
 
-**Problem:** The Worker prefetches storefront data but with a 1.5s timeout. If it times out, React has to fetch again.
-**Fix:** Cache the storefront data response at the edge separately with a 5-minute TTL, so the Worker can inject it from cache instantly without hitting Supabase.
+In `fetchAndInjectSlug`, extract the CSS file path from HTML (like we do for JS modulepreloads) and inject a `<link rel="preload" as="style">` hint:
 
-**File:** `docs/cloudflare-worker-production.js` — `prefetchStorefrontData` function
-- Add Cache API lookup before hitting Supabase
-- Cache successful responses for 300 seconds
-- On cache HIT: inject data instantly (0ms vs 500-1500ms)
-
-```text
-async function prefetchStorefrontData(slug, ctx) {
-  const cacheKey = new Request(`https://cache/storefront-data/${slug}`);
-  const cached = await cache.match(cacheKey);
-  if (cached) return cached.json();
-
-  // Fresh fetch with timeout...
-  const data = await fetchFromSupabase(slug);
-  if (data) {
-    ctx.waitUntil(cache.put(cacheKey, new Response(
-      JSON.stringify(data),
-      { headers: { 'Cache-Control': 'public, max-age=300' } }
-    )));
-  }
-  return data;
+```javascript
+// After modulePreloads block, add:
+const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
+let cssPreload = "";
+if (cssMatch) {
+  cssPreload = `<link rel="preload" href="${cssMatch[1]}" as="style" />`;
 }
+html = html.replace("<head>", `<head>${injection}${lcpPreload}${cssPreload}${modulePreloads}`);
 ```
 
-**Impact:** Storefront data injection goes from 500-1500ms to ~0ms on warm cache.
+This lets the browser fetch CSS in parallel with JS parsing instead of waiting for discovery.
 
-### Fix 3: Add `modulepreload` for Theme-Specific Chunks (saves ~300ms)
+#### 4. Deduplicate Worker preconnects
 
-**Problem:** The Worker already extracts the entry JS file for modulepreload, but doesn't preload the framework/router/supabase chunks. Browser discovers them only after parsing the entry chunk.
-**Fix:** Extract all chunk references from the HTML and add modulepreload hints in the Worker injection.
+Currently the Worker injects `preconnect` for Supabase URL AND Supabase storage as separate entries — but they share the same origin (`vjjlxmqgqtquggdajjvi.supabase.co`). Remove the duplicate storage preconnect (lines 453-454).
 
-**File:** `docs/cloudflare-worker-production.js` — `fetchAndInjectSlug` function (around line 411-417)
-```text
-// Extract ALL script chunks, not just entry
-const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
-let modulePreloads = "";
-for (const m of chunkMatches) {
-  modulePreloads += `<link rel="modulepreload" href="${m[1]}" />\n`;
-}
-```
+Also: skip adding hero image preconnect if it's a Supabase URL (already preconnected).
 
-**Impact:** Browser starts downloading all chunks in parallel from the first byte of HTML, saving ~300ms of discovery time.
+### Files to Edit
 
-## Files to Modify
+| File | Change |
+|------|--------|
+| `index.html` | Remove 3 preconnects + Google Fonts stylesheet/noscript block |
+| `docs/cloudflare-worker-current.js` | Add CSS preload injection, deduplicate Supabase preconnects, skip redundant hero origin preconnect |
 
-| File | Change | Impact |
-|------|--------|--------|
-| `docs/cloudflare-worker-production.js` | Increase HTML cache TTL to 300s/3600s SWR | 80% fewer cache MISSes |
-| `docs/cloudflare-worker-production.js` | Cache prefetched storefront data at edge | 0ms data injection on warm |
-| `docs/cloudflare-worker-production.js` | Modulepreload all JS chunks | ~300ms faster chunk loading |
+### Expected Impact
 
-## Expected Results After Fixes
+| Optimization | Savings |
+|---|---|
+| Remove 3 static preconnects | ~100-150ms (fewer TLS handshakes) |
+| Remove duplicate Google Fonts load | ~200-300ms (eliminates render-blocking connection) |
+| CSS preload in Worker | ~200-400ms (parallel CSS discovery) |
+| Deduplicate Worker preconnects | ~50ms (cleaner connection pool) |
+| **Total** | **~500-800ms render improvement** |
 
-| Scenario | Before | After |
-|----------|--------|-------|
-| Cache HIT (most visitors) | ~3-4s | **~1.5-2s** |
-| Cache MISS (cold edge) | ~5s | **~3-3.5s** |
-| Repeat visitor (same session) | ~2s | **~1s** |
+### Risks
 
-## What Won't Help (Don't Waste Time On)
-
-- **Removing Recharts** — it doesn't load on storefront already
-- **More bundle splitting** — chunks are already well-split at 5 pieces
-- **CSS splitting** — Vite already does cssCodeSplit, and your CSS is Tailwind (already optimized)
-- **Image optimization** — already done with 400/800 variants
-- **More prefetch/preconnect** — Worker already injects these
-
-The single highest-impact change is **Fix 1** (longer cache TTL). After deploying the updated Worker, most real users will see ~1.5-2s loads because they'll hit cached HTML at the edge.
+- **None for FOUC**: Critical above-the-fold styles are already inlined in `index.html`. The CSS preload just makes the full stylesheet arrive sooner.
+- **Dashboard unaffected**: Dashboard doesn't go through the Worker, so it keeps working as-is.
+- **Google Fonts**: Still loaded for storefronts via `loadGoogleFonts()` in JS. The noscript fallback is removed, but storefronts require JS anyway.
 
