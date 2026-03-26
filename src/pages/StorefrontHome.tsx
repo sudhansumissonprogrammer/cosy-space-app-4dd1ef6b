@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useQueryClient, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
@@ -59,16 +59,35 @@ export default function StorefrontHome() {
     whatsappNumber: store.whatsapp_number,
   });
 
-  const allCachedProducts = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  // Fetch initial products independently (shell no longer includes products)
+  const { data: initialProducts, isLoading: isInitialLoading } = useQuery({
+    queryKey: ["storefront-products", store.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(PRODUCT_COLUMNS)
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .order("is_best_selling", { ascending: false })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .limit(INITIAL_LIMIT);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!store.id,
+  });
+
+  const allCachedProducts = initialProducts || [];
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const categoryStyle = themeConfig?.category_style || "style-1";
 
-  // ── Best-selling products (always from cache, shown above Popular) ──
+  // ── Best-selling products ──
   const bestSellingProducts = useMemo(() => {
-    if (!allCachedProducts) return [];
     return allCachedProducts.filter((p: any) => p.is_best_selling);
   }, [allCachedProducts]);
 
@@ -147,7 +166,7 @@ export default function StorefrontHome() {
   }, [initialNonBestSelling, extraProducts, isDefaultSort]);
 
   // Show loading state for custom sorts on first fetch
-  const showSkeleton = !allCachedProducts || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
+  const showSkeleton = isInitialLoading || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
 
   // Stable observer — uses refs to avoid recreating IntersectionObserver on every state change
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
