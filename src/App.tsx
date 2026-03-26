@@ -442,15 +442,13 @@ function AppRouter() {
   }
 
   // ── AUTH/DASHBOARD: Only reachable on root domain, preview, or localhost ──
-  // Wrap with DashboardProviders (lazy) to load Radix Toaster + TooltipProvider
+  // DashboardProviders includes AuthProvider + Radix Toaster + TooltipProvider
   return (
-    <AuthProvider>
-      <Suspense fallback={<LoadingSpinner />}>
-        <DashboardProviders>
-          <LazyAuthRoutes />
-        </DashboardProviders>
-      </Suspense>
-    </AuthProvider>
+    <Suspense fallback={<LoadingSpinner />}>
+      <DashboardProviders>
+        <LazyAuthRoutes />
+      </DashboardProviders>
+    </Suspense>
   );
 }
 
