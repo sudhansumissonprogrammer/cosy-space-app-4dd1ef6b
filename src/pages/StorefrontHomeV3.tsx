@@ -304,6 +304,7 @@ export default function StorefrontHomeV3() {
         onClose={() => setSearchOpen(false)}
         products={products}
         slug={slug!}
+        storeId={store.id}
         initialFiltersOpen={false}
       />
 

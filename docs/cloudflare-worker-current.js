@@ -481,10 +481,9 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
         ])
       );
 
-      // Pre-warm products into Supabase REST cache (background, non-blocking)
-      if (storeId) {
-        ctx.waitUntil(_prewarmProducts(storeId, env));
-      }
+      // Note: product pre-warming removed — Supabase JS SDK uses different
+      // URL construction than raw REST, so Cache API entries don't intersect.
+      // Products load via useStorefrontProducts (~100-200ms, cached in React Query).
     }
 
     return data;
@@ -494,40 +493,9 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
   }
 }
 
-const PRODUCT_PREWARM_COLUMNS = "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
-const PRODUCT_PREWARM_TTL = 300; // 5 minutes
-
-/**
- * Pre-warm first page of products into Cache API so the frontend's
- * Supabase REST call gets a near-instant response on the next request.
- * This runs in background via waitUntil — never blocks the main response.
- */
-async function _prewarmProducts(storeId, env) {
-  try {
-    const url = `${SUPABASE_URL}/rest/v1/products?select=${encodeURIComponent(PRODUCT_PREWARM_COLUMNS)}&store_id=eq.${storeId}&is_active=eq.true&order=is_best_selling.desc.nullslast,created_at.desc.nullslast,id.asc&limit=20`;
-    const res = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    });
-    if (!res.ok) return;
-
-    // Cache the raw REST response so Supabase SDK cache picks it up
-    const productCacheKey = new Request(url);
-    await cache.put(
-      productCacheKey,
-      new Response(await res.text(), {
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": `public, max-age=${PRODUCT_PREWARM_TTL}`,
-        },
-      })
-    );
-  } catch {
-    // Non-critical — silently fail
-  }
-}
+// Product pre-warming removed — Supabase JS SDK URL construction differs
+// from raw REST URLs, making Cache API entries non-intersecting.
+// Products load client-side via useStorefrontProducts with React Query caching.
 
 /* ============== INJECT DATA INTO HTML ============== */
 
