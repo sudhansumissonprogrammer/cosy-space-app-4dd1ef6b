@@ -9,10 +9,14 @@
 
 const MAX_RAW_SIZE = 5 * 1024 * 1024; // 5MB — reject before processing
 const SKIP_THRESHOLD_KB = 100; // Don't compress images already under 100KB
-const MAX_OUTPUT_KB = 120; // target output size
+const HEAVY_THRESHOLD_KB = 200; // Heavy compression for images above 200KB
+const MAX_OUTPUT_KB = 120; // target output size for light compression
+const HEAVY_OUTPUT_KB = 100; // target output size for heavy compression
 const DEFAULT_MAX_DIMENSION = 1200;
 const DEFAULT_QUALITY = 0.92; // near-lossless
-const MIN_QUALITY = 0.75; // never go below this
+const HEAVY_QUALITY = 0.80; // starting quality for heavy compression
+const MIN_QUALITY = 0.75; // never go below this for light compression
+const HEAVY_MIN_QUALITY = 0.55; // lower floor for heavy compression
 
 export const IMAGE_VARIANT_WIDTHS = [400, 800] as const;
 export type VariantWidth = (typeof IMAGE_VARIANT_WIDTHS)[number];
@@ -92,9 +96,10 @@ async function compressCanvas(
     return { blob, ext, mimeType };
   }
 
-  // Iteratively reduce quality, but never below MIN_QUALITY
+  // Iteratively reduce quality, but never below the floor
+  const qualityFloor = quality <= HEAVY_QUALITY ? HEAVY_MIN_QUALITY : MIN_QUALITY;
   let currentQuality = quality - 0.05;
-  while (blob.size > targetKB * 1024 && currentQuality >= MIN_QUALITY) {
+  while (blob.size > targetKB * 1024 && currentQuality >= qualityFloor) {
     const nextBlob = await tryFormat(mimeType, currentQuality);
     if (!nextBlob || nextBlob.size === 0) break;
     blob = nextBlob;
