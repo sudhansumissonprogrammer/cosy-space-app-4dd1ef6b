@@ -96,6 +96,8 @@ export default function StorefrontHome() {
     hasNextPage,
     isFetchingNextPage,
     isLoading: isPaginatedLoading,
+    isError: isPaginatedError,
+    refetch: refetchPaginated,
   } = useInfiniteQuery({
     queryKey: ["storefront-home-more", store.id, sortBy],
     queryFn: async ({ pageParam = 0 }) => {
@@ -147,24 +149,25 @@ export default function StorefrontHome() {
   // Show loading state for custom sorts on first fetch
   const showSkeleton = !allCachedProducts || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
 
-  // Intersection Observer for infinite scroll
-  const handleObserver = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      const [entry] = entries;
-      if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
-      }
-    },
-    [hasNextPage, isFetchingNextPage, fetchNextPage]
-  );
+  // Stable observer — uses refs to avoid recreating IntersectionObserver on every state change
+  const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
+  scrollStateRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage };
 
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
-    const observer = new IntersectionObserver(handleObserver, { rootMargin: "300px" });
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const s = scrollStateRef.current;
+        if (entry.isIntersecting && s.hasNextPage && !s.isFetchingNextPage) {
+          s.fetchNextPage();
+        }
+      },
+      { rootMargin: "300px" }
+    );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [handleObserver]);
+  }, []); // stable — never recreated
 
   return (
     <>
@@ -282,6 +285,16 @@ export default function StorefrontHome() {
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
+            </div>
+          ) : isPaginatedError && displayProducts.length === 0 ? (
+            <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-lg border bg-card">
+              <p className="text-muted-foreground">Failed to load products</p>
+              <button
+                onClick={() => refetchPaginated()}
+                className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
+              >
+                Retry
+              </button>
             </div>
           ) : displayProducts.length > 0 ? (
             <>
