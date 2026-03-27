@@ -16,8 +16,9 @@ import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedI
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function UserSettings() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
