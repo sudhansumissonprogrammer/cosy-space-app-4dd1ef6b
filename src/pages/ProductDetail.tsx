@@ -297,20 +297,20 @@ export default function ProductDetail() {
     storeName: store.name,
   });
 
-  /* ── CRO #7: Periodic social proof toasts (reduced frequency, dismissible via sonner) ── */
+  /* ── CRO #7: Periodic social proof — inline notification state ── */
+  const [socialProof, setSocialProof] = useState<{ name: string; city: string; visible: boolean } | null>(null);
   useEffect(() => {
     if (!product) return;
-    const timer = setInterval(() => {
+    const show = () => {
       const nameIdx = Math.floor(Math.random() * reviewerNames.length);
       const cityIdx = Math.floor(Math.random() * socialProofCities.length);
-      toast(`${reviewerNames[nameIdx]} from ${socialProofCities[cityIdx]} just bought this! 🎉`, {
-        duration: 4000,
-        position: "bottom-left",
-        icon: "🛍️",
-        dismissible: true,
-      });
-    }, 35000 + Math.random() * 20000);
-    return () => clearInterval(timer);
+      setSocialProof({ name: reviewerNames[nameIdx], city: socialProofCities[cityIdx], visible: true });
+      setTimeout(() => setSocialProof((prev) => prev ? { ...prev, visible: false } : null), 5000);
+    };
+    const timer = setInterval(show, 35000 + Math.random() * 20000);
+    // Show first one after a short delay
+    const firstTimer = setTimeout(show, 6000 + Math.random() * 4000);
+    return () => { clearInterval(timer); clearTimeout(firstTimer); };
   }, [product?.id]);
 
   const allImages = (() => {
