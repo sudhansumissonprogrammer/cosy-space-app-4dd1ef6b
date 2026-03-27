@@ -32,7 +32,7 @@
 
 const WORKER_VERSION = "2.9";
 const ROOT_DOMAIN = "storivo.in";
-const ORIGIN_HOST = "id-preview--fc4c3c48-14f1-47a6-95b7-2a91420948de.lovable.app";
+const ORIGIN_HOST = "charm-dash-build.lovable.app";
 
 const SUPABASE_URL = "https://hnuowboxptvobvmgvqnx.supabase.co";
 const SUPABASE_ANON_KEY =
