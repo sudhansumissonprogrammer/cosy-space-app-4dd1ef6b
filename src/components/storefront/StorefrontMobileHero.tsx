@@ -53,7 +53,7 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
   if (uniqueSlides.length === 0) return null;
 
   return (
-    <div className="group" style={{ aspectRatio: "16/7", minHeight: 120, contain: "layout" }}>
+    <div className="group w-full" style={{ minHeight: 120 }}>
       <HeroBannerCarousel
         images={uniqueSlides}
         storeName={storeName}
