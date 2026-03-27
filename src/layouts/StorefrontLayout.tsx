@@ -174,10 +174,14 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
     </Link>
   );
 
+  const hideWishlistAndShare = isCentered || isWithSearch;
+
   const ActionButtons = !isCheckout ? (
     <div className="flex items-center gap-0 sm:gap-1">
-      <AccountBadge slug={store.slug} /><WishlistBadge slug={store.slug} /><CartBadge />
-      <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />
+      <AccountBadge slug={store.slug} />
+      {!hideWishlistAndShare && <WishlistBadge slug={store.slug} />}
+      <CartBadge />
+      {!hideWishlistAndShare && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
     </div>
   ) : null;
 
