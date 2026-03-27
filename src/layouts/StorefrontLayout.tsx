@@ -204,7 +204,7 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
             <>
               <HamburgerMenu store={store} />
               <div className="flex-1" />
-              {LogoElement}
+              <div className="absolute left-1/2 -translate-x-1/2">{LogoElement}</div>
               <div className="flex-1" />
               {ActionButtons}
             </>
