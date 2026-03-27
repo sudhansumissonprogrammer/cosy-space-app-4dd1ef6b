@@ -1657,17 +1657,39 @@ export default {
       return handlePurgeProducts(request, url, ctx, env);
     }
 
-    // ─── /api/purge-shell → Force SPA shell refresh (call after publish) ───
+    // ─── /api/purge-shell → Force SPA shell + storefront data refresh ───
     if (url.pathname === "/api/purge-shell" && request.method === "POST") {
+      // Determine slug from hostname or query param
+      let purgeSlug = url.searchParams.get("slug") || "";
+      if (!purgeSlug && hostname.endsWith(`.${ROOT_DOMAIN}`)) {
+        purgeSlug = hostname.replace(`.${ROOT_DOMAIN}`, "");
+      }
+      if (!purgeSlug && hostname !== ROOT_DOMAIN && !hostname.endsWith(`.${ROOT_DOMAIN}`)) {
+        purgeSlug = await resolveDomain(hostname.replace(/^www\./, "").toLowerCase().trim(), env) || "";
+      }
+
       const purgeOps = [
+        // Purge SPA shell
         cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
       ];
       if (env?.STORE_KV) {
         purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
       }
+      // Purge storefront data (store info, categories, theme — where hero image lives)
+      if (purgeSlug) {
+        purgeOps.push(
+          cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {})
+        );
+        if (env?.STORE_KV) {
+          purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
+        }
+        // Purge edge-cached full HTML for homepage
+        const edgeKey = getEarlyCacheKey(hostname, "/");
+        purgeOps.push(cache.delete(edgeKey).catch(() => {}));
+      }
       await Promise.all(purgeOps);
       return addCorsHeaders(
-        new Response(JSON.stringify({ purged: true, key: SPA_SHELL_KV_KEY }), {
+        new Response(JSON.stringify({ purged: true, key: SPA_SHELL_KV_KEY, slug: purgeSlug || null, storefrontDataPurged: !!purgeSlug }), {
           headers: { "Content-Type": "application/json" },
         }),
         "purge-shell"
