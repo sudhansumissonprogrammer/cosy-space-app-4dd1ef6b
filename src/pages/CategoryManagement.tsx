@@ -34,6 +34,7 @@ export default function CategoryManagement() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ["categories", storeId],
