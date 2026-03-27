@@ -497,6 +497,17 @@ export default function ProductDetail() {
             <p className="mt-1.5 text-[10px] text-muted-foreground uppercase tracking-wide">Inclusive of all taxes</p>
           </div>
 
+          {/* Estimated Delivery */}
+          <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-emerald-200/50 bg-emerald-50/40 px-3 py-2">
+            <Truck className="h-4 w-4 text-emerald-600 shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-emerald-700">
+                Estimated Delivery by {deliveryDate}
+              </span>
+              <span className="text-[10px] text-emerald-600/80">Order within 2 hours for fastest delivery</span>
+            </div>
+          </div>
+
           {/* Live viewers */}
           <div className="mt-3 flex items-center gap-2">
             <span className="relative flex h-2 w-2">
