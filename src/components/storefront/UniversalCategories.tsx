@@ -57,7 +57,7 @@ function CircleCarousel({ categories, storeSlug }: { categories: Category[]; sto
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-1 flex-shrink-0 transition-all">
           <div className="h-[72px] w-[72px] rounded-full border-2 overflow-hidden transition-all sm:h-[88px] sm:w-[88px] border-border bg-secondary/30" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
             {cat.image_url ? (
-              <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-contain" loading="lazy" width={124} height={124} />
+              <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover scale-110" loading="lazy" width={124} height={124} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" /></div>
             )}
