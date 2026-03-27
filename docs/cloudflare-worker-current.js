@@ -1608,6 +1608,23 @@ export default {
       return handlePurgeProducts(request, url, ctx, env);
     }
 
+    // ─── /api/purge-shell → Force SPA shell refresh (call after publish) ───
+    if (url.pathname === "/api/purge-shell" && request.method === "POST") {
+      const purgeOps = [
+        cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
+      ];
+      if (env?.STORE_KV) {
+        purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
+      }
+      await Promise.all(purgeOps);
+      return addCorsHeaders(
+        new Response(JSON.stringify({ purged: true, key: SPA_SHELL_KV_KEY }), {
+          headers: { "Content-Type": "application/json" },
+        }),
+        "purge-shell"
+      );
+    }
+
     // CORS preflight for /api/*
     if ((url.pathname === "/api/products" || url.pathname === "/api/purge-products") && request.method === "OPTIONS") {
       return new Response(null, {
