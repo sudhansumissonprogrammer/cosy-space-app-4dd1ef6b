@@ -1,4 +1,5 @@
-import HeroBannerCarousel from "./HeroBannerCarousel";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 
 interface StorefrontMobileHeroProps {
   mobileHeroUrl: string | null | undefined;
@@ -50,16 +51,130 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
   }
 
   const uniqueSlides = Array.from(new Set(slides));
+
+  // Preload first image — must be before any early return
+  useEffect(() => {
+    if (uniqueSlides.length > 0) {
+      return preloadHeroImage(uniqueSlides[0], 800);
+    }
+  }, [uniqueSlides[0]]);
+
   if (uniqueSlides.length === 0) return null;
 
+  // Single image — render directly at natural aspect ratio
+  if (uniqueSlides.length === 1) {
+    const src = uniqueSlides[0];
+    const srcSet = getImageSrcSet(src, [400, 600, 800]);
+    return (
+      <div className="block md:hidden w-full">
+        <img
+          src={optimizeImageUrl(src, 800)}
+          srcSet={srcSet || undefined}
+          sizes="100vw"
+          alt={`${storeName} hero banner`}
+          className="w-full h-auto block"
+          loading="eager"
+          fetchPriority="high"
+          decoding="sync"
+          draggable={false}
+        />
+      </div>
+    );
+  }
+
+  // Multiple images — simple carousel at natural aspect ratio
   return (
-    <div className="group w-full" style={{ minHeight: 120 }}>
-      <HeroBannerCarousel
-        images={uniqueSlides}
-        storeName={storeName}
-        interval={4000}
-        imageClassName="w-full h-full object-cover"
-      />
+    <div className="block md:hidden w-full">
+      <MobileHeroCarousel images={uniqueSlides} storeName={storeName} />
+    </div>
+  );
+}
+
+function MobileHeroCarousel({ images, storeName }: { images: string[]; storeName: string }) {
+  const [current, setCurrent] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dragStartRef = useRef<number | null>(null);
+  const dragCurrentRef = useRef<number | null>(null);
+  const len = images.length;
+
+  const next = useCallback(() => setCurrent((c) => (c + 1) % len), [len]);
+  const prev = useCallback(() => setCurrent((c) => (c - 1 + len) % len), [len]);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(next, 4000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [next]);
+
+  const resetTimer = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(next, 4000);
+  }, [next]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    dragStartRef.current = e.touches[0].clientX;
+    dragCurrentRef.current = e.touches[0].clientX;
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (dragStartRef.current === null || e.touches.length !== 1) return;
+    dragCurrentRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (dragStartRef.current === null) return;
+    const diff = (dragCurrentRef.current ?? dragStartRef.current) - dragStartRef.current;
+    dragStartRef.current = null;
+    dragCurrentRef.current = null;
+    if (Math.abs(diff) > 50) {
+      if (diff < 0) next(); else prev();
+    }
+    resetTimer();
+  };
+
+  return (
+    <div className="relative overflow-hidden touch-pan-y w-full">
+      <div
+        className="flex transition-transform duration-500 ease-out select-none"
+        style={{ transform: `translateX(-${current * 100}%)` }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {images.map((url, i) => {
+          const srcSet = getImageSrcSet(url, [400, 600, 800]);
+          return (
+            <div key={i} className="w-full flex-shrink-0">
+              <img
+                src={optimizeImageUrl(url, 800)}
+                srcSet={srcSet || undefined}
+                sizes="100vw"
+                alt={`${storeName} hero ${i + 1}`}
+                className="w-full h-auto block"
+                loading={i === 0 ? "eager" : "lazy"}
+                fetchPriority={i === 0 ? "high" : "auto"}
+                decoding={i === 0 ? "sync" : "async"}
+                draggable={false}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Dots */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+        {images.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => { setCurrent(i); resetTimer(); }}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              i === current ? "w-5 bg-white" : "w-2 bg-white/50"
+            }`}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
