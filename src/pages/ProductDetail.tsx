@@ -1337,7 +1337,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             key={`${activeIndex}-${images[activeIndex]}`}
             src={optimizeImageUrl(images[activeIndex], 800)}
             alt={productName}
-            className={`aspect-[3/4] sm:aspect-square w-full object-cover sm:object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+            className={`aspect-[3/4] sm:aspect-square w-full object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
             decoding="async"
             fetchPriority="high"
             draggable={false}
