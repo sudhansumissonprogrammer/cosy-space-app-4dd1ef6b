@@ -419,8 +419,10 @@ export default function ProductDetail() {
           hasDiscount={hasDiscount}
           discountPct={discountPct}
           onShare={async () => {
-            const baseShareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=share&slug=${encodeURIComponent(store.slug)}&product=${encodeURIComponent(product.slug || product.id)}`;
-            const shareUrl = `${baseShareUrl}&v=${Date.now()}`;
+            const storeHost = (store as any).custom_domain
+              ? `https://${(store as any).custom_domain}`
+              : `https://${store.slug}.storivo.in`;
+            const shareUrl = `${storeHost}/product/${product.slug || product.id}`;
             if (navigator.share) {
               try { await navigator.share({ title: product.name, url: shareUrl }); } catch {}
             } else {
@@ -594,7 +596,7 @@ export default function ProductDetail() {
 
                 {showBuyNow && (
                   <button
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.3s_ease-in-out_infinite_2s]"
                     style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                     onClick={handleBuyNow}
                   >
@@ -1233,7 +1235,7 @@ function AccordionItem({
 
 /* ── Share Buttons ── */
 function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName: string; storeSlug: string; productSlugOrId: string }) {
-  const shareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=share&slug=${encodeURIComponent(storeSlug)}&product=${encodeURIComponent(productSlugOrId)}&v=${Date.now()}`;
+  const shareUrl = `https://${storeSlug}.storivo.in/product/${productSlugOrId}`;
   const text = `Check out ${productName}!`;
   const copyLink = async () => {
     try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); } catch { toast.error("Failed to copy"); }
@@ -1291,7 +1293,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
   if (images.length === 0) {
     return (
       <div className="overflow-hidden rounded-2xl bg-accent">
-        <div className="flex aspect-[4/5] sm:aspect-square w-full items-center justify-center">
+        <div className="flex aspect-[3/4] sm:aspect-square w-full items-center justify-center">
           <Package className="h-16 w-16 text-muted-foreground/30" />
         </div>
       </div>
@@ -1330,12 +1332,12 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           )}
 
           {/* Skeleton */}
-          {!isMainLoaded && <Skeleton className="aspect-[4/5] sm:aspect-square w-full rounded-none" />}
+          {!isMainLoaded && <Skeleton className="aspect-[3/4] sm:aspect-square w-full rounded-none" />}
           <img
             key={`${activeIndex}-${images[activeIndex]}`}
             src={optimizeImageUrl(images[activeIndex], 800)}
             alt={productName}
-            className={`aspect-[4/5] sm:aspect-square w-full object-cover sm:object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+            className={`aspect-[3/4] sm:aspect-square w-full object-cover sm:object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
             decoding="async"
             fetchPriority="high"
             draggable={false}

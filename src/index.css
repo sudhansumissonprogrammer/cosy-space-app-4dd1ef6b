@@ -217,3 +217,11 @@
   0% { width: 0%; }
   100% { width: 85%; }
 }
+
+@keyframes vibrate {
+  0%, 90%, 100% { transform: translateX(0); }
+  92% { transform: translateX(-2px); }
+  94% { transform: translateX(2px); }
+  96% { transform: translateX(-2px); }
+  98% { transform: translateX(2px); }
+}
