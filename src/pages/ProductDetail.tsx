@@ -803,7 +803,7 @@ export default function ProductDetail() {
       />
 
       {/* Customer Reviews */}
-      <CustomerReviews reviews={fakeReviews} rating={stats.rating} reviewCount={stats.reviewCount} />
+      <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
 
       {/* Social proof notification — above sticky bar on mobile */}
       {socialProof && (
