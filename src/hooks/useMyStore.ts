@@ -12,7 +12,6 @@ const MY_STORE_COLUMNS = "id, name, slug, logo_url, currency, order_mode, whatsa
 
 export function useMyStore() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ["my-store", user?.id],
