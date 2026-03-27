@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ShoppingBag, ClipboardList, LayoutGrid, MessageCircle } from "lucide-react";
+import { Home, ShoppingBag, LayoutGrid, ClipboardList } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -11,14 +11,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   const location = useLocation();
   const isCheckout = location.pathname.includes("/checkout");
 
-  // Hide on checkout
   if (isCheckout) return null;
-
-  const phone = store.whatsapp_number?.replace(/[^0-9+]/g, "") || "";
-  const waMessage = encodeURIComponent(
-    `Hi ${store.name}! 👋\nI'd like to know more about your products.`
-  );
-  const waHref = phone ? `https://wa.me/${phone}?text=${waMessage}` : null;
 
   const currentPath = location.pathname;
 
@@ -31,16 +24,22 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
 
   const navItems = [
     {
-      label: "Shop",
-      icon: ShoppingBag,
+      label: "Home",
+      icon: Home,
       to: storefrontPath(store.slug),
       active: isHome,
     },
     {
+      label: "Shop",
+      icon: ShoppingBag,
+      to: storefrontPath(store.slug, "shop"),
+      active: isActive("shop"),
+    },
+    {
       label: "Categories",
       icon: LayoutGrid,
-      to: storefrontPath(store.slug, "shop"),
-      active: isActive("shop") || isActive("category"),
+      to: storefrontPath(store.slug, "best-sellers"),
+      active: isActive("best-sellers") || isActive("category"),
     },
     {
       label: "Orders",
@@ -68,33 +67,6 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
             <span className="text-[10px] font-medium leading-none">{item.label}</span>
           </Link>
         ))}
-
-        {/* WhatsApp - external link */}
-        {waHref ? (
-          <a
-            href={waHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-1 flex-col items-center gap-0.5 py-2 transition-colors"
-            style={{ color: "hsl(var(--muted-foreground))" }}
-          >
-            <MessageCircle className="h-5 w-5" strokeWidth={1.8} />
-            <span className="text-[10px] font-medium leading-none">Chat</span>
-          </a>
-        ) : (
-          <Link
-            to={storefrontPath(store.slug, "contact")}
-            className="flex flex-1 flex-col items-center gap-0.5 py-2 transition-colors"
-            style={{
-              color: isActive("contact")
-                ? "var(--storefront-primary, hsl(var(--primary)))"
-                : "hsl(var(--muted-foreground))",
-            }}
-          >
-            <MessageCircle className="h-5 w-5" strokeWidth={isActive("contact") ? 2.5 : 1.8} />
-            <span className="text-[10px] font-medium leading-none">Contact</span>
-          </Link>
-        )}
       </div>
     </nav>
   );
