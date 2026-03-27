@@ -15,7 +15,7 @@ export async function purgeStoreCache(
   }
 
   const requests = domains.flatMap((base) => [
-    fetch(`${base}/api/purge-shell`, { method: "POST" }).catch(() => null),
+    fetch(`${base}/api/purge-shell?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
     fetch(`${base}/api/purge-products`, { method: "POST" }).catch(() => null),
   ]);
 
