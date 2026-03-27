@@ -65,7 +65,7 @@
 
         function addPreconnect(origin){var pc=document.createElement('link');pc.rel='preconnect';pc.href=origin;document.head.appendChild(pc);}
         function preloadImg(url){var l=document.createElement('link');l.rel='preload';l.as='image';l.href=url;l.setAttribute('fetchpriority','high');document.head.appendChild(l);}
-        function optimizeSupabaseImg(url,w){if(url.indexOf('supabase.co/storage')>-1){url=url.replace('/storage/v1/object/','/storage/v1/render/image/');url+=(url.indexOf('?')>-1?'&':'?')+'width='+w+'&quality=75';}return url;}
+        function optimizeSupabaseImg(url,w){if(url.indexOf('supabase.co/storage')>-1){url=url.replace('/storage/v1/object/','/storage/v1/render/image/');url+=(url.indexOf('?')>-1?'&':'?')+'width='+w+'&quality=75';}else if(url.indexOf('cdn.shopify.com')>-1||url.indexOf('cdn/shop/')>-1){try{var u=new URL(url);u.searchParams.set('width',String(w));u.searchParams.set('format','webp');url=u.toString();}catch(e){}}return url;}
 
         var supaUrl='https://hnuowboxptvobvmgvqnx.supabase.co';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhudW93Ym94cHR2b2J2bWd2cW54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NjUzODAsImV4cCI6MjA5MDE0MTM4MH0.RGWBfVVKdCcmkcKxl2pgGP3kQJUWmoDz_yMHwQfETME';
