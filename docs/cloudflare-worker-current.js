@@ -1,5 +1,5 @@
 /**
- * STORIVO PRODUCTION ROUTER v2.7 — PARALLEL DOMAIN RESOLUTION
+ * STORIVO PRODUCTION ROUTER v3.1 — SPA SHELL CACHING
  *
  * Changes from v2.6:
  *   - PARALLEL ORIGIN FETCH: For custom domains, origin HTML fetch starts
