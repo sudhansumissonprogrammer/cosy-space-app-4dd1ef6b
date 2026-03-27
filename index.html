@@ -15,9 +15,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/png" href="/pwa-192x192.png">
     <link rel="preload" href="/src/index.css" as="style" />
-    
-    
-    
+    <link rel="modulepreload" href="/src/main.tsx" />
     
     <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
     <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
@@ -31,12 +29,15 @@
       .sf-skel{max-width:100%;padding:0}
       .sf-skel-nav{height:56px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;padding:0 16px;gap:12px}
       
-      .sf-skel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
-      .sf-skel-card{border-radius:12px;overflow:hidden}
-      .sf-skel-card-img{width:100%;aspect-ratio:4/5}
-      .sf-skel-card-txt{padding:8px}
+      .sf-skel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px 16px}
+      .sf-skel-card{border-radius:12px;overflow:hidden;border:1px solid #f0f0f0;contain:layout}
+      .sf-skel-card-img{width:100%;aspect-ratio:4/5;display:block}
+      .sf-skel-card-txt{padding:10px 12px 12px}
       .sf-skel-card-txt div{height:10px;margin-bottom:6px;border-radius:4px}
-      @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr);gap:16px;padding:24px}}
+      .sf-skel-card-txt .sk-price{height:14px;width:40%;margin-bottom:6px}
+      .sf-skel-card-txt .sk-btn{height:28px;border-radius:8px}
+      @media(min-width:640px){.sf-skel-grid{gap:16px;padding:16px 24px}}
+      @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr)}}
     </style>
     <!--
       Preload storefront API data + LCP hero image:
@@ -155,7 +156,7 @@
             if(window.__STORE_SLUG__) isStorefront=true;
           }
           if(isStorefront){
-            document.write('<div class="sf-skel"><div class="sf-skel-nav"><div class="sk sk-shimmer" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk sk-shimmer" style="width:28px;height:28px;border-radius:50%"></div></div><div style="padding:12px 16px"><div class="sk sk-shimmer" style="height:40px;border-radius:9999px;width:100%"></div></div><div style="padding:0 16px 8px;display:flex;gap:16px;overflow:hidden"><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div></div><div class="sf-skel-grid"><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:60%"></div><div class="sk sk-shimmer" style="width:40%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:70%"></div><div class="sk sk-shimmer" style="width:35%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:55%"></div><div class="sk sk-shimmer" style="width:45%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:65%"></div><div class="sk sk-shimmer" style="width:38%"></div></div></div></div></div>');
+            document.write('<div class="sf-skel"><div class="sf-skel-nav"><div class="sk sk-shimmer" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk sk-shimmer" style="width:28px;height:28px;border-radius:50%"></div></div><div style="padding:12px 16px"><div class="sk sk-shimmer" style="height:40px;border-radius:9999px;width:100%"></div></div><div style="padding:0 16px 8px;display:flex;gap:16px;overflow:hidden"><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div></div><div class="sf-skel-grid"><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:50%"></div><div class="sk sk-shimmer" style="width:80%"></div><div class="sk-price sk sk-shimmer"></div><div class="sk-btn sk sk-shimmer"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:60%"></div><div class="sk sk-shimmer" style="width:70%"></div><div class="sk-price sk sk-shimmer"></div><div class="sk-btn sk sk-shimmer"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:55%"></div><div class="sk sk-shimmer" style="width:75%"></div><div class="sk-price sk sk-shimmer"></div><div class="sk-btn sk sk-shimmer"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:65%"></div><div class="sk sk-shimmer" style="width:60%"></div><div class="sk-price sk sk-shimmer"></div><div class="sk-btn sk sk-shimmer"></div></div></div></div></div>');
           }
         })();
       </script>

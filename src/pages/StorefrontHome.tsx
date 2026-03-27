@@ -20,9 +20,9 @@ const INITIAL_LIMIT = PAGE_SIZE;
 
 function ProductCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout style" }}>
       <div className="p-1 pb-0">
-        <Skeleton className="w-full rounded-lg" style={{ aspectRatio: "4/5" }} />
+        <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
       </div>
       <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
         <div className="flex items-center justify-between">
