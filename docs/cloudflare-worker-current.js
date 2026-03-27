@@ -195,7 +195,7 @@ async function callEdgeFunction(name, params = {}) {
 
 /* ============== DOMAIN RESOLUTION (KV + Cache API) ============== */
 
-const KV_DOMAIN_TTL = 600; // 10 minutes in KV (global)
+const KV_DOMAIN_TTL = 3600; // 1 hour in KV (global)
 
 async function resolveDomain(hostname, env) {
   const domain = hostname.replace(/^www\./, "").toLowerCase().trim();
