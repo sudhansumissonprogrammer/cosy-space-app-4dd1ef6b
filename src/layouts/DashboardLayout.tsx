@@ -291,7 +291,7 @@ export default function DashboardLayout() {
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 )}
-                {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />}
+                {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
               </div>
             </header>
             <main className="flex-1 overflow-auto p-6">
