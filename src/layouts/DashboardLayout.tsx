@@ -347,6 +347,18 @@ export default function DashboardLayout() {
           </span>
         </div>
         <div className="flex items-center gap-1">
+          {store?.slug && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+              onClick={handlePurgeCache}
+              disabled={isPurging}
+              title="Purge cache"
+            >
+              <RefreshCw className={cn("h-5 w-5", isPurging && "animate-spin")} />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
