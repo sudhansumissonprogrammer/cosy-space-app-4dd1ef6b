@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Share2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ROOT_DOMAIN } from "@/lib/subdomain";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ShareStoreDialogProps {
   storeSlug: string;
