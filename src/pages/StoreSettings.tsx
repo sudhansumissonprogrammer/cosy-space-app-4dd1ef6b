@@ -344,7 +344,7 @@ export default function StoreSettings() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Banner</Label>
+                <Label>Desktop Hero Banner <span className="text-xs text-muted-foreground font-normal">(shown on desktop)</span></Label>
                 {bannerPreview ? (
                   <div className="relative inline-block">
                     <img src={bannerPreview} alt="Banner" className="h-20 w-40 rounded-lg border object-cover" />
