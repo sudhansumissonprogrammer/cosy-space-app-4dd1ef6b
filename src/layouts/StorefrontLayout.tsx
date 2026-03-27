@@ -277,6 +277,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
           store={store}
           marqueeText={themeConfig?.marquee_text}
           marqueeEnabled={themeConfig?.marquee_enabled ?? true}
+          headerLogoAlignment={themeConfig?.header_logo_alignment || "left"}
         />
       )}
     </StorefrontShell>
