@@ -596,7 +596,7 @@ export default function ProductDetail() {
 
                 {showBuyNow && (
                   <button
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.3s_ease-in-out_infinite_2s]"
                     style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                     onClick={handleBuyNow}
                   >
