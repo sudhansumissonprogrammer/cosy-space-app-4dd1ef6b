@@ -1291,7 +1291,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
   if (images.length === 0) {
     return (
       <div className="overflow-hidden rounded-2xl bg-accent">
-        <div className="flex aspect-[3/4] sm:aspect-square w-full items-center justify-center">
+        <div className="flex aspect-[4/5] sm:aspect-square w-full items-center justify-center">
           <Package className="h-16 w-16 text-muted-foreground/30" />
         </div>
       </div>
@@ -1330,12 +1330,12 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           )}
 
           {/* Skeleton */}
-          {!isMainLoaded && <Skeleton className="aspect-[3/4] sm:aspect-square w-full rounded-none" />}
+          {!isMainLoaded && <Skeleton className="aspect-[4/5] sm:aspect-square w-full rounded-none" />}
           <img
             key={`${activeIndex}-${images[activeIndex]}`}
             src={optimizeImageUrl(images[activeIndex], 800)}
             alt={productName}
-            className={`aspect-[3/4] sm:aspect-square w-full object-cover sm:object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+            className={`aspect-[4/5] sm:aspect-square w-full object-cover sm:object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
             decoding="async"
             fetchPriority="high"
             draggable={false}
