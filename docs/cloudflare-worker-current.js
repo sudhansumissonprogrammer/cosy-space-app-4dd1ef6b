@@ -1726,16 +1726,12 @@ export default {
       });
     }
 
-    // ─── v2.7 KEY OPTIMIZATION: PARALLEL DOMAIN RESOLUTION + ORIGIN FETCH ───
-    // The origin HTML is the same SPA shell regardless of slug.
-    // Start fetching it IMMEDIATELY while resolving the custom domain in parallel.
-    // This saves 300-500ms compared to v2.6's serial approach.
+    // ─── v3.1: SPA SHELL CACHING — ELIMINATES ORIGIN FETCH ───
+    // The SPA shell is cached in KV (~5ms read) instead of fetching from origin (~800ms).
+    // Domain resolution also uses KV. Total cold load: ~300ms worker time.
     const cleanDomain = hostname.replace(/^www\./, "").toLowerCase().trim();
 
-    const [slug, originResponse] = await Promise.all([
-      resolveDomain(cleanDomain, env),
-      proxyToOrigin(request), // Start origin fetch immediately — doesn't depend on slug
-    ]);
+    const slug = await resolveDomain(cleanDomain, env);
 
     if (slug) {
       // Check SEO/bot in parallel (these are fast — usually return null)
@@ -1747,9 +1743,9 @@ export default {
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      // Inject slug + storefront data into the already-fetched origin HTML
+      // fetchAndInjectSlug now uses cached SPA shell (KV ~5ms) + storefront data in parallel
       const { response: injectedResponse, dataSource } =
-        await injectIntoPreFetchedOrigin(originResponse, slug, ctx, env);
+        await fetchAndInjectSlug(request, slug, ctx, env);
 
       // Cache the fully-formed response for early exit on next request
       const contentType = injectedResponse.headers.get("content-type") || "";
