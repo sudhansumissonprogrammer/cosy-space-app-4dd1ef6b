@@ -232,6 +232,7 @@ interface ThemeConfig {
   marquee_enabled: boolean;
   product_card_style: string;
   category_style: string;
+  header_logo_alignment: string;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
@@ -241,44 +242,44 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
     heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left",
   },
   "theme-2": {
     primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
     heading_font: "Space Grotesk", body_font: "DM Sans", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left",
   },
   "theme-3": {
     primary_color: "#3B82F6", accent_color: "#F97316", text_color: "#1e293b", background_color: "#F8FAFC",
     heading_font: "Inter", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #3B82F6, #60a5fa, #F97316)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left",
   },
   "theme-10": {
     primary_color: "#FF3F6C", accent_color: "#111111", text_color: "#1a1a1a", background_color: "#FFFFFF",
     heading_font: "Poppins", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left",
   },
   "theme-11": {
     primary_color: "#1a1a1a", accent_color: "#EF4444", text_color: "#1a1a1a", background_color: "#F5F5F5",
     heading_font: "DM Sans", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555, #1a1a1a)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left",
   },
   "theme-12": {
     primary_color: "#FF3F6C", accent_color: "#111111", text_color: "#1a1a1a", background_color: "#FFFFFF",
     heading_font: "Poppins", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-3", category_style: "style-1",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-3", category_style: "style-1", header_logo_alignment: "left",
   },
   "theme-13": {
     primary_color: "#25D366", accent_color: "#128C7E", text_color: "#1a1a1a", background_color: "#FFFFFF",
     heading_font: "DM Sans", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #25D366, #128C7E, #25D366)",
     marquee_text: "🍽️ Scan & Order • 📱 WhatsApp Ordering • 🚀 Quick Service • ✨ Fresh & Delicious",
-    marquee_enabled: true, product_card_style: "style-4", category_style: "style-5",
+    marquee_enabled: true, product_card_style: "style-4", category_style: "style-5", header_logo_alignment: "left",
   },
 };
 
@@ -1839,6 +1840,7 @@ export default function StoreThemeSettings() {
         marquee_enabled: themeConfig.marquee_enabled ?? true,
         product_card_style: themeConfig.product_card_style || "style-1",
         category_style: themeConfig.category_style || "style-1",
+        header_logo_alignment: themeConfig.header_logo_alignment || "left",
       });
     } else {
       setConfig(defaults);
@@ -2176,6 +2178,71 @@ export default function StoreThemeSettings() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Header Logo Alignment */}
+          <div>
+            <h4 className="mb-3 text-sm font-semibold">Header Layout</h4>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Logo Alignment</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "left", label: "Left", desc: "Logo on the left side", icon: (
+                    <div className="flex items-center gap-1 w-full">
+                      <div className="h-2.5 w-6 rounded bg-foreground/80" />
+                      <div className="flex-1" />
+                      <div className="flex gap-0.5">
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                      </div>
+                    </div>
+                  )},
+                  { value: "center", label: "Center", desc: "Logo centered in header", icon: (
+                    <div className="flex items-center w-full">
+                      <div className="h-2 w-2 rounded bg-muted-foreground/40" />
+                      <div className="flex-1 flex justify-center">
+                        <div className="h-2.5 w-6 rounded bg-foreground/80" />
+                      </div>
+                      <div className="flex gap-0.5">
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                      </div>
+                    </div>
+                  )},
+                  { value: "left-with-search", label: "With Search", desc: "Logo left, search bar in center", icon: (
+                    <div className="flex items-center gap-1 w-full">
+                      <div className="h-2.5 w-4 rounded bg-foreground/80" />
+                      <div className="flex-1 h-2 rounded-full bg-muted-foreground/20 border border-muted-foreground/30" />
+                      <div className="flex gap-0.5">
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                      </div>
+                    </div>
+                  )},
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => updateField("header_logo_alignment", s.value)}
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                      config.header_logo_alignment === s.value
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/30"
+                    }`}
+                  >
+                    <div className="w-full rounded-lg border border-border bg-card p-2">
+                      {s.icon}
+                    </div>
+                    <span className="text-[10px] font-medium">{s.label}</span>
+                    {config.header_logo_alignment === s.value && (
+                      <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="h-3 w-3" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
