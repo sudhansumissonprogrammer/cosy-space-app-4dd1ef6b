@@ -8,15 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Upload, X, Crown } from "lucide-react";
+import { Loader2, Upload, X, Crown, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function UserSettings() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -269,6 +271,23 @@ export default function UserSettings() {
           </CardContent>
         </Card>
       </form>
+
+      {/* Sign Out */}
+      <Card>
+        <CardContent className="pt-6">
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={async () => {
+              await signOut();
+              navigate("/login");
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
