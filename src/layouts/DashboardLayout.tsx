@@ -13,7 +13,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
   Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
-  Search, User, Bell, X, BarChart3, MessageSquare, Clock,
+  Search, User, Bell, X, BarChart3, MessageSquare, Clock, RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
