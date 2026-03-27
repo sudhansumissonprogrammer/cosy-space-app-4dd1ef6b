@@ -22,7 +22,7 @@ export default function SmartInstallPrompt({
   appName,
   primaryColor = "hsl(var(--primary))",
   textColor = "hsl(var(--primary-foreground))",
-  delay = 5000,
+  delay = 20000,
 }: SmartInstallPromptProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPopup, setShowPopup] = useState(false);
