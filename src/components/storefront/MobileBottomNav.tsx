@@ -38,8 +38,8 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
     {
       label: "Categories",
       icon: LayoutGrid,
-      to: storefrontPath(store.slug, "best-sellers"),
-      active: isActive("best-sellers") || isActive("category"),
+      to: storefrontPath(store.slug, "categories"),
+      active: isActive("categories") || isActive("category"),
     },
     {
       label: "Orders",

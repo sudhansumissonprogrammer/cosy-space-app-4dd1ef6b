@@ -45,6 +45,7 @@ const StorefrontHomeV12 = lazy(() => import("./pages/StorefrontHomeV12"));
 const StorefrontHomeV13 = lazy(() => import("./pages/StorefrontHomeV13"));
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontShop = lazy(() => import("./pages/StorefrontShop"));
+const StorefrontCategoriesPage = lazy(() => import("./pages/StorefrontCategories"));
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
 const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
 const StorefrontShippingPolicy = lazy(() => import("./pages/StorefrontShippingPolicy"));
@@ -158,6 +159,7 @@ const storefrontChildRoutes = (theme: string) => {
       <Route index element={<HomeComponent />} />
       <Route path="shop" element={<StorefrontShop />} />
       <Route path="best-sellers" element={<StorefrontBestSellers />} />
+      <Route path="categories" element={<StorefrontCategoriesPage />} />
       <Route path="contact" element={<StorefrontContact />} />
       <Route path="return-policy" element={<StorefrontReturnPolicy />} />
       <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
