@@ -1244,13 +1244,6 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
   };
 }
 
-      status: originResponse.status,
-      headers: newHeaders,
-    }),
-    dataSource,
-  };
-}
-
 /* ============== STORE RESPONSE IN EDGE CACHE ============== */
 
 /**
