@@ -325,7 +325,7 @@ export default function StoreSettings() {
             <CardTitle className="flex items-center gap-2 text-lg">
               <Image className="h-5 w-5 text-primary" /> Images & Media
             </CardTitle>
-            <CardDescription>Logo, banner, and mobile hero images</CardDescription>
+            <CardDescription>Logo, desktop hero banner, and mobile hero images</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -344,7 +344,7 @@ export default function StoreSettings() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Banner</Label>
+                <Label>Desktop Hero Banner <span className="text-xs text-muted-foreground font-normal">(shown on desktop)</span></Label>
                 {bannerPreview ? (
                   <div className="relative inline-block">
                     <img src={bannerPreview} alt="Banner" className="h-20 w-40 rounded-lg border object-cover" />
