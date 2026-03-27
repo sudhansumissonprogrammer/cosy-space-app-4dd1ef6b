@@ -551,28 +551,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
     if (!res.ok) return null;
     const data = await res.json();
 
-    // ── HYBRID RENDERING: fetch first 2 products inline (lightweight only) ──
-    // Full product list loads via /api/products — NOT injected into HTML
-    const storeId = data?.store?.id;
-    if (storeId && data) {
-      try {
-        const products = await _fetchProductsFromDb(storeId, {}, 2000);
-        if (Array.isArray(products) && products.length > 0) {
-          // ONLY 2 products, ONLY minimal fields — keeps HTML payload <2KB
-          data._initialProducts = products.slice(0, 2).map(p => ({
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            sale_price: p.sale_price,
-            image_url: p.image_url ? p.image_url.split(",")[0].trim() : null,
-            slug: p.slug,
-          }));
-          // DO NOT set data.products — that bloats __STOREFRONT_DATA__
-        }
-      } catch {
-        // Silent — products will load via /api/products
-      }
-    }
+    // Products load via /api/products endpoint — NOT injected into shell HTML
 
     // Write to both KV (global) and Cache API (per-colo) in background
     // ALSO pre-warm first page of products so frontend gets instant cache hit
@@ -1099,38 +1078,6 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
         lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(store.logo_url)}" />`;
       }
     }
-
-    // ── HYBRID RENDERING: Preload first product image for instant LCP ──
-    const initialProducts = storefrontData._initialProducts;
-    if (Array.isArray(initialProducts) && initialProducts.length > 0) {
-      for (let pi = 0; pi < Math.min(2, initialProducts.length); pi++) {
-        let imgUrl = initialProducts[pi].image_url;
-        if (imgUrl && imgUrl.includes(",")) imgUrl = imgUrl.split(",")[0].trim();
-        if (imgUrl) {
-          let optImg = imgUrl;
-          if (imgUrl.includes("supabase.co/storage")) {
-            optImg = imgUrl.replace("/storage/v1/object/", "/storage/v1/render/image/");
-            optImg += (optImg.includes("?") ? "&" : "?") + "width=400&quality=75";
-          } else if (imgUrl.includes("cdn.shopify.com") || imgUrl.includes("cdn/shop/")) {
-            try {
-              const u = new URL(optImg);
-              u.searchParams.set("width", "400");
-              u.searchParams.set("format", "webp");
-              optImg = u.toString();
-            } catch {}
-          }
-          const safeImg = escapeHtml(optImg);
-          lcpPreload += `<link rel="preload" as="image" href="${safeImg}" ${pi === 0 ? 'fetchpriority="high"' : ''} />`;
-          try {
-            const imgOrigin = new URL(optImg).origin;
-            if (!preconnectedOrigins.has(imgOrigin)) {
-              preconnectedOrigins.add(imgOrigin);
-              lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
-            }
-          } catch {}
-        }
-      }
-    }
   }
 
   // CSS preload — discover Vite's generated CSS bundle for parallel fetch
@@ -1152,53 +1099,10 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     }
   }
 
-  // ── HYBRID RENDERING: Inject first 2 product cards into skeleton HTML ──
-  let hybridHtml = html;
-  const initialProducts = storefrontData?._initialProducts;
-  if (Array.isArray(initialProducts) && initialProducts.length > 0) {
-    const currency = storefrontData?.store?.currency || "₹";
-    let cardsHtml = "";
-    for (let ci = 0; ci < Math.min(2, initialProducts.length); ci++) {
-      const pr = initialProducts[ci];
-      let imgUrl = pr.image_url;
-      if (imgUrl && imgUrl.includes(",")) imgUrl = imgUrl.split(",")[0].trim();
-      let optImg = "";
-      if (imgUrl) {
-        optImg = imgUrl;
-        if (imgUrl.includes("supabase.co/storage")) {
-          optImg = imgUrl.replace("/storage/v1/object/", "/storage/v1/render/image/");
-          optImg += (optImg.includes("?") ? "&" : "?") + "width=400&quality=75";
-        } else if (imgUrl.includes("cdn.shopify.com") || imgUrl.includes("cdn/shop/")) {
-          try {
-            const u = new URL(optImg);
-            u.searchParams.set("width", "400");
-            u.searchParams.set("format", "webp");
-            optImg = u.toString();
-          } catch {}
-        }
-      }
-      const displayPrice = pr.sale_price || pr.price;
-      const safeName = escapeHtml(pr.name || "");
-      cardsHtml += `<div class="sf-skel-card" style="background:#fff;border:1px solid #eee">`;
-      if (optImg) {
-        cardsHtml += `<img src="${escapeHtml(optImg)}" alt="${safeName}" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block" loading="eager" fetchpriority="${ci === 0 ? "high" : "auto"}" width="400" height="500">`;
-      } else {
-        cardsHtml += `<div class="sf-skel-card-img" style="background:#f5f5f5"></div>`;
-      }
-      cardsHtml += `<div style="padding:8px 10px"><div style="font-size:11px;font-weight:700;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${safeName}</div>`;
-      cardsHtml += `<div style="font-size:13px;font-weight:800;color:#111;margin-top:4px">${escapeHtml(currency)}${Math.round(displayPrice)}</div></div></div>`;
-    }
-
-    // Inject hybrid cards by replacing first 2 skeleton cards in the grid
-    // The skeleton grid has 4 cards — replace the first 2 with real product data
-    const skelCardRegex = /<div class="sf-skel-card">[\s\S]*?<\/div><\/div><\/div>/;
-    // Simpler: inject cards + a script that replaces skeleton cards on DOM ready
-    const hybridScript = `<script>(function(){var g=document.querySelector('.sf-skel-grid');if(!g)return;var cards=g.querySelectorAll('.sf-skel-card');for(var i=0;i<Math.min(2,cards.length);i++)cards[i].remove();g.insertAdjacentHTML('afterbegin','${cardsHtml.replace(/'/g, "\\'")}');})()</script>`;
-    injection += hybridScript;
-  }
+  // Products render via React — no hybrid HTML injection
 
   // ── KEY: Inject data BEFORE <head> content so it's available before inline scripts
-  const injectedHtml = hybridHtml.replace("<head>", `<head>${injection}${lcpPreload}${cssPreload}${modulePreloads}`);
+  const injectedHtml = html.replace("<head>", `<head>${injection}${lcpPreload}${cssPreload}${modulePreloads}`);
 
   return { html: injectedHtml, dataSource };
 }

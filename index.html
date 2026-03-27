@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Self-hosted Inter font — eliminates external connection latency -->
     <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <!-- Decorative fonts (Alegreya SC, Changa, Montserrat) loaded via JS in StorefrontShell -->
     <title>Storivo — Create Your Online Store</title>
     <meta name="description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
     <meta name="author" content="Storivo" />
@@ -15,22 +14,15 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/png" href="/pwa-192x192.png">
     <link rel="preload" href="/src/index.css" as="style" />
-    
-    
-    
-    
     <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
     <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
-    <!-- Inline critical above-the-fold styles to prevent FOUC -->
+    <!-- Inline critical above-the-fold styles — static placeholders (no shimmer) -->
     <style>
       body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
       #root{min-height:100vh}
-      @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-      .sk{background:#f0f0f0;border-radius:8px}
-      .sk-shimmer{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:400px 100%;animation:shimmer 1.2s infinite}
+      .sk{background:#e8e8e8;border-radius:8px}
       .sf-skel{max-width:100%;padding:0}
       .sf-skel-nav{height:56px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;padding:0 16px;gap:12px}
-      
       .sf-skel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
       .sf-skel-card{border-radius:12px;overflow:hidden}
       .sf-skel-card-img{width:100%;aspect-ratio:4/5}
@@ -39,14 +31,13 @@
       @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr);gap:16px;padding:24px}}
     </style>
     <!--
-      Preload storefront API data + LCP hero image:
-      Only runs if Worker hasn't already injected __STOREFRONT_DATA__.
+      Lightweight prefetch: only starts /api/products fetch early.
+      No DOM manipulation, no image preloading, no hybrid card injection.
     -->
     <script>
       (function(){
         // If Worker already injected __STOREFRONT_DATA__, just kick off /api/products fetch
         if(window.__STOREFRONT_DATA__){
-          // Worker does NOT inject full products — start /api/products fetch immediately
           window.__PRODUCTS_PREFETCH__=fetch(location.origin+'/api/products',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).catch(function(){return null});
           return;
         }
@@ -63,12 +54,10 @@
         }
         if(!slug)return;
 
-        function addPreconnect(origin){var pc=document.createElement('link');pc.rel='preconnect';pc.href=origin;document.head.appendChild(pc);}
-        function preloadImg(url){var l=document.createElement('link');l.rel='preload';l.as='image';l.href=url;l.setAttribute('fetchpriority','high');document.head.appendChild(l);}
-        function optimizeSupabaseImg(url,w){if(url.indexOf('supabase.co/storage')>-1){url=url.replace('/storage/v1/object/','/storage/v1/render/image/');url+=(url.indexOf('?')>-1?'&':'?')+'width='+w+'&quality=75';}else if(url.indexOf('cdn.shopify.com')>-1||url.indexOf('cdn/shop/')>-1){try{var u=new URL(url);u.searchParams.set('width',String(w));u.searchParams.set('format','webp');url=u.toString();}catch(e){}}return url;}
-
         var supaUrl='https://soxuyuupzodkufxbbndq.supabase.co';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNveHV5dXVwem9ka3VmeGJibmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTI5ODYsImV4cCI6MjA5MDE2ODk4Nn0.cnK4FujigfVvNaXfNwQBb9qUQei8IQecHbDoVjFewQU';
+
+        // Fetch store data (lightweight — no product injection into DOM)
         var p_=fetch(supaUrl+'/rest/v1/rpc/get_storefront_data',{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
@@ -76,49 +65,7 @@
         }).then(function(r){return r.json()}).then(function(data){
           if(data&&data.store){
             window.__STOREFRONT_DATA__=data;
-            if(data.store.logo_url){
-              var logoLnk=document.createElement('link');
-              logoLnk.rel='preload';logoLnk.as='image';logoLnk.href=data.store.logo_url;
-              document.head.appendChild(logoLnk);
-            }
-            // Always preload first product image for fast LCP
-            if(data.products&&data.products[0]&&data.products[0].image_url){
-              var firstProdImg=data.products[0].image_url;
-              if(firstProdImg.indexOf(',')>-1)firstProdImg=firstProdImg.split(',')[0].trim();
-              if(firstProdImg)preloadImg(optimizeSupabaseImg(firstProdImg,400));
-              // Also preload second product image
-              if(data.products[1]&&data.products[1].image_url){
-                var secImg=data.products[1].image_url;
-                if(secImg.indexOf(',')>-1)secImg=secImg.split(',')[0].trim();
-                if(secImg){var l2=document.createElement('link');l2.rel='preload';l2.as='image';l2.href=optimizeSupabaseImg(secImg,400);document.head.appendChild(l2);}
-              }
-            }
-            // Inject first 2 real product cards into the skeleton (hybrid rendering)
-            try{
-              var skelGrid=document.querySelector('.sf-skel-grid');
-              if(skelGrid&&data.products&&data.products.length>0){
-                var currency=data.store.currency||'₹';
-                var cards=data.products.slice(0,2);
-                var html='';
-                for(var ci=0;ci<cards.length;ci++){
-                  var pr=cards[ci];
-                  var imgUrl=pr.image_url;
-                  if(imgUrl&&imgUrl.indexOf(',')>-1)imgUrl=imgUrl.split(',')[0].trim();
-                  var optImg=imgUrl?optimizeSupabaseImg(imgUrl,400):'';
-                  var displayPrice=pr.sale_price||pr.price;
-                  html+='<div class="sf-skel-card" style="background:#fff;border:1px solid #eee">';
-                  if(optImg)html+='<img src="'+optImg+'" alt="'+((pr.name||'').replace(/"/g,'&quot;'))+'" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block" loading="eager" fetchpriority="'+(ci===0?'high':'auto')+'" width="400" height="500">';
-                  else html+='<div class="sf-skel-card-img" style="background:#f5f5f5"></div>';
-                  html+='<div style="padding:8px 10px"><div style="font-size:11px;font-weight:700;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((pr.name||'').replace(/</g,'&lt;'))+'</div>';
-                  html+='<div style="font-size:13px;font-weight:800;color:#111;margin-top:4px">'+currency+Math.round(displayPrice)+'</div></div></div>';
-                }
-                // Replace first 2 skeleton cards with real product cards
-                var existingCards=skelGrid.querySelectorAll('.sf-skel-card');
-                for(var ri=0;ri<Math.min(2,existingCards.length);ri++)existingCards[ri].remove();
-                skelGrid.insertAdjacentHTML('afterbegin',html);
-              }
-            }catch(e){}
-            // Bridge for useStorefrontProducts — resolve with already-fetched products
+            // Bridge for useStorefrontProducts
             if(data.products&&data.products.length>0){
               window.__PRODUCTS_PREFETCH__=Promise.resolve(data.products);
             } else if(data.store.id){
@@ -132,13 +79,6 @@
       })();
     </script>
     
-  
-  
-  
-  
-  
-  
-  
   <meta property="og:title" content="Storivo — Create Your Online Store">
   <meta name="twitter:title" content="Storivo — Create Your Online Store">
   <meta property="og:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
@@ -159,7 +99,7 @@
             if(window.__STORE_SLUG__) isStorefront=true;
           }
           if(isStorefront){
-            document.write('<div class="sf-skel"><div class="sf-skel-nav"><div class="sk sk-shimmer" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk sk-shimmer" style="width:28px;height:28px;border-radius:50%"></div></div><div style="padding:12px 16px"><div class="sk sk-shimmer" style="height:40px;border-radius:9999px;width:100%"></div></div><div style="padding:0 16px 8px;display:flex;gap:16px;overflow:hidden"><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div></div><div class="sf-skel-grid"><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:60%"></div><div class="sk sk-shimmer" style="width:40%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:70%"></div><div class="sk sk-shimmer" style="width:35%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:55%"></div><div class="sk sk-shimmer" style="width:45%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:65%"></div><div class="sk sk-shimmer" style="width:38%"></div></div></div></div></div>');
+            document.write('<div class="sf-skel"><div class="sf-skel-nav"><div class="sk" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk" style="width:28px;height:28px;border-radius:50%"></div></div><div style="padding:12px 16px"><div class="sk" style="height:40px;border-radius:9999px;width:100%"></div></div><div style="padding:0 16px 8px;display:flex;gap:16px;overflow:hidden"><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div></div><div class="sf-skel-grid"><div class="sf-skel-card"><div class="sf-skel-card-img sk"></div><div class="sf-skel-card-txt"><div class="sk" style="width:60%"></div><div class="sk" style="width:40%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk"></div><div class="sf-skel-card-txt"><div class="sk" style="width:70%"></div><div class="sk" style="width:35%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk"></div><div class="sf-skel-card-txt"><div class="sk" style="width:55%"></div><div class="sk" style="width:45%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk"></div><div class="sf-skel-card-txt"><div class="sk" style="width:65%"></div><div class="sk" style="width:38%"></div></div></div></div></div>');
           }
         })();
       </script>
