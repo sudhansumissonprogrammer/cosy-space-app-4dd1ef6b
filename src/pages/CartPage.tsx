@@ -18,6 +18,24 @@ export default function CartPage() {
   const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
   const showCheckout = orderMode === "website" || orderMode === "both";
 
+  const { data: shippingConfig } = useQuery({
+    queryKey: ["store-shipping-config", store.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("store_shipping_config")
+        .select("free_shipping_above, flat_rate, is_active")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!store.id,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const freeShippingThreshold = shippingConfig?.free_shipping_above;
+  const shippingProgress = freeShippingThreshold ? Math.min(100, (cartTotal / freeShippingThreshold) * 100) : null;
+  const shippingRemaining = freeShippingThreshold ? Math.max(0, freeShippingThreshold - cartTotal) : null;
+
   const handleWhatsAppOrder = () => {
     if (!store.whatsapp_number) return;
     const phone = store.whatsapp_number.replace(/[^0-9+]/g, "");
