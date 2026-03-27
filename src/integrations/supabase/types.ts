@@ -1277,6 +1277,7 @@ export type Database = {
           button_style: string
           category_style: string
           created_at: string
+          header_logo_alignment: string
           heading_font: string
           id: string
           marquee_enabled: boolean
@@ -1295,6 +1296,7 @@ export type Database = {
           button_style?: string
           category_style?: string
           created_at?: string
+          header_logo_alignment?: string
           heading_font?: string
           id?: string
           marquee_enabled?: boolean
@@ -1313,6 +1315,7 @@ export type Database = {
           button_style?: string
           category_style?: string
           created_at?: string
+          header_logo_alignment?: string
           heading_font?: string
           id?: string
           marquee_enabled?: boolean
