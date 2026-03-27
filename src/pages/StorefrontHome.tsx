@@ -18,21 +18,22 @@ import { storefrontPath } from "@/lib/subdomain";
 
 const INITIAL_LIMIT = PAGE_SIZE;
 
+/** Static placeholder — no animation for faster perceived load */
 function ProductCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
       <div className="p-1 pb-0">
-        <Skeleton className="w-full rounded-lg" style={{ aspectRatio: "4/5" }} />
+        <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
       </div>
       <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-2.5 w-16" />
-          <Skeleton className="h-2.5 w-10" />
+          <div className="h-2.5 w-16 rounded bg-muted/60" />
+          <div className="h-2.5 w-10 rounded bg-muted/60" />
         </div>
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-3/4" />
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-7 w-full rounded-lg sm:h-8" />
+        <div className="h-3 w-full rounded bg-muted/60" />
+        <div className="h-3 w-3/4 rounded bg-muted/60" />
+        <div className="h-4 w-20 rounded bg-muted/60" />
+        <div className="h-7 w-full rounded-lg bg-muted/60 sm:h-8" />
       </div>
     </div>
   );

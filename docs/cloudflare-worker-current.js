@@ -1102,7 +1102,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   // Products render via React — no hybrid HTML injection
 
   // ── KEY: Inject data BEFORE <head> content so it's available before inline scripts
-  const injectedHtml = hybridHtml.replace("<head>", `<head>${injection}${lcpPreload}${cssPreload}${modulePreloads}`);
+  const injectedHtml = html.replace("<head>", `<head>${injection}${lcpPreload}${cssPreload}${modulePreloads}`);
 
   return { html: injectedHtml, dataSource };
 }
