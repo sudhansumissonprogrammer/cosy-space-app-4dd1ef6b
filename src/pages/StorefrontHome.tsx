@@ -319,18 +319,37 @@ export default function StorefrontHome() {
             </div>
           ) : displayProducts.length > 0 ? (
             <>
+              {/* Above-fold: first 4 products render immediately */}
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {displayProducts.map((product, idx) => (
+                {displayProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
                   <UniversalProductCard
                     key={product.id}
                     product={product}
                     slug={slug!}
                     store={store}
-                    priority={idx < 4}
+                    priority={idx < 2}
                     cardStyle={cardStyle}
                   />
                 ))}
               </div>
+
+              {/* Below-fold: deferred until near viewport */}
+              {displayProducts.length > ABOVE_FOLD_COUNT && (
+                <LazyRender minHeight={600} rootMargin="300px">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-2 sm:mt-4">
+                    {displayProducts.slice(ABOVE_FOLD_COUNT).map((product) => (
+                      <UniversalProductCard
+                        key={product.id}
+                        product={product}
+                        slug={slug!}
+                        store={store}
+                        priority={false}
+                        cardStyle={cardStyle}
+                      />
+                    ))}
+                  </div>
+                </LazyRender>
+              )}
 
               {/* Infinite scroll sentinel */}
               <div ref={sentinelRef} className="flex justify-center py-6">
