@@ -1,0 +1,1 @@
+UPDATE stores SET mobile_hero_images = NULL WHERE slug = 'overlaysnow';
