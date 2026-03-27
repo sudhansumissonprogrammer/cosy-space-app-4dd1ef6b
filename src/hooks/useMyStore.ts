@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,7 +12,6 @@ const MY_STORE_COLUMNS = "id, name, slug, logo_url, currency, order_mode, whatsa
 
 export function useMyStore() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ["my-store", user?.id],
@@ -28,17 +27,11 @@ export function useMyStore() {
         .maybeSingle();
       if (error) throw error;
 
-      // Seed the per-storeId cache ONLY if it doesn't already have richer data.
-      // useMyStore fetches partial columns; useStoreData fetches SELECT *.
-      // Overwriting full data with partial data would erase fields like
-      // mobile_hero_url, instagram_url, etc. causing the settings form to reset.
-      if (data?.id) {
-        queryClient.setQueryData(["store", data.id], (existing: any) => {
-          // If we already have full data (has fields not in MY_STORE_COLUMNS), keep it
-          if (existing && existing.instagram_url !== undefined) return existing;
-          return data;
-        });
-      }
+      // DO NOT seed ["store", storeId] cache here.
+      // useMyStore fetches only partial columns (MY_STORE_COLUMNS).
+      // useStoreData fetches SELECT * for settings pages.
+      // Seeding would overwrite full data with partial data, causing
+      // fields like instagram_url, mobile_hero_url to disappear.
 
       return data;
     },
