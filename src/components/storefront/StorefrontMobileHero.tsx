@@ -51,14 +51,15 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
   }
 
   const uniqueSlides = Array.from(new Set(slides));
-  if (uniqueSlides.length === 0) return null;
 
-  // Preload first image
+  // Preload first image — must be before any early return
   useEffect(() => {
     if (uniqueSlides.length > 0) {
       return preloadHeroImage(uniqueSlides[0], 800);
     }
-  }, [uniqueSlides]);
+  }, [uniqueSlides[0]]);
+
+  if (uniqueSlides.length === 0) return null;
 
   // Single image — render directly at natural aspect ratio
   if (uniqueSlides.length === 1) {
