@@ -5,9 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import LazyRender from "@/components/storefront/LazyRender";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
+
+const ABOVE_FOLD_COUNT = 4;
 
 const PAGE_SIZE = 20;
 
