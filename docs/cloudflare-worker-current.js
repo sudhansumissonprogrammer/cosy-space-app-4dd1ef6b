@@ -551,28 +551,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
     if (!res.ok) return null;
     const data = await res.json();
 
-    // ── HYBRID RENDERING: fetch first 2 products inline (lightweight only) ──
-    // Full product list loads via /api/products — NOT injected into HTML
-    const storeId = data?.store?.id;
-    if (storeId && data) {
-      try {
-        const products = await _fetchProductsFromDb(storeId, {}, 2000);
-        if (Array.isArray(products) && products.length > 0) {
-          // ONLY 2 products, ONLY minimal fields — keeps HTML payload <2KB
-          data._initialProducts = products.slice(0, 2).map(p => ({
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            sale_price: p.sale_price,
-            image_url: p.image_url ? p.image_url.split(",")[0].trim() : null,
-            slug: p.slug,
-          }));
-          // DO NOT set data.products — that bloats __STOREFRONT_DATA__
-        }
-      } catch {
-        // Silent — products will load via /api/products
-      }
-    }
+    // Products load via /api/products endpoint — NOT injected into shell HTML
 
     // Write to both KV (global) and Cache API (per-colo) in background
     // ALSO pre-warm first page of products so frontend gets instant cache hit
