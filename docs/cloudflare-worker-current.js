@@ -30,7 +30,7 @@
  *   - STORE_KV: Cloudflare KV namespace for global storefront data cache
  */
 
-const WORKER_VERSION = "3.0";
+const WORKER_VERSION = "3.1";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "charm-dash-build.lovable.app";
 
