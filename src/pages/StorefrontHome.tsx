@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -9,20 +9,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
+
+const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
+const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
 const INITIAL_LIMIT = PAGE_SIZE;
 
 function ProductCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout style" }}>
       <div className="p-1 pb-0">
-        <Skeleton className="w-full rounded-lg" style={{ aspectRatio: "4/5" }} />
+        <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
       </div>
       <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
         <div className="flex items-center justify-between">
@@ -220,7 +221,9 @@ export default function StorefrontHome() {
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
         {bestSellingProducts.length > 0 && (
           (store as any).best_selling_carousel ? (
-            <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
+            <Suspense fallback={null}>
+              <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
+            </Suspense>
           ) : (
             <section>
               <div className="flex items-center gap-3 mb-5">
@@ -232,7 +235,7 @@ export default function StorefrontHome() {
               </div>
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {bestSellingProducts.map((product, idx) => (
-                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
+                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
                 ))}
               </div>
             </section>
@@ -309,7 +312,7 @@ export default function StorefrontHome() {
                     product={product}
                     slug={slug!}
                     store={store}
-                    priority={idx < 4}
+                    priority={idx < 2}
                     cardStyle={cardStyle}
                   />
                 ))}
@@ -341,7 +344,9 @@ export default function StorefrontHome() {
           )}
         </section>
       </div>
-      <StorefrontInstagramSection store={store} />
+      <Suspense fallback={null}>
+        <StorefrontInstagramSection store={store} />
+      </Suspense>
     </>
   );
 }

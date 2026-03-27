@@ -30,12 +30,12 @@ export default function V12ProductCard({ product, slug, index = 0 }: V12ProductC
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
         {product.image_url ? (
           <img
-            src={optimizeImageUrl(product.image_url, 400)}
-            srcSet={getImageSrcSet(product.image_url, [300, 400, 600])}
+            src={optimizeImageUrl(product.image_url, 300, 60)}
+            srcSet={getImageSrcSet(product.image_url, [300, 400, 600], 60)}
             sizes={PRODUCT_CARD_SIZES}
             alt={product.name}
-            width={400}
-            height={533}
+            width={300}
+            height={400}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading={index < 4 ? "eager" : "lazy"}
             fetchPriority={index < 2 ? "high" : "auto"}
