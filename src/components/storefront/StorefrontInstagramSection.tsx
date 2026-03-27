@@ -104,7 +104,6 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
                 height={200}
                 className="h-full w-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-75"
               />
-              />
               {/* Hover overlay */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-black shadow-lg backdrop-blur-sm">
