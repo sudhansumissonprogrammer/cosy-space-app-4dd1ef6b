@@ -70,6 +70,8 @@ export default function StorefrontHome() {
 
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const categoryStyle = themeConfig?.category_style || "style-1";
+  const headerLayout = themeConfig?.header_logo_alignment || "left";
+  const hideSearchBar = headerLayout === "left-with-search";
 
   // ── Best-selling products ──
   const bestSellingProducts = useMemo(() => {
