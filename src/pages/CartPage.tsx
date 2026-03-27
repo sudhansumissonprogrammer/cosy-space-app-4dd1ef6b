@@ -71,6 +71,36 @@ export default function CartPage() {
         </Link>
       </div>
 
+      {/* Free Shipping Progress Bar */}
+      {shippingProgress !== null && shippingRemaining !== null && (
+        <div className="mb-4 rounded-xl border border-emerald-200/50 bg-emerald-50/30 p-3 sm:p-4">
+          {shippingRemaining > 0 ? (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs sm:text-sm font-semibold text-emerald-600 flex items-center gap-1.5">
+                  <Truck className="h-4 w-4" />
+                  Add {currency} {shippingRemaining.toFixed(0)} more for FREE delivery!
+                </span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">{Math.round(shippingProgress)}%</span>
+              </div>
+              <div className="h-2.5 w-full rounded-full bg-accent overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{
+                    width: `${shippingProgress}%`,
+                    background: "linear-gradient(90deg, #10b981, #34d399)",
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <span className="text-xs sm:text-sm font-bold text-emerald-600 flex items-center gap-1.5">
+              <Check className="h-4 w-4" /> 🎉 You qualify for FREE delivery!
+            </span>
+          )}
+        </div>
+      )}
+
       <h1 className="mb-3 sm:mb-6 text-lg sm:text-2xl font-bold text-foreground">Cart ({cartCount} items)</h1>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
