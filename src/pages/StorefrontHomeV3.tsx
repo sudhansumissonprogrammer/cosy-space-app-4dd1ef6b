@@ -386,7 +386,7 @@ export default function StorefrontHomeV3() {
             )}
           </>
         ) : (
-          <div className="flex min-h-[200px] items-center justify-center rounded-2xl border bg-card">
+          <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border bg-card">
             <p className="text-muted-foreground">No products available yet.</p>
           </div>
         )}
