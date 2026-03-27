@@ -221,7 +221,9 @@ export default function StorefrontHome() {
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
         {bestSellingProducts.length > 0 && (
           (store as any).best_selling_carousel ? (
-            <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
+            <Suspense fallback={null}>
+              <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
+            </Suspense>
           ) : (
             <section>
               <div className="flex items-center gap-3 mb-5">
@@ -342,7 +344,9 @@ export default function StorefrontHome() {
           )}
         </section>
       </div>
-      <StorefrontInstagramSection store={store} />
+      <Suspense fallback={null}>
+        <StorefrontInstagramSection store={store} />
+      </Suspense>
     </>
   );
 }
