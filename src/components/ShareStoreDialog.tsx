@@ -5,20 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Share2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ROOT_DOMAIN } from "@/lib/subdomain";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ShareStoreDialogProps {
   storeSlug: string;
   storeName: string;
+  customDomain?: string | null;
   trigger?: React.ReactNode;
   iconOnly?: boolean;
 }
 
-export default function ShareStoreDialog({ storeSlug, storeName, trigger, iconOnly }: ShareStoreDialogProps) {
+export default function ShareStoreDialog({ storeSlug, storeName, customDomain, trigger, iconOnly }: ShareStoreDialogProps) {
   const [copied, setCopied] = useState(false);
-  const storeUrl = `https://${storeSlug}.${ROOT_DOMAIN}`;
-  // Share URL goes through edge function so social crawlers can read OG tags without Cloudflare blocking
-  // Add a version token to bypass social-platform cache and force fresh OG fetches.
-  const shareUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=share&slug=${encodeURIComponent(storeSlug)}&v=${Date.now()}`;
+  // Use custom domain if connected, otherwise subdomain
+  const storeUrl = customDomain ? `https://${customDomain}` : `https://${storeSlug}.${ROOT_DOMAIN}`;
+  const shareUrl = storeUrl;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(storeUrl)}`;
 
   const handleCopy = async () => {

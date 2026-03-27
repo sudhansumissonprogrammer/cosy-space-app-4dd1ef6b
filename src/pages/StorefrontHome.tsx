@@ -260,7 +260,7 @@ export default function StorefrontHome() {
           <div className="mb-5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-5 w-1 rounded-full bg-foreground" />
-              <h2 className="text-lg font-bold text-foreground tracking-wide" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>Popular Products</h2>
+              <h2 className="text-lg font-bold text-foreground tracking-wide" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>🔥 Popular Products</h2>
             </div>
             <div className="relative">
               <button
