@@ -377,7 +377,11 @@ export default function StorefrontHome() {
           )}
         </section>
       </div>
-      <StorefrontInstagramSection store={store} />
+      <LazyRender minHeight={200} rootMargin="400px">
+        <Suspense fallback={null}>
+          <StorefrontInstagramSection store={store} />
+        </Suspense>
+      </LazyRender>
     </>
   );
 }

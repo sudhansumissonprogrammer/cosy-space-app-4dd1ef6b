@@ -148,31 +148,39 @@ export default function CategoryDetail() {
       ) : products.length > 0 ? (
         <>
           {isMenuStyle ? (
-            <div className="flex flex-col gap-2.5">
-              {products.map((product, idx) => (
-                <UniversalProductCard
-                  key={product.id}
-                  product={product}
-                  slug={slug!}
-                  store={store}
-                  priority={idx < 4}
-                  cardStyle={cardStyle}
-                />
-              ))}
-            </div>
+            <>
+              <div className="flex flex-col gap-2.5">
+                {products.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
+                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
+                ))}
+              </div>
+              {products.length > ABOVE_FOLD_COUNT && (
+                <LazyRender minHeight={400} rootMargin="300px">
+                  <div className="flex flex-col gap-2.5 mt-2.5">
+                    {products.slice(ABOVE_FOLD_COUNT).map((product) => (
+                      <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
+                    ))}
+                  </div>
+                </LazyRender>
+              )}
+            </>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {products.map((product, idx) => (
-                <UniversalProductCard
-                  key={product.id}
-                  product={product}
-                  slug={slug!}
-                  store={store}
-                  priority={idx < 4}
-                  cardStyle={cardStyle}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {products.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
+                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
+                ))}
+              </div>
+              {products.length > ABOVE_FOLD_COUNT && (
+                <LazyRender minHeight={600} rootMargin="300px">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-3 sm:mt-4">
+                    {products.slice(ABOVE_FOLD_COUNT).map((product) => (
+                      <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
+                    ))}
+                  </div>
+                </LazyRender>
+              )}
+            </>
           )}
 
           {/* Infinite scroll sentinel */}
