@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -9,21 +9,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
+import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
-
-const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
-const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
 const INITIAL_LIMIT = PAGE_SIZE;
 
 function ProductCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout style" }}>
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
       <div className="p-1 pb-0">
-        <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
+        <Skeleton className="w-full rounded-lg" style={{ aspectRatio: "4/5" }} />
       </div>
       <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
         <div className="flex items-center justify-between">
@@ -204,26 +203,20 @@ export default function StorefrontHome() {
 
       {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (
         <>
-          {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
-            <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
-          ) : null}
+          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
           <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
         </>
       ) : (
         <>
           <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
-          {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
-            <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
-          ) : null}
+          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
         </>
       )}
 
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
         {bestSellingProducts.length > 0 && (
           (store as any).best_selling_carousel ? (
-            <Suspense fallback={null}>
-              <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
-            </Suspense>
+            <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
           ) : (
             <section>
               <div className="flex items-center gap-3 mb-5">
@@ -235,7 +228,7 @@ export default function StorefrontHome() {
               </div>
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {bestSellingProducts.map((product, idx) => (
-                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
+                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
                 ))}
               </div>
             </section>
@@ -312,7 +305,7 @@ export default function StorefrontHome() {
                     product={product}
                     slug={slug!}
                     store={store}
-                    priority={idx < 2}
+                    priority={idx < 4}
                     cardStyle={cardStyle}
                   />
                 ))}
@@ -338,15 +331,13 @@ export default function StorefrontHome() {
               )}
             </>
           ) : (
-            <div className="flex min-h-[60vh] items-center justify-center rounded-lg border bg-card">
+            <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
               <p className="text-muted-foreground">No products available yet.</p>
             </div>
           )}
         </section>
       </div>
-      <Suspense fallback={null}>
-        <StorefrontInstagramSection store={store} />
-      </Suspense>
+      <StorefrontInstagramSection store={store} />
     </>
   );
 }

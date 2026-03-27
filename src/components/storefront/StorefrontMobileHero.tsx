@@ -57,7 +57,7 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
       <HeroBannerCarousel
         images={uniqueSlides}
         storeName={storeName}
-        interval={4000}
+        interval={2000}
         imageClassName="w-full h-full object-cover"
       />
     </div>

@@ -14,8 +14,9 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/png" href="/pwa-192x192.png">
-    <link rel="preload" href="/src/index.css" as="style" />
-    <link rel="modulepreload" href="/src/main.tsx" />
+    
+    
+    
     
     <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
     <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
@@ -28,16 +29,13 @@
       .sk-shimmer{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:400px 100%;animation:shimmer 1.2s infinite}
       .sf-skel{max-width:100%;padding:0}
       .sf-skel-nav{height:56px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;padding:0 16px;gap:12px}
-      
-      .sf-skel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px 16px}
-      .sf-skel-card{border-radius:12px;overflow:hidden;border:1px solid #f0f0f0;contain:layout}
-      .sf-skel-card-img{width:100%;aspect-ratio:4/5;display:block}
-      .sf-skel-card-txt{padding:10px 12px 12px}
+      .sf-skel-hero{width:100%;aspect-ratio:16/7;background:#f0f0f0}
+      .sf-skel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
+      .sf-skel-card{border-radius:12px;overflow:hidden}
+      .sf-skel-card-img{width:100%;aspect-ratio:4/5}
+      .sf-skel-card-txt{padding:8px}
       .sf-skel-card-txt div{height:10px;margin-bottom:6px;border-radius:4px}
-      .sf-skel-card-txt .sk-price{height:14px;width:40%;margin-bottom:6px}
-      .sf-skel-card-txt .sk-btn{height:28px;border-radius:8px}
-      @media(min-width:640px){.sf-skel-grid{gap:16px;padding:16px 24px}}
-      @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr)}}
+      @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr);gap:16px;padding:24px}}
     </style>
     <!--
       Preload storefront API data + LCP hero image:
@@ -66,10 +64,10 @@
 
         function addPreconnect(origin){var pc=document.createElement('link');pc.rel='preconnect';pc.href=origin;document.head.appendChild(pc);}
         function preloadImg(url){var l=document.createElement('link');l.rel='preload';l.as='image';l.href=url;l.setAttribute('fetchpriority','high');document.head.appendChild(l);}
-        function optimizeSupabaseImg(url,w){if(url.indexOf('supabase.co/storage')>-1){url=url.replace('/storage/v1/object/','/storage/v1/render/image/');url+=(url.indexOf('?')>-1?'&':'?')+'width='+w+'&quality=75';}else if(url.indexOf('cdn.shopify.com')>-1||url.indexOf('cdn/shop/')>-1){try{var u=new URL(url);u.searchParams.set('width',String(w));u.searchParams.set('format','webp');url=u.toString();}catch(e){}}return url;}
+        function optimizeSupabaseImg(url,w){if(url.indexOf('supabase.co/storage')>-1){url=url.replace('/storage/v1/object/','/storage/v1/render/image/');url+=(url.indexOf('?')>-1?'&':'?')+'width='+w+'&quality=75';}return url;}
 
-        var supaUrl='https://hnuowboxptvobvmgvqnx.supabase.co';
-        var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhudW93Ym94cHR2b2J2bWd2cW54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NjUzODAsImV4cCI6MjA5MDE0MTM4MH0.RGWBfVVKdCcmkcKxl2pgGP3kQJUWmoDz_yMHwQfETME';
+        var supaUrl='https://vjjlxmqgqtquggdajjvi.supabase.co';
+        var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqamx4bXFncXRxdWdnZGFqanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjEyNjgsImV4cCI6MjA4OTk5NzI2OH0.AjNH7zdzlAhmQnjwvhCOvDVac356sA04_ORb2j5rA2k';
         var p_=fetch(supaUrl+'/rest/v1/rpc/get_storefront_data',{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
@@ -77,6 +75,18 @@
         }).then(function(r){return r.json()}).then(function(data){
           if(data&&data.store){
             window.__STOREFRONT_DATA__=data;
+            var heroUrl=data.store.mobile_hero_url;
+            var heroImages=data.store.mobile_hero_images;
+            if(heroImages){
+              try{
+                var arr=typeof heroImages==='string'?JSON.parse(heroImages):heroImages;
+                if(Array.isArray(arr)&&arr[0])heroUrl=arr[0];
+              }catch(e){}
+            }
+            if(heroUrl){
+              preloadImg(optimizeSupabaseImg(heroUrl,800));
+              try{addPreconnect(new URL(heroUrl).origin);}catch(e){}
+            }
             if(data.store.logo_url){
               var logoLnk=document.createElement('link');
               logoLnk.rel='preload';logoLnk.as='image';logoLnk.href=data.store.logo_url;
@@ -156,7 +166,7 @@
             if(window.__STORE_SLUG__) isStorefront=true;
           }
           if(isStorefront){
-            document.write('<div class="sf-skel"><div class="sf-skel-nav"><div class="sk sk-shimmer" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk sk-shimmer" style="width:28px;height:28px;border-radius:50%"></div></div><div style="padding:12px 16px"><div class="sk sk-shimmer" style="height:40px;border-radius:9999px;width:100%"></div></div><div style="padding:0 16px 8px;display:flex;gap:16px;overflow:hidden"><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk sk-shimmer" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div></div><div class="sf-skel-grid"><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:50%"></div><div class="sk sk-shimmer" style="width:80%"></div><div class="sk-price sk sk-shimmer"></div><div class="sk-btn sk sk-shimmer"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:60%"></div><div class="sk sk-shimmer" style="width:70%"></div><div class="sk-price sk sk-shimmer"></div><div class="sk-btn sk sk-shimmer"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:55%"></div><div class="sk sk-shimmer" style="width:75%"></div><div class="sk-price sk sk-shimmer"></div><div class="sk-btn sk sk-shimmer"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:65%"></div><div class="sk sk-shimmer" style="width:60%"></div><div class="sk-price sk sk-shimmer"></div><div class="sk-btn sk sk-shimmer"></div></div></div></div></div>');
+            document.write('<div class="sf-skel"><div class="sf-skel-nav"><div class="sk sk-shimmer" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk sk-shimmer" style="width:28px;height:28px;border-radius:50%"></div></div><div class="sf-skel-hero sk-shimmer"></div><div class="sf-skel-grid"><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:60%"></div><div class="sk sk-shimmer" style="width:40%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:70%"></div><div class="sk sk-shimmer" style="width:35%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:55%"></div><div class="sk sk-shimmer" style="width:45%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk sk-shimmer"></div><div class="sf-skel-card-txt"><div class="sk sk-shimmer" style="width:65%"></div><div class="sk sk-shimmer" style="width:38%"></div></div></div></div></div>');
           }
         })();
       </script>

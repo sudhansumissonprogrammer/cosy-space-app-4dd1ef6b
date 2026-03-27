@@ -1,5 +1,5 @@
 /**
- * STORIVO PRODUCTION ROUTER v3.1 — SPA SHELL CACHING
+ * STORIVO PRODUCTION ROUTER v2.7 — PARALLEL DOMAIN RESOLUTION
  *
  * Changes from v2.6:
  *   - PARALLEL ORIGIN FETCH: For custom domains, origin HTML fetch starts
@@ -30,7 +30,7 @@
  *   - STORE_KV: Cloudflare KV namespace for global storefront data cache
  */
 
-const WORKER_VERSION = "3.1";
+const WORKER_VERSION = "2.9";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "charm-dash-build.lovable.app";
 
@@ -101,7 +101,7 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com https://*.shopify.com https://*.myshopify.com https: ; connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://lrcpkt0a.api.lc; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self'; form-action 'self';",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com; connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://lrcpkt0a.api.lc; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self'; form-action 'self';",
 };
 
 /* ============== HELPERS ============== */
@@ -370,96 +370,7 @@ async function proxyToOrigin(request) {
   }
 }
 
-/* ============== SPA SHELL CACHE (eliminates origin fetch on cold loads) ============== */
-// The origin HTML is the SAME Vite-built SPA for ALL stores.
-// Only injected data (__STORE_SLUG__, __STOREFRONT_DATA__) differs.
-// By caching the raw shell in KV, cold loads drop from ~800-1500ms to ~5ms.
-
-const SPA_SHELL_KV_KEY = "spa-shell:v1";
-const SPA_SHELL_KV_TTL = 60;           // 60 seconds in KV
-const SPA_SHELL_CACHE_TTL = 60;        // 60 seconds in Cache API (per-colo)
-
-let inflightShellFetch = null; // Coalesce concurrent shell fetches
-
-/**
- * Get the raw SPA HTML shell. Priority: KV → Cache API → origin fetch.
- * Returns { html: string, source: string } or null on total failure.
- */
-async function getSpaShell(request, ctx, env) {
-  // 1. KV (global, ~5ms)
-  if (env?.STORE_KV) {
-    try {
-      const kvHtml = await env.STORE_KV.get(SPA_SHELL_KV_KEY);
-      if (kvHtml) return { html: kvHtml, source: "kv-shell" };
-    } catch {}
-  }
-
-  // 2. Cache API (per-colo)
-  const shellCacheKey = new Request("https://cache/spa-shell");
-  try {
-    const cached = await cache.match(shellCacheKey);
-    if (cached) {
-      const html = await cached.text();
-      // Backfill KV
-      if (env?.STORE_KV && ctx) {
-        ctx.waitUntil(
-          env.STORE_KV.put(SPA_SHELL_KV_KEY, html, { expirationTtl: SPA_SHELL_KV_TTL }).catch(() => {})
-        );
-      }
-      return { html, source: "cache-shell" };
-    }
-  } catch {}
-
-  // 3. Origin fetch (coalesced — only 1 concurrent fetch)
-  if (inflightShellFetch) {
-    try {
-      const html = await inflightShellFetch;
-      return html ? { html, source: "origin-coalesced" } : null;
-    } catch { return null; }
-  }
-
-  const fetchPromise = _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey);
-  inflightShellFetch = fetchPromise;
-
-  try {
-    const html = await fetchPromise;
-    return html ? { html, source: "origin" } : null;
-  } catch { return null; }
-  finally { inflightShellFetch = null; }
-}
-
-async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
-  const response = await proxyToOrigin(request);
-  const contentType = response.headers.get("content-type") || "";
-
-  if (!response.ok || !contentType.includes("text/html")) return null;
-
-  const html = await response.text();
-  if (!html || html.length < 200) return null;
-
-  // Cache in both KV (global) and Cache API (per-colo)
-  if (ctx) {
-    ctx.waitUntil(
-      Promise.all([
-        env?.STORE_KV
-          ? env.STORE_KV.put(SPA_SHELL_KV_KEY, html, { expirationTtl: SPA_SHELL_KV_TTL })
-          : Promise.resolve(),
-        cache.put(
-          shellCacheKey,
-          new Response(html, {
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-              "Cache-Control": `public, max-age=${SPA_SHELL_CACHE_TTL}`,
-            },
-          })
-        ),
-      ]).catch(() => {})
-    );
-  }
-
-  return html;
-}
-
+/* ============== PREFETCH STOREFRONT DATA (KV + Cache API) ============== */
 
 const KV_STOREFRONT_TTL = 1800; // 30 minutes in KV (shell is tiny ~10KB)
 const CACHE_STOREFRONT_TTL = 600; // 10 minutes in Cache API (per-colo)
@@ -1094,7 +1005,30 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   if (storefrontData) {
     const store = storefrontData.store;
     if (store) {
-      // Preload logo for fast navbar render
+      let heroUrl = store.mobile_hero_url;
+      const heroImages = store.mobile_hero_images;
+      if (heroImages) {
+        try {
+          const arr = typeof heroImages === "string" ? JSON.parse(heroImages) : heroImages;
+          if (Array.isArray(arr) && arr[0]) heroUrl = arr[0];
+        } catch {}
+      }
+      if (heroUrl) {
+        let optUrl = heroUrl;
+        if (heroUrl.includes("supabase.co/storage")) {
+          optUrl = heroUrl.replace("/storage/v1/object/", "/storage/v1/render/image/");
+          optUrl += (optUrl.includes("?") ? "&" : "?") + "width=800&quality=75";
+        }
+        const safeHeroUrl = escapeHtml(optUrl);
+        lcpPreload += `<link rel="preload" as="image" href="${safeHeroUrl}" fetchpriority="high" />`;
+        try {
+          const heroOrigin = new URL(optUrl).origin;
+          if (!preconnectedOrigins.has(heroOrigin)) {
+            preconnectedOrigins.add(heroOrigin);
+            lcpPreload += `<link rel="preconnect" href="${heroOrigin}" crossorigin />`;
+          }
+        } catch {}
+      }
       if (store.logo_url) {
         lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(store.logo_url)}" />`;
       }
@@ -1111,13 +1045,6 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
           if (imgUrl.includes("supabase.co/storage")) {
             optImg = imgUrl.replace("/storage/v1/object/", "/storage/v1/render/image/");
             optImg += (optImg.includes("?") ? "&" : "?") + "width=400&quality=75";
-          } else if (imgUrl.includes("cdn.shopify.com") || imgUrl.includes("cdn/shop/")) {
-            try {
-              const u = new URL(optImg);
-              u.searchParams.set("width", "400");
-              u.searchParams.set("format", "webp");
-              optImg = u.toString();
-            } catch {}
           }
           const safeImg = escapeHtml(optImg);
           lcpPreload += `<link rel="preload" as="image" href="${safeImg}" ${pi === 0 ? 'fetchpriority="high"' : ''} />`;
@@ -1168,13 +1095,6 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
         if (imgUrl.includes("supabase.co/storage")) {
           optImg = imgUrl.replace("/storage/v1/object/", "/storage/v1/render/image/");
           optImg += (optImg.includes("?") ? "&" : "?") + "width=400&quality=75";
-        } else if (imgUrl.includes("cdn.shopify.com") || imgUrl.includes("cdn/shop/")) {
-          try {
-            const u = new URL(optImg);
-            u.searchParams.set("width", "400");
-            u.searchParams.set("format", "webp");
-            optImg = u.toString();
-          } catch {}
         }
       }
       const displayPrice = pr.sale_price || pr.price;
@@ -1206,40 +1126,71 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 /* ============== FETCH AND INJECT SLUG INTO HTML ============== */
 
 /**
- * v3.1: Uses cached SPA shell instead of fetching origin every time.
  * Returns { response, dataSource }
  */
 async function fetchAndInjectSlug(request, slug, ctx, env) {
-  // Parallel: get cached SPA shell + storefront data
-  const [shellResult, prefetchResult] = await Promise.all([
-    getSpaShell(request, ctx, env),
+  const [response, prefetchResult] = await Promise.all([
+    proxyToOrigin(request),
     prefetchStorefrontData(slug, ctx, env),
   ]);
-
-  if (!shellResult?.html) {
-    // Total shell failure — fall back to direct origin proxy
-    const response = await proxyToOrigin(request);
-    return { response, dataSource: "none" };
-  }
 
   const storefrontData = prefetchResult.data;
   const dataSource = prefetchResult.source;
 
-  const result = injectIntoHtml(shellResult.html, slug, storefrontData, dataSource);
+  const contentType = response.headers.get("content-type") || "";
 
-  const newHeaders = new Headers();
-  newHeaders.set("Content-Type", "text/html; charset=utf-8");
+  if (!contentType.includes("text/html") || !response.ok) {
+    return { response, dataSource };
+  }
+
+  const html = await response.text();
+  const result = injectIntoHtml(html, slug, storefrontData, dataSource);
+
+  const newHeaders = new Headers(response.headers);
   newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
   newHeaders.set("X-Store-Slug", slug);
   newHeaders.set("X-Data-Source", dataSource);
-  newHeaders.set("X-Shell-Source", shellResult.source);
   newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
-  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
-    newHeaders.set(k, v);
-  }
 
   return {
-    response: new Response(result.html, { status: 200, headers: newHeaders }),
+    response: new Response(result.html, {
+      status: response.status,
+      headers: newHeaders,
+    }),
+    dataSource,
+  };
+}
+
+/**
+ * v2.7: Inject slug + data into a pre-fetched origin response.
+ * Used when origin HTML was fetched in parallel with domain resolution.
+ */
+async function injectIntoPreFetchedOrigin(originResponse, slug, ctx, env) {
+  const contentType = originResponse.headers.get("content-type") || "";
+
+  if (!contentType.includes("text/html") || !originResponse.ok) {
+    return { response: originResponse, dataSource: "none" };
+  }
+
+  // Fetch storefront data (origin HTML already available)
+  const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
+  const storefrontData = prefetchResult.data;
+  const dataSource = prefetchResult.source;
+
+  const html = await originResponse.text();
+  const result = injectIntoHtml(html, slug, storefrontData, dataSource);
+
+  const newHeaders = new Headers(originResponse.headers);
+  newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
+  newHeaders.set("X-Store-Slug", slug);
+  newHeaders.set("X-Data-Source", dataSource);
+  newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
+
+  return {
+    response: new Response(result.html, {
+      status: originResponse.status,
+      headers: newHeaders,
+    }),
     dataSource,
   };
 }
@@ -1601,23 +1552,6 @@ export default {
       return handlePurgeProducts(request, url, ctx, env);
     }
 
-    // ─── /api/purge-shell → Force SPA shell refresh (call after publish) ───
-    if (url.pathname === "/api/purge-shell" && request.method === "POST") {
-      const purgeOps = [
-        cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
-      ];
-      if (env?.STORE_KV) {
-        purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
-      }
-      await Promise.all(purgeOps);
-      return addCorsHeaders(
-        new Response(JSON.stringify({ purged: true, key: SPA_SHELL_KV_KEY }), {
-          headers: { "Content-Type": "application/json" },
-        }),
-        "purge-shell"
-      );
-    }
-
     // CORS preflight for /api/*
     if ((url.pathname === "/api/products" || url.pathname === "/api/purge-products") && request.method === "OPTIONS") {
       return new Response(null, {
@@ -1736,12 +1670,16 @@ export default {
       });
     }
 
-    // ─── v3.1: SPA SHELL CACHING — ELIMINATES ORIGIN FETCH ───
-    // The SPA shell is cached in KV (~5ms read) instead of fetching from origin (~800ms).
-    // Domain resolution also uses KV. Total cold load: ~300ms worker time.
+    // ─── v2.7 KEY OPTIMIZATION: PARALLEL DOMAIN RESOLUTION + ORIGIN FETCH ───
+    // The origin HTML is the same SPA shell regardless of slug.
+    // Start fetching it IMMEDIATELY while resolving the custom domain in parallel.
+    // This saves 300-500ms compared to v2.6's serial approach.
     const cleanDomain = hostname.replace(/^www\./, "").toLowerCase().trim();
 
-    const slug = await resolveDomain(cleanDomain, env);
+    const [slug, originResponse] = await Promise.all([
+      resolveDomain(cleanDomain, env),
+      proxyToOrigin(request), // Start origin fetch immediately — doesn't depend on slug
+    ]);
 
     if (slug) {
       // Check SEO/bot in parallel (these are fast — usually return null)
@@ -1753,9 +1691,9 @@ export default {
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      // fetchAndInjectSlug now uses cached SPA shell (KV ~5ms) + storefront data in parallel
+      // Inject slug + storefront data into the already-fetched origin HTML
       const { response: injectedResponse, dataSource } =
-        await fetchAndInjectSlug(request, slug, ctx, env);
+        await injectIntoPreFetchedOrigin(originResponse, slug, ctx, env);
 
       // Cache the fully-formed response for early exit on next request
       const contentType = injectedResponse.headers.get("content-type") || "";

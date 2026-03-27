@@ -13,15 +13,12 @@ const PAGE_SIZE = 20;
 
 function ProductCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout style" }}>
-      <div className="p-1 pb-0">
-        <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
-      </div>
-      <div className="px-3 pt-2.5 pb-3 space-y-1.5">
-        <Skeleton className="h-2.5 w-16" />
-        <Skeleton className="h-3 w-full" />
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
+      <div className="px-2.5 pb-2.5 pt-2 space-y-2">
+        <Skeleton className="h-3.5 w-full" />
         <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-7 w-full rounded-lg" />
+        <Skeleton className="h-9 w-full rounded-lg" />
       </div>
     </div>
   );
