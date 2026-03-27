@@ -1078,38 +1078,6 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
         lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(store.logo_url)}" />`;
       }
     }
-
-    // ── HYBRID RENDERING: Preload first product image for instant LCP ──
-    const initialProducts = storefrontData._initialProducts;
-    if (Array.isArray(initialProducts) && initialProducts.length > 0) {
-      for (let pi = 0; pi < Math.min(2, initialProducts.length); pi++) {
-        let imgUrl = initialProducts[pi].image_url;
-        if (imgUrl && imgUrl.includes(",")) imgUrl = imgUrl.split(",")[0].trim();
-        if (imgUrl) {
-          let optImg = imgUrl;
-          if (imgUrl.includes("supabase.co/storage")) {
-            optImg = imgUrl.replace("/storage/v1/object/", "/storage/v1/render/image/");
-            optImg += (optImg.includes("?") ? "&" : "?") + "width=400&quality=75";
-          } else if (imgUrl.includes("cdn.shopify.com") || imgUrl.includes("cdn/shop/")) {
-            try {
-              const u = new URL(optImg);
-              u.searchParams.set("width", "400");
-              u.searchParams.set("format", "webp");
-              optImg = u.toString();
-            } catch {}
-          }
-          const safeImg = escapeHtml(optImg);
-          lcpPreload += `<link rel="preload" as="image" href="${safeImg}" ${pi === 0 ? 'fetchpriority="high"' : ''} />`;
-          try {
-            const imgOrigin = new URL(optImg).origin;
-            if (!preconnectedOrigins.has(imgOrigin)) {
-              preconnectedOrigins.add(imgOrigin);
-              lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />`;
-            }
-          } catch {}
-        }
-      }
-    }
   }
 
   // CSS preload — discover Vite's generated CSS bundle for parallel fetch
