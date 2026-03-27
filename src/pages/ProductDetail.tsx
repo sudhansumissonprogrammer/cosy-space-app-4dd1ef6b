@@ -1306,7 +1306,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
     <>
       <div className="space-y-1 lg:sticky lg:top-4">
         <div
-          className="relative overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-4"
+          className="relative overflow-hidden rounded-none sm:rounded-2xl bg-background sm:bg-accent cursor-zoom-in select-none -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0"
           onClick={() => setLightboxOpen(true)}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
