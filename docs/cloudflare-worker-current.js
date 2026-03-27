@@ -1,5 +1,5 @@
 /**
- * STORIVO PRODUCTION ROUTER v3.1 — SPA SHELL CACHING
+ * STORIVO PRODUCTION ROUTER v3.2 — PRE-WARM + CACHE-FIRST
  *
  * Changes from v2.6:
  *   - PARALLEL ORIGIN FETCH: For custom domains, origin HTML fetch starts
