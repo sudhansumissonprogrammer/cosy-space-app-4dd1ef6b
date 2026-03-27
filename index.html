@@ -43,14 +43,10 @@
     -->
     <script>
       (function(){
-        // If Worker already injected __STOREFRONT_DATA__ with products, just handle preloads
+        // If Worker already injected __STOREFRONT_DATA__, just kick off /api/products fetch
         if(window.__STOREFRONT_DATA__){
-          var wd=window.__STOREFRONT_DATA__;
-          if(wd.products&&wd.products.length>0){
-            // Start products prefetch bridge for useStorefrontProducts (already has data, just resolve)
-            window.__PRODUCTS_PREFETCH__=Promise.resolve(wd.products);
-          }
-          // Worker already handles image preloads and hybrid cards — skip rest
+          // Worker does NOT inject full products — start /api/products fetch immediately
+          window.__PRODUCTS_PREFETCH__=fetch(location.origin+'/api/products',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).catch(function(){return null});
           return;
         }
 

@@ -462,25 +462,23 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
     if (!res.ok) return null;
     const data = await res.json();
 
-    // ── HYBRID RENDERING: fetch first 2 products inline (not in background) ──
-    // This ensures products are available for HTML injection before response is sent
+    // ── HYBRID RENDERING: fetch first 2 products inline (lightweight only) ──
+    // Full product list loads via /api/products — NOT injected into HTML
     const storeId = data?.store?.id;
     if (storeId && data) {
       try {
         const products = await _fetchProductsFromDb(storeId, {}, 2000);
         if (Array.isArray(products) && products.length > 0) {
-          // Attach lightweight product data for HTML injection (max 2 for LCP)
-          data.products = products.slice(0, 20); // full first page for React initialData
+          // ONLY 2 products, ONLY minimal fields — keeps HTML payload <2KB
           data._initialProducts = products.slice(0, 2).map(p => ({
             id: p.id,
             name: p.name,
             price: p.price,
             sale_price: p.sale_price,
-            image_url: p.image_url,
+            image_url: p.image_url ? p.image_url.split(",")[0].trim() : null,
             slug: p.slug,
-            category: p.category,
-            is_best_selling: p.is_best_selling,
           }));
+          // DO NOT set data.products — that bloats __STOREFRONT_DATA__
         }
       } catch {
         // Silent — products will load via /api/products
