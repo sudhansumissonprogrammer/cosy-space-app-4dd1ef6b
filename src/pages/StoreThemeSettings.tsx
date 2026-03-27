@@ -2183,6 +2183,71 @@ export default function StoreThemeSettings() {
 
           <Separator />
 
+          {/* Header Logo Alignment */}
+          <div>
+            <h4 className="mb-3 text-sm font-semibold">Header Layout</h4>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Logo Alignment</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "left", label: "Left", desc: "Logo on the left side", icon: (
+                    <div className="flex items-center gap-1 w-full">
+                      <div className="h-2.5 w-6 rounded bg-foreground/80" />
+                      <div className="flex-1" />
+                      <div className="flex gap-0.5">
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                      </div>
+                    </div>
+                  )},
+                  { value: "center", label: "Center", desc: "Logo centered in header", icon: (
+                    <div className="flex items-center w-full">
+                      <div className="h-2 w-2 rounded bg-muted-foreground/40" />
+                      <div className="flex-1 flex justify-center">
+                        <div className="h-2.5 w-6 rounded bg-foreground/80" />
+                      </div>
+                      <div className="flex gap-0.5">
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                      </div>
+                    </div>
+                  )},
+                  { value: "left-with-search", label: "With Search", desc: "Logo left, search bar in center", icon: (
+                    <div className="flex items-center gap-1 w-full">
+                      <div className="h-2.5 w-4 rounded bg-foreground/80" />
+                      <div className="flex-1 h-2 rounded-full bg-muted-foreground/20 border border-muted-foreground/30" />
+                      <div className="flex gap-0.5">
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                      </div>
+                    </div>
+                  )},
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => updateField("header_logo_alignment", s.value)}
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                      config.header_logo_alignment === s.value
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/30"
+                    }`}
+                  >
+                    <div className="w-full rounded-lg border border-border bg-card p-2">
+                      {s.icon}
+                    </div>
+                    <span className="text-[10px] font-medium">{s.label}</span>
+                    {config.header_logo_alignment === s.value && (
+                      <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="h-3 w-3" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Marquee Strip Text */}
           <div>
             <div className="flex items-center justify-between mb-3">
