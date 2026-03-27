@@ -20,6 +20,7 @@ import StorefrontShell from "@/layouts/StorefrontShell";
 import { lazy } from "react";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
+const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
 
 // Re-export for backward compatibility — other layouts import these
 export type { Tables };
@@ -138,7 +139,7 @@ function StorefrontSkeleton() {
   );
 }
 
-function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left" }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string }) {
+function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left", mobileNavEnabled = false }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string; mobileNavEnabled?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
@@ -246,7 +247,12 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
         </Suspense>
       )}
 
-      <main><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+      <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+      {mobileNavEnabled && (
+        <Suspense fallback={null}>
+          <LazyMobileBottomNav store={store} />
+        </Suspense>
+      )}
       <StorefrontFooter store={store} />
 
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
@@ -282,6 +288,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
           marqueeText={themeConfig?.marquee_text}
           marqueeEnabled={themeConfig?.marquee_enabled ?? true}
           headerLogoAlignment={themeConfig?.header_logo_alignment || "left"}
+          mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? false}
         />
       )}
     </StorefrontShell>

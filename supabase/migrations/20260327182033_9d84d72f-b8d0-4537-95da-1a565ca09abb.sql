@@ -1,0 +1,1 @@
+ALTER TABLE public.store_theme_config ADD COLUMN mobile_nav_enabled boolean NOT NULL DEFAULT false;
