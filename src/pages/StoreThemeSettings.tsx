@@ -2288,6 +2288,27 @@ export default function StoreThemeSettings() {
             )}
           </div>
 
+          {/* Mobile Bottom Navigation (Theme 1 only) */}
+          {currentTheme === "theme-1" && (
+            <>
+              <Separator />
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <h4 className="text-sm font-semibold">Mobile Bottom Navigation</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Show a fixed bottom nav bar on mobile with Shop, Categories, Orders &amp; WhatsApp links.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.mobile_nav_enabled}
+                    onCheckedChange={(checked) => updateField("mobile_nav_enabled", checked)}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
           <Separator />
 
           {/* Product Card Style */}
