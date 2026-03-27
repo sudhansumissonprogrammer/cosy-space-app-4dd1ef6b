@@ -232,6 +232,7 @@ interface ThemeConfig {
   marquee_enabled: boolean;
   product_card_style: string;
   category_style: string;
+  header_logo_alignment: string;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
