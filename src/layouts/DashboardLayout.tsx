@@ -177,6 +177,7 @@ function MobileMenu({
 
 export default function DashboardLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
