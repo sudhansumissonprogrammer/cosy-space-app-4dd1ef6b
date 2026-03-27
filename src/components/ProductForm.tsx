@@ -469,6 +469,13 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       }
 
       toast.success(isEditing ? "Product updated!" : "Product created!");
+      
+      // Pre-warm edge caches so storefront reflects changes instantly
+      import("@/lib/prewarmStore").then(({ prewarmStore }) => {
+        // Use store slug from URL params
+        if (storeSlug) prewarmStore(storeSlug);
+      }).catch(() => {});
+
       if (onClose) {
         onClose();
       } else {

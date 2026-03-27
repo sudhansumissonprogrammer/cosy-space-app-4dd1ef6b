@@ -217,6 +217,11 @@ export default function CreateStore() {
         return;
       }
 
+      // Pre-warm edge caches so first visitor gets instant load
+      import("@/lib/prewarmStore").then(({ prewarmStore }) => {
+        prewarmStore(slug.trim());
+      }).catch(() => {});
+
       setShowConfetti(true);
       toast.success("Store created successfully! 🎉");
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
