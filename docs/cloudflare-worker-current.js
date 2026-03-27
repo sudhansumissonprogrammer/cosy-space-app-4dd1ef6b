@@ -1022,6 +1022,13 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
           if (imgUrl.includes("supabase.co/storage")) {
             optImg = imgUrl.replace("/storage/v1/object/", "/storage/v1/render/image/");
             optImg += (optImg.includes("?") ? "&" : "?") + "width=400&quality=75";
+          } else if (imgUrl.includes("cdn.shopify.com") || imgUrl.includes("cdn/shop/")) {
+            try {
+              const u = new URL(optImg);
+              u.searchParams.set("width", "400");
+              u.searchParams.set("format", "webp");
+              optImg = u.toString();
+            } catch {}
           }
           const safeImg = escapeHtml(optImg);
           lcpPreload += `<link rel="preload" as="image" href="${safeImg}" ${pi === 0 ? 'fetchpriority="high"' : ''} />`;
