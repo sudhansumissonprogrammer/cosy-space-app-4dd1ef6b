@@ -32,11 +32,11 @@
 
 const WORKER_VERSION = "2.9";
 const ROOT_DOMAIN = "storivo.in";
-const ORIGIN_HOST = "core-gleam-hub.lovable.app";
+const ORIGIN_HOST = "id-preview--fc4c3c48-14f1-47a6-95b7-2a91420948de.lovable.app";
 
-const SUPABASE_URL = "https://vjjlxmqgqtquggdajjvi.supabase.co";
+const SUPABASE_URL = "https://hnuowboxptvobvmgvqnx.supabase.co";
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqamx4bXFncXRxdWdnZGFqanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjEyNjgsImV4cCI6MjA4OTk5NzI2OH0.AjNH7zdzlAhmQnjwvhCOvDVac356sA04_ORb2j5rA2k";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhudW93Ym94cHR2b2J2bWd2cW54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NjUzODAsImV4cCI6MjA5MDE0MTM4MH0.RGWBfVVKdCcmkcKxl2pgGP3kQJUWmoDz_yMHwQfETME";
 
 /* ============== BOT DETECTION ============== */
 
