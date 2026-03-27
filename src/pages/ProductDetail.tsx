@@ -434,8 +434,8 @@ export default function ProductDetail() {
     setOpenAccordion(openAccordion === key ? null : key);
   };
 
-  const shippingProgress = Math.min(100, (cartTotal / FREE_SHIPPING_THRESHOLD) * 100);
-  const shippingRemaining = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
+  const shippingProgress = FREE_SHIPPING_THRESHOLD ? Math.min(100, (cartTotal / FREE_SHIPPING_THRESHOLD) * 100) : 100;
+  const shippingRemaining = FREE_SHIPPING_THRESHOLD ? Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal) : 0;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-3 sm:py-8">
