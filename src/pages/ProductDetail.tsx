@@ -41,7 +41,7 @@ function getProductStats(productId: string) {
   return {
     rating: stats.rating,
     reviewCount: stats.reviewCount,
-    viewers: stats.viewingNow,
+    baseViewers: 8 + (Math.abs((() => { let h = 0; for (let i = 0; i < productId.length; i++) { h = ((h << 5) - h) + productId.charCodeAt(i); h |= 0; } return h; })()) % 10),
     soldRecently: stats.soldThisWeek,
   };
 }
