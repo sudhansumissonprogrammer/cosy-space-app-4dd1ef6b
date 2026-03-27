@@ -203,13 +203,17 @@ export default function StorefrontHome() {
 
       {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (
         <>
-          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
+          {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
+            <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
+          ) : null}
           <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
         </>
       ) : (
         <>
           <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
-          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
+          {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
+            <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
+          ) : null}
         </>
       )}
 
@@ -331,7 +335,7 @@ export default function StorefrontHome() {
               )}
             </>
           ) : (
-            <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
+            <div className="flex min-h-[60vh] items-center justify-center rounded-lg border bg-card">
               <p className="text-muted-foreground">No products available yet.</p>
             </div>
           )}
