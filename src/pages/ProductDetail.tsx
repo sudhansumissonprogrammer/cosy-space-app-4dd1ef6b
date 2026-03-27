@@ -763,6 +763,34 @@ export default function ProductDetail() {
       {/* Customer Reviews */}
       <CustomerReviews reviews={fakeReviews} rating={stats.rating} reviewCount={stats.reviewCount} />
 
+      {/* Social proof notification — above sticky bar on mobile */}
+      {socialProof && (
+        <div
+          className={`fixed left-3 right-3 z-[51] sm:left-4 sm:right-auto sm:bottom-4 sm:max-w-xs transition-all duration-500 ${
+            socialProof.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+          }`}
+          style={{ bottom: `calc(var(--storefront-bottom-nav-height, 0px) + ${isOutOfStock ? "8px" : "7.5rem"})` }}
+        >
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-lg">
+            {product?.image_url && (
+              <img
+                src={optimizeImageUrl(splitImageUrls(product.image_url)[0], 80)}
+                alt=""
+                className="h-12 w-12 rounded-lg object-cover shrink-0"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground leading-snug">
+                {socialProof.name} from {socialProof.city} has just purchased {product?.name ? <span className="font-bold">{product.name}</span> : "this"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {Math.floor(Math.random() * 12) + 2} Minutes ago
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sticky Mobile CTA — cleaner */}
       {!isOutOfStock && (
         <div className="fixed left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ bottom: "var(--storefront-bottom-nav-height, 0px)", paddingBottom: "env(safe-area-inset-bottom)" }}>
