@@ -1206,68 +1206,44 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 /* ============== FETCH AND INJECT SLUG INTO HTML ============== */
 
 /**
+ * v3.1: Uses cached SPA shell instead of fetching origin every time.
  * Returns { response, dataSource }
  */
 async function fetchAndInjectSlug(request, slug, ctx, env) {
-  const [response, prefetchResult] = await Promise.all([
-    proxyToOrigin(request),
+  // Parallel: get cached SPA shell + storefront data
+  const [shellResult, prefetchResult] = await Promise.all([
+    getSpaShell(request, ctx, env),
     prefetchStorefrontData(slug, ctx, env),
   ]);
+
+  if (!shellResult?.html) {
+    // Total shell failure — fall back to direct origin proxy
+    const response = await proxyToOrigin(request);
+    return { response, dataSource: "none" };
+  }
 
   const storefrontData = prefetchResult.data;
   const dataSource = prefetchResult.source;
 
-  const contentType = response.headers.get("content-type") || "";
+  const result = injectIntoHtml(shellResult.html, slug, storefrontData, dataSource);
 
-  if (!contentType.includes("text/html") || !response.ok) {
-    return { response, dataSource };
-  }
-
-  const html = await response.text();
-  const result = injectIntoHtml(html, slug, storefrontData, dataSource);
-
-  const newHeaders = new Headers(response.headers);
+  const newHeaders = new Headers();
+  newHeaders.set("Content-Type", "text/html; charset=utf-8");
   newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
   newHeaders.set("X-Store-Slug", slug);
   newHeaders.set("X-Data-Source", dataSource);
+  newHeaders.set("X-Shell-Source", shellResult.source);
   newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+    newHeaders.set(k, v);
+  }
 
   return {
-    response: new Response(result.html, {
-      status: response.status,
-      headers: newHeaders,
-    }),
+    response: new Response(result.html, { status: 200, headers: newHeaders }),
     dataSource,
   };
 }
 
-/**
- * v2.7: Inject slug + data into a pre-fetched origin response.
- * Used when origin HTML was fetched in parallel with domain resolution.
- */
-async function injectIntoPreFetchedOrigin(originResponse, slug, ctx, env) {
-  const contentType = originResponse.headers.get("content-type") || "";
-
-  if (!contentType.includes("text/html") || !originResponse.ok) {
-    return { response: originResponse, dataSource: "none" };
-  }
-
-  // Fetch storefront data (origin HTML already available)
-  const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
-  const storefrontData = prefetchResult.data;
-  const dataSource = prefetchResult.source;
-
-  const html = await originResponse.text();
-  const result = injectIntoHtml(html, slug, storefrontData, dataSource);
-
-  const newHeaders = new Headers(originResponse.headers);
-  newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
-  newHeaders.set("X-Store-Slug", slug);
-  newHeaders.set("X-Data-Source", dataSource);
-  newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
-
-  return {
-    response: new Response(result.html, {
       status: originResponse.status,
       headers: newHeaders,
     }),
