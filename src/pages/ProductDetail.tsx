@@ -297,20 +297,20 @@ export default function ProductDetail() {
     storeName: store.name,
   });
 
-  /* ── CRO #7: Periodic social proof toasts (reduced frequency, dismissible via sonner) ── */
+  /* ── CRO #7: Periodic social proof — inline notification state ── */
+  const [socialProof, setSocialProof] = useState<{ name: string; city: string; visible: boolean } | null>(null);
   useEffect(() => {
     if (!product) return;
-    const timer = setInterval(() => {
+    const show = () => {
       const nameIdx = Math.floor(Math.random() * reviewerNames.length);
       const cityIdx = Math.floor(Math.random() * socialProofCities.length);
-      toast(`${reviewerNames[nameIdx]} from ${socialProofCities[cityIdx]} just bought this! 🎉`, {
-        duration: 4000,
-        position: "bottom-left",
-        icon: "🛍️",
-        dismissible: true,
-      });
-    }, 35000 + Math.random() * 20000);
-    return () => clearInterval(timer);
+      setSocialProof({ name: reviewerNames[nameIdx], city: socialProofCities[cityIdx], visible: true });
+      setTimeout(() => setSocialProof((prev) => prev ? { ...prev, visible: false } : null), 5000);
+    };
+    const timer = setInterval(show, 35000 + Math.random() * 20000);
+    // Show first one after a short delay
+    const firstTimer = setTimeout(show, 6000 + Math.random() * 4000);
+    return () => { clearInterval(timer); clearTimeout(firstTimer); };
   }, [product?.id]);
 
   const allImages = (() => {
@@ -596,7 +596,7 @@ export default function ProductDetail() {
 
                 {showBuyNow && (
                   <button
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.3s_ease-in-out_infinite_2s]"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
                     style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                     onClick={handleBuyNow}
                   >
@@ -762,6 +762,34 @@ export default function ProductDetail() {
 
       {/* Customer Reviews */}
       <CustomerReviews reviews={fakeReviews} rating={stats.rating} reviewCount={stats.reviewCount} />
+
+      {/* Social proof notification — above sticky bar on mobile */}
+      {socialProof && (
+        <div
+          className={`fixed left-3 right-3 z-[51] sm:left-4 sm:right-auto sm:bottom-4 sm:max-w-xs transition-all duration-500 ${
+            socialProof.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+          }`}
+          style={{ bottom: `calc(var(--storefront-bottom-nav-height, 0px) + ${isOutOfStock ? "8px" : "7.5rem"})` }}
+        >
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-lg">
+            {product?.image_url && (
+              <img
+                src={optimizeImageUrl(splitImageUrls(product.image_url)[0], 80)}
+                alt=""
+                className="h-12 w-12 rounded-lg object-cover shrink-0"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground leading-snug">
+                {socialProof.name} from {socialProof.city} has just purchased {product?.name ? <span className="font-bold">{product.name}</span> : "this"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {Math.floor(Math.random() * 12) + 2} Minutes ago
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sticky Mobile CTA — cleaner */}
       {!isOutOfStock && (
