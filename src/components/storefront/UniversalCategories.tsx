@@ -21,7 +21,7 @@ interface Props {
 function CircleSkeleton() {
   return (
     <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
-      <Skeleton className="h-16 w-16 rounded-full sm:h-20 sm:w-20" />
+      <Skeleton className="h-[72px] w-[72px] rounded-full sm:h-[88px] sm:w-[88px]" />
       <Skeleton className="h-3 w-14" />
     </div>
   );
