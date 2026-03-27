@@ -20,6 +20,7 @@ import StorefrontShell from "@/layouts/StorefrontShell";
 import { lazy } from "react";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
+const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
 
 // Re-export for backward compatibility — other layouts import these
 export type { Tables };
