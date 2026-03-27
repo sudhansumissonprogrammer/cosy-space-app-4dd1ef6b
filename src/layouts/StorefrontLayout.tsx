@@ -246,7 +246,12 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
         </Suspense>
       )}
 
-      <main><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+      <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+      {mobileNavEnabled && (
+        <Suspense fallback={null}>
+          <LazyMobileBottomNav store={store} />
+        </Suspense>
+      )}
       <StorefrontFooter store={store} />
 
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
