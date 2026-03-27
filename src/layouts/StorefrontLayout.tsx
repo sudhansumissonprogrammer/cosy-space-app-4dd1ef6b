@@ -135,12 +135,15 @@ function StorefrontSkeleton() {
   );
 }
 
-function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean }) {
+function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left" }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
 
   useEffect(() => { prefetchStorefrontRoutes(); }, []);
 
@@ -155,6 +158,26 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled }: { store: St
   const handleBackClick = () => { if (orderPlaced) { navigate(storefrontPath(store.slug)); return; } setShowExitDialog(true); };
   const handleExitConfirm = () => { setShowExitDialog(false); navigate(storefrontPath(store.slug, "cart")); };
 
+  const isCentered = headerLogoAlignment === "center";
+  const isWithSearch = headerLogoAlignment === "left-with-search";
+
+  const LogoElement = (
+    <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0" aria-label={`${store.name} home`}>
+      {store.logo_url ? (
+        <img src={store.logo_url} alt={store.name} width={160} height={48} className="h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[160px] object-contain" loading="eager" decoding="sync" fetchPriority="high" />
+      ) : (
+        <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary"><Store className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" aria-hidden="true" /></div>
+      )}
+    </Link>
+  );
+
+  const ActionButtons = !isCheckout ? (
+    <div className="flex items-center gap-0 sm:gap-1">
+      <AccountBadge slug={store.slug} /><WishlistBadge slug={store.slug} /><CartBadge />
+      <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />
+    </div>
+  ) : null;
+
   return (
     <>
       {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
@@ -162,29 +185,59 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled }: { store: St
       <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
           {isCheckout ? (
-            <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick} aria-label="Go back">
-              <ArrowLeft className="h-5 w-5 text-foreground" strokeWidth={2.5} aria-hidden="true" />
-            </Button>
+            <>
+              <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick} aria-label="Go back">
+                <ArrowLeft className="h-5 w-5 text-foreground" strokeWidth={2.5} aria-hidden="true" />
+              </Button>
+              {LogoElement}
+              <span className="text-sm font-semibold text-foreground" style={{ fontFamily: "'Montserrat', sans-serif" }}>Checkout</span>
+              <div className="flex-1" />
+            </>
+          ) : isCentered ? (
+            <>
+              <HamburgerMenu store={store} />
+              <div className="flex-1" />
+              {LogoElement}
+              <div className="flex-1" />
+              {ActionButtons}
+            </>
+          ) : isWithSearch ? (
+            <>
+              <HamburgerMenu store={store} />
+              {LogoElement}
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="flex-1 mx-2 flex items-center gap-2 rounded-full border border-border bg-accent/50 px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
+                aria-label="Search products"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span className="truncate">Search products...</span>
+              </button>
+              {ActionButtons}
+            </>
           ) : (
-            <HamburgerMenu store={store} />
-          )}
-          <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0" aria-label={`${store.name} home`}>
-            {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} width={160} height={48} className="h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[160px] object-contain" loading="eager" decoding="sync" fetchPriority="high" />
-            ) : (
-              <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary"><Store className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" aria-hidden="true" /></div>
-            )}
-          </Link>
-          {isCheckout && <span className="text-sm font-semibold text-foreground" style={{ fontFamily: "'Montserrat', sans-serif" }}>Checkout</span>}
-          <div className="flex-1" />
-          {!isCheckout && (
-            <div className="flex items-center gap-0 sm:gap-1">
-              <AccountBadge slug={store.slug} /><WishlistBadge slug={store.slug} /><CartBadge />
-              <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />
-            </div>
+            <>
+              <HamburgerMenu store={store} />
+              {LogoElement}
+              <div className="flex-1" />
+              {ActionButtons}
+            </>
           )}
         </div>
       </nav>
+
+      {/* Lazy search overlay for left-with-search mode */}
+      {isWithSearch && searchOpen && (
+        <Suspense fallback={null}>
+          <LazySearchOverlay
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            products={products}
+            slug={store.slug}
+            storeId={store.id}
+          />
+        </Suspense>
+      )}
 
       <main><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
       <StorefrontFooter store={store} />
