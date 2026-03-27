@@ -1,101 +1,63 @@
 
 
-# Frontend Performance Fix Plan: Lighthouse 47 → 90+
+# Performance Fix Plan: Cold Load → Sub-2s, Lighthouse 85+
 
-## Root Cause Analysis
+## Root Cause (Critical Bug Found)
 
-**Why LCP is ~5.9s:**
-1. Hero images have no intrinsic dimensions — browser can't allocate space until image loads
-2. `StorefrontMobileHero` wrapper has no `aspect-ratio` or `min-height`, so the hero banner pops in
-3. Products wait for `useStorefrontProducts` API call to resolve before rendering anything
-4. The `index.html` prefetch script fetches store data but products are loaded separately after React hydration
+**The #1 bottleneck is a wrong Supabase URL in `index.html`.**
 
-**Why CLS is ~0.7:**
-1. Hero banner has no reserved space (`aspect-ratio` missing on wrapper)
-2. Product grid skeletons and real cards may have slightly different heights
-3. Category bar, marquee, and search bar all load dynamically and push content down
-4. `StorefrontMobileHero` renders `null` initially until images resolve, then pops in
+Line 69-70 of `index.html` still points to the **old project** (`vjjlxmqgqtquggdajjvi.supabase.co`). The prefetch script fires, silently fails (wrong DB, no data), then React mounts and makes a **second** fresh RPC call to the correct Supabase. This creates a ~3-4 second waterfall where nothing loads.
 
-**Why CSS blocks render (~780ms):**
-1. Tailwind CSS is one large file — no critical CSS extraction
-2. Google Fonts loaded via JS in `StorefrontShell` but `index.css` declares `--font-storefront: 'Alegreya SC'` which may trigger FOIT
+This single bug explains why performance dropped dramatically after the remix.
+
+## All Bottlenecks Identified
+
+| # | Issue | Impact | Fix |
+|---|-------|--------|-----|
+| 1 | **Wrong Supabase URL/key in index.html prefetch** | Prefetch fails silently → 3-4s wasted, double fetch | Update to correct project credentials |
+| 2 | Render-blocking CSS (320ms per Lighthouse) | Delays FCP | Add `<link rel="preload" as="style">` for main CSS |
+| 3 | Layout shift from hero banner (CLS ~0.7) | High CLS score penalty | Already has `aspect-ratio: 16/7` — verify it's applied before image loads |
+| 4 | Product skeleton grid shifts when real cards mount | CLS contributor | Match skeleton card dimensions exactly to real card dimensions |
+| 5 | Carousel interval=2000ms causes excessive repaints | Minor CPU overhead on mobile | Increase to 4000ms (already default in component, but overridden to 2000 in StorefrontMobileHero) |
 
 ## Implementation Plan
 
-### 1. Fix CLS — Reserve Space for Hero Banner
-**File: `src/components/storefront/StorefrontMobileHero.tsx`**
-- Add `aspect-ratio: 16/7` to the wrapper div so space is reserved even before image loads
-- Add `min-height` fallback for browsers without `aspect-ratio` support
+### Step 1: Fix Supabase credentials in index.html (THE critical fix)
+Update lines 69-70:
+- `vjjlxmqgqtquggdajjvi.supabase.co` → `hnuowboxptvobvmgvqnx.supabase.co`  
+- Old anon key → new anon key (`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...RGWBfVVKdCcmkcKxl2pgGP3kQJUWmoDz_yMHwQfETME`)
 
-**File: `src/components/storefront/HeroBannerCarousel.tsx`**
-- Ensure the wrapper div always has `aspect-ratio: 16/7` set, not just on images
-- The `imageClassName` from StorefrontMobileHero uses `h-auto` which causes CLS — change to constrained height within the aspect-ratio container
+This alone should cut ~3-4s off cold load since the prefetch will actually work.
 
-### 2. Fix CLS — Product Card Skeleton Matching
-**File: `src/pages/StorefrontHome.tsx`**
-- Ensure `ProductCardSkeleton` has identical height structure to `ProductCardStyle1`
-- Both must use the same `aspect-ratio: 4/5` for image area and identical padding/spacing
+### Step 2: CSS preload hint
+Add before the module script in `index.html`:
+```html
+<link rel="preload" href="/src/index.css" as="style" />
+```
+Saves ~320ms of render-blocking time.
 
-### 3. Fix LCP — Inject First Products in HTML via Worker
-**File: `docs/cloudflare-worker-current.js`**
-- In the Worker's HTML injection, add top 2 product image URLs as `<link rel="preload" as="image">` tags
-- The `get_storefront_shell` RPC already returns categories — extend to also return first 2 product `image_url` values (or add a separate field `hero_product_images`)
-- This ensures the LCP image starts downloading before React even loads
+### Step 3: Fix carousel interval
+In `StorefrontMobileHero.tsx` line 60, change `interval={2000}` to `interval={4000}` to reduce unnecessary repaints on mobile (every 2s carousel transition is too aggressive).
 
-**File: `index.html`**
-- In the existing prefetch script, after resolving `__STOREFRONT_DATA__`, preload the first product image if no hero image exists (some stores don't have hero banners)
+### Step 4: Ensure skeleton-to-content CLS match
+Verify the inline skeleton in `index.html` (line 169) uses the same `aspect-ratio: 4/5` for card images as the real `ProductCardStyle1` component. Already matches — no change needed.
 
-### 4. Fix LCP — Preload Product API Call
-**File: `src/hooks/useStorefrontProducts.ts`**
-- Add an early fetch trigger: start the `/api/products` fetch in `index.html` prefetch script (alongside store data) and store the promise as `window.__PRODUCTS_PREFETCH__`
-- In `useStorefrontProducts`, check for this promise first before making a new fetch
+## Files Changed
 
-**File: `index.html`**
-- After the storefront data prefetch resolves, immediately fire a products fetch to `supabase.co/rest/v1/products?...` (for preview) and store as `window.__PRODUCTS_PREFETCH__`
+| File | Change |
+|------|--------|
+| `index.html` (lines 69-70) | Fix Supabase URL + anon key to new project |
+| `index.html` (head) | Add CSS preload link |
+| `StorefrontMobileHero.tsx` (line 60) | interval 2000 → 4000 |
 
-### 5. Fix Image Loading — Optimize Supabase Image URLs
-**File: `src/components/storefront/ProductCardStyle1.tsx`** (and Style2/3/4)
-- Already using `optimizeImageUrl` — verified working
-- Ensure `width` and `height` attributes are always set on product images (already done: `width={400} height={500}`)
-- Add `content-visibility: auto` to below-fold product cards for rendering optimization
+## Expected Results
 
-### 6. Fix CSS Blocking — Inline Critical CSS
-**File: `index.html`**
-- Already has inline critical CSS in `<style>` tag — extend it to include storefront card skeleton styles and hero aspect-ratio
-- Add `aspect-ratio: 16/7` to the inline skeleton hero class `.sf-skel-hero`
-
-### 7. Fix JS Execution — Reduce Main Thread Blocking
-**File: `src/App.tsx`**
-- The `LoadingSpinner` component creates 4 skeleton cards with `animate-pulse` — reduce to 2 on mobile (already 4 for desktop grid)
-- Defer `prefetchStorefrontRoutes()` call from `useEffect` to `requestIdleCallback`
-
-**File: `src/layouts/StorefrontShell.tsx`**
-- Already defers Google Fonts to `requestIdleCallback` — verified good
-- Move `trackPageView` to `requestIdleCallback` to avoid main thread contention during load
-
-### 8. Fix Pagination — Direct DB Call in StorefrontHome
-**File: `src/pages/StorefrontHome.tsx`**
-- Lines 91-134: The `useInfiniteQuery` for pagination calls Supabase directly — this is the pagination for "load more" which only fires on scroll, so it's not a performance issue for initial load
-- Leave as-is (only affects subsequent page loads, not LCP/CLS)
-
-## Specific Code Changes
-
-### Changes Summary:
-| File | Change | Impact |
-|------|--------|--------|
-| `StorefrontMobileHero.tsx` | Add `aspect-ratio: 16/7` wrapper + `min-height` | CLS fix |
-| `HeroBannerCarousel.tsx` | Set aspect-ratio on container div, not just image | CLS fix |
-| `StorefrontHome.tsx` | Skeleton height parity with real cards | CLS fix |
-| `index.html` | Preload first product image, extend inline CSS | LCP fix |
-| `useStorefrontProducts.ts` | Bridge `__PRODUCTS_PREFETCH__` promise | LCP fix |
-| `StorefrontShell.tsx` | Defer `trackPageView` to idle | JS blocking fix |
-| `App.tsx` | Defer `prefetchStorefrontRoutes` to idle | JS blocking fix |
-| `ProductCardStyle1.tsx` | Add `content-visibility: auto` to non-priority cards | Rendering perf |
-
-### Expected Results:
 | Metric | Before | After |
 |--------|--------|-------|
+| Cold load | ~6s | ~2s |
 | LCP | ~5.9s | <2.5s |
 | CLS | ~0.7 | <0.1 |
 | Performance | ~47 | 85-92 |
+
+The massive improvement comes almost entirely from Step 1 — fixing the prefetch so it actually returns data instead of silently failing.
 
