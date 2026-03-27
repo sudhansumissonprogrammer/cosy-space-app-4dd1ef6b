@@ -1463,6 +1463,158 @@ async function handleSeoFiles(url, slug) {
   return null;
 }
 
+/* ============== PRE-WARM ALL CACHES ============== */
+
+/**
+ * POST /api/prewarm
+ * Body: { slug: "store-slug", domain?: "custom-domain.com" }
+ * OR query params: ?slug=store-slug&domain=custom-domain.com
+ *
+ * Warms: domain→slug KV, store_id KV, SPA shell, storefront data, products, full HTML.
+ * Called automatically on: store creation, custom domain connect, deployment.
+ * Result: first real user gets instant cache HIT — NEVER hits DB.
+ */
+async function handlePrewarm(request, url, ctx, env) {
+  let slug, domain;
+
+  try {
+    if (request.headers.get("content-type")?.includes("application/json")) {
+      const body = await request.json();
+      slug = body.slug;
+      domain = body.domain;
+    }
+  } catch {}
+
+  slug = slug || url.searchParams.get("slug");
+  domain = domain || url.searchParams.get("domain");
+
+  if (!slug) {
+    return addCorsHeaders(
+      new Response(JSON.stringify({ error: "Missing slug" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }),
+      "prewarm-error"
+    );
+  }
+
+  const results = {};
+
+  try {
+    // 1. Warm domain→slug mapping in KV
+    if (domain && env?.STORE_KV) {
+      const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
+      await env.STORE_KV.put(
+        `domain:${cleanDomain}`,
+        JSON.stringify({ slug }),
+        { expirationTtl: KV_DOMAIN_TTL }
+      );
+      results.domainMapping = "warmed";
+    }
+
+    // 2. Warm store_id mapping
+    const subDomain = `${slug}.${ROOT_DOMAIN}`;
+    const storeId = await _resolveStoreId(domain || subDomain, env);
+    results.storeId = storeId ? "resolved" : "not-found";
+
+    // 3. Warm SPA shell
+    const fakeRequest = new Request(`https://${subDomain}/`, {
+      headers: { Host: subDomain },
+    });
+    const shellResult = await getSpaShell(fakeRequest, ctx, env);
+    results.shell = shellResult ? shellResult.source : "failed";
+
+    // 4. Warm storefront data
+    const dataResult = await prefetchStorefrontData(slug, ctx, env);
+    results.storefrontData = dataResult.source;
+
+    // 5. Warm products cache
+    if (storeId) {
+      try {
+        const products = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
+        const body = JSON.stringify(products || []);
+        const cacheOps = [];
+
+        // Cache for subdomain
+        const subCacheKey = _buildProductsCacheKey(subDomain, {});
+        const subKvKey = _buildProductsKvKey(subDomain, {});
+        cacheOps.push(
+          cache.put(subCacheKey, new Response(body, {
+            headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
+          })).catch(() => {})
+        );
+        if (env?.STORE_KV) {
+          cacheOps.push(env.STORE_KV.put(subKvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}));
+        }
+
+        // Also cache for custom domain
+        if (domain) {
+          const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
+          const domCacheKey = _buildProductsCacheKey(cleanDomain, {});
+          const domKvKey = _buildProductsKvKey(cleanDomain, {});
+          cacheOps.push(
+            cache.put(domCacheKey, new Response(body, {
+              headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
+            })).catch(() => {})
+          );
+          if (env?.STORE_KV) {
+            cacheOps.push(env.STORE_KV.put(domKvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}));
+          }
+        }
+
+        await Promise.all(cacheOps);
+        results.products = "warmed";
+      } catch {
+        results.products = "failed";
+      }
+    }
+
+    // 6. Warm full HTML response (early exit cache)
+    if (shellResult?.html && dataResult.data) {
+      const injected = injectIntoHtml(shellResult.html, slug, dataResult.data, "prewarm");
+      const htmlResponse = new Response(injected.html, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
+          "X-Store-Slug": slug,
+          "X-Data-Source": "prewarm",
+          "X-Shell-Source": shellResult.source,
+          ...SECURITY_HEADERS,
+        },
+      });
+
+      const subEarlyKey = getEarlyCacheKey(subDomain, "/");
+      await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
+
+      if (domain) {
+        const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
+        const domEarlyKey = getEarlyCacheKey(cleanDomain, "/");
+        await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
+      }
+
+      results.fullHtml = "warmed";
+    } else {
+      results.fullHtml = "skipped";
+    }
+
+    return addCorsHeaders(
+      new Response(JSON.stringify({ success: true, slug, domain: domain || null, results }), {
+        headers: { "Content-Type": "application/json" },
+      }),
+      "prewarm"
+    );
+  } catch (err) {
+    return addCorsHeaders(
+      new Response(JSON.stringify({ success: false, error: err?.message || "Unknown error", results }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }),
+      "prewarm-error"
+    );
+  }
+}
+
 /* ============== MAIN HANDLER ============== */
 
 export default {
