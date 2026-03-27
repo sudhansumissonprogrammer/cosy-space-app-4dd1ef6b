@@ -28,9 +28,16 @@ export function useMyStore() {
         .maybeSingle();
       if (error) throw error;
 
-      // Seed the per-storeId cache so useStoreData(storeId) gets a cache hit
+      // Seed the per-storeId cache ONLY if it doesn't already have richer data.
+      // useMyStore fetches partial columns; useStoreData fetches SELECT *.
+      // Overwriting full data with partial data would erase fields like
+      // mobile_hero_url, instagram_url, etc. causing the settings form to reset.
       if (data?.id) {
-        queryClient.setQueryData(["store", data.id], data);
+        queryClient.setQueryData(["store", data.id], (existing: any) => {
+          // If we already have full data (has fields not in MY_STORE_COLUMNS), keep it
+          if (existing && existing.instagram_url !== undefined) return existing;
+          return data;
+        });
       }
 
       return data;
