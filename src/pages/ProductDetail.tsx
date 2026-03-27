@@ -1023,6 +1023,46 @@ function CountdownTimer({ productId }: { productId: string }) {
   );
 }
 
+/* ── Inline countdown for trust block ── */
+function CountdownTimerInline({ productId }: { productId: string }) {
+  const seed = useMemo(() => getCountdownSeed(productId), [productId]);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const now = new Date();
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    const remainMs = endOfDay.getTime() - now.getTime();
+    const totalSec = Math.floor(remainMs / 1000);
+    const h = Math.min(seed.hours, Math.floor(totalSec / 3600));
+    const m = Math.min(seed.minutes, Math.floor((totalSec % 3600) / 60));
+    const s = totalSec % 60;
+    return { hours: h, minutes: m, seconds: s };
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        const totalSec = prev.hours * 3600 + prev.minutes * 60 + prev.seconds - 1;
+        if (totalSec <= 0) return { hours: seed.hours, minutes: seed.minutes, seconds: 0 };
+        return {
+          hours: Math.floor(totalSec / 3600),
+          minutes: Math.floor((totalSec % 3600) / 60),
+          seconds: totalSec % 60,
+        };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [seed]);
+
+  return (
+    <span className="text-xs font-semibold text-foreground">
+      Offer ends in{" "}
+      <span className="font-bold text-amber-600 tabular-nums">
+        {String(timeLeft.hours).padStart(2, "0")}h : {String(timeLeft.minutes).padStart(2, "0")}m : {String(timeLeft.seconds).padStart(2, "0")}s
+      </span>
+    </span>
+  );
+}
+
 /* ── Real Payment Logos ── */
 function RealPaymentLogos() {
   return (
