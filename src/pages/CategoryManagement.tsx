@@ -267,11 +267,21 @@ export default function CategoryManagement() {
                     </button>
                   </div>
                 ) : (
-                  <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input hover:border-primary/50">
-                    <Upload className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-[10px] text-muted-foreground">Upload</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImage} />
-                  </label>
+                  <div className="flex items-center gap-3">
+                    <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input hover:border-primary/50">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">Upload</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImage} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setLibraryOpen(true)}
+                      className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input hover:border-primary/50"
+                    >
+                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">Library</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
