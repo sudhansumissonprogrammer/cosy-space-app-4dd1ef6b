@@ -30,7 +30,7 @@
  *   - STORE_KV: Cloudflare KV namespace for global storefront data cache
  */
 
-const WORKER_VERSION = "2.9";
+const WORKER_VERSION = "3.0";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "charm-dash-build.lovable.app";
 
@@ -1005,30 +1005,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   if (storefrontData) {
     const store = storefrontData.store;
     if (store) {
-      let heroUrl = store.mobile_hero_url;
-      const heroImages = store.mobile_hero_images;
-      if (heroImages) {
-        try {
-          const arr = typeof heroImages === "string" ? JSON.parse(heroImages) : heroImages;
-          if (Array.isArray(arr) && arr[0]) heroUrl = arr[0];
-        } catch {}
-      }
-      if (heroUrl) {
-        let optUrl = heroUrl;
-        if (heroUrl.includes("supabase.co/storage")) {
-          optUrl = heroUrl.replace("/storage/v1/object/", "/storage/v1/render/image/");
-          optUrl += (optUrl.includes("?") ? "&" : "?") + "width=800&quality=75";
-        }
-        const safeHeroUrl = escapeHtml(optUrl);
-        lcpPreload += `<link rel="preload" as="image" href="${safeHeroUrl}" fetchpriority="high" />`;
-        try {
-          const heroOrigin = new URL(optUrl).origin;
-          if (!preconnectedOrigins.has(heroOrigin)) {
-            preconnectedOrigins.add(heroOrigin);
-            lcpPreload += `<link rel="preconnect" href="${heroOrigin}" crossorigin />`;
-          }
-        } catch {}
-      }
+      // Preload logo for fast navbar render
       if (store.logo_url) {
         lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(store.logo_url)}" />`;
       }
