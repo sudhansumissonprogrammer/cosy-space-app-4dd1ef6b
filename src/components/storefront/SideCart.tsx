@@ -143,6 +143,35 @@ export default function SideCart({ store }: SideCartProps) {
 
             {/* Footer / Checkout */}
             <div className="border-t bg-card px-4 py-2.5 space-y-1.5">
+              {/* Free Shipping Progress Bar */}
+              {shippingProgress !== null && shippingRemaining !== null && (
+                <div className="mb-1">
+                  {shippingRemaining > 0 ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                          <Truck className="h-3 w-3" />
+                          Add {currency} {shippingRemaining.toFixed(0)} more for FREE delivery!
+                        </span>
+                        <span className="text-[9px] text-muted-foreground">{Math.round(shippingProgress)}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-accent overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500 ease-out"
+                          style={{
+                            width: `${shippingProgress}%`,
+                            background: "linear-gradient(90deg, #10b981, #34d399)",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> 🎉 You qualify for FREE delivery!
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Subtotal</span>
                 <span className="text-sm font-bold text-foreground">
