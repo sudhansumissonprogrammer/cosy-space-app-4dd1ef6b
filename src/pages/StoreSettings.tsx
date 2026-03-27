@@ -185,6 +185,15 @@ export default function StoreSettings() {
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       setHeroImageFiles([]);
       toast.success("Store settings updated!");
+      // Auto-purge edge cache so changes appear instantly on storefront
+      if (store?.slug) {
+        import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
+          purgeStoreCache(store.slug, (store as any).custom_domain)
+        );
+        import("@/lib/prewarmStore").then(({ prewarmStore }) =>
+          prewarmStore(store.slug, (store as any).custom_domain)
+        );
+      }
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
   });

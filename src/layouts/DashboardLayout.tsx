@@ -6,6 +6,7 @@ import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
@@ -13,7 +14,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
   Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
-  Search, User, Bell, X, BarChart3, MessageSquare, Clock,
+  Search, User, Bell, X, BarChart3, MessageSquare, Clock, RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -177,6 +178,7 @@ function MobileMenu({
 
 export default function DashboardLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -226,6 +228,26 @@ export default function DashboardLayout() {
     setMenuOpen(false);
   };
 
+  const handlePurgeCache = async () => {
+    if (!store?.slug || isPurging) return;
+    setIsPurging(true);
+    try {
+      const { purgeStoreCache } = await import("@/lib/purgeStoreCache");
+      const { prewarmStore } = await import("@/lib/prewarmStore");
+      const ok = await purgeStoreCache(store.slug, (store as any).custom_domain);
+      await prewarmStore(store.slug, (store as any).custom_domain);
+      if (ok) {
+        toast.success("Cache purged! Your store will show the latest changes.");
+      } else {
+        toast.info("Cache purge sent. Changes will appear shortly.");
+      }
+    } catch {
+      toast.error("Failed to purge cache");
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
@@ -246,6 +268,19 @@ export default function DashboardLayout() {
                 </span>
               </div>
               <div className="flex items-center gap-1">
+                {store?.slug && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={handlePurgeCache}
+                    disabled={isPurging}
+                    title="Purge edge cache — instantly refresh your live store"
+                  >
+                    <RefreshCw className={cn("h-3.5 w-3.5", isPurging && "animate-spin")} />
+                    {isPurging ? "Purging…" : "Purge Cache"}
+                  </Button>
+                )}
                 {store?.slug && (
                   <Button
                     variant="ghost"
@@ -312,6 +347,18 @@ export default function DashboardLayout() {
           </span>
         </div>
         <div className="flex items-center gap-1">
+          {store?.slug && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+              onClick={handlePurgeCache}
+              disabled={isPurging}
+              title="Purge cache"
+            >
+              <RefreshCw className={cn("h-5 w-5", isPurging && "animate-spin")} />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
