@@ -1,29 +1,21 @@
 /**
  * prewarm-store Edge Function
  *
- * Called after: store creation, custom domain connect, deployment.
+ * Called after: store creation, custom domain connect, product changes.
  * Warms all Cloudflare Worker caches so first user gets instant response.
  *
  * Usage:
  *   POST /functions/v1/prewarm-store
  *   Body: { slug: "my-store", domain?: "mystore.com" }
- *
- * Can also be called from DB triggers via pg_net.
  */
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const ROOT_DOMAIN = "storivo.in";
-
-// All known Cloudflare Worker endpoints that serve storefronts
-const PREWARM_TARGETS = [
-  // Subdomain endpoint (always exists)
-  (slug: string) => `https://${slug}.${ROOT_DOMAIN}/api/prewarm?slug=${slug}`,
-];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -34,12 +26,15 @@ Deno.serve(async (req) => {
     let slug: string | null = null;
     let domain: string | null = null;
 
-    // Accept JSON body or query params
     const url = new URL(req.url);
     if (req.headers.get("content-type")?.includes("application/json")) {
-      const body = await req.json();
-      slug = body.slug || null;
-      domain = body.domain || null;
+      try {
+        const body = await req.json();
+        slug = body.slug || null;
+        domain = body.domain || null;
+      } catch {
+        // fallback to query params
+      }
     }
     slug = slug || url.searchParams.get("slug");
     domain = domain || url.searchParams.get("domain");
@@ -51,22 +46,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    const results: Record<string, any> = {};
+    const results: Record<string, unknown> = {};
 
-    // Build prewarm URLs
+    // Build prewarm URLs — warm both subdomain and custom domain Worker caches
     const prewarmUrls: string[] = [];
 
     // 1. Always warm via subdomain
-    const subdomainUrl = `https://${slug}.${ROOT_DOMAIN}/api/prewarm?slug=${slug}${domain ? `&domain=${encodeURIComponent(domain)}` : ""}`;
-    prewarmUrls.push(subdomainUrl);
+    const subParams = new URLSearchParams({ slug });
+    if (domain) subParams.set("domain", domain);
+    prewarmUrls.push(`https://${slug}.${ROOT_DOMAIN}/api/prewarm?${subParams}`);
 
     // 2. If custom domain exists, also warm directly on that domain
     if (domain) {
-      const customDomainUrl = `https://${domain}/api/prewarm?slug=${slug}&domain=${encodeURIComponent(domain)}`;
-      prewarmUrls.push(customDomainUrl);
+      const domParams = new URLSearchParams({ slug, domain });
+      prewarmUrls.push(`https://${domain}/api/prewarm?${domParams}`);
     }
 
-    // Fire all prewarm requests in parallel
+    // Fire all prewarm requests in parallel (15s timeout each)
     const prewarmResults = await Promise.allSettled(
       prewarmUrls.map(async (prewarmUrl) => {
         const controller = new AbortController();
@@ -83,13 +79,13 @@ Deno.serve(async (req) => {
           return { url: prewarmUrl, status: res.status, data };
         } catch (err) {
           clearTimeout(timeout);
-          return { url: prewarmUrl, error: (err as Error).message };
+          return { url: prewarmUrl, error: String(err) };
         }
       })
     );
 
-    results.prewarmTargets = prewarmResults.map((r) =>
-      r.status === "fulfilled" ? r.value : { error: (r as PromiseRejectedResult).reason }
+    results.targets = prewarmResults.map((r) =>
+      r.status === "fulfilled" ? r.value : { error: String(r.reason) }
     );
 
     return new Response(
@@ -98,7 +94,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: (err as Error).message }),
+      JSON.stringify({ error: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

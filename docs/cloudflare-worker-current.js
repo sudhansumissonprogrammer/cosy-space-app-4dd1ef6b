@@ -1852,7 +1852,11 @@ export default {
         return cachedFetch(request, "", ctx, false, env);
       }
 
-      // Parallelize: custom domain check + SEO files + bot detection + main fetch
+      // Start the main fetch IMMEDIATELY — don't wait for custom domain check.
+      // Custom domain redirect + SEO + bot all run in parallel with the main fetch.
+      const mainFetchPromise = fetchAndInjectSlug(request, slug, ctx, env);
+
+      // Parallelize: custom domain check + SEO files + bot detection
       const [customDomain, seoResponse, botResponse] = await Promise.all([
         getCustomDomainForSlug(slug),
         handleSeoFiles(url, slug),
@@ -1861,16 +1865,40 @@ export default {
 
       // 301 redirect to custom domain if one exists
       if (customDomain) {
+        // Discard the main fetch (it ran in background, won't be used)
+        mainFetchPromise.catch(() => {});
         return Response.redirect(
           `https://${customDomain}${url.pathname}${url.search}`,
           301
         );
       }
 
-      if (seoResponse) return seoResponse;
-      if (botResponse) return botResponse;
+      if (seoResponse) {
+        mainFetchPromise.catch(() => {});
+        return seoResponse;
+      }
+      if (botResponse) {
+        mainFetchPromise.catch(() => {});
+        return botResponse;
+      }
 
-      return cachedFetch(request, slug, ctx, false, env);
+      // Main fetch already started — just await it
+      const { response: injectedResponse, dataSource } = await mainFetchPromise;
+
+      // Cache for early exit on next request
+      const contentType = injectedResponse.headers.get("content-type") || "";
+      if (injectedResponse.status === 200 && contentType.includes("text/html")) {
+        const slugHeader = injectedResponse.headers.get("X-Store-Slug");
+        if (slugHeader === slug) {
+          storeInEdgeCache(ctx, hostname, url.pathname, slug, injectedResponse);
+        }
+      }
+
+      return addDiagnosticHeaders(injectedResponse, {
+        slug,
+        cacheStatus: "MISS",
+        dataSource,
+      });
     }
 
     // ─── CUSTOM DOMAIN ───
