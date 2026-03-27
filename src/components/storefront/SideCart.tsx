@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
-import { Minus, Plus, Trash2, ShoppingCart, ShoppingBag, MessageCircle, Package, X } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, ShoppingBag, MessageCircle, Package, X, Truck, Check } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import CartUpsell from "@/components/storefront/CartUpsell";
@@ -18,6 +20,24 @@ export default function SideCart({ store }: SideCartProps) {
   const orderMode = (store as any).order_mode || "whatsapp";
   const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
   const showCheckout = orderMode === "website" || orderMode === "both";
+
+  const { data: shippingConfig } = useQuery({
+    queryKey: ["store-shipping-config", store.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("store_shipping_config")
+        .select("free_shipping_above, flat_rate, is_active")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!store.id,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const freeShippingThreshold = shippingConfig?.free_shipping_above;
+  const shippingProgress = freeShippingThreshold ? Math.min(100, (cartTotal / freeShippingThreshold) * 100) : null;
+  const shippingRemaining = freeShippingThreshold ? Math.max(0, freeShippingThreshold - cartTotal) : null;
 
   const handleWhatsAppOrder = () => {
     if (!store.whatsapp_number) return;
@@ -123,6 +143,35 @@ export default function SideCart({ store }: SideCartProps) {
 
             {/* Footer / Checkout */}
             <div className="border-t bg-card px-4 py-2.5 space-y-1.5">
+              {/* Free Shipping Progress Bar */}
+              {shippingProgress !== null && shippingRemaining !== null && (
+                <div className="mb-1">
+                  {shippingRemaining > 0 ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                          <Truck className="h-3 w-3" />
+                          Add {currency} {shippingRemaining.toFixed(0)} more for FREE delivery!
+                        </span>
+                        <span className="text-[9px] text-muted-foreground">{Math.round(shippingProgress)}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-accent overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500 ease-out"
+                          style={{
+                            width: `${shippingProgress}%`,
+                            background: "linear-gradient(90deg, #10b981, #34d399)",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> 🎉 You qualify for FREE delivery!
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Subtotal</span>
                 <span className="text-sm font-bold text-foreground">
