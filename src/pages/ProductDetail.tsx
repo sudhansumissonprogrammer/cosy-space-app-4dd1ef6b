@@ -313,7 +313,7 @@ export default function ProductDetail() {
   });
 
   /* ── Live viewers — fluctuate between 8-20 ── */
-  const [liveViewers, setLiveViewers] = useState(() => stats.baseViewers);
+  const [liveViewers, setLiveViewers] = useState(() => 8 + Math.floor(Math.random() * 13));
   useEffect(() => {
     if (!product) return;
     const timer = setInterval(() => {
