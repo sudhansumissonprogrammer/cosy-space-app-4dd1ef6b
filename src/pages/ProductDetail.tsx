@@ -410,7 +410,7 @@ export default function ProductDetail() {
     <div className="mx-auto max-w-6xl px-4 py-3 sm:py-8">
       {/* Breadcrumb — hidden */}
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
+      <div className="grid gap-2 lg:grid-cols-2 lg:gap-10">
         {/* Image Gallery */}
         <ImageGallery
           key={product.id}
