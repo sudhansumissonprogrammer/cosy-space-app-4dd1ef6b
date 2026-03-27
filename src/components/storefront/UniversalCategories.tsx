@@ -52,17 +52,17 @@ function PillSkeleton() {
 /** Style 1: Small circles in horizontal carousel */
 function CircleCarousel({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
+    <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
       {categories.map((cat) => (
-        <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all">
-          <div className="h-[72px] w-[72px] rounded-full border-2 overflow-hidden transition-all sm:h-[88px] sm:w-[88px] border-border bg-secondary/30" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
+        <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-1 flex-shrink-0 transition-all">
+          <div className="h-[62px] w-[62px] rounded-full border-2 overflow-hidden transition-all sm:h-[80px] sm:w-[80px] border-border bg-secondary/30" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
             {cat.image_url ? (
-              <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" width={176} height={176} />
+              <img src={optimizeImageUrl(cat.image_url, 200)} alt={cat.name} className="h-full w-full object-cover" loading="lazy" width={124} height={124} />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" /></div>
+              <div className="flex h-full w-full items-center justify-center bg-accent"><Tag className="h-4 w-4 text-muted-foreground sm:h-5 sm:w-5" /></div>
             )}
           </div>
-          <span className="text-[11px] font-semibold tracking-wide text-foreground text-center leading-tight max-w-[72px] truncate">{cat.name}</span>
+          <span className="text-[10px] font-semibold tracking-wide text-foreground text-center leading-tight max-w-[62px] truncate sm:max-w-[80px] sm:text-[11px]">{cat.name}</span>
         </Link>
       ))}
     </div>
