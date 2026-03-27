@@ -129,6 +129,23 @@ export default function ProductDetail() {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
 
+  // Fetch store shipping config for free shipping threshold
+  const { data: shippingConfig } = useQuery({
+    queryKey: ["store-shipping-config", store.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("store_shipping_config")
+        .select("free_shipping_above, flat_rate, is_active")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!store.id,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const FREE_SHIPPING_THRESHOLD = shippingConfig?.free_shipping_above ?? 499;
+
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
