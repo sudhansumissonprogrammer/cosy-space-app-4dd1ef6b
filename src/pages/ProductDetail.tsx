@@ -312,6 +312,16 @@ export default function ProductDetail() {
     storeName: store.name,
   });
 
+  /* ── Live viewers — fluctuate between 8-20 ── */
+  const [liveViewers, setLiveViewers] = useState(() => stats.baseViewers);
+  useEffect(() => {
+    if (!product) return;
+    const timer = setInterval(() => {
+      setLiveViewers(8 + Math.floor(Math.random() * 13)); // 8-20
+    }, 5000 + Math.random() * 3000);
+    return () => clearInterval(timer);
+  }, [product?.id]);
+
   /* ── CRO #7: Periodic social proof — inline notification state ── */
   const [socialProof, setSocialProof] = useState<{ name: string; city: string; visible: boolean } | null>(null);
   useEffect(() => {
@@ -323,7 +333,6 @@ export default function ProductDetail() {
       setTimeout(() => setSocialProof((prev) => prev ? { ...prev, visible: false } : null), 5000);
     };
     const timer = setInterval(show, 35000 + Math.random() * 20000);
-    // Show first one after a short delay
     const firstTimer = setTimeout(show, 6000 + Math.random() * 4000);
     return () => { clearInterval(timer); clearTimeout(firstTimer); };
   }, [product?.id]);
