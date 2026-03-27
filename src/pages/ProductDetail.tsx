@@ -120,8 +120,6 @@ function getFakeReviews(productId: string) {
   return reviews;
 }
 
-const FREE_SHIPPING_THRESHOLD = 499;
-
 export default function ProductDetail() {
   const store = useOutletContext<StoreData>();
   const { productSlug } = useParams<{ productSlug: string }>();
