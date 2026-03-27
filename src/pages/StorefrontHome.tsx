@@ -235,7 +235,7 @@ export default function StorefrontHome() {
               </div>
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {bestSellingProducts.map((product, idx) => (
-                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
+                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
                 ))}
               </div>
             </section>
@@ -312,7 +312,7 @@ export default function StorefrontHome() {
                     product={product}
                     slug={slug!}
                     store={store}
-                    priority={idx < 4}
+                    priority={idx < 2}
                     cardStyle={cardStyle}
                   />
                 ))}
