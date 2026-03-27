@@ -30,17 +30,17 @@ export default function V12ProductCard({ product, slug, index = 0 }: V12ProductC
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
         {product.image_url ? (
           <img
-            src={optimizeImageUrl(product.image_url, 400)}
-            srcSet={getImageSrcSet(product.image_url, [300, 400, 600])}
-            sizes={PRODUCT_CARD_SIZES}
-            alt={product.name}
-            width={400}
-            height={533}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading={index < 4 ? "eager" : "lazy"}
-            fetchPriority={index < 2 ? "high" : "auto"}
-            decoding={index < 4 ? "sync" : "async"}
-          />
+33:             src={optimizeImageUrl(product.image_url, 300, 60)}
+34:             srcSet={getImageSrcSet(product.image_url, [300, 400, 600], 60)}
+35:             sizes={PRODUCT_CARD_SIZES}
+36:             alt={product.name}
+37:             width={300}
+38:             height={400}
+39:             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+40:             loading={index < 4 ? "eager" : "lazy"}
+41:             fetchPriority={index < 2 ? "high" : "auto"}
+42:             decoding={index < 4 ? "sync" : "async"}
+43:           />
         ) : (
           <div className="h-full w-full flex items-center justify-center bg-secondary/40">
             <Tag className="h-10 w-10 text-muted-foreground/40" aria-hidden="true" />
