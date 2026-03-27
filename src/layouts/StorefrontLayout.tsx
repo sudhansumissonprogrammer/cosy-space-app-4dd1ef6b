@@ -138,7 +138,7 @@ function StorefrontSkeleton() {
   );
 }
 
-function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left" }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string }) {
+function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left", mobileNavEnabled = false }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string; mobileNavEnabled?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
