@@ -1840,6 +1840,7 @@ export default function StoreThemeSettings() {
         marquee_enabled: themeConfig.marquee_enabled ?? true,
         product_card_style: themeConfig.product_card_style || "style-1",
         category_style: themeConfig.category_style || "style-1",
+        header_logo_alignment: themeConfig.header_logo_alignment || "left",
       });
     } else {
       setConfig(defaults);
