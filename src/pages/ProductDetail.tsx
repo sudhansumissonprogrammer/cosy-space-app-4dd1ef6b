@@ -522,17 +522,6 @@ export default function ProductDetail() {
             <p className="mt-1.5 text-[10px] text-muted-foreground uppercase tracking-wide">Inclusive of all taxes</p>
           </div>
 
-          {/* Estimated Delivery */}
-          <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-emerald-200/50 bg-emerald-50/40 px-3 py-2">
-            <Truck className="h-4 w-4 text-emerald-600 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-emerald-700">
-                Estimated Delivery by {deliveryDate}
-              </span>
-              <span className="text-[10px] text-emerald-600/80">Order within 2 hours for fastest delivery</span>
-            </div>
-          </div>
-
           {/* Live viewers */}
           <div className="mt-3 flex items-center gap-2">
             <span className="relative flex h-2 w-2">
@@ -540,7 +529,7 @@ export default function ProductDetail() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             <span className="text-xs text-muted-foreground">
-              <strong className="text-foreground">{stats.viewers} people</strong> viewing this right now
+              <strong className="text-foreground">{liveViewers} people</strong> viewing this right now
             </span>
           </div>
 
@@ -679,14 +668,54 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Safe Checkout — compact */}
+          {/* ── Checkout Trust Block — Safe checkout + Delivery + Offer ── */}
           {!isOutOfStock && (
-            <div className="mt-4 rounded-xl border border-emerald-200/50 bg-emerald-50/30 p-3">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Lock className="h-3 w-3 text-emerald-600" />
-                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Guaranteed Safe Checkout</span>
+            <div className="mt-5 rounded-2xl border border-border overflow-hidden">
+              {/* Safe Checkout Header */}
+              <div className="flex items-center justify-center gap-2 py-2.5 border-b border-border bg-muted/30">
+                <ShieldCheck className="h-4 w-4 text-foreground" />
+                <span className="text-[11px] font-bold text-foreground uppercase tracking-widest">Guaranteed Safe Checkout</span>
               </div>
-              <RealPaymentLogos />
+              <div className="px-4 py-3">
+                <RealPaymentLogos />
+              </div>
+
+              {/* Delivery & Offer Info */}
+              <div className="border-t border-border px-4 py-3 space-y-2.5">
+                {/* Estimated Delivery */}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                    <Truck className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-foreground">
+                      Estimated Delivery by {deliveryDate}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">Order within 2 hours for fastest delivery</span>
+                  </div>
+                </div>
+
+                {/* Offer countdown */}
+                {hasDiscount && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 shrink-0">
+                      <Timer className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div className="flex flex-col">
+                      <CountdownTimerInline productId={product.id} />
+                      <span className="text-[10px] text-muted-foreground">Limited time offer — don't miss out</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Inclusive of taxes */}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">Inclusive of all taxes</span>
+                </div>
+              </div>
             </div>
           )}
 
