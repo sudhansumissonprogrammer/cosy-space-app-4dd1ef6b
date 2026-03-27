@@ -376,8 +376,8 @@ async function proxyToOrigin(request) {
 // By caching the raw shell in KV, cold loads drop from ~800-1500ms to ~5ms.
 
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
-const SPA_SHELL_KV_TTL = 300;          // 5 minutes in KV
-const SPA_SHELL_CACHE_TTL = 120;       // 2 minutes in Cache API (per-colo)
+const SPA_SHELL_KV_TTL = 60;           // 60 seconds in KV
+const SPA_SHELL_CACHE_TTL = 60;        // 60 seconds in Cache API (per-colo)
 
 let inflightShellFetch = null; // Coalesce concurrent shell fetches
 
