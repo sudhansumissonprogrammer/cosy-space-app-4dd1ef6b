@@ -5,9 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import LazyRender from "@/components/storefront/LazyRender";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
+
+const ABOVE_FOLD_COUNT = 4;
 
 const PAGE_SIZE = 20;
 
@@ -118,17 +121,33 @@ export default function StorefrontShop() {
       ) : products.length > 0 ? (
         <>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((product, index) => (
+            {products.slice(0, ABOVE_FOLD_COUNT).map((product, index) => (
               <UniversalProductCard
                 key={product.id}
                 product={product}
                 slug={slug!}
                 store={store}
-                priority={index < 4}
+                priority={index < 2}
                 cardStyle={cardStyle}
               />
             ))}
           </div>
+          {products.length > ABOVE_FOLD_COUNT && (
+            <LazyRender minHeight={600} rootMargin="300px">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-3 sm:mt-4">
+                {products.slice(ABOVE_FOLD_COUNT).map((product) => (
+                  <UniversalProductCard
+                    key={product.id}
+                    product={product}
+                    slug={slug!}
+                    store={store}
+                    priority={false}
+                    cardStyle={cardStyle}
+                  />
+                ))}
+              </div>
+            </LazyRender>
+          )}
 
           {/* Infinite scroll sentinel */}
           <div ref={sentinelRef} className="flex justify-center py-8">

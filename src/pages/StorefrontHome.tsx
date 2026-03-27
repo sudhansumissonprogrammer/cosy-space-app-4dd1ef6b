@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -8,12 +8,16 @@ import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import BestSellingCarousel from "@/components/storefront/BestSellingCarousel";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
+
+const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
+const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+
+const ABOVE_FOLD_COUNT = 4;
 
 const INITIAL_LIMIT = PAGE_SIZE;
 
@@ -218,25 +222,38 @@ export default function StorefrontHome() {
       )}
 
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
-        {bestSellingProducts.length > 0 && (
-          (store as any).best_selling_carousel ? (
-            <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
-          ) : (
-            <section>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="h-px flex-1 bg-border" />
-                <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>
-                  🔥 Best Selling
-                </h2>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {bestSellingProducts.map((product, idx) => (
-                  <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
-                ))}
-              </div>
-            </section>
-          )
+      {bestSellingProducts.length > 0 && (
+          <LazyRender minHeight={400} rootMargin="300px">
+            <Suspense fallback={null}>
+              {(store as any).best_selling_carousel ? (
+                <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
+              ) : (
+                <section>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="h-px flex-1 bg-border" />
+                    <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>
+                      🔥 Best Selling
+                    </h2>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    {bestSellingProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
+                      <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
+                    ))}
+                  </div>
+                  {bestSellingProducts.length > ABOVE_FOLD_COUNT && (
+                    <LazyRender minHeight={400} rootMargin="300px">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-2 sm:mt-4">
+                        {bestSellingProducts.slice(ABOVE_FOLD_COUNT).map((product) => (
+                          <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
+                        ))}
+                      </div>
+                    </LazyRender>
+                  )}
+                </section>
+              )}
+            </Suspense>
+          </LazyRender>
         )}
 
         <section>
@@ -302,18 +319,37 @@ export default function StorefrontHome() {
             </div>
           ) : displayProducts.length > 0 ? (
             <>
+              {/* Above-fold: first 4 products render immediately */}
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {displayProducts.map((product, idx) => (
+                {displayProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
                   <UniversalProductCard
                     key={product.id}
                     product={product}
                     slug={slug!}
                     store={store}
-                    priority={idx < 4}
+                    priority={idx < 2}
                     cardStyle={cardStyle}
                   />
                 ))}
               </div>
+
+              {/* Below-fold: deferred until near viewport */}
+              {displayProducts.length > ABOVE_FOLD_COUNT && (
+                <LazyRender minHeight={600} rootMargin="300px">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-2 sm:mt-4">
+                    {displayProducts.slice(ABOVE_FOLD_COUNT).map((product) => (
+                      <UniversalProductCard
+                        key={product.id}
+                        product={product}
+                        slug={slug!}
+                        store={store}
+                        priority={false}
+                        cardStyle={cardStyle}
+                      />
+                    ))}
+                  </div>
+                </LazyRender>
+              )}
 
               {/* Infinite scroll sentinel */}
               <div ref={sentinelRef} className="flex justify-center py-6">
@@ -341,7 +377,11 @@ export default function StorefrontHome() {
           )}
         </section>
       </div>
-      <StorefrontInstagramSection store={store} />
+      <LazyRender minHeight={200} rootMargin="400px">
+        <Suspense fallback={null}>
+          <StorefrontInstagramSection store={store} />
+        </Suspense>
+      </LazyRender>
     </>
   );
 }
