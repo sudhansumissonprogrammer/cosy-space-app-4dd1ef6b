@@ -2,7 +2,7 @@ import { Instagram } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
-import { cleanImageUrl } from "@/lib/imageOptimize";
+import { cleanImageUrl, optimizeImageUrl } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 interface StorefrontInstagramSectionProps {
@@ -97,10 +97,13 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
               className="group relative aspect-square overflow-hidden bg-black/5"
             >
               <img
-                src={img.url}
+                src={optimizeImageUrl(img.url, 200, 60)}
                 alt={img.name}
                 loading="lazy"
+                width={200}
+                height={200}
                 className="h-full w-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-75"
+              />
               />
               {/* Hover overlay */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
