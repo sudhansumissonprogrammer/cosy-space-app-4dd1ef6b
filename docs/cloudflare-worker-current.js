@@ -1618,14 +1618,19 @@ export default {
       );
     }
 
+    // ─── /api/prewarm → Pre-warm all caches for a store (call on store create, domain connect, deploy) ───
+    if (url.pathname === "/api/prewarm" && request.method === "POST") {
+      return handlePrewarm(request, url, ctx, env);
+    }
+
     // CORS preflight for /api/*
-    if ((url.pathname === "/api/products" || url.pathname === "/api/purge-products") && request.method === "OPTIONS") {
+    if (url.pathname.startsWith("/api/") && request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
           "Access-Control-Max-Age": "86400",
         },
       });
