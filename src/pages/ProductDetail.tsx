@@ -337,6 +337,22 @@ export default function ProductDetail() {
 
   const fakeReviews = useMemo(() => product ? getFakeReviews(product.id) : [], [product?.id]);
 
+  // Fetch real reviews
+  const { data: realReviews, refetch: refetchReviews } = useQuery({
+    queryKey: ["product-reviews", product?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("product_reviews")
+        .select("*")
+        .eq("product_id", product!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return (data || []) as { id: string; customer_name: string; rating: number; review_text: string | null; is_verified: boolean; created_at: string }[];
+    },
+    enabled: !!product?.id,
+    staleTime: 2 * 60 * 1000,
+  });
+
   if (isLoading) return <ProductDetailSkeleton />;
 
   if (!product) {
