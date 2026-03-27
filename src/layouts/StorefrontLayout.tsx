@@ -17,6 +17,9 @@ import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 import StorefrontShell from "@/layouts/StorefrontShell";
+import { lazy } from "react";
+
+const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 
 // Re-export for backward compatibility — other layouts import these
 export type { Tables };
