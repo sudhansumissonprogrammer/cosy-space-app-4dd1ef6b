@@ -518,8 +518,6 @@ export default function ProductDetail() {
                 You save {currency} {(product.price - product.sale_price!).toFixed(2)} on this order
               </p>
             )}
-            {hasDiscount && <CountdownTimer productId={product.id} />}
-            <p className="mt-1.5 text-[10px] text-muted-foreground uppercase tracking-wide">Inclusive of all taxes</p>
           </div>
 
           {/* Live viewers */}
