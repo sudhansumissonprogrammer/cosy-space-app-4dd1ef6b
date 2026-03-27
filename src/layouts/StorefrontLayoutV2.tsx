@@ -133,7 +133,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
           <AccountBadgeV2 slug={store.slug} />
           <WishlistBadgeV2 slug={store.slug} />
           <CartBadgeV2 />
-          <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
+          <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />
         </div>
       </div>
     </nav>

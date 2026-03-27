@@ -180,7 +180,7 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled }: { store: St
           {!isCheckout && (
             <div className="flex items-center gap-0 sm:gap-1">
               <AccountBadge slug={store.slug} /><WishlistBadge slug={store.slug} /><CartBadge />
-              <ShareStoreDialog storeSlug={store.slug} storeName={store.name} iconOnly />
+              <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />
             </div>
           )}
         </div>

@@ -50,7 +50,7 @@ interface StorefrontShellProps {
   children: (props: ShellRenderProps) => ReactNode;
 }
 
-/** Default skeleton — static placeholders (no animation) for fast perceived load */
+/** Default skeleton — matches ProductCardStyle1 layout exactly (no animation) */
 function DefaultSkeleton() {
   return (
     <div className="min-h-screen bg-background font-sans">
@@ -64,17 +64,22 @@ function DefaultSkeleton() {
           <div className="h-9 w-9 rounded-full bg-muted/60" />
         </div>
       </nav>
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="mb-5 h-7 w-40 rounded-md bg-muted/60" />
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
-              <div className="w-full bg-muted/60" style={{ aspectRatio: "4/5" }} />
-              <div className="px-2.5 pb-2.5 pt-2 space-y-2">
-                <div className="h-3 w-16 rounded bg-muted/60" />
-                <div className="h-4 w-full rounded bg-muted/60" />
+      <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
+              <div className="p-1 pb-0">
+                <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
+              </div>
+              <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="h-2.5 w-16 rounded bg-muted/60" />
+                  <div className="h-2.5 w-10 rounded bg-muted/60" />
+                </div>
+                <div className="h-3 w-full rounded bg-muted/60" />
+                <div className="h-3 w-3/4 rounded bg-muted/60" />
                 <div className="h-4 w-20 rounded bg-muted/60" />
-                <div className="h-9 w-full rounded-lg bg-muted/60" />
+                <div className="h-7 w-full rounded-lg bg-muted/60 sm:h-8" />
               </div>
             </div>
           ))}
