@@ -295,6 +295,20 @@ export default function CategoryManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {storeId && (
+        <MediaLibraryPicker
+          storeId={storeId}
+          open={libraryOpen}
+          onClose={() => setLibraryOpen(false)}
+          onSelect={(urls) => {
+            if (urls[0]) {
+              setImageFile(null);
+              setImagePreview(urls[0]);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

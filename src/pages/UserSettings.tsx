@@ -271,6 +271,23 @@ export default function UserSettings() {
           </CardContent>
         </Card>
       </form>
+
+      {/* Sign Out */}
+      <Card>
+        <CardContent className="pt-6">
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={async () => {
+              await signOut();
+              navigate("/login");
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
