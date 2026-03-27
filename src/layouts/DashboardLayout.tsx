@@ -227,6 +227,26 @@ export default function DashboardLayout() {
     setMenuOpen(false);
   };
 
+  const handlePurgeCache = async () => {
+    if (!store?.slug || isPurging) return;
+    setIsPurging(true);
+    try {
+      const { purgeStoreCache } = await import("@/lib/purgeStoreCache");
+      const { prewarmStore } = await import("@/lib/prewarmStore");
+      const ok = await purgeStoreCache(store.slug, (store as any).custom_domain);
+      await prewarmStore(store.slug, (store as any).custom_domain);
+      if (ok) {
+        toast.success("Cache purged! Your store will show the latest changes.");
+      } else {
+        toast.info("Cache purge sent. Changes will appear shortly.");
+      }
+    } catch {
+      toast.error("Failed to purge cache");
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
@@ -247,6 +267,19 @@ export default function DashboardLayout() {
                 </span>
               </div>
               <div className="flex items-center gap-1">
+                {store?.slug && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={handlePurgeCache}
+                    disabled={isPurging}
+                    title="Purge edge cache — instantly refresh your live store"
+                  >
+                    <RefreshCw className={cn("h-3.5 w-3.5", isPurging && "animate-spin")} />
+                    {isPurging ? "Purging…" : "Purge Cache"}
+                  </Button>
+                )}
                 {store?.slug && (
                   <Button
                     variant="ghost"
