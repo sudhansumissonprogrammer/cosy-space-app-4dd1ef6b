@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import LazyRender from "@/components/storefront/LazyRender";
 import { storefrontPath } from "@/lib/subdomain";
 import { useEffect, useRef } from "react";
+
+const ABOVE_FOLD_COUNT = 4;
 
 const PAGE_SIZE = 20;
 
