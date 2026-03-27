@@ -159,6 +159,7 @@ const storefrontChildRoutes = (theme: string) => {
       <Route index element={<HomeComponent />} />
       <Route path="shop" element={<StorefrontShop />} />
       <Route path="best-sellers" element={<StorefrontBestSellers />} />
+      <Route path="categories" element={<StorefrontCategoriesPage />} />
       <Route path="contact" element={<StorefrontContact />} />
       <Route path="return-policy" element={<StorefrontReturnPolicy />} />
       <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
