@@ -190,11 +190,9 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
     <>
       {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
 
-      <nav className={`${
-        isCheckout || headerStyle === 'normal' ? 'sticky top-0' : 'absolute top-0 left-0 right-0'
-      } z-30 ${
+      <nav className={`sticky top-0 z-30 ${
         isCheckout ? 'bg-card/80 backdrop-blur-md' :
-        headerStyle === 'transparent' ? 'bg-transparent' :
+        headerStyle === 'transparent' ? '' :
         headerStyle === 'glassmorphic' ? '' :
         'bg-card/80 backdrop-blur-md'
       }`}
@@ -205,7 +203,7 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
           borderRadius: '0 0 1rem 1rem',
           border: '1px solid rgba(255,255,255,0.18)',
           margin: '0 8px',
-          boxShadow: '0 4px 30px rgba(0,0,0,0.06)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
         } : undefined}
       >
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
