@@ -69,48 +69,43 @@ function AppHeader({ store }: { store: StoreData }) {
 
 function ShoppingAppBottomNav({ store }: { store: StoreData }) {
   const location = useLocation();
-  const { wishlistCount } = useWishlist();
   const { cartCount, openCart } = useCart();
   const { user } = useStorefrontAuth();
+  const basePath = storefrontPath(store.slug);
+  const isHome = location.pathname === basePath || location.pathname === basePath + "/";
   const isShop = location.pathname.includes("shop");
+  const isWishlist = location.pathname.includes("wishlist");
   const isAccount = location.pathname.includes("account");
 
   const navItems = [
-    { icon: Home, label: "Home", isActive: isHome, type: "link" as const, to: basePath },
-    { icon: Store, label: "Shop", isActive: isShop, type: "link" as const, to: storefrontPath(store.slug, "shop") },
-    { icon: Heart, label: "Wishlist", isActive: isWishlist, type: "link" as const, to: storefrontPath(store.slug, "wishlist") },
-    { icon: Bell, label: "Alerts", isActive: false, type: "link" as const, to: storefrontPath(store.slug, user ? "account" : "login") },
-    { icon: User, label: "Account", isActive: isAccount, type: "link" as const, to: storefrontPath(store.slug, user ? "account" : "login") },
+    { icon: Home, label: "Home", isActive: isHome, to: basePath },
+    { icon: Store, label: "Shop", isActive: isShop, to: storefrontPath(store.slug, "shop") },
+    { icon: Heart, label: "Wishlist", isActive: isWishlist, to: storefrontPath(store.slug, "wishlist") },
+    { icon: Bell, label: "Alerts", isActive: false, to: storefrontPath(store.slug, user ? "account" : "login") },
+    { icon: User, label: "Account", isActive: isAccount, to: storefrontPath(store.slug, user ? "account" : "login") },
   ];
 
   return (
-    <>
-      <nav className="fixed bottom-0 left-0 right-0 z-30 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="mx-3 mb-2 flex items-center gap-2">
-          <div className="flex flex-1 items-center justify-around rounded-[28px] px-1.5 py-2" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)" }}>
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const handleClick = item.type === "search" ? () => setSearchOpen((prev) => !prev) : undefined;
-              const content = (
-                <>
-                  <div className="absolute inset-0 rounded-full transition-all duration-300 ease-out" style={{ backgroundColor: item.isActive ? "var(--storefront-text, hsl(var(--foreground)))" : "transparent", transform: item.isActive ? "scale(1)" : "scale(0.8)", opacity: item.isActive ? 1 : 0 }} />
-                  <Icon className="relative z-10 h-[22px] w-[22px] transition-all duration-300" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "var(--storefront-text, hsl(var(--foreground)))45" }} strokeWidth={1.8} fill={item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "none"} />
-                  <span className="relative z-10 text-xs font-semibold overflow-hidden transition-all duration-300 ease-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "transparent", maxWidth: item.isActive ? "80px" : "0px", opacity: item.isActive ? 1 : 0, marginLeft: item.isActive ? "6px" : "0px" }}>{item.label}</span>
-                  {!item.isActive && item.badge && item.badge > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold z-20" style={{ backgroundColor: "#EF4444", color: "#fff" }}>{item.badge > 9 ? "9+" : item.badge}</span>}
-                </>
-              );
-              if (item.type === "search") return <button key={item.label} onClick={handleClick} className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-all duration-300 active:scale-95">{content}</button>;
-              return <Link key={item.label} to={item.to} onClick={() => setSearchOpen(false)} className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-all duration-300 active:scale-95">{content}</Link>;
-            })}
-          </div>
-          <button onClick={openCart} className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)" }}>
-            <ShoppingCart className="h-[22px] w-[22px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} strokeWidth={1.8} />
-            {cartCount > 0 && <span className="absolute -right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: "#EF4444", color: "#fff" }}>{cartCount > 9 ? "9+" : cartCount}</span>}
-          </button>
+    <nav className="fixed bottom-0 left-0 right-0 z-30 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <div className="mx-3 mb-2 flex items-center gap-2">
+        <div className="flex flex-1 items-center justify-around rounded-[28px] px-1.5 py-2" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)" }}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.label} to={item.to} className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-all duration-300 active:scale-95">
+                <div className="absolute inset-0 rounded-full transition-all duration-300 ease-out" style={{ backgroundColor: item.isActive ? "var(--storefront-text, hsl(var(--foreground)))" : "transparent", transform: item.isActive ? "scale(1)" : "scale(0.8)", opacity: item.isActive ? 1 : 0 }} />
+                <Icon className="relative z-10 h-[22px] w-[22px] transition-all duration-300" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "var(--storefront-text, hsl(var(--foreground)))45" }} strokeWidth={1.8} fill={item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "none"} />
+                <span className="relative z-10 text-xs font-semibold overflow-hidden transition-all duration-300 ease-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "transparent", maxWidth: item.isActive ? "80px" : "0px", opacity: item.isActive ? 1 : 0, marginLeft: item.isActive ? "6px" : "0px" }}>{item.label}</span>
+              </Link>
+            );
+          })}
         </div>
-      </nav>
-      <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
-    </>
+        <button onClick={openCart} className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)" }}>
+          <ShoppingCart className="h-[22px] w-[22px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} strokeWidth={1.8} />
+          {cartCount > 0 && <span className="absolute -right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: "#EF4444", color: "#fff" }}>{cartCount > 9 ? "9+" : cartCount}</span>}
+        </button>
+      </div>
+    </nav>
   );
 }
 
