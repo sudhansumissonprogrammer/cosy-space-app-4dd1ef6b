@@ -11,6 +11,7 @@ import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
+import StorefrontSidebarMenu from "@/components/storefront/StorefrontSidebarMenu";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 function MilanoHeader({ store }: { store: StoreData }) {
@@ -32,27 +33,8 @@ function MilanoHeader({ store }: { store: StoreData }) {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--storefront-text, #1a1a1a)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><line x1="3" y1="7" x2="21" y2="7" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="17" x2="21" y2="17" /></svg>
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[320px] p-0 border-0" style={{ backgroundColor: "var(--storefront-bg, #f7f5f0)" }}>
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between px-5 py-3.5" style={{ backgroundColor: "var(--storefront-accent, #3d1c28)", color: "var(--storefront-bg, #f7f5f0)" }}>
-                <span className="text-sm font-bold uppercase tracking-wider" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>Menu</span>
-                <button onClick={() => setMenuOpen(false)} className="flex h-8 w-8 items-center justify-center" aria-label="Close menu"><X className="h-5 w-5" aria-hidden="true" /></button>
-              </div>
-              <nav className="flex-1 overflow-y-auto">
-                <div className="px-5 pt-4 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Pages</h4></div>
-                {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop All" }, { to: storefrontPath(store.slug, "about"), label: "About Us" }, { to: storefrontPath(store.slug, "contact"), label: "Contact" }].map((link) => (
-                  <Link key={link.label} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors" style={{ color: "var(--storefront-text, #1a1a1a)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)08", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{link.label}<ChevronRight className="h-4 w-4 opacity-40" /></Link>
-                ))}
-                <div className="px-5 pt-5 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Policies</h4></div>
-                {[{ to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" }, { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" }, { to: storefrontPath(store.slug, "terms"), label: "Terms & Conditions" }, { to: storefrontPath(store.slug, "privacy-policy"), label: "Privacy Policy" }].map((link) => (
-                  <Link key={link.label} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors" style={{ color: "var(--storefront-text, #1a1a1a)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{link.label}<ChevronRight className="h-4 w-4 opacity-40" /></Link>
-                ))}
-              </nav>
-              <div className="border-t" style={{ borderColor: "var(--storefront-text, #1a1a1a)0a" }}>
-                <Link to={storefrontPath(store.slug, "wishlist")} onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-5 py-4 text-[15px] font-medium" style={{ color: "var(--storefront-text, #1a1a1a)", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}><Heart className="h-5 w-5" />Wishlist</Link>
-                <Link to={storefrontPath(store.slug, user ? "account" : "login")} onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-5 py-4 text-[15px] font-medium" style={{ color: "var(--storefront-text, #1a1a1a)", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}><User className="h-5 w-5" />{user ? "My Account" : "Login / Register"}</Link>
-              </div>
-            </div>
+          <SheetContent side="left" className="w-[300px] p-0 border-0" style={{ backgroundColor: "var(--storefront-bg, #f7f5f0)" }}>
+            <StorefrontSidebarMenu slug={store.slug} storeName={store.name} logoUrl={store.logo_url} categories={categories} onClose={() => setMenuOpen(false)} />
           </SheetContent>
         </Sheet>
 
