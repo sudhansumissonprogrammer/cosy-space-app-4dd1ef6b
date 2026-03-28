@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ROOT_DOMAIN, getSubdomainSlug } from "@/lib/subdomain";
+import { getStoreBaseUrl } from "@/lib/storeUrl";
 
 interface MetaTagsOptions {
   title?: string;
@@ -8,6 +8,8 @@ interface MetaTagsOptions {
   ogType?: string;
   canonicalPath?: string;
   storeSlug?: string;
+  /** Custom domain if configured — used to build correct canonical URL */
+  customDomain?: string | null;
 }
 
 function setMeta(name: string, content: string, attr = "name") {
@@ -30,7 +32,7 @@ function setLink(rel: string, href: string) {
   el.setAttribute("href", href);
 }
 
-export function useMetaTags({ title, description, ogImage, ogType = "website", canonicalPath, storeSlug }: MetaTagsOptions) {
+export function useMetaTags({ title, description, ogImage, ogType = "website", canonicalPath, storeSlug, customDomain }: MetaTagsOptions) {
   useEffect(() => {
     const prevTitle = document.title;
     if (title) document.title = title;
@@ -40,9 +42,9 @@ export function useMetaTags({ title, description, ogImage, ogType = "website", c
     if (ogImage) setMeta("og:image", ogImage, "property");
     setMeta("og:type", ogType, "property");
 
-    // Canonical URL — prefer subdomain format for store pages
+    // Canonical URL — prefer custom domain, then subdomain
     if (storeSlug) {
-      const base = `https://${storeSlug}.${ROOT_DOMAIN}`;
+      const base = getStoreBaseUrl(storeSlug, customDomain);
       const canonical = canonicalPath ? `${base}/${canonicalPath}` : base;
       setLink("canonical", canonical);
       setMeta("og:url", canonical, "property");
@@ -50,9 +52,8 @@ export function useMetaTags({ title, description, ogImage, ogType = "website", c
 
     return () => {
       document.title = prevTitle;
-      // Clean up canonical
       const canonicalEl = document.querySelector('link[rel="canonical"]');
       if (canonicalEl) canonicalEl.remove();
     };
-  }, [title, description, ogImage, ogType, canonicalPath, storeSlug]);
+  }, [title, description, ogImage, ogType, canonicalPath, storeSlug, customDomain]);
 }

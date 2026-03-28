@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ROOT_DOMAIN } from "@/lib/subdomain";
+import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { getProductRating } from "@/lib/productUtils";
 
 const SCRIPT_ID = "json-ld-structured-data";
@@ -38,11 +38,13 @@ interface ProductJsonLdOptions {
   };
   storeSlug: string;
   storeName: string;
+  /** Custom domain for canonical URLs */
+  customDomain?: string | null;
 }
 
-export function useProductJsonLd({ product, storeSlug, storeName }: ProductJsonLdOptions) {
+export function useProductJsonLd({ product, storeSlug, storeName, customDomain }: ProductJsonLdOptions) {
   useEffect(() => {
-    const baseUrl = `https://${storeSlug}.${ROOT_DOMAIN}`;
+    const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
     const productUrl = `${baseUrl}/product/${product.slug || product.id}`;
     const price = product.sale_price && product.sale_price < product.price
       ? product.sale_price
@@ -78,7 +80,6 @@ export function useProductJsonLd({ product, storeSlug, storeName }: ProductJsonL
         priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         itemCondition: "https://schema.org/NewCondition",
       },
-      // Aggregate rating for rich snippets
       aggregateRating: {
         "@type": "AggregateRating",
         ratingValue: getProductRatingForSchema(product.id),
@@ -130,7 +131,7 @@ export function useProductJsonLd({ product, storeSlug, storeName }: ProductJsonL
       removeJsonLd();
       removeJsonLd(BREADCRUMB_SCRIPT_ID);
     };
-  }, [product, storeSlug, storeName]);
+  }, [product, storeSlug, storeName, customDomain]);
 }
 
 function getProductRatingForSchema(productId: string): string {
@@ -153,11 +154,13 @@ interface StoreJsonLdOptions {
   logo?: string | null;
   location?: string | null;
   whatsappNumber?: string | null;
+  /** Custom domain for canonical URLs */
+  customDomain?: string | null;
 }
 
-export function useStoreJsonLd({ storeName, storeSlug, description, logo, location, whatsappNumber }: StoreJsonLdOptions) {
+export function useStoreJsonLd({ storeName, storeSlug, description, logo, location, whatsappNumber, customDomain }: StoreJsonLdOptions) {
   useEffect(() => {
-    const baseUrl = `https://${storeSlug}.${ROOT_DOMAIN}`;
+    const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
     const data: Record<string, any> = {
       "@context": "https://schema.org",
       "@type": "Store",
@@ -177,5 +180,5 @@ export function useStoreJsonLd({ storeName, storeSlug, description, logo, locati
 
     setJsonLd(data);
     return () => removeJsonLd();
-  }, [storeName, storeSlug, description, logo, location, whatsappNumber]);
+  }, [storeName, storeSlug, description, logo, location, whatsappNumber, customDomain]);
 }
