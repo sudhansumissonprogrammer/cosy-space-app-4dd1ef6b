@@ -672,11 +672,10 @@ async function _prewarmProducts(storeId, slug, ctx, env) {
   }
 }
 
-/* ============== PRODUCTS API (Cache → KV → DB) ============== */
-// CHANGE 6: Increased KV TTLs
+/* ============== PRODUCTS API (Cache → DB, KV fallback only) ============== */
 
 const PRODUCTS_CACHE_TTL = 60;        // Cache API: 60 seconds
-const PRODUCTS_KV_TTL = 1800;         // KV: 30 minutes (was 300s)
+const PRODUCTS_KV_TTL = 1800;         // KV: 30 minutes (prewarm only, not written on user requests)
 const PRODUCTS_DB_TIMEOUT_MS = 3000;
 const PRODUCTS_PAGE_SIZE = 20;
 const PRODUCT_COLUMNS = "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
