@@ -1161,7 +1161,7 @@ function FrequentlyBoughtTogether({
         quantity: 1,
       });
     });
-    toast.success("Bundle added to cart! 🎉", { dismissible: true });
+    // Side cart opens automatically
   };
 
   return (
