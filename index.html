@@ -16,19 +16,10 @@
     <link rel="preload" href="/src/index.css" as="style" />
     <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
     <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
-    <!-- Inline critical above-the-fold styles — static placeholders (no shimmer) -->
+    <!-- Minimal inline styles for preview/localhost skeleton fallback -->
     <style>
       body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
       #root{min-height:100vh}
-      .sk{background:#e8e8e8;border-radius:8px}
-      .sf-skel{max-width:100%;padding:0}
-      .sf-skel-nav{height:56px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;padding:0 16px;gap:12px}
-      .sf-skel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
-      .sf-skel-card{border-radius:12px;overflow:hidden}
-      .sf-skel-card-img{width:100%;aspect-ratio:4/5}
-      .sf-skel-card-txt{padding:8px}
-      .sf-skel-card-txt div{height:10px;margin-bottom:6px;border-radius:4px}
-      @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr);gap:16px;padding:24px}}
     </style>
     <!--
       Lightweight prefetch: only starts /api/products fetch early.
