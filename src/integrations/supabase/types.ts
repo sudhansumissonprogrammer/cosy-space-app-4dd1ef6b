@@ -1452,6 +1452,8 @@ export type Database = {
       }
       stores: {
         Row: {
+          about_us_image_url: string | null
+          about_us_text: string | null
           banner_url: string | null
           best_selling_carousel: boolean
           business_hours: Json | null
@@ -1491,6 +1493,8 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          about_us_image_url?: string | null
+          about_us_text?: string | null
           banner_url?: string | null
           best_selling_carousel?: boolean
           business_hours?: Json | null
@@ -1530,6 +1534,8 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          about_us_image_url?: string | null
+          about_us_text?: string | null
           banner_url?: string | null
           best_selling_carousel?: boolean
           business_hours?: Json | null
