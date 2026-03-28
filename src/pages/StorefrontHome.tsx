@@ -59,6 +59,7 @@ export default function StorefrontHome() {
     logo: store.logo_url,
     location: store.location,
     whatsappNumber: store.whatsapp_number,
+    customDomain: (store as any)?.custom_domain,
   });
 
   // Fetch initial products independently (shell no longer includes products)

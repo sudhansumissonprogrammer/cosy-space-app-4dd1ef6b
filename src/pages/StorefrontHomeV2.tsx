@@ -207,6 +207,7 @@ export default function StorefrontHomeV2() {
     logo: store.logo_url,
     location: store.location,
     whatsappNumber: store.whatsapp_number,
+    customDomain: (store as any)?.custom_domain,
   });
 
   const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);

@@ -72,6 +72,18 @@ export default function DynamicPwaManifest({ storeName, logoUrl, themeColor = "#
       appleIcon.href = logoUrl;
     }
 
+    // Set per-store favicon so browser tab shows store logo, not Storivo icon
+    if (logoUrl) {
+      let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+      if (!favicon) {
+        favicon = document.createElement("link");
+        favicon.rel = "icon";
+        document.head.appendChild(favicon);
+      }
+      favicon.type = "image/png";
+      favicon.href = logoUrl;
+    }
+
     return () => {
       URL.revokeObjectURL(url);
     };
