@@ -957,7 +957,11 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
   }
 }
 
-function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
+/**
+ * Build product response and write to Cache API only (no KV on user requests).
+ * KV is only populated during pre-warm.
+ */
+function buildProductResponse(data, cacheKey, ctx, source) {
   const body = JSON.stringify(data || []);
   const response = new Response(body, {
     headers: {
@@ -966,13 +970,9 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
     },
   });
 
+  // Write to Cache API only — no KV write on user requests
   ctx.waitUntil(
-    Promise.all([
-      cache.put(cacheKey, response.clone()).catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
-        : Promise.resolve(),
-    ])
+    cache.put(cacheKey, response.clone()).catch(() => {})
   );
 
   return addCorsHeaders(response, source);
