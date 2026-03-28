@@ -1,52 +1,68 @@
+# Add "About Us" Storefront Page
 
+## Overview
 
-# Fix CLS (0.59) & Storefront Auth Leak
+Create a dedicated About Us page for every storefront, auto-populated from store data (name, description, location, social links) with emoji-enriched default content. Store owners can optionally upload a photo and write custom "About Us" text via Store Settings — if custom text is provided, the default auto-generated content is hidden.
 
-## Problem 1: CLS — Layout Shift on Product Grid
+## Database Migration
 
-The product grid sections have no reserved height. When products load asynchronously, the grid appears and pushes content down, causing a CLS of 0.59.
+Add two new columns to the `stores` table:
 
-**Affected files:**
-- `src/pages/StorefrontHome.tsx` — Popular Products section (line 308-381) and Best Selling section
-- `src/pages/StorefrontShop.tsx` — main product grid
-- `src/pages/CategoryDetail.tsx` — category product grid
+- `about_us_text TEXT NULL` — custom About Us content (if blank, show auto-generated default)
+- `about_us_image_url TEXT NULL` — optional photo displayed on the About Us page
 
-**Fix:** Add `min-height` and `contain: layout` to the product grid wrapper sections so they reserve vertical space before products render. Use `min-h-[calc(2*(80vw/2*1.25+120px))]` on mobile (2 rows of cards) which collapses to actual height once content loads. Simpler approach: use a fixed `min-h-[600px]` on the product section container matching the existing `LazyRender minHeight={600}` values.
-
-Specifically:
-- Wrap the Popular Products `<section>` content area in a div with `style={{ minHeight: 600, contain: "layout" }}`
-- Same for Shop All and CategoryDetail grids
-- The skeleton already has correct dimensions, so the skeleton → grid transition won't shift if the container reserves space
-
-## Problem 2: `storefront_customers` Queries for Dashboard Users
-
-**Root cause:** `StorefrontAuthProvider` wraps ALL storefront routes. When a logged-in dashboard user visits `/store/slug`, they have an auth token in localStorage, so the fast-path is skipped. `fetchOrCreateCustomer` then fires, querying/inserting into `storefront_customers` — wasteful and creates junk records.
-
-**Fix in `src/contexts/StorefrontAuthContext.tsx`:**
-- In `fetchOrCreateCustomer`, before querying, check if the user's email matches a `stores.user_id` (i.e., they're a store owner). But that adds another query.
-- **Better approach:** Check the current URL path. If the user is on a dashboard route (`/dashboard`, `/products`, `/orders`, etc.), skip `fetchOrCreateCustomer`. But StorefrontAuthProvider only wraps storefront routes, so this isn't the issue.
-- **Actual fix:** The real problem is that `fetchOrCreateCustomer` runs unconditionally for any authenticated user. Add a simple guard: only call `fetchOrCreateCustomer` if the user navigates to a page that actually needs customer identity (`/account`, `/checkout`, `/orders`). For browsing pages (home, shop, category, product detail), skip it entirely. This is a lazy-customer-creation pattern.
-
-**Implementation:** Change `fetchOrCreateCustomer` to not auto-run on auth state change. Instead, expose a `ensureCustomer()` method that pages like checkout/account call explicitly. In the auth state handler, just set `session`/`user` without triggering the customer query.
+Also update the `get_storefront_data` and `get_storefront_shell` DB functions to include these two new fields in the returned JSON.
 
 ## Changes
 
-### 1. `src/pages/StorefrontHome.tsx`
-- Add `style={{ minHeight: 600, contain: "layout" }}` to the Popular Products section wrapper (the `<section>` at line 263)
-- Add same to the skeleton container div at line 309
+### 1. New page: `src/pages/StorefrontAboutUs.tsx`
 
-### 2. `src/pages/StorefrontShop.tsx`
-- Add `style={{ minHeight: 600 }}` to the main product grid container
+- Uses `useOutletContext<StoreData>()` (same pattern as StorefrontContact)
+- Hero section with store logo and "About {store.name}" heading
+- If `store.about_us_text` exists, render it (with optional about image) and hide default content
+- If blank, render auto-generated content using store description, location, features, social links — with emojis (🏪 Our Story, 📍 Where to Find Us, ✨ Why Choose Us, 📱 Connect With Us)
+- Shows the uploaded `about_us_image_url` photo if available
 
-### 3. `src/pages/CategoryDetail.tsx`
-- Add `style={{ minHeight: 600 }}` to the main product grid container
+### 2. Route registration: `src/App.tsx`
 
-### 4. `src/contexts/StorefrontAuthContext.tsx`
-- Remove auto-calling `fetchOrCreateCustomer` from `onAuthStateChange` and `getSession`
-- Instead, expose `ensureCustomer()` in the context that lazily fetches/creates the customer record on first call
-- On auth state change, only set `session`/`user`/`loading` — no DB queries
-- This eliminates the storefront_customers query for ALL browsing users (dashboard owners AND anonymous-turned-logged-in visitors just browsing)
+- Add lazy import for `StorefrontAboutUs`
+- Add `<Route path="about" element={<StorefrontAboutUs />} />` in `storefrontChildRoutes`
 
-### 5. `src/pages/StorefrontAccount.tsx` and `src/pages/CheckoutPage.tsx`
-- Call `ensureCustomer()` on mount — these are the only pages that need the customer record
+### 3. Navigation — add "About Us" to all layout side menus
 
+Update these files to add an "About Us" link alongside "Contact Us":
+
+- `src/layouts/StorefrontLayout.tsx` — slide menu nav
+- `src/layouts/StorefrontLayoutV2.tsx` — slide menu
+- `src/layouts/StorefrontLayoutV3.tsx` — slide menu
+- `src/layouts/StorefrontLayoutV10.tsx` — slide menu + footer
+- `src/layouts/StorefrontLayoutV11.tsx` — slide menu + footer
+- `src/layouts/StorefrontLayoutV12.tsx` — slide menu + footer
+- `src/layouts/StorefrontLayoutV13.tsx` — slide menu + footer
+
+### 4. Footer: `src/components/storefront/StorefrontFooter.tsx`
+
+- Add "About Us" link to Quick Links column (between Home and Contact Us)
+
+### 5. Store Settings: `src/pages/StoreSettings.tsx`
+
+- Add new "About Us Page" section with:
+  - Image upload field for `about_us_image_url` (same pattern as banner upload)
+  - Textarea for custom `about_us_text`
+  - Helper text: "Leave blank to use auto-generated About Us content"
+- Include both fields in the save mutation
+
+### 6. Sitemap: `supabase/functions/seo-page/index.ts`
+
+- Add `/about` and `/contact` to the static pages list in the sitemap builder (alongside privacy-policy, return-policy, etc.)
+
+### 7. Update DB functions
+
+Update `get_storefront_data` and `get_storefront_shell` to include `about_us_text` and `about_us_image_url` in the returned store JSON.
+
+## Technical Notes
+
+- The About Us page follows the exact same pattern as `StorefrontContact.tsx` (uses outlet context, same styling approach)
+- No new tables needed — just two columns on `stores`
+- The auto-generated content uses store fields that already exist (description, location, city, state, features, social URLs)
+-  also add social icon social medial detils
