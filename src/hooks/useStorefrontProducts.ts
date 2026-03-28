@@ -13,16 +13,24 @@ const PRODUCT_COLUMNS =
  * where the Worker is not available — using the SAME interface shape.
  */
 async function fetchProducts(storeId: string): Promise<any[]> {
-  // Check if index.html prefetch already has products in flight
+  // 1. Check Worker-inlined products (embedded in HTML — instant, no fetch)
+  const inlineProducts = (window as any).__PRODUCTS_INLINE__;
+  if (inlineProducts) {
+    (window as any).__PRODUCTS_INLINE__ = null;
+    try {
+      const parsed = typeof inlineProducts === "string" ? JSON.parse(inlineProducts) : inlineProducts;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch { /* fall through */ }
+  }
+
+  // 2. Check if index.html prefetch already has products in flight
   const prefetchPromise = (window as any).__PRODUCTS_PREFETCH__;
   if (prefetchPromise) {
-    (window as any).__PRODUCTS_PREFETCH__ = null; // consume once
+    (window as any).__PRODUCTS_PREFETCH__ = null;
     try {
       const result = await prefetchPromise;
       if (Array.isArray(result) && result.length > 0) return result;
-    } catch {
-      // fall through to normal fetch
-    }
+    } catch { /* fall through */ }
   }
 
   const hostname = window.location.hostname;

@@ -11,7 +11,6 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { trackPageView } from "@/lib/trackPageView";
 import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
-import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy-load non-critical overlays
 const SideCart = lazy(() => import("@/components/storefront/SideCart"));

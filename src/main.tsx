@@ -9,11 +9,13 @@ initGlobalErrorHandlers();
 
 /**
  * Mount React immediately — no blocking await.
- * If Worker injected __STOREFRONT_DATA__, useStorefront picks it up as initialData.
- * If a prefetch promise is in flight, let it resolve in the background;
- * useStorefront will use it when ready (or fetch via RPC as fallback).
+ * Remove Worker-injected skeleton (#sf-skel) once React mounts.
  */
 createRoot(document.getElementById("root")!).render(<App />);
+
+// Remove edge-injected skeleton — React now owns the UI
+const edgeSkel = document.getElementById("sf-skel");
+if (edgeSkel) edgeSkel.remove();
 
 /**
  * Determine if current host is a storefront (custom domain or subdomain).
