@@ -135,7 +135,7 @@ function AnnouncementStrip({ customText }: { customText?: string }) {
       className="w-full overflow-hidden py-2.5"
       style={{
         background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #1a1a1a, #333, #1a1a1a))",
-        color: "var(--storefront-text, #1a1a1a)",
+        color: "#ffffff",
       }}
     >
       <div className="flex w-max animate-marquee">
