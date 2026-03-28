@@ -46,7 +46,7 @@ export default function CheckoutPage() {
   const productId = searchParams.get("product");
   const variantId = searchParams.get("variant");
   const { items: cartItems, clearCart } = useCart();
-  const { customer } = useStorefrontAuth();
+  const { customer, ensureCustomer } = useStorefrontAuth();
   const qc = useQueryClient();
 
   const [placing, setPlacing] = useState(false);
