@@ -231,3 +231,10 @@
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* Theme V3: push WhatsApp button above bottom nav + sticky cart bar on mobile */
+@media (max-width: 639px) {
+  .theme-v3-wa-fix a[aria-label="Chat on WhatsApp"] {
+    bottom: 9rem !important;
+  }
+}
