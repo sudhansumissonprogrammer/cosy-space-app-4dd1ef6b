@@ -157,6 +157,12 @@ export default function StorefrontShell({
   // Listen for live theme preview messages
   const previewOverride = useThemePreview(store?.id);
 
+  // Scroll to top on every route change — centralised fix for all mobile navbars
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, [pathname]);
+
   // Loading state
   if (isLoading) {
     return <>{skeleton || <DefaultSkeleton />}</>;
