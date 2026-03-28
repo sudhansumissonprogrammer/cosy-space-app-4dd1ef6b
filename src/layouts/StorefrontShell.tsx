@@ -1,4 +1,5 @@
 import { useEffect, useRef, Suspense, lazy, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
