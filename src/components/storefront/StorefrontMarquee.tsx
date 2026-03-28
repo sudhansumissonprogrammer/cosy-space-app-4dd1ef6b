@@ -23,7 +23,7 @@ export default function StorefrontMarquee({ text }: Props) {
     <div
       className="w-full overflow-hidden py-2.5 text-[13px] md:text-[15px] font-medium font-sans"
       style={{
-        background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a))",
+        background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #004643, #02615C, #004643))",
         color: "var(--storefront-marquee-text-color, #ffffff)",
         fontVariant: "small-caps",
       }}
