@@ -31,7 +31,7 @@ function getStorageKey(slug: string) {
   return `cart_${slug}`;
 }
 
-export function CartProvider({ slug, storeId, children }: { slug: string; storeId?: string; children: ReactNode }) {
+export function CartProvider({ slug, storeId, currency = "INR", children }: { slug: string; storeId?: string; currency?: string; children: ReactNode }) {
   // Start empty — defer localStorage read to avoid blocking first paint
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
