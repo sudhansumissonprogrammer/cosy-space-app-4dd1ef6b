@@ -138,8 +138,6 @@ function BottomTabBar({ store }: { store: StoreData }) {
         })}
       </div>
     </nav>
-    <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
-    </>
   );
 }
 
