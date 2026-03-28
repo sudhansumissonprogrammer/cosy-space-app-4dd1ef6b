@@ -111,7 +111,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
     { icon: Home, label: "Home", to: basePath, match: basePath },
     { icon: Grid3X3, label: "Categories", to: storefrontPath(store.slug, "categories"), match: "categories" },
     { icon: Store, label: "Shop", to: storefrontPath(store.slug, "shop"), match: "shop" },
-    { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
+    { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist" },
     { icon: User, label: "Profile", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
   ];
 
