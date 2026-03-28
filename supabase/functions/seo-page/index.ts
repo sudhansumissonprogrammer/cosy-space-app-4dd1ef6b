@@ -347,11 +347,11 @@ async function handleSitemap(url: URL) {
     }
   }
 
-  for (const page of ["privacy-policy", "return-policy", "shipping-policy", "terms"]) {
+  for (const page of ["about", "privacy-policy", "return-policy", "shipping-policy", "terms"]) {
     xml += `  <url>
     <loc>${baseUrl}/${page}</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
+    <priority>0.5</priority>
   </url>
 `;
   }
