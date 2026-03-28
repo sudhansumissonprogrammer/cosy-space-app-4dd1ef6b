@@ -37,9 +37,18 @@ export function useMetaTags({ title, description, ogImage, ogType = "website", c
     const prevTitle = document.title;
     if (title) document.title = title;
     if (description) setMeta("description", description);
-    if (title) setMeta("og:title", title, "property");
-    if (description) setMeta("og:description", description, "property");
-    if (ogImage) setMeta("og:image", ogImage, "property");
+    if (title) {
+      setMeta("og:title", title, "property");
+      setMeta("twitter:title", title, "name");
+    }
+    if (description) {
+      setMeta("og:description", description, "property");
+      setMeta("twitter:description", description, "name");
+    }
+    if (ogImage) {
+      setMeta("og:image", ogImage, "property");
+      setMeta("twitter:image", ogImage, "name");
+    }
     setMeta("og:type", ogType, "property");
 
     // Canonical URL — prefer custom domain, then subdomain

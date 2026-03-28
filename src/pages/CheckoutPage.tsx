@@ -540,7 +540,7 @@ export default function CheckoutPage() {
     saveExpressInfo();
     window.dispatchEvent(new CustomEvent("order-placed"));
     const purchaseEid = generateEventId();
-    fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), value: total, currency, num_items: checkoutItems.length }, purchaseEid);
+    fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), content_type: "product", value: total, currency, num_items: checkoutItems.length }, purchaseEid);
     // Split fullName into first/last for enhanced CAPI matching
     const nameParts = fullName.trim().split(/\s+/);
     const firstName = nameParts[0] || undefined;

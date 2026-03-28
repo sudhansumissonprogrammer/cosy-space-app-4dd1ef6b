@@ -88,7 +88,7 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
       content_ids: [item.productId],
       content_type: "product",
       value: item.price,
-      currency: "INR",
+      currency,
     }, eid);
     if (storeId) {
       fireMetaCAPI({
@@ -99,7 +99,7 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
           content_ids: [item.productId],
           content_type: "product",
           value: item.price,
-          currency: "INR",
+          currency,
         },
       });
     }
