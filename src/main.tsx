@@ -8,14 +8,13 @@ import { isCustomDomainHost, isSubdomainHost, isRootDomainHost, isPreviewHost, i
 initGlobalErrorHandlers();
 
 /**
- * Mount React immediately — no blocking await.
- * Remove Worker-injected skeleton (#sf-skel) once React mounts.
+ * Remove Worker-injected skeleton BEFORE React mounts
+ * to prevent the skeleton + real content stacking bug.
  */
-createRoot(document.getElementById("root")!).render(<App />);
-
-// Remove edge-injected skeleton — React now owns the UI
 const edgeSkel = document.getElementById("sf-skel");
 if (edgeSkel) edgeSkel.remove();
+
+createRoot(document.getElementById("root")!).render(<App />);
 
 /**
  * Determine if current host is a storefront (custom domain or subdomain).
