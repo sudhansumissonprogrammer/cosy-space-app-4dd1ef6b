@@ -1,68 +1,99 @@
-# Add "About Us" Storefront Page
 
-## Overview
 
-Create a dedicated About Us page for every storefront, auto-populated from store data (name, description, location, social links) with emoji-enriched default content. Store owners can optionally upload a photo and write custom "About Us" text via Store Settings — if custom text is provided, the default auto-generated content is hidden.
+# Performance Recovery Plan: 43 → 80+ Score
 
-## Database Migration
+## Problem Analysis
 
-Add two new columns to the `stores` table:
+Current cold-load timeline for a storefront visitor:
 
-- `about_us_text TEXT NULL` — custom About Us content (if blank, show auto-generated default)
-- `about_us_image_url TEXT NULL` — optional photo displayed on the About Us page
+```text
+0ms ─── Edge cache HIT (HTML returned)
+ ├── HTML has document.write skeleton (gray boxes, no theme color)
+ ├── Browser starts parsing JS chunks
+200ms ── CSS loads, skeleton visible but GENERIC (wrong colors)
+800ms ── React mounts, StorefrontShell renders ANOTHER skeleton
+1200ms ─ Google Fonts request fires (render-blocking)
+2500ms ─ Products fetch completes (/api/products)
+3500ms ─ First meaningful paint with real content
+```
 
-Also update the `get_storefront_data` and `get_storefront_shell` DB functions to include these two new fields in the returned JSON.
+**Root causes:**
+1. **Double skeleton**: index.html has a generic gray skeleton via `document.write`, then React replaces it with ANOTHER skeleton from `StorefrontShell` — both are generic and don't match the store's theme
+2. **JS waterfall**: Chunks load sequentially (framework → router → layout → home page) instead of in parallel
+3. **Products not available at edge**: Even though store data is injected by Worker, products require a separate `/api/products` fetch after React mounts
+4. **Google Fonts still block**: The `preload as="style" onload` pattern still causes a render delay
 
-## Changes
+## Solution: Server-Side Skeleton + Instant Products
 
-### 1. New page: `src/pages/StorefrontAboutUs.tsx`
+### Step 1: Theme-Aware Skeleton in Worker Response
 
-- Uses `useOutletContext<StoreData>()` (same pattern as StorefrontContact)
-- Hero section with store logo and "About {store.name}" heading
-- If `store.about_us_text` exists, render it (with optional about image) and hide default content
-- If blank, render auto-generated content using store description, location, features, social links — with emojis (🏪 Our Story, 📍 Where to Find Us, ✨ Why Choose Us, 📱 Connect With Us)
-- Shows the uploaded `about_us_image_url` photo if available
+Move skeleton generation INTO the Cloudflare Worker's `injectIntoHtml` function. Since the Worker already has the store's theme config (colors, logo, store name), it can generate a skeleton that:
+- Uses the store's actual background color and primary color
+- Shows the store's logo in the nav
+- Matches the store's theme layout (categories, product grid)
+- Is part of the cached HTML — so on edge cache HIT, the skeleton is **instant** (0ms)
 
-### 2. Route registration: `src/App.tsx`
+```text
+BEFORE: Edge HTML → generic gray skeleton → React mounts → themed skeleton → data loads → real UI
+AFTER:  Edge HTML (with themed skeleton + inline products) → React mounts → real UI replaces skeleton
+```
 
-- Add lazy import for `StorefrontAboutUs`
-- Add `<Route path="about" element={<StorefrontAboutUs />} />` in `storefrontChildRoutes`
+The Worker will inject a `<div id="sf-skel">` with inline styles using the theme's CSS variables that are already computed. React will simply remove this div when it mounts.
 
-### 3. Navigation — add "About Us" to all layout side menus
+### Step 2: Remove Client-Side Skeletons
 
-Update these files to add an "About Us" link alongside "Contact Us":
+- Remove the `document.write` skeleton from `index.html` (Worker provides it now)
+- Remove `DefaultSkeleton` from `StorefrontShell.tsx` (no longer needed since Worker skeleton is visible until React hydrates)
+- Add a small script in `main.tsx` to remove the `#sf-skel` div once React mounts
 
-- `src/layouts/StorefrontLayout.tsx` — slide menu nav
-- `src/layouts/StorefrontLayoutV2.tsx` — slide menu
-- `src/layouts/StorefrontLayoutV3.tsx` — slide menu
-- `src/layouts/StorefrontLayoutV10.tsx` — slide menu + footer
-- `src/layouts/StorefrontLayoutV11.tsx` — slide menu + footer
-- `src/layouts/StorefrontLayoutV12.tsx` — slide menu + footer
-- `src/layouts/StorefrontLayoutV13.tsx` — slide menu + footer
+### Step 3: Inline First 4 Products into HTML
 
-### 4. Footer: `src/components/storefront/StorefrontFooter.tsx`
+The Worker already fetches storefront shell data. Extend this to include the first 4 products (above-fold only) as `window.__PRODUCTS_INLINE__`. This eliminates the products fetch waterfall entirely for above-fold content.
 
-- Add "About Us" link to Quick Links column (between Home and Contact Us)
+- Worker's `injectIntoHtml` will embed `<script>window.__PRODUCTS_INLINE__=JSON.stringify(first4Products)</script>`
+- `useStorefrontProducts` hook checks this before fetching
+- Full product list still loads via `/api/products` in background
 
-### 5. Store Settings: `src/pages/StoreSettings.tsx`
+### Step 4: Fix Google Fonts
 
-- Add new "About Us Page" section with:
-  - Image upload field for `about_us_image_url` (same pattern as banner upload)
-  - Textarea for custom `about_us_text`
-  - Helper text: "Leave blank to use auto-generated About Us content"
-- Include both fields in the save mutation
+Change the Worker's font injection from `preload + onload` to a non-blocking async pattern:
+```html
+<link rel="stylesheet" href="...fonts..." media="print" onload="this.media='all'" />
+```
+This loads fonts without blocking any rendering.
 
-### 6. Sitemap: `supabase/functions/seo-page/index.ts`
+### Step 5: Strategic Module Preloads
 
-- Add `/about` and `/contact` to the static pages list in the sitemap builder (alongside privacy-policy, return-policy, etc.)
+The Worker knows which theme the store uses. Add `<link rel="modulepreload">` for theme-specific chunks (e.g., `StorefrontLayoutV14`, `StorefrontHomeV14`) so they load in parallel with the framework chunk instead of sequentially.
 
-### 7. Update DB functions
+## Expected Impact
 
-Update `get_storefront_data` and `get_storefront_shell` to include `about_us_text` and `about_us_image_url` in the returned store JSON.
+```text
+BEFORE (cold load):
+  0ms    → Generic gray skeleton
+  800ms  → React skeleton (theme flash)
+  2500ms → Products render
+  Score: ~43
 
-## Technical Notes
+AFTER (cold load):
+  0ms    → Themed skeleton with correct colors, logo, layout
+  800ms  → React mounts, replaces skeleton with real content (products inline)
+  Score: 80+
+```
 
-- The About Us page follows the exact same pattern as `StorefrontContact.tsx` (uses outlet context, same styling approach)
-- No new tables needed — just two columns on `stores`
-- The auto-generated content uses store fields that already exist (description, location, city, state, features, social URLs)
--  also add social icon social medial detils
+## Files Changed
+
+| File | Change |
+|---|---|
+| `docs/cloudflare-worker-current.js` | Add themed skeleton + inline products to `injectIntoHtml` |
+| `index.html` | Remove `document.write` skeleton block |
+| `src/layouts/StorefrontShell.tsx` | Remove DefaultSkeleton, add `#sf-skel` cleanup |
+| `src/hooks/useStorefrontProducts.ts` | Check `window.__PRODUCTS_INLINE__` before fetch |
+| `src/main.tsx` | Remove `#sf-skel` div on mount |
+
+## Technical Risks
+
+- **Worker code size**: Adding skeleton HTML increases Worker response size by ~2KB — negligible vs the performance gain
+- **Cache invalidation**: Skeleton is part of the cached HTML, so theme changes require cache purge (already handled by existing purge-store endpoint)
+- **Preview/localhost**: Falls back to current client-side skeleton since Worker isn't active there
+
