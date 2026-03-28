@@ -234,6 +234,7 @@ interface ThemeConfig {
   category_style: string;
   header_logo_alignment: string;
   mobile_nav_enabled: boolean;
+  transparent_header: boolean;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
