@@ -68,14 +68,22 @@ function AppHeader({ store }: { store: StoreData }) {
           </SheetContent>
         </Sheet>
 
+        {/* Store Logo / Name */}
+        <Link to={storefrontPath(store.slug)} className="flex items-center gap-2 flex-1 min-w-0">
+          {store.logo_url ? (
+            <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[120px] object-contain" />
+          ) : (
+            <span className="text-base font-bold truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}>{store.name}</span>
+          )}
+        </Link>
+
         <button
           onClick={() => setSearchOpen(true)}
-          className="flex flex-1 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-all active:scale-[0.98]"
-          style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08", border: "1px solid var(--storefront-text, hsl(var(--foreground)))12" }}
+          className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+          style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }}
           aria-label="Search products"
         >
-          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} aria-hidden="true" />
-          <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
+          <Search className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
         </button>
 
         <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
