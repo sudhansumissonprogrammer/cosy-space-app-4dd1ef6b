@@ -1167,12 +1167,30 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts =
     skeleton += `</div>`;
   }
   // Product grid placeholder
+  // Product grid — render real products if available, otherwise gray placeholders
   skeleton += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px">`;
-  for (let i = 0; i < 4; i++) {
-    skeleton += `<div style="border-radius:12px;overflow:hidden;background:${skeletonBg};border:1px solid ${skeletonMuted}">`;
-    skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
-    skeleton += `<div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div>`;
-    skeleton += `</div>`;
+  const skelProducts = (inlineProducts && Array.isArray(inlineProducts)) ? inlineProducts.slice(0, 4) : null;
+  if (skelProducts && skelProducts.length > 0) {
+    for (const p of skelProducts) {
+      skeleton += `<div style="border-radius:12px;overflow:hidden;background:${skeletonBg};border:1px solid ${skeletonMuted}">`;
+      if (p.image_url) {
+        skeleton += `<img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name || "")}" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block" loading="eager" />`;
+      } else {
+        skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
+      }
+      const displayPrice = p.sale_price || p.price;
+      const currency = p.currency === "INR" ? "₹" : p.currency === "USD" ? "$" : (p.currency || "₹");
+      skeleton += `<div style="padding:8px"><div style="font-size:13px;font-weight:500;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.name || "")}</div>`;
+      skeleton += `<div style="font-size:14px;font-weight:700;color:${primaryColor};margin-top:2px">${currency}${displayPrice}</div></div>`;
+      skeleton += `</div>`;
+    }
+  } else {
+    for (let i = 0; i < 4; i++) {
+      skeleton += `<div style="border-radius:12px;overflow:hidden;background:${skeletonBg};border:1px solid ${skeletonMuted}">`;
+      skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
+      skeleton += `<div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div>`;
+      skeleton += `</div>`;
+    }
   }
   skeleton += `</div></div>`;
   skeleton += `<script>(function(){var removed=false;function kill(){if(removed)return;removed=true;var s=document.getElementById('sf-skel');if(s){s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}}function whenReady(){kill();requestAnimationFrame(kill);setTimeout(kill,120);setTimeout(kill,600);}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',whenReady,{once:true});}else{whenReady();}window.addEventListener('load',kill,{once:true});var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});setTimeout(function(){mo.disconnect();kill();},1500);}}</script>`;
