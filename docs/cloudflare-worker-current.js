@@ -1598,9 +1598,9 @@ export default {
         const cachedSlug = earlyHit.headers.get("X-Store-Slug") || "";
         const cachedDataSource = earlyHit.headers.get("X-Data-Source") || "edge";
 
-        // CHANGE 4+8: Only revalidate if cooldown has elapsed (0 KV reads otherwise)
+        // Global revalidation lock — prevents duplicate refreshes across colos
         const revalKey = `html:${hostname}:${url.pathname}`;
-        if (shouldRevalidate(revalKey)) {
+        if (await shouldRevalidateGlobal(revalKey, env)) {
           ctx.waitUntil((async () => {
             try {
               let revalSlug = cachedSlug;
