@@ -1672,7 +1672,70 @@ export default {
       );
     }
 
-    // ─── /api/prewarm ───
+    // ─── /api/purge-store → Per-store cache purge (no global shell purge) ───
+    if (url.pathname === "/api/purge-store" && request.method === "POST") {
+      const purgeSlug = url.searchParams.get("slug") || "";
+      if (!purgeSlug) {
+        return addCorsHeaders(
+          new Response(JSON.stringify({ error: "Missing slug parameter" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }),
+          "purge-store-error"
+        );
+      }
+
+      const purgeOps = [];
+      const subDomain = `${purgeSlug}.${ROOT_DOMAIN}`;
+
+      // 1. Purge storefront data (Cache API + KV)
+      purgeOps.push(
+        cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {})
+      );
+      if (env?.STORE_KV) {
+        purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
+      }
+
+      // 2. Purge early HTML cache for subdomain
+      purgeOps.push(cache.delete(getEarlyCacheKey(subDomain, "/")).catch(() => {}));
+
+      // 3. Purge products cache for subdomain
+      const subCacheKey = _buildProductsCacheKey(subDomain, {});
+      purgeOps.push(cache.delete(subCacheKey).catch(() => {}));
+      for (const sort of ["price_asc", "price_desc", "newest"]) {
+        purgeOps.push(cache.delete(_buildProductsCacheKey(subDomain, { sort })).catch(() => {}));
+      }
+
+      // 4. If custom domain exists, purge those caches too
+      const customDomain = await getCustomDomainForSlug(purgeSlug);
+      if (customDomain) {
+        const cleanDomain = customDomain.replace(/^www\./, "").toLowerCase().trim();
+        purgeOps.push(cache.delete(getEarlyCacheKey(cleanDomain, "/")).catch(() => {}));
+        const domCacheKey = _buildProductsCacheKey(cleanDomain, {});
+        purgeOps.push(cache.delete(domCacheKey).catch(() => {}));
+        for (const sort of ["price_asc", "price_desc", "newest"]) {
+          purgeOps.push(cache.delete(_buildProductsCacheKey(cleanDomain, { sort })).catch(() => {}));
+        }
+      }
+
+      // 5. Purge store-id cache
+      purgeOps.push(cache.delete(new Request(`https://cache/store-id:${subDomain}`)).catch(() => {}));
+
+      await Promise.all(purgeOps);
+
+      return addCorsHeaders(
+        new Response(JSON.stringify({
+          purged: true,
+          slug: purgeSlug,
+          customDomain: customDomain || null,
+          scope: "store-only",
+        }), {
+          headers: { "Content-Type": "application/json" },
+        }),
+        "purge-store"
+      );
+    }
+
     if (url.pathname === "/api/prewarm" && request.method === "POST") {
       return handlePrewarm(request, url, ctx, env);
     }
