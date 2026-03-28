@@ -31,7 +31,7 @@ function getStorageKey(slug: string) {
   return `cart_${slug}`;
 }
 
-export function CartProvider({ slug, storeId, children }: { slug: string; storeId?: string; children: ReactNode }) {
+export function CartProvider({ slug, storeId, currency = "INR", children }: { slug: string; storeId?: string; currency?: string; children: ReactNode }) {
   // Start empty — defer localStorage read to avoid blocking first paint
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -88,7 +88,7 @@ export function CartProvider({ slug, storeId, children }: { slug: string; storeI
       content_ids: [item.productId],
       content_type: "product",
       value: item.price,
-      currency: "INR",
+      currency,
     }, eid);
     if (storeId) {
       fireMetaCAPI({
@@ -99,7 +99,7 @@ export function CartProvider({ slug, storeId, children }: { slug: string; storeI
           content_ids: [item.productId],
           content_type: "product",
           value: item.price,
-          currency: "INR",
+          currency,
         },
       });
     }
