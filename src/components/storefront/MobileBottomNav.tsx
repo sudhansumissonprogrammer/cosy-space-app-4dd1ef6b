@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingBag, LayoutGrid, ClipboardList } from "lucide-react";
+import { Home, ShoppingBag, LayoutGrid, ClipboardList, Heart } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -40,6 +40,12 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
       icon: LayoutGrid,
       to: storefrontPath(store.slug, "categories"),
       active: isActive("categories") || isActive("category"),
+    },
+    {
+      label: "Wishlist",
+      icon: Heart,
+      to: storefrontPath(store.slug, "wishlist"),
+      active: isActive("wishlist"),
     },
     {
       label: "Orders",
