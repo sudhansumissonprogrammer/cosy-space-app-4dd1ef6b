@@ -1169,8 +1169,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     skeleton += `</div>`;
   }
   skeleton += `</div></div>`;
-  // Self-removal: hide skeleton as soon as app JS begins executing
-  skeleton += `<style>#sf-skel.sf-hide{display:none!important}</style>`;
+  // No self-removal needed — index.html body script + main.tsx both remove #sf-skel
 
   let lcpPreload = "";
   if (storefrontData?.store?.logo_url) {
