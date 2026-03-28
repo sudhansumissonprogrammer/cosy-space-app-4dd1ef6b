@@ -1078,10 +1078,47 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   }
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" crossorigin />
-<link rel="dns-prefetch" href="${SUPABASE_URL}" />`;
+<link rel="dns-prefetch" href="${SUPABASE_URL}" />
+<link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co/storage" crossorigin />`;
 
   const preconnectedOrigins = new Set();
   try { preconnectedOrigins.add(new URL(SUPABASE_URL).origin); } catch {}
+
+  // ── Inline critical theme CSS ──
+  // Inject theme variables + Google Fonts preload so the page renders
+  // with correct colors/fonts BEFORE React hydrates (eliminates FOIT + color flash).
+  let inlineThemeCss = "";
+  if (storefrontData?.theme_config) {
+    const tc = storefrontData.theme_config;
+    const primaryColor = tc.primary_color || "#004643";
+    const r = parseInt(primaryColor.slice(1, 3), 16);
+    const g = parseInt(primaryColor.slice(3, 5), 16);
+    const b = parseInt(primaryColor.slice(5, 7), 16);
+    const lighten = (c) => Math.min(255, Math.round(c + (255 - c) * 0.35));
+    const primaryLight = `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
+    const btnTextColor = (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#1a1a1a" : "#ffffff";
+    const btnRadius = tc.button_style === "pill" ? "9999px" : tc.button_style === "square" ? "0px" : "0.5rem";
+
+    inlineThemeCss += `<style id="edge-theme">:root{`
+      + `--storefront-primary:${primaryColor};`
+      + `--storefront-primary-light:${primaryLight};`
+      + `--storefront-accent:${tc.accent_color || primaryColor};`
+      + `--storefront-text:${tc.text_color || "#1a1a1a"};`
+      + `--storefront-bg:${tc.background_color || "#ffffff"};`
+      + `--storefront-button-radius:${btnRadius};`
+      + `--storefront-btn-text:${btnTextColor};`
+      + `}body{background:${tc.background_color || "#ffffff"}}</style>\n`;
+
+    // Preload Google Fonts for heading + body
+    const fonts = [tc.heading_font, tc.body_font].filter(Boolean);
+    if (fonts.length > 0) {
+      const families = fonts.map(f => f.replace(/ /g, "+")).join("&family=");
+      inlineThemeCss += `<link rel="preload" href="https://fonts.googleapis.com/css2?family=${families}&display=swap" as="style" onload="this.rel='stylesheet'" />\n`;
+      inlineThemeCss += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap" /></noscript>\n`;
+      // Set font CSS variables immediately
+      inlineThemeCss += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
+    }
+  }
 
   let lcpPreload = "";
   if (storefrontData) {
@@ -1110,7 +1147,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     }
   }
 
-  const injectedHtml = html.replace("<head>", `<head>${injection}${lcpPreload}${cssPreload}${modulePreloads}`);
+  const injectedHtml = html.replace("<head>", `<head>${injection}${inlineThemeCss}${lcpPreload}${cssPreload}${modulePreloads}`);
 
   return { html: injectedHtml, dataSource };
 }
