@@ -126,6 +126,7 @@ export default function StorefrontShell({
     description: (store as any)?.meta_description || store?.description || undefined,
     ogImage: (store as any)?.og_image_url || store?.logo_url || undefined,
     storeSlug: store?.slug,
+    customDomain: (store as any)?.custom_domain,
   });
 
   // Track page view — deferred to idle time to avoid blocking LCP

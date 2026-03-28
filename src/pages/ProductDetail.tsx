@@ -266,6 +266,7 @@ export default function ProductDetail() {
     description: product?.description || undefined,
     ogImage: product?.image_url || undefined,
     storeSlug: store.slug,
+    customDomain: (store as any)?.custom_domain,
     canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
   });
 
@@ -310,6 +311,7 @@ export default function ProductDetail() {
     } : { name: "", price: 0, id: "", currency: "INR" },
     storeSlug: store.slug,
     storeName: store.name,
+    customDomain: (store as any)?.custom_domain,
   });
 
   /* ── Live viewers — fluctuate between 8-20 ── */

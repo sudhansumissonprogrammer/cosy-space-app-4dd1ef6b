@@ -422,6 +422,7 @@ export default function StorefrontHomeV13() {
     logo: store?.logo_url || undefined,
     location: (store as any)?.location || undefined,
     whatsappNumber: (store as any)?.whatsapp_number || undefined,
+    customDomain: (store as any)?.custom_domain || undefined,
   });
 
   const [searchQuery, setSearchQuery] = useState("");
