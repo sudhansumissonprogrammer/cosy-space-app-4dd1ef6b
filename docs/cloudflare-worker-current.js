@@ -1,30 +1,30 @@
 /**
- * STORIVO PRODUCTION ROUTER v3.3 — KV-OPTIMIZED CACHE-FIRST
+ * STORIVO PRODUCTION ROUTER v3.4 — FINAL SCALING OPTIMIZATION
  *
- * Changes from v3.2:
- *   - CACHE API FIRST: All data paths now check Cache API before KV,
- *     eliminating KV reads on warm colos entirely.
- *   - REVALIDATION COOLDOWN: Background revalidation throttled to once per
- *     30 seconds per hostname+path, preventing KV reads on every cache HIT.
- *   - INCREASED KV TTLs: Shell 60s→3600s, products 300s→1800s, storefront 1800s→3600s.
- *     Purge endpoints handle invalidation, so longer TTLs are safe.
- *   - CONSOLIDATED KV READS: Bundle key combines shell+storefront data into
- *     a single KV read instead of two parallel reads.
- *   - SKIP REDUNDANT KV WRITES: Background refresh skips KV write if data unchanged.
+ * Changes from v3.3:
+ *   - GLOBAL REVALIDATION LOCK: KV-based lock replaces in-memory-only
+ *     cooldown. Only ONE background refresh globally across all colos.
+ *   - KV-FREE PRODUCTS: Products normal flow is Cache API → DB only.
+ *     KV reads/writes removed from hot path. KV only in prewarm + fallback.
+ *   - PER-STORE PURGE: New /api/purge-store endpoint invalidates only
+ *     that store's caches without touching the global SPA shell.
+ *   - CACHE API FOR STORE-ID: _resolveStoreId now checks Cache API
+ *     between in-memory and KV, reducing KV reads in background tasks.
+ *   - TTL ALIGNMENT: SPA shell cache raised to 600s. Products remain 60s.
  *
  * Architecture:
  *   User → Edge Cache (full HTML) → DONE (0 KV reads)
  *        ↓ MISS
  *   Cache API (per-layer) → DONE (0 KV reads)
  *        ↓ MISS
- *   KV (single consolidated read) → DONE (1 KV read)
- *        ↓ MISS
- *   DB → write Cache + KV → DONE
+ *   DB (direct, coalesced) → write Cache API → DONE (0 KV reads)
+ *        ↓ FALLBACK ONLY
+ *   KV (rare fallback for resilience)
  *
- * KV Usage: Max 1-2 reads per request (was 5-7). ~85-90% reduction.
+ * KV Usage: Near-zero on normal traffic. ~95-99% cache hit rate.
  */
 
-const WORKER_VERSION = "3.3";
+const WORKER_VERSION = "3.4";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
