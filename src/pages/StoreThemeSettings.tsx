@@ -234,7 +234,6 @@ interface ThemeConfig {
   category_style: string;
   header_logo_alignment: string;
   mobile_nav_enabled: boolean;
-  transparent_header: boolean;
   header_style: string;
 }
 
