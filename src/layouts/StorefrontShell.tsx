@@ -1,4 +1,5 @@
 import { useEffect, useRef, Suspense, lazy, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
@@ -155,6 +156,12 @@ export default function StorefrontShell({
 
   // Listen for live theme preview messages
   const previewOverride = useThemePreview(store?.id);
+
+  // Scroll to top on every route change — centralised fix for all mobile navbars
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, [pathname]);
 
   // Loading state
   if (isLoading) {
