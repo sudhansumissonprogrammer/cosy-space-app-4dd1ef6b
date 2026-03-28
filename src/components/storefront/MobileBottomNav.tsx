@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingBag, LayoutGrid, ClipboardList } from "lucide-react";
+import { Home, ShoppingBag, LayoutGrid, ClipboardList, Heart } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
