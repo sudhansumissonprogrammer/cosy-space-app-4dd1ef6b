@@ -230,7 +230,7 @@ export default function StorefrontShell({
 
   // V13 restaurant mode — no wishlist
   return (
-    <CartProvider slug={store.slug} storeId={store.id}>
+    <CartProvider slug={store.slug} storeId={store.id} currency={store.currency || "INR"}>
       <StorefrontAuthProvider storeId={store.id}>
         {content}
       </StorefrontAuthProvider>
