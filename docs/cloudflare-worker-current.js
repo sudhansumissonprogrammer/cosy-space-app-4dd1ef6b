@@ -1178,12 +1178,26 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts =
   skeleton += `<script>(function(){var removed=false;function kill(){if(removed)return;removed=true;var s=document.getElementById('sf-skel');if(s){s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}}function whenReady(){kill();requestAnimationFrame(kill);setTimeout(kill,120);setTimeout(kill,600);}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',whenReady,{once:true});}else{whenReady();}window.addEventListener('load',kill,{once:true});var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});setTimeout(function(){mo.disconnect();kill();},1500);}}</script>`;
 
   let lcpPreload = "";
-  if (storefrontData?.store?.logo_url) {
-    lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(storefrontData.store.logo_url)}" />`;
+  // Preload hero/banner image (likely LCP element)
+  const bannerUrl = storefrontData?.store?.banner_url || storefrontData?.store?.mobile_hero_url;
+  if (bannerUrl) {
+    lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(bannerUrl)}" fetchpriority="high" />\n`;
   }
-
-  const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
-  let cssPreload = "";
+  if (storefrontData?.store?.logo_url) {
+    lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(storefrontData.store.logo_url)}" />\n`;
+  }
+  // Preload first product image for instant above-fold render
+  if (inlineProducts && inlineProducts.length > 0 && inlineProducts[0].image_url) {
+    lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(inlineProducts[0].image_url)}" fetchpriority="high" />\n`;
+    // Preconnect to image CDN if external
+    try {
+      const imgOrigin = new URL(inlineProducts[0].image_url).origin;
+      if (!preconnectedOrigins.has(imgOrigin)) {
+        preconnectedOrigins.add(imgOrigin);
+        lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />\n`;
+      }
+    } catch {}
+  }
   if (cssMatch) {
     cssPreload = `<link rel="preload" href="${cssMatch[1]}" as="style" />\n`;
   }
