@@ -66,48 +66,42 @@ function BannerSlider({ store }: { store: StoreData }) {
   const slide = slides[current] ?? slides[0] ?? { image: "", title: store.name, link: undefined };
 
   return (
-    <div className="px-3 pt-3 pb-1">
-      <div
-        className="relative overflow-hidden rounded-2xl h-40 sm:h-48"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {slide.image ? (
-          <img
-            src={optimizeImageUrl(slide.image, 800)}
-            alt={slide.title}
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-            loading="eager"
-          />
-        ) : (
-          <div
-            className="absolute inset-0"
-            style={{ background: `linear-gradient(135deg, var(--storefront-primary, #3B82F6), var(--storefront-accent, #F97316))` }}
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        <div className="absolute bottom-3 left-4 right-4">
-          <h2 className="text-white text-lg font-bold drop-shadow-md" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>
-            {slide.title}
-          </h2>
+    <div
+      className="relative w-full overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {slide.image ? (
+        <img
+          src={optimizeImageUrl(slide.image, 800)}
+          alt={slide.title}
+          className="w-full h-auto block transition-opacity duration-500"
+          loading="eager"
+          fetchPriority="high"
+          decoding="sync"
+        />
+      ) : (
+        <div
+          className="w-full aspect-[16/7]"
+          style={{ background: `linear-gradient(135deg, var(--storefront-primary, #3B82F6), var(--storefront-accent, #F97316))` }}
+        />
+      )}
+      {/* Dots */}
+      {count > 1 && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className="h-1.5 rounded-full transition-all"
+              style={{
+                width: i === current ? "16px" : "6px",
+                backgroundColor: i === current ? "var(--storefront-primary, #fff)" : "rgba(255,255,255,0.5)",
+              }}
+            />
+          ))}
         </div>
-        {/* Dots */}
-        {count > 1 && (
-          <div className="absolute bottom-2 right-3 flex gap-1">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                className="h-1.5 rounded-full transition-all"
-                style={{
-                  width: i === current ? "16px" : "6px",
-                  backgroundColor: i === current ? "var(--storefront-primary, #fff)" : "rgba(255,255,255,0.5)",
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
