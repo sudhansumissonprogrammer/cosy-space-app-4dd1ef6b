@@ -53,13 +53,13 @@ function contrastRatio(hex1: string, hex2: string): number {
 
 const COLOR_COMBINATIONS = [
   {
-    id: "royal-gold",
-    name: "Royal Gold",
-    primary: "#b8873c",
-    accent: "#000000",
-    text: "#1a1a1a",
-    background: "#f7f5f0",
-    marquee: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+    id: "cyprus-sand",
+    name: "Cyprus Sand",
+    primary: "#004643",
+    accent: "#004643",
+    text: "#222222",
+    background: "#F0EDE5",
+    marquee: "linear-gradient(90deg, #004643, #02615C, #004643)",
   },
   {
     id: "crimson-royale",
