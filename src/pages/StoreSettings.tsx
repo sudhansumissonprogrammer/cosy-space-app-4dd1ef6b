@@ -67,6 +67,10 @@ export default function StoreSettings() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [returnPolicy, setReturnPolicy] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
+  const [aboutUsText, setAboutUsText] = useState("");
+  const [aboutUsImageFile, setAboutUsImageFile] = useState<File | null>(null);
+  const [aboutUsImagePreview, setAboutUsImagePreview] = useState<string | null>(null);
+  const [aboutUsImageRemoved, setAboutUsImageRemoved] = useState(false);
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
