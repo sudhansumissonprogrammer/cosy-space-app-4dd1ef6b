@@ -122,7 +122,7 @@ function MilanoFooter({ store }: { store: StoreData }) {
         <div className="grid grid-cols-2 gap-6 text-sm">
           <div className="space-y-2.5">
             <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>Quick Links</h4>
-            {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop" }, { to: storefrontPath(store.slug, "contact"), label: "Contact Us" }].map((link) => (<Link key={link.label} to={link.to} className="block opacity-60 hover:opacity-100 transition-opacity text-[13px]">{link.label}</Link>))}
+            {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop" }, { to: storefrontPath(store.slug, "about"), label: "About Us" }, { to: storefrontPath(store.slug, "contact"), label: "Contact Us" }].map((link) => (<Link key={link.label} to={link.to} className="block opacity-60 hover:opacity-100 transition-opacity text-[13px]">{link.label}</Link>))}
           </div>
           <div className="space-y-2.5">
             <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>Policies</h4>

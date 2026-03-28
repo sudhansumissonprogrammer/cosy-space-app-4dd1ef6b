@@ -45,6 +45,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             <nav className="flex flex-col gap-2">
               {[
                 { to: storefrontPath(store.slug), label: "Home" },
+                { to: storefrontPath(store.slug, "about"), label: "About Us" },
                 { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
                 { to: storefrontPath(store.slug, "return-policy"), label: "Return, Refund & Cancellation" },
                 { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" },
