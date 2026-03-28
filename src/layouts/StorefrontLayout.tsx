@@ -17,6 +17,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 import StorefrontShell from "@/layouts/StorefrontShell";
+import StorefrontSidebarMenu from "@/components/storefront/StorefrontSidebarMenu";
 import { lazy } from "react";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));

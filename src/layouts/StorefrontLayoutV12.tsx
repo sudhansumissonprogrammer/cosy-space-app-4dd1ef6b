@@ -11,6 +11,7 @@ import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
+import StorefrontSidebarMenu from "@/components/storefront/StorefrontSidebarMenu";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 function V12Header({ store }: { store: StoreData }) {
