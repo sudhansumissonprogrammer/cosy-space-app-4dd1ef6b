@@ -20,13 +20,7 @@
     <style>
       body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
       #root{min-height:100vh}
-      /* Hide edge skeleton once React JS loads — prevents stacking bug */
-      #sf-skel.sf-hide{display:none!important}
     </style>
-    <script>
-      /* Immediately hide skeleton as soon as JS parses — before React even mounts */
-      (function(){var s=document.getElementById('sf-skel');if(s)s.classList.add('sf-hide')})();
-    </script>
     <!--
       Lightweight prefetch: only starts /api/products fetch early.
       No DOM manipulation, no image preloading, no hybrid card injection.
@@ -78,7 +72,12 @@
   <meta name="twitter:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
 </head>
   <body>
+    <!-- Worker injects #sf-skel BEFORE #root. This script runs after both exist. -->
     <div id="root"></div>
+    <script>
+      /* Remove Worker skeleton — runs in body so #sf-skel exists */
+      (function(){var s=document.getElementById('sf-skel');if(s)s.remove()})();
+    </script>
     <script>
       (function(){
         var p=location.pathname;
