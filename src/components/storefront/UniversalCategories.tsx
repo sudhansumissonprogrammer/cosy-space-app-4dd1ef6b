@@ -163,7 +163,7 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
   const isCarousel = categoryStyle === "style-1" || categoryStyle === "style-2" || categoryStyle === "style-5";
 
   return (
-    <div className="bg-card/80 backdrop-blur-md" style={{ minHeight: "104px", contain: "layout style" }}>
+    <div className="backdrop-blur-md" style={{ minHeight: "104px", contain: "layout style", backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
       <div className="mx-auto max-w-6xl px-4 py-4">
         {isLoading ? (
           isCarousel ? (
