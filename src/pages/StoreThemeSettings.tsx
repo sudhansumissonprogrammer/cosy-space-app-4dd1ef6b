@@ -1935,8 +1935,19 @@ export default function StoreThemeSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
       setDirty(false);
-      // Preview already reflects saved state via postMessage
+
+      // Purge edge cache so storefront visitors see new theme immediately
+      if (store?.slug) {
+        import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
+          purgeStoreCache(store.slug, (store as any).custom_domain)
+        );
+        import("@/lib/prewarmStore").then(({ prewarmStore }) =>
+          prewarmStore(store.slug, (store as any).custom_domain)
+        );
+      }
+
       toast.success("Theme settings saved!");
     },
     onError: () => toast.error("Failed to save settings"),
