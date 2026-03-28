@@ -16,19 +16,10 @@
     <link rel="preload" href="/src/index.css" as="style" />
     <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
     <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d6466f0a-5e3c-40ee-bcf4-be3635af35c7/id-preview-a021bd15--6ee1ce8f-139d-4ed1-b8de-1ea2356971e5.lovable.app-1773847969524.png">
-    <!-- Inline critical above-the-fold styles — static placeholders (no shimmer) -->
+    <!-- Minimal inline styles for preview/localhost skeleton fallback -->
     <style>
       body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
       #root{min-height:100vh}
-      .sk{background:#e8e8e8;border-radius:8px}
-      .sf-skel{max-width:100%;padding:0}
-      .sf-skel-nav{height:56px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;padding:0 16px;gap:12px}
-      .sf-skel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
-      .sf-skel-card{border-radius:12px;overflow:hidden}
-      .sf-skel-card-img{width:100%;aspect-ratio:4/5}
-      .sf-skel-card-txt{padding:8px}
-      .sf-skel-card-txt div{height:10px;margin-bottom:6px;border-radius:4px}
-      @media(min-width:768px){.sf-skel-grid{grid-template-columns:repeat(4,1fr);gap:16px;padding:24px}}
     </style>
     <!--
       Lightweight prefetch: only starts /api/products fetch early.
@@ -81,33 +72,29 @@
   <meta name="twitter:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
 </head>
   <body>
-    <div id="root">
-      <script>
-        (function(){
-          var p=location.pathname;
-          var isStorefront=p.indexOf('/store/')===0;
-          var h=location.hostname;
-          if(!isStorefront && h.endsWith('.storivo.in') && h!=='storivo.in' && h!=='www.storivo.in'){
-            var sub=h.replace('.storivo.in','');
-            if(sub && sub.indexOf('.')===-1) isStorefront=true;
-          }
-          if(!isStorefront && !h.endsWith('.lovable.app') && h!=='localhost' && !p.startsWith('/dashboard') && !p.startsWith('/admin') && !p.startsWith('/login') && !p.startsWith('/signup')){
-            if(window.__STORE_SLUG__) isStorefront=true;
-          }
-          if(isStorefront){
-            // Clear generic Storivo branding so it never flashes on store domains
-            document.title='';
-            var desc=document.querySelector('meta[name="description"]');if(desc)desc.setAttribute('content','');
-            var ogT=document.querySelector('meta[property="og:title"]');if(ogT)ogT.setAttribute('content','');
-            var ogD=document.querySelector('meta[property="og:description"]');if(ogD)ogD.setAttribute('content','');
-            var twT=document.querySelector('meta[name="twitter:title"]');if(twT)twT.setAttribute('content','');
-            var twD=document.querySelector('meta[name="twitter:description"]');if(twD)twD.setAttribute('content','');
-
-            document.write('<div class="sf-skel"><div class="sf-skel-nav"><div class="sk" style="width:100px;height:28px"></div><div style="flex:1"></div><div class="sk" style="width:28px;height:28px;border-radius:50%"></div></div><div style="padding:12px 16px"><div class="sk" style="height:40px;border-radius:9999px;width:100%"></div></div><div style="padding:0 16px 8px;display:flex;gap:16px;overflow:hidden"><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div><div class="sk" style="width:72px;height:72px;border-radius:50%;flex-shrink:0"></div></div><div class="sf-skel-grid"><div class="sf-skel-card"><div class="sf-skel-card-img sk"></div><div class="sf-skel-card-txt"><div class="sk" style="width:60%"></div><div class="sk" style="width:40%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk"></div><div class="sf-skel-card-txt"><div class="sk" style="width:70%"></div><div class="sk" style="width:35%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk"></div><div class="sf-skel-card-txt"><div class="sk" style="width:55%"></div><div class="sk" style="width:45%"></div></div></div><div class="sf-skel-card"><div class="sf-skel-card-img sk"></div><div class="sf-skel-card-txt"><div class="sk" style="width:65%"></div><div class="sk" style="width:38%"></div></div></div></div></div>');
-          }
-        })();
-      </script>
-    </div>
+    <div id="root"></div>
+    <script>
+      (function(){
+        var p=location.pathname;
+        var isStorefront=p.indexOf('/store/')===0;
+        var h=location.hostname;
+        if(!isStorefront && h.endsWith('.storivo.in') && h!=='storivo.in' && h!=='www.storivo.in'){
+          var sub=h.replace('.storivo.in','');
+          if(sub && sub.indexOf('.')===-1) isStorefront=true;
+        }
+        if(!isStorefront && !h.endsWith('.lovable.app') && h!=='localhost' && !p.startsWith('/dashboard') && !p.startsWith('/admin') && !p.startsWith('/login') && !p.startsWith('/signup')){
+          if(window.__STORE_SLUG__) isStorefront=true;
+        }
+        if(isStorefront){
+          document.title='';
+          var desc=document.querySelector('meta[name="description"]');if(desc)desc.setAttribute('content','');
+          var ogT=document.querySelector('meta[property="og:title"]');if(ogT)ogT.setAttribute('content','');
+          var ogD=document.querySelector('meta[property="og:description"]');if(ogD)ogD.setAttribute('content','');
+          var twT=document.querySelector('meta[name="twitter:title"]');if(twT)twT.setAttribute('content','');
+          var twD=document.querySelector('meta[name="twitter:description"]');if(twD)twD.setAttribute('content','');
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1085,49 +1085,94 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   try { preconnectedOrigins.add(new URL(SUPABASE_URL).origin); } catch {}
 
   // ── Inline critical theme CSS ──
-  // Inject theme variables + Google Fonts preload so the page renders
-  // with correct colors/fonts BEFORE React hydrates (eliminates FOIT + color flash).
   let inlineThemeCss = "";
+  let primaryColor = "#004643";
+  let bgColor = "#ffffff";
+  let textColor = "#1a1a1a";
+  let btnTextColor = "#ffffff";
+  let btnRadius = "0.5rem";
+  let primaryLight = "#4d8b89";
+
   if (storefrontData?.theme_config) {
     const tc = storefrontData.theme_config;
-    const primaryColor = tc.primary_color || "#004643";
+    primaryColor = tc.primary_color || "#004643";
+    bgColor = tc.background_color || "#ffffff";
+    textColor = tc.text_color || "#1a1a1a";
     const r = parseInt(primaryColor.slice(1, 3), 16);
     const g = parseInt(primaryColor.slice(3, 5), 16);
     const b = parseInt(primaryColor.slice(5, 7), 16);
     const lighten = (c) => Math.min(255, Math.round(c + (255 - c) * 0.35));
-    const primaryLight = `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
-    const btnTextColor = (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#1a1a1a" : "#ffffff";
-    const btnRadius = tc.button_style === "pill" ? "9999px" : tc.button_style === "square" ? "0px" : "0.5rem";
+    primaryLight = `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
+    btnTextColor = (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#1a1a1a" : "#ffffff";
+    btnRadius = tc.button_style === "pill" ? "9999px" : tc.button_style === "square" ? "0px" : "0.5rem";
 
     inlineThemeCss += `<style id="edge-theme">:root{`
       + `--storefront-primary:${primaryColor};`
       + `--storefront-primary-light:${primaryLight};`
       + `--storefront-accent:${tc.accent_color || primaryColor};`
-      + `--storefront-text:${tc.text_color || "#1a1a1a"};`
-      + `--storefront-bg:${tc.background_color || "#ffffff"};`
+      + `--storefront-text:${textColor};`
+      + `--storefront-bg:${bgColor};`
       + `--storefront-button-radius:${btnRadius};`
       + `--storefront-btn-text:${btnTextColor};`
-      + `}body{background:${tc.background_color || "#ffffff"}}</style>\n`;
+      + `}body{background:${bgColor}}</style>\n`;
 
-    // Preload Google Fonts for heading + body
+    // Non-blocking Google Fonts — media="print" trick
     const fonts = [tc.heading_font, tc.body_font].filter(Boolean);
     if (fonts.length > 0) {
       const families = fonts.map(f => f.replace(/ /g, "+")).join("&family=");
-      inlineThemeCss += `<link rel="preload" href="https://fonts.googleapis.com/css2?family=${families}&display=swap" as="style" onload="this.rel='stylesheet'" />\n`;
+      inlineThemeCss += `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap" media="print" onload="this.media='all'" />\n`;
       inlineThemeCss += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap" /></noscript>\n`;
-      // Set font CSS variables immediately
       inlineThemeCss += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
     }
   }
 
-  let lcpPreload = "";
-  if (storefrontData) {
-    const store = storefrontData.store;
-    if (store) {
-      if (store.logo_url) {
-        lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(store.logo_url)}" />`;
+  // ── Theme-aware skeleton (instant from edge cache) ──
+  const storeName = storefrontData?.store?.name || "";
+  const logoUrl = storefrontData?.store?.logo_url || "";
+  const skeletonBg = bgColor;
+  const skeletonMuted = textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
+
+  let skeleton = `<div id="sf-skel" style="min-height:100vh;background:${skeletonBg};font-family:'Inter',sans-serif">`;
+  // Nav bar
+  skeleton += `<nav style="height:56px;background:${skeletonBg};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px">`;
+  if (logoUrl) {
+    skeleton += `<img src="${escapeHtml(logoUrl)}" alt="" style="height:36px;width:36px;border-radius:8px;object-fit:cover" />`;
+  } else {
+    skeleton += `<div style="height:36px;width:36px;border-radius:8px;background:${skeletonMuted}"></div>`;
+  }
+  skeleton += `<div style="font-weight:600;font-size:16px;color:${textColor}">${escapeHtml(storeName)}</div>`;
+  skeleton += `<div style="flex:1"></div>`;
+  skeleton += `<div style="width:28px;height:28px;border-radius:50%;background:${skeletonMuted}"></div>`;
+  skeleton += `</nav>`;
+  // Search bar placeholder
+  skeleton += `<div style="padding:12px 16px"><div style="height:40px;border-radius:9999px;background:${skeletonMuted}"></div></div>`;
+  // Category circles
+  const cats = storefrontData?.categories;
+  if (cats && cats.length > 0) {
+    skeleton += `<div style="padding:0 16px 8px;display:flex;gap:16px;overflow:hidden">`;
+    for (let i = 0; i < Math.min(cats.length, 5); i++) {
+      const c = cats[i];
+      if (c.image_url) {
+        skeleton += `<div style="flex-shrink:0;text-align:center"><img src="${escapeHtml(c.image_url)}" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover" /><div style="font-size:11px;margin-top:4px;color:${textColor}">${escapeHtml(c.name || "")}</div></div>`;
+      } else {
+        skeleton += `<div style="flex-shrink:0"><div style="width:64px;height:64px;border-radius:50%;background:${skeletonMuted}"></div><div style="height:10px;width:50px;margin:4px auto 0;border-radius:4px;background:${skeletonMuted}"></div></div>`;
       }
     }
+    skeleton += `</div>`;
+  }
+  // Product grid placeholder
+  skeleton += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px">`;
+  for (let i = 0; i < 4; i++) {
+    skeleton += `<div style="border-radius:12px;overflow:hidden;background:${skeletonBg};border:1px solid ${skeletonMuted}">`;
+    skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
+    skeleton += `<div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div>`;
+    skeleton += `</div>`;
+  }
+  skeleton += `</div></div>`;
+
+  let lcpPreload = "";
+  if (storefrontData?.store?.logo_url) {
+    lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(storefrontData.store.logo_url)}" />`;
   }
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
@@ -1147,7 +1192,9 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     }
   }
 
-  const injectedHtml = html.replace("<head>", `<head>${injection}${inlineThemeCss}${lcpPreload}${cssPreload}${modulePreloads}`);
+  // Inject skeleton into body (before #root), everything else into <head>
+  let injectedHtml = html.replace("<head>", `<head>${injection}${inlineThemeCss}${lcpPreload}${cssPreload}${modulePreloads}`);
+  injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}<div id="root">`);
 
   return { html: injectedHtml, dataSource };
 }
