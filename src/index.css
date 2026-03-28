@@ -158,16 +158,16 @@
   }
 
   .btn-gold {
-    background: var(--storefront-primary, hsl(40 70% 55%));
+    background: var(--storefront-primary, #004643);
     color: var(--storefront-btn-text, #ffffff);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     border: none;
-    transition: filter 0.2s;
+    transition: background 0.2s, filter 0.2s;
   }
   .btn-gold:hover {
-    filter: brightness(1.08);
+    filter: brightness(1.15);
   }
 
   .animate-marquee {
