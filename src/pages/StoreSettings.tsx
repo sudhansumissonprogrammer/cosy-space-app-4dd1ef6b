@@ -155,6 +155,12 @@ export default function StoreSettings() {
         finalOgImageUrl = await uploadFile(ogImageFile, "store-banners");
       }
 
+      let finalAboutUsImageUrl = (store as any)?.about_us_image_url || null;
+      if (aboutUsImageRemoved) finalAboutUsImageUrl = null;
+      if (aboutUsImageFile) {
+        finalAboutUsImageUrl = await uploadFile(aboutUsImageFile, "store-banners");
+      }
+
       const hasHours = Object.values(businessHours).some((v) => v.trim());
       const { error } = await (supabase as any)
         .from("stores")
@@ -182,6 +188,8 @@ export default function StoreSettings() {
           og_image_url: finalOgImageUrl.trim() || null,
           owner_email: ownerEmail.trim() || null,
           default_profit_margin: defaultProfitMargin,
+          about_us_text: aboutUsText.trim() || null,
+          about_us_image_url: finalAboutUsImageUrl,
         })
         .eq("id", storeId!);
       if (error) throw error;
