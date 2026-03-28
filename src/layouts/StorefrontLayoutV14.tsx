@@ -295,7 +295,7 @@ export default function StorefrontLayoutV14({ slugOverride }: { slugOverride?: s
         <CheckoutAwareLayout
           store={store}
           headerLogoAlignment={themeConfig?.header_logo_alignment || "center"}
-          mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? false}
+          mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? true}
           headerStyle={themeConfig?.header_style && themeConfig.header_style !== "normal" ? themeConfig.header_style : "transparent"}
         />
       )}
