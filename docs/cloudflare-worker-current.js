@@ -824,8 +824,9 @@ async function handlePurgeProducts(request, url, ctx, env) {
 
 /**
  * GET /api/products
- * Flow: Cache API → KV → DB (coalesced + retry + fallback)
- * CHANGE 4: Background refresh throttled by revalidation cooldown
+ * Flow: Cache API → DB (coalesced + retry + fallback)
+ * KV removed from normal path — only used in fallback chain.
+ * Background refresh uses global revalidation lock.
  */
 async function handleProductsApi(request, url, ctx, env) {
   const domain = (request.headers.get("host") || url.hostname).toLowerCase().trim();
@@ -843,37 +844,16 @@ async function handleProductsApi(request, url, ctx, env) {
   try {
     const cached = await cache.match(cacheKey);
     if (cached) {
-      // CHANGE 4: Only revalidate if cooldown has elapsed (prevents repeated KV reads)
+      // Global revalidation lock — only one colo refreshes at a time
       const revalKey = `products:${domain}:${filters.category}:${filters.page}:${filters.sort}`;
-      if (shouldRevalidate(revalKey)) {
-        ctx.waitUntil(_refreshProductsBackground(domain, filters, cacheKey, kvKey, env));
+      if (await shouldRevalidateGlobal(revalKey, env)) {
+        ctx.waitUntil(_refreshProductsBackground(domain, filters, cacheKey, env));
       }
       return addCorsHeaders(cached, "cache-api");
     }
   } catch {}
 
-  // ── 2. KV (global, ~5ms) ──
-  if (env?.STORE_KV) {
-    try {
-      const kvData = await env.STORE_KV.get(kvKey, { type: "text" });
-      if (kvData) {
-        const kvResponse = new Response(kvData, {
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
-          },
-        });
-        // Backfill Cache API + throttled background refresh
-        const revalKey = `products:${domain}:${filters.category}:${filters.page}:${filters.sort}`;
-        const ops = [cache.put(cacheKey, kvResponse.clone())];
-        if (shouldRevalidate(revalKey)) {
-          ops.push(_refreshProductsBackground(domain, filters, cacheKey, kvKey, env));
-        }
-        ctx.waitUntil(Promise.all(ops));
-        return addCorsHeaders(kvResponse, "kv");
-      }
-    } catch {}
-  }
+  // ── 2. Skip KV — go directly to DB (KV only in fallback) ──
 
   // ── 3. Resolve domain → store_id (coalesced) ──
   const storeId = await _resolveStoreId(domain, env);
@@ -892,7 +872,7 @@ async function handleProductsApi(request, url, ctx, env) {
   if (inflightProductRequests.has(coalesceKey)) {
     try {
       const data = await inflightProductRequests.get(coalesceKey);
-      return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced");
+      return buildProductResponse(data, cacheKey, ctx, "origin-coalesced");
     } catch {
       return await _fallbackProducts(domain, cacheKey, kvKey, env);
     }
@@ -903,7 +883,7 @@ async function handleProductsApi(request, url, ctx, env) {
 
   try {
     const data = await fetchPromise;
-    return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin");
+    return buildProductResponse(data, cacheKey, ctx, "origin");
   } catch {
     return await _fallbackProducts(domain, cacheKey, kvKey, env);
   } finally {
