@@ -1589,7 +1589,8 @@ async function handlePrewarm(request, url, ctx, env) {
 
     // 6. Warm full HTML response (early exit cache)
     if (shellResult?.html && dataResult.data) {
-      const injected = injectIntoHtml(shellResult.html, slug, dataResult.data, "prewarm");
+      const prewarmProducts = storeId && results.products === "warmed" ? (await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS).catch(() => null)) : null;
+      const injected = injectIntoHtml(shellResult.html, slug, dataResult.data, "prewarm", prewarmProducts);
       const htmlResponse = new Response(injected.html, {
         status: 200,
         headers: {
