@@ -1,0 +1,1 @@
+ALTER TABLE public.store_theme_config ADD COLUMN transparent_header boolean NOT NULL DEFAULT false;

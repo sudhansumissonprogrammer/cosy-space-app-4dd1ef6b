@@ -139,7 +139,7 @@ function StorefrontSkeleton() {
   );
 }
 
-function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left", mobileNavEnabled = false }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string; mobileNavEnabled?: boolean }) {
+function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left", mobileNavEnabled = false, transparentHeader = false }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string; mobileNavEnabled?: boolean; transparentHeader?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
@@ -190,7 +190,7 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
     <>
       {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
 
-      <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
+      <nav className={`sticky top-0 z-30 ${isCheckout || !transparentHeader ? 'bg-card/80 backdrop-blur-md' : 'bg-transparent'}`}>
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
           {isCheckout ? (
             <>
@@ -289,6 +289,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
           marqueeEnabled={themeConfig?.marquee_enabled ?? true}
           headerLogoAlignment={themeConfig?.header_logo_alignment || "left"}
           mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? false}
+          transparentHeader={themeConfig?.transparent_header ?? false}
         />
       )}
     </StorefrontShell>

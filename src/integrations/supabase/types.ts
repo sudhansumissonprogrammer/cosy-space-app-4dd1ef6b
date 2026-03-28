@@ -1343,6 +1343,7 @@ export type Database = {
           product_card_style: string
           store_id: string
           text_color: string
+          transparent_header: boolean
           updated_at: string
         }
         Insert: {
@@ -1363,6 +1364,7 @@ export type Database = {
           product_card_style?: string
           store_id: string
           text_color?: string
+          transparent_header?: boolean
           updated_at?: string
         }
         Update: {
@@ -1383,6 +1385,7 @@ export type Database = {
           product_card_style?: string
           store_id?: string
           text_color?: string
+          transparent_header?: boolean
           updated_at?: string
         }
         Relationships: [
