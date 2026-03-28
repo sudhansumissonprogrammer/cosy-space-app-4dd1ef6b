@@ -1070,11 +1070,17 @@ function addCorsHeaders(response, source) {
 
 /* ============== INJECT DATA INTO HTML ============== */
 
-function injectIntoHtml(html, slug, storefrontData, dataSource) {
+function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts = null) {
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
+  }
+  // Inline first 4 products so React renders above-fold cards instantly (no /api/products fetch)
+  if (inlineProducts && Array.isArray(inlineProducts) && inlineProducts.length > 0) {
+    const first4 = inlineProducts.slice(0, 4);
+    const prodJson = JSON.stringify(first4).replace(/<\/script/gi, "<\\/script");
+    injection += `window.__PRODUCTS_INLINE__=${prodJson};`;
   }
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" crossorigin />
