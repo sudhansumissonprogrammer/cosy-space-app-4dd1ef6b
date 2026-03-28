@@ -187,7 +187,7 @@ export default function CreateStore() {
         mobileHeroUrl = await uploadFile(heroFile, "store-banners", `${user.id}/${slug}-mobile-hero.${ext}`);
       }
 
-      const { error } = await (supabase as any).from("stores").insert({
+      const { data: newStore, error } = await (supabase as any).from("stores").insert({
         owner_id: user.id,
         name: name.trim(),
         slug: slug.trim(),
@@ -205,7 +205,7 @@ export default function CreateStore() {
         mobile_hero_url: mobileHeroUrl,
         theme,
         owner_email: ownerEmail.trim() || null,
-      });
+      }).select("id").single();
 
       if (error) {
         setCreatingAnimation(false);
@@ -215,6 +215,30 @@ export default function CreateStore() {
           toast.error(error.message);
         }
         return;
+      }
+
+      // Create default theme config — Elegant Black & White + Algeria SC + Center + Transparent + Mobile Nav
+      if (newStore?.id) {
+        await (supabase as any).from("store_theme_config").insert({
+          store_id: newStore.id,
+          primary_color: "#1a1a1a",
+          accent_color: "#f5f5f5",
+          text_color: "#1a1a1a",
+          background_color: "#ffffff",
+          heading_font: "Alegreya SC",
+          body_font: "Alegreya SC",
+          button_style: "rounded",
+          product_card_style: "style-1",
+          category_style: "minimal",
+          header_style: "transparent",
+          header_logo_alignment: "Center",
+          mobile_nav_enabled: true,
+          marquee_enabled: false,
+          marquee_text: "",
+          marquee_gradient: "linear-gradient(90deg, #1a1a1a, #333333)",
+        }).then(({ error: themeErr }: any) => {
+          if (themeErr) console.warn("Theme config insert failed:", themeErr.message);
+        });
       }
 
       // Pre-warm edge caches so first visitor gets instant load
