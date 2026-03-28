@@ -57,21 +57,17 @@
         var supaUrl='https://soxuyuupzodkufxbbndq.supabase.co';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNveHV5dXVwem9ka3VmeGJibmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTI5ODYsImV4cCI6MjA5MDE2ODk4Nn0.cnK4FujigfVvNaXfNwQBb9qUQei8IQecHbDoVjFewQU';
 
-        // Fetch store data (lightweight — no product injection into DOM)
-        var p_=fetch(supaUrl+'/rest/v1/rpc/get_storefront_data',{
+        // Fetch lightweight shell (store+categories+theme) — matches Worker's get_storefront_shell
+        var p_=fetch(supaUrl+'/rest/v1/rpc/get_storefront_shell',{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
-          body:JSON.stringify({_slug:slug,_product_limit:20})
+          body:JSON.stringify({_slug:slug})
         }).then(function(r){return r.json()}).then(function(data){
           if(data&&data.store){
             window.__STOREFRONT_DATA__=data;
-            // Bridge for useStorefrontProducts
-            if(data.products&&data.products.length>0){
-              window.__PRODUCTS_PREFETCH__=Promise.resolve(data.products);
-            } else if(data.store.id){
-              var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+data.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=20&select=id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at';
-              window.__PRODUCTS_PREFETCH__=fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){return r.json()}).catch(function(){return null});
-            }
+            // Kick off products fetch separately via REST API
+            var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+data.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=20&select=id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at';
+            window.__PRODUCTS_PREFETCH__=fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){return r.json()}).catch(function(){return null});
           }
           return data;
         }).catch(function(){return null});

@@ -674,7 +674,7 @@ async function _prewarmProducts(storeId, slug, ctx, env) {
 
 /* ============== PRODUCTS API (Cache → DB, KV fallback only) ============== */
 
-const PRODUCTS_CACHE_TTL = 60;        // Cache API: 60 seconds
+const PRODUCTS_CACHE_TTL = 300;       // Cache API: 300 seconds (5 min) — stale-while-revalidate + purge keeps freshness
 const PRODUCTS_KV_TTL = 1800;         // KV: 30 minutes (prewarm only, not written on user requests)
 const PRODUCTS_DB_TIMEOUT_MS = 3000;
 const PRODUCTS_PAGE_SIZE = 20;
