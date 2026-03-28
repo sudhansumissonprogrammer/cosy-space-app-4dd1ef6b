@@ -247,10 +247,17 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_text: "🍽️ Scan & Order • 📱 WhatsApp Ordering • 🚀 Quick Service • ✨ Fresh & Delicious",
     marquee_enabled: true, product_card_style: "style-4", category_style: "style-5", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
+  "theme-14": {
+    primary_color: "#004643", accent_color: "#004643", text_color: "#222222", background_color: "#F0EDE5",
+    heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #004643, #02615C, #004643)",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-2", category_style: "style-3", header_logo_alignment: "center", mobile_nav_enabled: false, header_style: "normal",
+  },
 };
 
 const THEMES = [
   { id: "theme-1", name: "Classic", description: "Elegant gold & black with serif headings", available: true },
+  { id: "theme-14", name: "Classic Center", description: "Classic theme with centered logo & marquee under hero", available: true },
   { id: "theme-2", name: "Bold Modern", description: "Transparent header, carousel hero, masonry grid", available: true },
   { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
   
