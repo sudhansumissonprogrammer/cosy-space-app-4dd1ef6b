@@ -1203,6 +1203,8 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 /* ============== FETCH AND INJECT SLUG INTO HTML ============== */
 
 async function fetchAndInjectSlug(request, slug, ctx, env) {
+  // Fetch shell, storefront data, AND products in parallel — eliminates waterfall
+  const domain = (request.headers.get("host") || new URL(request.url).hostname).toLowerCase().trim();
   const [shellResult, prefetchResult] = await Promise.all([
     getSpaShell(request, ctx, env),
     prefetchStorefrontData(slug, ctx, env),
@@ -1216,7 +1218,34 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
   const storefrontData = prefetchResult.data;
   const dataSource = prefetchResult.source;
 
-  const result = injectIntoHtml(shellResult.html, slug, storefrontData, dataSource);
+  // Fetch products in parallel (non-blocking — uses storeId from storefront data)
+  let inlineProducts = null;
+  const storeId = storefrontData?.store?.id;
+  if (storeId) {
+    try {
+      // Check products cache first
+      const prodCacheKey = _buildProductsCacheKey(domain, {});
+      const cachedProds = await cache.match(prodCacheKey);
+      if (cachedProds) {
+        inlineProducts = await cachedProds.json();
+      } else {
+        inlineProducts = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
+        // Cache them for future requests
+        if (inlineProducts && ctx) {
+          const body = JSON.stringify(inlineProducts);
+          ctx.waitUntil(
+            cache.put(prodCacheKey, new Response(body, {
+              headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
+            })).catch(() => {})
+          );
+        }
+      }
+    } catch {
+      // Products will be fetched client-side as fallback
+    }
+  }
+
+  const result = injectIntoHtml(shellResult.html, slug, storefrontData, dataSource, inlineProducts);
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
