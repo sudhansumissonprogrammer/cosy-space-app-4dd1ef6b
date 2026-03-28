@@ -72,7 +72,12 @@
   <meta name="twitter:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
 </head>
   <body>
+    <!-- Worker injects #sf-skel BEFORE #root. This script runs after both exist. -->
     <div id="root"></div>
+    <script>
+      /* Remove Worker skeleton — runs in body so #sf-skel exists */
+      (function(){var s=document.getElementById('sf-skel');if(s)s.remove()})();
+    </script>
     <script>
       (function(){
         var p=location.pathname;
