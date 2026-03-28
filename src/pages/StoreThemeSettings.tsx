@@ -2308,6 +2308,21 @@ export default function StoreThemeSettings() {
                   />
                 </div>
               </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <h4 className="text-sm font-semibold">Transparent Header</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Make the header background transparent so it blends with the page content.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.transparent_header}
+                    onCheckedChange={(checked) => updateField("transparent_header", checked)}
+                  />
+                </div>
+              </div>
             </>
           )}
 
