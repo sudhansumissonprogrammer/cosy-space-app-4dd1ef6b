@@ -979,17 +979,18 @@ function buildProductResponse(data, cacheKey, ctx, source) {
 }
 
 /**
- * Background refresh: resolve store_id, fetch from DB, update Cache + KV.
- * CHANGE 5: Skip KV write if data unchanged (reduces KV write operations).
+ * Background refresh: resolve store_id, fetch from DB, update Cache API only.
+ * KV is NOT written during background refresh — only during pre-warm.
+ * This eliminates all KV reads/writes from the normal traffic path.
  */
-async function _refreshProductsBackground(domain, filters, cacheKey, kvKey, env) {
+async function _refreshProductsBackground(domain, filters, cacheKey, env) {
   try {
     const storeId = await _resolveStoreId(domain, env);
     if (!storeId) return;
     const data = await _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
 
-    // Always update Cache API (cheap, per-colo)
+    // Update Cache API only (cheap, per-colo) — no KV writes
     await cache.put(
       cacheKey,
       new Response(body, {
@@ -999,19 +1000,6 @@ async function _refreshProductsBackground(domain, filters, cacheKey, kvKey, env)
         },
       })
     ).catch(() => {});
-
-    // CHANGE 5: Only write KV if data actually changed (compare with existing)
-    if (env?.STORE_KV) {
-      try {
-        const existing = await env.STORE_KV.get(kvKey, { type: "text" });
-        if (existing !== body) {
-          await env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {});
-        }
-      } catch {
-        // If KV read fails, write anyway
-        await env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {});
-      }
-    }
   } catch {
     // Silent — stale data continues to serve
   }
