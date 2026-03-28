@@ -42,6 +42,12 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
       active: isActive("categories") || isActive("category"),
     },
     {
+      label: "Wishlist",
+      icon: Heart,
+      to: storefrontPath(store.slug, "wishlist"),
+      active: isActive("wishlist"),
+    },
+    {
       label: "Orders",
       icon: ClipboardList,
       to: storefrontPath(store.slug, "account"),
