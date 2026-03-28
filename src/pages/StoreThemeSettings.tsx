@@ -1899,6 +1899,16 @@ export default function StoreThemeSettings() {
         } catch {}
       }
 
+      // Purge edge cache so storefront visitors see new theme immediately
+      if (store?.slug) {
+        import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
+          purgeStoreCache(store.slug, (store as any).custom_domain)
+        );
+        import("@/lib/prewarmStore").then(({ prewarmStore }) =>
+          prewarmStore(store.slug, (store as any).custom_domain)
+        );
+      }
+
       setConfig(newConfig);
       setDirty(false);
       setIframeKey((k) => k + 1);
