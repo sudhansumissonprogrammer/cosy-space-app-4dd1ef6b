@@ -68,14 +68,22 @@ function AppHeader({ store }: { store: StoreData }) {
           </SheetContent>
         </Sheet>
 
+        {/* Store Logo / Name */}
+        <Link to={storefrontPath(store.slug)} className="flex items-center gap-2 flex-1 min-w-0">
+          {store.logo_url ? (
+            <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[120px] object-contain" />
+          ) : (
+            <span className="text-base font-bold truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}>{store.name}</span>
+          )}
+        </Link>
+
         <button
           onClick={() => setSearchOpen(true)}
-          className="flex flex-1 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-all active:scale-[0.98]"
-          style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08", border: "1px solid var(--storefront-text, hsl(var(--foreground)))12" }}
+          className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+          style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }}
           aria-label="Search products"
         >
-          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} aria-hidden="true" />
-          <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
+          <Search className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
         </button>
 
         <button onClick={openCart} className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
@@ -97,35 +105,23 @@ function BottomTabBar({ store }: { store: StoreData }) {
   const location = useLocation();
   const { wishlistCount } = useWishlist();
   const { user } = useStorefrontAuth();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
 
   const basePath = storefrontPath(store.slug);
   const tabs = [
     { icon: Home, label: "Home", to: basePath, match: basePath },
-    { icon: Grid3X3, label: "Categories", to: storefrontPath(store.slug, "shop"), match: "shop" },
-    { icon: Search, label: "Search", to: "__search__", match: "__never__" },
+    { icon: Grid3X3, label: "Categories", to: storefrontPath(store.slug, "categories"), match: "categories" },
+    { icon: Store, label: "Shop", to: storefrontPath(store.slug, "shop"), match: "shop" },
     { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
     { icon: User, label: "Profile", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
   ];
 
   return (
-    <>
     <nav className="fixed bottom-0 left-0 right-0 z-30 border-t md:hidden" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", borderColor: "var(--storefront-text, hsl(var(--foreground)))10" }}>
       <div className="flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom)]" style={{ minHeight: "56px" }}>
         {tabs.map((tab) => {
-          const isSearch = tab.to === "__search__";
           const isActive = tab.match === basePath ? location.pathname === basePath || location.pathname === basePath + "/" : location.pathname.includes(tab.match);
           const TabIcon = tab.icon;
-          return isSearch ? (
-            <button key={tab.label} onClick={() => setSearchOpen(true)} className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 transition-colors relative" style={{ minWidth: "48px" }}>
-              <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
-                <TabIcon className="h-5 w-5 transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))60" }} />
-              </div>
-              <span className="text-[10px] font-medium" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }}>{tab.label}</span>
-            </button>
-          ) : (
+          return (
             <Link key={tab.label} to={tab.to} className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 transition-colors relative" style={{ minWidth: "48px" }}>
               <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
                 <TabIcon className="h-5 w-5 transition-colors" style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))60" }} />
@@ -142,8 +138,6 @@ function BottomTabBar({ store }: { store: StoreData }) {
         })}
       </div>
     </nav>
-    <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
-    </>
   );
 }
 
