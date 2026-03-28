@@ -234,7 +234,7 @@ interface ThemeConfig {
   category_style: string;
   header_logo_alignment: string;
   mobile_nav_enabled: boolean;
-  transparent_header: boolean;
+  header_style: string;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
@@ -244,44 +244,44 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
     heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, transparent_header: false,
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-2": {
     primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
     heading_font: "Space Grotesk", body_font: "DM Sans", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, transparent_header: false,
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-3": {
     primary_color: "#3B82F6", accent_color: "#F97316", text_color: "#1e293b", background_color: "#F8FAFC",
     heading_font: "Inter", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #3B82F6, #60a5fa, #F97316)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, transparent_header: false,
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-10": {
     primary_color: "#FF3F6C", accent_color: "#111111", text_color: "#1a1a1a", background_color: "#FFFFFF",
     heading_font: "Poppins", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, transparent_header: false,
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-11": {
     primary_color: "#1a1a1a", accent_color: "#EF4444", text_color: "#1a1a1a", background_color: "#F5F5F5",
     heading_font: "DM Sans", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #1a1a1a, #555, #1a1a1a)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, transparent_header: false,
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-12": {
     primary_color: "#FF3F6C", accent_color: "#111111", text_color: "#1a1a1a", background_color: "#FFFFFF",
     heading_font: "Poppins", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #FF3F6C, #ff8fa3, #FF3F6C)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-3", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, transparent_header: false,
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-3", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-13": {
     primary_color: "#25D366", accent_color: "#128C7E", text_color: "#1a1a1a", background_color: "#FFFFFF",
     heading_font: "DM Sans", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #25D366, #128C7E, #25D366)",
     marquee_text: "🍽️ Scan & Order • 📱 WhatsApp Ordering • 🚀 Quick Service • ✨ Fresh & Delicious",
-    marquee_enabled: true, product_card_style: "style-4", category_style: "style-5", header_logo_alignment: "left", mobile_nav_enabled: false, transparent_header: false,
+    marquee_enabled: true, product_card_style: "style-4", category_style: "style-5", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
 };
 
@@ -1844,7 +1844,7 @@ export default function StoreThemeSettings() {
         category_style: themeConfig.category_style || "style-1",
         header_logo_alignment: themeConfig.header_logo_alignment || "left",
         mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? false,
-        transparent_header: themeConfig.transparent_header ?? false,
+        header_style: themeConfig.header_style || "normal",
       });
     } else {
       setConfig(defaults);
@@ -2310,17 +2310,39 @@ export default function StoreThemeSettings() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <h4 className="text-sm font-semibold">Transparent Header</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Make the header background transparent so it blends with the page content.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={config.transparent_header}
-                    onCheckedChange={(checked) => updateField("transparent_header", checked)}
-                  />
+                <h4 className="text-sm font-semibold mb-2">Header Style</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Choose how the header looks on your storefront.
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { value: "normal", label: "Normal", desc: "Solid background" },
+                    { value: "transparent", label: "Transparent", desc: "See-through" },
+                    { value: "glassmorphic", label: "Glass", desc: "Rounded blur" },
+                  ].map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => updateField("header_style", s.value)}
+                      className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all ${
+                        config.header_style === s.value
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                    >
+                      {config.header_style === s.value && (
+                        <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                      <div className={`w-full h-6 rounded-md border ${
+                        s.value === "normal" ? "bg-muted border-border" :
+                        s.value === "transparent" ? "bg-transparent border-dashed border-muted-foreground/30" :
+                        "bg-muted/40 backdrop-blur-sm border-muted-foreground/20 shadow-inner"
+                      }`} />
+                      <span className="text-[10px] font-semibold">{s.label}</span>
+                      <span className="text-[9px] text-muted-foreground">{s.desc}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </>
