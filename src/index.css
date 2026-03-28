@@ -18,48 +18,48 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 224 30% 14%;
+    --background: 43 24% 92%;
+    --foreground: 0 0% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 30% 14%;
+    --card-foreground: 0 0% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 30% 14%;
+    --popover-foreground: 0 0% 13%;
 
-    --primary: 0 0% 10%;
+    --primary: 178 100% 13%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 16% 93%;
-    --secondary-foreground: 224 30% 14%;
+    --secondary: 40 22% 88%;
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 220 16% 93%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 40 22% 88%;
+    --muted-foreground: 0 0% 42%;
 
-    --accent: 230 75% 95%;
-    --accent-foreground: 230 75% 57%;
+    --accent: 174 30% 93%;
+    --accent-foreground: 178 100% 13%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 90%;
-    --input: 220 16% 90%;
-    --ring: 230 75% 57%;
+    --border: 0 0% 90%;
+    --input: 0 0% 87%;
+    --ring: 178 100% 13%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 10% 46%;
-    --sidebar-primary: 230 75% 57%;
+    --sidebar-foreground: 0 0% 42%;
+    --sidebar-primary: 178 100% 13%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 75% 95%;
-    --sidebar-accent-foreground: 230 75% 57%;
-    --sidebar-border: 220 16% 93%;
-    --sidebar-ring: 230 75% 57%;
+    --sidebar-accent: 174 30% 93%;
+    --sidebar-accent-foreground: 178 100% 13%;
+    --sidebar-border: 40 22% 88%;
+    --sidebar-ring: 178 100% 13%;
 
-    --success: 152 60% 30%;
+    --success: 174 40% 30%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 39 100% 50%;
     --warning-foreground: 0 0% 100%;
 
     font-family: 'Inter', 'Segoe UI', sans-serif;
@@ -67,14 +67,14 @@
     --font-storefront: 'Alegreya SC', serif;
 
     /* Storefront theme defaults (overridden by inline CSS vars) */
-    --storefront-primary: #b8873c;
-    --storefront-accent: #000000;
-    --storefront-text: #1a1a1a;
-    --storefront-bg: #f7f5f0;
+    --storefront-primary: #004643;
+    --storefront-accent: #004643;
+    --storefront-text: #222222;
+    --storefront-bg: #F0EDE5;
     --storefront-heading-font: 'Alegreya SC';
     --storefront-body-font: 'Inter';
     --storefront-button-radius: 0.5rem;
-    --storefront-marquee-gradient: linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a);
+    --storefront-marquee-gradient: linear-gradient(90deg, #004643, #02615C, #004643);
   }
 
   .dark {
