@@ -158,7 +158,7 @@ export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: st
   }, []);
 
   return (
-    <StorefrontShell slugOverride={slugOverride} defaultPrimary="#b8873c" skeleton={<StorefrontV2Skeleton />}>
+    <StorefrontShell slugOverride={slugOverride} defaultPrimary="#004643" skeleton={<StorefrontV2Skeleton />}>
       {({ store }) => (
         <>
           <TransparentNav store={store} scrolled={scrolled} />

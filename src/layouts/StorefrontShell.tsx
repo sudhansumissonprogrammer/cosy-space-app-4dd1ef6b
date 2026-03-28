@@ -107,7 +107,7 @@ export default function StorefrontShell({
   showWishlist = true,
   showSideCart = true,
   showExitIntent = false,
-  defaultPrimary = "#b8873c",
+  defaultPrimary = "#004643",
   defaultButtonRadius = "0.5rem",
   wrapperStyle,
   wrapperClassName = "storefront-font min-h-screen font-sans",

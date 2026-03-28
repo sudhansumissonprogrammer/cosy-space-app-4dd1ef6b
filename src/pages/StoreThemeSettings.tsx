@@ -53,13 +53,13 @@ function contrastRatio(hex1: string, hex2: string): number {
 
 const COLOR_COMBINATIONS = [
   {
-    id: "royal-gold",
-    name: "Royal Gold",
-    primary: "#b8873c",
-    accent: "#000000",
-    text: "#1a1a1a",
-    background: "#f7f5f0",
-    marquee: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+    id: "cyprus-sand",
+    name: "Cyprus Sand",
+    primary: "#004643",
+    accent: "#004643",
+    text: "#222222",
+    background: "#F0EDE5",
+    marquee: "linear-gradient(90deg, #004643, #02615C, #004643)",
   },
   {
     id: "crimson-royale",
@@ -241,15 +241,15 @@ const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 
 
 const THEME_DEFAULTS: Record<string, ThemeConfig> = {
   "theme-1": {
-    primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
+    primary_color: "#004643", accent_color: "#004643", text_color: "#222222", background_color: "#F0EDE5",
     heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
-    marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+    marquee_gradient: "linear-gradient(90deg, #004643, #02615C, #004643)",
     marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-2": {
-    primary_color: "#b8873c", accent_color: "#000000", text_color: "#1a1a1a", background_color: "#f7f5f0",
+    primary_color: "#004643", accent_color: "#004643", text_color: "#222222", background_color: "#F0EDE5",
     heading_font: "Space Grotesk", body_font: "DM Sans", button_style: "pill",
-    marquee_gradient: "linear-gradient(90deg, #b8873c, #f1d78a, #d1a24a)",
+    marquee_gradient: "linear-gradient(90deg, #004643, #02615C, #004643)",
     marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-3": {
@@ -2013,7 +2013,7 @@ export default function StoreThemeSettings() {
                     className="h-24 w-full"
                     style={{
                       background: theme.id === "theme-1"
-                        ? "linear-gradient(135deg, #f7f5f0 0%, #b8873c 50%, #000000 100%)"
+                        ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #000000 100%)"
                         : theme.id === "theme-2"
                         ? "linear-gradient(135deg, #ffffff 0%, #2563eb 50%, #1e293b 100%)"
                         : theme.id === "theme-3"

@@ -23,7 +23,7 @@ export function isLightColor(hex: string): boolean {
 export function buildThemeStyle(
   themeConfig: Record<string, any> | null,
   previewOverride: Record<string, string> | null,
-  defaultPrimary = "#b8873c",
+  defaultPrimary = "#004643",
   defaultButtonRadius = "0.5rem"
 ): { themeStyle: React.CSSProperties; primaryColor: string; btnTextColor: string } {
   const primaryColor = themeConfig?.primary_color || defaultPrimary;
