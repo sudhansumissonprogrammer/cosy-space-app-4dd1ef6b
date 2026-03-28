@@ -180,7 +180,7 @@ export default function StorefrontHome() {
     <>
       {/* Search bar trigger — hidden when header already has search */}
       {!hideSearchBar && (
-        <div className="bg-card/80 backdrop-blur-md px-4 pt-3 pb-1">
+        <div className="backdrop-blur-md px-4 pt-3 pb-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
           <div className="mx-auto max-w-6xl flex items-center gap-2">
             <button
               onClick={() => setSearchOpen(true)}
