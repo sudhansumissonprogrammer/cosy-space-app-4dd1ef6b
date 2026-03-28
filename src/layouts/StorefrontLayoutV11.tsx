@@ -1,7 +1,7 @@
 import { useState, Suspense } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, ShoppingCart, Heart, Search, Menu, Home, Bell } from "lucide-react";
+import { Store, ShoppingCart, Heart, Search, Menu, Home, Bell, User } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
