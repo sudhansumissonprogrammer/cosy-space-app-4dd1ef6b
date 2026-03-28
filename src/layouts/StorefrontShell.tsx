@@ -218,7 +218,7 @@ export default function StorefrontShell({
   // Wrap with providers
   if (showWishlist) {
     return (
-      <CartProvider slug={store.slug} storeId={store.id}>
+      <CartProvider slug={store.slug} storeId={store.id} currency={store.currency || "INR"}>
         <WishlistProvider slug={store.slug}>
           <StorefrontAuthProvider storeId={store.id}>
             {content}
