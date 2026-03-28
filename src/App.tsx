@@ -47,6 +47,7 @@ const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers")
 const StorefrontShop = lazy(() => import("./pages/StorefrontShop"));
 const StorefrontCategoriesPage = lazy(() => import("./pages/StorefrontCategories"));
 const StorefrontContact = lazy(() => import("./pages/StorefrontContact"));
+const StorefrontAboutUs = lazy(() => import("./pages/StorefrontAboutUs"));
 const StorefrontReturnPolicy = lazy(() => import("./pages/StorefrontReturnPolicy"));
 const StorefrontShippingPolicy = lazy(() => import("./pages/StorefrontShippingPolicy"));
 const StorefrontTerms = lazy(() => import("./pages/StorefrontTerms"));
