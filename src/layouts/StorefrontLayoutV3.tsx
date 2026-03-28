@@ -103,7 +103,7 @@ function AppHeader({ store }: { store: StoreData }) {
 
 function BottomTabBar({ store }: { store: StoreData }) {
   const location = useLocation();
-  const { wishlistCount } = useWishlist();
+  const _ = useWishlist(); // keep provider active
   const { user } = useStorefrontAuth();
 
   const basePath = storefrontPath(store.slug);
