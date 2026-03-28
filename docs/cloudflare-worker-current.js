@@ -1132,7 +1132,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   const skeletonBg = bgColor;
   const skeletonMuted = textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
 
-  let skeleton = `<div id="sf-skel" style="min-height:100vh;background:${skeletonBg};font-family:'Inter',sans-serif;position:relative;z-index:0">`;
+  let skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skeletonBg};font-family:'Inter',sans-serif;z-index:2147483000;pointer-events:none;overflow:hidden">`;
   // Nav bar
   skeleton += `<nav style="height:56px;background:${skeletonBg};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px">`;
   if (logoUrl) {
@@ -1169,7 +1169,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     skeleton += `</div>`;
   }
   skeleton += `</div></div>`;
-  // No self-removal needed — index.html body script + main.tsx both remove #sf-skel
+  skeleton += `<script>(function(){var removed=false;function kill(){if(removed)return;removed=true;var s=document.getElementById('sf-skel');if(s){s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}}function whenReady(){kill();requestAnimationFrame(kill);setTimeout(kill,120);setTimeout(kill,600);}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',whenReady,{once:true});}else{whenReady();}window.addEventListener('load',kill,{once:true});var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});setTimeout(function(){mo.disconnect();kill();},1500);}}</script>`;
 
   let lcpPreload = "";
   if (storefrontData?.store?.logo_url) {
