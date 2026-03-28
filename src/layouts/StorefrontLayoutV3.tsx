@@ -44,6 +44,7 @@ function AppHeader({ store }: { store: StoreData }) {
               <nav className="flex flex-col gap-1 p-4">
                 {[
                   { to: storefrontPath(store.slug), label: "Home" },
+                  { to: storefrontPath(store.slug, "shop"), label: "Shop All" },
                   { to: storefrontPath(store.slug, "account"), label: "My Account" },
                   { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
                   { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
@@ -53,16 +54,6 @@ function AppHeader({ store }: { store: StoreData }) {
                     {link.label}
                   </Link>
                 ))}
-                {categories && categories.length > 0 && (
-                  <>
-                    <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categories</div>
-                    {categories.map((cat: any) => (
-                      <Link key={cat.id} to={storefrontPath(store.slug, `category/${cat.slug}`)} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
-                        {cat.name}
-                      </Link>
-                    ))}
-                  </>
-                )}
               </nav>
             </div>
           </SheetContent>

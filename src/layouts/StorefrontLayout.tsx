@@ -95,18 +95,11 @@ function HamburgerMenu({ store }: { store: StoreData }) {
           </div>
           <nav className="flex flex-col gap-1 p-4">
             <Link to={storefrontPath(store.slug)} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Home className="h-4 w-4" />Home</Link>
+            <Link to={storefrontPath(store.slug, "shop")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Store className="h-4 w-4" />Shop All</Link>
             <Link to={storefrontPath(store.slug, "account")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><User className="h-4 w-4" />My Account</Link>
             <Link to={storefrontPath(store.slug, "wishlist")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Heart className="h-4 w-4" />Wishlist</Link>
             <Link to={storefrontPath(store.slug, "contact")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Mail className="h-4 w-4" />Contact Us</Link>
             <Link to={storefrontPath(store.slug, "return-policy")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><RotateCcw className="h-4 w-4" />Return, Refund & Cancellation</Link>
-            {categories && categories.length > 0 && (
-              <>
-                <div className="mt-3 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categories</div>
-                {categories.map((cat: any) => (
-                  <Link key={cat.id} to={storefrontPath(store.slug, `category/${cat.slug}`)} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Tag className="h-4 w-4" />{cat.name}</Link>
-                ))}
-              </>
-            )}
           </nav>
         </div>
       </SheetContent>
