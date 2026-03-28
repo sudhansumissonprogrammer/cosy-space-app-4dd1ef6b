@@ -2310,17 +2310,39 @@ export default function StoreThemeSettings() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <h4 className="text-sm font-semibold">Transparent Header</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Make the header background transparent so it blends with the page content.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={config.transparent_header}
-                    onCheckedChange={(checked) => updateField("transparent_header", checked)}
-                  />
+                <h4 className="text-sm font-semibold mb-2">Header Style</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Choose how the header looks on your storefront.
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { value: "normal", label: "Normal", desc: "Solid background" },
+                    { value: "transparent", label: "Transparent", desc: "See-through" },
+                    { value: "glassmorphic", label: "Glass", desc: "Rounded blur" },
+                  ].map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => updateField("header_style", s.value)}
+                      className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all ${
+                        config.header_style === s.value
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                    >
+                      {config.header_style === s.value && (
+                        <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                      <div className={`w-full h-6 rounded-md border ${
+                        s.value === "normal" ? "bg-muted border-border" :
+                        s.value === "transparent" ? "bg-transparent border-dashed border-muted-foreground/30" :
+                        "bg-muted/40 backdrop-blur-sm border-muted-foreground/20 shadow-inner"
+                      }`} />
+                      <span className="text-[10px] font-semibold">{s.label}</span>
+                      <span className="text-[9px] text-muted-foreground">{s.desc}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </>
