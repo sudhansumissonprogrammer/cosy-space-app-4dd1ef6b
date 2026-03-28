@@ -1,103 +1,114 @@
 
-Goal: make the storefront cold load feel faster by removing the expensive “2 real product cards first” behavior and removing animated shimmer on the storefront loading path.
 
-What I’ll change
+# Cloudflare Worker KV Optimization Plan
 
-1. Remove the injected 2-product preview from the HTML shell
-- In `docs/cloudflare-worker-current.js`:
-  - Remove the `_initialProducts` fetch inside `_fetchShellFromSupabase()`
-  - Stop fetching products during shell generation
-  - Remove product-image preload generation from `injectIntoHtml()`
-  - Remove any HTML injection logic that inserts the first 1–2 real product cards
-- Result:
-  - Smaller HTML
-  - No product DB/API work in the shell path
-  - No “2 photos appear first” effect
+## Problem Analysis
 
-2. Simplify the `index.html` startup script
-- In `index.html`:
-  - Remove the fallback logic that:
-    - calls `get_storefront_data`
-    - preloads first/second product images
-    - injects real product cards into `.sf-skel-grid`
-    - resolves `__PRODUCTS_PREFETCH__` from prefetched product data
-  - Keep only the minimum shell/bootstrap behavior needed for store data, or trim it further so React owns the product rendering
-- Result:
-  - Less main-thread work before React mounts
-  - No duplicate “fake fast” product rendering that still feels slow
+The current Worker has **KV-first** ordering in critical paths, causing excessive KV reads even when Cache API has data. Here are the specific issues:
 
-3. Replace shimmer with static placeholders
-- In `index.html`:
-  - Remove `@keyframes shimmer`
-  - Replace `.sk-shimmer` animated gradient with flat static placeholder styles
-- In storefront React skeletons:
-  - Update storefront-specific loading placeholders to avoid animation:
-    - `src/pages/StorefrontHome.tsx`
-    - `src/layouts/StorefrontShell.tsx`
-    - possibly `src/components/ContentSkeleton.tsx` if used on storefront
-- I will avoid changing every app skeleton globally unless needed, so dashboard/admin screens keep their existing behavior.
-- Result:
-  - Less CPU/GPU work
-  - Cleaner, calmer loading state
-  - Better perceived cold-load performance
+### Current KV Reads Per Request (Worst Case)
 
-4. Keep product loading asynchronous and normal
-- Keep `useStorefrontProducts()` as the real product source
-- Let products render once the actual `/api/products` or preview fallback returns
-- Ensure the home page shows stable static placeholders until real cards load, instead of mixing injected cards + later hydration
-- Result:
-  - More consistent first render
-  - No odd visual jump from 2 cards to full list
+| Path | KV Reads | Issue |
+|------|----------|-------|
+| `getSpaShell()` | 1 | KV checked BEFORE Cache API |
+| `prefetchStorefrontData()` | 1 | KV checked BEFORE Cache API |
+| `resolveDomain()` | 1 | KV checked BEFORE Cache API |
+| `_resolveStoreId()` (products) | 1 | KV checked after in-memory only |
+| Products API data | 1 | Correct order (Cache → KV) |
+| Background revalidation | 2-3 | Runs on EVERY cache HIT |
+| **Total per cold request** | **5-7** | |
+| **Total per warm HIT** | **2-3** | Background reval still reads KV |
 
-5. Tighten storefront loading UX so it feels fast
-- In `src/pages/StorefrontHome.tsx`:
-  - Reduce above-the-fold skeleton complexity if needed
-  - Keep category + product placeholder sizes stable, but lightweight
-  - Preserve the optional mobile hero upload feature already in store settings
-- In `src/layouts/StorefrontShell.tsx`:
-  - Simplify the default storefront loading fallback if it’s heavier than needed
-- Result:
-  - Faster-feeling cold load without changing store features
+### Root Causes
+1. **`getSpaShell`** (line 389-411): Checks KV first, Cache API second — reversed from optimal
+2. **`prefetchStorefrontData`** (line 476-500): Same problem — KV before Cache API
+3. **`resolveDomain`** (line 200-261): Same problem — KV before Cache API
+4. **Background revalidation on every HIT** (line 1624-1640): Even when returning a cached response, `fetchAndInjectSlug` runs in background, triggering 2-3 KV reads
+5. **Short KV TTLs**: Shell at 60s, products at 300s — forces frequent re-writes
 
-Why this should help
-- Right now, the slow/odd behavior comes from two places:
-  1. the Worker shell path still prepares inline product preview data
-  2. `index.html` still does heavy pre-React work and animates shimmer placeholders
-- Removing both makes the shell truly lightweight:
-  - shell = store structure only
-  - products = loaded normally after boot
-  - placeholders = static, low-cost
+---
 
-Files likely involved
-- `docs/cloudflare-worker-current.js`
-- `index.html`
-- `src/pages/StorefrontHome.tsx`
-- `src/layouts/StorefrontShell.tsx`
-- possibly `src/components/ContentSkeleton.tsx`
+## Optimized Architecture
 
-Technical details
+### New Request Flow
 ```text
-Before:
-request -> worker shell -> shell data + initial products + image preload + HTML injection
-       -> index.html prefetch -> preload more images + replace skeleton cards
-       -> React hydration -> full product fetch/render
-
-After:
-request -> worker shell -> shell data only
-       -> static lightweight skeleton
-       -> React hydration
-       -> normal product fetch/render
+User → Worker → Early Cache (full HTML) → DONE (0 KV reads)
+                     ↓ MISS
+              Cache API (per-layer) → DONE (0 KV reads)
+                     ↓ MISS
+              KV (single consolidated read) → DONE (1 KV read)
+                     ↓ MISS
+              DB → write Cache + KV → DONE
 ```
 
-Expected outcome
-- No more 2 product images appearing first
-- No shimmer animation on storefront cold load
-- Smaller shell payload
-- Lower main-thread work before hydration
-- Better perceived cold-load speed, especially on first visit
+---
 
-Implementation priority
-1. Remove Worker inline product injection
-2. Remove `index.html` hybrid product injection/preload code
-3. Convert storefront placeholders from shimmer to static
-4. Simplify storefront loading skeletons without removing the mobile hero setting feature
+## Changes (Single File: `docs/cloudflare-worker-current.js`)
+
+### Change 1: Reverse cache order in `getSpaShell` — Cache API FIRST, KV second
+
+Currently lines 389-411 check KV → Cache API. Swap to Cache API → KV. This eliminates 1 KV read on every warm colo.
+
+### Change 2: Reverse cache order in `prefetchStorefrontData` — Cache API FIRST, KV second
+
+Lines 476-500 check KV → Cache API. Swap order. Eliminates 1 KV read per warm request.
+
+### Change 3: Reverse cache order in `resolveDomain` — Cache API FIRST, KV second
+
+Lines 200-261 check KV → Cache API. Swap so Cache API is checked first. Only matters for custom domains but still saves KV reads.
+
+### Change 4: Throttle background revalidation to prevent KV reads on every HIT
+
+Currently line 1624 runs `fetchAndInjectSlug` (which reads KV 2-3 times) on EVERY cache hit. Add a time-based gate: only revalidate if the cached response is older than 30 seconds. Use a lightweight in-memory Map to track last revalidation time per hostname+path.
+
+### Change 5: Skip KV writes in background refresh when data hasn't changed
+
+In `_refreshProductsBackground`, skip the KV write if the data matches what's already cached. This reduces KV write operations.
+
+### Change 6: Increase KV TTLs
+
+| Key | Current TTL | New TTL |
+|-----|-------------|---------|
+| `spa-shell:v1` | 60s | 3600s (1 hour) |
+| `storefront:{slug}` | 1800s | 3600s (1 hour) |
+| `products:{domain}` | 300s | 1800s (30 min) |
+| `store-id:{domain}` | 1800s | 3600s (1 hour) |
+| `domain:{domain}` | 3600s | 3600s (unchanged) |
+
+Purge endpoints already exist to invalidate on updates, so longer TTLs are safe.
+
+### Change 7: Consolidate KV reads in `fetchAndInjectSlug`
+
+Instead of two parallel calls (`getSpaShell` + `prefetchStorefrontData`) each doing their own KV lookup, add a combined KV key `bundle:{slug}` that stores both shell + storefront data. Single KV read replaces two.
+
+### Change 8: Add revalidation cooldown map
+
+```text
+const revalCooldowns = new Map(); // hostname+path → lastRevalTime
+const REVAL_COOLDOWN_MS = 30_000; // 30 seconds
+```
+
+Only trigger background revalidation if cooldown has elapsed, preventing repeated KV reads from stale-while-revalidate on every request.
+
+---
+
+## Expected KV Usage After Optimization
+
+| Scenario | Before (KV reads) | After (KV reads) | Reduction |
+|----------|-------------------|-------------------|-----------|
+| Cache HIT (early exit) | 2-3 (background reval) | 0 (cooldown gate) | 100% |
+| Cache API warm, KV skip | 2-3 | 0 | 100% |
+| Full cache miss | 5-7 | 1-2 | 70-85% |
+| Products API (warm) | 1 + 1 background | 0 | 100% |
+| Products API (miss) | 2-3 | 1 | 50-66% |
+
+**Overall estimated reduction: 85-90%** since the majority of requests are cache HITs with background revalidation being the main KV consumer.
+
+---
+
+## Files to Modify
+
+1. **`docs/cloudflare-worker-current.js`** — All Worker changes (reorder cache layers, add cooldown, increase TTLs, add bundle key)
+
+No changes needed to edge functions or client-side code. The prewarm and purge systems continue to work as-is — they just write to both Cache API and KV, which is correct.
+
