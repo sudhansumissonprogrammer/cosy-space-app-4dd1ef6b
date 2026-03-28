@@ -215,6 +215,17 @@ export default function StorefrontHomeV14() {
       {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
 
       {/* Categories */}
+      {storeCategories && storeCategories.length > 0 && (
+        <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px flex-1 bg-border" />
+            <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>
+              Shop by Category
+            </h2>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+        </div>
+      )}
       <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
 
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
