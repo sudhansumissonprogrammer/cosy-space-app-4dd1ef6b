@@ -162,7 +162,7 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
       slugOverride={slugOverride}
       defaultPrimary="#3B82F6"
       defaultButtonRadius="0.75rem"
-      wrapperStyle={{ "--storefront-bottom-nav-height": "72px" } as React.CSSProperties}
+      wrapperStyle={{ "--storefront-bottom-nav-height": "56px" } as React.CSSProperties}
       skeleton={<StorefrontV3Skeleton />}
     >
       {({ store }) => (
