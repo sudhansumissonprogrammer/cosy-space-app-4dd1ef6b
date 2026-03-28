@@ -2013,7 +2013,7 @@ export default function StoreThemeSettings() {
                     className="h-24 w-full"
                     style={{
                       background: theme.id === "theme-1"
-                        ? "linear-gradient(135deg, #f7f5f0 0%, #b8873c 50%, #000000 100%)"
+                        ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #000000 100%)"
                         : theme.id === "theme-2"
                         ? "linear-gradient(135deg, #ffffff 0%, #2563eb 50%, #1e293b 100%)"
                         : theme.id === "theme-3"

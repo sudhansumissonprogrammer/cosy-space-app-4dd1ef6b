@@ -75,7 +75,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
       ) : (
         <div
           className="absolute inset-0"
-          style={{ background: `linear-gradient(135deg, var(--storefront-primary, #b8873c), var(--storefront-accent, #000))` }}
+          style={{ background: `linear-gradient(135deg, var(--storefront-primary, #004643), var(--storefront-accent, #000))` }}
         />
       )}
 
@@ -97,7 +97,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
               to={slide.link}
               className="mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold uppercase tracking-wider transition-transform hover:scale-105"
               style={{
-                backgroundColor: "var(--storefront-primary, #b8873c)",
+                backgroundColor: "var(--storefront-primary, #004643)",
                 color: "var(--storefront-btn-text, #fff)",
                 borderRadius: "var(--storefront-button-radius, 0.5rem)",
               }}
@@ -108,7 +108,7 @@ function HeroCarousel({ store }: { store: StoreData }) {
             <button
               className="mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold uppercase tracking-wider transition-transform hover:scale-105"
               style={{
-                backgroundColor: "var(--storefront-primary, #b8873c)",
+                backgroundColor: "var(--storefront-primary, #004643)",
                 color: "var(--storefront-btn-text, #fff)",
                 borderRadius: "var(--storefront-button-radius, 0.5rem)",
               }}
