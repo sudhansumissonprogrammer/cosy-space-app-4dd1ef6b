@@ -258,6 +258,7 @@ function usePrefetchStorefrontData(slug: string | undefined) {
 /** Eagerly start loading the home page chunk so it downloads alongside the layout */
 function prefetchHomeChunk(theme: string) {
   switch (theme) {
+    case "theme-14": return import("./pages/StorefrontHomeV14");
     case "theme-13": return import("./pages/StorefrontHomeV13");
     case "theme-12": return import("./pages/StorefrontHomeV12");
     case "theme-11": return import("./pages/StorefrontHomeV11");
