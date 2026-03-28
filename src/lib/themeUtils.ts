@@ -19,6 +19,11 @@ export function isLightColor(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
+/** Read lightweight theme hint injected by Worker (v4.1) */
+export function getEdgeThemeHint(): { pc: string; bg: string; tc: string; ac: string; hf: string; bf: string; bs: string } | null {
+  return (window as any).__THEME__ || null;
+}
+
 /** Build CSS variable style object from theme config + optional preview override */
 export function buildThemeStyle(
   themeConfig: Record<string, any> | null,
@@ -26,7 +31,9 @@ export function buildThemeStyle(
   defaultPrimary = "#004643",
   defaultButtonRadius = "0.5rem"
 ): { themeStyle: React.CSSProperties; primaryColor: string; btnTextColor: string } {
-  const primaryColor = themeConfig?.primary_color || defaultPrimary;
+  // v4.1: Use edge theme hint as fallback when themeConfig hasn't loaded yet
+  const edgeHint = getEdgeThemeHint();
+  const primaryColor = themeConfig?.primary_color || edgeHint?.pc || defaultPrimary;
   const primaryLight = computePrimaryLight(primaryColor);
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 

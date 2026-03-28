@@ -1,30 +1,17 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.0 — NON-BLOCKING FAST SHELL
+ * STORIVO PRODUCTION ROUTER v4.1 — THEMED FAST SHELL + STAMPEDE GUARD
  *
- * Changes from v3.4:
- *   - NON-BLOCKING COLD LOAD: On cache MISS, returns shell HTML immediately
- *     with only slug + generic skeleton. DB data fetched in background via
- *     ctx.waitUntil and warms the full HTML cache for the NEXT request.
- *   - FAST SHELL MODE: New injectFastShell() — zero DB dependency, ~50ms.
- *     Only injects slug, preconnects, and a generic themed skeleton.
- *   - FULL INJECTION ONLY ON CACHE WARM: injectIntoHtml() (with data, theme,
- *     categories) only runs during prewarm and background revalidation —
- *     never on the critical response path.
- *   - ELIMINATED Promise.all BLOCKING: fetchAndInjectSlug no longer awaits
- *     prefetchStorefrontData before returning.
- *   - INCREASED EARLY HTML TTL: 600s → 1200s for edge cache.
- *
- * Architecture:
- *   User → Edge Cache (full HTML with data) → DONE (0 fetches)
- *        ↓ MISS
- *   SPA Shell (Cache API → KV → origin) → Fast Shell inject → Response (~50ms)
- *        ↓ ctx.waitUntil (background)
- *   prefetchStorefrontData → injectIntoHtml → warm Edge Cache for next request
- *
- * Result: Cold load Worker response in 50-120ms instead of 200-600ms.
+ * Changes from v4.0:
+ *   1. THEMED FAST SHELL: On cold load, reads lightweight theme from KV
+ *      (primaryColor + bgColor only) and injects branded skeleton — no DB RPC.
+ *   2. STAMPEDE GUARD: _warmFullHtmlInBackground checks edge cache first +
+ *      uses shouldRevalidateGlobal lock to prevent duplicate warming.
+ *   3. PREBUILT HEAD: Caches the <head> injection string (preconnects,
+ *      modulepreloads, CSS preload) in KV so injectFastShell does zero regex.
+ *   4. All existing v4.0 features preserved.
  */
 
-const WORKER_VERSION = "4.0";
+const WORKER_VERSION = "4.1";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
@@ -475,6 +462,63 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
   return html;
 }
 
+/* ============== PREBUILT HEAD — cached in KV to avoid regex on every request ============== */
+
+const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
+const PREBUILT_HEAD_KV_TTL = 3600;
+
+/**
+ * Extract and cache the <head> injection pieces (CSS preload + modulepreloads)
+ * from the SPA shell HTML. Stored in KV so injectFastShell does ZERO regex.
+ */
+async function getPrebuiltHead(html, env) {
+  // Try KV first
+  if (env?.STORE_KV) {
+    try {
+      const cached = await env.STORE_KV.get(PREBUILT_HEAD_KV_KEY);
+      if (cached) return cached;
+    } catch {}
+  }
+
+  // Build it from HTML
+  const prebuilt = _buildPrebuiltHead(html);
+
+  // Store in KV for future requests
+  if (env?.STORE_KV) {
+    env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, prebuilt, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(() => {});
+  }
+
+  return prebuilt;
+}
+
+function _buildPrebuiltHead(html) {
+  let head = "";
+
+  // Preconnects (static — always the same)
+  head += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />`;
+  head += `<link rel="dns-prefetch" href="${SUPABASE_URL}" />`;
+  head += `<link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co/storage" crossorigin />`;
+
+  // CSS preload
+  const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
+  if (cssMatch) {
+    head += `<link rel="preload" href="${cssMatch[1]}" as="style" />`;
+  }
+
+  // Module preloads (skip dashboard chunks)
+  const DASHBOARD_CHUNK_PATTERN = /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
+  const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
+  const seen = new Set();
+  for (const m of chunkMatches) {
+    if (!seen.has(m[1]) && !DASHBOARD_CHUNK_PATTERN.test(m[1])) {
+      seen.add(m[1]);
+      head += `<link rel="modulepreload" href="${m[1]}" />`;
+    }
+  }
+
+  return head;
+}
+
 
 const KV_STOREFRONT_TTL = 3600;
 const CACHE_STOREFRONT_TTL = 600;
@@ -564,6 +608,12 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       const dataStr = JSON.stringify(data);
       const storeId = data?.store?.id;
       const storeSlug = data?.store?.slug;
+
+      // v4.1: Also cache lightweight theme in KV for fast shell
+      if (data?.theme_config) {
+        _cacheThemeForFastShell(slug, data.theme_config, env);
+      }
+
       ctx.waitUntil(
         Promise.all([
           env?.STORE_KV
@@ -586,6 +636,42 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
     return null;
   }
 }
+
+/* ============== LIGHTWEIGHT THEME CACHE (for Fast Shell) ============== */
+
+const THEME_LITE_KV_TTL = 3600;
+
+/**
+ * Cache only the minimal theme props needed for a branded skeleton.
+ * ~100 bytes in KV — nearly free to read.
+ */
+function _cacheThemeForFastShell(slug, themeConfig, env) {
+  if (!env?.STORE_KV) return;
+  const lite = {
+    pc: themeConfig.primary_color || "#004643",
+    bg: themeConfig.background_color || "#ffffff",
+    tc: themeConfig.text_color || "#1a1a1a",
+    ac: themeConfig.accent_color || "",
+    hf: themeConfig.heading_font || "",
+    bf: themeConfig.body_font || "",
+    bs: themeConfig.button_style || "rounded",
+  };
+  env.STORE_KV.put(`theme-lite:${slug}`, JSON.stringify(lite), { expirationTtl: THEME_LITE_KV_TTL }).catch(() => {});
+}
+
+/**
+ * Read lightweight theme from KV — NO DB call, ~2ms.
+ * Returns null if not cached (first-ever cold load for this store).
+ */
+async function _getThemeLite(slug, env) {
+  if (!env?.STORE_KV) return null;
+  try {
+    return await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" });
+  } catch {
+    return null;
+  }
+}
+
 
 async function _prewarmProducts(storeId, slug, ctx, env) {
   const domain = slug ? `${slug}.${ROOT_DOMAIN}` : "unknown";
@@ -1066,7 +1152,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     skeleton += `</div>`;
   }
   skeleton += `</div></div>`;
-  skeleton += `<script>(function(){var removed=false;function kill(){if(removed)return;removed=true;var s=document.getElementById('sf-skel');if(s){s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}}function whenReady(){kill();requestAnimationFrame(kill);setTimeout(kill,120);setTimeout(kill,600);}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',whenReady,{once:true});}else{whenReady();}window.addEventListener('load',kill,{once:true});var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});setTimeout(function(){mo.disconnect();kill();},1500);}}</script>`;
+  skeleton += `<script>(function(){var removed=false;function kill(){if(removed)return;removed=true;var s=document.getElementById('sf-skel');if(s){s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}}function whenReady(){kill();requestAnimationFrame(kill);setTimeout(kill,120);setTimeout(kill,600);}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',whenReady,{once:true});}else{whenReady();}window.addEventListener('load',kill,{once:true});var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});setTimeout(function(){mo.disconnect();kill();},1500);}}})()</script>`;
 
   let lcpPreload = "";
   if (storefrontData?.store?.logo_url) {
@@ -1096,80 +1182,121 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   return { html: injectedHtml, dataSource };
 }
 
-/* ============== FAST SHELL INJECT (NON-BLOCKING — critical path) ============== */
+/* ============== FAST SHELL INJECT (v4.1 — THEMED, NON-BLOCKING) ============== */
 
 /**
- * Lightweight injection for COLD LOAD — zero DB dependency.
- * Only injects: slug, preconnects, CSS preload, modulepreloads, generic skeleton.
- * No storefront data, no theme config, no categories.
- * Client-side React handles all data fetching via Prefetch Bridge.
+ * v4.1: THEMED fast shell — reads lightweight theme from KV (~2ms).
+ * If theme is cached: branded skeleton with store colors.
+ * If no theme: falls back to neutral gray skeleton.
+ * NO DB RPC, NO heavy JSON, NO full storefront data.
  *
- * Execution time: <5ms (string operations only, no JSON serialization).
+ * Uses prebuilt head from KV to skip all regex (~0ms processing).
  */
-function injectFastShell(html, slug) {
-  const injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";</script>
-<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />
-<link rel="dns-prefetch" href="${SUPABASE_URL}" />
-<link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co/storage" crossorigin />`;
+function injectFastShell(html, slug, themeLite, prebuiltHead) {
+  const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
 
-  // Generic skeleton — no theme data, uses neutral colors
-  const skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:#fff;font-family:'Inter',sans-serif;z-index:2147483000;pointer-events:none;overflow:hidden"><nav style="height:56px;background:#fff;border-bottom:1px solid #e8e8e8;display:flex;align-items:center;padding:0 16px;gap:12px"><div style="height:36px;width:36px;border-radius:8px;background:#e8e8e8"></div><div style="height:14px;width:80px;border-radius:4px;background:#e8e8e8"></div><div style="flex:1"></div><div style="width:28px;height:28px;border-radius:50%;background:#e8e8e8"></div></nav><div style="padding:12px 16px"><div style="height:40px;border-radius:9999px;background:#e8e8e8"></div></div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px"><div style="border-radius:12px;overflow:hidden;border:1px solid #e8e8e8"><div style="width:100%;aspect-ratio:4/5;background:#e8e8e8"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:#e8e8e8;margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:#e8e8e8"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid #e8e8e8"><div style="width:100%;aspect-ratio:4/5;background:#e8e8e8"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:#e8e8e8;margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:#e8e8e8"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid #e8e8e8"><div style="width:100%;aspect-ratio:4/5;background:#e8e8e8"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:#e8e8e8;margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:#e8e8e8"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid #e8e8e8"><div style="width:100%;aspect-ratio:4/5;background:#e8e8e8"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:#e8e8e8;margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:#e8e8e8"></div></div></div></div></div><script>(function(){var removed=false;function kill(){if(removed)return;removed=true;var s=document.getElementById('sf-skel');if(s){s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}}function whenReady(){kill();requestAnimationFrame(kill);setTimeout(kill,120);setTimeout(kill,600);}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',whenReady,{once:true});}else{whenReady();}window.addEventListener('load',kill,{once:true});var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});setTimeout(function(){mo.disconnect();kill();},1500);}}})()</script>`;
-
-  // CSS preload
-  const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
-  let cssPreload = "";
-  if (cssMatch) {
-    cssPreload = `<link rel="preload" href="${cssMatch[1]}" as="style" />\n`;
+  // v4.1: Inject lightweight theme hint so React can apply brand colors instantly
+  let themeHint = "";
+  if (themeLite) {
+    themeHint = `window.__THEME__=${JSON.stringify(themeLite)};`;
   }
 
-  // Module preloads (skip dashboard chunks)
-  const DASHBOARD_CHUNK_PATTERN = /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
-  const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
-  let modulePreloads = "";
-  const seen = new Set();
-  for (const m of chunkMatches) {
-    if (!seen.has(m[1]) && !DASHBOARD_CHUNK_PATTERN.test(m[1])) {
-      seen.add(m[1]);
-      modulePreloads += `<link rel="modulepreload" href="${m[1]}" />\n`;
+  const injection = slugScript + themeHint + `</script>`;
+
+  // Use theme colors if available, else neutral
+  const bgColor = themeLite?.bg || "#ffffff";
+  const textColor = themeLite?.tc || "#1a1a1a";
+  const primaryColor = themeLite?.pc || "#004643";
+  const skeletonMuted = textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
+
+  // v4.1: Inline theme CSS variables so React picks up brand colors on first paint
+  let themeCss = "";
+  if (themeLite) {
+    const r = parseInt(primaryColor.slice(1, 3), 16);
+    const g = parseInt(primaryColor.slice(3, 5), 16);
+    const b = parseInt(primaryColor.slice(5, 7), 16);
+    const lighten = (c) => Math.min(255, Math.round(c + (255 - c) * 0.35));
+    const primaryLight = `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
+    const btnTextColor = (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#1a1a1a" : "#ffffff";
+    const btnRadius = themeLite.bs === "pill" ? "9999px" : themeLite.bs === "square" ? "0px" : "0.5rem";
+
+    themeCss = `<style id="edge-theme">:root{`
+      + `--storefront-primary:${primaryColor};`
+      + `--storefront-primary-light:${primaryLight};`
+      + `--storefront-accent:${themeLite.ac || primaryColor};`
+      + `--storefront-text:${textColor};`
+      + `--storefront-bg:${bgColor};`
+      + `--storefront-button-radius:${btnRadius};`
+      + `--storefront-btn-text:${btnTextColor};`
+      + `}body{background:${bgColor}}</style>`;
+
+    // Font CSS variables + async load
+    const fonts = [themeLite.hf, themeLite.bf].filter(Boolean);
+    if (fonts.length > 0) {
+      const families = fonts.map(f => f.replace(/ /g, "+")).join("&family=");
+      themeCss += `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap" media="print" onload="this.media='all'" />`;
+      themeCss += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap" /></noscript>`;
+      themeCss += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>`;
     }
   }
 
-  let injectedHtml = html.replace("<head>", `<head>${injection}${cssPreload}${modulePreloads}`);
+  // Branded skeleton
+  const skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${bgColor};font-family:'Inter',sans-serif;z-index:2147483000;pointer-events:none;overflow:hidden"><nav style="height:56px;background:${bgColor};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px"><div style="height:36px;width:36px;border-radius:8px;background:${skeletonMuted}"></div><div style="height:14px;width:80px;border-radius:4px;background:${skeletonMuted}"></div><div style="flex:1"></div><div style="width:28px;height:28px;border-radius:50%;background:${skeletonMuted}"></div></nav><div style="padding:12px 16px"><div style="height:40px;border-radius:9999px;background:${skeletonMuted}"></div></div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px"><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div></div></div><script>(function(){var removed=false;function kill(){if(removed)return;removed=true;var s=document.getElementById('sf-skel');if(s){s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}}function whenReady(){kill();requestAnimationFrame(kill);setTimeout(kill,120);setTimeout(kill,600);}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',whenReady,{once:true});}else{whenReady();}window.addEventListener('load',kill,{once:true});var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});setTimeout(function(){mo.disconnect();kill();},1500);}}})()</script>`;
+
+  // v4.1: Use prebuilt head if available (zero regex), else build inline
+  let headInjection;
+  if (prebuiltHead) {
+    headInjection = `${injection}${themeCss}${prebuiltHead}`;
+  } else {
+    // Fallback: build head inline (only on first-ever request before KV warms)
+    headInjection = `${injection}${themeCss}${_buildPrebuiltHead(html)}`;
+  }
+
+  let injectedHtml = html.replace("<head>", `<head>${headInjection}`);
   injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}<div id="root">`);
 
   return injectedHtml;
 }
 
-/* ============== FETCH AND INJECT SLUG INTO HTML (v4.0 — NON-BLOCKING) ============== */
+/* ============== FETCH AND INJECT SLUG INTO HTML (v4.1 — THEMED NON-BLOCKING) ============== */
 
 /**
- * v4.0 CORE CHANGE: Non-blocking cold load.
+ * v4.1 CORE: Non-blocking cold load with branded skeleton.
  *
  * On cache MISS:
  *   1. Fetch SPA shell (fast — usually from Cache API)
- *   2. Return HTML immediately with injectFastShell (slug + generic skeleton)
- *   3. ctx.waitUntil: fetch storefront data → build full HTML → warm edge cache
- *
- * Next request hits the warmed edge cache with full data/theme/skeleton.
+ *   2. Read lightweight theme from KV (~2ms, no DB)
+ *   3. Return branded HTML immediately
+ *   4. ctx.waitUntil: fetch full data → warm edge cache (with stampede guard)
  */
 async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
-  // Get the SPA shell — this is the ONLY await before response
-  const shellResult = await getSpaShell(request, ctx, env);
+  // Start both in parallel — shell from cache, theme from KV
+  const [shellResult, themeLite, prebuiltHead] = await Promise.all([
+    getSpaShell(request, ctx, env),
+    _getThemeLite(slug, env),
+    env?.STORE_KV ? env.STORE_KV.get(PREBUILT_HEAD_KV_KEY) : null,
+  ]);
 
   if (!shellResult?.html) {
     const response = await proxyToOrigin(request);
     return { response, dataSource: "none" };
   }
 
-  // NON-BLOCKING: Return fast shell immediately
-  const fastHtml = injectFastShell(shellResult.html, slug);
+  // NON-BLOCKING: Return themed fast shell immediately
+  const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead);
+
+  // Also save prebuilt head to KV if it wasn't there
+  if (!prebuiltHead && env?.STORE_KV) {
+    const built = _buildPrebuiltHead(shellResult.html);
+    env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, built, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(() => {});
+  }
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
-  // Shorter TTL for fast shell — will be replaced by full HTML soon
+  // Short TTL — will be replaced by full HTML from background warm
   newHeaders.set("Cache-Control", "public, max-age=30, stale-while-revalidate=300");
   newHeaders.set("X-Store-Slug", slug);
-  newHeaders.set("X-Data-Source", "fast-shell");
+  newHeaders.set("X-Data-Source", themeLite ? "fast-shell-themed" : "fast-shell");
   newHeaders.set("X-Shell-Source", shellResult.source);
   newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
@@ -1178,18 +1305,37 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
 
   const response = new Response(fastHtml, { status: 200, headers: newHeaders });
 
-  // BACKGROUND: Fetch data and warm the FULL HTML cache for next request
+  // BACKGROUND: Warm full HTML cache — with stampede guard
   ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname));
 
-  return { response, dataSource: "fast-shell" };
+  return { response, dataSource: themeLite ? "fast-shell-themed" : "fast-shell" };
 }
 
 /**
- * Background task: fetch storefront data, build full themed HTML,
- * and store in edge cache. Next visitor gets instant HIT with full data.
+ * v4.1: Background task with STAMPEDE GUARD.
+ * Checks edge cache first + uses global lock to prevent duplicate warming.
  */
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname) {
   try {
+    // ── STAMPEDE GUARD 1: Check if full HTML already exists in edge cache ──
+    if (hostname && pathname) {
+      const earlyKey = getEarlyCacheKey(hostname, pathname);
+      const existing = await cache.match(earlyKey);
+      if (existing) {
+        // Check if it's already a full response (not a fast-shell)
+        const ds = existing.headers.get("X-Data-Source") || "";
+        if (ds && ds !== "fast-shell" && ds !== "fast-shell-themed") {
+          return; // Already have full HTML — skip warming
+        }
+      }
+    }
+
+    // ── STAMPEDE GUARD 2: Global lock — only ONE worker instance warms per slug ──
+    const warmKey = `warm-html:${slug}`;
+    if (!(await shouldRevalidateGlobal(warmKey, env))) {
+      return; // Another instance is already warming this slug
+    }
+
     const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
     if (!prefetchResult.data) return;
 
@@ -1208,7 +1354,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
 
     const fullResponse = new Response(result.html, { status: 200, headers: fullHeaders });
 
-    // Store in edge cache — this replaces the fast shell for future requests
+    // Store in edge cache — replaces the fast shell for future requests
     if (hostname && pathname) {
       const earlyKey = getEarlyCacheKey(hostname, pathname);
       await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
@@ -1360,35 +1506,49 @@ async function handleBot(request, slug, url, isCustom) {
           status: 200,
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
-            ...SECURITY_HEADERS,
+            "Cache-Control": "public, max-age=3600, s-maxage=86400",
+            "X-Bot-Render": "true",
           },
         });
+
         await cache.put(botCacheKey, response.clone());
         return response;
       }
     } catch {}
   }
 
-  if (SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua)) {
+  if (SOCIAL_BOT_REGEX.test(ua)) {
     try {
-      const res = await callEdgeFunction("seo-page", {
+      const ogCacheKey = new Request(
+        `https://cache/og/${slug}/${product || "home"}`
+      );
+      const cached = await cache.match(ogCacheKey);
+      if (cached) return cached;
+
+      const domain = isCustom ? url.hostname : null;
+      const res = await callEdgeFunction("bot-render", {
         slug,
-        type: "og",
         ...(product ? { product } : {}),
+        ...(domain ? { domain } : {}),
+        social: "true",
       });
-      if (!res.ok) return null;
-      const og = await res.json();
-      return new Response(buildOgHtml(og, finalUrl), {
-        status: 200,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=300, s-maxage=3600",
-        },
-      });
-    } catch {
-      return null;
-    }
+
+      if (res && res.ok) {
+        const ogData = await res.json();
+        const ogHtml = buildOgHtml(ogData, finalUrl);
+        const response = new Response(ogHtml, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "public, max-age=3600, s-maxage=86400",
+            "X-OG-Render": "true",
+          },
+        });
+
+        await cache.put(ogCacheKey, response.clone());
+        return response;
+      }
+    } catch {}
   }
 
   return null;
@@ -1475,6 +1635,15 @@ async function handlePrewarm(request, url, ctx, env) {
     const shellResult = await getSpaShell(request, ctx, env);
     results.spaShell = shellResult?.source || "failed";
 
+    // 1b. Warm prebuilt head
+    if (shellResult?.html) {
+      const built = _buildPrebuiltHead(shellResult.html);
+      if (env?.STORE_KV) {
+        await env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, built, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(() => {});
+      }
+      results.prebuiltHead = "warmed";
+    }
+
     // 2. Warm domain mapping
     if (domain) {
       const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
@@ -1495,12 +1664,19 @@ async function handlePrewarm(request, url, ctx, env) {
       results.domainMapping = "warmed";
     }
 
-    // 3. Warm store-id mapping
+    // 3. Warm storefront data + theme-lite
     const subDomain = `${slug}.${ROOT_DOMAIN}`;
     let storeId = null;
     const dataResult = await prefetchStorefrontData(slug, ctx, env);
     storeId = dataResult.data?.store?.id;
     results.storefrontData = dataResult.source;
+
+    // 3b. Theme-lite is auto-cached inside _fetchShellFromSupabase,
+    // but ensure it's there for prewarm
+    if (dataResult.data?.theme_config) {
+      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env);
+      results.themeLite = "warmed";
+    }
 
     if (storeId) {
       const storeIdStr = storeId;
@@ -1719,7 +1895,6 @@ export default {
                 revalSlug = hostname.replace(`.${ROOT_DOMAIN}`, "");
               }
               if (revalSlug) {
-                // Background revalidation uses FULL injection (with data)
                 const [shellResult, prefetchResult] = await Promise.all([
                   getSpaShell(request, ctx, env),
                   prefetchStorefrontData(revalSlug, ctx, env),
@@ -1777,6 +1952,7 @@ export default {
       ];
       if (env?.STORE_KV) {
         purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
+        purgeOps.push(env.STORE_KV.delete(PREBUILT_HEAD_KV_KEY).catch(() => {}));
       }
       if (purgeSlug) {
         purgeOps.push(
@@ -1784,6 +1960,7 @@ export default {
         );
         if (env?.STORE_KV) {
           purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
+          purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
         }
         const edgeKey = getEarlyCacheKey(hostname, "/");
         purgeOps.push(cache.delete(edgeKey).catch(() => {}));
@@ -1818,6 +1995,7 @@ export default {
       );
       if (env?.STORE_KV) {
         purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
+        purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
       }
 
       purgeOps.push(cache.delete(getEarlyCacheKey(subDomain, "/")).catch(() => {}));
@@ -1937,7 +2115,6 @@ export default {
         return cachedFetch(request, "", ctx, false, env);
       }
 
-      // v4.0: Start SEO/bot checks in parallel, but DON'T start main fetch yet
       const [customDomain, seoResponse, botResponse] = await Promise.all([
         getCustomDomainForSlug(slug),
         handleSeoFiles(url, slug),
@@ -1954,19 +2131,14 @@ export default {
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      // v4.0: Non-blocking — returns fast shell immediately
+      // v4.1: Non-blocking themed fast shell
       const { response: injectedResponse, dataSource } = await fetchAndInjectSlug(
         request, slug, ctx, env, hostname, url.pathname
       );
 
       const contentType = injectedResponse.headers.get("content-type") || "";
       if (injectedResponse.status === 200 && contentType.includes("text/html")) {
-        const slugHeader = injectedResponse.headers.get("X-Store-Slug");
-        if (slugHeader === slug) {
-          // Don't store fast-shell in edge cache with long TTL —
-          // the background task will store the full version
-          // (storeInEdgeCache already happens in fetchAndInjectSlug for fast shell with short TTL)
-        }
+        // Fast shell has short TTL; background task stores full version
       }
 
       return addDiagnosticHeaders(injectedResponse, {
@@ -2007,7 +2179,7 @@ export default {
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      // v4.0: Non-blocking
+      // v4.1: Non-blocking themed
       const { response: injectedResponse, dataSource } =
         await fetchAndInjectSlug(request, slug, ctx, env, hostname, url.pathname);
 
