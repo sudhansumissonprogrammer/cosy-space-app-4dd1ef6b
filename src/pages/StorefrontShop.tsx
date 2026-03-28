@@ -162,6 +162,7 @@ export default function StorefrontShop() {
           <p className="text-muted-foreground">No products yet.</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

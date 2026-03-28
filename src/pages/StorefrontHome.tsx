@@ -260,7 +260,7 @@ export default function StorefrontHome() {
           </LazyRender>
         )}
 
-        <section>
+        <section style={{ minHeight: 600, contain: "layout" }}>
           <div className="mb-5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-5 w-1 rounded-full bg-foreground" />

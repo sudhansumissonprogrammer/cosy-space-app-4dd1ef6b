@@ -196,6 +196,7 @@ export default function CategoryDetail() {
           <p className="text-muted-foreground">No products in this category yet.</p>
         </div>
       )}
+      </div>
     </div>
   );
 }
