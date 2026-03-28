@@ -266,6 +266,7 @@ export default function ProductDetail() {
     description: product?.description || undefined,
     ogImage: product?.image_url || undefined,
     storeSlug: store.slug,
+    customDomain: (store as any)?.custom_domain,
     canonicalPath: product ? `product/${product.slug || product.id}` : undefined,
   });
 
