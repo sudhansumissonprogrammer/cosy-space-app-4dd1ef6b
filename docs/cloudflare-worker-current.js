@@ -416,8 +416,8 @@ async function proxyToOrigin(request) {
 // CHANGE 6: KV TTL increased from 60s to 3600s
 
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
-const SPA_SHELL_KV_TTL = 3600;          // 1 hour in KV (was 60s)
-const SPA_SHELL_CACHE_TTL = 300;         // 5 minutes in Cache API (was 60s)
+const SPA_SHELL_KV_TTL = 3600;          // 1 hour in KV
+const SPA_SHELL_CACHE_TTL = 600;         // 10 minutes in Cache API (was 300s)
 
 let inflightShellFetch = null;
 
