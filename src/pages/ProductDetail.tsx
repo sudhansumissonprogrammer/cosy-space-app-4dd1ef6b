@@ -125,7 +125,7 @@ export default function ProductDetail() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
 
-  const { addToCart, items, cartTotal } = useCart();
+  const { addToCart, items, cartTotal, closeCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
 
@@ -408,7 +408,7 @@ export default function ProductDetail() {
     });
     setJustAdded(true);
     setCartBounce(true);
-    toast.success(`${product.name} added to cart`, { dismissible: true });
+    // Side cart opens automatically — no extra toast needed
     setTimeout(() => setJustAdded(false), 1500);
     setTimeout(() => setCartBounce(false), 600);
   };
@@ -423,6 +423,8 @@ export default function ProductDetail() {
       image: product.image_url || undefined,
       quantity,
     });
+    // Close side cart immediately so it doesn't flash, then navigate to checkout
+    closeCart();
     navigate(storefrontPath(store.slug, "checkout"));
   };
 
@@ -1159,7 +1161,7 @@ function FrequentlyBoughtTogether({
         quantity: 1,
       });
     });
-    toast.success("Bundle added to cart! 🎉", { dismissible: true });
+    // Side cart opens automatically
   };
 
   return (
