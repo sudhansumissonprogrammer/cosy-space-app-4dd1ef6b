@@ -1132,7 +1132,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   const skeletonBg = bgColor;
   const skeletonMuted = textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
 
-  let skeleton = `<div id="sf-skel" style="min-height:100vh;background:${skeletonBg};font-family:'Inter',sans-serif">`;
+  let skeleton = `<div id="sf-skel" style="min-height:100vh;background:${skeletonBg};font-family:'Inter',sans-serif;position:relative;z-index:0">`;
   // Nav bar
   skeleton += `<nav style="height:56px;background:${skeletonBg};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px">`;
   if (logoUrl) {
@@ -1169,6 +1169,8 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     skeleton += `</div>`;
   }
   skeleton += `</div></div>`;
+  // Self-removal: hide skeleton as soon as app JS begins executing
+  skeleton += `<style>#sf-skel.sf-hide{display:none!important}</style>`;
 
   let lcpPreload = "";
   if (storefrontData?.store?.logo_url) {
