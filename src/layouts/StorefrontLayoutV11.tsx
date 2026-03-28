@@ -72,19 +72,15 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
   const { wishlistCount } = useWishlist();
   const { cartCount, openCart } = useCart();
   const { user } = useStorefrontAuth();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
-  const basePath = storefrontPath(store.slug);
-  const isHome = location.pathname === basePath || location.pathname === basePath + "/";
-  const isWishlist = location.pathname.includes("wishlist");
+  const isShop = location.pathname.includes("shop");
   const isAccount = location.pathname.includes("account");
 
   const navItems = [
-    { icon: Home, label: "Home", isActive: isHome && !searchOpen, type: "link" as const, to: basePath },
-    { icon: Search, label: "Search", isActive: searchOpen, type: "search" as const, to: "" },
-    { icon: Heart, label: "Wishlist", isActive: isWishlist && !searchOpen, type: "link" as const, to: storefrontPath(store.slug, "wishlist"), badge: wishlistCount },
-    { icon: Bell, label: "Alerts", isActive: isAccount && !searchOpen, type: "link" as const, to: storefrontPath(store.slug, user ? "account" : "login") },
+    { icon: Home, label: "Home", isActive: isHome, type: "link" as const, to: basePath },
+    { icon: Store, label: "Shop", isActive: isShop, type: "link" as const, to: storefrontPath(store.slug, "shop") },
+    { icon: Heart, label: "Wishlist", isActive: isWishlist, type: "link" as const, to: storefrontPath(store.slug, "wishlist") },
+    { icon: Bell, label: "Alerts", isActive: false, type: "link" as const, to: storefrontPath(store.slug, user ? "account" : "login") },
+    { icon: User, label: "Account", isActive: isAccount, type: "link" as const, to: storefrontPath(store.slug, user ? "account" : "login") },
   ];
 
   return (
