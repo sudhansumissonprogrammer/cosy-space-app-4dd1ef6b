@@ -18,12 +18,11 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 
 /* ── Swipeable Banner Slider ── */
 function BannerSlider({ store }: { store: StoreData }) {
-  const { products } = useStorefrontProducts(store.id);
   const [current, setCurrent] = useState(0);
   const touchStart = useRef(0);
 
   const slides = useMemo(() => {
-    const s: { image: string; title: string; link?: string }[] = [];
+    const s: { image: string; title: string }[] = [];
     const mhi = (store as any).mobile_hero_images;
     if (mhi && Array.isArray(mhi) && mhi.length > 0) {
       mhi.forEach((url: string, idx: number) => {
@@ -37,15 +36,11 @@ function BannerSlider({ store }: { store: StoreData }) {
         s.push({ image: (store as any).mobile_hero_url, title: "New Arrivals" });
       }
     }
-    const bestSelling = products?.filter((p: any) => p.is_best_selling && p.image_url).slice(0, 3) || [];
-    bestSelling.forEach((p: any) => {
-      s.push({ image: p.image_url, title: p.name, link: storefrontPath(store.slug, `product/${p.slug || p.id}`) });
-    });
     if (s.length === 0) {
       s.push({ image: "", title: store.name });
     }
     return s;
-  }, [store, products]);
+  }, [store]);
 
   const count = slides.length;
 
