@@ -190,7 +190,7 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
     <>
       {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
 
-      <nav className="sticky top-0 z-30 bg-card/80 backdrop-blur-md">
+      <nav className={`sticky top-0 z-30 ${isCheckout || !transparentHeader ? 'bg-card/80 backdrop-blur-md' : 'bg-transparent'}`}>
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
           {isCheckout ? (
             <>
