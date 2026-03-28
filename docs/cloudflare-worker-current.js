@@ -1070,17 +1070,11 @@ function addCorsHeaders(response, source) {
 
 /* ============== INJECT DATA INTO HTML ============== */
 
-function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts = null) {
+function injectIntoHtml(html, slug, storefrontData, dataSource) {
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
-  }
-  // Inline first 4 products so React renders above-fold cards instantly (no /api/products fetch)
-  if (inlineProducts && Array.isArray(inlineProducts) && inlineProducts.length > 0) {
-    const first4 = inlineProducts.slice(0, 4);
-    const prodJson = JSON.stringify(first4).replace(/<\/script/gi, "<\\/script");
-    injection += `window.__PRODUCTS_INLINE__=${prodJson};`;
   }
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" crossorigin />
@@ -1167,55 +1161,23 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts =
     skeleton += `</div>`;
   }
   // Product grid placeholder
-  // Product grid — render real products if available, otherwise gray placeholders
   skeleton += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px">`;
-  const skelProducts = (inlineProducts && Array.isArray(inlineProducts)) ? inlineProducts.slice(0, 4) : null;
-  if (skelProducts && skelProducts.length > 0) {
-    for (const p of skelProducts) {
-      skeleton += `<div style="border-radius:12px;overflow:hidden;background:${skeletonBg};border:1px solid ${skeletonMuted}">`;
-      if (p.image_url) {
-        skeleton += `<img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name || "")}" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block" loading="eager" />`;
-      } else {
-        skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
-      }
-      const displayPrice = p.sale_price || p.price;
-      const currency = p.currency === "INR" ? "₹" : p.currency === "USD" ? "$" : (p.currency || "₹");
-      skeleton += `<div style="padding:8px"><div style="font-size:13px;font-weight:500;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.name || "")}</div>`;
-      skeleton += `<div style="font-size:14px;font-weight:700;color:${primaryColor};margin-top:2px">${currency}${displayPrice}</div></div>`;
-      skeleton += `</div>`;
-    }
-  } else {
-    for (let i = 0; i < 4; i++) {
-      skeleton += `<div style="border-radius:12px;overflow:hidden;background:${skeletonBg};border:1px solid ${skeletonMuted}">`;
-      skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
-      skeleton += `<div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div>`;
-      skeleton += `</div>`;
-    }
+  for (let i = 0; i < 4; i++) {
+    skeleton += `<div style="border-radius:12px;overflow:hidden;background:${skeletonBg};border:1px solid ${skeletonMuted}">`;
+    skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
+    skeleton += `<div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div>`;
+    skeleton += `</div>`;
   }
   skeleton += `</div></div>`;
   skeleton += `<script>(function(){var removed=false;function kill(){if(removed)return;removed=true;var s=document.getElementById('sf-skel');if(s){s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}}function whenReady(){kill();requestAnimationFrame(kill);setTimeout(kill,120);setTimeout(kill,600);}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',whenReady,{once:true});}else{whenReady();}window.addEventListener('load',kill,{once:true});var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});setTimeout(function(){mo.disconnect();kill();},1500);}}</script>`;
 
   let lcpPreload = "";
-  // Preload hero/banner image (likely LCP element)
-  const bannerUrl = storefrontData?.store?.banner_url || storefrontData?.store?.mobile_hero_url;
-  if (bannerUrl) {
-    lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(bannerUrl)}" fetchpriority="high" />\n`;
-  }
   if (storefrontData?.store?.logo_url) {
-    lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(storefrontData.store.logo_url)}" />\n`;
+    lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(storefrontData.store.logo_url)}" />`;
   }
-  // Preload first product image for instant above-fold render
-  if (inlineProducts && inlineProducts.length > 0 && inlineProducts[0].image_url) {
-    lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(inlineProducts[0].image_url)}" fetchpriority="high" />\n`;
-    // Preconnect to image CDN if external
-    try {
-      const imgOrigin = new URL(inlineProducts[0].image_url).origin;
-      if (!preconnectedOrigins.has(imgOrigin)) {
-        preconnectedOrigins.add(imgOrigin);
-        lcpPreload += `<link rel="preconnect" href="${imgOrigin}" crossorigin />\n`;
-      }
-    } catch {}
-  }
+
+  const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
+  let cssPreload = "";
   if (cssMatch) {
     cssPreload = `<link rel="preload" href="${cssMatch[1]}" as="style" />\n`;
   }
@@ -1241,8 +1203,6 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts =
 /* ============== FETCH AND INJECT SLUG INTO HTML ============== */
 
 async function fetchAndInjectSlug(request, slug, ctx, env) {
-  // Fetch shell, storefront data, AND products in parallel — eliminates waterfall
-  const domain = (request.headers.get("host") || new URL(request.url).hostname).toLowerCase().trim();
   const [shellResult, prefetchResult] = await Promise.all([
     getSpaShell(request, ctx, env),
     prefetchStorefrontData(slug, ctx, env),
@@ -1256,34 +1216,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env) {
   const storefrontData = prefetchResult.data;
   const dataSource = prefetchResult.source;
 
-  // Fetch products in parallel (non-blocking — uses storeId from storefront data)
-  let inlineProducts = null;
-  const storeId = storefrontData?.store?.id;
-  if (storeId) {
-    try {
-      // Check products cache first
-      const prodCacheKey = _buildProductsCacheKey(domain, {});
-      const cachedProds = await cache.match(prodCacheKey);
-      if (cachedProds) {
-        inlineProducts = await cachedProds.json();
-      } else {
-        inlineProducts = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
-        // Cache them for future requests
-        if (inlineProducts && ctx) {
-          const body = JSON.stringify(inlineProducts);
-          ctx.waitUntil(
-            cache.put(prodCacheKey, new Response(body, {
-              headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
-            })).catch(() => {})
-          );
-        }
-      }
-    } catch {
-      // Products will be fetched client-side as fallback
-    }
-  }
-
-  const result = injectIntoHtml(shellResult.html, slug, storefrontData, dataSource, inlineProducts);
+  const result = injectIntoHtml(shellResult.html, slug, storefrontData, dataSource);
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -1607,8 +1540,7 @@ async function handlePrewarm(request, url, ctx, env) {
 
     // 6. Warm full HTML response (early exit cache)
     if (shellResult?.html && dataResult.data) {
-      const prewarmProducts = storeId && results.products === "warmed" ? (await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS).catch(() => null)) : null;
-      const injected = injectIntoHtml(shellResult.html, slug, dataResult.data, "prewarm", prewarmProducts);
+      const injected = injectIntoHtml(shellResult.html, slug, dataResult.data, "prewarm");
       const htmlResponse = new Response(injected.html, {
         status: 200,
         headers: {
