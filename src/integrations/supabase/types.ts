@@ -1333,6 +1333,7 @@ export type Database = {
           category_style: string
           created_at: string
           header_logo_alignment: string
+          header_style: string
           heading_font: string
           id: string
           marquee_enabled: boolean
@@ -1343,7 +1344,6 @@ export type Database = {
           product_card_style: string
           store_id: string
           text_color: string
-          transparent_header: boolean
           updated_at: string
         }
         Insert: {
@@ -1354,6 +1354,7 @@ export type Database = {
           category_style?: string
           created_at?: string
           header_logo_alignment?: string
+          header_style?: string
           heading_font?: string
           id?: string
           marquee_enabled?: boolean
@@ -1364,7 +1365,6 @@ export type Database = {
           product_card_style?: string
           store_id: string
           text_color?: string
-          transparent_header?: boolean
           updated_at?: string
         }
         Update: {
@@ -1375,6 +1375,7 @@ export type Database = {
           category_style?: string
           created_at?: string
           header_logo_alignment?: string
+          header_style?: string
           heading_font?: string
           id?: string
           marquee_enabled?: boolean
@@ -1385,7 +1386,6 @@ export type Database = {
           product_card_style?: string
           store_id?: string
           text_color?: string
-          transparent_header?: boolean
           updated_at?: string
         }
         Relationships: [
