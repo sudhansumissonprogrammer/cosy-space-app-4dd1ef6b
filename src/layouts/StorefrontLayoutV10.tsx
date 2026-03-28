@@ -40,15 +40,9 @@ function MilanoHeader({ store }: { store: StoreData }) {
               </div>
               <nav className="flex-1 overflow-y-auto">
                 <div className="px-5 pt-4 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Pages</h4></div>
-                {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop" }, { to: storefrontPath(store.slug, "contact"), label: "Contact" }].map((link) => (
-                  <Link key={link.label} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors" style={{ color: "var(--storefront-text, #1a1a1a)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{link.label}<ChevronRight className="h-4 w-4 opacity-40" /></Link>
+                {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop All" }, { to: storefrontPath(store.slug, "contact"), label: "Contact" }].map((link) => (
+                  <Link key={link.label} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors" style={{ color: "var(--storefront-text, #1a1a1a)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)08", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{link.label}<ChevronRight className="h-4 w-4 opacity-40" /></Link>
                 ))}
-                {categories && categories.length > 0 && (
-                  <>
-                    <div className="px-5 pt-5 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Categories</h4></div>
-                    {categories.map((cat: any) => (<Link key={cat.id} to={storefrontPath(store.slug, `category/${cat.slug}`)} onClick={() => setMenuOpen(false)} className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors" style={{ color: "var(--storefront-text, #1a1a1a)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{cat.name}<ChevronRight className="h-4 w-4 opacity-40" /></Link>))}
-                  </>
-                )}
                 <div className="px-5 pt-5 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Policies</h4></div>
                 {[{ to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" }, { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" }, { to: storefrontPath(store.slug, "terms"), label: "Terms & Conditions" }, { to: storefrontPath(store.slug, "privacy-policy"), label: "Privacy Policy" }].map((link) => (
                   <Link key={link.label} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors" style={{ color: "var(--storefront-text, #1a1a1a)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)0a", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{link.label}<ChevronRight className="h-4 w-4 opacity-40" /></Link>
