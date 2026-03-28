@@ -296,7 +296,7 @@ export default function StorefrontLayoutV14({ slugOverride }: { slugOverride?: s
           store={store}
           headerLogoAlignment={themeConfig?.header_logo_alignment || "center"}
           mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? false}
-          headerStyle={themeConfig?.header_style || "normal"}
+          headerStyle={themeConfig?.header_style || "transparent"}
         />
       )}
     </StorefrontShell>
