@@ -67,6 +67,10 @@ export default function StoreSettings() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [returnPolicy, setReturnPolicy] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
+  const [aboutUsText, setAboutUsText] = useState("");
+  const [aboutUsImageFile, setAboutUsImageFile] = useState<File | null>(null);
+  const [aboutUsImagePreview, setAboutUsImagePreview] = useState<string | null>(null);
+  const [aboutUsImageRemoved, setAboutUsImageRemoved] = useState(false);
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
@@ -103,6 +107,8 @@ export default function StoreSettings() {
       if (store.features) setFeatures(store.features as unknown as Feature[]);
       setReturnPolicy((store as any).return_policy || "");
       setShippingPolicy((store as any).shipping_policy || "");
+      setAboutUsText((store as any).about_us_text || "");
+      if ((store as any).about_us_image_url) setAboutUsImagePreview((store as any).about_us_image_url);
       setBestSellingCarousel((store as any).best_selling_carousel || false);
       setMetaTitle((store as any).meta_title || "");
       setMetaDescription((store as any).meta_description || "");
@@ -149,6 +155,12 @@ export default function StoreSettings() {
         finalOgImageUrl = await uploadFile(ogImageFile, "store-banners");
       }
 
+      let finalAboutUsImageUrl = (store as any)?.about_us_image_url || null;
+      if (aboutUsImageRemoved) finalAboutUsImageUrl = null;
+      if (aboutUsImageFile) {
+        finalAboutUsImageUrl = await uploadFile(aboutUsImageFile, "store-banners");
+      }
+
       const hasHours = Object.values(businessHours).some((v) => v.trim());
       const { error } = await (supabase as any)
         .from("stores")
@@ -176,6 +188,8 @@ export default function StoreSettings() {
           og_image_url: finalOgImageUrl.trim() || null,
           owner_email: ownerEmail.trim() || null,
           default_profit_margin: defaultProfitMargin,
+          about_us_text: aboutUsText.trim() || null,
+          about_us_image_url: finalAboutUsImageUrl,
         })
         .eq("id", storeId!);
       if (error) throw error;
@@ -444,7 +458,39 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
-        {/* ── 5. Store Policies ── */}
+        {/* ── 5. About Us Page ── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Store className="h-5 w-5 text-primary" /> About Us Page
+            </CardTitle>
+            <CardDescription>Customize your About Us page. Leave text blank to use auto-generated content.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <Label>About Us Photo</Label>
+              {aboutUsImagePreview ? (
+                <div className="relative inline-block">
+                  <img src={aboutUsImagePreview} alt="About Us" className="h-32 w-full max-w-md rounded-lg border object-cover" />
+                  <button type="button" onClick={() => { setAboutUsImageFile(null); setAboutUsImagePreview(null); setAboutUsImageRemoved(true); }} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
+                </div>
+              ) : (
+                <label className="flex h-24 w-full max-w-md cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input hover:border-primary/50">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Upload about us photo</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setAboutUsImageFile(f); setAboutUsImagePreview(URL.createObjectURL(f)); setAboutUsImageRemoved(false); } }} />
+                </label>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="about-us-text">Custom About Us Text</Label>
+              <Textarea id="about-us-text" value={aboutUsText} onChange={(e) => setAboutUsText(e.target.value)} rows={6} placeholder="Tell your customers about your brand story, mission, values... Leave blank to use auto-generated content with emojis." maxLength={5000} />
+              <p className="text-xs text-muted-foreground">Leave blank to use auto-generated About Us content based on your store details</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── 6. Store Policies ── */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">

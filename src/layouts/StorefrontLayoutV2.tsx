@@ -98,6 +98,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
                   { to: storefrontPath(store.slug, "shop"), label: "Shop All" },
                   { to: storefrontPath(store.slug, "account"), label: "My Account" },
                   { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
+                  { to: storefrontPath(store.slug, "about"), label: "About Us" },
                   { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
                   { to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" },
                 ].map((link) => (

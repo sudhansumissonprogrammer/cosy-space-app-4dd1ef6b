@@ -38,7 +38,7 @@ function AppHeader({ store }: { store: StoreData }) {
                 {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[160px] object-contain" /> : <span className="text-lg font-bold text-foreground">{store.name}</span>}
               </div>
               <nav className="flex flex-col gap-1 p-4">
-                {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop All" }, { to: storefrontPath(store.slug, "account"), label: "My Account" }, { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" }, { to: storefrontPath(store.slug, "contact"), label: "Contact Us" }, { to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" }].map((link) => (
+                {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop All" }, { to: storefrontPath(store.slug, "account"), label: "My Account" }, { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" }, { to: storefrontPath(store.slug, "about"), label: "About Us" }, { to: storefrontPath(store.slug, "contact"), label: "Contact Us" }, { to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" }].map((link) => (
                   <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">{link.label}</Link>
                 ))}
               </nav>
