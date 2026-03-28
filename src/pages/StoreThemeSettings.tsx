@@ -94,7 +94,7 @@ const COLOR_COMBINATIONS = [
     primary: "#114C5A",
     accent: "#172B36",
     text: "#1a1a1a",
-    background: "#F1F6F4",
+    background: "#FFF3E6",
     marquee: "linear-gradient(90deg, #114C5A, #38a89d, #114C5A)",
   },
   {
