@@ -683,29 +683,43 @@ const PRODUCT_COLUMNS = "id,category,cost_price,created_at,currency,description,
 const inflightProductRequests = new Map();
 const inflightDomainResolutions = new Map();
 
-/* ── Domain → store_id resolution (coalesced + KV-cached) ── */
-// CHANGE 6: Increased KV TTL for store-id from 1800s to 3600s
+/* ── Domain → store_id resolution (in-memory → Cache API → KV → DB) ── */
 
 const domainStoreIdCache = new Map();
 
 async function _resolveStoreId(domain, env) {
-  // 1. In-memory (same isolate)
+  // 1. In-memory (same isolate, ~0ms)
   const memEntry = domainStoreIdCache.get(domain);
   if (memEntry && Date.now() < memEntry.expiresAt) return memEntry.storeId;
 
-  // 2. KV
+  // 2. Cache API (per-colo, ~0ms if warm) — avoids KV read
+  const storeIdCacheKey = new Request(`https://cache/store-id:${domain}`);
+  try {
+    const cached = await cache.match(storeIdCacheKey);
+    if (cached) {
+      const storeId = await cached.text();
+      domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
+      return storeId || null;
+    }
+  } catch {}
+
+  // 3. KV (global, ~5ms) — only on Cache API miss
   const kvKey = `store-id:${domain}`;
   if (env?.STORE_KV) {
     try {
       const kvVal = await env.STORE_KV.get(kvKey);
       if (kvVal) {
         domainStoreIdCache.set(domain, { storeId: kvVal, expiresAt: Date.now() + 300_000 });
+        // Backfill Cache API
+        cache.put(storeIdCacheKey, new Response(kvVal, {
+          headers: { "Cache-Control": "public, max-age=600" },
+        })).catch(() => {});
         return kvVal;
       }
     } catch {}
   }
 
-  // 3. Coalesced DB lookup
+  // 4. Coalesced DB lookup
   if (inflightDomainResolutions.has(domain)) {
     try {
       return await inflightDomainResolutions.get(domain);
@@ -722,6 +736,10 @@ async function _resolveStoreId(domain, env) {
 
     if (storeId) {
       domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
+      // Write to both Cache API and KV
+      cache.put(storeIdCacheKey, new Response(storeId, {
+        headers: { "Cache-Control": "public, max-age=600" },
+      })).catch(() => {});
       if (env?.STORE_KV) {
         env.STORE_KV.put(kvKey, storeId, { expirationTtl: 3600 }).catch(() => {});
       }
