@@ -408,7 +408,7 @@ export default function ProductDetail() {
     });
     setJustAdded(true);
     setCartBounce(true);
-    toast.success(`${product.name} added to cart`, { dismissible: true });
+    // Side cart opens automatically — no extra toast needed
     setTimeout(() => setJustAdded(false), 1500);
     setTimeout(() => setCartBounce(false), 600);
   };
