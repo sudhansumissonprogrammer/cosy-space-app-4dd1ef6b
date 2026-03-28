@@ -103,7 +103,7 @@ function AppHeader({ store }: { store: StoreData }) {
 
 function BottomTabBar({ store }: { store: StoreData }) {
   const location = useLocation();
-  const { wishlistCount } = useWishlist();
+  const _ = useWishlist(); // keep provider active
   const { user } = useStorefrontAuth();
 
   const basePath = storefrontPath(store.slug);
@@ -111,7 +111,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
     { icon: Home, label: "Home", to: basePath, match: basePath },
     { icon: Grid3X3, label: "Categories", to: storefrontPath(store.slug, "categories"), match: "categories" },
     { icon: Store, label: "Shop", to: storefrontPath(store.slug, "shop"), match: "shop" },
-    { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
+    { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist" },
     { icon: User, label: "Profile", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
   ];
 
@@ -123,13 +123,8 @@ function BottomTabBar({ store }: { store: StoreData }) {
           const TabIcon = tab.icon;
           return (
             <Link key={tab.label} to={tab.to} className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 transition-colors relative" style={{ minWidth: "48px" }}>
-              <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
+              <div className="flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
                 <TabIcon className="h-5 w-5 transition-colors" style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))60" }} />
-                {tab.badge && tab.badge > 0 && (
-                  <span className="absolute -right-2 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
-                    {tab.badge > 9 ? "9+" : tab.badge}
-                  </span>
-                )}
               </div>
               <span className="text-[10px] font-medium" style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))50" }}>{tab.label}</span>
               {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 rounded-full" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }} />}
@@ -167,7 +162,7 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
       slugOverride={slugOverride}
       defaultPrimary="#3B82F6"
       defaultButtonRadius="0.75rem"
-      wrapperStyle={{ "--storefront-bottom-nav-height": "72px" } as React.CSSProperties}
+      wrapperStyle={{ "--storefront-bottom-nav-height": "56px" } as React.CSSProperties}
       skeleton={<StorefrontV3Skeleton />}
     >
       {({ store }) => (
