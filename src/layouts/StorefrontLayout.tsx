@@ -296,7 +296,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
           marqueeEnabled={themeConfig?.marquee_enabled ?? true}
           headerLogoAlignment={themeConfig?.header_logo_alignment || "left"}
           mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? false}
-          transparentHeader={themeConfig?.transparent_header ?? false}
+          headerStyle={themeConfig?.header_style || "normal"}
         />
       )}
     </StorefrontShell>
