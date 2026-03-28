@@ -76,7 +76,34 @@
     <div id="root"></div>
     <script>
       /* Remove Worker skeleton — runs in body so #sf-skel exists */
-      (function(){var s=document.getElementById('sf-skel');if(s)s.remove()})();
+      (function(){
+        var done=false;
+        function kill(){
+          if(done) return;
+          var s=document.getElementById('sf-skel');
+          if(!s) return;
+          done=true;
+          s.style.opacity='0';
+          s.style.visibility='hidden';
+          s.style.display='none';
+          if(s.remove) s.remove();
+        }
+        kill();
+        requestAnimationFrame(kill);
+        setTimeout(kill,120);
+        setTimeout(kill,600);
+        var root=document.getElementById('root');
+        if(root && root.childElementCount===0){
+          var mo=new MutationObserver(function(){
+            if(root.childElementCount>0){
+              mo.disconnect();
+              kill();
+            }
+          });
+          mo.observe(root,{childList:true});
+          setTimeout(function(){mo.disconnect();kill();},1500);
+        }
+      })();
     </script>
     <script>
       (function(){
