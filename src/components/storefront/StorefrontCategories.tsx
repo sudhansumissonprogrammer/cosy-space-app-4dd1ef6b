@@ -29,7 +29,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
   if (!isLoading && (!categories || categories.length === 0)) return null;
 
   return (
-    <div className="bg-card/80 backdrop-blur-md">
+    <div className="backdrop-blur-md" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
       <div className="mx-auto max-w-6xl px-4 py-4">
         <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
           {isLoading ? (
