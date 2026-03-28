@@ -69,6 +69,30 @@ function shouldRevalidate(key) {
   return true;
 }
 
+/**
+ * Global revalidation lock — prevents duplicate background refreshes
+ * across different Cloudflare colos. Uses KV with 30s TTL as a
+ * distributed lock, with in-memory gate as the first (free) check.
+ * Returns true if this colo should proceed with revalidation.
+ */
+async function shouldRevalidateGlobal(key, env) {
+  // 1. In-memory gate first (free, ~0ms)
+  if (!shouldRevalidate(key)) return false;
+
+  // 2. KV-based global lock (cross-region, ~5ms)
+  if (env?.STORE_KV) {
+    try {
+      const lockKey = `reval-lock:${key}`;
+      const existing = await env.STORE_KV.get(lockKey);
+      if (existing) return false; // Another colo is already revalidating
+      await env.STORE_KV.put(lockKey, "1", { expirationTtl: 30 });
+    } catch {
+      // KV unavailable — proceed with local-only gate (already passed)
+    }
+  }
+  return true;
+}
+
 let lastRevalCleanup = 0;
 function cleanRevalMap() {
   const now = Date.now();
