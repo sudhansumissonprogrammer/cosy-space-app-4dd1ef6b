@@ -414,6 +414,8 @@ export default function ProductDetail() {
   };
 
   const handleBuyNow = () => {
+    // Add to cart silently (without opening side cart) and go straight to checkout
+    const { items } = useCart.getState?.() || {};
     addToCart({
       productId: product.id,
       variantId: selectedVariant?.id,
@@ -423,6 +425,8 @@ export default function ProductDetail() {
       image: product.image_url || undefined,
       quantity,
     });
+    // Close side cart immediately if it opened, then navigate
+    closeCart();
     navigate(storefrontPath(store.slug, "checkout"));
   };
 

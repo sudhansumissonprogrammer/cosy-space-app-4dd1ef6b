@@ -37,7 +37,7 @@ export function useProductCardActions(product: Product) {
       image: product.image_url || undefined,
       quantity: 1,
     });
-    toast.success(`${product.name} added to cart`);
+    // Side cart opens automatically — no toast needed
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
