@@ -102,6 +102,7 @@ export default function StorefrontShop() {
         )}
       </div>
 
+      <div style={{ minHeight: 600, contain: "layout" }}>
       {isLoading ? (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -161,6 +162,7 @@ export default function StorefrontShop() {
           <p className="text-muted-foreground">No products yet.</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

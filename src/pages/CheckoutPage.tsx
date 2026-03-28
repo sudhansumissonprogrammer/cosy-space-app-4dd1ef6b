@@ -46,7 +46,7 @@ export default function CheckoutPage() {
   const productId = searchParams.get("product");
   const variantId = searchParams.get("variant");
   const { items: cartItems, clearCart } = useCart();
-  const { customer } = useStorefrontAuth();
+  const { customer, ensureCustomer } = useStorefrontAuth();
   const qc = useQueryClient();
 
   const [placing, setPlacing] = useState(false);
@@ -82,6 +82,9 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponLoading, setCouponLoading] = useState(false);
+
+  // Lazily fetch/create customer record on checkout
+  useEffect(() => { ensureCustomer(); }, [ensureCustomer]);
 
   // Fetch ALL saved addresses for logged-in customer
   const { data: savedAddresses } = useQuery({

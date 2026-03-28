@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOutletContext, Navigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -336,7 +336,12 @@ function WishlistTab({ customerId, store }: { customerId: string; store: StoreDa
 
 export default function StorefrontAccount() {
   const store = useOutletContext<StoreData>();
-  const { customer, loading, signOut, user } = useStorefrontAuth();
+  const { customer, loading, signOut, user, ensureCustomer } = useStorefrontAuth();
+
+  // Lazily fetch/create customer record on this page
+  useEffect(() => {
+    if (user && !customer) ensureCustomer();
+  }, [user, customer, ensureCustomer]);
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   if (!user) return <Navigate to={storefrontPath(store.slug, "login")} replace />;

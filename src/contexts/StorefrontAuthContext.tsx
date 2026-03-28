@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,6 +16,8 @@ interface StorefrontAuthContextType {
   user: User | null;
   customer: StorefrontCustomer | null;
   loading: boolean;
+  /** Lazily fetch/create the customer record. Only call from pages that need it (account, checkout). */
+  ensureCustomer: () => Promise<StorefrontCustomer | null>;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -34,11 +36,11 @@ export function StorefrontAuthProvider({
   const [user, setUser] = useState<User | null>(null);
   const [customer, setCustomer] = useState<StorefrontCustomer | null>(null);
   const [loading, setLoading] = useState(true);
+  const ensurePromiseRef = useRef<Promise<StorefrontCustomer | null> | null>(null);
 
   const fetchOrCreateCustomer = useCallback(
-    async (userId: string, email?: string) => {
-      // Try to fetch existing customer record
-      const { data, error } = await supabase
+    async (userId: string, email?: string): Promise<StorefrontCustomer | null> => {
+      const { data } = await supabase
         .from("storefront_customers")
         .select("*")
         .eq("user_id", userId)
@@ -47,10 +49,9 @@ export function StorefrontAuthProvider({
 
       if (data) {
         setCustomer(data as StorefrontCustomer);
-        return;
+        return data as StorefrontCustomer;
       }
 
-      // Create customer record if not exists
       const { data: newCustomer, error: insertErr } = await supabase
         .from("storefront_customers")
         .insert({ user_id: userId, store_id: storeId, email: email || null })
@@ -59,14 +60,29 @@ export function StorefrontAuthProvider({
 
       if (!insertErr && newCustomer) {
         setCustomer(newCustomer as StorefrontCustomer);
+        return newCustomer as StorefrontCustomer;
       }
+      return null;
     },
     [storeId]
   );
 
+  /** Lazy customer resolution — deduped via ref */
+  const ensureCustomer = useCallback(async (): Promise<StorefrontCustomer | null> => {
+    if (customer) return customer;
+    if (!user) return null;
+    if (ensurePromiseRef.current) return ensurePromiseRef.current;
+    const promise = fetchOrCreateCustomer(user.id, user.email ?? undefined);
+    ensurePromiseRef.current = promise;
+    try {
+      return await promise;
+    } finally {
+      ensurePromiseRef.current = null;
+    }
+  }, [customer, user, fetchOrCreateCustomer]);
+
   useEffect(() => {
     // Fast-path: if no Supabase auth token in localStorage, skip auth entirely.
-    // 99% of storefront visitors are anonymous — this eliminates 1 API call per visit.
     const hasAuthToken = (() => {
       try {
         const storageKey = `sb-soxuyuupzodkufxbbndq-auth-token`;
@@ -81,16 +97,13 @@ export function StorefrontAuthProvider({
       return;
     }
 
-    // Only initialize auth SDK for visitors with an existing session token
     const initAuth = () => {
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((_event, sess) => {
         setSession(sess);
         setUser(sess?.user ?? null);
-        if (sess?.user) {
-          setTimeout(() => fetchOrCreateCustomer(sess.user.id, sess.user.email), 0);
-        } else {
+        if (!sess?.user) {
           setCustomer(null);
         }
         setLoading(false);
@@ -99,9 +112,6 @@ export function StorefrontAuthProvider({
       supabase.auth.getSession().then(({ data: { session: sess } }) => {
         setSession(sess);
         setUser(sess?.user ?? null);
-        if (sess?.user) {
-          fetchOrCreateCustomer(sess.user.id, sess.user.email);
-        }
         setLoading(false);
       });
 
@@ -123,7 +133,7 @@ export function StorefrontAuthProvider({
         cancelIdleCallback(handle);
       }
     };
-  }, [fetchOrCreateCustomer]);
+  }, []);
 
   const signUp = async (email: string, password: string, name?: string) => {
     const { error } = await supabase.auth.signUp({
@@ -146,7 +156,7 @@ export function StorefrontAuthProvider({
 
   return (
     <StorefrontAuthContext.Provider
-      value={{ session, user, customer, loading, signUp, signIn, signOut }}
+      value={{ session, user, customer, loading, ensureCustomer, signUp, signIn, signOut }}
     >
       {children}
     </StorefrontAuthContext.Provider>
