@@ -81,7 +81,6 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
     { icon: Home, label: "Home", isActive: isHome, to: basePath },
     { icon: Store, label: "Shop", isActive: isShop, to: storefrontPath(store.slug, "shop") },
     { icon: Heart, label: "Wishlist", isActive: isWishlist, to: storefrontPath(store.slug, "wishlist") },
-    { icon: Bell, label: "Alerts", isActive: false, to: storefrontPath(store.slug, user ? "account" : "login") },
     { icon: User, label: "Account", isActive: isAccount, to: storefrontPath(store.slug, user ? "account" : "login") },
   ];
 
@@ -92,10 +91,10 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.label} to={item.to} className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-all duration-300 active:scale-95">
-                <div className="absolute inset-0 rounded-full transition-all duration-300 ease-out" style={{ backgroundColor: item.isActive ? "var(--storefront-text, hsl(var(--foreground)))" : "transparent", transform: item.isActive ? "scale(1)" : "scale(0.8)", opacity: item.isActive ? 1 : 0 }} />
-                <Icon className="relative z-10 h-[22px] w-[22px] transition-all duration-300" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "var(--storefront-text, hsl(var(--foreground)))45" }} strokeWidth={1.8} fill={item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "none"} />
-                <span className="relative z-10 text-xs font-semibold overflow-hidden transition-all duration-300 ease-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "transparent", maxWidth: item.isActive ? "80px" : "0px", opacity: item.isActive ? 1 : 0, marginLeft: item.isActive ? "6px" : "0px" }}>{item.label}</span>
+              <Link key={item.label} to={item.to} className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-all duration-200 ease-in-out active:scale-95">
+                <div className="absolute inset-0 rounded-full transition-all duration-200 ease-in-out" style={{ backgroundColor: item.isActive ? "var(--storefront-text, hsl(var(--foreground)))" : "transparent", opacity: item.isActive ? 1 : 0 }} />
+                <Icon className="relative z-10 h-[22px] w-[22px] transition-colors duration-200 ease-in-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "var(--storefront-text, hsl(var(--foreground)))45" }} strokeWidth={1.8} fill={item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "none"} />
+                <span className="relative z-10 text-xs font-semibold overflow-hidden transition-all duration-200 ease-in-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "transparent", maxWidth: item.isActive ? "80px" : "0px", opacity: item.isActive ? 1 : 0, marginLeft: item.isActive ? "6px" : "0px" }}>{item.label}</span>
               </Link>
             );
           })}
