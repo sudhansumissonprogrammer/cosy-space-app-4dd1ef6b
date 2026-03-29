@@ -51,6 +51,8 @@ const StoreTracking = lazy(() => import("@/pages/StoreTracking"));
 
 const CategoryManagement = lazy(() => import("@/pages/CategoryManagement"));
 const MediaLibrary = lazy(() => import("@/pages/MediaLibrary"));
+const StorePages = lazy(() => import("@/pages/StorePages"));
+const StorePageEditor = lazy(() => import("@/pages/StorePageEditor"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const InstallApp = lazy(() => import("@/pages/InstallApp"));
 
@@ -115,6 +117,9 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/tax" element={<StoreTaxSettings />} />
           <Route path="stores/:storeSlug/abandoned-carts" element={<StoreAbandonedCarts />} />
           <Route path="stores/:storeSlug/theme" element={<StoreThemeSettings />} />
+          <Route path="stores/:storeSlug/pages" element={<StorePages />} />
+          <Route path="stores/:storeSlug/pages/new" element={<StorePageEditor />} />
+          <Route path="stores/:storeSlug/pages/:pageId/edit" element={<StorePageEditor />} />
           <Route path="stores/:storeSlug/whatsapp" element={<WhatsAppMarketing />} />
           <Route path="stores/:storeSlug/tracking" element={<StoreTracking />} />
           

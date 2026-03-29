@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
   ShoppingCart, Palette, BarChart3, MessageSquare, FolderOpen, Image as ImageIcon,
-  Clock,
+  Clock, FileText,
 } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
@@ -113,6 +113,7 @@ export function AppSidebar() {
   const settingsItems = storeSlug
     ? [
         { title: "Theme", url: `/dashboard/stores/${storeSlug}/theme`, icon: Palette, menuKey: "theme" },
+        { title: "Pages", url: `/dashboard/stores/${storeSlug}/pages`, icon: FileText, menuKey: "pages" },
         { title: "Domain", url: `/dashboard/stores/${storeSlug}/domain`, icon: Globe, menuKey: "domain" },
         { title: "Store Settings", url: `/dashboard/stores/${storeSlug}/settings`, icon: Settings, menuKey: "store_settings" },
       ].filter((i) => isVisible(i.menuKey))
