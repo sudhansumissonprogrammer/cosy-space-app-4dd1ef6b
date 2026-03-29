@@ -691,8 +691,8 @@ export default function CheckoutPage() {
           <p className="text-xs text-muted-foreground mt-1">We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.</p>
         </div>
         <div className="mt-6 flex flex-col gap-2 items-center">
-          <Button asChild variant="outline"><Link to={storefrontPath(store.slug, "account")}>View My Orders</Link></Button>
-          <Button asChild><Link to={storefrontPath(store.slug)}>Continue Shopping</Link></Button>
+          <Link to={storefrontPath(store.slug, "account")} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>View My Orders</Link>
+          <Link to={storefrontPath(store.slug)} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>Continue Shopping</Link>
         </div>
       </div>
     );
