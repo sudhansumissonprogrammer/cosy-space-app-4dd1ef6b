@@ -1872,6 +1872,7 @@ export default function StoreThemeSettings() {
   };
 
   const [iframeKey, setIframeKey] = useState(0);
+  const iframeLoadedRef = useRef(false);
 
   const applyThemeMutation = useMutation({
     mutationFn: async (themeId: string) => {
