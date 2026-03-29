@@ -309,7 +309,7 @@ export default function StorefrontHomeV14() {
           </div>
 
           {showSkeleton ? (
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 560 }}>
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
