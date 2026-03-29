@@ -275,9 +275,9 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_enabled: true, product_card_style: "style-4", category_style: "style-5", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-14": {
-    primary_color: "#004643", accent_color: "#004643", text_color: "#222222", background_color: "#F0EDE5",
+    primary_color: "#A71D31", accent_color: "#3F0D12", text_color: "#1a1a1a", background_color: "#FBE4E3",
     heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
-    marquee_gradient: "linear-gradient(90deg, #004643, #02615C, #004643)",
+    marquee_gradient: "linear-gradient(90deg, #A71D31, #e8616b, #A71D31)",
     marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-2", category_style: "style-4", header_logo_alignment: "center", mobile_nav_enabled: true, header_style: "normal",
   },
   "theme-15": {
