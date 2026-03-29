@@ -19,7 +19,7 @@ interface Props {
  * Style 3 — Clean card with top-right wishlist, discount badge,
  * star rating, price and full-width Add to Cart button.
  */
-export default function ProductCardStyle3({ product, slug, store, priority = false }: Props) {
+export default function ProductCardStyle3({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const discount = getDiscountPercent(product.price, product.sale_price);
   const rating = getProductRating(product.id);
