@@ -154,14 +154,8 @@ export function getImageSrcSet(
   const firstUrl = url.includes(",") ? url.split(",")[0].trim() : url.trim();
   if (!firstUrl) return "";
 
-  // For our pipeline images, only emit the 3 stored widths
-  if (isOptimizedUrl(firstUrl)) {
-    return PIPELINE_WIDTHS
-      .map((w) => `${resolveVariantUrl(firstUrl, w)} ${w}w`)
-      .join(", ");
-  }
-
-  // For external images, use runtime optimization
+  // For ALL images (pipeline or external), use optimizeImageUrl which handles
+  // render API for pipeline images and CDN params for external
   return sizes
     .map((w) => `${optimizeImageUrl(firstUrl, w, quality)} ${w}w`)
     .join(", ");
