@@ -59,7 +59,14 @@ export function buildThemeStyle(
   const primaryHsl = hexToHsl(primaryColor);
   const primaryFgHsl = isLightColor(primaryColor) ? "0 0% 10%" : "0 0% 100%";
 
-  const themeStyle: React.CSSProperties = (previewOverride || (themeConfig
+  const baseOverrides = {
+    "--primary": primaryHsl,
+    "--primary-foreground": primaryFgHsl,
+  };
+
+  const themeStyle: React.CSSProperties = (previewOverride
+    ? { ...previewOverride, ...baseOverrides }
+    : themeConfig
     ? {
         "--storefront-primary": themeConfig.primary_color,
         "--storefront-primary-light": primaryLight,
@@ -72,11 +79,9 @@ export function buildThemeStyle(
           themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : defaultButtonRadius,
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,
         "--storefront-btn-text": btnTextColor,
-        // Override shadcn --primary so all components (buttons, badges, borders) use the store theme color
-        "--primary": primaryHsl,
-        "--primary-foreground": primaryFgHsl,
+        ...baseOverrides,
       }
-    : {})) as any;
+    : { ...baseOverrides }) as any;
 
   return { themeStyle, primaryColor, btnTextColor };
 }
