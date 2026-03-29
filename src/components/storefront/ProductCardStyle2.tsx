@@ -12,6 +12,7 @@ interface Props {
   slug: string;
   store: Tables<"stores">;
   priority?: boolean;
+  onVariantRequired?: () => void;
 }
 
 /**
