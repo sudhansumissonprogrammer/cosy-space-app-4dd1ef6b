@@ -182,6 +182,7 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="account" element={<StorefrontAccount />} />
       <Route path="install" element={<InstallApp />} />
       <Route path="track-order" element={<OrderTrackingPage />} />
+      <Route path="page/:pageSlug" element={<StorefrontCustomPage />} />
     </>
   );
 };
