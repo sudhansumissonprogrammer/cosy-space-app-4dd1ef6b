@@ -174,7 +174,7 @@ export default function CategoryDetail() {
               </div>
               {products.length > ABOVE_FOLD_COUNT && (
                 <LazyRender minHeight={600} rootMargin="300px">
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-3 sm:mt-4">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-2 sm:mt-4">
                     {products.slice(ABOVE_FOLD_COUNT).map((product) => (
                       <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
                     ))}
