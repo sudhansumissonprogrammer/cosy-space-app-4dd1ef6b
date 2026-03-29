@@ -235,6 +235,7 @@ export default function StorefrontHomeV14() {
         </div>
       )}
       <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
+      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
 
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
         {bestSellingProducts.length > 0 && (
