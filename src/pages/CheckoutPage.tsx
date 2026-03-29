@@ -1035,10 +1035,15 @@ export default function CheckoutPage() {
           <span className="font-semibold text-foreground">Total</span>
           <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
         </div>
-        <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
+        <button
+          className="flex h-12 w-full items-center justify-center gap-2 text-sm font-bold btn-gold disabled:opacity-50"
+          style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+          onClick={handlePlaceOrder}
+          disabled={placing}
+        >
           {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {paymentMethod === "razorpay" ? `Pay ${currency} ${total.toFixed(2)}` : `Place Order · ${currency} ${total.toFixed(2)}`}
-        </Button>
+        </button>
       </div>
 
       {/* Address Picker Dialog (change or add new) */}
