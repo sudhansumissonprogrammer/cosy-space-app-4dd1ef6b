@@ -313,6 +313,7 @@ export default function DashboardLayout() {
         ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, exact: false, badge: pendingOrders }] : []),
         { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, exact: false },
         { label: "Categories", icon: Grid3X3, path: `/dashboard/stores/${storeSlug}/categories`, exact: false },
+        { label: "More", icon: Menu, path: "__menu__", exact: false },
         { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
       ]
     : [
