@@ -12,9 +12,9 @@ Deno.serve(async (req) => {
   try {
     const { lat, lng } = await req.json();
 
-    if (typeof lat !== "number" || typeof lng !== "number") {
+    if (typeof lat !== "number" || typeof lng !== "number" || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       return new Response(
-        JSON.stringify({ error: "lat and lng required" }),
+        JSON.stringify({ error: "Invalid coordinates" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -27,37 +27,55 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch landmark/neighborhood info from Google
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&result_type=point_of_interest|establishment|neighborhood|sublocality|locality`;
-    const geoRes = await fetch(url);
-    const geoData = await geoRes.json();
+    // Fetch detailed address + landmark/POI in parallel
+    const [detailRes, poiRes] = await Promise.all([
+      fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`),
+      fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&result_type=point_of_interest|establishment|neighborhood|sublocality`),
+    ]);
 
-    let landmark = "";
+    const [detailData, poiData] = await Promise.all([detailRes.json(), poiRes.json()]);
 
-    if (geoData.status === "OK" && geoData.results?.length) {
-      const poiResult = geoData.results.find((r: any) =>
-        r.types?.some((t: string) => ["point_of_interest", "establishment", "premise"].includes(t))
+    if (detailData.status !== "OK" || !detailData.results?.length) {
+      return new Response(
+        JSON.stringify({ error: "No address found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
-      const neighborhoodResult = geoData.results.find((r: any) =>
-        r.types?.some((t: string) => ["neighborhood", "sublocality_level_1", "sublocality"].includes(t))
-      );
-
-      const bestResult = poiResult || neighborhoodResult || geoData.results[0];
-      const components = bestResult.address_components || [];
-
-      const get = (type: string) =>
-        components.find((c: any) => c.types.includes(type))?.long_name || "";
-
-      const poi = poiResult ? components[0]?.long_name || "" : "";
-      const area = get("sublocality_level_1") || get("sublocality") || get("neighborhood");
-
-      const parts = [poi, area].filter(Boolean);
-      // Deduplicate
-      landmark = [...new Set(parts)].join(", ");
     }
 
+    const result = detailData.results[0];
+    const components = result.address_components || [];
+    const get = (type: string) =>
+      components.find((c: any) => c.types.includes(type))?.long_name || "";
+
+    // Extract landmark from POI results
+    let landmark = "";
+    if (poiData.status === "OK" && poiData.results?.length) {
+      const poi = poiData.results.find((r: any) =>
+        r.types?.some((t: string) => ["point_of_interest", "establishment"].includes(t))
+      );
+      if (poi) {
+        landmark = poi.address_components?.[0]?.long_name || "";
+      }
+    }
+
+    const sublocality = get("sublocality_level_1") || get("sublocality") || get("neighborhood");
+    const streetParts = [
+      landmark ? `Near ${landmark}` : "",
+      get("route") || get("sublocality_level_2"),
+      sublocality,
+    ].filter(Boolean);
+    // Deduplicate
+    const uniqueParts = [...new Set(streetParts)];
+
+    const address = {
+      street_address: uniqueParts.join(", ") || result.formatted_address?.split(",").slice(0, 2).join(",") || "",
+      city: get("locality") || get("administrative_area_level_2"),
+      state: get("administrative_area_level_1"),
+      pincode: get("postal_code"),
+    };
+
     return new Response(
-      JSON.stringify({ success: true, landmark }),
+      JSON.stringify({ success: true, address }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
