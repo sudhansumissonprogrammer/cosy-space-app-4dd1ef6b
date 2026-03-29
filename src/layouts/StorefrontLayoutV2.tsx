@@ -140,21 +140,16 @@ function StorefrontV2Skeleton() {
 }
 
 export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: string } = {}) {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
     <StorefrontShell slugOverride={slugOverride} defaultPrimary="#004643" skeleton={<StorefrontV2Skeleton />}>
       {({ store }) => (
         <>
-          <TransparentNav store={store} scrolled={scrolled} />
-          <main><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+          <TransparentNav store={store} scrolled={false} />
+          <main className="pb-16 md:pb-0"><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
           <StorefrontFooter store={store} />
+          <div className="md:hidden">
+            <MobileBottomNav store={store} />
+          </div>
         </>
       )}
     </StorefrontShell>
