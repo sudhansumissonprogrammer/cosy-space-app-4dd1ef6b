@@ -118,11 +118,8 @@ export function optimizeImageUrl(
   return url;
 }
 
-/** Pick the closest stored variant width that is ≥ requested width */
-function pickBestVariant(requestedWidth: number): VariantWidth {
-  for (const w of PIPELINE_WIDTHS) {
-    if (w >= requestedWidth) return w;
-  }
+/** @deprecated No longer needed — render API handles all sizes */
+function pickBestVariant(requestedWidth: number): 800 {
   return 800;
 }
 
