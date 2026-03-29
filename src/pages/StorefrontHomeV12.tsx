@@ -172,11 +172,18 @@ function BestSellingSection({ products, slug, store, cardStyle }: { products: an
   return (
     <div className="py-4">
       <SectionHeader title="Best Selling" slug={slug} linkTo="shop" />
-      <div className="flex gap-3 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+      {/* Mobile: horizontal scroll */}
+      <div className="flex gap-3 overflow-x-auto px-4 pb-2 md:hidden" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
         {bestSellers.map((product, idx) => (
           <div key={product.id} className="flex-shrink-0" style={{ width: "165px" }}>
             <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
           </div>
+        ))}
+      </div>
+      {/* Desktop: consistent grid */}
+      <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4 px-4">
+        {bestSellers.map((product, idx) => (
+          <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
         ))}
       </div>
     </div>
