@@ -1,5 +1,3 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -12,15 +10,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lat, lng } = await req.json();
-
-    if (typeof lat !== "number" || typeof lng !== "number" || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      return new Response(
-        JSON.stringify({ error: "Invalid coordinates" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const apiKey = Deno.env.get("GOOGLE_GEOCODING_API_KEY");
     if (!apiKey) {
       return new Response(
@@ -29,33 +18,80 @@ Deno.serve(async (req) => {
       );
     }
 
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&result_type=street_address|sublocality|locality`;
-    const res = await fetch(url);
-    const data = await res.json();
+    // Get client IP from headers
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      null;
 
-    if (data.status !== "OK" || !data.results?.length) {
+    if (!clientIp || clientIp === "unknown") {
       return new Response(
-        JSON.stringify({ error: "No address found" }),
+        JSON.stringify({ error: "Could not determine location" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Step 1: IP geolocation (free, no key needed, ~50ms)
+    const ipRes = await fetch(`http://ip-api.com/json/${clientIp}?fields=status,lat,lon,city,regionName,zip`);
+    const ipData = await ipRes.json();
+
+    if (ipData.status !== "success" || !ipData.lat || !ipData.lon) {
+      return new Response(
+        JSON.stringify({ error: "Could not determine location from IP" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const result = data.results[0];
-    const components = result.address_components || [];
+    // Step 2: Google reverse geocode for detailed address with landmarks
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${ipData.lat},${ipData.lon}&key=${apiKey}&result_type=point_of_interest|establishment|neighborhood|sublocality|locality`;
+    const geoRes = await fetch(url);
+    const geoData = await geoRes.json();
 
-    const get = (type: string) =>
-      components.find((c: any) => c.types.includes(type))?.long_name || "";
+    let landmark = "";
+    let streetAddress = "";
 
-    const address = {
-      street_address: [get("premise"), get("street_number"), get("route"), get("sublocality_level_2"), get("sublocality_level_1")].filter(Boolean).join(", "),
-      city: get("locality") || get("administrative_area_level_2"),
-      state: get("administrative_area_level_1"),
-      pincode: get("postal_code"),
-      formatted: result.formatted_address || "",
-    };
+    if (geoData.status === "OK" && geoData.results?.length) {
+      // Find a landmark/POI result first
+      const poiResult = geoData.results.find((r: any) =>
+        r.types?.some((t: string) => ["point_of_interest", "establishment", "premise"].includes(t))
+      );
+      const neighborhoodResult = geoData.results.find((r: any) =>
+        r.types?.some((t: string) => ["neighborhood", "sublocality_level_1", "sublocality"].includes(t))
+      );
+      const localityResult = geoData.results.find((r: any) =>
+        r.types?.includes("locality")
+      );
+
+      const bestResult = poiResult || neighborhoodResult || localityResult || geoData.results[0];
+      const components = bestResult.address_components || [];
+
+      const get = (type: string) =>
+        components.find((c: any) => c.types.includes(type))?.long_name || "";
+
+      landmark = poiResult
+        ? components[0]?.long_name || ""
+        : get("neighborhood") || get("sublocality_level_1") || get("sublocality");
+
+      const area = get("sublocality_level_1") || get("sublocality") || get("neighborhood");
+      streetAddress = [landmark, area].filter(Boolean).join(", ");
+      // Deduplicate if landmark === area
+      if (landmark && landmark === area) streetAddress = landmark;
+    }
+
+    const city = ipData.city || "";
+    const state = ipData.regionName || "";
+    const pincode = ipData.zip || "";
 
     return new Response(
-      JSON.stringify({ success: true, address }),
+      JSON.stringify({
+        success: true,
+        address: {
+          street_address: streetAddress || `Near ${city}`,
+          city,
+          state,
+          pincode,
+        },
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
