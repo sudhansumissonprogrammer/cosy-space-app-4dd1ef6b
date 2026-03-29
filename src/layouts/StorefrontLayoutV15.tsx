@@ -181,7 +181,7 @@ function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavE
     <>
       {/* NO marquee here — theme-15 renders marquee inside the home page after hero */}
 
-      <nav className={`${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : 'sticky top-0'} z-30 ${
+      <nav className={`${isCheckout ? 'sticky top-0' : ''} z-30 ${
         isCheckout ? 'bg-card/80 backdrop-blur-md' :
         headerStyle === 'transparent' ? '' :
         headerStyle === 'glassmorphic' ? '' :
