@@ -921,41 +921,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                             <div className="space-y-1.5">
                               <Label className="text-xs">Variant Name *</Label>
                               <Input
-                                placeholder="e.g. Red, Large, 500ml"
+                                placeholder="e.g. S, M, L, XL, Red, Blue"
                                 value={v.name}
                                 onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, name: e.target.value } : vr))}
                                 maxLength={100}
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Price Override</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="Use base price"
-                                  value={v.price}
-                                  onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, price: e.target.value } : vr))}
-                                  step="0.01"
-                                  min="0"
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Stock</Label>
-                                <Input
-                                  type="number"
-                                  value={v.stock}
-                                  onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, stock: e.target.value } : vr))}
-                                  min="0"
-                                />
-                              </div>
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">SKU (optional)</Label>
-                              <Input
-                                placeholder="e.g. PROD-RED-L"
-                                value={v.sku}
-                                onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, sku: e.target.value } : vr))}
-                                maxLength={50}
                               />
                             </div>
                           </div>
