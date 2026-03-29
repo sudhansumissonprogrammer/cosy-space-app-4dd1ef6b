@@ -19,6 +19,7 @@ import StorefrontShell from "@/layouts/StorefrontShell";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
+const LazyDesktopNavBar = lazy(() => import("@/components/storefront/DesktopNavBar"));
 
 export type { Tables };
 export type StoreData = Tables<"stores">;
