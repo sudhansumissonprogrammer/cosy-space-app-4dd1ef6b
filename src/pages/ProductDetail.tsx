@@ -584,12 +584,11 @@ export default function ProductDetail() {
                     key={v.id}
                     type="button"
                     onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
-                    disabled={v.stock_quantity <= 0}
                     className={`relative rounded-xl border-2 px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                       selectedVariant?.id === v.id
                         ? "border-primary bg-primary/10 text-primary shadow-sm"
                         : "border-border text-foreground hover:border-primary/40 hover:bg-accent/50"
-                    } ${v.stock_quantity <= 0 ? "opacity-30 cursor-not-allowed" : "active:scale-95"}`}
+                    } active:scale-95`}
                   >
                     {selectedVariant?.id === v.id && (
                       <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
@@ -597,16 +596,6 @@ export default function ProductDetail() {
                       </span>
                     )}
                     {v.name}
-                    {v.price !== null && v.price !== basePrice && (
-                      <span className="ml-1 text-xs opacity-70">
-                        ({currency} {Number(v.price).toFixed(2)})
-                      </span>
-                    )}
-                    {v.stock_quantity <= 0 && (
-                      <span className="absolute inset-0 flex items-center justify-center">
-                        <span className="h-px w-full bg-muted-foreground/50 rotate-[-15deg]" />
-                      </span>
-                    )}
                   </button>
                 ))}
               </div>
