@@ -95,6 +95,7 @@ function MobileMenu({
             { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeSlug}/media`, menuKey: "media_library" },
             { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeSlug}/products/bulk-upload`, menuKey: "bulk_upload" },
             { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeSlug}/theme`, menuKey: "theme" },
+            { label: "Pages", icon: FileText, path: `/dashboard/stores/${storeSlug}/pages`, menuKey: "pages" },
             { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeSlug}/domain`, menuKey: "domain" },
             { label: "Store Settings", icon: Settings, path: `/dashboard/stores/${storeSlug}/settings`, menuKey: "store_settings" },
           ]),

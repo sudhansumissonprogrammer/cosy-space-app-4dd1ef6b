@@ -458,54 +458,24 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
-        {/* ── 5. About Us Page ── */}
+        {/* ── 5. Pages & Policies ── */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Store className="h-5 w-5 text-primary" /> About Us Page
+              <FileText className="h-5 w-5 text-primary" /> Pages & Policies
             </CardTitle>
-            <CardDescription>Customize your About Us page. Leave text blank to use auto-generated content.</CardDescription>
+            <CardDescription>Manage your About Us, Contact, and policy pages</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="space-y-2">
-              <Label>About Us Photo</Label>
-              {aboutUsImagePreview ? (
-                <div className="relative inline-block">
-                  <img src={aboutUsImagePreview} alt="About Us" className="h-32 w-full max-w-md rounded-lg border object-cover" />
-                  <button type="button" onClick={() => { setAboutUsImageFile(null); setAboutUsImagePreview(null); setAboutUsImageRemoved(true); }} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
-                </div>
-              ) : (
-                <label className="flex h-24 w-full max-w-md cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input hover:border-primary/50">
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground">Upload about us photo</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setAboutUsImageFile(f); setAboutUsImagePreview(URL.createObjectURL(f)); setAboutUsImageRemoved(false); } }} />
-                </label>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="about-us-text">Custom About Us Text</Label>
-              <Textarea id="about-us-text" value={aboutUsText} onChange={(e) => setAboutUsText(e.target.value)} rows={6} placeholder="Tell your customers about your brand story, mission, values... Leave blank to use auto-generated content with emojis." maxLength={5000} />
-              <p className="text-xs text-muted-foreground">Leave blank to use auto-generated About Us content based on your store details</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ── 6. Store Policies ── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="h-5 w-5 text-primary" /> Store Policies
-            </CardTitle>
-            <CardDescription>Leave blank to use default templates</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="return-policy">Return Policy</Label>
-              <Textarea id="return-policy" value={returnPolicy} onChange={(e) => setReturnPolicy(e.target.value)} rows={5} placeholder="Leave blank for a default template..." maxLength={5000} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="shipping-policy">Shipping Policy</Label>
-              <Textarea id="shipping-policy" value={shippingPolicy} onChange={(e) => setShippingPolicy(e.target.value)} rows={5} placeholder="Leave blank for a default template..." maxLength={5000} />
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Edit About Us, Contact, Return Policy, Shipping Policy, and more from the Pages section.
+              </p>
+              <Button variant="outline" asChild>
+                <Link to={`/dashboard/stores/${storeSlug}/pages`}>
+                  <FileText className="mr-2 h-4 w-4" /> Manage Pages
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -117,6 +117,9 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/tax" element={<StoreTaxSettings />} />
           <Route path="stores/:storeSlug/abandoned-carts" element={<StoreAbandonedCarts />} />
           <Route path="stores/:storeSlug/theme" element={<StoreThemeSettings />} />
+          <Route path="stores/:storeSlug/pages" element={<StorePages />} />
+          <Route path="stores/:storeSlug/pages/new" element={<StorePageEditor />} />
+          <Route path="stores/:storeSlug/pages/:pageId/edit" element={<StorePageEditor />} />
           <Route path="stores/:storeSlug/whatsapp" element={<WhatsAppMarketing />} />
           <Route path="stores/:storeSlug/tracking" element={<StoreTracking />} />
           
