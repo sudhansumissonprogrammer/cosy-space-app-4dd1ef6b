@@ -133,6 +133,15 @@ const COLOR_COMBINATIONS = [
     background: "#F7F7FF",
     marquee: "linear-gradient(90deg, #27187E, #3D2BA0, #27187E)",
   },
+  {
+    id: "crimson-sand",
+    name: "Crimson Sand",
+    primary: "#CD0000",
+    accent: "#8B0000",
+    text: "#1a1a1a",
+    background: "#EFEDE6",
+    marquee: "linear-gradient(90deg, #CD0000, #E53030, #CD0000)",
+  },
 ];
 
 /* ── Per-theme recommended color combinations (curated for best visual result) ── */
