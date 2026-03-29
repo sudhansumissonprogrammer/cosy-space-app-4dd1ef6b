@@ -155,6 +155,7 @@ const LoadingSpinner = () => {
 };
 
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
+const StorefrontCustomPage = lazy(() => import("./pages/StorefrontCustomPage"));
 
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
