@@ -892,7 +892,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                               {v.name || `Variant ${i + 1}`}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {v.price ? `₹${v.price}` : 'Base price'} · Stock: {v.stock}
+                              {v.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
