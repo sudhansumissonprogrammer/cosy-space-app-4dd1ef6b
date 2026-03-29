@@ -1,0 +1,93 @@
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useStoreData } from "@/hooks/useStoreData";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function StorefrontCustomPage() {
+  const { pageSlug, slug } = useParams<{ pageSlug: string; slug?: string }>();
+
+  // Resolve store id from slug or subdomain
+  const storeSlug = slug || (window as any).__STORE_SLUG__ || window.location.hostname.split(".")[0];
+
+  const { data: page, isLoading } = useQuery({
+    queryKey: ["storefront-custom-page", storeSlug, pageSlug],
+    queryFn: async () => {
+      // First get store id from slug
+      const { data: store } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("slug", storeSlug)
+        .single();
+      if (!store) return null;
+
+      const { data, error } = await supabase
+        .from("store_pages")
+        .select("*")
+        .eq("store_id", store.id)
+        .eq("slug", pageSlug!)
+        .eq("page_type", "custom")
+        .eq("is_active", true)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!pageSlug && !!storeSlug,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+      </div>
+    );
+  }
+
+  if (!page) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+          Page Not Found
+        </h1>
+        <p className="mt-2 text-muted-foreground">The page you're looking for doesn't exist.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <h1
+        className="text-2xl md:text-3xl font-bold mb-6"
+        style={{
+          color: "var(--storefront-text, hsl(var(--foreground)))",
+          fontFamily: "var(--storefront-heading-font, inherit)",
+        }}
+      >
+        {page.title}
+      </h1>
+
+      {page.image_url && (
+        <img
+          src={page.image_url}
+          alt={page.title}
+          className="w-full max-h-[400px] object-cover rounded-xl mb-6"
+        />
+      )}
+
+      {page.content && (
+        <div
+          className="prose prose-sm max-w-none whitespace-pre-line"
+          style={{
+            color: "var(--storefront-text, hsl(var(--foreground)))",
+            fontFamily: "var(--storefront-body-font, inherit)",
+          }}
+        >
+          {page.content}
+        </div>
+      )}
+    </div>
+  );
+}
