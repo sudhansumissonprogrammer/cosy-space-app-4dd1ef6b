@@ -5,6 +5,7 @@
 
 interface StoreInfo {
   name: string;
+  description?: string | null;
   whatsapp_number?: string | null;
   location?: string | null;
   city?: string | null;
