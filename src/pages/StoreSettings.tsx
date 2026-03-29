@@ -19,22 +19,8 @@ import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeSVG } from "qrcode.react";
 
-const ICON_OPTIONS = [
-  { value: "Award", label: "Award" },
-  { value: "Leaf", label: "Leaf" },
-  { value: "Shield", label: "Shield" },
-  { value: "Star", label: "Star" },
-  { value: "Sparkles", label: "Sparkles" },
-  { value: "Heart", label: "Heart" },
-  { value: "Truck", label: "Truck" },
-  { value: "ThumbsUp", label: "ThumbsUp" },
-];
 
-interface Feature {
-  icon: string;
-  title: string;
-  description: string;
-}
+
 
 export default function StoreSettings() {
   const { storeId, storeSlug } = useStoreSlugParam();
