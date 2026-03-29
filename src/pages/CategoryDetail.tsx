@@ -108,7 +108,7 @@ export default function CategoryDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="mx-auto max-w-6xl px-2 sm:px-4 py-6">
       <div className="mb-5 flex items-center gap-3">
         <button
           onClick={() => navigate(storefrontPath(slug!, ""))}
