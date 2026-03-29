@@ -124,6 +124,15 @@ const COLOR_COMBINATIONS = [
     background: "#F8FAFA",
     marquee: "linear-gradient(90deg, #004545, #00A8A8, #FF6B35)",
   },
+  {
+    id: "ghost-persian",
+    name: "Ghost × Persian",
+    primary: "#27187E",
+    accent: "#27187E",
+    text: "#FFFFFF",
+    background: "#5A7F7F",
+    marquee: "linear-gradient(90deg, #27187E, #3D2BA0, #27187E)",
+  },
 ];
 
 /* ── Per-theme recommended color combinations (curated for best visual result) ── */
