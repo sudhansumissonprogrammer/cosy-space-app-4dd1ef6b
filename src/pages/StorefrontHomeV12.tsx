@@ -16,7 +16,7 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Hero Banner ── */
-function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
+function V12Hero({ store }: { store: StoreData }) {
   // Mobile hero images (mobile only)
   const mobileImages: string[] = [];
   const mhi = (store as any).mobile_hero_images;
