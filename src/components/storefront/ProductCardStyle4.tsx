@@ -33,7 +33,7 @@ interface Props {
   onVariantRequired?: () => void;
 }
 
-export default function ProductCardStyle4({ product, slug, store }: Props) {
+export default function ProductCardStyle4({ product, slug, store, onVariantRequired }: Props) {
   const { items, addToCart, updateQuantity } = useCart();
   const existing = items.find(
     (i) => i.productId === product.id && !i.variantId
