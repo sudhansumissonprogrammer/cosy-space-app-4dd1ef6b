@@ -111,7 +111,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
 
         <Link to={storefrontPath(store.slug)} className="flex-shrink-0" aria-label={`${store.name} home`}>
           {store.logo_url ? (
-            <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[140px] object-contain" style={{ filter: scrolled ? "none" : "brightness(0) invert(1)" }} />
+            <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[140px] object-contain" />
           ) : (
             <span className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>{store.name}</span>
           )}
