@@ -96,11 +96,10 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
                 {[
                   { to: storefrontPath(store.slug), label: "Home" },
                   { to: storefrontPath(store.slug, "shop"), label: "Shop All" },
-                  { to: storefrontPath(store.slug, "account"), label: "My Account" },
-                  { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
                   { to: storefrontPath(store.slug, "about"), label: "About Us" },
                   { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
-                  { to: storefrontPath(store.slug, "return-policy"), label: "Return Policy" },
+                  { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
+                  { to: storefrontPath(store.slug, "account"), label: "My Account" },
                 ].map((link) => (
                   <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
                     {link.label}
