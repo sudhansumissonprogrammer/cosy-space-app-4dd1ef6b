@@ -239,6 +239,54 @@ export default function CreateStore() {
         }).then(({ error: themeErr }: any) => {
           if (themeErr) console.warn("Theme config insert failed:", themeErr.message);
         });
+
+        // AI-powered content generation (non-blocking for store creation)
+        try {
+          const { data: aiData, error: aiErr } = await supabase.functions.invoke(
+            "generate-store-content",
+            {
+              body: {
+                store_name: name.trim(),
+                store_description: description.trim() || name.trim(),
+              },
+            }
+          );
+
+          if (!aiErr && aiData && !aiData.error) {
+            // Update store with AI-generated content
+            const updatePayload: Record<string, string> = {};
+            if (aiData.store_description) updatePayload.description = aiData.store_description;
+            if (aiData.meta_title) updatePayload.meta_title = aiData.meta_title;
+            if (aiData.meta_description) updatePayload.meta_description = aiData.meta_description;
+            if (aiData.about_us) updatePayload.about_us_text = aiData.about_us;
+
+            if (Object.keys(updatePayload).length > 0) {
+              await (supabase as any)
+                .from("stores")
+                .update(updatePayload)
+                .eq("id", newStore.id);
+            }
+
+            // Create About Us page with AI content
+            if (aiData.about_us) {
+              await (supabase as any).from("store_pages").insert({
+                store_id: newStore.id,
+                title: "About Us",
+                slug: "about-us",
+                page_type: "about",
+                content: aiData.about_us,
+                is_active: true,
+                display_order: 0,
+              }).then(({ error: pageErr }: any) => {
+                if (pageErr) console.warn("About page insert failed:", pageErr.message);
+              });
+            }
+          } else {
+            console.warn("AI content generation skipped:", aiErr || aiData?.error);
+          }
+        } catch (aiError) {
+          console.warn("AI content generation failed (non-blocking):", aiError);
+        }
       }
 
       // Pre-warm edge caches so first visitor gets instant load
