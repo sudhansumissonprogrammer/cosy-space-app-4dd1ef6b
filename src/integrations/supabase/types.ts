@@ -2141,6 +2141,30 @@ export type Database = {
       }
     }
     Views: {
+      platform_config_public: {
+        Row: {
+          created_at: string | null
+          default_currency: string | null
+          id: string | null
+          platform_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_currency?: string | null
+          id?: string | null
+          platform_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_currency?: string | null
+          id?: string | null
+          platform_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       store_payment_config_public: {
         Row: {
           created_at: string | null
