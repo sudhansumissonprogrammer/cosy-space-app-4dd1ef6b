@@ -680,19 +680,19 @@ export default function CheckoutPage() {
 
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <CheckCircle2 className="h-8 w-8 text-primary" />
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-primary) 15%, transparent)" }}>
+          <CheckCircle2 className="h-8 w-8" style={{ color: "var(--storefront-primary)" }} />
         </div>
         <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
         <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
         {(orderNumber || orderId) && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span></p>}
-        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+        <div className="mt-4 rounded-lg p-3" style={{ borderColor: "color-mix(in srgb, var(--storefront-primary) 20%, transparent)", border: "1px solid", backgroundColor: "color-mix(in srgb, var(--storefront-primary) 5%, transparent)" }}>
           <p className="text-sm text-foreground font-medium">✅ Order confirmed!</p>
           <p className="text-xs text-muted-foreground mt-1">We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.</p>
         </div>
         <div className="mt-6 flex flex-col gap-2 items-center">
-          <Button asChild variant="outline"><Link to={storefrontPath(store.slug, "account")}>View My Orders</Link></Button>
-          <Button asChild><Link to={storefrontPath(store.slug)}>Continue Shopping</Link></Button>
+          <Link to={storefrontPath(store.slug, "account")} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>View My Orders</Link>
+          <Link to={storefrontPath(store.slug)} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>Continue Shopping</Link>
         </div>
       </div>
     );
@@ -1035,10 +1035,15 @@ export default function CheckoutPage() {
           <span className="font-semibold text-foreground">Total</span>
           <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
         </div>
-        <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
+        <button
+          className="flex h-12 w-full items-center justify-center gap-2 text-sm font-bold btn-gold disabled:opacity-50"
+          style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+          onClick={handlePlaceOrder}
+          disabled={placing}
+        >
           {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {paymentMethod === "razorpay" ? `Pay ${currency} ${total.toFixed(2)}` : `Place Order · ${currency} ${total.toFixed(2)}`}
-        </Button>
+        </button>
       </div>
 
       {/* Address Picker Dialog (change or add new) */}
@@ -1104,8 +1109,9 @@ export default function CheckoutPage() {
                   <Input value={newAddr.pincode} onChange={(e) => setNewAddr(p => ({ ...p, pincode: e.target.value }))} placeholder="400001" maxLength={10} />
                 </div>
               </div>
-              <Button
-                className="w-full"
+              <button
+                className="flex h-10 w-full items-center justify-center text-sm font-bold btn-gold disabled:opacity-50"
+                style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
                 disabled={!newAddr.full_name.trim() || !newAddr.phone.trim() || !newAddr.street_address.trim() || !newAddr.city.trim() || !newAddr.state.trim() || !newAddr.pincode.trim()}
                 onClick={async () => {
                   if (!customer?.id) return;
@@ -1139,7 +1145,7 @@ export default function CheckoutPage() {
                 }}
               >
                 Save & Use This Address
-              </Button>
+              </button>
             </div>
           </div>
         </DialogContent>

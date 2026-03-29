@@ -48,19 +48,19 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <ShoppingCart className="mx-auto mb-4 h-16 w-16 text-muted-foreground/40" />
-        <h1 className="text-2xl font-bold text-foreground">Your cart is empty</h1>
-        <p className="mt-2 text-muted-foreground">Add some products to get started.</p>
-        <Button asChild className="mt-6">
-          <Link to={storefrontPath(store.slug)}>Continue Shopping</Link>
-        </Button>
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center" style={{ color: "var(--storefront-text, inherit)" }}>
+        <ShoppingCart className="mx-auto mb-4 h-16 w-16 opacity-30" />
+        <h1 className="text-2xl font-bold">Your cart is empty</h1>
+        <p className="mt-2 opacity-60">Add some products to get started.</p>
+        <Link to={storefrontPath(store.slug)} className="mt-6 inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>
+          Continue Shopping
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl w-full overflow-x-hidden px-3 sm:px-4 py-4 sm:py-8">
+    <div className="mx-auto max-w-3xl w-full overflow-x-hidden px-3 sm:px-4 py-4 sm:py-8" style={{ color: "var(--storefront-text, inherit)" }}>
       <div className="mb-3 sm:mb-6">
         <Link
           to={storefrontPath(store.slug)}
@@ -164,10 +164,14 @@ export default function CartPage() {
 
               <div className="space-y-2">
                 {showCheckout && (
-                  <Button className="w-full text-xs sm:text-sm" size="default" onClick={() => navigate(storefrontPath(store.slug, "checkout"))}>
-                    <ShoppingBag className="mr-2 h-4 w-4" />
+                  <button
+                    className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
+                    style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+                    onClick={() => navigate(storefrontPath(store.slug, "checkout"))}
+                  >
+                    <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
-                  </Button>
+                  </button>
                 )}
                 {showWhatsApp && (
                   <button

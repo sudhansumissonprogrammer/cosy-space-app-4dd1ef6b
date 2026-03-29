@@ -51,7 +51,7 @@ export default function SideCart({ store }: SideCartProps) {
 
   return (
     <Sheet open={isCartOpen} onOpenChange={(open) => !open && closeCart()}>
-      <SheetContent side="right" className="storefront-font flex w-[85vw] max-w-md flex-col p-0 sm:w-[400px]">
+      <SheetContent side="right" className="storefront-font flex w-[85vw] max-w-md flex-col p-0 sm:w-[400px]" style={{ backgroundColor: "var(--storefront-bg, #ffffff)", color: "var(--storefront-text, inherit)" }}>
         {/* Header */}
         <SheetHeader className="border-b px-4 py-4">
           <div className="flex items-center justify-between">
