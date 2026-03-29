@@ -77,7 +77,7 @@ export default function StorefrontHomeV14() {
 
   // Theme-14 defaults: style-2 cards, style-3 categories
   const cardStyle = themeConfig?.product_card_style || "style-2";
-  const categoryStyle = themeConfig?.category_style || "style-4";
+  const categoryStyle = themeConfig?.category_style || "style-3";
   const headerLayout = themeConfig?.header_logo_alignment || "center";
   const hideSearchBar = headerLayout === "left-with-search";
   const marqueeText = themeConfig?.marquee_text;
