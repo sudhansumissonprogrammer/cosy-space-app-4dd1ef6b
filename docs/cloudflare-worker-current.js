@@ -1234,8 +1234,8 @@ function injectFastShell(html, slug, themeLite, prebuiltHead) {
     const fonts = [themeLite.hf, themeLite.bf].filter(Boolean);
     if (fonts.length > 0) {
       const families = fonts.map(f => f.replace(/ /g, "+")).join("&family=");
-      themeCss += `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap" media="print" onload="this.media='all'" />`;
-      themeCss += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap" /></noscript>`;
+      themeCss += `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" media="print" onload="this.media='all'" />`;
+      themeCss += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" /></noscript>`;
       themeCss += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>`;
     }
   }
