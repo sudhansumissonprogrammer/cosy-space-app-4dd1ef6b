@@ -15,6 +15,7 @@ import {
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
   Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
   Search, User, Bell, X, BarChart3, MessageSquare, Clock, RefreshCw,
+  Grid3X3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -311,6 +312,7 @@ export default function DashboardLayout() {
         { label: "Home", icon: LayoutDashboard, path: "/dashboard", exact: true },
         ...(!isWhatsAppOnly ? [{ label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, exact: false, badge: pendingOrders }] : []),
         { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, exact: false },
+        { label: "Categories", icon: Grid3X3, path: `/dashboard/stores/${storeSlug}/categories`, exact: false },
         { label: "More", icon: Menu, path: "__menu__", exact: false },
         { label: "Profile", icon: User, path: "/dashboard/settings", exact: true },
       ]
