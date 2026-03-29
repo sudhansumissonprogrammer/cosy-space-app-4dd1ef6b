@@ -2293,6 +2293,14 @@ export type Database = {
         Args: { _limit?: number; _product_id: string }
         Returns: string[]
       }
+      get_platform_config_public: {
+        Args: never
+        Returns: {
+          default_currency: string
+          id: string
+          platform_name: string
+        }[]
+      }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
       get_store_usage_stats: { Args: never; Returns: Json }
       get_store_views: {
