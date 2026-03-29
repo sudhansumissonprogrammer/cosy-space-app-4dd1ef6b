@@ -521,6 +521,54 @@ export default function CheckoutPage() {
     }
   };
 
+  // Browser geolocation + Google reverse geocoding
+  const handleUseMyLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    setGeoLoading(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000,
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      const { data, error } = await supabase.functions.invoke("reverse-geocode", {
+        body: { lat: latitude, lng: longitude },
+      });
+
+      if (error) throw new Error(error.message);
+      if (!data?.success || !data?.address) {
+        toast.error("Could not determine your address");
+        return;
+      }
+
+      const addr = data.address;
+      if (addr.street_address) setStreetAddress(addr.street_address);
+      if (addr.city) setCity(addr.city);
+      if (addr.state) setState(addr.state);
+      if (addr.pincode) setPincode(addr.pincode);
+      toast.success("Address auto-filled from your location!");
+    } catch (err: any) {
+      if (err?.code === 1) {
+        toast.error("Location permission denied. Please allow location access.");
+      } else if (err?.code === 2) {
+        toast.error("Unable to determine your location");
+      } else if (err?.code === 3) {
+        toast.error("Location request timed out");
+      } else {
+        toast.error("Failed to detect location");
+      }
+    } finally {
+      setGeoLoading(false);
+    }
+  };
+
   // Save checkout info to localStorage for express checkout
   const saveExpressInfo = () => {
     try {
