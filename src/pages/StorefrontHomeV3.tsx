@@ -361,14 +361,14 @@ export default function StorefrontHomeV3() {
 
         {/* Grid */}
         {isProductsLoading ? (
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-56 rounded-2xl" />
             ))}
           </div>
         ) : allSorted.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {allSorted.slice(0, 8).map((product, idx) => (
                 <UniversalProductCard
                   key={product.id}
@@ -382,7 +382,7 @@ export default function StorefrontHomeV3() {
             </div>
             {allSorted.length > 8 && (
               <LazyRender rootMargin="400px" minHeight={400}>
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                   {allSorted.slice(8).map((product) => (
                     <UniversalProductCard
                       key={product.id}
