@@ -68,12 +68,11 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-30 transition-all duration-300"
+      className="relative z-30 transition-all duration-300"
       style={{
-        backgroundColor: scrolled ? "var(--storefront-bg, hsl(var(--background)))" : "transparent",
-        color: scrolled ? "var(--storefront-text, hsl(var(--foreground)))" : "#ffffff",
-        borderBottom: scrolled ? "1px solid var(--storefront-text, hsl(var(--foreground)))10" : "none",
-        backdropFilter: scrolled ? "blur(12px)" : "none",
+        backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+        color: "var(--storefront-text, hsl(var(--foreground)))",
+        borderBottom: "1px solid var(--storefront-text, hsl(var(--foreground)))10",
       }}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
