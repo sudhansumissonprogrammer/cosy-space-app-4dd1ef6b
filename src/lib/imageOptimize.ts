@@ -53,6 +53,7 @@ export function optimizeImageUrl(
       );
       u.searchParams.set("width", String(width));
       u.searchParams.set("quality", String(quality));
+      u.searchParams.set("resize", "contain");
       return u.toString();
     } catch {
       return baseUrl;
@@ -88,18 +89,7 @@ export function optimizeImageUrl(
       );
       u.searchParams.set("width", String(width));
       u.searchParams.set("quality", String(quality));
-      return u.toString();
-    } catch {
-      return url;
-    }
-    try {
-      const u = new URL(url);
-      u.pathname = u.pathname.replace(
-        "/storage/v1/object/",
-        "/storage/v1/render/image/",
-      );
-      u.searchParams.set("width", String(width));
-      u.searchParams.set("quality", String(quality));
+      u.searchParams.set("resize", "contain");
       return u.toString();
     } catch {
       return url;
