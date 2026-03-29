@@ -17,6 +17,7 @@ import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
+import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
