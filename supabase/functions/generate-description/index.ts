@@ -9,16 +9,24 @@ const corsHeaders = {
 const SYSTEM_PROMPT =
   "You are an expert e-commerce copywriter. Write a 3–4 line product description based on the product name provided. Make it attractive, clear, and professional. Focus on benefits and usability. Keep it concise. Do not use emojis. Do not use markdown formatting. Return only the description text, nothing else.";
 
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function callNvidia(productName: string): Promise<string> {
   const apiKey = Deno.env.get("NVIDIA_API_KEY");
   if (!apiKey) throw new Error("NVIDIA_API_KEY not set");
 
-  const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+  const res = await fetchWithTimeout("https://integrate.api.nvidia.com/v1/chat/completions", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "meta/llama-3.1-8b-instruct",
       messages: [
@@ -28,7 +36,7 @@ async function callNvidia(productName: string): Promise<string> {
       max_tokens: 300,
       temperature: 0.7,
     }),
-  });
+  }, 5000);
 
   if (!res.ok) {
     const text = await res.text();
@@ -44,12 +52,9 @@ async function callLovableAI(productName: string): Promise<string> {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) throw new Error("LOVABLE_API_KEY not set");
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "google/gemini-3-flash-preview",
       messages: [
@@ -57,7 +62,7 @@ async function callLovableAI(productName: string): Promise<string> {
         { role: "user", content: `Product name: ${productName}` },
       ],
     }),
-  });
+  }, 3000);
 
   if (!res.ok) {
     const text = await res.text();
@@ -67,6 +72,33 @@ async function callLovableAI(productName: string): Promise<string> {
 
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() || "";
+}
+
+async function callGemini(productName: string): Promise<string> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+
+  const res = await fetchWithTimeout(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\nProduct name: ${productName}` }] }],
+        generationConfig: { maxOutputTokens: 300, temperature: 0.7 },
+      }),
+    },
+    4000
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("Gemini error:", res.status, text);
+    throw new Error(`Gemini API failed: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 }
 
 serve(async (req) => {
@@ -93,22 +125,40 @@ serve(async (req) => {
 
     const trimmedName = product_name.trim();
     let description = "";
-    let usedFallback = false;
+    let provider = "";
 
-    // Primary: NVIDIA
+    // 1. NVIDIA (5s timeout)
     try {
       description = await callNvidia(trimmedName);
+      provider = "nvidia";
     } catch (e) {
-      console.warn("NVIDIA failed, falling back to Lovable AI:", e);
-      usedFallback = true;
-      // Fallback: Lovable AI
-      description = await callLovableAI(trimmedName);
+      console.warn("NVIDIA failed:", e);
     }
 
-    if (!description) throw new Error("Empty response from AI");
+    // 2. Lovable AI (3s timeout)
+    if (!description) {
+      try {
+        description = await callLovableAI(trimmedName);
+        provider = "lovable";
+      } catch (e) {
+        console.warn("Lovable AI failed:", e);
+      }
+    }
+
+    // 3. Gemini (4s timeout)
+    if (!description) {
+      try {
+        description = await callGemini(trimmedName);
+        provider = "gemini";
+      } catch (e) {
+        console.warn("Gemini failed:", e);
+      }
+    }
+
+    if (!description) throw new Error("All AI providers failed");
 
     return new Response(
-      JSON.stringify({ description, fallback: usedFallback }),
+      JSON.stringify({ description, provider }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
