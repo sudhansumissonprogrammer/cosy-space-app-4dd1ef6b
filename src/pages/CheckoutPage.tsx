@@ -1109,8 +1109,9 @@ export default function CheckoutPage() {
                   <Input value={newAddr.pincode} onChange={(e) => setNewAddr(p => ({ ...p, pincode: e.target.value }))} placeholder="400001" maxLength={10} />
                 </div>
               </div>
-              <Button
-                className="w-full"
+              <button
+                className="flex h-10 w-full items-center justify-center text-sm font-bold btn-gold disabled:opacity-50"
+                style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
                 disabled={!newAddr.full_name.trim() || !newAddr.phone.trim() || !newAddr.street_address.trim() || !newAddr.city.trim() || !newAddr.state.trim() || !newAddr.pincode.trim()}
                 onClick={async () => {
                   if (!customer?.id) return;
