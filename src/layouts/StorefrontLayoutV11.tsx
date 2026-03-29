@@ -21,6 +21,7 @@ function AppHeader({ store }: { store: StoreData }) {
   const queryClient = useQueryClient();
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
 
   return (
     <>
