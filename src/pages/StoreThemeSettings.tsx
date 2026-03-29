@@ -1798,6 +1798,7 @@ export default function StoreThemeSettings() {
       return data;
     },
     enabled: !!storeId,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Fetch real categories for preview
@@ -1813,6 +1814,7 @@ export default function StoreThemeSettings() {
       return data;
     },
     enabled: !!storeId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const previewProducts = storeProducts && storeProducts.length > 0
@@ -1872,6 +1874,7 @@ export default function StoreThemeSettings() {
   };
 
   const [iframeKey, setIframeKey] = useState(0);
+  const iframeLoadedRef = useRef(false);
 
   const applyThemeMutation = useMutation({
     mutationFn: async (themeId: string) => {
@@ -1952,7 +1955,15 @@ export default function StoreThemeSettings() {
 
       setConfig(newConfig);
       setDirty(false);
-      setIframeKey((k) => k + 1);
+      // Soft-reload: reuse cached JS/CSS instead of destroying iframe
+      setTimeout(() => {
+        const activeRef = previewMode === "mobile" ? iframeRef : iframeDesktopRef;
+        try {
+          activeRef.current?.contentWindow?.location.reload();
+        } catch {
+          setIframeKey((k) => k + 1);
+        }
+      }, 300);
       toast.success("Theme applied with best color combination!");
     },
     onError: () => toast.error("Failed to apply theme"),
@@ -2496,7 +2507,10 @@ export default function StoreThemeSettings() {
                           ref={iframeRef}
                           src={`/store/${store.slug}`}
                           title="Store Preview"
-                          onLoad={() => sendToIframe(config)}
+                          onLoad={() => {
+                            iframeLoadedRef.current = true;
+                            sendToIframe(config);
+                          }}
                           style={{
                             width: "375px",
                             height: "700px",
@@ -2527,7 +2541,10 @@ export default function StoreThemeSettings() {
                         ref={iframeDesktopRef}
                         src={`/store/${store.slug}`}
                         title="Store Preview Desktop"
-                        onLoad={() => sendToIframe(config)}
+                        onLoad={() => {
+                          iframeLoadedRef.current = true;
+                          sendToIframe(config);
+                        }}
                         style={{
                           width: "1440px",
                           height: "900px",
