@@ -53,6 +53,7 @@ export function optimizeImageUrl(
       );
       u.searchParams.set("width", String(width));
       u.searchParams.set("quality", String(quality));
+      u.searchParams.set("resize", "contain");
       return u.toString();
     } catch {
       return baseUrl;
