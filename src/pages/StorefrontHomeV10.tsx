@@ -16,7 +16,7 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Hero Image Section ── */
-function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
+function MilanoHero({ store }: { store: StoreData }) {
   // Mobile hero images (mobile only)
   const mobileImages: string[] = [];
   const mhi = (store as any).mobile_hero_images;
@@ -32,52 +32,12 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
     desktopImages.push(store.banner_url);
   }
 
-  const fallbackHero = (
-    <div
-      className="w-full flex items-center justify-center"
-      style={{
-        height: "420px",
-        background: `linear-gradient(135deg, var(--storefront-accent, #3d1c28), var(--storefront-accent, #3d1c28)cc)`,
-      }}
-    >
-      <div className="text-center space-y-3 px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70" style={{ color: "var(--storefront-primary, #1a1a1a)" }}>
-          Welcome to
-        </p>
-        <h1
-          className="text-3xl font-bold"
-          style={{
-            color: "var(--storefront-bg, #f7f5f0)",
-            fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif",
-          }}
-        >
-          {store.name}
-        </h1>
-        {store.description && (
-          <p className="text-sm opacity-60 max-w-xs mx-auto" style={{ color: "var(--storefront-bg, #f7f5f0)" }}>
-            {store.description}
-          </p>
-        )}
-        <Link
-          to={storefrontPath(slug, "shop")}
-          className="inline-flex items-center gap-1.5 mt-2 px-6 py-2.5 text-sm font-semibold transition-all active:scale-95"
-          style={{
-            backgroundColor: "var(--storefront-primary, #1a1a1a)",
-            color: "var(--storefront-btn-text, #fff)",
-            borderRadius: "var(--storefront-button-radius, 0.5rem)",
-          }}
-        >
-          Shop Now
-        </Link>
-      </div>
-    </div>
-  );
 
   return (
     <>
       {/* Mobile hero */}
-      <div className="block md:hidden">
-        {mobileImages.length > 0 ? (
+      {mobileImages.length > 0 && (
+        <div className="block md:hidden">
           <HeroBannerCarousel
             images={mobileImages}
             storeName={store.name}
@@ -85,11 +45,11 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
             imageClassName="w-full h-auto object-cover"
             maxHeight="520px"
           />
-        ) : fallbackHero}
-      </div>
+        </div>
+      )}
       {/* Desktop hero */}
-      <div className="hidden md:block">
-        {desktopImages.length > 0 ? (
+      {desktopImages.length > 0 && (
+        <div className="hidden md:block">
           <HeroBannerCarousel
             images={desktopImages}
             storeName={store.name}
@@ -97,8 +57,8 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
             imageClassName="w-full h-auto object-cover"
             maxHeight="520px"
           />
-        ) : fallbackHero}
-      </div>
+        </div>
+      )}
     </>
   );
 }
@@ -307,7 +267,7 @@ export default function StorefrontHomeV10() {
 
   return (
     <div>
-      <MilanoHero store={store} slug={effectiveSlug} />
+      <MilanoHero store={store} />
       <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
       {(themeConfig?.marquee_enabled ?? true) && <AnnouncementStrip customText={themeConfig?.marquee_text} />}
       {products && products.length > 0 && (

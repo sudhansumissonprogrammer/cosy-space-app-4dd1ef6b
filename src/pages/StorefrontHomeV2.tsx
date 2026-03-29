@@ -53,16 +53,21 @@ function HeroCarousel({ store }: { store: StoreData }) {
     return s;
   }, [store]);
 
-  // Use mobile slides on mobile, desktop slides on desktop
-  // We render both and use CSS to show/hide
+  const hasMobileSlides = mobileSlides.some(s => s.image);
+  const hasDesktopSlides = desktopSlides.some(s => s.image);
+
   return (
     <>
-      <div className="block md:hidden">
-        <HeroSlides slides={mobileSlides} store={store} />
-      </div>
-      <div className="hidden md:block">
-        <HeroSlides slides={desktopSlides} store={store} />
-      </div>
+      {hasMobileSlides && (
+        <div className="block md:hidden">
+          <HeroSlides slides={mobileSlides} store={store} />
+        </div>
+      )}
+      {hasDesktopSlides && (
+        <div className="hidden md:block">
+          <HeroSlides slides={desktopSlides} store={store} />
+        </div>
+      )}
     </>
   );
 }

@@ -16,7 +16,7 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Hero Banner ── */
-function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
+function V12Hero({ store }: { store: StoreData }) {
   // Mobile hero images (mobile only)
   const mobileImages: string[] = [];
   const mhi = (store as any).mobile_hero_images;
@@ -32,46 +32,12 @@ function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
     desktopImages.push(store.banner_url);
   }
 
-  const fallbackHero = (
-    <div
-      className="w-full flex items-center justify-center"
-      style={{
-        height: "400px",
-        background: `linear-gradient(135deg, var(--storefront-primary, #FF3F6C), var(--storefront-accent, #111111))`,
-      }}
-    >
-      <div className="text-center space-y-3 px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-          Welcome to
-        </p>
-        <h1
-          className="text-3xl font-bold text-white"
-          style={{ fontFamily: "var(--storefront-heading-font, 'Poppins'), sans-serif" }}
-        >
-          {store.name}
-        </h1>
-        {store.description && (
-          <p className="text-sm text-white/60 max-w-xs mx-auto">{store.description}</p>
-        )}
-        <Link
-          to={storefrontPath(slug, "shop")}
-          className="inline-flex items-center gap-1.5 mt-2 px-6 py-2.5 text-sm font-semibold text-white transition-all active:scale-95"
-          style={{
-            backgroundColor: "var(--storefront-primary, #FF3F6C)",
-            borderRadius: "var(--storefront-button-radius, 0.5rem)",
-          }}
-        >
-          Shop Now
-        </Link>
-      </div>
-    </div>
-  );
 
   return (
     <>
       {/* Mobile hero */}
-      <div className="block md:hidden">
-        {mobileImages.length > 0 ? (
+      {mobileImages.length > 0 && (
+        <div className="block md:hidden">
           <HeroBannerCarousel
             images={mobileImages}
             storeName={store.name}
@@ -79,11 +45,11 @@ function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
             imageClassName="w-full h-auto object-cover"
             maxHeight="520px"
           />
-        ) : fallbackHero}
-      </div>
+        </div>
+      )}
       {/* Desktop hero */}
-      <div className="hidden md:block">
-        {desktopImages.length > 0 ? (
+      {desktopImages.length > 0 && (
+        <div className="hidden md:block">
           <HeroBannerCarousel
             images={desktopImages}
             storeName={store.name}
@@ -91,8 +57,8 @@ function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
             imageClassName="w-full h-auto object-cover"
             maxHeight="520px"
           />
-        ) : fallbackHero}
-      </div>
+        </div>
+      )}
     </>
   );
 }
@@ -270,7 +236,7 @@ export default function StorefrontHomeV12() {
 
   return (
     <div>
-      <V12Hero store={store} slug={effectiveSlug} />
+      <V12Hero store={store} />
       {(themeConfig?.marquee_enabled ?? true) && <V12Marquee customText={themeConfig?.marquee_text} />}
       {products && products.length > 0 && (
         <BestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />

@@ -47,14 +47,21 @@ function BannerSlider({ store }: { store: StoreData }) {
     return s;
   }, [store]);
 
+  const hasMobileSlides = mobileSlides.some(s => s.image);
+  const hasDesktopSlides = desktopSlides.some(s => s.image);
+
   return (
     <>
-      <div className="block md:hidden">
-        <BannerSliderInner slides={mobileSlides} />
-      </div>
-      <div className="hidden md:block">
-        <BannerSliderInner slides={desktopSlides} />
-      </div>
+      {hasMobileSlides && (
+        <div className="block md:hidden">
+          <BannerSliderInner slides={mobileSlides} />
+        </div>
+      )}
+      {hasDesktopSlides && (
+        <div className="hidden md:block">
+          <BannerSliderInner slides={desktopSlides} />
+        </div>
+      )}
     </>
   );
 }
