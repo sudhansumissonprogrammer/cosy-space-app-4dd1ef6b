@@ -104,7 +104,7 @@ export default function StorefrontShop() {
 
       <div style={{ minHeight: 600, contain: "layout" }}>
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <ProductCardSkeleton key={i} />
           ))}
@@ -121,7 +121,7 @@ export default function StorefrontShop() {
         </div>
       ) : products.length > 0 ? (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {products.slice(0, ABOVE_FOLD_COUNT).map((product, index) => (
               <UniversalProductCard
                 key={product.id}
@@ -135,7 +135,7 @@ export default function StorefrontShop() {
           </div>
           {products.length > ABOVE_FOLD_COUNT && (
             <LazyRender minHeight={600} rootMargin="300px">
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-3 sm:mt-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-2 sm:mt-4">
                 {products.slice(ABOVE_FOLD_COUNT).map((product) => (
                   <UniversalProductCard
                     key={product.id}
