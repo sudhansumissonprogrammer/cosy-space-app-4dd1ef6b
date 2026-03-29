@@ -62,7 +62,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [additionalPreviews, setAdditionalPreviews] = useState<{ url: string; isExisting: boolean; id?: string }[]>([]);
 
   // Variants state
-  interface VariantRow { id?: string; name: string; sku: string; price: string; stock: string; isActive: boolean; isExisting?: boolean }
+  interface VariantRow { id?: string; name: string; isActive: boolean; isExisting?: boolean }
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [expandedVariant, setExpandedVariant] = useState<number | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
