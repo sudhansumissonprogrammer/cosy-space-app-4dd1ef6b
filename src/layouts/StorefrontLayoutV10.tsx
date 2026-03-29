@@ -20,6 +20,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
   const queryClient = useQueryClient();
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
   const { wishlistCount } = useWishlist();
   const { user } = useStorefrontAuth();
 
@@ -40,7 +41,7 @@ function MilanoHeader({ store }: { store: StoreData }) {
               </div>
               <nav className="flex-1 overflow-y-auto">
                 <div className="px-5 pt-4 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Pages</h4></div>
-                {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop All" }, { to: storefrontPath(store.slug, "about"), label: "About Us" }, { to: storefrontPath(store.slug, "contact"), label: "Contact" }].map((link) => (
+                {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop All" }, { to: storefrontPath(store.slug, "about"), label: "About Us" }, { to: storefrontPath(store.slug, "contact"), label: "Contact" }, ...customPages.map((cp: any) => ({ to: storefrontPath(store.slug, `page/${cp.slug}`), label: cp.title }))].map((link) => (
                   <Link key={link.label} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors" style={{ color: "var(--storefront-text, #1a1a1a)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)08", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{link.label}<ChevronRight className="h-4 w-4 opacity-40" /></Link>
                 ))}
                 <div className="px-5 pt-5 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Policies</h4></div>

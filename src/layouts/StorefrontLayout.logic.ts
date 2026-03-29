@@ -93,6 +93,22 @@ export function useStorefront(slugOverride?: string) {
       try {
         localStorage.setItem(`storefront_theme_${store.slug}`, store.theme);
       } catch {}
+
+      // Prefetch custom pages for sidebar menu
+      queryClient.prefetchQuery({
+        queryKey: ["storefront-custom-pages", store.id],
+        queryFn: async () => {
+          const { data: pages } = await supabase
+            .from("store_pages")
+            .select("id, title, slug, content, image_url")
+            .eq("store_id", store.id)
+            .eq("page_type", "custom")
+            .eq("is_active", true)
+            .order("display_order", { ascending: true });
+          return pages ?? [];
+        },
+        staleTime: 5 * 60 * 1000,
+      });
     }
 
     // Seed categories into cache so child pages get instant hits

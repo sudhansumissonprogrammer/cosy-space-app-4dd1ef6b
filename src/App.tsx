@@ -155,6 +155,7 @@ const LoadingSpinner = () => {
 };
 
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
+const StorefrontCustomPage = lazy(() => import("./pages/StorefrontCustomPage"));
 
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
@@ -181,6 +182,7 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="account" element={<StorefrontAccount />} />
       <Route path="install" element={<InstallApp />} />
       <Route path="track-order" element={<OrderTrackingPage />} />
+      <Route path="page/:pageSlug" element={<StorefrontCustomPage />} />
     </>
   );
 };

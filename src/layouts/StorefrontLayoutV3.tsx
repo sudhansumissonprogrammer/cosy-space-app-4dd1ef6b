@@ -21,6 +21,7 @@ function AppHeader({ store }: { store: StoreData }) {
   const queryClient = useQueryClient();
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
 
   return (
     <>
@@ -47,6 +48,7 @@ function AppHeader({ store }: { store: StoreData }) {
                   { to: storefrontPath(store.slug, "shop"), label: "Shop All" },
                   { to: storefrontPath(store.slug, "about"), label: "About Us" },
                   { to: storefrontPath(store.slug, "contact"), label: "Contact Us" },
+                  ...customPages.map((cp: any) => ({ to: storefrontPath(store.slug, `page/${cp.slug}`), label: cp.title })),
                   { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
                   { to: storefrontPath(store.slug, "account"), label: "My Account" },
                 ].map((link) => (
