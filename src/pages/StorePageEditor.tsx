@@ -240,6 +240,8 @@ export default function StorePageEditor() {
               <p className="text-xs text-muted-foreground">{content.length}/10000 characters</p>
             </div>
 
+            {/* Page Image — hide for policy pages */}
+            {(!pageType || pageType === "custom" || pageType === "about_us" || pageType === "contact") && (
             <div className="space-y-2">
               <Label>Page Image (optional)</Label>
               {imagePreview ? (
@@ -269,6 +271,7 @@ export default function StorePageEditor() {
                 </label>
               )}
             </div>
+            )}
 
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div>
