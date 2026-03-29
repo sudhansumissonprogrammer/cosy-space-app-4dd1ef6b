@@ -438,20 +438,6 @@ export default function ProductDetail() {
     navigate(storefrontPath(store.slug, "checkout"));
   };
 
-  const handleBuyNow = () => {
-    addToCart({
-      productId: product.id,
-      variantId: selectedVariant?.id,
-      name: product.name,
-      variantName: selectedVariant?.name,
-      price: variantPrice,
-      image: product.image_url || undefined,
-      quantity,
-    });
-    // Close side cart immediately so it doesn't flash, then navigate to checkout
-    closeCart();
-    navigate(storefrontPath(store.slug, "checkout"));
-  };
 
   const handleWishlist = () => {
     toggleWishlist({
