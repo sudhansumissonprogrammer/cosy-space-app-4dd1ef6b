@@ -521,23 +521,34 @@ export default function CheckoutPage() {
     }
   };
 
-  // IP-based location detection + Google reverse geocoding (no browser permission needed)
+  // IP-based location (accurate city/state/pincode) + Google landmark lookup
   const handleUseMyLocation = async () => {
     setGeoLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("reverse-geocode");
+      // Step 1: Get user's real location from their IP (client-side = accurate IP)
+      const ipRes = await fetch("https://ipapi.co/json/");
+      const ipData = await ipRes.json();
 
-      if (error) throw new Error(error.message);
-      if (!data?.success || !data?.address) {
-        toast.error("Could not determine your address");
+      if (!ipData || ipData.error) {
+        toast.error("Could not determine your location");
         return;
       }
 
-      const addr = data.address;
-      if (addr.street_address) setStreetAddress(addr.street_address);
-      if (addr.city) setCity(addr.city);
-      if (addr.state) setState(addr.state);
-      if (addr.pincode) setPincode(addr.pincode);
+      // Fill city/state/pincode from IP geolocation (accurate)
+      if (ipData.city) setCity(ipData.city);
+      if (ipData.region) setState(ipData.region);
+      if (ipData.postal) setPincode(ipData.postal);
+
+      // Step 2: Get landmark/neighborhood from Google (parallel)
+      if (ipData.latitude && ipData.longitude) {
+        const { data } = await supabase.functions.invoke("reverse-geocode", {
+          body: { lat: ipData.latitude, lng: ipData.longitude },
+        });
+        if (data?.success && data?.landmark) {
+          setStreetAddress(data.landmark);
+        }
+      }
+
       toast.success("Address auto-filled!");
     } catch {
       toast.error("Failed to detect location");
