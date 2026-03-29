@@ -79,12 +79,19 @@ export function optimizeImageUrl(
 
   // ── 4. Supabase Storage ──
   if (url.includes("supabase.co/storage")) {
-    // Pipeline-optimized images: serve directly (no re-encoding)
-    if (isOptimizedUrl(url)) {
-      const best = pickBestVariant(width);
-      return resolveVariantUrl(url, best);
+    // Use render/image transform API for on-the-fly resizing
+    try {
+      const u = new URL(url);
+      u.pathname = u.pathname.replace(
+        "/storage/v1/object/",
+        "/storage/v1/render/image/",
+      );
+      u.searchParams.set("width", String(width));
+      u.searchParams.set("quality", String(quality));
+      return u.toString();
+    } catch {
+      return url;
     }
-    // Non-pipeline images: use render/image transform API
     try {
       const u = new URL(url);
       u.pathname = u.pathname.replace(
