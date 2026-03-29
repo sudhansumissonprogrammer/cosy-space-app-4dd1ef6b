@@ -18,7 +18,8 @@ const HEAVY_QUALITY = 0.80; // starting quality for heavy compression
 const MIN_QUALITY = 0.75; // never go below this for light compression
 const HEAVY_MIN_QUALITY = 0.55; // lower floor for heavy compression
 
-export const IMAGE_VARIANT_WIDTHS = [400, 800] as const;
+/** @deprecated Multi-size variants removed — single 800w upload only */
+export const IMAGE_VARIANT_WIDTHS = [800] as const;
 export type VariantWidth = (typeof IMAGE_VARIANT_WIDTHS)[number];
 
 export interface CompressionResult {
