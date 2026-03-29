@@ -139,17 +139,7 @@ export default function StorefrontShell({
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, [pathname]);
 
-  // Loading state
-  if (isLoading) {
-    return <>{skeleton || <DefaultSkeleton />}</>;
-  }
-
-  // Not found
-  if (!store) {
-    return <StorefrontNotFound slug={slug} label={notFoundLabel} />;
-  }
-
-  // Build theme style
+  // Build theme style before early returns so hooks stay in stable order
   const { themeStyle, primaryColor, btnTextColor } = buildThemeStyle(
     themeConfig,
     previewOverride,
@@ -177,6 +167,16 @@ export default function StorefrontShell({
       });
     };
   }, [themeStyle]);
+
+  // Loading state
+  if (isLoading) {
+    return <>{skeleton || <DefaultSkeleton />}</>;
+  }
+
+  // Not found
+  if (!store) {
+    return <StorefrontNotFound slug={slug} label={notFoundLabel} />;
+  }
 
   const renderProps: ShellRenderProps = {
     store,
