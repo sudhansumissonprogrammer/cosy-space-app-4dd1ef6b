@@ -680,8 +680,8 @@ export default function CheckoutPage() {
 
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <CheckCircle2 className="h-8 w-8 text-primary" />
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-primary) 15%, transparent)" }}>
+          <CheckCircle2 className="h-8 w-8" style={{ color: "var(--storefront-primary)" }} />
         </div>
         <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
         <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
