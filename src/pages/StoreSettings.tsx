@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Globe, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Switch } from "@/components/ui/switch";
