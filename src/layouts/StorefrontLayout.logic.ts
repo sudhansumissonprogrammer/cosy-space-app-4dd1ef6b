@@ -73,7 +73,7 @@ export function useStorefront(slugOverride?: string) {
       return result as any;
     },
     enabled: !!slug,
-    staleTime: 30_000,
+    staleTime: 60_000,
     gcTime: 10 * 60 * 1000,
     // If we have injected data, use it as initialData for instant render
     ...(injected?.store && slug && !seeded.current
