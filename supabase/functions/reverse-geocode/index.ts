@@ -10,6 +10,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const { lat, lng } = await req.json();
+
+    if (typeof lat !== "number" || typeof lng !== "number") {
+      return new Response(
+        JSON.stringify({ error: "lat and lng required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const apiKey = Deno.env.get("GOOGLE_GEOCODING_API_KEY");
     if (!apiKey) {
       return new Response(
@@ -18,80 +27,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get client IP from headers
-    const clientIp =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("cf-connecting-ip") ||
-      null;
-
-    if (!clientIp || clientIp === "unknown") {
-      return new Response(
-        JSON.stringify({ error: "Could not determine location" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Step 1: IP geolocation (free, no key needed, ~50ms)
-    const ipRes = await fetch(`http://ip-api.com/json/${clientIp}?fields=status,lat,lon,city,regionName,zip`);
-    const ipData = await ipRes.json();
-
-    if (ipData.status !== "success" || !ipData.lat || !ipData.lon) {
-      return new Response(
-        JSON.stringify({ error: "Could not determine location from IP" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Step 2: Google reverse geocode for detailed address with landmarks
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${ipData.lat},${ipData.lon}&key=${apiKey}&result_type=point_of_interest|establishment|neighborhood|sublocality|locality`;
+    // Fetch landmark/neighborhood info from Google
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&result_type=point_of_interest|establishment|neighborhood|sublocality|locality`;
     const geoRes = await fetch(url);
     const geoData = await geoRes.json();
 
     let landmark = "";
-    let streetAddress = "";
 
     if (geoData.status === "OK" && geoData.results?.length) {
-      // Find a landmark/POI result first
       const poiResult = geoData.results.find((r: any) =>
         r.types?.some((t: string) => ["point_of_interest", "establishment", "premise"].includes(t))
       );
       const neighborhoodResult = geoData.results.find((r: any) =>
         r.types?.some((t: string) => ["neighborhood", "sublocality_level_1", "sublocality"].includes(t))
       );
-      const localityResult = geoData.results.find((r: any) =>
-        r.types?.includes("locality")
-      );
 
-      const bestResult = poiResult || neighborhoodResult || localityResult || geoData.results[0];
+      const bestResult = poiResult || neighborhoodResult || geoData.results[0];
       const components = bestResult.address_components || [];
 
       const get = (type: string) =>
         components.find((c: any) => c.types.includes(type))?.long_name || "";
 
-      landmark = poiResult
-        ? components[0]?.long_name || ""
-        : get("neighborhood") || get("sublocality_level_1") || get("sublocality");
-
+      const poi = poiResult ? components[0]?.long_name || "" : "";
       const area = get("sublocality_level_1") || get("sublocality") || get("neighborhood");
-      streetAddress = [landmark, area].filter(Boolean).join(", ");
-      // Deduplicate if landmark === area
-      if (landmark && landmark === area) streetAddress = landmark;
+
+      const parts = [poi, area].filter(Boolean);
+      // Deduplicate
+      landmark = [...new Set(parts)].join(", ");
     }
 
-    const city = ipData.city || "";
-    const state = ipData.regionName || "";
-    const pincode = ipData.zip || "";
-
     return new Response(
-      JSON.stringify({
-        success: true,
-        address: {
-          street_address: streetAddress || `Near ${city}`,
-          city,
-          state,
-          pincode,
-        },
-      }),
+      JSON.stringify({ success: true, landmark }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
