@@ -279,21 +279,21 @@ export default function StorefrontHomeV12() {
       <div className="py-4">
         <SectionHeader title="Just For You" slug={effectiveSlug} linkTo="shop" />
         {isProductsLoading ? (
-          <div className="grid grid-cols-2 gap-3 px-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 px-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-80 rounded-lg" />
             ))}
           </div>
         ) : products.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-3 px-4">
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 px-4">
               {products.slice(0, 6).map((product, idx) => (
                 <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
             {products.length > 6 && (
               <LazyRender rootMargin="600px" minHeight={400}>
-                <div className="grid grid-cols-2 gap-3 px-4 mt-3">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-4 px-4 mt-3">
                   {products.slice(6).map((product, idx) => (
                     <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
                   ))}
