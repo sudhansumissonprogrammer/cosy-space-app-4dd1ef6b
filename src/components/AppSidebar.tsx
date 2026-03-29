@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
   ShoppingCart, Palette, BarChart3, MessageSquare, FolderOpen, Image as ImageIcon,
-  Clock,
+  Clock, FileText,
 } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
