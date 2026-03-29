@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Hero Image Section ── */

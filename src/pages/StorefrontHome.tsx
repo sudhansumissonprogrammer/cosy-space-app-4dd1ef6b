@@ -17,6 +17,7 @@ import { storefrontPath } from "@/lib/subdomain";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 4;
 

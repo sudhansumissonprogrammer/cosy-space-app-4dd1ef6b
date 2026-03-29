@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 /* ── Swipeable Banner Slider ── */
 function BannerSlider({ store }: { store: StoreData }) {
