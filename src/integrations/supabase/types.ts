@@ -2141,30 +2141,6 @@ export type Database = {
       }
     }
     Views: {
-      platform_config_public: {
-        Row: {
-          created_at: string | null
-          default_currency: string | null
-          id: string | null
-          platform_name: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          default_currency?: string | null
-          id?: string | null
-          platform_name?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          default_currency?: string | null
-          id?: string | null
-          platform_name?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       store_payment_config_public: {
         Row: {
           created_at: string | null
@@ -2316,6 +2292,14 @@ export type Database = {
       get_co_purchased_products: {
         Args: { _limit?: number; _product_id: string }
         Returns: string[]
+      }
+      get_platform_config_public: {
+        Args: never
+        Returns: {
+          default_currency: string
+          id: string
+          platform_name: string
+        }[]
       }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
       get_store_usage_stats: { Args: never; Returns: Json }
