@@ -96,7 +96,7 @@ export default function CategoryDetail() {
 
   if (!categoryLoading && !category) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mx-auto max-w-6xl px-2 sm:px-4 py-6">
         <Button variant="outline" size="sm" onClick={() => navigate(storefrontPath(slug!, ""))} className="mb-4 rounded-full bg-background text-foreground shadow-sm hover:shadow-md">
           <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back
         </Button>
@@ -108,7 +108,7 @@ export default function CategoryDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="mx-auto max-w-6xl px-2 sm:px-4 py-6">
       <div className="mb-5 flex items-center gap-3">
         <button
           onClick={() => navigate(storefrontPath(slug!, ""))}
