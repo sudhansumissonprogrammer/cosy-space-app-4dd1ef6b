@@ -398,7 +398,13 @@ export default function ProductDetail() {
   const isLowStock = !isUnlimitedStock && product.stock_quantity > 0 && product.stock_quantity <= 10;
   const isOutOfStock = !isUnlimitedStock && product.stock_quantity <= 0;
 
+  const hasVariants = (variants || []).length > 0;
+
   const handleAddToCart = () => {
+    if (hasVariants && !selectedVariant) {
+      toast.error("Please select a variant first");
+      return;
+    }
     addToCart({
       productId: product.id,
       variantId: selectedVariant?.id,
@@ -410,9 +416,26 @@ export default function ProductDetail() {
     });
     setJustAdded(true);
     setCartBounce(true);
-    // Side cart opens automatically — no extra toast needed
     setTimeout(() => setJustAdded(false), 1500);
     setTimeout(() => setCartBounce(false), 600);
+  };
+
+  const handleBuyNow = () => {
+    if (hasVariants && !selectedVariant) {
+      toast.error("Please select a variant first");
+      return;
+    }
+    addToCart({
+      productId: product.id,
+      variantId: selectedVariant?.id,
+      name: product.name,
+      variantName: selectedVariant?.name,
+      price: variantPrice,
+      image: product.image_url || undefined,
+      quantity,
+    });
+    closeCart();
+    navigate(storefrontPath(store.slug, "checkout"));
   };
 
   const handleBuyNow = () => {
