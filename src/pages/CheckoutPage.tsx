@@ -521,37 +521,41 @@ export default function CheckoutPage() {
     }
   };
 
-  // IP-based location (accurate city/state/pincode) + Google landmark lookup
+  // Browser geolocation + Google Geocoding for accurate address
   const handleUseMyLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation not supported by your browser");
+      return;
+    }
     setGeoLoading(true);
     try {
-      // Step 1: Get user's real location from their IP (client-side = accurate IP)
-      const ipRes = await fetch("https://ipapi.co/json/");
-      const ipData = await ipRes.json();
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 300000,
+        });
+      });
 
-      if (!ipData || ipData.error) {
-        toast.error("Could not determine your location");
+      const { data, error } = await supabase.functions.invoke("reverse-geocode", {
+        body: { lat: position.coords.latitude, lng: position.coords.longitude },
+      });
+
+      if (error) throw new Error(error.message);
+      if (!data?.success || !data?.address) {
+        toast.error("Could not determine your address");
         return;
       }
 
-      // Fill city/state/pincode from IP geolocation (accurate)
-      if (ipData.city) setCity(ipData.city);
-      if (ipData.region) setState(ipData.region);
-      if (ipData.postal) setPincode(ipData.postal);
-
-      // Step 2: Get landmark/neighborhood from Google (parallel)
-      if (ipData.latitude && ipData.longitude) {
-        const { data } = await supabase.functions.invoke("reverse-geocode", {
-          body: { lat: ipData.latitude, lng: ipData.longitude },
-        });
-        if (data?.success && data?.landmark) {
-          setStreetAddress(data.landmark);
-        }
-      }
-
+      const addr = data.address;
+      if (addr.street_address) setStreetAddress(addr.street_address);
+      if (addr.city) setCity(addr.city);
+      if (addr.state) setState(addr.state);
+      if (addr.pincode) setPincode(addr.pincode);
       toast.success("Address auto-filled!");
-    } catch {
-      toast.error("Failed to detect location");
+    } catch (err: any) {
+      if (err?.code === 1) toast.error("Location permission denied");
+      else toast.error("Failed to detect location");
     } finally {
       setGeoLoading(false);
     }
