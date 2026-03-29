@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { useStoreData } from "@/hooks/useStoreData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,9 +11,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Upload, X } from "lucide-react";
+import { ArrowLeft, Loader2, Upload, X, Plus, Trash2, Award } from "lucide-react";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+
+const ICON_OPTIONS = [
+  { value: "Award", label: "Award" },
+  { value: "Leaf", label: "Leaf" },
+  { value: "Shield", label: "Shield" },
+  { value: "Star", label: "Star" },
+  { value: "Sparkles", label: "Sparkles" },
+  { value: "Heart", label: "Heart" },
+  { value: "Truck", label: "Truck" },
+  { value: "ThumbsUp", label: "ThumbsUp" },
+];
+
+interface Feature {
+  icon: string;
+  title: string;
+  description: string;
+}
 
 export default function StorePageEditor() {
   const { pageId } = useParams();
@@ -29,6 +48,9 @@ export default function StorePageEditor() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageRemoved, setImageRemoved] = useState(false);
+  const [features, setFeatures] = useState<Feature[]>([]);
+
+  const { data: store } = useStoreData(storeId);
 
   const { data: page, isLoading } = useQuery({
     queryKey: ["store-page", pageId],
@@ -44,6 +66,9 @@ export default function StorePageEditor() {
     enabled: !!pageId,
   });
 
+  const pageType = (page as any)?.page_type;
+  const showFeatures = pageType === "about_us" || pageType === "contact";
+
   useEffect(() => {
     if (page) {
       setTitle((page as any).title || "");
@@ -53,6 +78,16 @@ export default function StorePageEditor() {
       if ((page as any).image_url) setImagePreview((page as any).image_url);
     }
   }, [page]);
+
+  // Load features from store when editing about_us or contact pages
+  useEffect(() => {
+    if (store && showFeatures) {
+      const storeFeatures = store.features as unknown as Feature[] | null;
+      if (storeFeatures && Array.isArray(storeFeatures)) {
+        setFeatures(storeFeatures);
+      }
+    }
+  }, [store, showFeatures]);
 
   const generateSlug = (text: string) =>
     text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -88,11 +123,17 @@ export default function StorePageEditor() {
         if (error) throw error;
 
         // Sync back to stores table for backward compatibility
-        const pageType = (page as any)?.page_type;
         if (pageType === "about_us") {
           await supabase.from("stores").update({
             about_us_text: payload.content,
             about_us_image_url: imageUrl,
+            features: features.length > 0 ? features : null,
+          } as any).eq("id", storeId!);
+          queryClient.invalidateQueries({ queryKey: ["store", storeId] });
+        } else if (pageType === "contact") {
+          // Features are shared — sync them back too
+          await supabase.from("stores").update({
+            features: features.length > 0 ? features : null,
           } as any).eq("id", storeId!);
           queryClient.invalidateQueries({ queryKey: ["store", storeId] });
         } else if (pageType === "return_policy") {
@@ -124,7 +165,7 @@ export default function StorePageEditor() {
     );
   }
 
-  const isSystemPage = (page as any)?.page_type && (page as any).page_type !== "custom";
+  const isSystemPage = pageType && pageType !== "custom";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -231,6 +272,42 @@ export default function StorePageEditor() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Why Choose Us — shown for About Us & Contact pages */}
+        {showFeatures && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Award className="h-5 w-5 text-primary" /> Why Choose Us
+              </CardTitle>
+              <CardDescription>Selling points shown on your About Us and Contact pages</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {features.map((feature, idx) => (
+                <div key={idx} className="flex gap-2 items-start rounded-lg border p-3">
+                  <div className="flex-1 space-y-2">
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <Select value={feature.icon} onValueChange={(v) => { const updated = [...features]; updated[idx] = { ...updated[idx], icon: v }; setFeatures(updated); }}>
+                        <SelectTrigger><SelectValue placeholder="Icon" /></SelectTrigger>
+                        <SelectContent>{ICON_OPTIONS.map((o) => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}</SelectContent>
+                      </Select>
+                      <Input placeholder="Title" value={feature.title} onChange={(e) => { const updated = [...features]; updated[idx] = { ...updated[idx], title: e.target.value }; setFeatures(updated); }} className="sm:col-span-2" maxLength={50} />
+                    </div>
+                    <Input placeholder="Description" value={feature.description} onChange={(e) => { const updated = [...features]; updated[idx] = { ...updated[idx], description: e.target.value }; setFeatures(updated); }} maxLength={100} />
+                  </div>
+                  <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => setFeatures(features.filter((_, i) => i !== idx))}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+              {features.length < 6 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setFeatures([...features, { icon: "Award", title: "", description: "" }])}>
+                  <Plus className="mr-1 h-4 w-4" /> Add Feature
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex gap-3">
           <Button type="submit" className="flex-1" disabled={saveMutation.isPending}>
