@@ -124,54 +124,69 @@ const COLOR_COMBINATIONS = [
     background: "#F8FAFA",
     marquee: "linear-gradient(90deg, #004545, #00A8A8, #FF6B35)",
   },
+  {
+    id: "ghost-persian",
+    name: "Ghost × Persian",
+    primary: "#27187E",
+    accent: "#27187E",
+    text: "#FFFFFF",
+    background: "#5A7F7F",
+    marquee: "linear-gradient(90deg, #27187E, #3D2BA0, #27187E)",
+  },
 ];
 
 /* ── Per-theme recommended color combinations (curated for best visual result) ── */
 const THEME_RECOMMENDATIONS: Record<string, string[]> = {
   "theme-1": [
-    "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "ghost-persian", "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "lux-black-gold", "lux-cream-brown", "velvet-merlot",
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
   "theme-14": [
-    "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "ghost-persian", "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "lux-black-gold", "lux-cream-brown", "velvet-merlot",
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
   "theme-15": [
-    "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "ghost-persian", "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "lux-black-gold", "lux-cream-brown", "velvet-merlot",
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
   "theme-2": [
-    "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "ghost-persian", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "royal-gold", "lux-black-gold", "coral-sunset", "mint-fresh",
     "electric-violet", "app-blue-orange", "app-teal-cyan", "app-purple-pink", "ocean-teal",
     "crimson-royale", "emerald-luxe", "lilac-mist", "saffron-bloom", "lux-white-champagne",
   ],
   "theme-3": [
-    "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "ghost-persian", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "app-blue-orange", "app-teal-cyan", "app-purple-pink", "coral-sunset",
     "mint-fresh", "electric-violet", "app-red-yellow", "royal-gold", "lux-cream-brown",
     "crimson-royale", "emerald-luxe", "ocean-teal", "lilac-mist", "lux-black-gold",
   ],
   "theme-10": [
-    "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "ghost-persian", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "coral-sunset", "crimson-royale", "app-purple-pink", "electric-violet",
     "lilac-mist", "app-blue-orange", "mint-fresh", "app-teal-cyan", "royal-gold",
     "lux-black-gold", "lux-cream-brown", "ocean-teal", "emerald-luxe", "saffron-bloom",
   ],
   "theme-11": [
-    "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "ghost-persian", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "app-blue-orange", "app-teal-cyan", "app-purple-pink", "coral-sunset",
     "mint-fresh", "electric-violet", "royal-gold", "lux-black-gold", "lux-cream-brown",
     "ocean-teal", "emerald-luxe", "crimson-royale", "lilac-mist", "saffron-bloom",
   ],
   "theme-12": [
-    "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "ghost-persian", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "coral-sunset", "crimson-royale", "app-purple-pink", "electric-violet",
+    "lilac-mist", "app-blue-orange", "mint-fresh", "app-teal-cyan", "royal-gold",
+    "lux-black-gold", "lux-cream-brown", "ocean-teal", "emerald-luxe", "saffron-bloom",
+  ],
+  "theme-13": [
+    "ghost-persian", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "coral-sunset", "crimson-royale", "app-purple-pink", "electric-violet",
     "lilac-mist", "app-blue-orange", "mint-fresh", "app-teal-cyan", "royal-gold",
     "lux-black-gold", "lux-cream-brown", "ocean-teal", "emerald-luxe", "saffron-bloom",
