@@ -14,9 +14,43 @@ Deno.serve(async (req) => {
   try {
     const { email, phone, name, store_id, order_id } = await req.json();
 
+    // Validate required fields
     if (!store_id || !order_id) {
       return new Response(
         JSON.stringify({ error: "store_id and order_id are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(store_id) || !uuidRegex.test(order_id)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid store_id or order_id format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate email format if provided
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate phone format if provided (digits, spaces, +, -, parens only)
+    if (phone && !/^[0-9\s+\-()]{7,20}$/.test(phone)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid phone format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate name length
+    if (name && (typeof name !== "string" || name.length > 200)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid name" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
