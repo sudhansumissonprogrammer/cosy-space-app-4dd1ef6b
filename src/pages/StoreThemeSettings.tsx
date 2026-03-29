@@ -2065,31 +2065,27 @@ export default function StoreThemeSettings() {
                         : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
                   />
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">{theme.name}</h3>
-                        <p className="text-xs text-muted-foreground">{theme.description}</p>
-                      </div>
-                      {isApplied ? (
-                        <Badge variant="secondary" className="gap-1">
-                          <Check className="h-3 w-3" /> Applied
-                        </Badge>
-                      ) : theme.available ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => applyThemeMutation.mutate(theme.id)}
-                          disabled={applyThemeMutation.isPending}
-                        >
-                          Apply
-                        </Button>
-                      ) : (
-                        <Badge variant="outline" className="gap-1 text-muted-foreground">
-                          <Lock className="h-3 w-3" /> Soon
-                        </Badge>
-                      )}
-                    </div>
+                  <div className="p-2.5 flex flex-col items-center text-center gap-1.5">
+                    <h3 className="text-sm font-semibold leading-tight">{theme.name}</h3>
+                    {isApplied ? (
+                      <Badge variant="secondary" className="gap-1 text-xs">
+                        <Check className="h-3 w-3" /> Applied
+                      </Badge>
+                    ) : theme.available ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs px-4"
+                        onClick={() => applyThemeMutation.mutate(theme.id)}
+                        disabled={applyThemeMutation.isPending}
+                      >
+                        Apply
+                      </Button>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
+                        <Lock className="h-3 w-3" /> Soon
+                      </Badge>
+                    )}
                   </div>
                 </div>
               );
