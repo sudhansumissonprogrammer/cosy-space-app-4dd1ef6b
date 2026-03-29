@@ -232,9 +232,9 @@ const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 
 
 const THEME_DEFAULTS: Record<string, ThemeConfig> = {
   "theme-1": {
-    primary_color: "#004643", accent_color: "#004643", text_color: "#222222", background_color: "#F0EDE5",
+    primary_color: "#000000", accent_color: "#000000", text_color: "#000000", background_color: "#ffffff",
     heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
-    marquee_gradient: "linear-gradient(90deg, #004643, #02615C, #004643)",
+    marquee_gradient: "linear-gradient(90deg, #000000, #333333, #000000)",
     marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
   },
   "theme-2": {
