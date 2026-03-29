@@ -161,7 +161,8 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
     >
       {({ store }) => (
         <>
-          <MilanoHeader store={store} />
+          <DesktopNavBar store={store} />
+          <div className="md:hidden"><MilanoHeader store={store} /></div>
           <main className="pb-16 md:pb-0">
             <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense>
           </main>
