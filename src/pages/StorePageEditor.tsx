@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Upload, X, Plus, Trash2, Award } from "lucide-react";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+import { getDefaultContent } from "@/lib/defaultPageContent";
 
 const ICON_OPTIONS = [
   { value: "Award", label: "Award" },
