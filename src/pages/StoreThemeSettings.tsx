@@ -142,12 +142,21 @@ const COLOR_COMBINATIONS = [
     background: "#EFEDE6",
     marquee: "linear-gradient(90deg, #CD0000, #E53030, #CD0000)",
   },
+  {
+    id: "plum-cream",
+    name: "Plum Cream",
+    primary: "#381932",
+    accent: "#5C2D52",
+    text: "#1a1a1a",
+    background: "#FFF3E6",
+    marquee: "linear-gradient(90deg, #381932, #5C2D52, #381932)",
+  },
 ];
 
 /* ── Per-theme recommended color combinations (curated for best visual result) ── */
 const THEME_RECOMMENDATIONS: Record<string, string[]> = {
   "theme-1": [
-    "crimson-sand", "ghost-persian", "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "plum-cream", "crimson-sand", "ghost-persian", "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "lux-black-gold", "lux-cream-brown", "velvet-merlot",
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
