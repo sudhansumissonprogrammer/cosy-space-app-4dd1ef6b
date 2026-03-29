@@ -19,7 +19,7 @@ function CartBadgeV2() {
   const { cartCount, openCart } = useCart();
   return (
     <button onClick={openCart} className="relative" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
-      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
         <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
       {cartCount > 0 && (
@@ -38,7 +38,7 @@ function WishlistBadgeV2({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
     <Link to={storefrontPath(slug, "wishlist")} className="relative" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}>
-      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
         <Heart className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
       {wishlistCount > 0 && (
@@ -55,7 +55,7 @@ function AccountBadgeV2({ slug }: { slug: string }) {
   if (loading) return null;
   return (
     <Link to={storefrontPath(slug, user ? "account" : "login")} aria-label={user ? "My account" : "Login"}>
-      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
         <User className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
     </Link>
@@ -79,7 +79,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+            <button className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
               <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </SheetTrigger>
