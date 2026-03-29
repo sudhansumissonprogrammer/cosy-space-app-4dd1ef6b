@@ -867,7 +867,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setVariants((prev) => [...prev, { name: "", sku: "", price: "", stock: "0", isActive: true }]);
+                    setVariants((prev) => [...prev, { name: "", isActive: true }]);
                     setExpandedVariant(variants.length);
                   }}
                 >
