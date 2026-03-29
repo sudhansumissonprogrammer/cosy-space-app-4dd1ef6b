@@ -70,5 +70,5 @@ export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
     link.rel = "stylesheet";
     document.head.appendChild(link);
   }
-  link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap&text=`;
+  link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin`;
 }
