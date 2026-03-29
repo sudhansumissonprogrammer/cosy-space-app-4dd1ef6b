@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Store, ShoppingCart, Heart, User, Menu } from "lucide-react";
@@ -12,13 +12,14 @@ import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
+import MobileBottomNav from "@/components/storefront/MobileBottomNav";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 function CartBadgeV2() {
   const { cartCount, openCart } = useCart();
   return (
     <button onClick={openCart} className="relative" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
-      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
         <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
       {cartCount > 0 && (
@@ -37,7 +38,7 @@ function WishlistBadgeV2({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
     <Link to={storefrontPath(slug, "wishlist")} className="relative" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}>
-      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
         <Heart className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
       {wishlistCount > 0 && (
@@ -54,7 +55,7 @@ function AccountBadgeV2({ slug }: { slug: string }) {
   if (loading) return null;
   return (
     <Link to={storefrontPath(slug, user ? "account" : "login")} aria-label={user ? "My account" : "Login"}>
-      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
         <User className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
     </Link>
@@ -68,18 +69,17 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-30 transition-all duration-300"
+      className="relative z-30 transition-all duration-300"
       style={{
-        backgroundColor: scrolled ? "var(--storefront-bg, hsl(var(--background)))" : "transparent",
-        color: scrolled ? "var(--storefront-text, hsl(var(--foreground)))" : "#ffffff",
-        borderBottom: scrolled ? "1px solid var(--storefront-text, hsl(var(--foreground)))10" : "none",
-        backdropFilter: scrolled ? "blur(12px)" : "none",
+        backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+        color: "var(--storefront-text, hsl(var(--foreground)))",
+        borderBottom: "1px solid var(--storefront-text, hsl(var(--foreground)))10",
       }}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <button className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-colors hover:bg-white/20">
+            <button className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
               <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </SheetTrigger>
@@ -112,7 +112,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
 
         <Link to={storefrontPath(store.slug)} className="flex-shrink-0" aria-label={`${store.name} home`}>
           {store.logo_url ? (
-            <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[140px] object-contain" style={{ filter: scrolled ? "none" : "brightness(0) invert(1)" }} />
+            <img src={store.logo_url} alt={store.name} className="h-10 w-auto max-w-[140px] object-contain" />
           ) : (
             <span className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>{store.name}</span>
           )}
@@ -140,21 +140,16 @@ function StorefrontV2Skeleton() {
 }
 
 export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: string } = {}) {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
     <StorefrontShell slugOverride={slugOverride} defaultPrimary="#004643" skeleton={<StorefrontV2Skeleton />}>
       {({ store }) => (
         <>
-          <TransparentNav store={store} scrolled={scrolled} />
-          <main><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+          <TransparentNav store={store} scrolled={false} />
+          <main className="pb-16 md:pb-0"><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
           <StorefrontFooter store={store} />
+          <div className="md:hidden">
+            <MobileBottomNav store={store} />
+          </div>
         </>
       )}
     </StorefrontShell>

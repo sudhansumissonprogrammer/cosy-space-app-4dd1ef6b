@@ -258,7 +258,7 @@ export default function StorefrontHomeV2() {
       <HeroCarousel store={store} />
 
       {/* Search bar */}
-      <div className="sticky top-16 z-20 border-b px-4 py-3" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
+      <div className="border-b px-4 py-3" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
         <div className="mx-auto max-w-6xl flex items-center gap-2">
           <button
             onClick={() => setSearchOpen(true)}
