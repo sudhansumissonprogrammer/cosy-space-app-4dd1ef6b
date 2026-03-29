@@ -164,6 +164,20 @@ export default function StorefrontShell({
     ...wrapperStyle,
   };
 
+  useEffect(() => {
+    const appliedVars = Object.entries(themeStyle).filter(([key, value]) => key.startsWith("--") && typeof value === "string") as Array<[string, string]>;
+
+    appliedVars.forEach(([key, value]) => {
+      document.body.style.setProperty(key, value);
+    });
+
+    return () => {
+      appliedVars.forEach(([key]) => {
+        document.body.style.removeProperty(key);
+      });
+    };
+  }, [themeStyle]);
+
   const renderProps: ShellRenderProps = {
     store,
     slug: slug!,
