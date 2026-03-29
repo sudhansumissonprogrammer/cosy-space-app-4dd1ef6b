@@ -62,7 +62,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [additionalPreviews, setAdditionalPreviews] = useState<{ url: string; isExisting: boolean; id?: string }[]>([]);
 
   // Variants state
-  interface VariantRow { id?: string; name: string; sku: string; price: string; stock: string; isActive: boolean; isExisting?: boolean }
+  interface VariantRow { id?: string; name: string; isActive: boolean; isExisting?: boolean }
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [expandedVariant, setExpandedVariant] = useState<number | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -209,9 +209,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       setVariants(existingVariants.map((v: any) => ({
         id: v.id,
         name: v.name,
-        sku: v.sku || "",
-        price: v.price !== null ? String(v.price) : "",
-        stock: String(v.stock_quantity),
         isActive: v.is_active !== false,
         isExisting: true,
       })));
@@ -406,9 +403,9 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
           const variantData = {
             product_id: savedProductId,
             name: v.name.trim(),
-            sku: v.sku.trim() || null,
-            price: v.price ? parseFloat(v.price) : null,
-            stock_quantity: parseInt(v.stock) || 0,
+            sku: null,
+            price: null,
+            stock_quantity: 0,
             display_order: i,
             is_active: v.isActive,
           };
@@ -870,7 +867,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setVariants((prev) => [...prev, { name: "", sku: "", price: "", stock: "0", isActive: true }]);
+                    setVariants((prev) => [...prev, { name: "", isActive: true }]);
                     setExpandedVariant(variants.length);
                   }}
                 >
@@ -895,7 +892,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                               {v.name || `Variant ${i + 1}`}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {v.price ? `₹${v.price}` : 'Base price'} · Stock: {v.stock}
+                              {v.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -924,41 +921,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                             <div className="space-y-1.5">
                               <Label className="text-xs">Variant Name *</Label>
                               <Input
-                                placeholder="e.g. Red, Large, 500ml"
+                                placeholder="e.g. S, M, L, XL, Red, Blue"
                                 value={v.name}
                                 onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, name: e.target.value } : vr))}
                                 maxLength={100}
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Price Override</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="Use base price"
-                                  value={v.price}
-                                  onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, price: e.target.value } : vr))}
-                                  step="0.01"
-                                  min="0"
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Stock</Label>
-                                <Input
-                                  type="number"
-                                  value={v.stock}
-                                  onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, stock: e.target.value } : vr))}
-                                  min="0"
-                                />
-                              </div>
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">SKU (optional)</Label>
-                              <Input
-                                placeholder="e.g. PROD-RED-L"
-                                value={v.sku}
-                                onChange={(e) => setVariants((prev) => prev.map((vr, idx) => idx === i ? { ...vr, sku: e.target.value } : vr))}
-                                maxLength={50}
                               />
                             </div>
                           </div>

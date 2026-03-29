@@ -27,9 +27,13 @@ export function useProductCardActions(product: Product) {
     ? Number(product.sale_price)
     : Number(product.price);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent, onVariantRequired?: () => void) => {
     e.preventDefault();
     e.stopPropagation();
+    if (onVariantRequired) {
+      onVariantRequired();
+      return;
+    }
     addToCart({
       productId: product.id,
       name: product.name,

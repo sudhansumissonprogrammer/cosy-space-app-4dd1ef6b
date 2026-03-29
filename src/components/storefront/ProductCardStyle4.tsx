@@ -30,9 +30,10 @@ interface Props {
   slug: string;
   store: Tables<"stores">;
   priority?: boolean;
+  onVariantRequired?: () => void;
 }
 
-export default function ProductCardStyle4({ product, slug, store }: Props) {
+export default function ProductCardStyle4({ product, slug, store, onVariantRequired }: Props) {
   const { items, addToCart, updateQuantity } = useCart();
   const existing = items.find(
     (i) => i.productId === product.id && !i.variantId
@@ -45,6 +46,7 @@ export default function ProductCardStyle4({ product, slug, store }: Props) {
   const currency = store.currency === "USD" ? "$" : "₹";
 
   const handleAdd = useCallback(() => {
+    if (onVariantRequired) { onVariantRequired(); return; }
     addToCart({
       productId: product.id,
       name: product.name,
@@ -52,7 +54,7 @@ export default function ProductCardStyle4({ product, slug, store }: Props) {
       image: product.image_url || undefined,
       quantity: 1,
     });
-  }, [addToCart, product, price]);
+  }, [addToCart, product, price, onVariantRequired]);
 
   const handleIncrease = useCallback(() => {
     updateQuantity(product.id, undefined, qty + 1);
