@@ -20,34 +20,55 @@ function HeroCarousel({ store }: { store: StoreData }) {
   const { products } = useStorefrontProducts(store.id);
   const [current, setCurrent] = useState(0);
 
-  // Use banner, mobile hero, and best-selling product images as slides
-  const slides = useMemo(() => {
+  // Desktop slides: only use banner_url + best-selling products
+  const desktopSlides = useMemo(() => {
+    const s: { image: string; title: string; subtitle: string; link?: string }[] = [];
+    if ((store as any).banner_url) {
+      s.push({ image: (store as any).banner_url, title: store.name, subtitle: store.description || "Discover our collection" });
+    }
+    const bestSelling = products?.filter((p: any) => p.is_best_selling && p.image_url).slice(0, 3) || [];
+    bestSelling.forEach((p: any) => {
+      s.push({ image: p.image_url, title: p.name, subtitle: `₹${p.sale_price || p.price}`, link: storefrontPath(store.slug, `product/${p.slug || p.id}`) });
+    });
+    if (s.length === 0) {
+      s.push({ image: "", title: store.name, subtitle: store.description || "Explore our collection" });
+    }
+    return s;
+  }, [store, products]);
+
+  // Mobile slides: only use mobile_hero_images / mobile_hero_url
+  const mobileSlides = useMemo(() => {
     const s: { image: string; title: string; subtitle: string; link?: string }[] = [];
     const mhi = (store as any).mobile_hero_images;
     if (mhi && Array.isArray(mhi) && mhi.length > 0) {
       mhi.forEach((url: string, idx: number) => {
         s.push({ image: url, title: idx === 0 ? store.name : "New Arrivals", subtitle: idx === 0 ? (store.description || "Discover our collection") : "Shop the latest trends" });
       });
-    } else {
-      if ((store as any).banner_url) {
-        s.push({ image: (store as any).banner_url, title: store.name, subtitle: store.description || "Discover our collection" });
-      }
-      if ((store as any).mobile_hero_url) {
-        s.push({ image: (store as any).mobile_hero_url, title: "New Arrivals", subtitle: "Shop the latest trends" });
-      }
+    } else if ((store as any).mobile_hero_url) {
+      s.push({ image: (store as any).mobile_hero_url, title: store.name, subtitle: store.description || "Discover our collection" });
     }
-    // Add best-selling products as slides
-    const bestSelling = products?.filter((p: any) => p.is_best_selling && p.image_url).slice(0, 3) || [];
-    bestSelling.forEach((p: any) => {
-      s.push({ image: p.image_url, title: p.name, subtitle: `₹${p.sale_price || p.price}`, link: storefrontPath(store.slug, `product/${p.slug || p.id}`) });
-    });
-    // Fallback: if no slides, create gradient-based ones
     if (s.length === 0) {
       s.push({ image: "", title: store.name, subtitle: store.description || "Explore our collection" });
-      s.push({ image: "", title: "New Collection", subtitle: "Premium quality products" });
     }
     return s;
-  }, [store, products]);
+  }, [store]);
+
+  // Use mobile slides on mobile, desktop slides on desktop
+  // We render both and use CSS to show/hide
+  return (
+    <>
+      <div className="block md:hidden">
+        <HeroSlides slides={mobileSlides} store={store} />
+      </div>
+      <div className="hidden md:block">
+        <HeroSlides slides={desktopSlides} store={store} />
+      </div>
+    </>
+  );
+}
+
+function HeroSlides({ slides, store }: { slides: { image: string; title: string; subtitle: string; link?: string }[]; store: StoreData }) {
+  const [current, setCurrent] = useState(0);
 
   const slideCount = slides.length;
 
