@@ -17,60 +17,83 @@ import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Hero Banner ── */
 function V12Hero({ store, slug }: { store: StoreData; slug: string }) {
-  const heroImages: string[] = [];
+  // Mobile hero images (mobile only)
+  const mobileImages: string[] = [];
   const mhi = (store as any).mobile_hero_images;
   if (mhi && Array.isArray(mhi) && mhi.length > 0) {
-    heroImages.push(...mhi);
-  } else {
-    const heroUrl = store.mobile_hero_url || store.banner_url;
-    if (heroUrl) heroImages.push(heroUrl);
+    mobileImages.push(...mhi);
+  } else if (store.mobile_hero_url) {
+    mobileImages.push(store.mobile_hero_url);
   }
 
-  if (heroImages.length === 0) {
-    return (
-      <div
-        className="w-full flex items-center justify-center"
-        style={{
-          height: "400px",
-          background: `linear-gradient(135deg, var(--storefront-primary, #FF3F6C), var(--storefront-accent, #111111))`,
-        }}
-      >
-        <div className="text-center space-y-3 px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-            Welcome to
-          </p>
-          <h1
-            className="text-3xl font-bold text-white"
-            style={{ fontFamily: "var(--storefront-heading-font, 'Poppins'), sans-serif" }}
-          >
-            {store.name}
-          </h1>
-          {store.description && (
-            <p className="text-sm text-white/60 max-w-xs mx-auto">{store.description}</p>
-          )}
-          <Link
-            to={storefrontPath(slug, "shop")}
-            className="inline-flex items-center gap-1.5 mt-2 px-6 py-2.5 text-sm font-semibold text-white transition-all active:scale-95"
-            style={{
-              backgroundColor: "var(--storefront-primary, #FF3F6C)",
-              borderRadius: "var(--storefront-button-radius, 0.5rem)",
-            }}
-          >
-            Shop Now
-          </Link>
-        </div>
-      </div>
-    );
+  // Desktop hero images (desktop only)
+  const desktopImages: string[] = [];
+  if (store.banner_url) {
+    desktopImages.push(store.banner_url);
   }
+
+  const fallbackHero = (
+    <div
+      className="w-full flex items-center justify-center"
+      style={{
+        height: "400px",
+        background: `linear-gradient(135deg, var(--storefront-primary, #FF3F6C), var(--storefront-accent, #111111))`,
+      }}
+    >
+      <div className="text-center space-y-3 px-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+          Welcome to
+        </p>
+        <h1
+          className="text-3xl font-bold text-white"
+          style={{ fontFamily: "var(--storefront-heading-font, 'Poppins'), sans-serif" }}
+        >
+          {store.name}
+        </h1>
+        {store.description && (
+          <p className="text-sm text-white/60 max-w-xs mx-auto">{store.description}</p>
+        )}
+        <Link
+          to={storefrontPath(slug, "shop")}
+          className="inline-flex items-center gap-1.5 mt-2 px-6 py-2.5 text-sm font-semibold text-white transition-all active:scale-95"
+          style={{
+            backgroundColor: "var(--storefront-primary, #FF3F6C)",
+            borderRadius: "var(--storefront-button-radius, 0.5rem)",
+          }}
+        >
+          Shop Now
+        </Link>
+      </div>
+    </div>
+  );
 
   return (
-    <HeroBannerCarousel
-      images={heroImages}
-      storeName={store.name}
-      interval={2000}
-      imageClassName="w-full h-auto object-cover"
-      maxHeight="520px"
-    />
+    <>
+      {/* Mobile hero */}
+      <div className="block md:hidden">
+        {mobileImages.length > 0 ? (
+          <HeroBannerCarousel
+            images={mobileImages}
+            storeName={store.name}
+            interval={2000}
+            imageClassName="w-full h-auto object-cover"
+            maxHeight="520px"
+          />
+        ) : fallbackHero}
+      </div>
+      {/* Desktop hero */}
+      <div className="hidden md:block">
+        {desktopImages.length > 0 ? (
+          <HeroBannerCarousel
+            images={desktopImages}
+            storeName={store.name}
+            interval={2000}
+            imageClassName="w-full h-auto object-cover"
+            maxHeight="520px"
+          />
+        ) : fallbackHero}
+      </div>
+    </>
   );
 }
 

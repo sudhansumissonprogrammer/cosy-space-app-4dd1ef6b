@@ -79,7 +79,7 @@ function BannerSliderInner({ slides }: { slides: { image: string; title: string 
     }
   };
 
-  const slide = slides[current] ?? slides[0] ?? { image: "", title: store.name, link: undefined };
+  const slide = slides[current] ?? slides[0] ?? { image: "", title: "Store", link: undefined };
 
   return (
     <div
