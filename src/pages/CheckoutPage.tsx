@@ -1145,7 +1145,7 @@ export default function CheckoutPage() {
                 }}
               >
                 Save & Use This Address
-              </Button>
+              </button>
             </div>
           </div>
         </DialogContent>

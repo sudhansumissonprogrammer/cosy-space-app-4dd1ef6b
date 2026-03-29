@@ -164,10 +164,14 @@ export default function CartPage() {
 
               <div className="space-y-2">
                 {showCheckout && (
-                  <Button className="w-full text-xs sm:text-sm" size="default" onClick={() => navigate(storefrontPath(store.slug, "checkout"))}>
-                    <ShoppingBag className="mr-2 h-4 w-4" />
+                  <button
+                    className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
+                    style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+                    onClick={() => navigate(storefrontPath(store.slug, "checkout"))}
+                  >
+                    <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
-                  </Button>
+                  </button>
                 )}
                 {showWhatsApp && (
                   <button
