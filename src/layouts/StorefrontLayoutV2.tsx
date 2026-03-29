@@ -13,6 +13,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import MobileBottomNav from "@/components/storefront/MobileBottomNav";
+import DesktopNavBar from "@/components/storefront/DesktopNavBar";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 function CartBadgeV2() {
@@ -146,7 +147,8 @@ export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: st
     <StorefrontShell slugOverride={slugOverride} defaultPrimary="#004643" skeleton={<StorefrontV2Skeleton />}>
       {({ store }) => (
         <>
-          <TransparentNav store={store} scrolled={false} />
+          <DesktopNavBar store={store} />
+          <div className="md:hidden"><TransparentNav store={store} scrolled={false} /></div>
           <main className="pb-16 md:pb-0"><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
           <StorefrontFooter store={store} />
           <div className="md:hidden">

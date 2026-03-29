@@ -11,6 +11,7 @@ import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
+import DesktopNavBar from "@/components/storefront/DesktopNavBar";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 function MilanoHeader({ store }: { store: StoreData }) {
@@ -160,7 +161,8 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
     >
       {({ store }) => (
         <>
-          <MilanoHeader store={store} />
+          <DesktopNavBar store={store} />
+          <div className="md:hidden"><MilanoHeader store={store} /></div>
           <main className="pb-16 md:pb-0">
             <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense>
           </main>

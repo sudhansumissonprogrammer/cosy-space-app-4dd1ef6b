@@ -11,6 +11,7 @@ import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
+import DesktopNavBar from "@/components/storefront/DesktopNavBar";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 function V12Header({ store }: { store: StoreData }) {
@@ -157,7 +158,8 @@ export default function StorefrontLayoutV12({ slugOverride }: { slugOverride?: s
     >
       {({ store }) => (
         <>
-          <V12Header store={store} />
+          <DesktopNavBar store={store} />
+          <div className="md:hidden"><V12Header store={store} /></div>
           <main className="pb-16 md:pb-0">
             <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense>
           </main>

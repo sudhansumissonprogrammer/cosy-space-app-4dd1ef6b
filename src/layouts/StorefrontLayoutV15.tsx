@@ -23,6 +23,7 @@ import StorefrontShell from "@/layouts/StorefrontShell";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const LazyMobileBottomNavV15 = lazy(() => import("@/components/storefront/MobileBottomNavV15"));
+const LazyDesktopNavBar = lazy(() => import("@/components/storefront/DesktopNavBar"));
 
 export type { Tables };
 export type StoreData = Tables<"stores">;
@@ -184,7 +185,15 @@ function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavE
     <>
       {/* NO marquee here — theme-15 renders marquee inside the home page after hero */}
 
-      <nav className={`${isCheckout ? 'sticky top-0' : ''} z-30 ${
+      {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
+      {!isCheckout && (
+        <Suspense fallback={null}>
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} />
+        </Suspense>
+      )}
+
+      {/* Mobile header + checkout header */}
+      <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} z-30 ${
         isCheckout ? 'bg-card/80 backdrop-blur-md' :
         headerStyle === 'transparent' ? '' :
         headerStyle === 'glassmorphic' ? '' :
@@ -243,8 +252,8 @@ function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavE
         </div>
       </nav>
 
-      {/* Lazy search overlay for left-with-search mode */}
-      {isWithSearch && searchOpen && (
+      {/* Lazy search overlay */}
+      {searchOpen && (
         <Suspense fallback={null}>
           <LazySearchOverlay
             open={searchOpen}
