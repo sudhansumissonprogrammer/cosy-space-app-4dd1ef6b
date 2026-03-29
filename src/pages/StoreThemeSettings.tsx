@@ -1798,6 +1798,7 @@ export default function StoreThemeSettings() {
       return data;
     },
     enabled: !!storeId,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Fetch real categories for preview
@@ -1813,6 +1814,7 @@ export default function StoreThemeSettings() {
       return data;
     },
     enabled: !!storeId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const previewProducts = storeProducts && storeProducts.length > 0
