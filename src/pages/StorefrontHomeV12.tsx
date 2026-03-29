@@ -283,7 +283,7 @@ export default function StorefrontHomeV12() {
           </div>
         )}
       </div>
-      <TrustBadges />
+      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
       <StorefrontInstagramSection store={store} />
     </div>
   );

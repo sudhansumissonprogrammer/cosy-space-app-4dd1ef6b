@@ -387,6 +387,7 @@ export default function StorefrontHomeV14() {
           )}
         </section>
       </div>
+      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
       <LazyRender minHeight={200} rootMargin="400px">
         <Suspense fallback={null}>
           <StorefrontInstagramSection store={store} />
