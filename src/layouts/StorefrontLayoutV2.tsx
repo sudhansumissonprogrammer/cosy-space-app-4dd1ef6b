@@ -66,6 +66,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
   const [menuOpen, setMenuOpen] = useState(false);
   const queryClient = useQueryClient();
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
 
   return (
     <nav
