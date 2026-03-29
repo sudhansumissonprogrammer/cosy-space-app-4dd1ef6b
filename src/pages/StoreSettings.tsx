@@ -50,7 +50,6 @@ export default function StoreSettings() {
   const [heroRemoved, setHeroRemoved] = useState(false);
   const [heroImages, setHeroImages] = useState<string[]>([]);
   const [heroImageFiles, setHeroImageFiles] = useState<File[]>([]);
-  const [features, setFeatures] = useState<Feature[]>([]);
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
