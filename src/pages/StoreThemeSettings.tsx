@@ -1953,7 +1953,15 @@ export default function StoreThemeSettings() {
 
       setConfig(newConfig);
       setDirty(false);
-      setIframeKey((k) => k + 1);
+      // Soft-reload: reuse cached JS/CSS instead of destroying iframe
+      setTimeout(() => {
+        const activeRef = previewMode === "mobile" ? iframeRef : iframeDesktopRef;
+        try {
+          activeRef.current?.contentWindow?.location.reload();
+        } catch {
+          setIframeKey((k) => k + 1);
+        }
+      }, 300);
       toast.success("Theme applied with best color combination!");
     },
     onError: () => toast.error("Failed to apply theme"),
