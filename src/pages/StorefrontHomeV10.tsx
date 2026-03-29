@@ -76,8 +76,8 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
   return (
     <>
       {/* Mobile hero */}
-      <div className="block md:hidden">
-        {mobileImages.length > 0 ? (
+      {mobileImages.length > 0 && (
+        <div className="block md:hidden">
           <HeroBannerCarousel
             images={mobileImages}
             storeName={store.name}
@@ -85,11 +85,11 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
             imageClassName="w-full h-auto object-cover"
             maxHeight="520px"
           />
-        ) : fallbackHero}
-      </div>
+        </div>
+      )}
       {/* Desktop hero */}
-      <div className="hidden md:block">
-        {desktopImages.length > 0 ? (
+      {desktopImages.length > 0 && (
+        <div className="hidden md:block">
           <HeroBannerCarousel
             images={desktopImages}
             storeName={store.name}
@@ -97,8 +97,8 @@ function MilanoHero({ store, slug }: { store: StoreData; slug: string }) {
             imageClassName="w-full h-auto object-cover"
             maxHeight="520px"
           />
-        ) : fallbackHero}
-      </div>
+        </div>
+      )}
     </>
   );
 }
