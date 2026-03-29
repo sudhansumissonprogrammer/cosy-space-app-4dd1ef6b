@@ -22,7 +22,7 @@ import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 import StorefrontShell from "@/layouts/StorefrontShell";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
-const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
+const LazyMobileBottomNavV15 = lazy(() => import("@/components/storefront/MobileBottomNavV15"));
 
 export type { Tables };
 export type StoreData = Tables<"stores">;
@@ -253,10 +253,10 @@ function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavE
         </Suspense>
       )}
 
-      <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+      <main className={mobileNavEnabled ? "pb-20 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
       {mobileNavEnabled && (
         <Suspense fallback={null}>
-          <LazyMobileBottomNav store={store} />
+          <LazyMobileBottomNavV15 store={store} />
         </Suspense>
       )}
       <StorefrontFooter store={store} />
