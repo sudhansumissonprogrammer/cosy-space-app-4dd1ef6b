@@ -263,8 +263,8 @@ export default function StorefrontHomeV14() {
           </LazyRender>
         )}
 
-        <section style={{ minHeight: 600, contain: "layout" }}>
-          <div className="mb-5 flex items-center justify-between gap-3">
+        <section style={{ minHeight: 600, contain: "layout style" }}>
+          <div className="mb-5 flex items-center justify-between gap-3" style={{ minHeight: 32 }}>
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-5 w-1 rounded-full bg-foreground" />
               <h2 className="text-lg font-bold text-foreground tracking-wide" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>🔥 Popular Products</h2>
@@ -309,7 +309,7 @@ export default function StorefrontHomeV14() {
           </div>
 
           {showSkeleton ? (
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 560 }}>
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
@@ -326,7 +326,7 @@ export default function StorefrontHomeV14() {
             </div>
           ) : displayProducts.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 560 }}>
                 {displayProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
                   <UniversalProductCard
                     key={product.id}

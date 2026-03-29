@@ -172,7 +172,7 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
   const hideWishlistAndShare = isCentered || isWithSearch;
 
   const ActionButtons = !isCheckout ? (
-    <div className="flex items-center gap-0 sm:gap-1">
+    <div className="flex items-center gap-0 sm:gap-1" style={{ minHeight: 40, contain: "layout" }}>
       <AccountBadge slug={store.slug} />
       {!hideWishlistAndShare && <WishlistBadge slug={store.slug} />}
       <CartBadge />
