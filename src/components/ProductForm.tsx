@@ -66,6 +66,29 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [expandedVariant, setExpandedVariant] = useState<number | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+
+  const handleGenerateDescription = async () => {
+    if (!name.trim()) {
+      toast.error("Enter a product name first");
+      return;
+    }
+    setGeneratingDesc(true);
+    try {
+      const res = await supabase.functions.invoke("generate-description", {
+        body: { product_name: name.trim() },
+      });
+      if (res.error) throw res.error;
+      const desc = res.data?.description;
+      if (!desc) throw new Error("Empty response");
+      setDescription(desc);
+      toast.success("Description generated!");
+    } catch {
+      toast.error("Failed to generate description. Try again.");
+    } finally {
+      setGeneratingDesc(false);
+    }
+  };
 
 
   // Check product limit
