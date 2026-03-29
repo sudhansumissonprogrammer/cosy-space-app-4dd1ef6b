@@ -99,10 +99,6 @@ export default function StoreSettings() {
         setHeroImages(existingHeroImages);
       }
       if (store.features) setFeatures(store.features as unknown as Feature[]);
-      setReturnPolicy((store as any).return_policy || "");
-      setShippingPolicy((store as any).shipping_policy || "");
-      setAboutUsText((store as any).about_us_text || "");
-      if ((store as any).about_us_image_url) setAboutUsImagePreview((store as any).about_us_image_url);
       setBestSellingCarousel((store as any).best_selling_carousel || false);
       setMetaTitle((store as any).meta_title || "");
       setMetaDescription((store as any).meta_description || "");
