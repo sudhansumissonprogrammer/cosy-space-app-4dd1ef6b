@@ -2541,7 +2541,10 @@ export default function StoreThemeSettings() {
                         ref={iframeDesktopRef}
                         src={`/store/${store.slug}`}
                         title="Store Preview Desktop"
-                        onLoad={() => sendToIframe(config)}
+                        onLoad={() => {
+                          iframeLoadedRef.current = true;
+                          sendToIframe(config);
+                        }}
                         style={{
                           width: "1440px",
                           height: "900px",
