@@ -169,11 +169,18 @@ function BestSellingSection({ products, slug, store, cardStyle }: { products: an
   return (
     <div className="py-4">
       <SectionHeader title="Best Selling" slug={slug} linkTo="shop" />
-      <div className="flex gap-3 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+      {/* Mobile: horizontal scroll */}
+      <div className="flex gap-3 overflow-x-auto px-4 pb-2 md:hidden" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
         {bestSellers.map((product, idx) => (
           <div key={product.id} className="flex-shrink-0" style={{ width: "160px" }}>
             <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
           </div>
+        ))}
+      </div>
+      {/* Desktop: consistent grid */}
+      <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4 px-4">
+        {bestSellers.map((product, idx) => (
+          <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
         ))}
       </div>
     </div>
@@ -284,14 +291,14 @@ export default function StorefrontHomeV10() {
           </div>
         ) : products.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 px-2 sm:px-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4">
               {products.slice(0, 6).map((product, idx) => (
                 <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
             {products.length > 6 && (
               <LazyRender rootMargin="600px" minHeight={400}>
-                <div className="grid grid-cols-2 gap-1.5 sm:gap-4 px-2 sm:px-4 mt-3">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4 mt-1.5 sm:mt-4">
                   {products.slice(6).map((product, idx) => (
                     <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
                   ))}
