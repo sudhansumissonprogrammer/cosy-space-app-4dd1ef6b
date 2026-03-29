@@ -55,10 +55,15 @@ export default function StorePages() {
 
     const seedPages = async () => {
       const rows = SYSTEM_PAGES.map((sp) => {
+        // Use existing store data if available, otherwise generate default template
         let content = "";
         if (sp.page_type === "about_us") content = (store as any).about_us_text || "";
         if (sp.page_type === "return_policy") content = (store as any).return_policy || "";
         if (sp.page_type === "shipping_policy") content = (store as any).shipping_policy || "";
+        // If no existing content, use the default template
+        if (!content) {
+          content = getDefaultContent(sp.page_type, store as any);
+        }
         return {
           store_id: storeId,
           page_type: sp.page_type,
