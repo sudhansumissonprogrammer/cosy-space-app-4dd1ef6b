@@ -16,8 +16,8 @@ import type { VariantWidth } from "./imageCompression";
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
 
-/** Standard widths for srcSet that match our stored variants */
-const PIPELINE_WIDTHS: VariantWidth[] = [400, 800];
+/** We now store only 800w — render API handles responsive sizes */
+const PIPELINE_WIDTHS: number[] = [400, 800];
 
 /**
  * Returns an optimised URL for a given image.
@@ -39,11 +39,24 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // ── 1. Our own pipeline variants ──
+  // ── 1. Our pipeline images: use Supabase render API for any size ──
   if (isOptimizedUrl(url)) {
-    // Pick the best matching stored variant
-    const best = pickBestVariant(width);
-    return resolveVariantUrl(url, best);
+    // Resolve to the 800w stored file, then use render API if smaller size needed
+    const baseUrl = resolveVariantUrl(url, 800);
+    if (width >= 800) return baseUrl;
+    // Use render API to resize on-the-fly
+    try {
+      const u = new URL(baseUrl);
+      u.pathname = u.pathname.replace(
+        "/storage/v1/object/",
+        "/storage/v1/render/image/",
+      );
+      u.searchParams.set("width", String(width));
+      u.searchParams.set("quality", String(quality));
+      return u.toString();
+    } catch {
+      return baseUrl;
+    }
   }
 
   // ── 2. Shopify CDN ──
@@ -66,12 +79,19 @@ export function optimizeImageUrl(
 
   // ── 4. Supabase Storage ──
   if (url.includes("supabase.co/storage")) {
-    // Pipeline-optimized images: serve directly (no re-encoding)
-    if (isOptimizedUrl(url)) {
-      const best = pickBestVariant(width);
-      return resolveVariantUrl(url, best);
+    // Use render/image transform API for on-the-fly resizing
+    try {
+      const u = new URL(url);
+      u.pathname = u.pathname.replace(
+        "/storage/v1/object/",
+        "/storage/v1/render/image/",
+      );
+      u.searchParams.set("width", String(width));
+      u.searchParams.set("quality", String(quality));
+      return u.toString();
+    } catch {
+      return url;
     }
-    // Non-pipeline images: use render/image transform API
     try {
       const u = new URL(url);
       u.pathname = u.pathname.replace(
@@ -98,11 +118,8 @@ export function optimizeImageUrl(
   return url;
 }
 
-/** Pick the closest stored variant width that is ≥ requested width */
-function pickBestVariant(requestedWidth: number): VariantWidth {
-  for (const w of PIPELINE_WIDTHS) {
-    if (w >= requestedWidth) return w;
-  }
+/** @deprecated No longer needed — render API handles all sizes */
+function pickBestVariant(requestedWidth: number): 800 {
   return 800;
 }
 
@@ -137,14 +154,8 @@ export function getImageSrcSet(
   const firstUrl = url.includes(",") ? url.split(",")[0].trim() : url.trim();
   if (!firstUrl) return "";
 
-  // For our pipeline images, only emit the 3 stored widths
-  if (isOptimizedUrl(firstUrl)) {
-    return PIPELINE_WIDTHS
-      .map((w) => `${resolveVariantUrl(firstUrl, w)} ${w}w`)
-      .join(", ");
-  }
-
-  // For external images, use runtime optimization
+  // For ALL images (pipeline or external), use optimizeImageUrl which handles
+  // render API for pipeline images and CDN params for external
   return sizes
     .map((w) => `${optimizeImageUrl(firstUrl, w, quality)} ${w}w`)
     .join(", ");

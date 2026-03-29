@@ -18,7 +18,8 @@ const HEAVY_QUALITY = 0.80; // starting quality for heavy compression
 const MIN_QUALITY = 0.75; // never go below this for light compression
 const HEAVY_MIN_QUALITY = 0.55; // lower floor for heavy compression
 
-export const IMAGE_VARIANT_WIDTHS = [400, 800] as const;
+/** @deprecated Multi-size variants removed — single 800w upload only */
+export const IMAGE_VARIANT_WIDTHS = [800] as const;
 export type VariantWidth = (typeof IMAGE_VARIANT_WIDTHS)[number];
 
 export interface CompressionResult {
@@ -170,68 +171,19 @@ export async function processImage(
 }
 
 /**
- * Generate multiple size variants (200, 400, 800px) from a single image.
- * Each variant is WebP, compressed with high quality floor.
- * Returns the main (800px) result + a map of all variant files.
+ * Process a single 800w optimized image for upload.
+ * Previously generated multiple variants — now produces a single 800w WebP.
+ * Supabase render API handles responsive resizing on-the-fly.
  */
 export async function processImageMultiSize(
   file: File,
   quality?: number,
 ): Promise<MultiSizeResult> {
-  const originalSize = file.size;
-
-  if (file.size > MAX_RAW_SIZE) {
-    throw new Error(`Image too large (${formatSize(file.size)}). Maximum allowed is 5MB.`);
-  }
-
-  // Skip compression for images already under 100KB — preserve original quality
-  if (file.size <= SKIP_THRESHOLD_KB * 1024) {
-    const variants = new Map<VariantWidth, File>();
-    for (const w of IMAGE_VARIANT_WIDTHS) {
-      variants.set(w, file);
-    }
-    return {
-      main: { file, originalSize, compressedSize: file.size, skipped: true },
-      variants,
-    };
-  }
-
-  // Determine compression tier based on input size
-  const isHeavy = file.size > HEAVY_THRESHOLD_KB * 1024;
-  const effectiveQuality = quality ?? (isHeavy ? HEAVY_QUALITY : DEFAULT_QUALITY);
-
-  const img = await loadImage(file);
+  // Delegate to processImage with 800px max dimension
+  const main = await processImage(file, 800, quality);
   const variants = new Map<VariantWidth, File>();
-  let mainResult: CompressionResult | null = null;
-
-  // Tighter targets for heavy compression
-  const variantTargetKB: Record<VariantWidth, number> = isHeavy
-    ? { 400: 60, 800: HEAVY_OUTPUT_KB }
-    : { 400: 90, 800: MAX_OUTPUT_KB };
-
-  for (const targetWidth of IMAGE_VARIANT_WIDTHS) {
-    const effectiveWidth = Math.min(targetWidth, img.width);
-    const { width, height } = scaleDimensions(img.width, img.height, effectiveWidth);
-    const canvas = renderToCanvas(img, width, height);
-
-    const targetKB = variantTargetKB[targetWidth];
-    const { blob, ext } = await compressCanvas(canvas, effectiveQuality, targetKB);
-
-    const baseName = file.name.replace(/\.[^/.]+$/, "");
-    const variantFile = new File([blob], `${baseName}-${targetWidth}w.${ext}`, { type: blob.type });
-    variants.set(targetWidth, variantFile);
-
-    if (targetWidth === 800) {
-      mainResult = { file: variantFile, originalSize, compressedSize: blob.size, skipped: false };
-    }
-  }
-
-  URL.revokeObjectURL(img.src);
-
-  return {
-    main: mainResult!,
-    variants,
-  };
+  variants.set(800, main.file);
+  return { main, variants };
 }
 
 /**

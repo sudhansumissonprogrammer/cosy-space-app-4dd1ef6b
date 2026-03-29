@@ -2,20 +2,19 @@
  * Centralized upload handler for the image optimization pipeline.
  *
  * On every upload:
- *  1. Generates 200px, 400px, 800px WebP variants client-side
- *  2. Uploads all variants to Supabase Storage
- *  3. Returns the 800px URL as the main reference
+ *  1. Compresses to a single 800w WebP variant client-side
+ *  2. Uploads ONE file to Supabase Storage
+ *  3. Returns the public URL as the main reference
  *
- * The naming convention allows imageOptimize.ts to resolve srcSet
- * from actual stored files instead of runtime proxies.
+ * Responsive serving is handled by Supabase render API at request time:
+ *   /storage/v1/render/image/...?width=400&quality=85
  *
- * Naming: {basePath}-200w.webp, {basePath}-400w.webp, {basePath}-800w.webp
+ * Naming: {basePath}-800w.webp
  */
 
 import { supabase } from "@/integrations/supabase/client";
 import {
   processImageMultiSize,
-  IMAGE_VARIANT_WIDTHS,
   type MultiSizeResult,
   type VariantWidth,
   getCompressionMessage,
@@ -24,19 +23,19 @@ import {
 export interface UploadResult {
   /** The main (800w) public URL — use this as image_url */
   mainUrl: string;
-  /** Map of width → public URL for all variants */
+  /** Map of width → public URL (now contains only 800w) */
   variantUrls: Map<VariantWidth, string>;
   /** Human-readable compression message */
   compressionMessage: string | null;
 }
 
 /**
- * Upload an image with automatic multi-size optimization.
+ * Upload an image with automatic optimization (single 800w file).
  *
  * @param file        Raw image file from the user
  * @param bucket      Storage bucket name (e.g. "product-images")
  * @param basePath    Path prefix (e.g. "userId/storeId/1234abc")
- * @returns UploadResult with URLs for all variants
+ * @returns UploadResult with URL
  */
 export async function uploadOptimizedImage(
   file: File,
@@ -45,41 +44,26 @@ export async function uploadOptimizedImage(
 ): Promise<UploadResult> {
   const result: MultiSizeResult = await processImageMultiSize(file);
   const variantUrls = new Map<VariantWidth, string>();
-  let mainUrl = "";
 
-  // Upload all variants in parallel
-  const uploads = IMAGE_VARIANT_WIDTHS.map(async (width) => {
-    const variantFile = result.variants.get(width);
-    if (!variantFile) return;
+  // Upload the single 800w variant
+  const variantFile = result.variants.get(800);
+  if (!variantFile) throw new Error("Image compression failed — no output file");
 
-    const ext = variantFile.name.split(".").pop() || "webp";
-    const path = `${basePath}-${width}w.${ext}`;
+  const ext = variantFile.name.split(".").pop() || "webp";
+  const path = `${basePath}-800w.${ext}`;
 
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(path, variantFile, {
-        cacheControl: "31536000", // 1 year — immutable content-addressed
-        upsert: true,
-        contentType: variantFile.type,
-      });
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(path, variantFile, {
+      cacheControl: "31536000", // 1 year — immutable content-addressed
+      upsert: true,
+      contentType: variantFile.type,
+    });
 
-    if (error) throw new Error(`Failed to upload ${width}w variant: ${error.message}`);
+  if (error) throw new Error(`Failed to upload image: ${error.message}`);
 
-    const publicUrl = supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl;
-    variantUrls.set(width, publicUrl);
-
-    if (width === 800) {
-      mainUrl = publicUrl;
-    }
-  });
-
-  await Promise.all(uploads);
-
-  // Fallback if 800w was skipped (image smaller than 800px)
-  if (!mainUrl) {
-    const largest = [...variantUrls.entries()].sort((a, b) => b[0] - a[0])[0];
-    if (largest) mainUrl = largest[1];
-  }
+  const mainUrl = supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl;
+  variantUrls.set(800, mainUrl);
 
   return {
     mainUrl,
