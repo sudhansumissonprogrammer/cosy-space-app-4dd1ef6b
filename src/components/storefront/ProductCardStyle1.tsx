@@ -19,7 +19,7 @@ interface Props {
 const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
-export default function ProductCardStyle1({ product, slug, store, priority = false }: Props) {
+export default function ProductCardStyle1({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -31,6 +31,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
     e.preventDefault();
     e.stopPropagation();
     if (isAdding) return;
+    if (onVariantRequired) { onVariantRequired(); return; }
     setIsAdding(true);
     handleAddToCart(e);
     setIsAdding(false);

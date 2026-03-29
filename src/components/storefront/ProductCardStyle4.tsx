@@ -46,6 +46,7 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
   const currency = store.currency === "USD" ? "$" : "₹";
 
   const handleAdd = useCallback(() => {
+    if (onVariantRequired) { onVariantRequired(); return; }
     addToCart({
       productId: product.id,
       name: product.name,
@@ -53,7 +54,7 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
       image: product.image_url || undefined,
       quantity: 1,
     });
-  }, [addToCart, product, price]);
+  }, [addToCart, product, price, onVariantRequired]);
 
   const handleIncrease = useCallback(() => {
     updateQuantity(product.id, undefined, qty + 1);

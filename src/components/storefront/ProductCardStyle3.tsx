@@ -75,7 +75,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
             </span>
           )}
         </div>
-        <button onClick={handleAddToCart} className="w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-semibold uppercase tracking-wider transition-all active:scale-95 mt-1" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)", color: "var(--storefront-btn-text, #fff)", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
+        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-semibold uppercase tracking-wider transition-all active:scale-95 mt-1" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)", color: "var(--storefront-btn-text, #fff)", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
           <ShoppingCart className="h-3.5 w-3.5" aria-hidden="true" />
           Add to Cart
         </button>
