@@ -77,7 +77,7 @@ export default function StorefrontHomeV14() {
 
   // Theme-14 defaults: style-2 cards, style-3 categories
   const cardStyle = themeConfig?.product_card_style || "style-2";
-  const categoryStyle = themeConfig?.category_style || "style-2";
+  const categoryStyle = themeConfig?.category_style || "style-4";
   const headerLayout = themeConfig?.header_logo_alignment || "center";
   const hideSearchBar = headerLayout === "left-with-search";
   const marqueeText = themeConfig?.marquee_text;
@@ -235,7 +235,6 @@ export default function StorefrontHomeV14() {
         </div>
       )}
       <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
-      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
 
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
         {bestSellingProducts.length > 0 && (
@@ -389,6 +388,7 @@ export default function StorefrontHomeV14() {
           )}
         </section>
       </div>
+      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
       <LazyRender minHeight={200} rootMargin="400px">
         <Suspense fallback={null}>
           <StorefrontInstagramSection store={store} />
