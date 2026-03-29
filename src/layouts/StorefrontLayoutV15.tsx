@@ -253,10 +253,10 @@ function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavE
         </Suspense>
       )}
 
-      <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+      <main className={mobileNavEnabled ? "pb-20 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
       {mobileNavEnabled && (
         <Suspense fallback={null}>
-          <LazyMobileBottomNav store={store} />
+          <LazyMobileBottomNavV15 store={store} />
         </Suspense>
       )}
       <StorefrontFooter store={store} />
