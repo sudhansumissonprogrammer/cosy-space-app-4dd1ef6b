@@ -276,6 +276,7 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
 const THEMES = [
   { id: "theme-1", name: "Classic", description: "Elegant gold & black with serif headings", available: true },
   { id: "theme-14", name: "Classic Center", description: "Classic theme with centered logo & marquee under hero", available: true },
+  { id: "theme-15", name: "Classic Center Alt", description: "Classic Center with Style-1 product cards & square category carousel", available: true },
   { id: "theme-2", name: "Bold Modern", description: "Transparent header, carousel hero, masonry grid", available: true },
   { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
   
