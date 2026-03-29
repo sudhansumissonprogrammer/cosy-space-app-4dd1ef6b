@@ -154,19 +154,19 @@ export default function StorefrontShell({
     ...wrapperStyle,
   };
 
+  // Sync theme CSS vars to document.body so portal-rendered components (Sheet, Dialog) inherit them
+  const themeVarsKey = useMemo(() => JSON.stringify(themeStyle), [themeStyle]);
   useEffect(() => {
     const appliedVars = Object.entries(themeStyle).filter(([key, value]) => key.startsWith("--") && typeof value === "string") as Array<[string, string]>;
-
     appliedVars.forEach(([key, value]) => {
       document.body.style.setProperty(key, value);
     });
-
     return () => {
       appliedVars.forEach(([key]) => {
         document.body.style.removeProperty(key);
       });
     };
-  }, [themeStyle]);
+  }, [themeVarsKey]);
 
   // Loading state
   if (isLoading) {
