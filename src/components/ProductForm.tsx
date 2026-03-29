@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import {
@@ -66,6 +66,29 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [expandedVariant, setExpandedVariant] = useState<number | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+
+  const handleGenerateDescription = async () => {
+    if (!name.trim()) {
+      toast.error("Enter a product name first");
+      return;
+    }
+    setGeneratingDesc(true);
+    try {
+      const res = await supabase.functions.invoke("generate-description", {
+        body: { product_name: name.trim() },
+      });
+      if (res.error) throw res.error;
+      const desc = res.data?.description;
+      if (!desc) throw new Error("Empty response");
+      setDescription(desc);
+      toast.success("Description generated!");
+    } catch {
+      toast.error("Failed to generate description. Try again.");
+    } finally {
+      setGeneratingDesc(false);
+    }
+  };
 
 
   // Check product limit
@@ -716,7 +739,24 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="description">Description</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs text-primary hover:text-primary/80"
+                  disabled={generatingDesc || !name.trim()}
+                  onClick={handleGenerateDescription}
+                >
+                  {generatingDesc ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  {generatingDesc ? "Generating…" : "AI Generate"}
+                </Button>
+              </div>
               <Textarea
                 id="description"
                 placeholder="Describe your product..."
