@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, ChevronRight, Tag, X, Pencil, Smartphone, Wallet } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, ChevronRight, Tag, X, Pencil, Smartphone, Wallet, LocateFixed } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -76,6 +76,7 @@ export default function CheckoutPage() {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
   const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
 
   // Coupon
   const [couponCode, setCouponCode] = useState("");
@@ -520,6 +521,54 @@ export default function CheckoutPage() {
     }
   };
 
+  // Browser geolocation + Google reverse geocoding
+  const handleUseMyLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    setGeoLoading(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000,
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      const { data, error } = await supabase.functions.invoke("reverse-geocode", {
+        body: { lat: latitude, lng: longitude },
+      });
+
+      if (error) throw new Error(error.message);
+      if (!data?.success || !data?.address) {
+        toast.error("Could not determine your address");
+        return;
+      }
+
+      const addr = data.address;
+      if (addr.street_address) setStreetAddress(addr.street_address);
+      if (addr.city) setCity(addr.city);
+      if (addr.state) setState(addr.state);
+      if (addr.pincode) setPincode(addr.pincode);
+      toast.success("Address auto-filled from your location!");
+    } catch (err: any) {
+      if (err?.code === 1) {
+        toast.error("Location permission denied. Please allow location access.");
+      } else if (err?.code === 2) {
+        toast.error("Unable to determine your location");
+      } else if (err?.code === 3) {
+        toast.error("Location request timed out");
+      } else {
+        toast.error("Failed to detect location");
+      }
+    } finally {
+      setGeoLoading(false);
+    }
+  };
+
   // Save checkout info to localStorage for express checkout
   const saveExpressInfo = () => {
     try {
@@ -824,6 +873,15 @@ export default function CheckoutPage() {
                 <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
             </div>
+            <button
+              type="button"
+              onClick={handleUseMyLocation}
+              disabled={geoLoading}
+              className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+            >
+              {geoLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LocateFixed className="h-3.5 w-3.5" />}
+              {geoLoading ? "Detecting location…" : "📍 Use my location"}
+            </button>
             <div className="space-y-1">
               <Label htmlFor="pincode" className="text-xs">Pincode * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
               <Input id="pincode" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
