@@ -145,11 +145,8 @@ export default function StoreSettings() {
         finalOgImageUrl = await uploadFile(ogImageFile, "store-banners");
       }
 
-      let finalAboutUsImageUrl = (store as any)?.about_us_image_url || null;
-      if (aboutUsImageRemoved) finalAboutUsImageUrl = null;
-      if (aboutUsImageFile) {
-        finalAboutUsImageUrl = await uploadFile(aboutUsImageFile, "store-banners");
-      }
+
+
 
       const hasHours = Object.values(businessHours).some((v) => v.trim());
       const { error } = await (supabase as any)
