@@ -76,6 +76,7 @@ export default function CheckoutPage() {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
   const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
 
   // Coupon
   const [couponCode, setCouponCode] = useState("");
