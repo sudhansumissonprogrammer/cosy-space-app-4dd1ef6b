@@ -9,21 +9,32 @@ const corsHeaders = {
 const SYSTEM_PROMPT =
   "You are an expert e-commerce copywriter. Write a 3–4 line product description based on the product name provided. Make it attractive, clear, and professional. Focus on benefits and usability. Keep it concise. Do not use emojis. Do not use markdown formatting. Return only the description text, nothing else.";
 
+// --- Provider health tracking ---
+const COOLDOWN_MS = 5 * 60 * 1000;
+const failedAt: Record<string, number> = {};
+
+function isProviderActive(name: string): boolean {
+  const t = failedAt[name];
+  if (!t) return true;
+  if (Date.now() - t > COOLDOWN_MS) { delete failedAt[name]; return true; }
+  return false;
+}
+
+function markInactive(name: string) {
+  failedAt[name] = Date.now();
+  console.warn(`Provider ${name} marked inactive until ${new Date(Date.now() + COOLDOWN_MS).toISOString()}`);
+}
+
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return res;
-  } finally {
-    clearTimeout(timer);
-  }
+  try { return await fetch(url, { ...options, signal: controller.signal }); }
+  finally { clearTimeout(timer); }
 }
 
 async function callNvidia(productName: string): Promise<string> {
   const apiKey = Deno.env.get("NVIDIA_API_KEY");
   if (!apiKey) throw new Error("NVIDIA_API_KEY not set");
-
   const res = await fetchWithTimeout("https://integrate.api.nvidia.com/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -33,17 +44,10 @@ async function callNvidia(productName: string): Promise<string> {
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Product name: ${productName}` },
       ],
-      max_tokens: 300,
-      temperature: 0.7,
+      max_tokens: 300, temperature: 0.7,
     }),
   }, 5000);
-
-  if (!res.ok) {
-    const text = await res.text();
-    console.error("NVIDIA error:", res.status, text);
-    throw new Error(`NVIDIA API failed: ${res.status}`);
-  }
-
+  if (!res.ok) { const t = await res.text(); console.error("NVIDIA error:", res.status, t); throw new Error(`NVIDIA ${res.status}`); }
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() || "";
 }
@@ -51,7 +55,6 @@ async function callNvidia(productName: string): Promise<string> {
 async function callLovableAI(productName: string): Promise<string> {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) throw new Error("LOVABLE_API_KEY not set");
-
   const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -63,13 +66,7 @@ async function callLovableAI(productName: string): Promise<string> {
       ],
     }),
   }, 3000);
-
-  if (!res.ok) {
-    const text = await res.text();
-    console.error("Lovable AI error:", res.status, text);
-    throw new Error(`Lovable AI failed: ${res.status}`);
-  }
-
+  if (!res.ok) { const t = await res.text(); console.error("Lovable error:", res.status, t); throw new Error(`Lovable ${res.status}`); }
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() || "";
 }
@@ -77,7 +74,6 @@ async function callLovableAI(productName: string): Promise<string> {
 async function callGemini(productName: string): Promise<string> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
-
   const res = await fetchWithTimeout(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
@@ -87,85 +83,57 @@ async function callGemini(productName: string): Promise<string> {
         contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\nProduct name: ${productName}` }] }],
         generationConfig: { maxOutputTokens: 300, temperature: 0.7 },
       }),
-    },
-    4000
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    console.error("Gemini error:", res.status, text);
-    throw new Error(`Gemini API failed: ${res.status}`);
-  }
-
+    }, 4000);
+  if (!res.ok) { const t = await res.text(); console.error("Gemini error:", res.status, t); throw new Error(`Gemini ${res.status}`); }
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 }
 
+const providers: { name: string; fn: (n: string) => Promise<string> }[] = [
+  { name: "nvidia", fn: callNvidia },
+  { name: "lovable", fn: callLovableAI },
+  { name: "gemini", fn: callGemini },
+];
+
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { product_name } = await req.json();
-
-    if (!product_name || typeof product_name !== "string" || product_name.trim().length === 0) {
-      return new Response(
-        JSON.stringify({ error: "product_name is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!product_name || typeof product_name !== "string" || !product_name.trim()) {
+      return new Response(JSON.stringify({ error: "product_name is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
     if (product_name.length > 500) {
-      return new Response(
-        JSON.stringify({ error: "product_name too long" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "product_name too long" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const trimmedName = product_name.trim();
     let description = "";
     let provider = "";
 
-    // 1. NVIDIA (5s timeout)
-    try {
-      description = await callNvidia(trimmedName);
-      provider = "nvidia";
-    } catch (e) {
-      console.warn("NVIDIA failed:", e);
-    }
-
-    // 2. Lovable AI (3s timeout)
-    if (!description) {
+    for (const p of providers) {
+      if (!isProviderActive(p.name)) {
+        console.log(`Skipping inactive provider: ${p.name}`);
+        continue;
+      }
       try {
-        description = await callLovableAI(trimmedName);
-        provider = "lovable";
+        description = await p.fn(trimmedName);
+        if (description) { provider = p.name; break; }
       } catch (e) {
-        console.warn("Lovable AI failed:", e);
+        console.warn(`${p.name} failed:`, e);
+        markInactive(p.name);
       }
     }
 
-    // 3. Gemini (4s timeout)
-    if (!description) {
-      try {
-        description = await callGemini(trimmedName);
-        provider = "gemini";
-      } catch (e) {
-        console.warn("Gemini failed:", e);
-      }
-    }
+    if (!description) throw new Error("All AI providers failed or inactive");
 
-    if (!description) throw new Error("All AI providers failed");
-
-    return new Response(
-      JSON.stringify({ description, provider }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ description, provider }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("generate-description error:", e);
-    return new Response(
-      JSON.stringify({ error: "Failed to generate description. Try again." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Failed to generate description. Try again." }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
