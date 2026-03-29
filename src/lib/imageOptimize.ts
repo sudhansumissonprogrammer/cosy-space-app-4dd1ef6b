@@ -16,8 +16,8 @@ import type { VariantWidth } from "./imageCompression";
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
 
-/** Standard widths for srcSet that match our stored variants */
-const PIPELINE_WIDTHS: VariantWidth[] = [400, 800];
+/** We now store only 800w — render API handles responsive sizes */
+const PIPELINE_WIDTHS: number[] = [400, 800];
 
 /**
  * Returns an optimised URL for a given image.
