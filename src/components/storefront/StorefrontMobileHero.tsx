@@ -66,7 +66,7 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
     const src = uniqueSlides[0];
     const srcSet = getImageSrcSet(src, [400, 600, 800]);
     return (
-      <div className="block md:hidden w-full">
+      <div className="block md:hidden w-full" style={{ contain: "layout style" }}>
         <img
           src={optimizeImageUrl(src, 800)}
           srcSet={srcSet || undefined}
@@ -77,6 +77,8 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
           fetchPriority="high"
           decoding="sync"
           draggable={false}
+          width={800}
+          height={400}
         />
       </div>
     );
