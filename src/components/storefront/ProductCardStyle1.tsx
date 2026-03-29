@@ -88,12 +88,12 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
         <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)}>
           <h3 className="text-xs font-bold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">{product.name}</h3>
         </Link>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-1 min-w-0">
           {product.sale_price ? (
             <>
-              <span className="text-sm font-extrabold text-foreground">{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
-              <span className="text-[10px] text-muted-foreground line-through">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
-              {discountPercent && <span className="rounded-full bg-success px-1.5 py-0.5 text-[9px] font-bold text-success-foreground">{discountPercent}% off</span>}
+              <span className="text-sm font-extrabold text-foreground whitespace-nowrap">{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
+              <span className="text-[10px] text-muted-foreground line-through whitespace-nowrap">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
+              {discountPercent && <span className="rounded-full bg-success px-1 py-0.5 text-[8px] font-bold text-success-foreground whitespace-nowrap shrink-0">{discountPercent}% off</span>}
             </>
           ) : (
             <span className="text-sm font-extrabold text-foreground">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
