@@ -22,7 +22,7 @@ import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 import StorefrontShell from "@/layouts/StorefrontShell";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
-const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
+const LazyMobileBottomNavV15 = lazy(() => import("@/components/storefront/MobileBottomNavV15"));
 
 export type { Tables };
 export type StoreData = Tables<"stores">;
