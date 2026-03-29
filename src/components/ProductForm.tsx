@@ -209,9 +209,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       setVariants(existingVariants.map((v: any) => ({
         id: v.id,
         name: v.name,
-        sku: v.sku || "",
-        price: v.price !== null ? String(v.price) : "",
-        stock: String(v.stock_quantity),
         isActive: v.is_active !== false,
         isExisting: true,
       })));
