@@ -58,10 +58,6 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                       : "p-2"
                   }`}
                 >
-                  {/* Active dot indicator */}
-                  {active && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-background shrink-0 animate-scale-in" />
-                  )}
                   <item.icon
                     className={`shrink-0 transition-all duration-400 ${
                       active
