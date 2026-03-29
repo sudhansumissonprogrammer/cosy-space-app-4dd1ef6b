@@ -739,7 +739,24 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="description">Description</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs text-primary hover:text-primary/80"
+                  disabled={generatingDesc || !name.trim()}
+                  onClick={handleGenerateDescription}
+                >
+                  {generatingDesc ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  {generatingDesc ? "Generating…" : "AI Generate"}
+                </Button>
+              </div>
               <Textarea
                 id="description"
                 placeholder="Describe your product..."
