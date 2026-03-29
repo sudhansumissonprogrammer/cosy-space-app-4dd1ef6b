@@ -403,9 +403,9 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
           const variantData = {
             product_id: savedProductId,
             name: v.name.trim(),
-            sku: v.sku.trim() || null,
-            price: v.price ? parseFloat(v.price) : null,
-            stock_quantity: parseInt(v.stock) || 0,
+            sku: null,
+            price: null,
+            stock_quantity: 0,
             display_order: i,
             is_active: v.isActive,
           };
