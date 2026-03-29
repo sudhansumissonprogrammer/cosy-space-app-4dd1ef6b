@@ -73,12 +73,18 @@ export default function StorePageEditor() {
   useEffect(() => {
     if (page) {
       setTitle((page as any).title || "");
-      setContent((page as any).content || "");
+      // If content is empty for a system page, pre-fill with default template
+      const existingContent = (page as any).content || "";
+      if (existingContent) {
+        setContent(existingContent);
+      } else if ((page as any).page_type && (page as any).page_type !== "custom" && store) {
+        setContent(getDefaultContent((page as any).page_type, store as any));
+      }
       setSlug((page as any).slug || "");
       setIsActive((page as any).is_active ?? true);
       if ((page as any).image_url) setImagePreview((page as any).image_url);
     }
-  }, [page]);
+  }, [page, store]);
 
   // Load features from store when editing about_us or contact pages
   useEffect(() => {
