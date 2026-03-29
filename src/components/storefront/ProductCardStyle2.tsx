@@ -19,7 +19,7 @@ interface Props {
  * Style 2 — Milano-inspired: floating wishlist + cart icons on the image,
  * star ratings below, no explicit Add to Cart button row.
  */
-export default function ProductCardStyle2({ product, slug, store, priority = false }: Props) {
+export default function ProductCardStyle2({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const discount = getDiscountPercent(product.price, product.sale_price);
   const rating = getProductRating(product.id);
