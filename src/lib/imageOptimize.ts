@@ -39,11 +39,24 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // ── 1. Our own pipeline variants ──
+  // ── 1. Our pipeline images: use Supabase render API for any size ──
   if (isOptimizedUrl(url)) {
-    // Pick the best matching stored variant
-    const best = pickBestVariant(width);
-    return resolveVariantUrl(url, best);
+    // Resolve to the 800w stored file, then use render API if smaller size needed
+    const baseUrl = resolveVariantUrl(url, 800);
+    if (width >= 800) return baseUrl;
+    // Use render API to resize on-the-fly
+    try {
+      const u = new URL(baseUrl);
+      u.pathname = u.pathname.replace(
+        "/storage/v1/object/",
+        "/storage/v1/render/image/",
+      );
+      u.searchParams.set("width", String(width));
+      u.searchParams.set("quality", String(quality));
+      return u.toString();
+    } catch {
+      return baseUrl;
+    }
   }
 
   // ── 2. Shopify CDN ──
