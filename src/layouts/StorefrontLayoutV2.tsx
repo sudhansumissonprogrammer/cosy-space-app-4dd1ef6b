@@ -13,6 +13,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import MobileBottomNav from "@/components/storefront/MobileBottomNav";
+import DesktopNavBar from "@/components/storefront/DesktopNavBar";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 function CartBadgeV2() {
