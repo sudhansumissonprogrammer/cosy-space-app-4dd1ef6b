@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Store, ShoppingCart, Heart, User, Menu } from "lucide-react";
