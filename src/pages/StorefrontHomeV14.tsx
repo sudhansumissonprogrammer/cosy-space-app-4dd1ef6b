@@ -206,10 +206,16 @@ export default function StorefrontHomeV14() {
         initialFiltersOpen={openFilters}
       />
 
-      {/* Hero image first, then marquee below it */}
+      {/* Mobile hero (mobile only) */}
       {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
         <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
       ) : null}
+      {/* Desktop hero banner (desktop only) */}
+      {(store as any).banner_url && (
+        <div className="hidden md:block">
+          <HeroBannerCarousel images={[(store as any).banner_url]} storeName={store.name} imageClassName="w-full h-auto object-cover" maxHeight="520px" />
+        </div>
+      )}
 
       {/* Marquee strip — rendered AFTER hero (key difference from theme-1) */}
       {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}

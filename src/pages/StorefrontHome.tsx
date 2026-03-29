@@ -213,17 +213,31 @@ export default function StorefrontHome() {
 
       {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (
         <>
+          {/* Mobile hero */}
           {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
             <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
           ) : null}
+          {/* Desktop hero banner */}
+          {(store as any).banner_url && (
+            <div className="hidden md:block">
+              <HeroBannerCarousel images={[(store as any).banner_url]} storeName={store.name} imageClassName="w-full h-auto object-cover" maxHeight="520px" />
+            </div>
+          )}
           <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
         </>
       ) : (
         <>
           <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
+          {/* Mobile hero */}
           {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
             <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
           ) : null}
+          {/* Desktop hero banner */}
+          {(store as any).banner_url && (
+            <div className="hidden md:block">
+              <HeroBannerCarousel images={[(store as any).banner_url]} storeName={store.name} imageClassName="w-full h-auto object-cover" maxHeight="520px" />
+            </div>
+          )}
         </>
       )}
 
