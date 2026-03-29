@@ -129,8 +129,8 @@ const COLOR_COMBINATIONS = [
     name: "Ghost × Persian",
     primary: "#27187E",
     accent: "#27187E",
-    text: "#FFFFFF",
-    background: "#5A7F7F",
+    text: "#1a1a1a",
+    background: "#F7F7FF",
     marquee: "linear-gradient(90deg, #27187E, #3D2BA0, #27187E)",
   },
 ];
