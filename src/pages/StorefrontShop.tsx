@@ -12,7 +12,7 @@ import { useEffect, useRef } from "react";
 
 const ABOVE_FOLD_COUNT = 4;
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 14;
 
 function ProductCardSkeleton() {
   return (
