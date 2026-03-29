@@ -388,7 +388,7 @@ export default function ProductDetail() {
   const discountPct = getDiscountPercent(product.price, product.sale_price) || 0;
   const currency = product.currency || "USD";
   const basePrice = hasDiscount ? product.sale_price! : product.price;
-  const variantPrice = selectedVariant?.price ?? basePrice;
+  const variantPrice = basePrice; // variants no longer override price
   const orderMode = (store as any).order_mode || "whatsapp";
   const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
   const showBuyNow = orderMode === "website" || orderMode === "both";
