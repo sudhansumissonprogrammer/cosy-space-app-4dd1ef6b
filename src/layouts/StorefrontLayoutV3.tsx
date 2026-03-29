@@ -12,6 +12,7 @@ import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
+import DesktopNavBar from "@/components/storefront/DesktopNavBar";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 function AppHeader({ store }: { store: StoreData }) {
