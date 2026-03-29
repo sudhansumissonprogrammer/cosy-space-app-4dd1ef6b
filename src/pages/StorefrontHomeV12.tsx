@@ -259,7 +259,7 @@ export default function StorefrontHomeV12() {
           </div>
         ) : products.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 px-2 sm:px-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4">
               {products.slice(0, 6).map((product, idx) => (
                 <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
