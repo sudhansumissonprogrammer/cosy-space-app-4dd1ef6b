@@ -1,0 +1,396 @@
+/**
+ * StorefrontHomeV15 — "Classic Center Alt" home page
+ * Clone of Theme 14 except:
+ * - Default card style: style-1
+ * - Default category style: style-4 (square carousel)
+ */
+import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
+import { useOutletContext, useParams, Link } from "react-router-dom";
+import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
+import { supabase } from "@/integrations/supabase/client";
+import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
+import type { StoreData } from "@/layouts/StorefrontLayout";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
+import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
+import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
+import LazyRender from "@/components/storefront/LazyRender";
+import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import { storefrontPath } from "@/lib/subdomain";
+
+const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
+const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+
+const ABOVE_FOLD_COUNT = 4;
+const INITIAL_LIMIT = PAGE_SIZE;
+
+function ProductCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
+      <div className="p-1 pb-0">
+        <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
+      </div>
+      <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <div className="h-2.5 w-16 rounded bg-muted/60" />
+          <div className="h-2.5 w-10 rounded bg-muted/60" />
+        </div>
+        <div className="h-3 w-full rounded bg-muted/60" />
+        <div className="h-3 w-3/4 rounded bg-muted/60" />
+        <div className="h-4 w-20 rounded bg-muted/60" />
+        <div className="h-7 w-full rounded-lg bg-muted/60 sm:h-8" />
+      </div>
+    </div>
+  );
+}
+
+export default function StorefrontHomeV15() {
+  const store = useOutletContext<StoreData>();
+  const { slug } = useParams<{ slug: string }>();
+  const queryClient = useQueryClient();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [openFilters, setOpenFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
+  const [sortOpen, setSortOpen] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useStoreJsonLd({
+    storeName: store.name,
+    storeSlug: store.slug,
+    description: store.description,
+    logo: store.logo_url,
+    location: store.location,
+    whatsappNumber: store.whatsapp_number,
+    customDomain: (store as any)?.custom_domain,
+  });
+
+  const { products: initialProducts, isLoading: isInitialLoading } = useStorefrontProducts(store.id);
+  const allCachedProducts = initialProducts;
+  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const themeConfig = useStorefrontThemeConfig(store.id);
+
+  // Theme-15 defaults: style-1 cards, style-4 categories (square carousel)
+  const cardStyle = themeConfig?.product_card_style || "style-1";
+  const categoryStyle = themeConfig?.category_style || "style-4";
+  const headerLayout = themeConfig?.header_logo_alignment || "center";
+  const hideSearchBar = headerLayout === "left-with-search";
+  const marqueeText = themeConfig?.marquee_text;
+  const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
+
+  const bestSellingProducts = useMemo(() => {
+    return allCachedProducts.filter((p: any) => p.is_best_selling);
+  }, [allCachedProducts]);
+
+  const isDefaultSort = sortBy === "popular";
+
+  const initialNonBestSelling = useMemo(() => {
+    if (!isDefaultSort || !allCachedProducts.length) return [];
+    return allCachedProducts.filter((p: any) => !p.is_best_selling).slice(0, INITIAL_LIMIT);
+  }, [allCachedProducts, isDefaultSort]);
+
+  const totalProducts = queryClient.getQueryData<number>(["storefront-total-products", store.id]) ?? allCachedProducts?.length ?? 0;
+  const totalNonBestSelling = totalProducts - bestSellingProducts.length;
+
+  const apiOffset = isDefaultSort ? INITIAL_LIMIT : 0;
+  const hasMoreBeyondInitial = isDefaultSort ? totalNonBestSelling > INITIAL_LIMIT : totalNonBestSelling > 0;
+
+  const {
+    data: paginatedData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isPaginatedLoading,
+    isError: isPaginatedError,
+    refetch: refetchPaginated,
+  } = useInfiniteQuery({
+    queryKey: ["storefront-home-more", store.id, sortBy],
+    queryFn: async ({ pageParam = 0 }) => {
+      const offset = apiOffset + pageParam * PAGE_SIZE;
+      let query = supabase
+        .from("products")
+        .select(PRODUCT_COLUMNS)
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .eq("is_best_selling", false);
+
+      switch (sortBy) {
+        case "price_asc":
+          query = query.order("price", { ascending: true }).order("id", { ascending: true });
+          break;
+        case "price_desc":
+          query = query.order("price", { ascending: false }).order("id", { ascending: true });
+          break;
+        case "newest":
+          query = query.order("created_at", { ascending: false }).order("id", { ascending: true });
+          break;
+        default:
+          query = query.order("created_at", { ascending: false }).order("id", { ascending: true });
+      }
+
+      const { data, error } = await query.range(offset, offset + PAGE_SIZE - 1);
+      if (error) throw error;
+      return { products: data || [], page: pageParam };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.products.length === PAGE_SIZE ? lastPage.page + 1 : undefined,
+    enabled: !!store.id && hasMoreBeyondInitial,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const extraProducts = paginatedData?.pages.flatMap((p) => p.products) || [];
+
+  const displayProducts = useMemo(() => {
+    if (isDefaultSort) {
+      return [...initialNonBestSelling, ...extraProducts];
+    }
+    return extraProducts;
+  }, [initialNonBestSelling, extraProducts, isDefaultSort]);
+
+  const showSkeleton = isInitialLoading || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
+
+  const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
+  scrollStateRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage };
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const s = scrollStateRef.current;
+        if (entry.isIntersecting && s.hasNextPage && !s.isFetchingNextPage) {
+          s.fetchNextPage();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <>
+      {/* Search bar trigger — hidden when header already has search */}
+      {!hideSearchBar && (
+        <div className="backdrop-blur-md px-4 pt-3 pb-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", minHeight: 52, contain: "layout style" }}>
+          <div className="mx-auto max-w-6xl flex items-center gap-2">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="flex flex-1 items-center gap-2.5 rounded-full bg-accent/60 px-4 py-2.5 text-sm text-foreground/60 transition-colors hover:bg-accent"
+              aria-label="Search products"
+            >
+              <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Search products...</span>
+            </button>
+            <button
+              onClick={() => { setSearchOpen(true); setOpenFilters(true); }}
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-colors hover:bg-foreground/90"
+              aria-label="Open filters"
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <StorefrontSearchOverlay
+        open={searchOpen}
+        onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
+        products={allCachedProducts}
+        slug={slug!}
+        storeId={store.id}
+        initialFiltersOpen={openFilters}
+      />
+
+      {/* Mobile hero (mobile only) */}
+      {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
+        <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
+      ) : null}
+      {/* Desktop hero banner (desktop only) */}
+      {(store as any).banner_url && (
+        <div className="hidden md:block">
+          <HeroBannerCarousel images={[(store as any).banner_url]} storeName={store.name} imageClassName="w-full h-auto object-cover" maxHeight="520px" />
+        </div>
+      )}
+
+      {/* Marquee strip — rendered AFTER hero */}
+      {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
+
+      {/* Categories */}
+      {storeCategories && storeCategories.length > 0 && (
+        <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px flex-1 bg-border" />
+            <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>
+              Shop by Category
+            </h2>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+        </div>
+      )}
+      <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
+
+      <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
+        {bestSellingProducts.length > 0 && (
+          <LazyRender minHeight={400} rootMargin="300px">
+            <Suspense fallback={null}>
+              {(store as any).best_selling_carousel ? (
+                <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
+              ) : (
+                <section>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="h-px flex-1 bg-border" />
+                    <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>
+                      🔥 Best Selling
+                    </h2>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    {bestSellingProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
+                      <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
+                    ))}
+                  </div>
+                  {bestSellingProducts.length > ABOVE_FOLD_COUNT && (
+                    <LazyRender minHeight={400} rootMargin="300px">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-2 sm:mt-4">
+                        {bestSellingProducts.slice(ABOVE_FOLD_COUNT).map((product) => (
+                          <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
+                        ))}
+                      </div>
+                    </LazyRender>
+                  )}
+                </section>
+              )}
+            </Suspense>
+          </LazyRender>
+        )}
+
+        <section style={{ minHeight: 600, contain: "layout style" }}>
+          <div className="mb-5 flex items-center justify-between gap-3" style={{ minHeight: 32 }}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-5 w-1 rounded-full bg-foreground" />
+              <h2 className="text-lg font-bold text-foreground tracking-wide" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>🔥 Popular Products</h2>
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => setSortOpen(!sortOpen)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-accent/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                aria-label="Sort products"
+              >
+                <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">
+                  {sortBy === "popular" && "Popular"}
+                  {sortBy === "price_asc" && "Price: Low"}
+                  {sortBy === "price_desc" && "Price: High"}
+                  {sortBy === "newest" && "Newest"}
+                </span>
+              </button>
+              {sortOpen && (
+                <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+                  {([
+                    { value: "popular", label: "Popular" },
+                    { value: "price_asc", label: "Price: Low → High" },
+                    { value: "price_desc", label: "Price: High → Low" },
+                    { value: "newest", label: "Newest First" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
+                      className={`block w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
+                        sortBy === opt.value
+                          ? "bg-foreground/10 text-foreground font-bold"
+                          : "text-foreground hover:bg-accent/60"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {showSkeleton ? (
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 560 }}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : isPaginatedError && displayProducts.length === 0 ? (
+            <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-lg border bg-card">
+              <p className="text-muted-foreground">Failed to load products</p>
+              <button
+                onClick={() => refetchPaginated()}
+                className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : displayProducts.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 560 }}>
+                {displayProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
+                  <UniversalProductCard
+                    key={product.id}
+                    product={product}
+                    slug={slug!}
+                    store={store}
+                    priority={idx < 2}
+                    cardStyle={cardStyle}
+                  />
+                ))}
+              </div>
+
+              {displayProducts.length > ABOVE_FOLD_COUNT && (
+                <LazyRender minHeight={600} rootMargin="300px">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-2 sm:mt-4">
+                    {displayProducts.slice(ABOVE_FOLD_COUNT).map((product) => (
+                      <UniversalProductCard
+                        key={product.id}
+                        product={product}
+                        slug={slug!}
+                        store={store}
+                        priority={false}
+                        cardStyle={cardStyle}
+                      />
+                    ))}
+                  </div>
+                </LazyRender>
+              )}
+
+              <div ref={sentinelRef} className="flex justify-center py-6">
+                {isFetchingNextPage && (
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                )}
+              </div>
+
+              {!hasNextPage && totalProducts > 8 && (
+                <div className="flex justify-center pt-2">
+                  <Link
+                    to={storefrontPath(slug!, "shop")}
+                    className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
+                  >
+                    View All Products
+                  </Link>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex min-h-[60vh] items-center justify-center rounded-lg border bg-card">
+              <p className="text-muted-foreground">No products available yet.</p>
+            </div>
+          )}
+        </section>
+      </div>
+      <LazyRender minHeight={200} rootMargin="400px">
+        <Suspense fallback={null}>
+          <StorefrontInstagramSection store={store} />
+        </Suspense>
+      </LazyRender>
+    </>
+  );
+}

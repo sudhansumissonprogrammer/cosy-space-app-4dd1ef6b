@@ -140,6 +140,12 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
+  "theme-15": [
+    "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "lux-black-gold", "lux-cream-brown", "velvet-merlot",
+    "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
+    "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
+  ],
   "theme-2": [
     "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
     "royal-gold", "lux-black-gold", "coral-sunset", "mint-fresh",
@@ -259,11 +265,18 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_gradient: "linear-gradient(90deg, #004643, #02615C, #004643)",
     marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-2", category_style: "style-4", header_logo_alignment: "center", mobile_nav_enabled: true, header_style: "normal",
   },
+  "theme-15": {
+    primary_color: "#004643", accent_color: "#004643", text_color: "#222222", background_color: "#F0EDE5",
+    heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #004643, #02615C, #004643)",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-4", header_logo_alignment: "center", mobile_nav_enabled: true, header_style: "normal",
+  },
 };
 
 const THEMES = [
   { id: "theme-1", name: "Classic", description: "Elegant gold & black with serif headings", available: true },
   { id: "theme-14", name: "Classic Center", description: "Classic theme with centered logo & marquee under hero", available: true },
+  { id: "theme-15", name: "Classic Center Alt", description: "Classic Center with Style-1 product cards & square category carousel", available: true },
   { id: "theme-2", name: "Bold Modern", description: "Transparent header, carousel hero, masonry grid", available: true },
   { id: "theme-3", name: "App Style", description: "Mobile-app inspired with bottom tab bar & flash deals", available: true },
   
@@ -2031,6 +2044,8 @@ export default function StoreThemeSettings() {
                         : theme.id === "theme-12"
                         ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
                         : theme.id === "theme-14"
+                        ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)"
+                        : theme.id === "theme-15"
                         ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)"
                         : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
                     }}
