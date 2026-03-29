@@ -41,7 +41,11 @@ export default function LazyRender({
   }, [rootMargin]);
 
   return (
-    <div ref={ref} className={className} style={visible ? undefined : { minHeight }}>
+    <div
+      ref={ref}
+      className={`${className || ""} ${!visible ? "storefront-below-fold" : ""}`.trim()}
+      style={visible ? undefined : { minHeight }}
+    >
       {visible ? children : null}
     </div>
   );

@@ -162,8 +162,10 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
 
   const isCarousel = categoryStyle === "style-1" || categoryStyle === "style-2" || categoryStyle === "style-5";
 
+  const gridMinHeight = categoryStyle === "style-3" || categoryStyle === "style-4" ? 280 : 104;
+
   return (
-    <div className="backdrop-blur-md" style={{ minHeight: "104px", contain: "layout style", backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
+    <div className="backdrop-blur-md" style={{ minHeight: gridMinHeight, contain: "layout style", backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
       <div className="mx-auto max-w-6xl px-4 py-4">
         {isLoading ? (
           isCarousel ? (

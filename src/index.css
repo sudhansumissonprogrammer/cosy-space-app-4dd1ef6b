@@ -232,6 +232,12 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Storefront below-fold sections: defer rendering cost */
+.storefront-below-fold {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
+
 /* Theme V3: push WhatsApp button above bottom nav + sticky cart bar on mobile */
 @media (max-width: 639px) {
   .theme-v3-wa-fix a[aria-label="Chat on WhatsApp"] {
