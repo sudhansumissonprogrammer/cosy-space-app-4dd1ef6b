@@ -86,7 +86,7 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
 
   // Multiple images — simple carousel at natural aspect ratio
   return (
-    <div className="block md:hidden w-full">
+    <div className="block md:hidden w-full" style={{ contain: "layout style" }}>
       <MobileHeroCarousel images={uniqueSlides} storeName={storeName} />
     </div>
   );
