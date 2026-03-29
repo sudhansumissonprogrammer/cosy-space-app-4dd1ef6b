@@ -18,29 +18,50 @@ import StorefrontInstagramSection from "@/components/storefront/StorefrontInstag
 
 /* ── Swipeable Banner Slider ── */
 function BannerSlider({ store }: { store: StoreData }) {
-  const [current, setCurrent] = useState(0);
-  const touchStart = useRef(0);
-
-  const slides = useMemo(() => {
+  // Mobile: only mobile_hero_images / mobile_hero_url
+  const mobileSlides = useMemo(() => {
     const s: { image: string; title: string }[] = [];
     const mhi = (store as any).mobile_hero_images;
     if (mhi && Array.isArray(mhi) && mhi.length > 0) {
       mhi.forEach((url: string, idx: number) => {
         s.push({ image: url, title: idx === 0 ? store.name : "New Arrivals" });
       });
-    } else {
-      if ((store as any).banner_url) {
-        s.push({ image: (store as any).banner_url, title: store.name });
-      }
-      if ((store as any).mobile_hero_url) {
-        s.push({ image: (store as any).mobile_hero_url, title: "New Arrivals" });
-      }
+    } else if ((store as any).mobile_hero_url) {
+      s.push({ image: (store as any).mobile_hero_url, title: store.name });
     }
     if (s.length === 0) {
       s.push({ image: "", title: store.name });
     }
     return s;
   }, [store]);
+
+  // Desktop: only banner_url
+  const desktopSlides = useMemo(() => {
+    const s: { image: string; title: string }[] = [];
+    if ((store as any).banner_url) {
+      s.push({ image: (store as any).banner_url, title: store.name });
+    }
+    if (s.length === 0) {
+      s.push({ image: "", title: store.name });
+    }
+    return s;
+  }, [store]);
+
+  return (
+    <>
+      <div className="block md:hidden">
+        <BannerSliderInner slides={mobileSlides} />
+      </div>
+      <div className="hidden md:block">
+        <BannerSliderInner slides={desktopSlides} />
+      </div>
+    </>
+  );
+}
+
+function BannerSliderInner({ slides }: { slides: { image: string; title: string }[] }) {
+  const [current, setCurrent] = useState(0);
+  const touchStart = useRef(0);
 
   const count = slides.length;
 
