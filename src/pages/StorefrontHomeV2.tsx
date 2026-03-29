@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 /* ── Hero Carousel ── */
 function HeroCarousel({ store }: { store: StoreData }) {
@@ -374,6 +375,7 @@ export default function StorefrontHomeV2() {
           </div>
         )}
       </div>
+      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
       <StorefrontInstagramSection store={store} />
     </>
   );

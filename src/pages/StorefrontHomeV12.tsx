@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 
 /* ── Hero Banner ── */
@@ -283,7 +284,7 @@ export default function StorefrontHomeV12() {
           </div>
         )}
       </div>
-      <TrustBadges />
+      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
       <StorefrontInstagramSection store={store} />
     </div>
   );

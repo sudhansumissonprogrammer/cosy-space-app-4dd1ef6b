@@ -24,6 +24,7 @@ import { storefrontPath } from "@/lib/subdomain";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 4;
 const INITIAL_LIMIT = PAGE_SIZE;
@@ -386,6 +387,7 @@ export default function StorefrontHomeV15() {
           )}
         </section>
       </div>
+      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
       <LazyRender minHeight={200} rootMargin="400px">
         <Suspense fallback={null}>
           <StorefrontInstagramSection store={store} />
