@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Trash2, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Switch } from "@/components/ui/switch";
@@ -19,22 +19,8 @@ import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeSVG } from "qrcode.react";
 
-const ICON_OPTIONS = [
-  { value: "Award", label: "Award" },
-  { value: "Leaf", label: "Leaf" },
-  { value: "Shield", label: "Shield" },
-  { value: "Star", label: "Star" },
-  { value: "Sparkles", label: "Sparkles" },
-  { value: "Heart", label: "Heart" },
-  { value: "Truck", label: "Truck" },
-  { value: "ThumbsUp", label: "ThumbsUp" },
-];
 
-interface Feature {
-  icon: string;
-  title: string;
-  description: string;
-}
+
 
 export default function StoreSettings() {
   const { storeId, storeSlug } = useStoreSlugParam();
@@ -64,7 +50,6 @@ export default function StoreSettings() {
   const [heroRemoved, setHeroRemoved] = useState(false);
   const [heroImages, setHeroImages] = useState<string[]>([]);
   const [heroImageFiles, setHeroImageFiles] = useState<File[]>([]);
-  const [features, setFeatures] = useState<Feature[]>([]);
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
@@ -98,7 +83,6 @@ export default function StoreSettings() {
       if (existingHeroImages && Array.isArray(existingHeroImages) && existingHeroImages.length > 0) {
         setHeroImages(existingHeroImages);
       }
-      if (store.features) setFeatures(store.features as unknown as Feature[]);
       setBestSellingCarousel((store as any).best_selling_carousel || false);
       setMetaTitle((store as any).meta_title || "");
       setMetaDescription((store as any).meta_description || "");
@@ -166,7 +150,6 @@ export default function StoreSettings() {
           banner_url: bannerUrl,
           mobile_hero_url: mobileHeroUrl,
           mobile_hero_images: finalHeroImages.length > 0 ? finalHeroImages : null,
-          features: features.length > 0 ? features : null,
           best_selling_carousel: bestSellingCarousel,
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
@@ -411,33 +394,6 @@ export default function StoreSettings() {
               <Switch checked={bestSellingCarousel} onCheckedChange={setBestSellingCarousel} />
             </div>
 
-            {/* Why Choose Us features */}
-            <div className="space-y-3">
-              <div>
-                <Label className="flex items-center gap-1.5"><Award className="h-3.5 w-3.5" /> Why Choose Us</Label>
-                <p className="text-xs text-muted-foreground">Selling points shown on your Contact page</p>
-              </div>
-              {features.map((feature, idx) => (
-                <div key={idx} className="flex gap-2 items-start rounded-lg border p-3">
-                  <div className="flex-1 space-y-2">
-                    <div className="grid gap-2 sm:grid-cols-3">
-                      <Select value={feature.icon} onValueChange={(v) => { const updated = [...features]; updated[idx] = { ...updated[idx], icon: v }; setFeatures(updated); }}>
-                        <SelectTrigger><SelectValue placeholder="Icon" /></SelectTrigger>
-                        <SelectContent>{ICON_OPTIONS.map((o) => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}</SelectContent>
-                      </Select>
-                      <Input placeholder="Title" value={feature.title} onChange={(e) => { const updated = [...features]; updated[idx] = { ...updated[idx], title: e.target.value }; setFeatures(updated); }} className="sm:col-span-2" maxLength={50} />
-                    </div>
-                    <Input placeholder="Description" value={feature.description} onChange={(e) => { const updated = [...features]; updated[idx] = { ...updated[idx], description: e.target.value }; setFeatures(updated); }} maxLength={100} />
-                  </div>
-                  <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => setFeatures(features.filter((_, i) => i !== idx))}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </div>
-              ))}
-              {features.length < 6 && (
-                <Button type="button" variant="outline" size="sm" onClick={() => setFeatures([...features, { icon: "Award", title: "", description: "" }])}>
-                  <Plus className="mr-1 h-4 w-4" /> Add Feature
-                </Button>
-              )}
-            </div>
           </CardContent>
         </Card>
 
