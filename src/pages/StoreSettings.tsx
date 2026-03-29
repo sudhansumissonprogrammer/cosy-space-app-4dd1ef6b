@@ -83,7 +83,6 @@ export default function StoreSettings() {
       if (existingHeroImages && Array.isArray(existingHeroImages) && existingHeroImages.length > 0) {
         setHeroImages(existingHeroImages);
       }
-      if (store.features) setFeatures(store.features as unknown as Feature[]);
       setBestSellingCarousel((store as any).best_selling_carousel || false);
       setMetaTitle((store as any).meta_title || "");
       setMetaDescription((store as any).meta_description || "");
