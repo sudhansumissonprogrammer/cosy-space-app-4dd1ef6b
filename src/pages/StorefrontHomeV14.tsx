@@ -77,7 +77,7 @@ export default function StorefrontHomeV14() {
 
   // Theme-14 defaults: style-2 cards, style-3 categories
   const cardStyle = themeConfig?.product_card_style || "style-2";
-  const categoryStyle = themeConfig?.category_style || "style-3";
+  const categoryStyle = themeConfig?.category_style || "style-2";
   const headerLayout = themeConfig?.header_logo_alignment || "center";
   const hideSearchBar = headerLayout === "left-with-search";
   const marqueeText = themeConfig?.marquee_text;
@@ -219,6 +219,9 @@ export default function StorefrontHomeV14() {
         </div>
       )}
 
+      {/* Marquee strip — rendered AFTER hero (key difference from theme-1) */}
+      {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
+
       {/* Categories */}
       {storeCategories && storeCategories.length > 0 && (
         <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4">
@@ -232,9 +235,7 @@ export default function StorefrontHomeV14() {
         </div>
       )}
       <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
-
-      {/* Marquee strip — rendered AFTER categories (theme-14 specific) */}
-      {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
+      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
 
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
         {bestSellingProducts.length > 0 && (
@@ -388,7 +389,6 @@ export default function StorefrontHomeV14() {
           )}
         </section>
       </div>
-      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
       <LazyRender minHeight={200} rootMargin="400px">
         <Suspense fallback={null}>
           <StorefrontInstagramSection store={store} />
