@@ -63,10 +63,10 @@ function TrustItem({ icon, title, description }: { icon: React.ReactNode; title:
         {icon}
       </div>
       <div className="flex flex-col">
-        <span className="text-[15px] font-bold leading-tight" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+        <span className="text-[15px] font-bold leading-tight" style={{ fontFamily: "'Alegreya SC', serif" }}>
           {title}
         </span>
-        <span className="text-[13px] leading-snug opacity-70 mt-0.5" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+        <span className="text-[13px] leading-snug opacity-70 mt-0.5" style={{ fontFamily: "'Alegreya SC', serif" }}>
           {description}
         </span>
       </div>
