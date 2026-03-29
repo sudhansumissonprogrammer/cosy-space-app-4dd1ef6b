@@ -150,7 +150,6 @@ export default function StoreSettings() {
           banner_url: bannerUrl,
           mobile_hero_url: mobileHeroUrl,
           mobile_hero_images: finalHeroImages.length > 0 ? finalHeroImages : null,
-          features: features.length > 0 ? features : null,
           best_selling_carousel: bestSellingCarousel,
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
