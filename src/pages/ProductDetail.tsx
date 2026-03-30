@@ -426,6 +426,24 @@ export default function ProductDetail() {
       toast.error("Please select a variant first");
       return;
     }
+
+    // Theme 16: show phone modal instead of direct checkout
+    if ((store as any).theme === "theme-16") {
+      // Add to cart first so checkout has the item
+      addToCart({
+        productId: product.id,
+        variantId: selectedVariant?.id,
+        name: product.name,
+        variantName: selectedVariant?.name,
+        price: variantPrice,
+        image: product.image_url || undefined,
+        quantity,
+      });
+      closeCart();
+      setBuyNowModalOpen(true);
+      return;
+    }
+
     addToCart({
       productId: product.id,
       variantId: selectedVariant?.id,
