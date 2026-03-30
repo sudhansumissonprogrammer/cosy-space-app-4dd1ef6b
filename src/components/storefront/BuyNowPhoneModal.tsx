@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Lock, ShieldCheck } from "lucide-react";
+import { Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
@@ -41,73 +41,49 @@ export default function BuyNowPhoneModal({
       return "";
     }
   });
-  const [loading, setLoading] = useState(false);
+  
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     const cleaned = phone.replace(/\D/g, "");
     if (cleaned.length !== 10) {
       toast.error("Please enter a valid 10-digit mobile number");
       return;
     }
 
-    setLoading(true);
+    // Save phone immediately
+    try { localStorage.setItem("checkout_phone", cleaned); } catch {}
 
-    // Save phone
-    try {
-      localStorage.setItem("checkout_phone", cleaned);
-    } catch {}
-
-    // Try geolocation + reverse geocode with fallback
-    if ("geolocation" in navigator) {
-      try {
-        // Try high accuracy first, fallback to low accuracy
-        let pos: GeolocationPosition | null = null;
-        try {
-          pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 600000,
-            });
-          });
-        } catch {
-          // High accuracy failed — try low accuracy (cell/wifi)
-          try {
-            pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: false,
-                timeout: 15000,
-                maximumAge: 600000,
-              });
-            });
-          } catch {
-            // Both failed
-          }
-        }
-
-        if (pos) {
-          const { data } = await supabase.functions.invoke("reverse-geocode", {
-            body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-          });
-
-          if (data?.success && data?.address) {
-            try {
-              localStorage.setItem(
-                "checkout_address",
-                JSON.stringify(data.address)
-              );
-            } catch {}
-          }
-        }
-      } catch {
-        // Geocode API failed — continue without address
-      }
-    }
-
-    setLoading(false);
+    // Navigate immediately — don't wait for geocode
     onBeforeNavigate?.();
     onOpenChange(false);
     navigate(storefrontPath(storeSlug, "checkout"));
+
+    // Fire-and-forget: get location & save address in background
+    if ("geolocation" in navigator) {
+      const doGeocode = async (pos: GeolocationPosition) => {
+        try {
+          const { data } = await supabase.functions.invoke("reverse-geocode", {
+            body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          });
+          if (data?.success && data?.address) {
+            try { localStorage.setItem("checkout_address", JSON.stringify(data.address)); } catch {}
+          }
+        } catch {}
+      };
+
+      // Try high accuracy first, fallback to low
+      navigator.geolocation.getCurrentPosition(
+        (pos) => doGeocode(pos),
+        () => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => doGeocode(pos),
+            () => {}, // Both failed — no address
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }
+          );
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 600000 }
+      );
+    }
   };
 
   return (
@@ -155,17 +131,10 @@ export default function BuyNowPhoneModal({
           {/* Continue button */}
           <Button
             onClick={handleContinue}
-            disabled={loading || phone.replace(/\D/g, "").length !== 10}
+            disabled={phone.replace(/\D/g, "").length !== 10}
             className="w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wider"
           >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Getting your location...
-              </>
-            ) : (
-              "Continue to Checkout"
-            )}
+            Continue to Checkout
           </Button>
         </div>
       </DialogContent>

@@ -76,6 +76,29 @@ export default function CheckoutPage() {
   const [city, setCity] = useState(buyNowAddress?.city || savedInfo.city || "");
   const [state, setState] = useState(buyNowAddress?.state || savedInfo.state || "");
   const [pincode, setPincode] = useState(buyNowAddress?.pincode || savedInfo.pincode || "");
+
+  // Re-check localStorage for late-arriving address data (Theme-16 geocode race condition)
+  useEffect(() => {
+    const checkForAddress = () => {
+      try {
+        const addr = JSON.parse(localStorage.getItem("checkout_address") || "null");
+        if (addr) {
+          if (addr.street_address && !streetAddress) setStreetAddress(addr.street_address);
+          if (addr.city && !city) setCity(addr.city);
+          if (addr.state && !state) setState(addr.state);
+          if (addr.pincode && !pincode) setPincode(addr.pincode);
+        }
+      } catch {}
+    };
+    // Check after short delays to catch late writes
+    const t1 = setTimeout(checkForAddress, 500);
+    const t2 = setTimeout(checkForAddress, 2000);
+    const t3 = setTimeout(checkForAddress, 5000);
+    // Also listen for storage events from the same tab
+    const handler = (e: StorageEvent) => { if (e.key === "checkout_address") checkForAddress(); };
+    window.addEventListener("storage", handler);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); window.removeEventListener("storage", handler); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
