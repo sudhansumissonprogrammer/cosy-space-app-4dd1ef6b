@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo, useState, useEffect, useRef } from "react";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+// Sonner moved into DashboardProviders — not needed on storefront critical path
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { getSubdomainSlug, ROOT_DOMAIN, isCustomDomainHost, isSubdomainHost } from "@/lib/subdomain";
