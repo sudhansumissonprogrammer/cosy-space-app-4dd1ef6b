@@ -158,7 +158,10 @@ export default function StorefrontHome() {
     return () => observer.disconnect();
   }, []); // stable — never recreated
 
+  const allProductIds = useMemo(() => [...bestSellingProducts, ...displayProducts].map((p: any) => p.id), [bestSellingProducts, displayProducts]);
+
   return (
+    <VariantCountProvider productIds={allProductIds}>
     <>
       {/* Search bar trigger — hidden when header already has search */}
       {!hideSearchBar && (
