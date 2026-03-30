@@ -22,6 +22,8 @@ export default function SideCart({ store }: SideCartProps) {
   const currency = store.currency || "USD";
   const orderMode = (store as any).order_mode || "whatsapp";
   const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
+  const isTheme16 = (store as any).theme === "theme-16";
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
   const showCheckout = orderMode === "website" || orderMode === "both";
 
   const { data: shippingConfig } = useQuery({
