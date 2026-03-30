@@ -144,12 +144,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                   decoding="sync"
                 />
               ) : (
-                <span
-                  className="text-xl font-bold tracking-tight whitespace-nowrap"
-                  style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
-                >
-                  {store.name}
-                </span>
+                <StoreTextLogo storeName={store.name} size="text-xl" />
               )}
             </Link>
           </div>
