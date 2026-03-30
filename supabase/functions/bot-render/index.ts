@@ -234,7 +234,7 @@ body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0;color:#1a
 <body>
 <header class="header">
 ${store.logo_url ? `<img src="${esc(store.logo_url)}" alt="${storeName} logo">` : ""}
-<h2>${storeName}</h2>
+<h2 style="font-family:'Alegreya SC',serif;letter-spacing:0.04em">${storeName}</h2>
 </header>
 <main class="container">
 <section class="hero">
