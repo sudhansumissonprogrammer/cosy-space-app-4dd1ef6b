@@ -6,7 +6,7 @@ import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Search, ArrowUpDown, ChevronLeft, ChevronRight, Zap, Tag, Clock } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { getDiscountPercent } from "@/lib/productUtils";
