@@ -2,8 +2,9 @@
  * BuyNowPhoneModal — Theme 16 exclusive.
  * Collects phone, triggers geolocation + reverse-geocode,
  * saves to localStorage, then redirects to checkout.
+ * If phone already saved, skips modal and goes direct to checkout (Quick Buy).
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -27,6 +28,49 @@ interface Props {
   onBeforeNavigate?: () => void;
 }
 
+/** Fire-and-forget geolocation + reverse geocode */
+function triggerGeolocation() {
+  if (!("geolocation" in navigator)) {
+    console.warn("[BuyNow] Geolocation not available");
+    return;
+  }
+
+  const doGeocode = async (pos: GeolocationPosition) => {
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/reverse-geocode`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      });
+      const data = await res.json();
+      if (data?.success && data?.address) {
+        localStorage.setItem("checkout_address", JSON.stringify(data.address));
+        console.log("[BuyNow] Address saved:", data.address);
+      }
+    } catch (err) {
+      console.warn("[BuyNow] Geocode failed:", err);
+    }
+  };
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => doGeocode(pos),
+    () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => doGeocode(pos),
+        (err2) => console.warn("[BuyNow] All geo failed:", err2.message),
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }
+      );
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 }
+  );
+}
+
 export default function BuyNowPhoneModal({
   open,
   onOpenChange,
@@ -34,6 +78,7 @@ export default function BuyNowPhoneModal({
   onBeforeNavigate,
 }: Props) {
   const navigate = useNavigate();
+  const didSkip = useRef(false);
   const [phone, setPhone] = useState(() => {
     try {
       return localStorage.getItem("checkout_phone") || "";
@@ -41,7 +86,26 @@ export default function BuyNowPhoneModal({
       return "";
     }
   });
-  
+
+  // If phone already saved, skip modal and go direct to checkout
+  useEffect(() => {
+    if (!open || didSkip.current) return;
+    try {
+      const saved = localStorage.getItem("checkout_phone");
+      if (saved && saved.replace(/\D/g, "").length === 10) {
+        didSkip.current = true;
+        onBeforeNavigate?.();
+        onOpenChange(false);
+        navigate(storefrontPath(storeSlug, "checkout"));
+        triggerGeolocation();
+      }
+    } catch {}
+  }, [open]);
+
+  // Reset skip flag when modal closes
+  useEffect(() => {
+    if (!open) didSkip.current = false;
+  }, [open]);
 
   const handleContinue = () => {
     const cleaned = phone.replace(/\D/g, "");
@@ -50,59 +114,12 @@ export default function BuyNowPhoneModal({
       return;
     }
 
-    // Save phone immediately
     try { localStorage.setItem("checkout_phone", cleaned); } catch {}
 
-    // Navigate immediately — don't wait for geocode
     onBeforeNavigate?.();
     onOpenChange(false);
     navigate(storefrontPath(storeSlug, "checkout"));
-
-    // Fire-and-forget: get location & save address in background
-    if ("geolocation" in navigator) {
-      const doGeocode = async (pos: GeolocationPosition) => {
-        try {
-          console.log("[BuyNowModal] Geocoding coords:", pos.coords.latitude, pos.coords.longitude);
-          // Use direct fetch instead of supabase.functions.invoke()
-          // because storefront shoppers are unauthenticated
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-          const res = await fetch(`${supabaseUrl}/functions/v1/reverse-geocode`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "apikey": anonKey,
-              "Authorization": `Bearer ${anonKey}`,
-            },
-            body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-          });
-          const data = await res.json();
-          console.log("[BuyNowModal] Geocode response:", data);
-          if (data?.success && data?.address) {
-            localStorage.setItem("checkout_address", JSON.stringify(data.address));
-            console.log("[BuyNowModal] Address saved to localStorage:", data.address);
-          }
-        } catch (err) {
-          console.warn("[BuyNowModal] Geocode failed:", err);
-        }
-      };
-
-      // Try high accuracy first, fallback to low
-      navigator.geolocation.getCurrentPosition(
-        (pos) => doGeocode(pos),
-        (err) => {
-          console.log("[BuyNowModal] High-accuracy geo failed, trying low:", err.message);
-          navigator.geolocation.getCurrentPosition(
-            (pos) => doGeocode(pos),
-            (err2) => console.warn("[BuyNowModal] All geolocation failed:", err2.message),
-            { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }
-          );
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 }
-      );
-    } else {
-      console.warn("[BuyNowModal] Geolocation not available");
-    }
+    triggerGeolocation();
   };
 
   return (
@@ -118,7 +135,6 @@ export default function BuyNowPhoneModal({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* Phone input */}
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
               +91
@@ -135,7 +151,6 @@ export default function BuyNowPhoneModal({
             />
           </div>
 
-          {/* Trust indicators */}
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Lock className="h-3.5 w-3.5" />
@@ -147,7 +162,6 @@ export default function BuyNowPhoneModal({
             </span>
           </div>
 
-          {/* Continue button */}
           <Button
             onClick={handleContinue}
             disabled={phone.replace(/\D/g, "").length !== 10}
