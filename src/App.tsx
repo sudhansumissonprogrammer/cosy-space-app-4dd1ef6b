@@ -452,7 +452,6 @@ function AppRouter() {
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <Sonner />
       <BrowserRouter>
         <Suspense fallback={<LoadingSpinner />}>
           <ErrorBoundary fallbackMessage="This page encountered an error">

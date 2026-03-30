@@ -2,11 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Non-render-blocking Google Fonts: media="print" trick swaps to "all" on load -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;700&family=Poppins:wght@300;400;500;600;700;800&display=swap&subset=latin" media="print" onload="this.media='all'" />
+    <!-- Self-hosted fonts — no external network calls to Google -->
+    <style>
+      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}
+      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/alegreya-sc-700.woff2') format('woff2')}
+      @font-face{font-family:'Poppins';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/poppins-300.woff2') format('woff2')}
+      @font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/poppins-400.woff2') format('woff2')}
+      @font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/poppins-500.woff2') format('woff2')}
+      @font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/poppins-600.woff2') format('woff2')}
+      @font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/poppins-700.woff2') format('woff2')}
+      @font-face{font-family:'Poppins';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/poppins-800.woff2') format('woff2')}
+    </style>
     <link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co" />
     <title>Storivo — Create Your Online Store</title>
     <meta name="description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">

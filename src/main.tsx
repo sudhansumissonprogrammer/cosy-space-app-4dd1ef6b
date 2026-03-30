@@ -1,11 +1,18 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { initGlobalErrorHandlers } from "@/lib/logError";
 import { isCustomDomainHost, isSubdomainHost, isRootDomainHost, isPreviewHost, isLocalHost } from "@/lib/subdomain";
 
-// Catch unhandled errors & rejections globally
-initGlobalErrorHandlers();
+// Defer global error handlers to idle time — not needed during first paint
+if ("requestIdleCallback" in window) {
+  (window as any).requestIdleCallback(() => {
+    import("@/lib/logError").then(({ initGlobalErrorHandlers }) => initGlobalErrorHandlers());
+  }, { timeout: 3000 });
+} else {
+  setTimeout(() => {
+    import("@/lib/logError").then(({ initGlobalErrorHandlers }) => initGlobalErrorHandlers());
+  }, 2000);
+}
 
 /**
  * Remove Worker-injected skeleton BEFORE React mounts
