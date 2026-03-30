@@ -151,6 +151,7 @@ export default function ProductDetail() {
   const [justAdded, setJustAdded] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
+  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
 
   const deliveryDate = useMemo(() => getDeliveryDate(), []);
 
