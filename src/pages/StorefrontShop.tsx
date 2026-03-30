@@ -71,8 +71,8 @@ export default function StorefrontShop() {
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
   scrollStateRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage };
 
-  useEffect(() => {
-    const el = sentinelRef.current;
+  // Re-attach observer whenever sentinel mounts (products load)
+  const sentinelCallbackRef = useCallback((el: HTMLDivElement | null) => {
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -85,7 +85,7 @@ export default function StorefrontShop() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []); // stable — never recreated
+  }, []);
 
   return (
     <div className="mx-auto max-w-6xl px-2 sm:px-4 py-6">
