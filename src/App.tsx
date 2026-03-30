@@ -14,11 +14,13 @@ const DashboardProviders = lazy(() =>
     import("@/components/ui/toaster"),
     import("@/components/ui/tooltip"),
     import("@/contexts/AuthContext"),
-  ]).then(([toasterMod, tooltipMod, authMod]) => ({
+    import("@/components/ui/sonner"),
+  ]).then(([toasterMod, tooltipMod, authMod, sonnerMod]) => ({
     default: ({ children }: { children: React.ReactNode }) => (
       <authMod.AuthProvider>
         <tooltipMod.TooltipProvider>
           <toasterMod.Toaster />
+          <sonnerMod.Toaster />
           {children}
         </tooltipMod.TooltipProvider>
       </authMod.AuthProvider>
