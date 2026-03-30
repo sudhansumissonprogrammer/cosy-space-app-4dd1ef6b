@@ -2347,22 +2347,62 @@ export default function StoreThemeSettings() {
             )}
           </div>
 
-          {/* Mobile Bottom Navigation (Theme 1 only) */}
-          {currentTheme === "theme-1" && (
+          {/* Mobile Bottom Navigation Style (Theme 1 & 14) */}
+          {(currentTheme === "theme-1" || currentTheme === "theme-14") && (
             <>
               <Separator />
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <h4 className="text-sm font-semibold">Mobile Bottom Navigation</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Show a fixed bottom nav bar on mobile with Shop, Categories, Orders &amp; WhatsApp links.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={config.mobile_nav_enabled}
-                    onCheckedChange={(checked) => updateField("mobile_nav_enabled", checked)}
-                  />
+                <h4 className="text-sm font-semibold mb-1">Mobile Bottom Navigation</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Choose the navigation bar style for mobile devices. Always visible on mobile.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
+                    { value: "modern", label: "Modern", desc: "Floating pill with cart" },
+                  ].map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => updateField("mobile_nav_style", s.value)}
+                      className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                        (config.mobile_nav_style || "classic") === s.value
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                    >
+                      {(config.mobile_nav_style || "classic") === s.value && (
+                        <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                      {/* Mini preview */}
+                      <div className="w-full h-8 rounded-lg border border-border bg-muted/30 flex items-center justify-around px-2">
+                        {s.value === "classic" ? (
+                          <>
+                            <Home className="h-3 w-3 text-muted-foreground" />
+                            <Store className="h-3 w-3 text-muted-foreground" />
+                            <LayoutGrid className="h-3 w-3 text-muted-foreground" />
+                            <Heart className="h-3 w-3 text-muted-foreground" />
+                            <User className="h-3 w-3 text-muted-foreground" />
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5">
+                              <Home className="h-2.5 w-2.5 text-primary" />
+                              <span className="text-[7px] font-bold text-primary">Home</span>
+                            </div>
+                            <Store className="h-3 w-3 text-muted-foreground" />
+                            <Heart className="h-3 w-3 text-muted-foreground" />
+                            <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                              <ShoppingCart className="h-2.5 w-2.5 text-primary-foreground" />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-semibold">{s.label}</span>
+                      <span className="text-[9px] text-muted-foreground">{s.desc}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 

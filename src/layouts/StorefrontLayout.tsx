@@ -21,6 +21,7 @@ import { lazy } from "react";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
+const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
 const LazyDesktopNavBar = lazy(() => import("@/components/storefront/DesktopNavBar"));
 
 // Re-export for backward compatibility — other layouts import these
