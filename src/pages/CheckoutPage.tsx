@@ -599,6 +599,8 @@ export default function CheckoutPage() {
     setOrderPlaced(true);
     if (!isSingleMode) clearCart();
     saveExpressInfo();
+    // Clean up theme-16 BuyNow modal localStorage after order
+    try { localStorage.removeItem("checkout_phone"); localStorage.removeItem("checkout_address"); } catch {}
     window.dispatchEvent(new CustomEvent("order-placed"));
     const purchaseEid = generateEventId();
     fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), content_type: "product", value: total, currency, num_items: checkoutItems.length }, purchaseEid);
