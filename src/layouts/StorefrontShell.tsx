@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, Suspense, lazy, type ReactNode } from "react";
+import { useEffect, useRef, useMemo, useState, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
@@ -18,6 +18,21 @@ const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhat
 const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
 const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
 const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
+
+/** Defers ExitIntentPopup mounting by 5 seconds to keep initial load fast */
+function DeferredExitIntent({ storeId, storeName }: { storeId: string; storeName: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+  if (!show) return null;
+  return (
+    <Suspense fallback={null}>
+      <ExitIntentPopup storeId={storeId} storeName={storeName} />
+    </Suspense>
+  );
+}
 
 export interface ShellRenderProps {
   store: StoreData;
@@ -158,9 +173,10 @@ export default function StorefrontShell({
   const themeVarsKey = useMemo(() => JSON.stringify(themeStyle), [themeStyle]);
   useEffect(() => {
     const appliedVars = Object.entries(themeStyle).filter(([key, value]) => key.startsWith("--") && typeof value === "string") as Array<[string, string]>;
-    appliedVars.forEach(([key, value]) => {
-      document.body.style.setProperty(key, value);
-    });
+    // Single cssText assignment instead of per-property setProperty calls
+    const existing = document.body.style.cssText;
+    const varsCss = appliedVars.map(([k, v]) => `${k}:${v}`).join(";");
+    document.body.style.cssText = existing + ";" + varsCss;
     return () => {
       appliedVars.forEach(([key]) => {
         document.body.style.removeProperty(key);
@@ -207,11 +223,7 @@ export default function StorefrontShell({
       <Suspense fallback={null}>
         <FloatingWhatsApp store={store} />
       </Suspense>
-      {showExitIntent && (
-        <Suspense fallback={null}>
-          <ExitIntentPopup storeId={store.id} storeName={store.name} />
-        </Suspense>
-      )}
+      {showExitIntent && <DeferredExitIntent storeId={store.id} storeName={store.name} />}
     </div>
   );
 

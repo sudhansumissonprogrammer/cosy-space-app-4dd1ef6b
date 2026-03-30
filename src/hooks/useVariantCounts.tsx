@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -8,9 +8,17 @@ const VariantCountContext = createContext<CountMap | null>(null);
 
 /**
  * Batch-fetch variant counts for a list of products in ONE query.
- * Wrap product grids with this to eliminate N individual queries.
+ * Deferred by 1s after mount so product cards render instantly without waiting.
  */
 export function VariantCountProvider({ productIds, children }: { productIds: string[]; children: ReactNode }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (productIds.length === 0) return;
+    const timer = setTimeout(() => setReady(true), 1000);
+    return () => clearTimeout(timer);
+  }, [productIds.length > 0]);
+
   const { data: counts } = useQuery({
     queryKey: ["variant-counts-batch", productIds.length > 0 ? productIds[0] : "empty", productIds.length],
     queryFn: async (): Promise<CountMap> => {
@@ -28,7 +36,7 @@ export function VariantCountProvider({ productIds, children }: { productIds: str
       return map;
     },
     staleTime: 10 * 60 * 1000,
-    enabled: productIds.length > 0,
+    enabled: ready && productIds.length > 0,
   });
 
   return (
