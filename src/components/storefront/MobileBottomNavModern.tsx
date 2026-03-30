@@ -1,0 +1,131 @@
+/**
+ * MobileBottomNavModern — Floating pill navigation with animated active indicator.
+ * Active item: colored dot + label slide-in. Inactive: icon only.
+ * Includes cart button as elevated circle.
+ */
+import { Link, useLocation } from "react-router-dom";
+import { Home, Store, LayoutGrid, Heart, User, ShoppingCart } from "lucide-react";
+import { storefrontPath } from "@/lib/subdomain";
+import { useCart } from "@/contexts/CartContext";
+import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
+import type { StoreData } from "@/layouts/StorefrontLayout";
+
+const navItems = [
+  { key: "home", label: "Home", icon: Home, path: "" },
+  { key: "shop", label: "Shop", icon: Store, path: "shop" },
+  { key: "categories", label: "Categories", icon: LayoutGrid, path: "categories" },
+  { key: "wishlist", label: "Wishlist", icon: Heart, path: "wishlist" },
+  { key: "account", label: "Account", icon: User, path: "account" },
+];
+
+export default function MobileBottomNavModern({ store }: { store: StoreData }) {
+  const location = useLocation();
+  const { cartCount, openCart } = useCart();
+  const { user } = useStorefrontAuth();
+  const isCheckout = location.pathname.includes("/checkout");
+
+  if (isCheckout) return null;
+
+  const currentPath = location.pathname;
+  const storePath = storefrontPath(store.slug);
+
+  const getActive = (path: string) => {
+    if (path === "") return currentPath === storePath || currentPath === storePath + "/";
+    const full = storefrontPath(store.slug, path);
+    return currentPath === full || currentPath.startsWith(full + "/");
+  };
+
+  const getTo = (path: string) => {
+    if (path === "") return storePath;
+    if (path === "account") return storefrontPath(store.slug, user ? "account" : "login");
+    return storefrontPath(store.slug, path);
+  };
+
+  return (
+    <nav
+      className="fixed bottom-0 inset-x-0 z-40 sm:hidden pointer-events-none"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      <div className="flex items-end justify-center gap-2 px-3 pb-2.5 pointer-events-auto">
+        {/* Main floating pill */}
+        <div
+          className="flex items-center justify-around rounded-[28px] px-1.5 py-1.5 flex-1 shadow-[0_4px_24px_rgba(0,0,0,0.12)]"
+          style={{
+            backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
+            border: "1px solid var(--storefront-text, hsl(var(--foreground)))10",
+          }}
+        >
+          {navItems.map((item) => {
+            const active = getActive(item.path);
+            return (
+              <Link
+                key={item.key}
+                to={getTo(item.path)}
+                className="relative flex items-center justify-center outline-none"
+                aria-label={item.label}
+              >
+                <div
+                  className={`flex items-center gap-1.5 rounded-full transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                    active ? "px-3 py-2" : "p-2"
+                  }`}
+                  style={
+                    active
+                      ? {
+                          backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
+                        }
+                      : undefined
+                  }
+                >
+                  <item.icon
+                    className={`shrink-0 transition-all duration-[400ms] ${
+                      active ? "h-[17px] w-[17px]" : "h-5 w-5"
+                    }`}
+                    strokeWidth={active ? 2.4 : 1.6}
+                    style={{
+                      color: active
+                        ? "var(--storefront-btn-text, hsl(var(--primary-foreground)))"
+                        : "var(--storefront-text, hsl(var(--foreground)))90",
+                    }}
+                  />
+                  <span
+                    className={`text-[11px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                      active ? "max-w-[70px] opacity-100" : "max-w-0 opacity-0"
+                    }`}
+                    style={{
+                      color: active
+                        ? "var(--storefront-btn-text, hsl(var(--primary-foreground)))"
+                        : undefined,
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Elevated cart circle */}
+        <button
+          onClick={openCart}
+          className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full shadow-[0_4px_24px_rgba(0,0,0,0.12)] transition-transform duration-200 active:scale-90"
+          style={{
+            backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
+          }}
+          aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
+        >
+          <ShoppingCart
+            className="h-5 w-5"
+            strokeWidth={1.8}
+            style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
+          />
+          {cartCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px] px-1">
+              {cartCount > 9 ? "9+" : cartCount}
+            </span>
+          )}
+        </button>
+      </div>
+    </nav>
+  );
+}
