@@ -2,7 +2,9 @@ import { createContext, useContext, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-const VariantCountContext = createContext<Map<string, number> | null>(null);
+type CountMap = Map<string, number>;
+
+const VariantCountContext = createContext<CountMap | null>(null);
 
 /**
  * Batch-fetch variant counts for a list of products in ONE query.
@@ -11,15 +13,15 @@ const VariantCountContext = createContext<Map<string, number> | null>(null);
 export function VariantCountProvider({ productIds, children }: { productIds: string[]; children: ReactNode }) {
   const { data: counts } = useQuery({
     queryKey: ["variant-counts-batch", productIds.length > 0 ? productIds[0] : "empty", productIds.length],
-    queryFn: async () => {
-      if (productIds.length === 0) return new Map<string, number>();
+    queryFn: async (): Promise<CountMap> => {
+      if (productIds.length === 0) return new Map();
       const { data, error } = await supabase
         .from("product_variants")
         .select("product_id")
         .in("product_id", productIds)
         .eq("is_active", true);
       if (error) throw error;
-      const map = new Map<string, number>();
+      const map: CountMap = new Map();
       for (const row of data || []) {
         map.set(row.product_id, (map.get(row.product_id) || 0) + 1);
       }
