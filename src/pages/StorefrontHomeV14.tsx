@@ -57,9 +57,8 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
-  // Theme-14 defaults: style-2 cards, style-3 categories
-  const cardStyle = themeConfig?.product_card_style || "style-2";
-  const categoryStyle = themeConfig?.category_style || "style-4";
+  const cardStyle = themeConfig?.product_card_style || defaultCardStyle;
+  const categoryStyle = themeConfig?.category_style || defaultCategoryStyle;
   const headerLayout = themeConfig?.header_logo_alignment || "center";
   const hideSearchBar = headerLayout === "left-with-search";
   const marqueeText = themeConfig?.marquee_text;
