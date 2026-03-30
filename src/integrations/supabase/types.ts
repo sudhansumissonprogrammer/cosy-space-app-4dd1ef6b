@@ -1397,6 +1397,7 @@ export type Database = {
           marquee_gradient: string
           marquee_text: string
           mobile_nav_enabled: boolean
+          mobile_nav_style: string
           primary_color: string
           product_card_style: string
           store_id: string
@@ -1418,6 +1419,7 @@ export type Database = {
           marquee_gradient?: string
           marquee_text?: string
           mobile_nav_enabled?: boolean
+          mobile_nav_style?: string
           primary_color?: string
           product_card_style?: string
           store_id: string
@@ -1439,6 +1441,7 @@ export type Database = {
           marquee_gradient?: string
           marquee_text?: string
           mobile_nav_enabled?: boolean
+          mobile_nav_style?: string
           primary_color?: string
           product_card_style?: string
           store_id?: string

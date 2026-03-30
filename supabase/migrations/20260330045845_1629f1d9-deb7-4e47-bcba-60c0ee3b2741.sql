@@ -1,0 +1,1 @@
+ALTER TABLE public.store_theme_config ADD COLUMN IF NOT EXISTS mobile_nav_style text NOT NULL DEFAULT 'classic';

@@ -21,6 +21,7 @@ import { lazy } from "react";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
+const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
 const LazyDesktopNavBar = lazy(() => import("@/components/storefront/DesktopNavBar"));
 
 // Re-export for backward compatibility — other layouts import these
@@ -137,7 +138,7 @@ function StorefrontSkeleton() {
   );
 }
 
-function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left", mobileNavEnabled = false, headerStyle = "normal" }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string; mobileNavEnabled?: boolean; headerStyle?: string }) {
+function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left", mobileNavEnabled = false, mobileNavStyle = "classic", headerStyle = "normal" }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string; mobileNavEnabled?: boolean; mobileNavStyle?: string; headerStyle?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
@@ -271,7 +272,7 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
       <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
       {mobileNavEnabled && (
         <Suspense fallback={null}>
-          <LazyMobileBottomNav store={store} />
+          {mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> : <LazyMobileBottomNav store={store} />}
         </Suspense>
       )}
       <StorefrontFooter store={store} />
@@ -309,7 +310,8 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
           marqueeText={themeConfig?.marquee_text}
           marqueeEnabled={themeConfig?.marquee_enabled ?? true}
           headerLogoAlignment={themeConfig?.header_logo_alignment || "left"}
-          mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? false}
+          mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? true}
+          mobileNavStyle={(themeConfig as any)?.mobile_nav_style || "classic"}
           headerStyle={themeConfig?.header_style || "normal"}
         />
       )}

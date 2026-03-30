@@ -19,6 +19,7 @@ import StorefrontShell from "@/layouts/StorefrontShell";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
+const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
 const LazyDesktopNavBar = lazy(() => import("@/components/storefront/DesktopNavBar"));
 
 export type { Tables };
@@ -137,7 +138,7 @@ function StorefrontSkeleton() {
  * - Logo alignment defaults to center
  * - All other functionality (slide menu, footer, checkout, etc.) is identical
  */
-function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavEnabled = false, headerStyle = "normal" }: { store: StoreData; headerLogoAlignment?: string; mobileNavEnabled?: boolean; headerStyle?: string }) {
+function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavEnabled = false, mobileNavStyle = "classic", headerStyle = "normal" }: { store: StoreData; headerLogoAlignment?: string; mobileNavEnabled?: boolean; mobileNavStyle?: string; headerStyle?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
@@ -271,7 +272,7 @@ function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavE
       <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
       {mobileNavEnabled && (
         <Suspense fallback={null}>
-          <LazyMobileBottomNav store={store} />
+          {mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> : <LazyMobileBottomNav store={store} />}
         </Suspense>
       )}
       <StorefrontFooter store={store} />
@@ -308,6 +309,7 @@ export default function StorefrontLayoutV14({ slugOverride }: { slugOverride?: s
           store={store}
           headerLogoAlignment={themeConfig?.header_logo_alignment || "center"}
           mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? true}
+          mobileNavStyle={(themeConfig as any)?.mobile_nav_style || "classic"}
           headerStyle={themeConfig?.header_style && themeConfig.header_style !== "normal" ? themeConfig.header_style : "transparent"}
         />
       )}
