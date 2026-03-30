@@ -55,6 +55,7 @@ export default function SideCart({ store }: SideCartProps) {
   };
 
   return (
+    <>
     <Sheet open={isCartOpen} onOpenChange={(open) => !open && closeCart()}>
       <SheetContent side="right" className="storefront-font flex w-[85vw] max-w-md flex-col p-0 sm:w-[400px]" style={{ backgroundColor: "var(--storefront-bg, #ffffff)", color: "var(--storefront-text, inherit)" }}>
         {/* Header */}
