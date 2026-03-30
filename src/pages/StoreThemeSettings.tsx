@@ -1857,7 +1857,17 @@ export default function StoreThemeSettings() {
     ? mapDbCategoriesToPreview(storeCategories)
     : DEFAULT_CATEGORIES;
 
-  const currentTheme = store?.theme || "theme-1";
+  // Local override ensures instant UI tick update when Apply is clicked,
+  // even if the query cache refetch hasn't completed yet.
+  const [themeOverride, setThemeOverride] = useState<string | null>(null);
+  const currentTheme = themeOverride || store?.theme || "theme-1";
+
+  // Sync override back to null once query cache catches up
+  useEffect(() => {
+    if (store?.theme && themeOverride && store.theme === themeOverride) {
+      setThemeOverride(null);
+    }
+  }, [store?.theme, themeOverride]);
   const defaults = THEME_DEFAULTS[currentTheme] || THEME_DEFAULTS["theme-1"];
 
   const [config, setConfig] = useState<ThemeConfig>(defaults);
@@ -1952,6 +1962,9 @@ export default function StoreThemeSettings() {
       return { themeId, newConfig };
     },
     onSuccess: ({ themeId, newConfig }) => {
+      // Immediately update local override so the tick moves instantly
+      setThemeOverride(themeId);
+
       queryClient.setQueryData(["store-detail", storeId], (old: any) =>
         old ? { ...old, theme: themeId } : old
       );
