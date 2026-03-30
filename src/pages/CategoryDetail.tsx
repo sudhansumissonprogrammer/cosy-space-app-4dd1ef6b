@@ -70,30 +70,32 @@ export default function CategoryDetail() {
 
   const products = data?.pages.flatMap((p) => p.products) || [];
 
-  // Stable observer ref pattern
-  const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
-  scrollStateRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage };
-
+  const sentinelElRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   const sentinelRef = useCallback((el: HTMLDivElement | null) => {
+    sentinelElRef.current = el;
+  }, []);
+
+  useEffect(() => {
     if (observerRef.current) {
       observerRef.current.disconnect();
       observerRef.current = null;
     }
-    if (!el) return;
+    const el = sentinelElRef.current;
+    if (!el || !hasNextPage || isFetchingNextPage) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        const s = scrollStateRef.current;
-        if (entry.isIntersecting && s.hasNextPage && !s.isFetchingNextPage) {
-          s.fetchNextPage();
+        if (entry.isIntersecting) {
+          fetchNextPage();
         }
       },
       { rootMargin: "300px" }
     );
     observer.observe(el);
     observerRef.current = observer;
-  }, []);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (!categoryLoading && !category) {
     return (
