@@ -98,14 +98,14 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
         ) : products.length > 0 ? (
           <>
             <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4">
-              {products.slice(0, 6).map((product: any, idx: number) => (
+              {products.slice(0, 8).map((product: any, idx: number) => (
                 <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
-            {products.length > 6 && (
+            {products.length > 8 && (
               <LazyRender rootMargin="600px" minHeight={400}>
                 <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4 mt-1.5 sm:mt-4">
-                  {products.slice(6).map((product: any) => (
+                  {products.slice(8).map((product: any) => (
                     <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
                   ))}
                 </div>
