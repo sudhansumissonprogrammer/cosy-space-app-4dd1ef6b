@@ -262,6 +262,7 @@ Deno.serve(async (req) => {
   const slug = url.searchParams.get("slug");
   const productSlug = url.searchParams.get("product");
   const domain = url.searchParams.get("domain");
+  const isSocial = url.searchParams.get("social") === "true";
 
   if (!slug) {
     return new Response(JSON.stringify({ error: "Missing slug" }), {
@@ -295,6 +296,51 @@ Deno.serve(async (req) => {
   const canonical = safeDomain
     ? `https://${safeDomain}`
     : `https://${slug}.${ROOT_DOMAIN}`;
+
+  // ── Social bot JSON response (for WhatsApp, Facebook, Telegram, etc.) ──
+  if (isSocial) {
+    if (productSlug) {
+      let product: any = null;
+      const { data: bySlug } = await supabase
+        .from("products")
+        .select("id, name, slug, description, price, sale_price, currency, image_url")
+        .eq("store_id", store.id)
+        .eq("slug", productSlug)
+        .eq("is_active", true)
+        .single();
+      product = bySlug;
+      if (!product) {
+        const { data: byId } = await supabase
+          .from("products")
+          .select("id, name, slug, description, price, sale_price, currency, image_url")
+          .eq("store_id", store.id)
+          .eq("id", productSlug)
+          .eq("is_active", true)
+          .single();
+        product = byId;
+      }
+      if (product) {
+        const price = product.sale_price || product.price;
+        const currency = product.currency || store.currency || "INR";
+        const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency + " ";
+        return new Response(JSON.stringify({
+          title: `${product.name} — ${currencySymbol}${price}`,
+          description: product.description?.slice(0, 160) || `Buy ${product.name} at ${store.name}. Fast delivery & easy returns.`,
+          image: product.image_url || store.og_image_url || store.banner_url || store.logo_url || "",
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },
+        });
+      }
+    }
+    // Store-level OG data
+    return new Response(JSON.stringify({
+      title: store.meta_title || `${store.name} — Shop Online`,
+      description: store.meta_description || store.description || `Shop the best products at ${store.name}. Fast delivery & easy returns.`,
+      image: store.og_image_url || store.banner_url || store.logo_url || "",
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },
+    });
+  }
 
   // Product page
   if (productSlug) {
