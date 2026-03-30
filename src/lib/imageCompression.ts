@@ -190,3 +190,69 @@ export async function processImageMultiSize(
  * @deprecated Use processImage() instead. Kept for backward compatibility.
  */
 export const compressImage = processImage;
+
+/**
+ * Fetch an image from a URL and compress it to ~50% of original file size.
+ * Used for CSV bulk-upload flow — lighter compression than manual uploads.
+ * Quality range: 0.92 → 0.80 (never degrades visually).
+ * Max dimension: 1200px (same as manual uploads).
+ */
+export async function processImageFromUrl(
+  url: string,
+  targetReductionPercent = 50,
+): Promise<CompressionResult> {
+  // Fetch image as blob
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+  const blob = await response.blob();
+  const originalSize = blob.size;
+
+  // Determine file name from URL
+  const urlPath = new URL(url).pathname;
+  const baseName = urlPath.split("/").pop()?.replace(/\.[^/.]+$/, "") || "image";
+  const ext = urlPath.split(".").pop()?.toLowerCase() || "jpg";
+  const mimeType = blob.type || (ext === "png" ? "image/png" : "image/jpeg");
+
+  const file = new File([blob], `${baseName}.${ext}`, { type: mimeType });
+
+  // Skip if already very small (under 50KB)
+  if (originalSize <= 50 * 1024) {
+    return { file, originalSize, compressedSize: originalSize, skipped: true };
+  }
+
+  const targetBytes = originalSize * (1 - targetReductionPercent / 100);
+
+  const img = await loadImage(file);
+  const { width, height } = scaleDimensions(img.width, img.height, DEFAULT_MAX_DIMENSION);
+  const canvas = renderToCanvas(img, width, height);
+  URL.revokeObjectURL(img.src);
+
+  // Start at high quality, iterate down to hit ~50% reduction
+  const BULK_START_QUALITY = 0.92;
+  const BULK_MIN_QUALITY = 0.80;
+
+  const tryFormat = (format: string, q: number): Promise<Blob | null> =>
+    new Promise((res) => canvas.toBlob((b) => res(b), format, q));
+
+  let quality = BULK_START_QUALITY;
+  let resultBlob = await tryFormat("image/webp", quality);
+  let resultExt = "webp";
+
+  if (!resultBlob || resultBlob.size === 0) {
+    resultBlob = await tryFormat("image/jpeg", quality);
+    resultExt = "jpg";
+  }
+  if (!resultBlob) throw new Error("Browser could not encode image");
+
+  // Iterate down quality to reach target size
+  const format = resultExt === "webp" ? "image/webp" : "image/jpeg";
+  while (resultBlob.size > targetBytes && quality > BULK_MIN_QUALITY) {
+    quality -= 0.03;
+    const nextBlob = await tryFormat(format, quality);
+    if (!nextBlob || nextBlob.size === 0) break;
+    resultBlob = nextBlob;
+  }
+
+  const compressedFile = new File([resultBlob], `${baseName}.${resultExt}`, { type: resultBlob.type });
+  return { file: compressedFile, originalSize, compressedSize: resultBlob.size, skipped: false };
+}
