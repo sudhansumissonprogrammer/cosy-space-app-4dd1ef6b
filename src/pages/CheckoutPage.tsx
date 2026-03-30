@@ -794,7 +794,8 @@ export default function CheckoutPage() {
         </CollapsibleContent>
       </Collapsible>
 
-      {/* 2. Coupon Code */}
+      {/* 2. Coupon Code — only show if store has active coupons */}
+      {(hasActiveCoupons || appliedCoupon) && (
       <div className="mb-4 rounded-xl border border-border bg-card p-4">
         {appliedCoupon ? (
           <div className="flex items-center justify-between">
@@ -826,6 +827,7 @@ export default function CheckoutPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* 3. Delivery Details */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-4">
