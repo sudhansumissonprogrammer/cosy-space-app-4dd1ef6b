@@ -15,9 +15,20 @@ import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Switch } from "@/components/ui/switch";
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeSVG } from "qrcode.react";
+
+/** Generate a URL-safe slug from a store name */
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "") // remove special chars
+    .replace(/\s+/g, "")          // remove all spaces (no hyphens, just concatenate)
+    .replace(/-+/g, "-")          // collapse hyphens
+    .replace(/^-|-$/g, "");       // trim hyphens
+}
 
 
 
