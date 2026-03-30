@@ -2,7 +2,7 @@
  * Shared mobile app-style header used by V3 and V11 themes.
  * Features: hamburger menu, logo, search button, cart button.
  */
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart, Search, Menu } from "lucide-react";
