@@ -1,10 +1,10 @@
-import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, useMemo, useRef, useEffect, lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
@@ -14,35 +14,15 @@ import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
+import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
+import SortDropdown from "@/components/storefront/SortDropdown";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 4;
-
 const INITIAL_LIMIT = PAGE_SIZE;
-
-/** Static placeholder — no animation for faster perceived load */
-function ProductCardSkeleton() {
-  return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
-      <div className="p-1 pb-0">
-        <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
-      </div>
-      <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
-        <div className="flex items-center justify-between">
-          <div className="h-2.5 w-16 rounded bg-muted/60" />
-          <div className="h-2.5 w-10 rounded bg-muted/60" />
-        </div>
-        <div className="h-3 w-full rounded bg-muted/60" />
-        <div className="h-3 w-3/4 rounded bg-muted/60" />
-        <div className="h-4 w-20 rounded bg-muted/60" />
-        <div className="h-7 w-full rounded-lg bg-muted/60 sm:h-8" />
-      </div>
-    </div>
-  );
-}
 
 export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
