@@ -262,6 +262,7 @@ Deno.serve(async (req) => {
   const slug = url.searchParams.get("slug");
   const productSlug = url.searchParams.get("product");
   const domain = url.searchParams.get("domain");
+  const isSocial = url.searchParams.get("social") === "true";
 
   if (!slug) {
     return new Response(JSON.stringify({ error: "Missing slug" }), {
