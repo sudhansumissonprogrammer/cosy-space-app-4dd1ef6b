@@ -184,7 +184,15 @@ export default function SideCart({ store }: SideCartProps) {
                 </span>
               </div>
               <div className="space-y-1.5">
-                {showCheckout && (
+                {showCheckout && isTheme16 ? (
+                  <button
+                    onClick={() => { closeCart(); setShowPhoneModal(true); }}
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-[0.98] btn-gold"
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Proceed to Checkout
+                  </button>
+                ) : showCheckout ? (
                   <Link
                     to={storefrontPath(store.slug, "checkout")}
                     onClick={closeCart}
@@ -193,7 +201,7 @@ export default function SideCart({ store }: SideCartProps) {
                     <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
                   </Link>
-                )}
+                ) : null}
                 {showWhatsApp && (
                   <button
                     className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-xs font-bold text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98] disabled:opacity-50"
