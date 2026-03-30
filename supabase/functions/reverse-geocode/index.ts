@@ -47,28 +47,70 @@ Deno.serve(async (req) => {
     const get = (type: string) =>
       components.find((c: any) => c.types.includes(type))?.long_name || "";
 
-    // Extract landmark from POI results
+    // Helper: detect plus codes like "6RFV+3QR" or "XXXX+XX"
+    const isPlusCode = (s: string) => /^[A-Z0-9]{4,}\+[A-Z0-9]{2,}$/i.test(s.trim());
+
+    // Extract landmark from POI results (skip plus codes)
     let landmark = "";
     if (poiData.status === "OK" && poiData.results?.length) {
-      const poi = poiData.results.find((r: any) =>
-        r.types?.some((t: string) => ["point_of_interest", "establishment"].includes(t))
-      );
-      if (poi) {
-        landmark = poi.address_components?.[0]?.long_name || "";
+      for (const r of poiData.results) {
+        const hasPoi = r.types?.some((t: string) =>
+          ["point_of_interest", "establishment", "neighborhood", "sublocality"].includes(t)
+        );
+        if (hasPoi) {
+          // Try formatted_address first part for a readable name
+          const name = r.address_components?.[0]?.long_name || "";
+          if (name && !isPlusCode(name)) {
+            landmark = name;
+            break;
+          }
+        }
       }
     }
 
+    // Also scan detail results for neighborhood/village names
+    const allResults = detailData.results || [];
+    let villageName = "";
+    let areaName = "";
+    for (const r of allResults) {
+      for (const comp of (r.address_components || [])) {
+        if (!villageName && comp.types?.includes("locality") && !isPlusCode(comp.long_name)) {
+          // skip, we use this for city
+        }
+        if (!villageName && (comp.types?.includes("sublocality_level_1") || comp.types?.includes("neighborhood")) && !isPlusCode(comp.long_name)) {
+          villageName = comp.long_name;
+        }
+        if (!areaName && (comp.types?.includes("sublocality_level_2") || comp.types?.includes("sublocality")) && !isPlusCode(comp.long_name)) {
+          areaName = comp.long_name;
+        }
+      }
+    }
+
+    const route = get("route");
     const sublocality = get("sublocality_level_1") || get("sublocality") || get("neighborhood");
+
+    // Build street address: prioritize landmark/area/village, filter plus codes
     const streetParts = [
       landmark ? `Near ${landmark}` : "",
-      get("route") || get("sublocality_level_2"),
-      sublocality,
+      route && !isPlusCode(route) ? route : "",
+      areaName && areaName !== landmark && areaName !== sublocality ? areaName : "",
+      villageName && villageName !== landmark && villageName !== areaName ? villageName : "",
+      sublocality && sublocality !== villageName && sublocality !== areaName && sublocality !== landmark ? sublocality : "",
     ].filter(Boolean);
+
     // Deduplicate
     const uniqueParts = [...new Set(streetParts)];
 
+    // Fallback: use formatted_address but strip plus codes
+    let fallbackAddress = "";
+    if (uniqueParts.length === 0) {
+      const parts = (result.formatted_address || "").split(",").map((s: string) => s.trim());
+      const cleanParts = parts.filter((p: string) => !isPlusCode(p) && p.length > 1).slice(0, 2);
+      fallbackAddress = cleanParts.join(", ");
+    }
+
     const address = {
-      street_address: uniqueParts.join(", ") || result.formatted_address?.split(",").slice(0, 2).join(",") || "",
+      street_address: uniqueParts.join(", ") || fallbackAddress || "",
       city: get("locality") || get("administrative_area_level_2"),
       state: get("administrative_area_level_1"),
       pincode: get("postal_code"),

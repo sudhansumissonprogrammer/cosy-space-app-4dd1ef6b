@@ -43,6 +43,28 @@ export default function BuyNowPhoneModal({
   });
   
 
+  // Check if phone already exists — if so, skip modal entirely
+  const hasExistingPhone = (() => {
+    try {
+      const saved = localStorage.getItem("checkout_phone");
+      return saved && saved.replace(/\D/g, "").length === 10;
+    } catch { return false; }
+  })();
+
+  // If phone exists, auto-proceed when modal opens
+  const handleQuickBuy = () => {
+    onBeforeNavigate?.();
+    onOpenChange(false);
+    navigate(storefrontPath(storeSlug, "checkout"));
+    triggerGeolocation();
+  };
+
+  // Auto-skip modal if phone is already saved
+  if (open && hasExistingPhone) {
+    // Use setTimeout to avoid calling during render
+    setTimeout(() => handleQuickBuy(), 0);
+  }
+
   const handleContinue = () => {
     const cleaned = phone.replace(/\D/g, "");
     if (cleaned.length !== 10) {
