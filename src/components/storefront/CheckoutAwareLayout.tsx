@@ -1,0 +1,188 @@
+/**
+ * Shared layout for themes with checkout-aware header (V1, V14, V15).
+ * Renders: marquee (optional), desktop nav, mobile header with logo alignment variants,
+ * mobile bottom nav, footer, search overlay, and checkout exit dialog.
+ */
+import { useState, useEffect, Suspense, lazy, type ReactNode } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { Store, ArrowLeft, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { Tables } from "@/integrations/supabase/types";
+import ShareStoreDialog from "@/components/ShareStoreDialog";
+import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
+import { storefrontPath } from "@/lib/subdomain";
+import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
+
+const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
+const LazyDesktopNavBar = lazy(() => import("@/components/storefront/DesktopNavBar"));
+const LazyHamburgerMenu = lazy(() => import("@/components/storefront/HamburgerMenu"));
+const LazyCheckoutExitDialog = lazy(() => import("@/components/storefront/CheckoutExitDialog"));
+
+type StoreData = Tables<"stores">;
+
+interface CheckoutAwareLayoutProps {
+  store: StoreData;
+  /** Optional marquee element to render above the header */
+  marquee?: ReactNode;
+  headerLogoAlignment?: string;
+  mobileNavEnabled?: boolean;
+  /** Component to render as mobile bottom nav */
+  mobileNav?: ReactNode;
+  headerStyle?: string;
+}
+
+export default function CheckoutAwareLayout({
+  store,
+  marquee,
+  headerLogoAlignment = "left",
+  mobileNavEnabled = false,
+  mobileNav,
+  headerStyle = "normal",
+}: CheckoutAwareLayoutProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isCheckout = location.pathname.includes("/checkout");
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+
+  useEffect(() => { prefetchStorefrontRoutes(); }, []);
+
+  useEffect(() => {
+    const handler = () => setOrderPlaced(true);
+    window.addEventListener("order-placed", handler);
+    return () => window.removeEventListener("order-placed", handler);
+  }, []);
+
+  useEffect(() => { if (!isCheckout) setOrderPlaced(false); }, [isCheckout]);
+
+  const handleBackClick = () => { if (orderPlaced) { navigate(storefrontPath(store.slug)); return; } setShowExitDialog(true); };
+  const handleExitConfirm = () => { setShowExitDialog(false); navigate(storefrontPath(store.slug, "cart")); };
+
+  const isCentered = headerLogoAlignment === "center";
+  const isWithSearch = headerLogoAlignment === "left-with-search";
+
+  const LogoElement = (
+    <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0" aria-label={`${store.name} home`}>
+      {store.logo_url ? (
+        <img src={store.logo_url} alt={store.name} width={160} height={48} className="h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[160px] object-contain" loading="eager" decoding="sync" fetchPriority="high" />
+      ) : (
+        <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary"><Store className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" aria-hidden="true" /></div>
+      )}
+    </Link>
+  );
+
+  const hideWishlistAndShare = isCentered || isWithSearch;
+
+  const ActionButtons = !isCheckout ? (
+    <div className="flex items-center gap-0 sm:gap-1" style={{ minHeight: 40, contain: "layout" }}>
+      <AccountBadge slug={store.slug} />
+      {!hideWishlistAndShare && <WishlistBadge slug={store.slug} />}
+      <CartBadge />
+      {!hideWishlistAndShare && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
+    </div>
+  ) : null;
+
+  return (
+    <>
+      {marquee}
+
+      {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
+      {!isCheckout && (
+        <Suspense fallback={null}>
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} />
+        </Suspense>
+      )}
+
+      {/* Mobile header + checkout header */}
+      <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 ${
+        isCheckout ? 'bg-card/80 backdrop-blur-md' :
+        headerStyle === 'transparent' ? '' :
+        headerStyle === 'glassmorphic' ? '' :
+        'bg-card/80 backdrop-blur-md'
+      }`}
+        style={!isCheckout && headerStyle === 'glassmorphic' ? {
+          background: 'rgba(255,255,255,0.12)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          borderRadius: '0 0 1rem 1rem',
+          border: '1px solid rgba(255,255,255,0.18)',
+          margin: '0 8px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+        } : undefined}
+      >
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
+          {isCheckout ? (
+            <>
+              <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick} aria-label="Go back">
+                <ArrowLeft className="h-5 w-5 text-foreground" strokeWidth={2.5} aria-hidden="true" />
+              </Button>
+              {LogoElement}
+              <span className="text-sm font-semibold text-foreground" style={{ fontFamily: "'Montserrat', sans-serif" }}>Checkout</span>
+              <div className="flex-1" />
+            </>
+          ) : isCentered ? (
+            <>
+              <Suspense fallback={null}><LazyHamburgerMenu store={store} /></Suspense>
+              <div className="flex-1" />
+              <div className="absolute left-1/2 -translate-x-1/2">{LogoElement}</div>
+              <div className="flex-1" />
+              {ActionButtons}
+            </>
+          ) : isWithSearch ? (
+            <>
+              <Suspense fallback={null}><LazyHamburgerMenu store={store} /></Suspense>
+              {LogoElement}
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="flex-1 mx-2 flex items-center gap-2 rounded-full border border-border bg-accent/50 px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
+                aria-label="Search products"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span className="truncate">Search products...</span>
+              </button>
+              {ActionButtons}
+            </>
+          ) : (
+            <>
+              <Suspense fallback={null}><LazyHamburgerMenu store={store} /></Suspense>
+              {LogoElement}
+              <div className="flex-1" />
+              {ActionButtons}
+            </>
+          )}
+        </div>
+      </nav>
+
+      {/* Lazy search overlay */}
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <LazySearchOverlay
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            products={products}
+            slug={store.slug}
+            storeId={store.id}
+          />
+        </Suspense>
+      )}
+
+      <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+      {mobileNavEnabled && mobileNav}
+      <StorefrontFooter store={store} />
+
+      <Suspense fallback={null}>
+        <LazyCheckoutExitDialog
+          open={showExitDialog}
+          onOpenChange={setShowExitDialog}
+          onConfirmExit={handleExitConfirm}
+        />
+      </Suspense>
+    </>
+  );
+}
