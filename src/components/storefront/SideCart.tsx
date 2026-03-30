@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Suspense, lazy, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import CartUpsell from "@/components/storefront/CartUpsell";
 
+const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
+
 interface SideCartProps {
   store: StoreData;
 }
@@ -19,6 +22,8 @@ export default function SideCart({ store }: SideCartProps) {
   const currency = store.currency || "USD";
   const orderMode = (store as any).order_mode || "whatsapp";
   const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
+  const isTheme16 = (store as any).theme === "theme-16";
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
   const showCheckout = orderMode === "website" || orderMode === "both";
 
   const { data: shippingConfig } = useQuery({
@@ -50,6 +55,7 @@ export default function SideCart({ store }: SideCartProps) {
   };
 
   return (
+    <>
     <Sheet open={isCartOpen} onOpenChange={(open) => !open && closeCart()}>
       <SheetContent side="right" className="storefront-font flex w-[85vw] max-w-md flex-col p-0 sm:w-[400px]" style={{ backgroundColor: "var(--storefront-bg, #ffffff)", color: "var(--storefront-text, inherit)" }}>
         {/* Header */}
@@ -179,7 +185,15 @@ export default function SideCart({ store }: SideCartProps) {
                 </span>
               </div>
               <div className="space-y-1.5">
-                {showCheckout && (
+                {showCheckout && isTheme16 ? (
+                  <button
+                    onClick={() => { closeCart(); setShowPhoneModal(true); }}
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-[0.98] btn-gold"
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Proceed to Checkout
+                  </button>
+                ) : showCheckout ? (
                   <Link
                     to={storefrontPath(store.slug, "checkout")}
                     onClick={closeCart}
@@ -188,7 +202,7 @@ export default function SideCart({ store }: SideCartProps) {
                     <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
                   </Link>
-                )}
+                ) : null}
                 {showWhatsApp && (
                   <button
                     className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-xs font-bold text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98] disabled:opacity-50"
@@ -211,5 +225,15 @@ export default function SideCart({ store }: SideCartProps) {
         )}
       </SheetContent>
     </Sheet>
+    {isTheme16 && (
+      <Suspense fallback={null}>
+        <BuyNowPhoneModal
+          open={showPhoneModal}
+          onOpenChange={setShowPhoneModal}
+          storeSlug={store.slug}
+        />
+      </Suspense>
+    )}
+    </>
   );
 }

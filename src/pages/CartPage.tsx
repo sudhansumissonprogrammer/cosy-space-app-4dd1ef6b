@@ -1,4 +1,5 @@
 import { Link, useOutletContext, useNavigate } from "react-router-dom";
+import { Suspense, lazy, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2, MessageCircle, Package, S
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 
+const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
+
 export default function CartPage() {
   const store = useOutletContext<StoreData>();
   const navigate = useNavigate();
@@ -17,6 +20,8 @@ export default function CartPage() {
   const orderMode = (store as any).order_mode || "whatsapp";
   const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
   const showCheckout = orderMode === "website" || orderMode === "both";
+  const isTheme16 = (store as any).theme === "theme-16";
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
   const { data: shippingConfig } = useQuery({
     queryKey: ["storefront-shipping-config", store.id],
@@ -60,6 +65,7 @@ export default function CartPage() {
   }
 
   return (
+    <>
     <div className="mx-auto max-w-3xl w-full overflow-x-hidden px-3 sm:px-4 py-4 sm:py-8" style={{ color: "var(--storefront-text, inherit)" }}>
       <div className="mb-3 sm:mb-6">
         <Link
@@ -163,7 +169,16 @@ export default function CartPage() {
               </div>
 
               <div className="space-y-2">
-                {showCheckout && (
+                {showCheckout && isTheme16 ? (
+                  <button
+                    className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
+                    style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+                    onClick={() => setShowPhoneModal(true)}
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Proceed to Checkout
+                  </button>
+                ) : showCheckout ? (
                   <button
                     className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
                     style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
@@ -172,7 +187,7 @@ export default function CartPage() {
                     <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
                   </button>
-                )}
+                ) : null}
                 {showWhatsApp && (
                   <button
                     className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] text-xs sm:text-sm font-bold text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98] disabled:opacity-50"
@@ -189,5 +204,15 @@ export default function CartPage() {
         </div>
       </div>
     </div>
+    {isTheme16 && (
+      <Suspense fallback={null}>
+        <BuyNowPhoneModal
+          open={showPhoneModal}
+          onOpenChange={setShowPhoneModal}
+          storeSlug={store.slug}
+        />
+      </Suspense>
+    )}
+    </>
   );
 }
