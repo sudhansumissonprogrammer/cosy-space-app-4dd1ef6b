@@ -41,7 +41,7 @@ export default function BuyNowPhoneModal({
       return "";
     }
   });
-  const [loading, setLoading] = useState(false);
+  
 
   const handleContinue = () => {
     const cleaned = phone.replace(/\D/g, "");
