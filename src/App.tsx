@@ -38,6 +38,7 @@ const StorefrontLayoutV12 = lazy(() => import("./layouts/StorefrontLayoutV12"));
 const StorefrontLayoutV13 = lazy(() => import("./layouts/StorefrontLayoutV13"));
 const StorefrontLayoutV14 = lazy(() => import("./layouts/StorefrontLayoutV14"));
 const StorefrontLayoutV15 = lazy(() => import("./layouts/StorefrontLayoutV15"));
+const StorefrontLayoutV16 = lazy(() => import("./layouts/StorefrontLayoutV16"));
 
 // Storefront home pages — ALL lazy loaded
 const StorefrontHome = lazy(() => import("./pages/StorefrontHome"));
@@ -49,6 +50,7 @@ const StorefrontHomeV12 = lazy(() => import("./pages/StorefrontHomeV12"));
 const StorefrontHomeV13 = lazy(() => import("./pages/StorefrontHomeV13"));
 const StorefrontHomeV14 = lazy(() => import("./pages/StorefrontHomeV14"));
 const StorefrontHomeV15 = lazy(() => import("./pages/StorefrontHomeV15"));
+const StorefrontHomeV16 = lazy(() => import("./pages/StorefrontHomeV16"));
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontShop = lazy(() => import("./pages/StorefrontShop"));
 const StorefrontCategoriesPage = lazy(() => import("./pages/StorefrontCategories"));
@@ -159,7 +161,7 @@ const StorefrontCustomPage = lazy(() => import("./pages/StorefrontCustomPage"));
 
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
-  const HomeComponent = theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV11 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+  const HomeComponent = theme === "theme-16" ? StorefrontHomeV16 : theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV11 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
   return (
     <>
       <Route index element={<HomeComponent />} />
@@ -211,6 +213,7 @@ function getInstantTheme(slug: string | undefined): string {
 
 function getLayoutComponent(theme: string) {
   switch (theme) {
+    case "theme-16": return StorefrontLayoutV16;
     case "theme-15": return StorefrontLayoutV15;
     case "theme-14": return StorefrontLayoutV14;
     case "theme-13": return StorefrontLayoutV13;
@@ -263,6 +266,7 @@ function usePrefetchStorefrontData(slug: string | undefined) {
 /** Eagerly start loading the home page chunk so it downloads alongside the layout */
 function prefetchHomeChunk(theme: string) {
   switch (theme) {
+    case "theme-16": return import("./pages/StorefrontHomeV16");
     case "theme-15": return import("./pages/StorefrontHomeV15");
     case "theme-14": return import("./pages/StorefrontHomeV14");
     case "theme-13": return import("./pages/StorefrontHomeV13");

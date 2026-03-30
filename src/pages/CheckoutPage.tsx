@@ -62,16 +62,20 @@ export default function CheckoutPage() {
   const [summaryOpen, setSummaryOpen] = useState(false);
 
   // Form — pre-fill from localStorage for returning users
+  // Theme-16 BuyNowPhoneModal stores checkout_phone & checkout_address
   const savedInfo = (() => {
     try { return JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}"); } catch { return {}; }
   })();
+  const buyNowPhone = (() => { try { return localStorage.getItem("checkout_phone") || ""; } catch { return ""; } })();
+  const buyNowAddress = (() => { try { return JSON.parse(localStorage.getItem("checkout_address") || "null"); } catch { return null; } })();
+
   const [fullName, setFullName] = useState(savedInfo.fullName || "");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState(savedInfo.phone || "");
-  const [streetAddress, setStreetAddress] = useState(savedInfo.streetAddress || "");
-  const [city, setCity] = useState(savedInfo.city || "");
-  const [state, setState] = useState(savedInfo.state || "");
-  const [pincode, setPincode] = useState(savedInfo.pincode || "");
+  const [phone, setPhone] = useState(buyNowPhone || savedInfo.phone || "");
+  const [streetAddress, setStreetAddress] = useState(buyNowAddress?.street_address || savedInfo.streetAddress || "");
+  const [city, setCity] = useState(buyNowAddress?.city || savedInfo.city || "");
+  const [state, setState] = useState(buyNowAddress?.state || savedInfo.state || "");
+  const [pincode, setPincode] = useState(buyNowAddress?.pincode || savedInfo.pincode || "");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
@@ -595,6 +599,8 @@ export default function CheckoutPage() {
     setOrderPlaced(true);
     if (!isSingleMode) clearCart();
     saveExpressInfo();
+    // Clean up theme-16 BuyNow modal localStorage after order
+    try { localStorage.removeItem("checkout_phone"); localStorage.removeItem("checkout_address"); } catch {}
     window.dispatchEvent(new CustomEvent("order-placed"));
     const purchaseEid = generateEventId();
     fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), content_type: "product", value: total, currency, num_items: checkoutItems.length }, purchaseEid);

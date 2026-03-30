@@ -26,6 +26,9 @@ import StorefrontProductCard from "@/components/storefront/StorefrontProductCard
 import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
+import { lazy, Suspense } from "react";
+
+const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 
 interface Variant {
   id: string;
@@ -151,6 +154,7 @@ export default function ProductDetail() {
   const [justAdded, setJustAdded] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
+  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
 
   const deliveryDate = useMemo(() => getDeliveryDate(), []);
 
@@ -425,6 +429,24 @@ export default function ProductDetail() {
       toast.error("Please select a variant first");
       return;
     }
+
+    // Theme 16: show phone modal instead of direct checkout
+    if ((store as any).theme === "theme-16") {
+      // Add to cart first so checkout has the item
+      addToCart({
+        productId: product.id,
+        variantId: selectedVariant?.id,
+        name: product.name,
+        variantName: selectedVariant?.name,
+        price: variantPrice,
+        image: product.image_url || undefined,
+        quantity,
+      });
+      closeCart();
+      setBuyNowModalOpen(true);
+      return;
+    }
+
     addToCart({
       productId: product.id,
       variantId: selectedVariant?.id,
@@ -969,6 +991,17 @@ export default function ProductDetail() {
         } catch {}
         return null;
       })()}
+
+      {/* Theme-16 Buy Now Phone Modal */}
+      {(store as any).theme === "theme-16" && (
+        <Suspense fallback={null}>
+          <BuyNowPhoneModal
+            open={buyNowModalOpen}
+            onOpenChange={setBuyNowModalOpen}
+            storeSlug={store.slug}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
