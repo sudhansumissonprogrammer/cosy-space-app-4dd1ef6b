@@ -32,7 +32,7 @@ export default function StorefrontShop() {
   const { slug } = useParams<{ slug: string }>();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  
 
   const {
     data,
