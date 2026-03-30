@@ -318,6 +318,7 @@ const THEMES = [
   { id: "theme-11", name: "Shopping App", description: "Minimal nav with separated cart emphasis for faster conversions", available: true },
   { id: "theme-12", name: "Starter Classic", description: "Clean classic storefront with hero, carousel & product grid", available: true },
   { id: "theme-13", name: "Restaurant QR Menu", description: "WhatsApp-first QR ordering for restaurants & cafés — no checkout, just scan & order", available: true },
+  { id: "theme-16", name: "Classic + Quick Buy", description: "Classic theme with phone-first Buy Now flow — collects number & auto-fills address", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
