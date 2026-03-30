@@ -10,6 +10,8 @@ import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2, MessageCircle, Package, S
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 
+const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
+
 export default function CartPage() {
   const store = useOutletContext<StoreData>();
   const navigate = useNavigate();
