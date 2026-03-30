@@ -243,6 +243,7 @@ interface ThemeConfig {
   category_style: string;
   header_logo_alignment: string;
   mobile_nav_enabled: boolean;
+  mobile_nav_style: string;
   header_style: string;
 }
 
