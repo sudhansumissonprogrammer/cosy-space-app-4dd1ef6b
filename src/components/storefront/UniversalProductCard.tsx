@@ -1,6 +1,4 @@
 import { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardStyle2 from "./ProductCardStyle2";
@@ -15,6 +13,8 @@ interface Props {
   store: Tables<"stores">;
   priority?: boolean;
   cardStyle?: string;
+  /** Pre-computed variant count — avoids per-card query when provided */
+  variantCount?: number;
 }
 
 /**
@@ -22,25 +22,14 @@ interface Props {
  * product_card_style setting from theme config.
  * If the product has variants, clicking Add to Cart opens a variant picker
  * instead of adding directly.
+ *
+ * Variant count is now passed from parent (batched query) to eliminate
+ * N individual queries per page load.
  */
-export default function UniversalProductCard({ product, slug, store, priority = false, cardStyle = "style-1" }: Props) {
+export default function UniversalProductCard({ product, slug, store, priority = false, cardStyle = "style-1", variantCount = 0 }: Props) {
   const [variantOpen, setVariantOpen] = useState(false);
 
-  // Check if product has variants (lightweight query, cached)
-  const { data: variantCount } = useQuery({
-    queryKey: ["product-variant-count", product.id],
-    queryFn: async () => {
-      const { count } = await (supabase as any)
-        .from("product_variants")
-        .select("id", { count: "exact", head: true })
-        .eq("product_id", product.id)
-        .eq("is_active", true);
-      return count || 0;
-    },
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const hasVariants = (variantCount || 0) > 0;
+  const hasVariants = variantCount > 0;
 
   const onVariantRequired = useCallback(() => {
     setVariantOpen(true);
