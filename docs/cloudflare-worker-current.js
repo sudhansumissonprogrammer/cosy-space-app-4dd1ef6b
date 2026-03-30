@@ -1137,6 +1137,31 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 
   const storeName = storefrontData?.store?.name || "";
   const logoUrl = storefrontData?.store?.logo_url || "";
+
+  // ── Inject store-specific OG meta tags + favicon + title ──
+  let ogMeta = "";
+  if (storefrontData?.store) {
+    const s = storefrontData.store;
+    const ogTitle = escapeHtml(s.meta_title || `${s.name} — Shop Online`);
+    const ogDesc = escapeHtml(s.meta_description || s.description || `Shop the best products at ${s.name}. Fast delivery & easy returns.`);
+    const ogImage = escapeHtml(s.og_image_url || s.banner_url || s.logo_url || "");
+    ogMeta += `<title>${ogTitle}</title>`;
+    ogMeta += `<meta name="description" content="${ogDesc}">`;
+    ogMeta += `<meta property="og:title" content="${ogTitle}">`;
+    ogMeta += `<meta property="og:description" content="${ogDesc}">`;
+    ogMeta += `<meta name="twitter:title" content="${ogTitle}">`;
+    ogMeta += `<meta name="twitter:description" content="${ogDesc}">`;
+    if (ogImage) {
+      ogMeta += `<meta property="og:image" content="${ogImage}">`;
+      ogMeta += `<meta name="twitter:image" content="${ogImage}">`;
+    }
+    ogMeta += `<meta property="og:site_name" content="${escapeHtml(s.name)}">`;
+    if (logoUrl) {
+      ogMeta += `<link rel="icon" type="image/png" href="${escapeHtml(logoUrl)}">`;
+      ogMeta += `<link rel="apple-touch-icon" href="${escapeHtml(logoUrl)}">`;
+    }
+  }
+
   const skeletonBg = bgColor;
   const skeletonMuted = textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
 
@@ -1197,7 +1222,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     }
   }
 
-  let injectedHtml = html.replace("<head>", `<head>${injection}${inlineThemeCss}${lcpPreload}${cssPreload}${modulePreloads}`);
+  let injectedHtml = html.replace("<head>", `<head>${injection}${ogMeta}${inlineThemeCss}${lcpPreload}${cssPreload}${modulePreloads}`);
   injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}<div id="root">`);
 
   return { html: injectedHtml, dataSource };
