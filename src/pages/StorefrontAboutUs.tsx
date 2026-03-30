@@ -1,5 +1,6 @@
 import { useOutletContext } from "react-router-dom";
-import { MapPin, Instagram, Facebook, MessageCircle, Store, Heart, Award, Leaf, Shield, Star, Sparkles, Truck, ThumbsUp } from "lucide-react";
+import { MapPin, Instagram, Facebook, MessageCircle, Heart, Award, Leaf, Shield, Star, Sparkles, Truck, ThumbsUp } from "lucide-react";
+import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 
