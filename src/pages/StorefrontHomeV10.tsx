@@ -5,7 +5,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Tag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import LazyRender from "@/components/storefront/LazyRender";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
