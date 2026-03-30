@@ -39,7 +39,6 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
   const [searchOpen, setSearchOpen] = useState(false);
   const [openFilters, setOpenFilters] = useState(false);
   const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
-  const [sortOpen, setSortOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useStoreJsonLd({
