@@ -168,7 +168,16 @@ export default function CartPage() {
               </div>
 
               <div className="space-y-2">
-                {showCheckout && (
+                {showCheckout && isTheme16 ? (
+                  <button
+                    className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
+                    style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+                    onClick={() => setShowPhoneModal(true)}
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Proceed to Checkout
+                  </button>
+                ) : showCheckout ? (
                   <button
                     className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
                     style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
@@ -177,7 +186,7 @@ export default function CartPage() {
                     <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
                   </button>
-                )}
+                ) : null}
                 {showWhatsApp && (
                   <button
                     className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] text-xs sm:text-sm font-bold text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98] disabled:opacity-50"
