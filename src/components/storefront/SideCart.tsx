@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Suspense, lazy, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { Minus, Plus, Trash2, ShoppingCart, ShoppingBag, MessageCircle, Package,
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import CartUpsell from "@/components/storefront/CartUpsell";
+
+const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 
 interface SideCartProps {
   store: StoreData;
