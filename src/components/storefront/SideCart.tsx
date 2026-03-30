@@ -224,5 +224,15 @@ export default function SideCart({ store }: SideCartProps) {
         )}
       </SheetContent>
     </Sheet>
+    {isTheme16 && (
+      <Suspense fallback={null}>
+        <BuyNowPhoneModal
+          open={showPhoneModal}
+          onOpenChange={setShowPhoneModal}
+          storeSlug={store.slug}
+        />
+      </Suspense>
+    )}
+    </>
   );
 }
