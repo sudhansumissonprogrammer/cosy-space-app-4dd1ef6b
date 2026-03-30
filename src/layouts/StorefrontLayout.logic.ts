@@ -37,11 +37,7 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      // 1. Use injected data (Cloudflare Worker — now shell-only: store+categories+theme)
-      const wd = (window as any).__STOREFRONT_DATA__;
-      if (wd?.store) return wd;
-
-      // 2. Await the index.html prefetch promise if still in flight,
+      // 1. Await the index.html prefetch promise if still in flight,
       // but never block forever (prevents infinite shimmer state).
       const prefetch = (window as any).__STOREFRONT_PREFETCH__;
       if (prefetch) {
@@ -64,7 +60,7 @@ export function useStorefront(slugOverride?: string) {
         }
       }
 
-      // 3. Fresh RPC call — use shell (lightweight, no products)
+      // 2. Fresh RPC call — use shell (lightweight, no products)
       const { data: result, error } = await supabase.rpc("get_storefront_shell" as any, {
         _slug: slug!,
       });
