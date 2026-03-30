@@ -1,140 +1,19 @@
-import { useState, Suspense } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { ShoppingCart, Heart, User, Search, Menu, Home, LayoutGrid, X, ChevronRight } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useCart } from "@/contexts/CartContext";
-import { useWishlist } from "@/contexts/WishlistContext";
-import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
-import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+import { Suspense } from "react";
+import { Outlet } from "react-router-dom";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
-import { storefrontPath } from "@/lib/subdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import DesktopNavBar from "@/components/storefront/DesktopNavBar";
-import type { StoreData } from "@/layouts/StorefrontLayout";
+import { ElegantHeader, ElegantTabBar, ElegantFooter } from "@/components/storefront/ElegantComponents";
 
-function V12Header({ store }: { store: StoreData }) {
-  const { cartCount, openCart } = useCart();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
-  const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
-  const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
-  const { user } = useStorefrontAuth();
-
-  return (
-    <>
-      <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3" style={{ backgroundColor: "var(--storefront-bg, #ffffff)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)12" }}>
-        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-          <SheetTrigger asChild>
-            <button className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Open menu">
-              <Menu className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[300px] p-0 border-0" style={{ backgroundColor: "var(--storefront-bg, #ffffff)" }}>
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between px-5 py-3.5" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)", color: "#fff" }}>
-                <span className="text-sm font-bold uppercase tracking-wider" style={{ fontFamily: "var(--storefront-heading-font, 'Poppins'), sans-serif" }}>Menu</span>
-                <button onClick={() => setMenuOpen(false)} className="flex h-8 w-8 items-center justify-center" aria-label="Close menu"><X className="h-5 w-5" aria-hidden="true" /></button>
-              </div>
-              <nav className="flex-1 overflow-y-auto">
-                <div className="px-5 pt-4 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Pages</h4></div>
-                {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop All" }, { to: storefrontPath(store.slug, "about"), label: "About Us" }, { to: storefrontPath(store.slug, "contact"), label: "Contact" }, ...customPages.map((cp: any) => ({ to: storefrontPath(store.slug, `page/${cp.slug}`), label: cp.title }))].map((link) => (
-                  <Link key={link.label} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors" style={{ color: "var(--storefront-text, #1a1a1a)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)08", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{link.label}<ChevronRight className="h-4 w-4 opacity-40" /></Link>
-                ))}
-                <div className="px-5 pt-5 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>Policies</h4></div>
-                {[{ to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" }, { to: storefrontPath(store.slug, "terms"), label: "Terms & Conditions" }, { to: storefrontPath(store.slug, "privacy-policy"), label: "Privacy Policy" }].map((link) => (
-                  <Link key={link.label} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center justify-between px-5 py-3.5 text-[15px] font-medium transition-colors" style={{ color: "var(--storefront-text, #1a1a1a)", borderBottom: "1px solid var(--storefront-text, #1a1a1a)08", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{link.label}<ChevronRight className="h-4 w-4 opacity-40" /></Link>
-                ))}
-              </nav>
-              <div className="border-t" style={{ borderColor: "var(--storefront-text, #1a1a1a)0a" }}>
-                <Link to={storefrontPath(store.slug, "wishlist")} onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-5 py-4 text-[15px] font-medium" style={{ color: "var(--storefront-text, #1a1a1a)" }}><Heart className="h-5 w-5" />Wishlist</Link>
-                <Link to={storefrontPath(store.slug, user ? "account" : "login")} onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-5 py-4 text-[15px] font-medium" style={{ color: "var(--storefront-text, #1a1a1a)" }}><User className="h-5 w-5" />{user ? "My Account" : "Login / Register"}</Link>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        <Link to={storefrontPath(store.slug)} className="absolute left-1/2 -translate-x-1/2">
-          {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[130px] object-contain" /> : <span className="text-xl font-bold" style={{ color: "var(--storefront-text, #1a1a1a)", fontFamily: "var(--storefront-heading-font, 'Poppins'), sans-serif" }}>{store.name}</span>}
-        </Link>
-
-        <div className="flex items-center gap-0.5">
-          <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Search products"><Search className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" /></button>
-          <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
-            <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, #1a1a1a)" }} aria-hidden="true" />
-            {cartCount > 0 && <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)" }}>{cartCount > 9 ? "9+" : cartCount}</span>}
-          </button>
-        </div>
-      </header>
-      <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
-    </>
-  );
-}
-
-function V12TabBar({ store }: { store: StoreData }) {
-  const location = useLocation();
-  const { wishlistCount } = useWishlist();
-  const { cartCount, openCart } = useCart();
-  const { user } = useStorefrontAuth();
-  const basePath = storefrontPath(store.slug);
-  const tabs = [
-    { icon: Home, label: "Home", to: basePath, matchExact: true },
-    { icon: LayoutGrid, label: "Shop", to: storefrontPath(store.slug, "shop"), match: "shop" },
-    { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
-    { icon: User, label: "Account", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
-    { icon: ShoppingCart, label: "Cart", to: "__cart__", match: "__cart__", badge: cartCount, isCart: true },
-  ];
-
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-      <div className="flex items-center justify-around py-1.5 border-t" style={{ backgroundColor: "var(--storefront-bg, #ffffff)", borderColor: "var(--storefront-text, #1a1a1a)10" }}>
-        {tabs.map((tab) => {
-          const isActive = tab.matchExact ? location.pathname === basePath || location.pathname === basePath + "/" : location.pathname.includes(tab.match!);
-          const TabIcon = tab.icon;
-          const content = (
-            <div className="flex flex-col items-center justify-center gap-0.5 py-1 px-2" style={{ minWidth: "52px" }}>
-              <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
-                <TabIcon className="h-[22px] w-[22px] transition-colors" style={{ color: isActive ? "var(--storefront-primary, #FF3F6C)" : "var(--storefront-text, #1a1a1a)60" }} />
-                {tab.badge != null && tab.badge > 0 && <span className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)" }}>{tab.badge > 9 ? "9+" : tab.badge}</span>}
-              </div>
-              <span className="text-[10px] font-medium" style={{ color: isActive ? "var(--storefront-primary, #FF3F6C)" : "var(--storefront-text, #1a1a1a)60" }}>{tab.label}</span>
-            </div>
-          );
-          if (tab.isCart) return <button key={tab.label} onClick={openCart} className="transition-all active:scale-90">{content}</button>;
-          return <Link key={tab.label} to={tab.to} className="transition-all active:scale-90">{content}</Link>;
-        })}
-      </div>
-    </nav>
-  );
-}
-
-function V12Footer({ store }: { store: StoreData }) {
-  const year = new Date().getFullYear();
-  return (
-    <footer className="mt-8" style={{ backgroundColor: "var(--storefront-accent, #111111)", color: "#fff" }}>
-      <div className="px-5 py-10 space-y-8 max-w-6xl mx-auto">
-        <div className="text-center space-y-3">
-          {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-10 w-auto mx-auto object-contain brightness-0 invert" /> : <h3 className="text-2xl font-bold" style={{ fontFamily: "var(--storefront-heading-font, 'Poppins'), sans-serif" }}>{store.name}</h3>}
-          {store.description && <p className="text-sm opacity-60 max-w-md mx-auto leading-relaxed">{store.description}</p>}
-        </div>
-        <div className="grid grid-cols-2 gap-6 text-sm">
-          <div className="space-y-2.5">
-            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #FF3F6C)" }}>Quick Links</h4>
-            {[{ to: storefrontPath(store.slug), label: "Home" }, { to: storefrontPath(store.slug, "shop"), label: "Shop All" }, { to: storefrontPath(store.slug, "about"), label: "About Us" }, { to: storefrontPath(store.slug, "contact"), label: "Contact Us" }].map((link) => (<Link key={link.label} to={link.to} className="block opacity-60 hover:opacity-100 transition-opacity text-[13px]">{link.label}</Link>))}
-          </div>
-          <div className="space-y-2.5">
-            <h4 className="text-xs font-bold uppercase tracking-widest opacity-50" style={{ color: "var(--storefront-primary, #FF3F6C)" }}>Policies</h4>
-            {[{ to: storefrontPath(store.slug, "return-policy"), label: "Return & Refund" }, { to: storefrontPath(store.slug, "shipping-policy"), label: "Shipping Policy" }, { to: storefrontPath(store.slug, "terms"), label: "Terms & Conditions" }, { to: storefrontPath(store.slug, "privacy-policy"), label: "Privacy Policy" }].map((link) => (<Link key={link.label} to={link.to} className="block opacity-60 hover:opacity-100 transition-opacity text-[13px]">{link.label}</Link>))}
-          </div>
-        </div>
-        <div className="pt-6 border-t border-white/10 text-center"><p className="text-[11px] opacity-40">© {year} {store.name}. All rights reserved.</p></div>
-      </div>
-    </footer>
-  );
-}
+const V12_COLORS = {
+  defaultPrimary: "#FF3F6C",
+  defaultBg: "#ffffff",
+  defaultText: "#1a1a1a",
+  defaultAccent: "#111111",
+  headingFontFallback: "Poppins",
+  bodyFontFallback: "Inter",
+};
 
 function StorefrontV12Skeleton() {
   return (
@@ -159,12 +38,12 @@ export default function StorefrontLayoutV12({ slugOverride }: { slugOverride?: s
       {({ store }) => (
         <>
           <DesktopNavBar store={store} />
-          <div className="md:hidden"><V12Header store={store} /></div>
+          <div className="md:hidden"><ElegantHeader store={store} colors={V12_COLORS} /></div>
           <main className="pb-16 md:pb-0">
             <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense>
           </main>
-          <V12Footer store={store} />
-          <V12TabBar store={store} />
+          <ElegantFooter store={store} colors={V12_COLORS} />
+          <ElegantTabBar store={store} colors={V12_COLORS} />
         </>
       )}
     </StorefrontShell>
