@@ -203,5 +203,15 @@ export default function CartPage() {
         </div>
       </div>
     </div>
+    {isTheme16 && (
+      <Suspense fallback={null}>
+        <BuyNowPhoneModal
+          open={showPhoneModal}
+          onOpenChange={setShowPhoneModal}
+          storeSlug={store.slug}
+        />
+      </Suspense>
+    )}
+    </>
   );
 }
