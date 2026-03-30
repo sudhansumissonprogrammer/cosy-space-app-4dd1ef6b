@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Store, BadgeCheck } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
+import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -52,7 +53,7 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
               />
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-background bg-card shadow-lg sm:h-24 sm:w-24">
-                <Store className="h-8 w-8 text-muted-foreground" />
+                <StoreTextLogo storeName={store.name} size="text-sm" className="text-center leading-tight px-1 break-words whitespace-normal" />
               </div>
             )}
             <div className="mb-1 min-w-0 flex-1">

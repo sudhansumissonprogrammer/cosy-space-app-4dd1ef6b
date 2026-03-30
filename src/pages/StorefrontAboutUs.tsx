@@ -1,5 +1,6 @@
 import { useOutletContext } from "react-router-dom";
-import { MapPin, Instagram, Facebook, MessageCircle, Store, Heart, Award, Leaf, Shield, Star, Sparkles, Truck, ThumbsUp } from "lucide-react";
+import { MapPin, Instagram, Facebook, MessageCircle, Heart, Award, Leaf, Shield, Star, Sparkles, Truck, ThumbsUp } from "lucide-react";
+import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 
@@ -141,8 +142,8 @@ export default function StorefrontAboutUs() {
               loading="eager"
             />
           ) : (
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 backdrop-blur-sm">
-              <Store className="h-8 w-8 text-primary" />
+            <div className="mx-auto mb-4">
+              <StoreTextLogo storeName={store.name} size="text-3xl" />
             </div>
           )}
           <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">

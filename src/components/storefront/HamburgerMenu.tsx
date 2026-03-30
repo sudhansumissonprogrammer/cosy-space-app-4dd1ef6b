@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, Home, Tag, Mail, Heart, User } from "lucide-react";
+import { Store as StoreIcon, Home, Tag, Mail, Heart, User } from "lucide-react";
+import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { storefrontPath } from "@/lib/subdomain";
@@ -29,16 +30,13 @@ export default function HamburgerMenu({ store }: { store: StoreData }) {
             {store.logo_url ? (
               <img src={store.logo_url} alt={store.name} width={160} height={40} className="h-10 w-auto max-w-[160px] object-contain" loading="eager" />
             ) : (
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary"><Store className="h-4 w-4 text-primary-foreground" /></div>
-                <span className="text-lg font-bold text-foreground">{store.name}</span>
-              </div>
+              <StoreTextLogo storeName={store.name} size="text-lg" />
             )}
           </div>
           <nav className="flex flex-col gap-1 p-4">
             <Link to={storefrontPath(store.slug)} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Home className="h-4 w-4" />Home</Link>
-            <Link to={storefrontPath(store.slug, "shop")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Store className="h-4 w-4" />Shop All</Link>
-            <Link to={storefrontPath(store.slug, "about")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Store className="h-4 w-4" />About Us</Link>
+            <Link to={storefrontPath(store.slug, "shop")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><StoreIcon className="h-4 w-4" />Shop All</Link>
+            <Link to={storefrontPath(store.slug, "about")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><StoreIcon className="h-4 w-4" />About Us</Link>
             <Link to={storefrontPath(store.slug, "contact")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Mail className="h-4 w-4" />Contact Us</Link>
             {customPages.map((cp: any) => (
               <Link key={cp.id} to={storefrontPath(store.slug, `page/${cp.slug}`)} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Tag className="h-4 w-4" />{cp.title}</Link>

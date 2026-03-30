@@ -7,6 +7,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 
@@ -144,12 +145,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                   decoding="sync"
                 />
               ) : (
-                <span
-                  className="text-xl font-bold tracking-tight whitespace-nowrap"
-                  style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
-                >
-                  {store.name}
-                </span>
+                <StoreTextLogo storeName={store.name} size="text-xl" />
               )}
             </Link>
           </div>
