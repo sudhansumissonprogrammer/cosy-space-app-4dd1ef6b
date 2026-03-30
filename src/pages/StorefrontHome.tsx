@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useMemo, useRef, useEffect, lazy, Suspense, useCallback } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -9,7 +9,7 @@ import { VariantCountProvider } from "@/hooks/useVariantCounts";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import LazyRender from "@/components/storefront/LazyRender";
@@ -186,14 +186,18 @@ export default function StorefrontHome() {
         </div>
       )}
 
-      <StorefrontSearchOverlay
-        open={searchOpen}
-        onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
-        products={allCachedProducts}
-        slug={slug!}
-        storeId={store.id}
-        initialFiltersOpen={openFilters}
-      />
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <StorefrontSearchOverlay
+            open={searchOpen}
+            onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
+            products={allCachedProducts}
+            slug={slug!}
+            storeId={store.id}
+            initialFiltersOpen={openFilters}
+          />
+        </Suspense>
+      )}
 
       {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (
         <>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -6,7 +6,7 @@ import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Search, ArrowUpDown, ChevronLeft, ChevronRight, Zap, Tag, Clock } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { getDiscountPercent } from "@/lib/productUtils";
@@ -318,14 +318,18 @@ export default function StorefrontHomeV3() {
       {products && <FlashDeals products={products} slug={slug!} store={store} />}
 
       {/* Search overlay */}
-      <StorefrontSearchOverlay
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        products={products}
-        slug={slug!}
-        storeId={store.id}
-        initialFiltersOpen={false}
-      />
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <StorefrontSearchOverlay
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            products={products}
+            slug={slug!}
+            storeId={store.id}
+            initialFiltersOpen={false}
+          />
+        </Suspense>
+      )}
 
       {/* Product Grid */}
       <div className="px-3 pb-6 space-y-3">

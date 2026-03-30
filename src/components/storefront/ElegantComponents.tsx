@@ -2,7 +2,7 @@
  * Shared "Milano-style" header, tab bar, and footer used by V10 and V12 themes.
  * Parameterized by default colors and fonts to support both themes.
  */
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart, Heart, User, Search, Home, LayoutGrid, X, ChevronRight } from "lucide-react";
@@ -10,7 +10,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
-import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import { storefrontPath } from "@/lib/subdomain";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -80,7 +80,7 @@ export function ElegantHeader({ store, colors }: { store: StoreData; colors: The
           </button>
         </div>
       </header>
-      <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
+      {searchOpen && <Suspense fallback={null}><StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} /></Suspense>}
     </>
   );
 }

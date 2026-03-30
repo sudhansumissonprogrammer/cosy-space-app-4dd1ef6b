@@ -16,7 +16,7 @@ import { VariantCountProvider } from "@/hooks/useVariantCounts";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
@@ -180,14 +180,18 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
         </div>
       )}
 
-      <StorefrontSearchOverlay
-        open={searchOpen}
-        onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
-        products={allCachedProducts}
-        slug={slug!}
-        storeId={store.id}
-        initialFiltersOpen={openFilters}
-      />
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <StorefrontSearchOverlay
+            open={searchOpen}
+            onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
+            products={allCachedProducts}
+            slug={slug!}
+            storeId={store.id}
+            initialFiltersOpen={openFilters}
+          />
+        </Suspense>
+      )}
 
       {/* Mobile hero (mobile only) */}
       {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (

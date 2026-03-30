@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
@@ -6,7 +6,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Search, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
@@ -284,14 +284,18 @@ export default function StorefrontHomeV2() {
         </div>
       </div>
 
-      <StorefrontSearchOverlay
-        open={searchOpen}
-        onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
-        products={products}
-        slug={slug!}
-        storeId={store.id}
-        initialFiltersOpen={openFilters}
-      />
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <StorefrontSearchOverlay
+            open={searchOpen}
+            onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
+            products={products}
+            slug={slug!}
+            storeId={store.id}
+            initialFiltersOpen={openFilters}
+          />
+        </Suspense>
+      )}
 
       {/* Categories */}
       <UniversalCategories
