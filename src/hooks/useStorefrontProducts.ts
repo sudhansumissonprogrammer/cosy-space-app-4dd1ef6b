@@ -84,4 +84,4 @@ export function useStorefrontProducts(storeId: string | undefined) {
   return { products: data || [], isLoading };
 }
 
-export { PRODUCT_COLUMNS, PAGE_SIZE };
+export { PRODUCT_COLUMNS, PRODUCT_COLUMNS_FULL, PAGE_SIZE };
