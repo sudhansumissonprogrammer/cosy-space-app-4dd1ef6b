@@ -378,3 +378,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
     </>
   );
 }
+
+export default function StorefrontHomeV14() {
+  return <ClassicCenterHome defaultCardStyle="style-2" defaultCategoryStyle="style-4" />;
+}
