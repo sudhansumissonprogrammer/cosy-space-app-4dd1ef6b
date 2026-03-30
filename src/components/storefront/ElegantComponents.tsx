@@ -80,7 +80,7 @@ export function ElegantHeader({ store, colors }: { store: StoreData; colors: The
           </button>
         </div>
       </header>
-      <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
+      {searchOpen && <Suspense fallback={null}><StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} /></Suspense>}
     </>
   );
 }

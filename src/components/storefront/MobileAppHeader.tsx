@@ -56,7 +56,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
           </button>
         </div>
       </header>
-      <StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} />
+      {searchOpen && <Suspense fallback={null}><StorefrontSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} products={products} slug={store.slug} initialFiltersOpen={false} /></Suspense>}
     </>
   );
 }

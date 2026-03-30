@@ -318,14 +318,18 @@ export default function StorefrontHomeV3() {
       {products && <FlashDeals products={products} slug={slug!} store={store} />}
 
       {/* Search overlay */}
-      <StorefrontSearchOverlay
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        products={products}
-        slug={slug!}
-        storeId={store.id}
-        initialFiltersOpen={false}
-      />
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <StorefrontSearchOverlay
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            products={products}
+            slug={slug!}
+            storeId={store.id}
+            initialFiltersOpen={false}
+          />
+        </Suspense>
+      )}
 
       {/* Product Grid */}
       <div className="px-3 pb-6 space-y-3">

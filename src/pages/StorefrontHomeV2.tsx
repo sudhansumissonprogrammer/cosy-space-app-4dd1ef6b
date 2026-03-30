@@ -284,14 +284,18 @@ export default function StorefrontHomeV2() {
         </div>
       </div>
 
-      <StorefrontSearchOverlay
-        open={searchOpen}
-        onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
-        products={products}
-        slug={slug!}
-        storeId={store.id}
-        initialFiltersOpen={openFilters}
-      />
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <StorefrontSearchOverlay
+            open={searchOpen}
+            onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
+            products={products}
+            slug={slug!}
+            storeId={store.id}
+            initialFiltersOpen={openFilters}
+          />
+        </Suspense>
+      )}
 
       {/* Categories */}
       <UniversalCategories

@@ -186,14 +186,18 @@ export default function StorefrontHome() {
         </div>
       )}
 
-      <StorefrontSearchOverlay
-        open={searchOpen}
-        onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
-        products={allCachedProducts}
-        slug={slug!}
-        storeId={store.id}
-        initialFiltersOpen={openFilters}
-      />
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <StorefrontSearchOverlay
+            open={searchOpen}
+            onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
+            products={allCachedProducts}
+            slug={slug!}
+            storeId={store.id}
+            initialFiltersOpen={openFilters}
+          />
+        </Suspense>
+      )}
 
       {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (
         <>

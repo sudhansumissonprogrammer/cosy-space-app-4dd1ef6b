@@ -180,14 +180,18 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
         </div>
       )}
 
-      <StorefrontSearchOverlay
-        open={searchOpen}
-        onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
-        products={allCachedProducts}
-        slug={slug!}
-        storeId={store.id}
-        initialFiltersOpen={openFilters}
-      />
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <StorefrontSearchOverlay
+            open={searchOpen}
+            onClose={() => { setSearchOpen(false); setOpenFilters(false); }}
+            products={allCachedProducts}
+            slug={slug!}
+            storeId={store.id}
+            initialFiltersOpen={openFilters}
+          />
+        </Suspense>
+      )}
 
       {/* Mobile hero (mobile only) */}
       {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
