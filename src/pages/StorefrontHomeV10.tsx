@@ -95,31 +95,23 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
               <Skeleton key={i} className="h-72 rounded-lg" />
             ))}
           </div>
-        ) : products.length > 0 ? (
-          <>
+        ) : (() => {
+          const popularProducts = products.filter((p: any) => !p.is_best_selling).slice(0, 8);
+          return popularProducts.length > 0 ? (
             <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4">
-              {products.slice(0, 8).map((product: any, idx: number) => (
+              {popularProducts.map((product: any, idx: number) => (
                 <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}
             </div>
-            {products.length > 8 && (
-              <LazyRender rootMargin="600px" minHeight={400}>
-                <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4 mt-1.5 sm:mt-4">
-                  {products.slice(8).map((product: any) => (
-                    <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
-                  ))}
-                </div>
-              </LazyRender>
-            )}
-          </>
-        ) : (
-          <div className="flex min-h-[60vh] items-center justify-center">
-            <div className="text-center space-y-2">
-              <Tag className="h-12 w-12 mx-auto" style={{ color: "var(--storefront-text, #1a1a1a)20" }} />
-              <p className="text-sm" style={{ color: "var(--storefront-text, #1a1a1a)60" }}>No products available yet.</p>
+          ) : (
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <div className="text-center space-y-2">
+                <Tag className="h-12 w-12 mx-auto" style={{ color: "var(--storefront-text, #1a1a1a)20" }} />
+                <p className="text-sm" style={{ color: "var(--storefront-text, #1a1a1a)60" }}>No products available yet.</p>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
       <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
       <StorefrontInstagramSection store={store} />

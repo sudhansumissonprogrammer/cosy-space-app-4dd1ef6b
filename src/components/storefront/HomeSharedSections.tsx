@@ -32,26 +32,38 @@ export function HomeSectionHeader({ title, slug, linkTo, fontFallback = "'Alegre
   );
 }
 
-/** Best selling section with mobile scroll + desktop grid — shared by V10/V12 */
+/** Best selling section — respects store carousel setting. Shared by V10/V12 */
 export function HomeBestSellingSection({ products, slug, store, cardStyle }: { products: any[]; slug: string; store: StoreData; cardStyle: string }) {
-  const bestSellers = useMemo(() => products.filter((p: any) => p.is_best_selling).slice(0, 10), [products]);
+  const bestSellers = useMemo(() => products.filter((p: any) => p.is_best_selling), [products]);
   if (bestSellers.length === 0) return null;
+
+  const useCarousel = (store as any).best_selling_carousel;
 
   return (
     <div className="py-4">
       <HomeSectionHeader title="Best Selling" slug={slug} linkTo="shop" />
-      <div className="flex gap-3 overflow-x-auto px-4 pb-2 md:hidden" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
-        {bestSellers.map((product: any, idx: number) => (
-          <div key={product.id} className="flex-shrink-0" style={{ width: "160px" }}>
-            <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
+      {useCarousel ? (
+        <div className="px-4">
+          <Suspense fallback={null}>
+            <BestSellingCarousel products={bestSellers} slug={slug} store={store} cardStyle={cardStyle} />
+          </Suspense>
+        </div>
+      ) : (
+        <>
+          <div className="flex gap-3 overflow-x-auto px-4 pb-2 md:hidden" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+            {bestSellers.map((product: any, idx: number) => (
+              <div key={product.id} className="flex-shrink-0" style={{ width: "160px" }}>
+                <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4 px-4">
-        {bestSellers.map((product: any, idx: number) => (
-          <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
-        ))}
-      </div>
+          <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4 px-4">
+            {bestSellers.map((product: any, idx: number) => (
+              <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
