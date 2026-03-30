@@ -5,6 +5,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import { VariantCountProvider } from "@/hooks/useVariantCounts";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
@@ -157,7 +158,10 @@ export default function StorefrontHome() {
     return () => observer.disconnect();
   }, []); // stable — never recreated
 
+  const allProductIds = useMemo(() => [...bestSellingProducts, ...displayProducts].map((p: any) => p.id), [bestSellingProducts, displayProducts]);
+
   return (
+    <VariantCountProvider productIds={allProductIds}>
     <>
       {/* Search bar trigger — hidden when header already has search */}
       {!hideSearchBar && (
@@ -348,5 +352,6 @@ export default function StorefrontHome() {
         </Suspense>
       </LazyRender>
     </>
+    </VariantCountProvider>
   );
 }

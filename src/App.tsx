@@ -126,25 +126,23 @@ const LoadingSpinner = () => {
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-          <div className="h-10 w-10 animate-pulse rounded-lg bg-muted" />
-          <div className="h-10 w-24 animate-pulse rounded-lg bg-muted" />
+          <div className="h-10 w-10 rounded-lg bg-muted/60" />
+          <div className="h-10 w-24 rounded-lg bg-muted/60" />
           <div className="flex-1" />
-          <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
-          <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
+          <div className="h-9 w-9 rounded-full bg-muted/60" />
+          <div className="h-9 w-9 rounded-full bg-muted/60" />
         </div>
       </div>
-      <div className="w-full" style={{ aspectRatio: "16/7", background: "hsl(var(--muted))" }}>
-        <div className="h-full w-full animate-pulse" />
-      </div>
+      <div className="w-full bg-muted/60" style={{ aspectRatio: "16/7" }} />
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[0,1,2,3].map(i => (
             <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
-              <div className="w-full animate-pulse bg-muted" style={{ aspectRatio: "4/5" }} />
+              <div className="w-full bg-muted/60" style={{ aspectRatio: "4/5" }} />
               <div className="p-2.5 space-y-2">
-                <div className="h-3 w-16 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-full animate-pulse rounded bg-muted" />
-                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-16 rounded bg-muted/60" />
+                <div className="h-4 w-full rounded bg-muted/60" />
+                <div className="h-4 w-20 rounded bg-muted/60" />
               </div>
             </div>
           ))}

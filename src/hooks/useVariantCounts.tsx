@@ -1,0 +1,45 @@
+import { createContext, useContext, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+type CountMap = Map<string, number>;
+
+const VariantCountContext = createContext<CountMap | null>(null);
+
+/**
+ * Batch-fetch variant counts for a list of products in ONE query.
+ * Wrap product grids with this to eliminate N individual queries.
+ */
+export function VariantCountProvider({ productIds, children }: { productIds: string[]; children: ReactNode }) {
+  const { data: counts } = useQuery({
+    queryKey: ["variant-counts-batch", productIds.length > 0 ? productIds[0] : "empty", productIds.length],
+    queryFn: async (): Promise<CountMap> => {
+      if (productIds.length === 0) return new Map();
+      const { data, error } = await supabase
+        .from("product_variants")
+        .select("product_id")
+        .in("product_id", productIds)
+        .eq("is_active", true);
+      if (error) throw error;
+      const map: CountMap = new Map();
+      for (const row of data || []) {
+        map.set(row.product_id, (map.get(row.product_id) || 0) + 1);
+      }
+      return map;
+    },
+    staleTime: 10 * 60 * 1000,
+    enabled: productIds.length > 0,
+  });
+
+  return (
+    <VariantCountContext.Provider value={counts ?? null}>
+      {children}
+    </VariantCountContext.Provider>
+  );
+}
+
+/** Get variant count for a single product. Returns 0 if provider is missing or count unknown. */
+export function useVariantCount(productId: string): number {
+  const counts = useContext(VariantCountContext);
+  return counts?.get(productId) ?? 0;
+}
