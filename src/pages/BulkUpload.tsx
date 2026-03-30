@@ -437,7 +437,7 @@ export default function BulkUpload() {
 
       // Background-copy external images to our storage + sync to media library
       if (_createdProducts && _createdProducts.length > 0 && storeId) {
-        copyExternalImagesForProducts(_createdProducts, storeId);
+        compressAndUploadExternalImages(_createdProducts, storeId);
 
         // Auto-sync product images to media library (fire-and-forget)
         const imageUrls = _createdProducts
