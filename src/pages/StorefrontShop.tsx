@@ -1,5 +1,5 @@
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -30,21 +30,6 @@ export default function StorefrontShop() {
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
 
-  // Fetch total count (lightweight, head-only)
-  const { data: totalCount } = useQuery({
-    queryKey: ["storefront-shop-count", store.id],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("products")
-        .select("id", { count: "exact", head: true })
-        .eq("store_id", store.id)
-        .eq("is_active", true);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    enabled: !!store.id,
-    staleTime: 5 * 60 * 1000,
-  });
 
   const {
     data,
@@ -114,11 +99,6 @@ export default function StorefrontShop() {
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <h1 className="text-xl font-bold text-foreground">Shop All</h1>
-        {typeof totalCount === "number" && totalCount > 0 && (
-          <span className="text-sm text-muted-foreground">
-            ({totalCount} products)
-          </span>
-        )}
       </div>
 
       <div style={{ minHeight: 600, contain: "layout" }}>
