@@ -57,30 +57,51 @@ export default function BuyNowPhoneModal({
       localStorage.setItem("checkout_phone", cleaned);
     } catch {}
 
-    // Try geolocation + reverse geocode
-    try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 8000,
-          maximumAge: 300000,
-        });
-      });
-
-      const { data } = await supabase.functions.invoke("reverse-geocode", {
-        body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-      });
-
-      if (data?.success && data?.address) {
+    // Try geolocation + reverse geocode with fallback
+    if ("geolocation" in navigator) {
+      try {
+        // Try high accuracy first, fallback to low accuracy
+        let pos: GeolocationPosition | null = null;
         try {
-          localStorage.setItem(
-            "checkout_address",
-            JSON.stringify(data.address)
-          );
-        } catch {}
+          pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 600000,
+            });
+          });
+        } catch {
+          // High accuracy failed — try low accuracy (cell/wifi)
+          try {
+            pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: false,
+                timeout: 15000,
+                maximumAge: 600000,
+              });
+            });
+          } catch {
+            // Both failed
+          }
+        }
+
+        if (pos) {
+          const { data } = await supabase.functions.invoke("reverse-geocode", {
+            body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          });
+
+          if (data?.success && data?.address) {
+            try {
+              localStorage.setItem(
+                "checkout_address",
+                JSON.stringify(data.address)
+              );
+            } catch {}
+          }
+        }
+      } catch {
+        // Geocode API failed — continue without address
       }
-    } catch {
-      // Location denied or geocode failed — continue without address
     }
 
     setLoading(false);
