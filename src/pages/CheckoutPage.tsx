@@ -196,6 +196,22 @@ export default function CheckoutPage() {
     },
   });
 
+  // Check if store has any active coupons
+  const { data: hasActiveCoupons } = useQuery({
+    queryKey: ["store-has-coupons", store.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("coupons")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .limit(1);
+      if (error) throw error;
+      return (count ?? 0) > 0;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const availableMethods = paymentConfig?.payment_methods || ["cod"];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
@@ -778,7 +794,8 @@ export default function CheckoutPage() {
         </CollapsibleContent>
       </Collapsible>
 
-      {/* 2. Coupon Code */}
+      {/* 2. Coupon Code — only show if store has active coupons */}
+      {(hasActiveCoupons || appliedCoupon) && (
       <div className="mb-4 rounded-xl border border-border bg-card p-4">
         {appliedCoupon ? (
           <div className="flex items-center justify-between">
@@ -810,6 +827,7 @@ export default function CheckoutPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* 3. Delivery Details */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-4">

@@ -90,7 +90,7 @@ export default function CheckoutAwareLayout({
 
   return (
     <>
-      {marquee}
+      {!isCheckout && marquee}
 
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
@@ -116,7 +116,7 @@ export default function CheckoutAwareLayout({
           boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
         } : undefined}
       >
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4">
+        <div className={`mx-auto flex ${isCheckout ? 'h-11' : 'h-14'} max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4`}>
           {isCheckout ? (
             <>
               <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick} aria-label="Go back">
