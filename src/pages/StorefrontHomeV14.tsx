@@ -31,7 +31,7 @@ import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import SortDropdown from "@/components/storefront/SortDropdown";
 
 const ABOVE_FOLD_COUNT = 4;
-const INITIAL_LIMIT = PAGE_SIZE;
+const POPULAR_LIMIT = 10;
 
 export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategoryStyle = "style-4" }: { defaultCardStyle?: string; defaultCategoryStyle?: string } = {}) {
   const store = useOutletContext<StoreData>();

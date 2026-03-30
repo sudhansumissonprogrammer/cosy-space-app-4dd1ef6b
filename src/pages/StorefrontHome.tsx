@@ -23,7 +23,7 @@ const StorefrontInstagramSection = lazy(() => import("@/components/storefront/St
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 4;
-const INITIAL_LIMIT = PAGE_SIZE;
+const POPULAR_LIMIT = 10;
 
 export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
