@@ -263,43 +263,7 @@ export default function StorefrontHome() {
               <div className="h-5 w-1 rounded-full bg-foreground" />
               <h2 className="text-lg font-bold text-foreground tracking-wide" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>🔥 Popular Products</h2>
             </div>
-            <div className="relative">
-              <button
-                onClick={() => setSortOpen(!sortOpen)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-accent/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
-                aria-label="Sort products"
-              >
-                <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
-                <span className="hidden sm:inline">
-                  {sortBy === "popular" && "Popular"}
-                  {sortBy === "price_asc" && "Price: Low"}
-                  {sortBy === "price_desc" && "Price: High"}
-                  {sortBy === "newest" && "Newest"}
-                </span>
-              </button>
-              {sortOpen && (
-                <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
-                  {([
-                    { value: "popular", label: "Popular" },
-                    { value: "price_asc", label: "Price: Low → High" },
-                    { value: "price_desc", label: "Price: High → Low" },
-                    { value: "newest", label: "Newest First" },
-                  ] as const).map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
-                      className={`block w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
-                        sortBy === opt.value
-                          ? "bg-foreground/10 text-foreground font-bold"
-                          : "text-foreground hover:bg-accent/60"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <SortDropdown value={sortBy} onChange={setSortBy} />
           </div>
 
           {showSkeleton ? (
