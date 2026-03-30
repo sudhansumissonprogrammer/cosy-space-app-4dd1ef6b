@@ -18,7 +18,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import SortDropdown from "@/components/storefront/SortDropdown";
 
-const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
+
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
