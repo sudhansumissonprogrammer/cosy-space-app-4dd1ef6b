@@ -192,10 +192,13 @@ export default function StorefrontShell({
       {children(renderProps)}
 
       {/* Lazy overlays — shared across all themes */}
+      {/* PWA install prompts temporarily disabled */}
+      {/*
       <Suspense fallback={null}>
         <DynamicPwaManifest storeName={store.name} logoUrl={store.logo_url} themeColor={primaryColor} />
         <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
       </Suspense>
+      */}
       {showSideCart && (
         <Suspense fallback={null}>
           <SideCart store={store} />
