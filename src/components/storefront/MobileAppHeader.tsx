@@ -8,7 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart, Search, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
-import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import { storefrontPath } from "@/lib/subdomain";
 import type { Tables } from "@/integrations/supabase/types";
 
