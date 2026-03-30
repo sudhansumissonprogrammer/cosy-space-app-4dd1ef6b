@@ -1,16 +1,13 @@
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import LazyRender from "@/components/storefront/LazyRender";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useRef } from "react";
-
-const ABOVE_FOLD_COUNT = 4;
 
 const PAGE_SIZE = 14;
 
@@ -32,7 +29,22 @@ export default function StorefrontShop() {
   const { slug } = useParams<{ slug: string }>();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
-  
+
+  // Fetch total count (lightweight, head-only)
+  const { data: totalCount } = useQuery({
+    queryKey: ["storefront-shop-count", store.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", store.id)
+        .eq("is_active", true);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!store.id,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const {
     data,
@@ -67,15 +79,13 @@ export default function StorefrontShop() {
 
   const products = data?.pages.flatMap((p) => p.products) || [];
 
-  // Stable observer — uses ref to avoid recreating on every state change
+  // Stable observer ref pattern
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
   scrollStateRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage };
 
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Re-attach observer whenever sentinel mounts (products load)
-  const sentinelCallbackRef = useCallback((el: HTMLDivElement | null) => {
-    // Disconnect previous observer
+  const sentinelRef = useCallback((el: HTMLDivElement | null) => {
     if (observerRef.current) {
       observerRef.current.disconnect();
       observerRef.current = null;
@@ -88,7 +98,7 @@ export default function StorefrontShop() {
           s.fetchNextPage();
         }
       },
-      { rootMargin: "200px" }
+      { rootMargin: "300px" }
     );
     observer.observe(el);
     observerRef.current = observer;
@@ -104,71 +114,60 @@ export default function StorefrontShop() {
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <h1 className="text-xl font-bold text-foreground">Shop All</h1>
-        {products.length > 0 && (
-          <span className="text-sm text-muted-foreground">({products.length} products)</span>
+        {typeof totalCount === "number" && totalCount > 0 && (
+          <span className="text-sm text-muted-foreground">
+            ({totalCount} products)
+          </span>
         )}
       </div>
 
       <div style={{ minHeight: 600, contain: "layout" }}>
-      {isLoading ? (
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <ProductCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : isError && products.length === 0 ? (
-        <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-lg border bg-card">
-          <p className="text-muted-foreground">Failed to load products</p>
-          <button
-            onClick={() => refetch()}
-            className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      ) : products.length > 0 ? (
-        <>
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {products.slice(0, ABOVE_FOLD_COUNT).map((product, index) => (
-              <UniversalProductCard
-                key={product.id}
-                product={product}
-                slug={slug!}
-                store={store}
-                priority={index < 2}
-                cardStyle={cardStyle}
-              />
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
             ))}
           </div>
-          {products.length > ABOVE_FOLD_COUNT && (
-            <LazyRender minHeight={600} rootMargin="300px">
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4">
-                {products.slice(ABOVE_FOLD_COUNT).map((product) => (
-                  <UniversalProductCard
-                    key={product.id}
-                    product={product}
-                    slug={slug!}
-                    store={store}
-                    priority={false}
-                    cardStyle={cardStyle}
-                  />
-                ))}
-              </div>
-            </LazyRender>
-          )}
-
-          {/* Infinite scroll sentinel */}
-          <div ref={sentinelCallbackRef} className="flex justify-center py-8">
-            {isFetchingNextPage && (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            )}
+        ) : isError && products.length === 0 ? (
+          <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-lg border bg-card">
+            <p className="text-muted-foreground">Failed to load products</p>
+            <button
+              onClick={() => refetch()}
+              className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
+            >
+              Retry
+            </button>
           </div>
-        </>
-      ) : (
-        <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
-          <p className="text-muted-foreground">No products yet.</p>
-        </div>
-      )}
+        ) : products.length > 0 ? (
+          <>
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {products.map((product, index) => (
+                <UniversalProductCard
+                  key={product.id}
+                  product={product}
+                  slug={slug!}
+                  store={store}
+                  priority={index < 4}
+                  cardStyle={cardStyle}
+                />
+              ))}
+            </div>
+
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="flex justify-center py-8">
+              {isFetchingNextPage && (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              )}
+              {!hasNextPage && products.length > PAGE_SIZE && (
+                <p className="text-sm text-muted-foreground">You've seen all products</p>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
+            <p className="text-muted-foreground">No products yet.</p>
+          </div>
+        )}
       </div>
     </div>
   );
