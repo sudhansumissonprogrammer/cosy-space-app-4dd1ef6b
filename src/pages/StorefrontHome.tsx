@@ -352,5 +352,6 @@ export default function StorefrontHome() {
         </Suspense>
       </LazyRender>
     </>
+    </VariantCountProvider>
   );
 }
