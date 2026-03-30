@@ -131,7 +131,7 @@ export default function ProductDetail() {
 
   // Fetch store shipping config for free shipping threshold
   const { data: shippingConfig } = useQuery({
-    queryKey: ["store-shipping-config", store.id],
+    queryKey: ["storefront-shipping-config", store.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("store_shipping_config")

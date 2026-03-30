@@ -19,7 +19,7 @@ export default function CartPage() {
   const showCheckout = orderMode === "website" || orderMode === "both";
 
   const { data: shippingConfig } = useQuery({
-    queryKey: ["store-shipping-config", store.id],
+    queryKey: ["storefront-shipping-config", store.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("store_shipping_config")
