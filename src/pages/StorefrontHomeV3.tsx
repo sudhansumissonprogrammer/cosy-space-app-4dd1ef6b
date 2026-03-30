@@ -381,7 +381,7 @@ export default function StorefrontHomeV3() {
         ) : allSorted.length > 0 ? (
           <>
             <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {allSorted.slice(0, 8).map((product, idx) => (
+              {allSorted.slice(0, 10).map((product, idx) => (
                 <UniversalProductCard
                   key={product.id}
                   product={product}
