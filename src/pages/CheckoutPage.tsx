@@ -79,25 +79,28 @@ export default function CheckoutPage() {
 
   // Re-check localStorage for late-arriving address data (Theme-16 geocode race condition)
   useEffect(() => {
+    let filled = false;
     const checkForAddress = () => {
+      if (filled) return;
       try {
-        const addr = JSON.parse(localStorage.getItem("checkout_address") || "null");
+        const raw = localStorage.getItem("checkout_address");
+        if (!raw) return;
+        const addr = JSON.parse(raw);
         if (addr) {
-          if (addr.street_address && !streetAddress) setStreetAddress(addr.street_address);
-          if (addr.city && !city) setCity(addr.city);
-          if (addr.state && !state) setState(addr.state);
-          if (addr.pincode && !pincode) setPincode(addr.pincode);
+          filled = true;
+          // Use functional updates to avoid stale closures
+          if (addr.street_address) setStreetAddress((prev: string) => prev || addr.street_address);
+          if (addr.city) setCity((prev: string) => prev || addr.city);
+          if (addr.state) setState((prev: string) => prev || addr.state);
+          if (addr.pincode) setPincode((prev: string) => prev || addr.pincode);
         }
       } catch {}
     };
-    // Check after short delays to catch late writes
-    const t1 = setTimeout(checkForAddress, 500);
-    const t2 = setTimeout(checkForAddress, 2000);
-    const t3 = setTimeout(checkForAddress, 5000);
-    // Also listen for storage events from the same tab
-    const handler = (e: StorageEvent) => { if (e.key === "checkout_address") checkForAddress(); };
-    window.addEventListener("storage", handler);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); window.removeEventListener("storage", handler); };
+    // Poll aggressively for background geocode results (same-tab writes don't trigger StorageEvent)
+    const interval = setInterval(checkForAddress, 800);
+    const timeout = setTimeout(() => clearInterval(interval), 20000); // stop after 20s
+    checkForAddress(); // immediate check
+    return () => { clearInterval(interval); clearTimeout(timeout); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
