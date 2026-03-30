@@ -13,6 +13,7 @@ import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import { storefrontPath } from "@/lib/subdomain";
 import type { Tables } from "@/integrations/supabase/types";
+import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 
 type StoreData = Tables<"stores">;
 
