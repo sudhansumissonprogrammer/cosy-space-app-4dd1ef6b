@@ -11,7 +11,7 @@ import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
@@ -26,38 +26,19 @@ import { storefrontPath } from "@/lib/subdomain";
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
+import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
+import SortDropdown from "@/components/storefront/SortDropdown";
 
 const ABOVE_FOLD_COUNT = 4;
 const INITIAL_LIMIT = PAGE_SIZE;
 
-function ProductCardSkeleton() {
-  return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
-      <div className="p-1 pb-0">
-        <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
-      </div>
-      <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
-        <div className="flex items-center justify-between">
-          <div className="h-2.5 w-16 rounded bg-muted/60" />
-          <div className="h-2.5 w-10 rounded bg-muted/60" />
-        </div>
-        <div className="h-3 w-full rounded bg-muted/60" />
-        <div className="h-3 w-3/4 rounded bg-muted/60" />
-        <div className="h-4 w-20 rounded bg-muted/60" />
-        <div className="h-7 w-full rounded-lg bg-muted/60 sm:h-8" />
-      </div>
-    </div>
-  );
-}
-
-export default function StorefrontHomeV14() {
+export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategoryStyle = "style-4" }: { defaultCardStyle?: string; defaultCategoryStyle?: string } = {}) {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
   const [searchOpen, setSearchOpen] = useState(false);
   const [openFilters, setOpenFilters] = useState(false);
   const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
-  const [sortOpen, setSortOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useStoreJsonLd({
@@ -75,9 +56,8 @@ export default function StorefrontHomeV14() {
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
-  // Theme-14 defaults: style-2 cards, style-3 categories
-  const cardStyle = themeConfig?.product_card_style || "style-2";
-  const categoryStyle = themeConfig?.category_style || "style-4";
+  const cardStyle = themeConfig?.product_card_style || defaultCardStyle;
+  const categoryStyle = themeConfig?.category_style || defaultCategoryStyle;
   const headerLayout = themeConfig?.header_logo_alignment || "center";
   const hideSearchBar = headerLayout === "left-with-search";
   const marqueeText = themeConfig?.marquee_text;
@@ -277,43 +257,7 @@ export default function StorefrontHomeV14() {
               <div className="h-5 w-1 rounded-full bg-foreground" />
               <h2 className="text-lg font-bold text-foreground tracking-wide" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>🔥 Popular Products</h2>
             </div>
-            <div className="relative">
-              <button
-                onClick={() => setSortOpen(!sortOpen)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-accent/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
-                aria-label="Sort products"
-              >
-                <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
-                <span className="hidden sm:inline">
-                  {sortBy === "popular" && "Popular"}
-                  {sortBy === "price_asc" && "Price: Low"}
-                  {sortBy === "price_desc" && "Price: High"}
-                  {sortBy === "newest" && "Newest"}
-                </span>
-              </button>
-              {sortOpen && (
-                <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
-                  {([
-                    { value: "popular", label: "Popular" },
-                    { value: "price_asc", label: "Price: Low → High" },
-                    { value: "price_desc", label: "Price: High → Low" },
-                    { value: "newest", label: "Newest First" },
-                  ] as const).map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
-                      className={`block w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
-                        sortBy === opt.value
-                          ? "bg-foreground/10 text-foreground font-bold"
-                          : "text-foreground hover:bg-accent/60"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <SortDropdown value={sortBy} onChange={setSortBy} />
           </div>
 
           {showSkeleton ? (
@@ -396,4 +340,8 @@ export default function StorefrontHomeV14() {
       </LazyRender>
     </>
   );
+}
+
+export default function StorefrontHomeV14() {
+  return <ClassicCenterHome defaultCardStyle="style-2" defaultCategoryStyle="style-4" />;
 }

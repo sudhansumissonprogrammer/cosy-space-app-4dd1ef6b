@@ -1,10 +1,10 @@
-import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, useMemo, useRef, useEffect, lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowUpDown, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
@@ -14,35 +14,15 @@ import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
+import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
+import SortDropdown from "@/components/storefront/SortDropdown";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 4;
-
 const INITIAL_LIMIT = PAGE_SIZE;
-
-/** Static placeholder — no animation for faster perceived load */
-function ProductCardSkeleton() {
-  return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-card" style={{ contain: "layout" }}>
-      <div className="p-1 pb-0">
-        <div className="w-full rounded-lg bg-muted/60" style={{ aspectRatio: "4/5" }} />
-      </div>
-      <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
-        <div className="flex items-center justify-between">
-          <div className="h-2.5 w-16 rounded bg-muted/60" />
-          <div className="h-2.5 w-10 rounded bg-muted/60" />
-        </div>
-        <div className="h-3 w-full rounded bg-muted/60" />
-        <div className="h-3 w-3/4 rounded bg-muted/60" />
-        <div className="h-4 w-20 rounded bg-muted/60" />
-        <div className="h-7 w-full rounded-lg bg-muted/60 sm:h-8" />
-      </div>
-    </div>
-  );
-}
 
 export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
@@ -51,7 +31,6 @@ export default function StorefrontHome() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [openFilters, setOpenFilters] = useState(false);
   const [sortBy, setSortBy] = useState<"popular" | "price_asc" | "price_desc" | "newest">("popular");
-  const [sortOpen, setSortOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useStoreJsonLd({
@@ -283,43 +262,7 @@ export default function StorefrontHome() {
               <div className="h-5 w-1 rounded-full bg-foreground" />
               <h2 className="text-lg font-bold text-foreground tracking-wide" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>🔥 Popular Products</h2>
             </div>
-            <div className="relative">
-              <button
-                onClick={() => setSortOpen(!sortOpen)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-accent/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
-                aria-label="Sort products"
-              >
-                <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
-                <span className="hidden sm:inline">
-                  {sortBy === "popular" && "Popular"}
-                  {sortBy === "price_asc" && "Price: Low"}
-                  {sortBy === "price_desc" && "Price: High"}
-                  {sortBy === "newest" && "Newest"}
-                </span>
-              </button>
-              {sortOpen && (
-                <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
-                  {([
-                    { value: "popular", label: "Popular" },
-                    { value: "price_asc", label: "Price: Low → High" },
-                    { value: "price_desc", label: "Price: High → Low" },
-                    { value: "newest", label: "Newest First" },
-                  ] as const).map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
-                      className={`block w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
-                        sortBy === opt.value
-                          ? "bg-foreground/10 text-foreground font-bold"
-                          : "text-foreground hover:bg-accent/60"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <SortDropdown value={sortBy} onChange={setSortBy} />
           </div>
 
           {showSkeleton ? (
