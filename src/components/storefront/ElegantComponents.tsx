@@ -10,7 +10,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
-import StorefrontSearchOverlay from "@/components/storefront/StorefrontSearchOverlay";
+const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 import { storefrontPath } from "@/lib/subdomain";
 import type { Tables } from "@/integrations/supabase/types";
 
