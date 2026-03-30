@@ -60,13 +60,13 @@ const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const ProductDetailSkeleton = () => (
   <div className="mx-auto max-w-6xl px-4 py-8 space-y-4">
-    <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+    <div className="h-8 w-48 rounded bg-muted/60" />
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div className="aspect-square animate-pulse rounded-xl bg-muted" />
+      <div className="aspect-square rounded-xl bg-muted/60" />
       <div className="space-y-4">
-        <div className="h-6 w-3/4 animate-pulse rounded bg-muted" />
-        <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
-        <div className="h-10 w-32 animate-pulse rounded bg-muted" />
+        <div className="h-6 w-3/4 rounded bg-muted/60" />
+        <div className="h-4 w-1/2 rounded bg-muted/60" />
+        <div className="h-10 w-32 rounded bg-muted/60" />
       </div>
     </div>
   </div>
