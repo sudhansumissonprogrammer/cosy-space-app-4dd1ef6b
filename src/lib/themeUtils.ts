@@ -86,7 +86,7 @@ export function buildThemeStyle(
   return { themeStyle, primaryColor, btnTextColor };
 }
 
-/** Load Google Fonts dynamically for theme config */
+/** Load Google Fonts dynamically for theme config — non-blocking */
 export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
   if (!themeConfig) return;
   const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
@@ -98,7 +98,15 @@ export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
     link = document.createElement("link");
     link.id = linkId;
     link.rel = "stylesheet";
+    // Non-blocking: load as print, swap to all on load
+    link.media = "print";
+    link.onload = () => { link.media = "all"; };
     document.head.appendChild(link);
   }
-  link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin`;
+  const newHref = `https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin`;
+  if (link.href !== newHref) {
+    link.media = "print";
+    link.onload = () => { link.media = "all"; };
+    link.href = newHref;
+  }
 }
