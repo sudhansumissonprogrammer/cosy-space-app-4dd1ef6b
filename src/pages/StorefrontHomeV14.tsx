@@ -78,8 +78,8 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
   const totalProducts = queryClient.getQueryData<number>(["storefront-total-products", store.id]) ?? allCachedProducts?.length ?? 0;
   const totalNonBestSelling = totalProducts - bestSellingProducts.length;
 
-  const apiOffset = isDefaultSort ? INITIAL_LIMIT : 0;
-  const hasMoreBeyondInitial = isDefaultSort ? totalNonBestSelling > INITIAL_LIMIT : totalNonBestSelling > 0;
+  const apiOffset = isDefaultSort ? POPULAR_LIMIT : 0;
+  const hasMoreBeyondInitial = isDefaultSort ? totalNonBestSelling > POPULAR_LIMIT : totalNonBestSelling > 0;
 
   const {
     data: paginatedData,

@@ -76,8 +76,8 @@ export default function StorefrontHome() {
 
   // For default sort: skip the first 20 (served from cache)
   // For custom sorts: start from 0 (full API pagination)
-  const apiOffset = isDefaultSort ? INITIAL_LIMIT : 0;
-  const hasMoreBeyondInitial = isDefaultSort ? totalNonBestSelling > INITIAL_LIMIT : totalNonBestSelling > 0;
+  const apiOffset = isDefaultSort ? POPULAR_LIMIT : 0;
+  const hasMoreBeyondInitial = isDefaultSort ? totalNonBestSelling > POPULAR_LIMIT : totalNonBestSelling > 0;
 
   const {
     data: paginatedData,
