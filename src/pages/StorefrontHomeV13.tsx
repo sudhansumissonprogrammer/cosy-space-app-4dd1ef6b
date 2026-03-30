@@ -10,7 +10,7 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
 /* ── Veg / Non-Veg indicator ── */
 function DietBadge({ category }: { category: string | null }) {
