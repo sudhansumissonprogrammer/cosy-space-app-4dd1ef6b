@@ -75,9 +75,13 @@ export function useStorefront(slugOverride?: string) {
     enabled: !!slug,
     staleTime: 60_000,
     gcTime: 10 * 60 * 1000,
-    // If we have injected data, use it as initialData for instant render
+    // If we have injected data, use it as initialData for instant render.
+    // initialDataUpdatedAt: 0 marks it as "infinitely stale" so React Query
+    // immediately does a background refetch. This is critical: the browser
+    // or Worker may serve old cached HTML with a stale theme — the background
+    // refetch ensures we always converge to the DB truth within seconds.
     ...(injected?.store && slug && !seeded.current
-      ? { initialData: injected }
+      ? { initialData: injected, initialDataUpdatedAt: 0 }
       : {}),
   });
 
