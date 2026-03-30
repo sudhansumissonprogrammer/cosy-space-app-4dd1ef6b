@@ -309,6 +309,7 @@ export default function StorefrontLayoutV14({ slugOverride }: { slugOverride?: s
           store={store}
           headerLogoAlignment={themeConfig?.header_logo_alignment || "center"}
           mobileNavEnabled={themeConfig?.mobile_nav_enabled ?? true}
+          mobileNavStyle={(themeConfig as any)?.mobile_nav_style || "classic"}
           headerStyle={themeConfig?.header_style && themeConfig.header_style !== "normal" ? themeConfig.header_style : "transparent"}
         />
       )}
