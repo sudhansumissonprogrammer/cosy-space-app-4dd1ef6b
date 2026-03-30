@@ -32,7 +32,7 @@ import SortDropdown from "@/components/storefront/SortDropdown";
 const ABOVE_FOLD_COUNT = 4;
 const INITIAL_LIMIT = PAGE_SIZE;
 
-export default function StorefrontHomeV14() {
+export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategoryStyle = "style-4" }: { defaultCardStyle?: string; defaultCategoryStyle?: string } = {}) {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
