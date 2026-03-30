@@ -138,7 +138,7 @@ function StorefrontSkeleton() {
  * - Logo alignment defaults to center
  * - All other functionality (slide menu, footer, checkout, etc.) is identical
  */
-function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavEnabled = false, headerStyle = "normal" }: { store: StoreData; headerLogoAlignment?: string; mobileNavEnabled?: boolean; headerStyle?: string }) {
+function CheckoutAwareLayout({ store, headerLogoAlignment = "center", mobileNavEnabled = false, mobileNavStyle = "classic", headerStyle = "normal" }: { store: StoreData; headerLogoAlignment?: string; mobileNavEnabled?: boolean; mobileNavStyle?: string; headerStyle?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
