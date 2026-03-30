@@ -131,17 +131,10 @@ export default function BuyNowPhoneModal({
           {/* Continue button */}
           <Button
             onClick={handleContinue}
-            disabled={loading || phone.replace(/\D/g, "").length !== 10}
+            disabled={phone.replace(/\D/g, "").length !== 10}
             className="w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wider"
           >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Getting your location...
-              </>
-            ) : (
-              "Continue to Checkout"
-            )}
+            Continue to Checkout
           </Button>
         </div>
       </DialogContent>
