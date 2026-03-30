@@ -63,10 +63,21 @@ export default function BuyNowPhoneModal({
       const doGeocode = async (pos: GeolocationPosition) => {
         try {
           console.log("[BuyNowModal] Geocoding coords:", pos.coords.latitude, pos.coords.longitude);
-          const { data, error } = await supabase.functions.invoke("reverse-geocode", {
-            body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          // Use direct fetch instead of supabase.functions.invoke()
+          // because storefront shoppers are unauthenticated
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          const res = await fetch(`${supabaseUrl}/functions/v1/reverse-geocode`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": anonKey,
+              "Authorization": `Bearer ${anonKey}`,
+            },
+            body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
           });
-          console.log("[BuyNowModal] Geocode response:", data, error);
+          const data = await res.json();
+          console.log("[BuyNowModal] Geocode response:", data);
           if (data?.success && data?.address) {
             localStorage.setItem("checkout_address", JSON.stringify(data.address));
             console.log("[BuyNowModal] Address saved to localStorage:", data.address);
