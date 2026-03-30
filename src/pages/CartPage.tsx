@@ -65,6 +65,7 @@ export default function CartPage() {
   }
 
   return (
+    <>
     <div className="mx-auto max-w-3xl w-full overflow-x-hidden px-3 sm:px-4 py-4 sm:py-8" style={{ color: "var(--storefront-text, inherit)" }}>
       <div className="mb-3 sm:mb-6">
         <Link
