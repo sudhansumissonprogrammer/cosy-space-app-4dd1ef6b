@@ -272,7 +272,7 @@ function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAli
       <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
       {mobileNavEnabled && (
         <Suspense fallback={null}>
-          <LazyMobileBottomNav store={store} />
+          {mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> : <LazyMobileBottomNav store={store} />}
         </Suspense>
       )}
       <StorefrontFooter store={store} />
