@@ -15,9 +15,20 @@ import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Switch } from "@/components/ui/switch";
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeSVG } from "qrcode.react";
+
+/** Generate a URL-safe slug from a store name */
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "") // remove special chars
+    .replace(/\s+/g, "")          // remove all spaces (no hyphens, just concatenate)
+    .replace(/-+/g, "-")          // collapse hyphens
+    .replace(/^-|-$/g, "");       // trim hyphens
+}
 
 
 
@@ -26,6 +37,7 @@ export default function StoreSettings() {
   const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -133,10 +145,14 @@ export default function StoreSettings() {
 
 
       const hasHours = Object.values(businessHours).some((v) => v.trim());
+      const newSlug = generateSlug(name);
+      if (!newSlug) throw new Error("Store name must contain at least one letter or number");
+
       const { error } = await (supabase as any)
         .from("stores")
         .update({
           name: name.trim(),
+          slug: newSlug,
           description: description.trim() || null,
           whatsapp_number: whatsappNumber.trim() || null,
           location: location.trim() || null,
@@ -159,20 +175,36 @@ export default function StoreSettings() {
         })
         .eq("id", storeId!);
       if (error) throw error;
+      return { newSlug };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["store", storeId] });
       queryClient.invalidateQueries({ queryKey: ["stores"] });
+      queryClient.invalidateQueries({ queryKey: ["my-store"] });
       setHeroImageFiles([]);
       toast.success("Store settings updated!");
-      // Auto-purge edge cache so changes appear instantly on storefront
-      if (store?.slug) {
+
+      const newSlug = result?.newSlug;
+      const oldSlug = store?.slug;
+
+      // Auto-purge edge cache for BOTH old and new slugs
+      if (oldSlug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
-          purgeStoreCache(store.slug, (store as any).custom_domain)
+          purgeStoreCache(oldSlug, (store as any).custom_domain)
+        );
+      }
+      if (newSlug) {
+        import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
+          purgeStoreCache(newSlug, (store as any).custom_domain)
         );
         import("@/lib/prewarmStore").then(({ prewarmStore }) =>
-          prewarmStore(store.slug, (store as any).custom_domain)
+          prewarmStore(newSlug, (store as any).custom_domain)
         );
+      }
+
+      // Navigate to new slug URL if slug changed
+      if (newSlug && newSlug !== oldSlug) {
+        navigate(`/dashboard/stores/${newSlug}/settings`, { replace: true });
       }
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
