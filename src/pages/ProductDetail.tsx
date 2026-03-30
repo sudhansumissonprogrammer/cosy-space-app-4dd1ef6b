@@ -26,6 +26,9 @@ import StorefrontProductCard from "@/components/storefront/StorefrontProductCard
 import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
+import { lazy, Suspense } from "react";
+
+const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 
 interface Variant {
   id: string;
