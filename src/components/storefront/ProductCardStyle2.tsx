@@ -46,6 +46,7 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
               <img src={optimizeImageUrl(images[0], priority ? 200 : 400, priority ? 45 : undefined)} srcSet={getImageSrcSet(images[0], priority ? [200, 400] : [300, 400, 600], priority ? 45 : undefined)} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding={priority ? "sync" : "async"} />
               {hasSecond && (
                 <img src={optimizeImageUrl(images[1], 400)} srcSet={getImageSrcSet(images[1], [300, 400, 600])} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" decoding="async" />
+
               )}
             </>
           );

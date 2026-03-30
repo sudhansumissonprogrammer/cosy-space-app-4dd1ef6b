@@ -1,5 +1,6 @@
 /**
  * StorefrontHomeV12 — Reuses ElegantHomePage from V10 with different defaults.
+ * Static import to avoid double lazy waterfall.
  */
 import { ElegantHomePage } from "./StorefrontHomeV10";
 

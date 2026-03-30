@@ -414,8 +414,12 @@ export default function StorefrontHomeV3() {
           </div>
         )}
       </div>
-      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
-      <StorefrontInstagramSection store={store} />
+      <Suspense fallback={null}>
+        <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <StorefrontInstagramSection store={store} />
+      </Suspense>
     </>
   );
 }

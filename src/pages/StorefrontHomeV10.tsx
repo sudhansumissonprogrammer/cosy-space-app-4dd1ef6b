@@ -112,8 +112,12 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
           );
         })()}
       </div>
-      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
-      <StorefrontInstagramSection store={store} />
+      <Suspense fallback={null}>
+        <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <StorefrontInstagramSection store={store} />
+      </Suspense>
     </div>
   );
 }

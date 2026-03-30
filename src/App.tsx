@@ -274,7 +274,7 @@ function prefetchHomeChunk(theme: string) {
     case "theme-14": return import("./pages/StorefrontHomeV14");
     case "theme-13": return import("./pages/StorefrontHomeV13");
     case "theme-12": return import("./pages/StorefrontHomeV12");
-    case "theme-11": return import("./pages/StorefrontHomeV11");
+    case "theme-11": return import("./pages/StorefrontHomeV3"); // V11 = V3
     case "theme-10": return import("./pages/StorefrontHomeV10");
     case "theme-3": return import("./pages/StorefrontHomeV3");
     case "theme-2": return import("./pages/StorefrontHomeV2");

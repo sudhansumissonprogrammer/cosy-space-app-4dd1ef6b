@@ -589,7 +589,9 @@ export default function StorefrontHomeV13() {
           </div>
         ))}
       </div>
-      <StorefrontInstagramSection store={store} />
+      <Suspense fallback={null}>
+        <StorefrontInstagramSection store={store} />
+      </Suspense>
     </div>
   );
 }

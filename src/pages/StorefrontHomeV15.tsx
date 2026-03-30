@@ -1,8 +1,6 @@
 /**
  * StorefrontHomeV15 — "Classic Center Alt" home page
- * Reuses ClassicCenterHome from V14 with different default styles:
- * - Default card style: style-1 (vs style-2 in V14)
- * - Default category style: style-4
+ * Static import to avoid double lazy waterfall.
  */
 import { ClassicCenterHome } from "./StorefrontHomeV14";
 
