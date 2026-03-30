@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, lazy, Suspense } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -10,7 +10,7 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
+const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
 /* ── Veg / Non-Veg indicator ── */
 function DietBadge({ category }: { category: string | null }) {
@@ -589,7 +589,9 @@ export default function StorefrontHomeV13() {
           </div>
         ))}
       </div>
-      <StorefrontInstagramSection store={store} />
+      <Suspense fallback={null}>
+        <StorefrontInstagramSection store={store} />
+      </Suspense>
     </div>
   );
 }

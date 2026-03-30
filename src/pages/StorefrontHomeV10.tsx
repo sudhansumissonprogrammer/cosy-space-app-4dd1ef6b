@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, lazy, Suspense } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -9,8 +9,8 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
-import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
+const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import { ResponsiveHeroBanner, HomeBestSellingSection, HomeSectionHeader } from "@/components/storefront/HomeSharedSections";
 
@@ -112,8 +112,12 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
           );
         })()}
       </div>
-      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
-      <StorefrontInstagramSection store={store} />
+      <Suspense fallback={null}>
+        <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <StorefrontInstagramSection store={store} />
+      </Suspense>
     </div>
   );
 }

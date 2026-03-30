@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 14;
 
 /** Lightweight column list — avoids fetching heavy fields (product_images, product_variants) */
 const PRODUCT_COLUMNS =

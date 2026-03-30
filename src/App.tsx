@@ -163,7 +163,8 @@ const StorefrontCustomPage = lazy(() => import("./pages/StorefrontCustomPage"));
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
   // Theme 16 uses the same home as Theme 1 — no separate lazy chunk needed
-  const HomeComponent = theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV11 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+  // V11 re-exports V3 exactly — map directly to avoid double lazy chunk
+  const HomeComponent = theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV3 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
   return (
     <>
       <Route index element={<HomeComponent />} />
@@ -273,7 +274,7 @@ function prefetchHomeChunk(theme: string) {
     case "theme-14": return import("./pages/StorefrontHomeV14");
     case "theme-13": return import("./pages/StorefrontHomeV13");
     case "theme-12": return import("./pages/StorefrontHomeV12");
-    case "theme-11": return import("./pages/StorefrontHomeV11");
+    case "theme-11": return import("./pages/StorefrontHomeV3"); // V11 = V3
     case "theme-10": return import("./pages/StorefrontHomeV10");
     case "theme-3": return import("./pages/StorefrontHomeV3");
     case "theme-2": return import("./pages/StorefrontHomeV2");

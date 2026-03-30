@@ -13,8 +13,8 @@ import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
-import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
+const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
 
 /* ── Hero Carousel ── */
 function HeroCarousel({ store }: { store: StoreData }) {
@@ -379,8 +379,16 @@ export default function StorefrontHomeV2() {
           </div>
         )}
       </div>
-      <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
-      <StorefrontInstagramSection store={store} />
+      <LazyRender rootMargin="300px" minHeight={100}>
+        <Suspense fallback={null}>
+          <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
+        </Suspense>
+      </LazyRender>
+      <LazyRender rootMargin="300px" minHeight={100}>
+        <Suspense fallback={null}>
+          <StorefrontInstagramSection store={store} />
+        </Suspense>
+      </LazyRender>
     </>
   );
 }
