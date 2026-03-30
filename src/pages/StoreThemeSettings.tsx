@@ -1870,6 +1870,7 @@ export default function StoreThemeSettings() {
         category_style: themeConfig.category_style || "style-1",
         header_logo_alignment: themeConfig.header_logo_alignment || "left",
         mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? false,
+        mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
       });
     } else {
