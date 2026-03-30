@@ -19,6 +19,21 @@ const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwa
 const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
 const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
 
+/** Defers ExitIntentPopup mounting by 5 seconds to keep initial load fast */
+function DeferredExitIntent({ storeId, storeName }: { storeId: string; storeName: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+  if (!show) return null;
+  return (
+    <Suspense fallback={null}>
+      <ExitIntentPopup storeId={storeId} storeName={storeName} />
+    </Suspense>
+  );
+}
+
 export interface ShellRenderProps {
   store: StoreData;
   slug: string;
