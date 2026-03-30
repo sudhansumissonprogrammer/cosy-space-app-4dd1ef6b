@@ -291,7 +291,7 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     heading_font: "DM Sans", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #25D366, #128C7E, #25D366)",
     marquee_text: "🍽️ Scan & Order • 📱 WhatsApp Ordering • 🚀 Quick Service • ✨ Fresh & Delicious",
-    marquee_enabled: true, product_card_style: "style-4", category_style: "style-5", header_logo_alignment: "left", mobile_nav_enabled: false, header_style: "normal",
+    marquee_enabled: true, product_card_style: "style-4", category_style: "style-5", header_logo_alignment: "left", mobile_nav_enabled: false, mobile_nav_style: "classic", header_style: "normal",
   },
   "theme-14": {
     primary_color: "#A71D31", accent_color: "#3F0D12", text_color: "#1a1a1a", background_color: "#FBE4E3",
