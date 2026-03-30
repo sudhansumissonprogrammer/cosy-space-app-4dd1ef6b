@@ -99,11 +99,6 @@ export default function StorefrontShop() {
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <h1 className="text-xl font-bold text-foreground">Shop All</h1>
-        {typeof totalCount === "number" && totalCount > 0 && (
-          <span className="text-sm text-muted-foreground">
-            ({totalCount} products)
-          </span>
-        )}
       </div>
 
       <div style={{ minHeight: 600, contain: "layout" }}>
