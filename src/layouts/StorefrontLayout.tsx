@@ -138,7 +138,7 @@ function StorefrontSkeleton() {
   );
 }
 
-function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left", mobileNavEnabled = false, headerStyle = "normal" }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string; mobileNavEnabled?: boolean; headerStyle?: string }) {
+function CheckoutAwareLayout({ store, marqueeText, marqueeEnabled, headerLogoAlignment = "left", mobileNavEnabled = false, mobileNavStyle = "classic", headerStyle = "normal" }: { store: StoreData; marqueeText?: string; marqueeEnabled?: boolean; headerLogoAlignment?: string; mobileNavEnabled?: boolean; mobileNavStyle?: string; headerStyle?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
