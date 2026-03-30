@@ -991,6 +991,17 @@ export default function ProductDetail() {
         } catch {}
         return null;
       })()}
+
+      {/* Theme-16 Buy Now Phone Modal */}
+      {(store as any).theme === "theme-16" && (
+        <Suspense fallback={null}>
+          <BuyNowPhoneModal
+            open={buyNowModalOpen}
+            onOpenChange={setBuyNowModalOpen}
+            storeSlug={store.slug}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
