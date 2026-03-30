@@ -9,8 +9,8 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
-import StorefrontInstagramSection from "@/components/storefront/StorefrontInstagramSection";
-import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
+const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import { ResponsiveHeroBanner, HomeBestSellingSection, HomeSectionHeader } from "@/components/storefront/HomeSharedSections";
 
