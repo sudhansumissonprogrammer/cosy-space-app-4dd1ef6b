@@ -50,7 +50,8 @@ const StorefrontHomeV12 = lazy(() => import("./pages/StorefrontHomeV12"));
 const StorefrontHomeV13 = lazy(() => import("./pages/StorefrontHomeV13"));
 const StorefrontHomeV14 = lazy(() => import("./pages/StorefrontHomeV14"));
 const StorefrontHomeV15 = lazy(() => import("./pages/StorefrontHomeV15"));
-const StorefrontHomeV16 = lazy(() => import("./pages/StorefrontHomeV16"));
+// Theme 16 home is identical to Theme 1 — use StorefrontHome directly to avoid double lazy waterfall
+// (StorefrontHomeV16 statically re-exports StorefrontHome, so lazy-loading it adds no value)
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontShop = lazy(() => import("./pages/StorefrontShop"));
 const StorefrontCategoriesPage = lazy(() => import("./pages/StorefrontCategories"));
