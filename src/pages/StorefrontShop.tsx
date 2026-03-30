@@ -71,8 +71,15 @@ export default function StorefrontShop() {
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
   scrollStateRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage };
 
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
   // Re-attach observer whenever sentinel mounts (products load)
   const sentinelCallbackRef = useCallback((el: HTMLDivElement | null) => {
+    // Disconnect previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -84,7 +91,7 @@ export default function StorefrontShop() {
       { rootMargin: "200px" }
     );
     observer.observe(el);
-    return () => observer.disconnect();
+    observerRef.current = observer;
   }, []);
 
   return (
