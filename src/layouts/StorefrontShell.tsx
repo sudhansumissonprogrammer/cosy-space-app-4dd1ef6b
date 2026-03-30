@@ -207,11 +207,7 @@ export default function StorefrontShell({
       <Suspense fallback={null}>
         <FloatingWhatsApp store={store} />
       </Suspense>
-      {showExitIntent && (
-        <Suspense fallback={null}>
-          <ExitIntentPopup storeId={store.id} storeName={store.name} />
-        </Suspense>
-      )}
+      {showExitIntent && <DeferredExitIntent storeId={store.id} storeName={store.name} />}
     </div>
   );
 
