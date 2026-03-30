@@ -173,9 +173,10 @@ export default function StorefrontShell({
   const themeVarsKey = useMemo(() => JSON.stringify(themeStyle), [themeStyle]);
   useEffect(() => {
     const appliedVars = Object.entries(themeStyle).filter(([key, value]) => key.startsWith("--") && typeof value === "string") as Array<[string, string]>;
-    appliedVars.forEach(([key, value]) => {
-      document.body.style.setProperty(key, value);
-    });
+    // Single cssText assignment instead of per-property setProperty calls
+    const existing = document.body.style.cssText;
+    const varsCss = appliedVars.map(([k, v]) => `${k}:${v}`).join(";");
+    document.body.style.cssText = existing + ";" + varsCss;
     return () => {
       appliedVars.forEach(([key]) => {
         document.body.style.removeProperty(key);
