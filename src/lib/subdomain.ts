@@ -43,29 +43,40 @@ export function isCustomDomainHost(hostname: string = window.location.hostname):
  * 2. ?store= query param fallback
  * 3. Subdomain extraction from hostname
  * Returns null for root domain, www, localhost, and preview URLs.
+ *
+ * Result is cached after first call to avoid repeated URLSearchParams parsing.
  */
+let _cachedSlug: string | null | undefined;
+
 export function getSubdomainSlug(): string | null {
+  if (_cachedSlug !== undefined) return _cachedSlug;
+
   if (window.__STORE_SLUG__) {
-    return window.__STORE_SLUG__;
+    _cachedSlug = window.__STORE_SLUG__;
+    return _cachedSlug;
   }
 
   const params = new URLSearchParams(window.location.search);
   const slugFromQuery = params.get("store");
   if (slugFromQuery) {
-    return slugFromQuery;
+    _cachedSlug = slugFromQuery;
+    return _cachedSlug;
   }
 
   const hostname = window.location.hostname;
 
   if (isLocalHost(hostname) || isPreviewHost(hostname) || isRootDomainHost(hostname)) {
+    _cachedSlug = null;
     return null;
   }
 
   if (!isSubdomainHost(hostname)) {
+    _cachedSlug = null;
     return null;
   }
 
-  return hostname.slice(0, hostname.length - ROOT_DOMAIN.length - 1);
+  _cachedSlug = hostname.slice(0, hostname.length - ROOT_DOMAIN.length - 1);
+  return _cachedSlug;
 }
 
 /**

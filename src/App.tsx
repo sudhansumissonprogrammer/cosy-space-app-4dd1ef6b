@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo, useState, useEffect, useRef } from "react";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+// Sonner moved into DashboardProviders — not needed on storefront critical path
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { getSubdomainSlug, ROOT_DOMAIN, isCustomDomainHost, isSubdomainHost } from "@/lib/subdomain";
@@ -14,11 +14,13 @@ const DashboardProviders = lazy(() =>
     import("@/components/ui/toaster"),
     import("@/components/ui/tooltip"),
     import("@/contexts/AuthContext"),
-  ]).then(([toasterMod, tooltipMod, authMod]) => ({
+    import("@/components/ui/sonner"),
+  ]).then(([toasterMod, tooltipMod, authMod, sonnerMod]) => ({
     default: ({ children }: { children: React.ReactNode }) => (
       <authMod.AuthProvider>
         <tooltipMod.TooltipProvider>
           <toasterMod.Toaster />
+          <sonnerMod.Toaster />
           {children}
         </tooltipMod.TooltipProvider>
       </authMod.AuthProvider>
@@ -60,13 +62,13 @@ const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const ProductDetailSkeleton = () => (
   <div className="mx-auto max-w-6xl px-4 py-8 space-y-4">
-    <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+    <div className="h-8 w-48 rounded bg-muted/60" />
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div className="aspect-square animate-pulse rounded-xl bg-muted" />
+      <div className="aspect-square rounded-xl bg-muted/60" />
       <div className="space-y-4">
-        <div className="h-6 w-3/4 animate-pulse rounded bg-muted" />
-        <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
-        <div className="h-10 w-32 animate-pulse rounded bg-muted" />
+        <div className="h-6 w-3/4 rounded bg-muted/60" />
+        <div className="h-4 w-1/2 rounded bg-muted/60" />
+        <div className="h-10 w-32 rounded bg-muted/60" />
       </div>
     </div>
   </div>
@@ -450,7 +452,6 @@ function AppRouter() {
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <Sonner />
       <BrowserRouter>
         <Suspense fallback={<LoadingSpinner />}>
           <ErrorBoundary fallbackMessage="This page encountered an error">
