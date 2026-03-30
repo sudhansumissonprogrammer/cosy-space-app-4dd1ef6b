@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, Home, Tag, Mail, Heart, User } from "lucide-react";
+import { Home, Tag, Mail, Heart, User } from "lucide-react";
+import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { storefrontPath } from "@/lib/subdomain";

@@ -6,7 +6,8 @@
 import { useState, useEffect, Suspense, lazy, type ReactNode } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
+import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";

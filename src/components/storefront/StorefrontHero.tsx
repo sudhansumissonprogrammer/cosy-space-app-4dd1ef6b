@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Store, BadgeCheck } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
+import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
