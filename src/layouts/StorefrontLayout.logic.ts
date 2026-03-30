@@ -118,6 +118,11 @@ export function useStorefront(slugOverride?: string) {
     if (theme_config && store) {
       queryClient.setQueryData(["storefront-theme-config", store.id], theme_config);
     }
+    // Seed shipping config so TrustStrip / SideCart / CartPage get instant cache hit
+    const shipping_config = (data as any)?.shipping_config;
+    if (shipping_config && store) {
+      queryClient.setQueryData(["storefront-shipping-config", store.id], shipping_config);
+    }
     // Seed total product count so home page knows pagination state
     if (store && (data as any)?.total_products != null) {
       queryClient.setQueryData(["storefront-total-products", store.id], (data as any).total_products);
