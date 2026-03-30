@@ -62,27 +62,35 @@ export default function BuyNowPhoneModal({
     if ("geolocation" in navigator) {
       const doGeocode = async (pos: GeolocationPosition) => {
         try {
-          const { data } = await supabase.functions.invoke("reverse-geocode", {
+          console.log("[BuyNowModal] Geocoding coords:", pos.coords.latitude, pos.coords.longitude);
+          const { data, error } = await supabase.functions.invoke("reverse-geocode", {
             body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
           });
+          console.log("[BuyNowModal] Geocode response:", data, error);
           if (data?.success && data?.address) {
-            try { localStorage.setItem("checkout_address", JSON.stringify(data.address)); } catch {}
+            localStorage.setItem("checkout_address", JSON.stringify(data.address));
+            console.log("[BuyNowModal] Address saved to localStorage:", data.address);
           }
-        } catch {}
+        } catch (err) {
+          console.warn("[BuyNowModal] Geocode failed:", err);
+        }
       };
 
       // Try high accuracy first, fallback to low
       navigator.geolocation.getCurrentPosition(
         (pos) => doGeocode(pos),
-        () => {
+        (err) => {
+          console.log("[BuyNowModal] High-accuracy geo failed, trying low:", err.message);
           navigator.geolocation.getCurrentPosition(
             (pos) => doGeocode(pos),
-            () => {}, // Both failed — no address
+            (err2) => console.warn("[BuyNowModal] All geolocation failed:", err2.message),
             { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }
           );
         },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 600000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 }
       );
+    } else {
+      console.warn("[BuyNowModal] Geolocation not available");
     }
   };
 
