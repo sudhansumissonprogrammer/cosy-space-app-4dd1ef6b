@@ -1,6 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
-import { fireMetaCAPI } from "@/lib/metaCapi";
 
 export interface CartItem {
   productId: string;
@@ -29,6 +27,41 @@ const CartContext = createContext<CartContextType | null>(null);
 
 function getStorageKey(slug: string) {
   return `cart_${slug}`;
+}
+
+/** Fire analytics asynchronously — never blocks addToCart */
+function fireAddToCartAnalytics(
+  item: { productId: string; name: string; price: number },
+  currency: string,
+  storeId?: string
+) {
+  // Dynamic imports keep fbPixelTrack + metaCapi out of the initial bundle
+  Promise.all([
+    import("@/hooks/useFacebookPixel"),
+    import("@/lib/metaCapi"),
+  ]).then(([pixelMod, capiMod]) => {
+    const eid = pixelMod.generateEventId();
+    pixelMod.fbPixelTrack("AddToCart", {
+      content_name: item.name,
+      content_ids: [item.productId],
+      content_type: "product",
+      value: item.price,
+      currency,
+    }, eid);
+    if (storeId) {
+      capiMod.fireMetaCAPI({
+        storeId,
+        eventName: "AddToCart",
+        eventId: eid,
+        customData: {
+          content_ids: [item.productId],
+          content_type: "product",
+          value: item.price,
+          currency,
+        },
+      });
+    }
+  }).catch(() => {});
 }
 
 export function CartProvider({ slug, storeId, currency = "INR", children }: { slug: string; storeId?: string; currency?: string; children: ReactNode }) {
@@ -82,28 +115,9 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
       return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
     setIsCartOpen(true);
-    const eid = generateEventId();
-    fbPixelTrack("AddToCart", {
-      content_name: item.name,
-      content_ids: [item.productId],
-      content_type: "product",
-      value: item.price,
-      currency,
-    }, eid);
-    if (storeId) {
-      fireMetaCAPI({
-        storeId,
-        eventName: "AddToCart",
-        eventId: eid,
-        customData: {
-          content_ids: [item.productId],
-          content_type: "product",
-          value: item.price,
-          currency,
-        },
-      });
-    }
-  }, [slug, storeId]);
+    // Fire analytics asynchronously — doesn't block cart UI
+    fireAddToCartAnalytics(item, currency, storeId);
+  }, [slug, storeId, currency]);
 
   const removeFromCart = useCallback((productId: string, variantId?: string) => {
     setItems((prev) => prev.filter((i) => !(i.productId === productId && i.variantId === variantId)));

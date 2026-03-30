@@ -5,6 +5,10 @@ const PAGE_SIZE = 20;
 
 /** Lightweight column list — avoids fetching heavy fields (product_images, product_variants) */
 const PRODUCT_COLUMNS =
+  "id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id";
+
+/** Full columns including cost/sku/timestamps — used for dashboard and follow-up fetches */
+const PRODUCT_COLUMNS_FULL =
   "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
 /**
@@ -80,4 +84,4 @@ export function useStorefrontProducts(storeId: string | undefined) {
   return { products: data || [], isLoading };
 }
 
-export { PRODUCT_COLUMNS, PAGE_SIZE };
+export { PRODUCT_COLUMNS, PRODUCT_COLUMNS_FULL, PAGE_SIZE };
