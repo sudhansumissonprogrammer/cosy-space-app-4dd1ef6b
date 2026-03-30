@@ -196,6 +196,22 @@ export default function CheckoutPage() {
     },
   });
 
+  // Check if store has any active coupons
+  const { data: hasActiveCoupons } = useQuery({
+    queryKey: ["store-has-coupons", store.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("coupons")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .limit(1);
+      if (error) throw error;
+      return (count ?? 0) > 0;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const availableMethods = paymentConfig?.payment_methods || ["cod"];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
