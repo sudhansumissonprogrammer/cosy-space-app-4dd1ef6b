@@ -23,7 +23,7 @@ const StorefrontInstagramSection = lazy(() => import("@/components/storefront/St
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 4;
-const INITIAL_LIMIT = PAGE_SIZE;
+const POPULAR_LIMIT = 10;
 
 export default function StorefrontHome() {
   const store = useOutletContext<StoreData>();
@@ -68,7 +68,7 @@ export default function StorefrontHome() {
 
   const initialNonBestSelling = useMemo(() => {
     if (!isDefaultSort || !allCachedProducts.length) return [];
-    return allCachedProducts.filter((p: any) => !p.is_best_selling).slice(0, INITIAL_LIMIT);
+    return allCachedProducts.filter((p: any) => !p.is_best_selling).slice(0, POPULAR_LIMIT);
   }, [allCachedProducts, isDefaultSort]);
 
   const totalProducts = queryClient.getQueryData<number>(["storefront-total-products", store.id]) ?? allCachedProducts?.length ?? 0;
@@ -76,8 +76,8 @@ export default function StorefrontHome() {
 
   // For default sort: skip the first 20 (served from cache)
   // For custom sorts: start from 0 (full API pagination)
-  const apiOffset = isDefaultSort ? INITIAL_LIMIT : 0;
-  const hasMoreBeyondInitial = isDefaultSort ? totalNonBestSelling > INITIAL_LIMIT : totalNonBestSelling > 0;
+  const apiOffset = isDefaultSort ? POPULAR_LIMIT : 0;
+  const hasMoreBeyondInitial = isDefaultSort ? totalNonBestSelling > POPULAR_LIMIT : totalNonBestSelling > 0;
 
   const {
     data: paginatedData,

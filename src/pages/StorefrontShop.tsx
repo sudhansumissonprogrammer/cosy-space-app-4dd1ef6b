@@ -8,7 +8,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import LazyRender from "@/components/storefront/LazyRender";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
-import { useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 
 const ABOVE_FOLD_COUNT = 4;
 
@@ -32,7 +32,7 @@ export default function StorefrontShop() {
   const { slug } = useParams<{ slug: string }>();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  
 
   const {
     data,
@@ -71,8 +71,8 @@ export default function StorefrontShop() {
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
   scrollStateRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage };
 
-  useEffect(() => {
-    const el = sentinelRef.current;
+  // Re-attach observer whenever sentinel mounts (products load)
+  const sentinelCallbackRef = useCallback((el: HTMLDivElement | null) => {
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -85,7 +85,7 @@ export default function StorefrontShop() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []); // stable — never recreated
+  }, []);
 
   return (
     <div className="mx-auto max-w-6xl px-2 sm:px-4 py-6">
@@ -151,7 +151,7 @@ export default function StorefrontShop() {
           )}
 
           {/* Infinite scroll sentinel */}
-          <div ref={sentinelRef} className="flex justify-center py-8">
+          <div ref={sentinelCallbackRef} className="flex justify-center py-8">
             {isFetchingNextPage && (
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             )}

@@ -95,7 +95,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
             ))}
           </div>
         ) : (() => {
-          const popularProducts = products.filter((p: any) => !p.is_best_selling).slice(0, 8);
+          const popularProducts = products.filter((p: any) => !p.is_best_selling).slice(0, 10);
           return popularProducts.length > 0 ? (
             <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4">
               {popularProducts.map((product: any, idx: number) => (
