@@ -43,71 +43,47 @@ export default function BuyNowPhoneModal({
   });
   const [loading, setLoading] = useState(false);
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     const cleaned = phone.replace(/\D/g, "");
     if (cleaned.length !== 10) {
       toast.error("Please enter a valid 10-digit mobile number");
       return;
     }
 
-    setLoading(true);
+    // Save phone immediately
+    try { localStorage.setItem("checkout_phone", cleaned); } catch {}
 
-    // Save phone
-    try {
-      localStorage.setItem("checkout_phone", cleaned);
-    } catch {}
-
-    // Try geolocation + reverse geocode with fallback
-    if ("geolocation" in navigator) {
-      try {
-        // Try high accuracy first, fallback to low accuracy
-        let pos: GeolocationPosition | null = null;
-        try {
-          pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 600000,
-            });
-          });
-        } catch {
-          // High accuracy failed — try low accuracy (cell/wifi)
-          try {
-            pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: false,
-                timeout: 15000,
-                maximumAge: 600000,
-              });
-            });
-          } catch {
-            // Both failed
-          }
-        }
-
-        if (pos) {
-          const { data } = await supabase.functions.invoke("reverse-geocode", {
-            body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-          });
-
-          if (data?.success && data?.address) {
-            try {
-              localStorage.setItem(
-                "checkout_address",
-                JSON.stringify(data.address)
-              );
-            } catch {}
-          }
-        }
-      } catch {
-        // Geocode API failed — continue without address
-      }
-    }
-
-    setLoading(false);
+    // Navigate immediately — don't wait for geocode
     onBeforeNavigate?.();
     onOpenChange(false);
     navigate(storefrontPath(storeSlug, "checkout"));
+
+    // Fire-and-forget: get location & save address in background
+    if ("geolocation" in navigator) {
+      const doGeocode = async (pos: GeolocationPosition) => {
+        try {
+          const { data } = await supabase.functions.invoke("reverse-geocode", {
+            body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          });
+          if (data?.success && data?.address) {
+            try { localStorage.setItem("checkout_address", JSON.stringify(data.address)); } catch {}
+          }
+        } catch {}
+      };
+
+      // Try high accuracy first, fallback to low
+      navigator.geolocation.getCurrentPosition(
+        (pos) => doGeocode(pos),
+        () => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => doGeocode(pos),
+            () => {}, // Both failed — no address
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }
+          );
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 600000 }
+      );
+    }
   };
 
   return (
