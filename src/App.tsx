@@ -162,7 +162,8 @@ const StorefrontCustomPage = lazy(() => import("./pages/StorefrontCustomPage"));
 
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
-  const HomeComponent = theme === "theme-16" ? StorefrontHomeV16 : theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV11 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+  // Theme 16 uses the same home as Theme 1 — no separate lazy chunk needed
+  const HomeComponent = theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV11 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
   return (
     <>
       <Route index element={<HomeComponent />} />
