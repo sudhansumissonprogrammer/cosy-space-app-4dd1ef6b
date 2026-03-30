@@ -90,7 +90,7 @@ export default function CheckoutAwareLayout({
 
   return (
     <>
-      {marquee}
+      {!isCheckout && marquee}
 
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
