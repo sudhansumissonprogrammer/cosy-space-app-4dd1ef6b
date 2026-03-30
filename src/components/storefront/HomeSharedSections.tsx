@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
+
+const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 
 type StoreData = Tables<"stores">;
 
