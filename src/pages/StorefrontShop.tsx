@@ -8,7 +8,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import LazyRender from "@/components/storefront/LazyRender";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
-import { useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 
 const ABOVE_FOLD_COUNT = 4;
 
