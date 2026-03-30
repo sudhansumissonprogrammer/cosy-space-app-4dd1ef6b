@@ -35,8 +35,8 @@ export default function HamburgerMenu({ store }: { store: StoreData }) {
           </div>
           <nav className="flex flex-col gap-1 p-4">
             <Link to={storefrontPath(store.slug)} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Home className="h-4 w-4" />Home</Link>
-            <Link to={storefrontPath(store.slug, "shop")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Store className="h-4 w-4" />Shop All</Link>
-            <Link to={storefrontPath(store.slug, "about")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Store className="h-4 w-4" />About Us</Link>
+            <Link to={storefrontPath(store.slug, "shop")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><StoreIcon className="h-4 w-4" />Shop All</Link>
+            <Link to={storefrontPath(store.slug, "about")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><StoreIcon className="h-4 w-4" />About Us</Link>
             <Link to={storefrontPath(store.slug, "contact")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Mail className="h-4 w-4" />Contact Us</Link>
             {customPages.map((cp: any) => (
               <Link key={cp.id} to={storefrontPath(store.slug, `page/${cp.slug}`)} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"><Tag className="h-4 w-4" />{cp.title}</Link>
