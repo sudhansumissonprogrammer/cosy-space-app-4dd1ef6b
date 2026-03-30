@@ -37,6 +37,7 @@ export default function StoreSettings() {
   const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
