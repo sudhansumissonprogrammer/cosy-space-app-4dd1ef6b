@@ -6,6 +6,7 @@ import ProductCardStyle3 from "./ProductCardStyle3";
 import ProductCardStyle4 from "./ProductCardStyle4";
 import VariantPickerDialog from "./VariantPickerDialog";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
+import { useVariantCount } from "@/hooks/useVariantCounts";
 
 interface Props {
   product: Tables<"products">;
@@ -13,22 +14,18 @@ interface Props {
   store: Tables<"stores">;
   priority?: boolean;
   cardStyle?: string;
-  /** Pre-computed variant count — avoids per-card query when provided */
-  variantCount?: number;
 }
 
 /**
  * Renders the correct product card component based on the store's
  * product_card_style setting from theme config.
- * If the product has variants, clicking Add to Cart opens a variant picker
- * instead of adding directly.
  *
- * Variant count is now passed from parent (batched query) to eliminate
- * N individual queries per page load.
+ * Variant count is read from VariantCountProvider context (batched query)
+ * to eliminate N individual queries per page.
  */
-export default function UniversalProductCard({ product, slug, store, priority = false, cardStyle = "style-1", variantCount = 0 }: Props) {
+export default function UniversalProductCard({ product, slug, store, priority = false, cardStyle = "style-1" }: Props) {
   const [variantOpen, setVariantOpen] = useState(false);
-
+  const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
 
   const onVariantRequired = useCallback(() => {
