@@ -48,7 +48,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
           </Sheet>
 
           <Link to={storefrontPath(store.slug)} className="flex items-center shrink-0">
-            {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[120px] object-contain" /> : <span className="text-base font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}>{store.name}</span>}
+            {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[120px] object-contain" /> : <StoreTextLogo storeName={store.name} size="text-base" color="var(--storefront-text, hsl(var(--foreground)))" />}
           </Link>
 
           <button onClick={() => setSearchOpen(true)} className="flex flex-1 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-all active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08", border: "1px solid var(--storefront-text, hsl(var(--foreground)))12" }} aria-label="Search products">

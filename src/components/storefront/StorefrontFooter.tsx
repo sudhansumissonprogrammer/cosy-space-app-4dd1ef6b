@@ -25,12 +25,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
               {store.logo_url ? (
                 <img src={optimizeImageUrl(store.logo_url, 120, 80)} alt={store.name} width={120} height={40} className="h-10 w-auto max-w-[120px] object-contain" loading="lazy" decoding="async" />
               ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
-                  <Store className="h-4 w-4 text-white" />
-                </div>
-              )}
-              {!store.logo_url && (
-                <span className="text-lg font-bold text-white">{store.name}</span>
+                <StoreTextLogo storeName={store.name} size="text-lg" color="white" />
               )}
             </div>
             {store.description && (

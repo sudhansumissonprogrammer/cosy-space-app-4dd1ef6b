@@ -135,7 +135,7 @@ export function ElegantFooter({ store, colors }: { store: StoreData; colors: The
     <footer className="mt-8" style={{ backgroundColor: `var(--storefront-accent, ${colors.defaultAccent})`, color: `var(--storefront-bg, ${colors.defaultBg})` }}>
       <div className="px-5 py-10 space-y-8 max-w-6xl mx-auto">
         <div className="text-center space-y-3">
-          {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-10 w-auto mx-auto object-contain brightness-0 invert" /> : <h3 className="text-2xl font-bold" style={{ fontFamily: `var(--storefront-heading-font, '${colors.headingFontFallback}'), serif` }}>{store.name}</h3>}
+          {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-10 w-auto mx-auto object-contain brightness-0 invert" /> : <StoreTextLogo storeName={store.name} size="text-2xl" />}
           {store.description && <p className="text-sm opacity-60 max-w-md mx-auto leading-relaxed">{store.description}</p>}
         </div>
         <div className="grid grid-cols-2 gap-6 text-sm">
