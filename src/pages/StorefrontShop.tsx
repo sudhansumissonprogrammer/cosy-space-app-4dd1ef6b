@@ -30,21 +30,6 @@ export default function StorefrontShop() {
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
 
-  // Fetch total count (lightweight, head-only)
-  const { data: totalCount } = useQuery({
-    queryKey: ["storefront-shop-count", store.id],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("products")
-        .select("id", { count: "exact", head: true })
-        .eq("store_id", store.id)
-        .eq("is_active", true);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    enabled: !!store.id,
-    staleTime: 5 * 60 * 1000,
-  });
 
   const {
     data,
