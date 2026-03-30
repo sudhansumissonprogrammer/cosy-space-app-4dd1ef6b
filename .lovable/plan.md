@@ -1,64 +1,102 @@
-# Theme 16 Performance Optimization Plan
+
+
+# Universal Cold-Load Optimization — All Themes to 4-5s
 
 ## Problem
+Theme 16 was optimized to ~5s, but themes 1-3, 10-15 still take 7-10s on cold loads. The same bottlenecks exist across all themes but haven't been addressed universally.
 
-Theme 16 takes ~10 seconds to fully load. Since Theme 16 re-exports Theme 1 (Classic) home and wraps it in StorefrontShell, the bottlenecks are shared with V1 but compounded by the lazy-loading chain.
+## What Changes (No Design Changes)
 
-## Root Causes Identified
+### 1. Priority Image Optimization for ProductCardStyle2, Style3, Style4
+**Currently**: Styles 2, 3, and 4 always load images at quality 60 with srcSet [300, 400, 600] — even for above-fold cards.
+**Fix**: Apply the same priority optimization already in Style1: when `priority=true`, use quality 45 and srcSet [200, 400]. This cuts ~40% off above-fold image bytes for all themes using these card styles (themes 2, 3, 10, 11, 12, 13, 14, 15).
 
-1. **Lazy-load waterfall**: App.tsx lazy-loads StorefrontLayoutV16, which imports StorefrontShell, which loads store data, then renders Outlet, which lazy-loads StorefrontHomeV16 (re-exports StorefrontHome). That's 2 sequential lazy chunks before any content renders.
-2. **Initial product fetch is only 20 items** (`PAGE_SIZE = 20` in useStorefrontProducts), but the home page splits best-selling vs non-best-selling, so if many are best-selling the "Popular Products" section may appear empty until the infinite scroll query fires — causing a second network round-trip.
-3. **VariantCountProvider** fires a batch query for all visible product IDs on every render, adding a DB round-trip before cards can fully render.
-4. **StorefrontShell overlays** (SideCart, FloatingWhatsApp, ExitIntentPopup) are lazy but still imported and mounted on initial load, adding to hydration cost.
-5. **Image quality at 60** for product cards — each card loads 300px + 600px srcSet images. With 500+ products this is fine for pagination but the initial 4-8 cards could load faster with smaller payloads.
-6. **Google Fonts** loaded via idle callback but still blocks text rendering if fonts aren't cached.
+Files: `ProductCardStyle2.tsx`, `ProductCardStyle3.tsx`, `ProductCardStyle4.tsx`
 
-## Plan
+### 2. Eliminate Double Lazy Waterfall for Re-Export Home Pages
+**Currently**: `StorefrontHomeV11` re-exports from V3, `StorefrontHomeV12` re-exports from V10, `StorefrontHomeV15` re-exports from V14. These are lazy-loaded in App.tsx, creating a double chunk download (the re-export file + the actual component).
+**Fix**: In `storefrontChildRoutes()`, map these themes directly to their parent home component — same pattern already applied for Theme 16.
 
-### Step 1: Eliminate the double lazy-load waterfall
+File: `App.tsx` (lines ~164-166)
 
-- Change `StorefrontHomeV16.tsx` from a re-export to a direct component that imports `StorefrontHome` statically (not lazy). Since the layout already lazy-loads, the home page content shouldn't also be lazy.
-- In `App.tsx`, for theme-16 routes, use `StorefrontHome` directly as the child element instead of lazy `StorefrontHomeV16`, since V16 home is identical to V1.
+### 3. Eager Home Chunk Prefetch for All Themes
+**Currently**: `prefetchHomeChunk()` already covers all themes — no change needed here. Already optimized.
 
-### Step 2: Preload the layout chunk
+### 4. Static Imports for Thin Re-Export Home Pages
+**Fix**: Convert `StorefrontHomeV11.tsx`, `StorefrontHomeV12.tsx`, `StorefrontHomeV15.tsx` to use static imports (like V16 was already fixed), so if they're ever loaded directly, they don't create a waterfall.
 
-- Add a `<link rel="modulepreload">` hint in `index.html` for the StorefrontLayoutV16 chunk, or use Vite's dynamic import with `/* @vite-ignore */` preload comment.
-- Alternatively, in the theme detection logic in App.tsx, trigger `import("./layouts/StorefrontLayoutV16")` eagerly when theme-16 is detected (before React needs it).
+Files: `StorefrontHomeV11.tsx`, `StorefrontHomeV12.tsx`, `StorefrontHomeV15.tsx`
 
-### Step 3: Reduce image payload for above-fold cards
+### 5. Defer StorefrontInstagramSection Import in V2, V3, V10, V13
+**Currently**: Some home pages statically import `StorefrontInstagramSection` and `StorefrontTrustStrip` even though they render below the fold.
+**Fix**: Make these lazy imports where they aren't already (V2, V3 already lazy-load search overlay but not Instagram). This reduces initial chunk size.
 
-- Lower quality from 60 to 45 for the first 4 priority product card images (srcSet sizes [200, 400] instead of [300, 600]).
-- This cuts ~40% off image bytes for above-fold content.
+Files: `StorefrontHomeV2.tsx`, `StorefrontHomeV3.tsx`, `StorefrontHomeV10.tsx`, `StorefrontHomeV13.tsx`
 
-### Step 4: Defer VariantCountProvider
+### 6. PAGE_SIZE Alignment
+**Currently**: `PAGE_SIZE = 20` but edge worker inlines 14 products. The mismatch means React discards the 14 inline products and re-fetches 20.
+**Fix**: Change `PAGE_SIZE` to 14 to match the edge worker's inline count, eliminating a redundant API call on cold load.
 
-- Wrap `VariantCountProvider` to delay the batch query by 1 second or until after first paint, so product cards render immediately with a fallback "no variants" state, then update reactively.
-
-### Step 5: Defer non-critical overlays further
-
-- Move `ExitIntentPopup` to load only after 5 seconds of user activity (not on mount).
-- Keep `SideCart` and `FloatingWhatsApp` as-is (already lazy with Suspense).
-
-### Step 6: Optimize StorefrontShell theme CSS computation
-
-- Memoize `buildThemeStyle` result more aggressively — currently recalculates on every render even when inputs haven't changed.
-- Move the `document.body.style` sync to use a single `cssText` assignment instead of per-property `setProperty` calls.
+File: `useStorefrontProducts.ts`
 
 ## Technical Details
 
-### Files to modify:
+### ProductCardStyle2/3 image fix (example):
+```typescript
+// Before:
+src={optimizeImageUrl(images[0], 400)}
+srcSet={getImageSrcSet(images[0], [300, 400, 600])}
 
-- `src/pages/StorefrontHomeV16.tsx` — static import instead of re-export
-- `src/App.tsx` — preload theme-16 layout chunk on theme detection
-- `src/components/storefront/ProductCardStyle1.tsx` — reduce above-fold image sizes
-- `src/hooks/useVariantCounts.tsx` — add deferred loading (1s delay)
-- `src/layouts/StorefrontShell.tsx` — defer ExitIntentPopup, optimize CSS sync
-- `src/pages/StorefrontHome.tsx` — minor: reduce ABOVE_FOLD_COUNT image quality
+// After:
+src={optimizeImageUrl(images[0], priority ? 200 : 400, priority ? 45 : undefined)}
+srcSet={getImageSrcSet(images[0], priority ? [200, 400] : [300, 400, 600], priority ? 45 : undefined)}
+```
 
-### Expected Impact:
+### App.tsx storefrontChildRoutes fix:
+```typescript
+// Map re-export themes to their parent home component
+const HomeComponent =
+  theme === "theme-16" ? StorefrontHome :      // already done
+  theme === "theme-15" ? StorefrontHomeV14 :    // V15 re-exports V14
+  theme === "theme-11" ? StorefrontHomeV3 :     // V11 re-exports V3
+  theme === "theme-12" ? StorefrontHomeV10 :    // V12 re-exports V10  
+  // ... rest unchanged
+```
 
-- Eliminating double lazy waterfall: **-1.5s**
-- Image payload reduction: **-0.5s**
-- Deferred variant query: **-0.5s**  
-- Chunk preloading: **-1s**
-- Combined: **~5.5s reduction** (10s → ~5s target) i want them should load on store font in 5 second
+Wait — V15 and V12 pass different props (defaultCardStyle, etc.), so they can't simply be replaced by their parent. Only V11 (exact re-export) can be mapped directly. V12 and V15 need static imports instead.
+
+### Corrected approach for V12/V15:
+Keep them as separate lazy components but ensure their re-export files use static imports to avoid chain loading.
+
+### PAGE_SIZE change:
+```typescript
+// useStorefrontProducts.ts line 4
+const PAGE_SIZE = 14; // Match edge worker inline count
+```
+
+## Expected Impact per Theme
+
+| Optimization | Savings | Themes Affected |
+|---|---|---|
+| Priority image quality reduction | ~0.5s | 2, 3, 10, 11, 12, 13, 14, 15 |
+| Eliminate V11 double lazy | ~0.8s | 11 |
+| Static imports for V12, V15 | ~0.5s | 12, 15 |
+| Lazy Instagram/TrustStrip | ~0.3s | 2, 3, 10, 13 |
+| PAGE_SIZE 20→14 alignment | ~1-2s | ALL themes |
+
+**Combined: ~2-3s reduction across all themes**, bringing 7-10s cold loads down to ~4-6s.
+
+## Files to Modify
+1. `src/components/storefront/ProductCardStyle2.tsx` — priority image optimization
+2. `src/components/storefront/ProductCardStyle3.tsx` — priority image optimization
+3. `src/components/storefront/ProductCardStyle4.tsx` — priority image optimization
+4. `src/App.tsx` — map V11 directly to V3 home in storefrontChildRoutes
+5. `src/pages/StorefrontHomeV11.tsx` — static import instead of re-export
+6. `src/pages/StorefrontHomeV12.tsx` — static import instead of re-export
+7. `src/pages/StorefrontHomeV15.tsx` — static import instead of re-export
+8. `src/pages/StorefrontHomeV2.tsx` — lazy import StorefrontInstagramSection
+9. `src/pages/StorefrontHomeV3.tsx` — lazy import StorefrontInstagramSection
+10. `src/pages/StorefrontHomeV10.tsx` — lazy import StorefrontInstagramSection (already lazy — verify)
+11. `src/pages/StorefrontHomeV13.tsx` — lazy import StorefrontInstagramSection
+12. `src/hooks/useStorefrontProducts.ts` — PAGE_SIZE 20 → 14
+
