@@ -2,7 +2,7 @@
  * Shared "Milano-style" header, tab bar, and footer used by V10 and V12 themes.
  * Parameterized by default colors and fonts to support both themes.
  */
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart, Heart, User, Search, Home, LayoutGrid, X, ChevronRight } from "lucide-react";
