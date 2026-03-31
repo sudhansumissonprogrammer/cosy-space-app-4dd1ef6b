@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
-import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import type { Session, User } from "@supabase/supabase-js";
+
+/** Lazy-load supabase client — keeps the 45KB chunk off the storefront critical path */
+let _supabasePromise: Promise<typeof import("@/integrations/supabase/client")> | null = null;
+function getSupabase() {
+  if (!_supabasePromise) _supabasePromise = import("@/integrations/supabase/client");
+  return _supabasePromise;
+}
 
 interface StorefrontCustomer {
   id: string;
