@@ -270,7 +270,7 @@ async function getCustomDomainForSlug(slug) {
 
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stores?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      `${SUPABASE_URL}/rest/v1/stores_public?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
