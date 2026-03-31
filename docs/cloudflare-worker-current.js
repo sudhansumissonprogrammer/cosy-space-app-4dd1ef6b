@@ -220,7 +220,7 @@ async function resolveDomain(hostname, env) {
 
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stores?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
+      `${SUPABASE_URL}/rest/v1/stores_public?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
