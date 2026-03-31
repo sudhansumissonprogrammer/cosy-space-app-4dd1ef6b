@@ -1,13 +1,12 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.2 — KV-OPTIMIZED
+ * STORIVO PRODUCTION ROUTER v4.5 — DB KEEPALIVE + CACHE TTL BOOST
  *
- * Changes from v4.1:
- *   1. ELIMINATED shouldRevalidateGlobal KV lock — uses in-memory only with
- *      longer cooldown (120s) to handle isolate recycling gracefully.
- *   2. theme-lite + prebuilt-head read from Cache API first, KV only as fallback.
- *   3. Background revalidation only triggers every 120s per slug (was 30s).
- *   4. Reduced KV reads per request from 3-6 to 0-1.
- *   5. All existing v4.1 features preserved.
+ * Changes from v4.4:
+ *   1. Added `scheduled()` handler — pings Supabase DB every 5 min via Cron Trigger
+ *      to keep the connection pool warm (eliminates ~4s cold start).
+ *   2. Increased fast-shell Cache-Control from max-age=30 to max-age=300
+ *      with stale-while-revalidate=600 — reduces cache misses by 10x.
+ *   3. All existing v4.4 features preserved.
  */
 
 const WORKER_VERSION = "4.5";
