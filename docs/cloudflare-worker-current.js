@@ -309,34 +309,31 @@ async function getCustomDomainForSlug(slug) {
  * Returns { storeId: string|null, customDomain: string|null }
  */
 const _storeInfoCache = new Map();
+const STORE_INFO_KV_TTL = 3600;
 
 async function _resolveStoreInfo(slug, hostname, env) {
-  // Check in-memory cache first
+  // 1. In-memory cache (fastest)
   const memEntry = _storeInfoCache.get(slug);
   if (memEntry && Date.now() < memEntry.expiresAt) {
     return { storeId: memEntry.storeId, customDomain: memEntry.customDomain };
   }
 
-  // Check Cache API for combined result
+  // 2. Cache API (free, fast)
   const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
   try {
     const cached = await cache.match(infoCacheKey);
     if (cached) {
       const data = await cached.json();
       if (data.__nf) {
-        // Negative cache
         _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
-        // Also seed _resolveStoreId memory cache so the 404 path stays fast
         domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
         return { storeId: null, customDomain: null };
       }
       const result = { storeId: data.id || null, customDomain: data.cd || null };
       _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
-      // Seed the _resolveStoreId memory cache too
       if (result.storeId) {
         domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
       }
-      // Seed the customDomain cache too
       cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
         JSON.stringify({ custom_domain: result.customDomain }),
         { headers: { "Cache-Control": "public, max-age=300" } }
@@ -345,7 +342,39 @@ async function _resolveStoreInfo(slug, hostname, env) {
     }
   } catch {}
 
-  // Single DB call for both id and custom_domain
+  // 3. KV (v4.6: new tier — survives Cache API expiry, much faster than DB)
+  if (env?.STORE_KV) {
+    try {
+      const kvData = await env.STORE_KV.get(`store-info:${slug}`, { type: "json" });
+      if (kvData) {
+        if (kvData.__nf) {
+          _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+          domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+          // Promote to Cache API
+          cache.put(infoCacheKey, new Response(JSON.stringify(kvData), {
+            headers: { "Cache-Control": "public, max-age=60" },
+          })).catch(() => {});
+          return { storeId: null, customDomain: null };
+        }
+        const result = { storeId: kvData.id || null, customDomain: kvData.cd || null };
+        _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
+        if (result.storeId) {
+          domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
+        }
+        // Promote to Cache API
+        cache.put(infoCacheKey, new Response(JSON.stringify(kvData), {
+          headers: { "Cache-Control": "public, max-age=300" },
+        })).catch(() => {});
+        cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
+          JSON.stringify({ custom_domain: result.customDomain }),
+          { headers: { "Cache-Control": "public, max-age=300" } }
+        )).catch(() => {});
+        return result;
+      }
+    } catch {}
+  }
+
+  // 4. DB (slowest — only on complete cache miss)
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/stores_public?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
@@ -362,30 +391,43 @@ async function _resolveStoreInfo(slug, hostname, env) {
     const row = rows[0];
 
     if (!row) {
-      // Store doesn't exist — cache negative result
+      // Store doesn't exist — cache negative result in all tiers
+      const nfData = { __nf: true };
       _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
       domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
-      cache.put(infoCacheKey, new Response(JSON.stringify({ __nf: true }), {
+      cache.put(infoCacheKey, new Response(JSON.stringify(nfData), {
         headers: { "Cache-Control": "public, max-age=60" },
       })).catch(() => {});
+      if (env?.STORE_KV) {
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 120 }).catch(() => {});
+      }
       return { storeId: null, customDomain: null };
     }
 
     const result = { storeId: row.id, customDomain: row.custom_domain || null };
+    const cachePayload = { id: result.storeId, cd: result.customDomain };
     _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
     domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
 
-    // Cache combined result + seed individual caches
-    cache.put(infoCacheKey, new Response(JSON.stringify({ id: result.storeId, cd: result.customDomain }), {
-      headers: { "Cache-Control": "public, max-age=300" },
-    })).catch(() => {});
-    cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
-      JSON.stringify({ custom_domain: result.customDomain }),
-      { headers: { "Cache-Control": "public, max-age=300" } }
-    )).catch(() => {});
-    cache.put(new Request(`https://cache/store-id:${hostname}`), new Response(result.storeId, {
-      headers: { "Cache-Control": "public, max-age=600" },
-    })).catch(() => {});
+    // Write to all cache tiers
+    const writes = [
+      cache.put(infoCacheKey, new Response(JSON.stringify(cachePayload), {
+        headers: { "Cache-Control": "public, max-age=300" },
+      })).catch(() => {}),
+      cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
+        JSON.stringify({ custom_domain: result.customDomain }),
+        { headers: { "Cache-Control": "public, max-age=300" } }
+      )).catch(() => {}),
+      cache.put(new Request(`https://cache/store-id:${hostname}`), new Response(result.storeId, {
+        headers: { "Cache-Control": "public, max-age=600" },
+      })).catch(() => {}),
+    ];
+    if (env?.STORE_KV) {
+      writes.push(
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(cachePayload), { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
+      );
+    }
+    await Promise.all(writes);
 
     return result;
   } catch {
