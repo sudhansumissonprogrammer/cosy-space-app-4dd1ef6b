@@ -91,7 +91,7 @@ export default function CheckoutAwareLayout({
       <AccountBadge slug={store.slug} />
       {!hideWishlistAndShare && <WishlistBadge slug={store.slug} />}
       <CartBadge />
-      {!hideWishlistAndShare && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
+      {!hideWishlistAndShare && <Suspense fallback={null}><LazyShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly /></Suspense>}
     </div>
   ) : null;
 
