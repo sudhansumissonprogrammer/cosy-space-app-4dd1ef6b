@@ -617,6 +617,44 @@ function _buildPrebuiltHead(html) {
   return head;
 }
 
+/* ============== PROXY TO ORIGIN WITH CF EDGE CACHING (v4.3 — for hashed static assets) ============== */
+
+async function proxyToOriginCached(request) {
+  const url = new URL(request.url);
+  url.hostname = ORIGIN_HOST;
+
+  const headers = new Headers(request.headers);
+  headers.set("Host", ORIGIN_HOST);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ORIGIN_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url.toString(), {
+      method: request.method,
+      headers,
+      signal: controller.signal,
+      // v4.3: Enable CF edge caching for immutable hashed assets
+      // This caches JS/CSS chunks at the CF POP — subsequent users in the same region
+      // get edge-cached responses instead of origin roundtrips (~200-800ms savings per chunk)
+      cf: { cacheTtl: 2592000, cacheEverything: true },
+    });
+    clearTimeout(timeout);
+
+    const newRes = new Response(res.body, res);
+    if (newRes.ok) {
+      newRes.headers.set("Cache-Control", "public, max-age=2592000, immutable");
+    }
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+      newRes.headers.set(k, v);
+    }
+    return newRes;
+  } catch {
+    clearTimeout(timeout);
+    // Fallback to uncached proxy
+    return proxyToOrigin(request);
+  }
+}
 
 const KV_STOREFRONT_TTL = 3600;
 const CACHE_STOREFRONT_TTL = 600;
@@ -1330,7 +1368,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 
 /* ============== FAST SHELL INJECT (v4.2 — Cache API first for theme) ============== */
 
-function injectFastShell(html, slug, themeLite, prebuiltHead) {
+function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
   const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
 
   let themeHint = "";
@@ -1338,7 +1376,13 @@ function injectFastShell(html, slug, themeLite, prebuiltHead) {
     themeHint = `window.__THEME__=${JSON.stringify(themeLite)};`;
   }
 
-  const injection = slugScript + themeHint + `</script>`;
+  // v4.3: Inject cached products directly into fast shell — eliminates client-side products fetch
+  let productsHint = "";
+  if (inlineProducts) {
+    productsHint = `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`;
+  }
+
+  const injection = slugScript + themeHint + productsHint + `</script>`;
 
   const bgColor = themeLite?.bg || "#ffffff";
   const textColor = themeLite?.tc || "#1a1a1a";
@@ -1967,6 +2011,12 @@ export default {
         url.pathname !== "/robots.txt");
 
     if (isStaticAsset) {
+      // v4.3: Enable CF edge caching for hashed /assets/ files (JS, CSS, fonts, images)
+      // These files contain content hashes in filenames — safe to cache forever at edge.
+      // Previously used cacheTtl:0 which forced every chunk to origin on cold load (~200-800ms per chunk).
+      if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/static/")) {
+        return proxyToOriginCached(request);
+      }
       return proxyToOrigin(request);
     }
 
@@ -2276,13 +2326,29 @@ export default {
         return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "none" });
       }
 
-      const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead);
+      // v4.3: Try to inject cached products directly into fast shell
+      // If products are in edge cache, inject them — eliminates client-side fetch entirely
+      // If not cached, client-side prefetch bridge handles it (no regression)
+      let inlineProducts = null;
+      try {
+        const productsCacheKey = _buildProductsCacheKey(hostname, {});
+        const cachedProducts = await cache.match(productsCacheKey);
+        if (cachedProducts) {
+          inlineProducts = await cachedProducts.text();
+        }
+      } catch {}
+
+      const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead, inlineProducts);
+
+      const dataSource = inlineProducts
+        ? "fast-shell-products"
+        : themeLite ? "fast-shell-themed" : "fast-shell";
 
       const newHeaders = new Headers();
       newHeaders.set("Content-Type", "text/html; charset=utf-8");
       newHeaders.set("Cache-Control", "public, max-age=30, stale-while-revalidate=300");
       newHeaders.set("X-Store-Slug", slug);
-      newHeaders.set("X-Data-Source", themeLite ? "fast-shell-themed" : "fast-shell");
+      newHeaders.set("X-Data-Source", dataSource);
       newHeaders.set("X-Shell-Source", shellResult.source);
       newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
@@ -2297,7 +2363,7 @@ export default {
       return addDiagnosticHeaders(response, {
         slug,
         cacheStatus: "MISS",
-        dataSource: themeLite ? "fast-shell-themed" : "fast-shell",
+        dataSource,
       });
     }
 
