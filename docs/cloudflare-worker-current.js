@@ -1548,12 +1548,29 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
     getPrebuiltHead(shellResult.html, env),
   ]);
 
+  // v4.8.1: Check Cache API first, then KV fallback for products
   let inlineProducts = null;
   try {
     const productsCacheKey = _buildProductsCacheKey(hostname, {});
     const cachedProducts = await cache.match(productsCacheKey);
     if (cachedProducts) {
       inlineProducts = await cachedProducts.text();
+    } else if (env?.STORE_KV) {
+      // KV fallback — products may be warm in KV even if Cache API expired
+      const kvKey = _buildProductsKvKey(hostname, {});
+      const kvProducts = await env.STORE_KV.get(kvKey);
+      if (kvProducts) {
+        inlineProducts = kvProducts;
+        // Re-populate Cache API from KV for next request
+        ctx.waitUntil(
+          cache.put(productsCacheKey, new Response(kvProducts, {
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
+            },
+          })).catch(() => {})
+        );
+      }
     }
   } catch {}
 
