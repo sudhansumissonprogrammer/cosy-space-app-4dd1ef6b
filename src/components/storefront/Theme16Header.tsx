@@ -31,9 +31,36 @@ type StoreData = Tables<"stores">;
 interface Theme16HeaderProps {
   store: StoreData;
   onOrderPlaced?: boolean;
+  headerStyle?: string;
 }
 
-export default function Theme16Header({ store, onOrderPlaced }: Theme16HeaderProps) {
+function getHeaderStyles(headerStyle: string) {
+  if (headerStyle === "transparent") {
+    return {
+      bg: "transparent",
+      borderColor: "transparent",
+      extraClass: "",
+      wrapperStyle: {} as React.CSSProperties,
+    };
+  }
+  if (headerStyle === "glassmorphic") {
+    return {
+      bg: "rgba(255,255,255,0.12)",
+      borderColor: "transparent",
+      extraClass: "backdrop-blur-[20px] rounded-b-2xl shadow-lg",
+      wrapperStyle: { margin: "0 8px" } as React.CSSProperties,
+    };
+  }
+  // "normal" — solid bg
+  return {
+    bg: "var(--storefront-bg, hsl(var(--background)))",
+    borderColor: "var(--storefront-text, hsl(var(--foreground)))10",
+    extraClass: "backdrop-blur-xl",
+    wrapperStyle: {} as React.CSSProperties,
+  };
+}
+
+export default function Theme16Header({ store, onOrderPlaced, headerStyle = "normal" }: Theme16HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
