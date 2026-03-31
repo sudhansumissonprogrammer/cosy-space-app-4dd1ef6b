@@ -1,13 +1,23 @@
 import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { getSubdomainSlug } from "@/lib/subdomain";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type StoreData = Tables<"stores">;
 
 const PREFETCH_BRIDGE_TIMEOUT_MS = 1500;
+
+/** Lazy supabase import — keeps the 45KB chunk off the storefront critical path
+ *  when the prefetch bridge (index.html) already fetched the data */
+async function rpcGetStorefrontShell(slug: string) {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data, error } = await supabase.rpc("get_storefront_shell" as any, {
+    _slug: slug,
+  });
+  if (error) throw error;
+  return data as any;
+}
 
 /**
  * Core storefront data-fetching hook.
@@ -61,12 +71,8 @@ export function useStorefront(slugOverride?: string) {
       }
 
       // 2. Fresh RPC call — use shell (lightweight, no products)
-      const { data: result, error } = await supabase.rpc("get_storefront_shell" as any, {
-        _slug: slug!,
-      });
-
-      if (error) throw error;
-      return result as any;
+      // This dynamically imports supabase only when needed
+      return rpcGetStorefrontShell(slug!);
     },
     enabled: !!slug,
     staleTime: 60_000,
@@ -98,6 +104,7 @@ export function useStorefront(slugOverride?: string) {
       queryClient.prefetchQuery({
         queryKey: ["storefront-custom-pages", store.id],
         queryFn: async () => {
+          const { supabase } = await import("@/integrations/supabase/client");
           const { data: pages } = await supabase
             .from("store_pages")
             .select("id, title, slug, content, image_url")
