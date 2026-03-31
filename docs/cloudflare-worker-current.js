@@ -796,6 +796,10 @@ async function _resolveStoreId(domain, env) {
       }
     } else {
       domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
+      // Cache negative result in Cache API for 60s to speed up repeated 404s
+      cache.put(storeIdCacheKey, new Response("__NOT_FOUND__", {
+        headers: { "Cache-Control": "public, max-age=60" },
+      })).catch(() => {});
     }
 
     return storeId;
