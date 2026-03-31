@@ -2326,7 +2326,19 @@ export default {
         return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "none" });
       }
 
-      const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead);
+      // v4.3: Try to inject cached products directly into fast shell
+      // If products are in edge cache, inject them — eliminates client-side fetch entirely
+      // If not cached, client-side prefetch bridge handles it (no regression)
+      let inlineProducts = null;
+      try {
+        const productsCacheKey = _buildProductsCacheKey(hostname, {});
+        const cachedProducts = await cache.match(productsCacheKey);
+        if (cachedProducts) {
+          inlineProducts = await cachedProducts.text();
+        }
+      } catch {}
+
+      const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead, inlineProducts);
 
       const newHeaders = new Headers();
       newHeaders.set("Content-Type", "text/html; charset=utf-8");
