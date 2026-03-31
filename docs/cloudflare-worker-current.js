@@ -1,15 +1,17 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.5 — DB KEEPALIVE + CACHE TTL BOOST
+ * STORIVO PRODUCTION ROUTER v4.6 — KV STORE EXISTENCE + ROUTING OPTIMIZATION
  *
- * Changes from v4.4:
- *   1. Added `scheduled()` handler — pings Supabase DB every 5 min via Cron Trigger
- *      to keep the connection pool warm (eliminates ~4s cold start).
- *   2. Increased fast-shell Cache-Control from max-age=30 to max-age=300
- *      with stale-while-revalidate=600 — reduces cache misses by 10x.
- *   3. All existing v4.4 features preserved.
+ * Changes from v4.5:
+ *   1. KV tier in _resolveStoreInfo: memory → Cache API → KV → DB
+ *      Eliminates ~200-400ms DB lookup when Cache API expires but KV is warm.
+ *   2. Custom domain product inlining: same as subdomain path, injects cached
+ *      products into fast-shell HTML (eliminates client-side fetch waterfall).
+ *   3. Subdomain fast-shell Cache-Control bumped from max-age=30 to max-age=300.
+ *   4. Cron handler warms active store slugs in KV (not just DB ping).
+ *   5. All existing v4.5 features preserved.
  */
 
-const WORKER_VERSION = "4.5";
+const WORKER_VERSION = "4.6";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
