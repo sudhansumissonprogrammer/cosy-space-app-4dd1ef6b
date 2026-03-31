@@ -10,8 +10,9 @@ import { ArrowLeft, Search } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
-import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+
+const LazyShareStoreDialog = lazy(() => import("@/components/ShareStoreDialog"));
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
