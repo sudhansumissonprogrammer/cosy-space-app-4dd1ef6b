@@ -1967,6 +1967,12 @@ export default {
         url.pathname !== "/robots.txt");
 
     if (isStaticAsset) {
+      // v4.3: Enable CF edge caching for hashed /assets/ files (JS, CSS, fonts, images)
+      // These files contain content hashes in filenames — safe to cache forever at edge.
+      // Previously used cacheTtl:0 which forced every chunk to origin on cold load (~200-800ms per chunk).
+      if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/static/")) {
+        return proxyToOriginCached(request);
+      }
       return proxyToOrigin(request);
     }
 
