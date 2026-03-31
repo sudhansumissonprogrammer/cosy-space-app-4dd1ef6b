@@ -51,7 +51,13 @@ export default function CheckoutAwareLayout({
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
 
-  useEffect(() => { prefetchStorefrontRoutes(); }, []);
+  useEffect(() => {
+    // Defer route prefetching by 3s to keep critical path fast
+    const timer = setTimeout(() => {
+      import("@/lib/prefetchStorefrontRoutes").then(m => m.prefetchStorefrontRoutes());
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const handler = () => setOrderPlaced(true);
