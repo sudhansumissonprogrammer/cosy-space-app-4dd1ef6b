@@ -97,10 +97,19 @@
           s.style.display='none';
           if(s.remove) s.remove();
         }
-        kill();
-        requestAnimationFrame(kill);
-        setTimeout(kill,120);
-        setTimeout(kill,600);
+        function rootReady(){
+          var root=document.getElementById('root');
+          return !!(root && root.childElementCount>0);
+        }
+        function tryKill(){
+          if(rootReady()) kill();
+        }
+        if(document.readyState==='complete'){
+          tryKill();
+        }else{
+          document.addEventListener('DOMContentLoaded',tryKill,{once:true});
+          window.addEventListener('load',tryKill,{once:true});
+        }
         var root=document.getElementById('root');
         if(root && root.childElementCount===0){
           var mo=new MutationObserver(function(){
@@ -110,7 +119,10 @@
             }
           });
           mo.observe(root,{childList:true});
-          setTimeout(function(){mo.disconnect();kill();},1500);
+          window.addEventListener('storefront:mounted',function(){mo.disconnect();kill();},{once:true});
+          setTimeout(function(){mo.disconnect();tryKill();},12000);
+        }else if(rootReady()){
+          kill();
         }
       })();
     </script>
