@@ -951,7 +951,7 @@ async function _fetchStoreIdFromDb(domain) {
     : `custom_domain=eq.${encodeURIComponent(domain)}`;
 
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/stores?select=id&${query}&limit=1`,
+    `${SUPABASE_URL}/rest/v1/stores_public?select=id&${query}&limit=1`,
     { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
   );
   if (!res.ok) return null;
