@@ -28,6 +28,7 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
         const mobileNavStyle = (themeConfig as any)?.mobile_nav_style || "classic";
         const mobileNavEnabled = themeConfig?.mobile_nav_enabled ?? true;
         const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
+        const headerStyle = (themeConfig as any)?.header_style || "normal";
 
         return <Theme16Inner
           store={store}
@@ -35,6 +36,7 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
           mobileNavEnabled={mobileNavEnabled}
           marqueeEnabled={marqueeEnabled}
           marqueeText={themeConfig?.marquee_text}
+          headerStyle={headerStyle}
         />;
       }}
     </StorefrontShell>
