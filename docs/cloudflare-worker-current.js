@@ -17,7 +17,7 @@
  *  13. Slug index populated in handlePrewarm for pre-first-cron coverage
  */
 
-const WORKER_VERSION = "4.8";
+const WORKER_VERSION = "4.8.1";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
