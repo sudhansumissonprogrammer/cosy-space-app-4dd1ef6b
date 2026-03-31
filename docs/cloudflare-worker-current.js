@@ -754,6 +754,10 @@ async function _resolveStoreId(domain, env) {
     const cached = await cache.match(storeIdCacheKey);
     if (cached) {
       const storeId = await cached.text();
+      if (storeId === "__NOT_FOUND__") {
+        domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
+        return null;
+      }
       domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
       return storeId || null;
     }
