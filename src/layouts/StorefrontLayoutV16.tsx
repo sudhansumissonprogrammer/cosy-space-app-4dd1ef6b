@@ -79,7 +79,7 @@ function Theme16Inner({
     <>
       {!isCheckout && marqueeEnabled && <StorefrontMarquee text={marqueeText} />}
 
-      <Theme16Header store={store} onOrderPlaced={orderPlaced} />
+      <Theme16Header store={store} onOrderPlaced={orderPlaced} headerStyle={headerStyle} />
 
       <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}>
         <Suspense fallback={<StorefrontContentSkeleton />}>
