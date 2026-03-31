@@ -1368,7 +1368,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 
 /* ============== FAST SHELL INJECT (v4.2 — Cache API first for theme) ============== */
 
-function injectFastShell(html, slug, themeLite, prebuiltHead) {
+function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
   const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
 
   let themeHint = "";
@@ -1376,7 +1376,13 @@ function injectFastShell(html, slug, themeLite, prebuiltHead) {
     themeHint = `window.__THEME__=${JSON.stringify(themeLite)};`;
   }
 
-  const injection = slugScript + themeHint + `</script>`;
+  // v4.3: Inject cached products directly into fast shell — eliminates client-side products fetch
+  let productsHint = "";
+  if (inlineProducts) {
+    productsHint = `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`;
+  }
+
+  const injection = slugScript + themeHint + productsHint + `</script>`;
 
   const bgColor = themeLite?.bg || "#ffffff";
   const textColor = themeLite?.tc || "#1a1a1a";
