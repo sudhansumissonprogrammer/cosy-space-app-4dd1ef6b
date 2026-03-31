@@ -754,6 +754,10 @@ async function _resolveStoreId(domain, env) {
     const cached = await cache.match(storeIdCacheKey);
     if (cached) {
       const storeId = await cached.text();
+      if (storeId === "__NOT_FOUND__") {
+        domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
+        return null;
+      }
       domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
       return storeId || null;
     }
@@ -796,6 +800,10 @@ async function _resolveStoreId(domain, env) {
       }
     } else {
       domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
+      // Cache negative result in Cache API for 60s to speed up repeated 404s
+      cache.put(storeIdCacheKey, new Response("__NOT_FOUND__", {
+        headers: { "Cache-Control": "public, max-age=60" },
+      })).catch(() => {});
     }
 
     return storeId;
@@ -2131,6 +2139,21 @@ export default {
 
       if (!slug || slug.includes(".") || slug === "www") {
         return cachedFetch(request, "", ctx, false, env);
+      }
+
+      // Fast store-existence check — return instant 404 for non-existent stores
+      const storeId = await _resolveStoreId(hostname, env);
+      if (!storeId) {
+        const safeSlug = slug.replace(/[<>"'&]/g, "");
+        const notFoundHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.storivo.in</strong></p><a href="https://storivo.in">Create Your Store</a></div></body></html>`;
+        return new Response(notFoundHtml, {
+          status: 404,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "public, max-age=60",
+            ...SECURITY_HEADERS,
+          },
+        });
       }
 
       const [customDomain, seoResponse, botResponse] = await Promise.all([
