@@ -310,6 +310,28 @@ async function getCustomDomainForSlug(slug) {
 const _storeInfoCache = new Map();
 const STORE_INFO_KV_TTL = 3600;
 
+/* ============== SLUG INDEX — IN-MEMORY SET (populated by cron via KV) ============== */
+let _slugIndexSet = null;      // Set<string> of all active slugs
+let _slugIndexExpiresAt = 0;   // timestamp when memory copy expires
+
+/**
+ * v4.7: Returns a Set of all active slugs. Reads from memory first, falls back to KV.
+ * Returns null if neither is available (first cold start before cron runs).
+ */
+async function _getSlugIndex(env) {
+  if (_slugIndexSet && Date.now() < _slugIndexExpiresAt) return _slugIndexSet;
+  if (!env?.STORE_KV) return null;
+  try {
+    const arr = await env.STORE_KV.get("all-active-slugs", { type: "json" });
+    if (Array.isArray(arr)) {
+      _slugIndexSet = new Set(arr);
+      _slugIndexExpiresAt = Date.now() + 300_000; // 5 min memory TTL
+      return _slugIndexSet;
+    }
+  } catch {}
+  return null;
+}
+
 async function _resolveStoreInfo(slug, hostname, env) {
   // 1. In-memory cache (fastest)
   const memEntry = _storeInfoCache.get(slug);
