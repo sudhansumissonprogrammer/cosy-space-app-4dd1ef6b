@@ -2749,7 +2749,7 @@ export default {
           }
 
           if (kvWrites.length > 0) await Promise.all(kvWrites);
-          console.log(`[keepalive] warmed ${allStores.length} stores in KV, slug index: ${allSlugs.length} entries`);
+          console.log(`[keepalive] warmed ${allStores.length} stores — KV writes: ${kvWriteCount} changed, ${kvSkipCount} skipped (smart-write)`);
 
           // 4. v4.8: Pre-warm top 20 stores using internal functions (no recursive fetch)
           const top20 = allStores.slice(0, 20);
