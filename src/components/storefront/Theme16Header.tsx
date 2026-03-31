@@ -241,9 +241,10 @@ export default function Theme16Header({ store, onOrderPlaced, headerStyle = "nor
 
   // ───── DESKTOP HEADER (md+) ─────
   const DesktopHeader = (
-    <nav className="hidden md:block sticky top-0 z-30" style={{
-      backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+    <nav className={`hidden md:block sticky top-0 z-30 ${hs.extraClass}`} style={{
+      backgroundColor: hs.bg,
       color: "var(--storefront-text, hsl(var(--foreground)))",
+      ...hs.wrapperStyle,
     }}>
       <div className="mx-auto flex h-16 max-w-7xl items-center px-6 relative">
         {/* ── Left: Pill nav links ── */}
