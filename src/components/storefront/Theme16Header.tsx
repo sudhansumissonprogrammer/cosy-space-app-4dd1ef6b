@@ -138,9 +138,10 @@ export default function Theme16Header({ store, onOrderPlaced, headerStyle = "nor
 
   // ───── MOBILE HEADER (< md) ─────
   const MobileHeader = (
-    <nav className="md:hidden sticky top-0 z-30" style={{
-      backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
+    <nav className={`md:hidden sticky top-0 z-30 ${hs.extraClass}`} style={{
+      backgroundColor: hs.bg,
       color: "var(--storefront-text, hsl(var(--foreground)))",
+      ...hs.wrapperStyle,
     }}>
       {/* Top bar: hamburger, logo centered, cart */}
       <div className="flex items-center h-14 px-3 relative">
