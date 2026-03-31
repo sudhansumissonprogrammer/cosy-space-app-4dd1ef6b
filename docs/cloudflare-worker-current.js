@@ -1,5 +1,5 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.8 — PERFORMANCE & RELIABILITY FIXES
+ * STORIVO PRODUCTION ROUTER v4.8.1 — CLS FIX + PRODUCTS KV FALLBACK
  *
  * Changes from v4.7:
  *   1. Custom domain: parallel fetch (resolveDomain + getSpaShell + prebuiltHead in Promise.all) — ~200ms win
