@@ -2406,7 +2406,7 @@ export default {
 
       const newHeaders = new Headers();
       newHeaders.set("Content-Type", "text/html; charset=utf-8");
-      newHeaders.set("Cache-Control", "public, max-age=30, stale-while-revalidate=300");
+      newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
       newHeaders.set("X-Store-Slug", slug);
       newHeaders.set("X-Data-Source", dataSource);
       newHeaders.set("X-Shell-Source", shellResult.source);
