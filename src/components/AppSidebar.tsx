@@ -90,6 +90,7 @@ export function AppSidebar() {
     ? [
         { title: "Orders", url: `/dashboard/stores/${storeSlug}/orders`, icon: ShoppingBag, badge: pendingOrders, menuKey: "orders" },
         { title: "Customers", url: `/dashboard/stores/${storeSlug}/customers`, icon: Users, menuKey: "customers" },
+        { title: "Leads", url: `/dashboard/stores/${storeSlug}/leads`, icon: UserCheck, menuKey: "leads" },
         { title: "Abandoned Carts", url: `/dashboard/stores/${storeSlug}/abandoned-carts`, icon: ShoppingCart, menuKey: "abandoned_carts" },
       ].filter((i) => isVisible(i.menuKey))
     : [];
