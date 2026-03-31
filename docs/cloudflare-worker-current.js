@@ -2679,33 +2679,67 @@ export default {
           if (allStores.length === 0) return;
 
           const kvWrites = [];
+          const kvReads = [];
           const allSlugs = [];
+          let kvWriteCount = 0;
+          let kvSkipCount = 0;
 
-          for (const s of allStores) {
-            if (!s.slug || !s.id) continue;
-            allSlugs.push(s.slug);
-            const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
-            if (env?.STORE_KV) {
-              kvWrites.push(
-                env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
+          // ── SMART CONDITIONAL WRITES ──
+          // Read existing KV values first, only write if data changed.
+          // Converts expensive KV writes (~$5/M) into cheap KV reads (~$0.50/M).
+          // For a stable store set, this reduces writes by ~95%.
+
+          if (env?.STORE_KV) {
+            // Phase 1: Batch-read existing KV values for all stores
+            const readPromises = [];
+            for (const s of allStores) {
+              if (!s.slug || !s.id) continue;
+              allSlugs.push(s.slug);
+              readPromises.push(
+                env.STORE_KV.get(`store-info:${s.slug}`).catch(() => null)
               );
-              const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
-              kvWrites.push(
-                env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
-              );
-              if (s.custom_domain) {
-                const cleanCustom = s.custom_domain.replace(/^www\./, "").toLowerCase().trim();
+            }
+            const existingValues = await Promise.all(readPromises);
+
+            // Phase 2: Compare and write only changed entries
+            for (let i = 0; i < allSlugs.length; i++) {
+              const s = allStores.find(st => st.slug === allSlugs[i]);
+              if (!s) continue;
+
+              const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
+              const existing = existingValues[i];
+
+              // Only write if data actually changed
+              if (existing !== payload) {
                 kvWrites.push(
-                  env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+                  env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
                 );
+                const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
                 kvWrites.push(
-                  env.STORE_KV.put(`domain:${cleanCustom}`, JSON.stringify({ slug: s.slug }), { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
+                  env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
                 );
+                if (s.custom_domain) {
+                  const cleanCustom = s.custom_domain.replace(/^www\./, "").toLowerCase().trim();
+                  kvWrites.push(
+                    env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+                  );
+                  kvWrites.push(
+                    env.STORE_KV.put(`domain:${cleanCustom}`, JSON.stringify({ slug: s.slug }), { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
+                  );
+                }
+                kvWriteCount++;
+              } else {
+                kvSkipCount++;
               }
+            }
+          } else {
+            for (const s of allStores) {
+              if (!s.slug || !s.id) continue;
+              allSlugs.push(s.slug);
             }
           }
 
-          // Write slug index to KV
+          // Write slug index to KV (always write — small payload, critical for routing)
           if (env?.STORE_KV && allSlugs.length > 0) {
             kvWrites.push(
               env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 600 }).catch(() => {})
