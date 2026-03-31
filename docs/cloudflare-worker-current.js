@@ -343,7 +343,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
   // Single DB call for both id and custom_domain
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stores?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      `${SUPABASE_URL}/rest/v1/stores_public?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
