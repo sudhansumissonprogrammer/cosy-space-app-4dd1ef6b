@@ -10,17 +10,17 @@ import { ArrowLeft, Search } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
-import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
-import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+
+const LazyShareStoreDialog = lazy(() => import("@/components/ShareStoreDialog"));
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
-import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const LazyDesktopNavBar = lazy(() => import("@/components/storefront/DesktopNavBar"));
 const LazyHamburgerMenu = lazy(() => import("@/components/storefront/HamburgerMenu"));
 const LazyCheckoutExitDialog = lazy(() => import("@/components/storefront/CheckoutExitDialog"));
+const LazyStorefrontFooter = lazy(() => import("@/components/storefront/StorefrontFooter"));
 
 type StoreData = Tables<"stores">;
 
@@ -52,7 +52,13 @@ export default function CheckoutAwareLayout({
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
 
-  useEffect(() => { prefetchStorefrontRoutes(); }, []);
+  useEffect(() => {
+    // Defer route prefetching by 3s to keep critical path fast
+    const timer = setTimeout(() => {
+      import("@/lib/prefetchStorefrontRoutes").then(m => m.prefetchStorefrontRoutes());
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const handler = () => setOrderPlaced(true);
@@ -85,7 +91,7 @@ export default function CheckoutAwareLayout({
       <AccountBadge slug={store.slug} />
       {!hideWishlistAndShare && <WishlistBadge slug={store.slug} />}
       <CartBadge />
-      {!hideWishlistAndShare && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
+      {!hideWishlistAndShare && <Suspense fallback={null}><LazyShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly /></Suspense>}
     </div>
   ) : null;
 
@@ -175,7 +181,7 @@ export default function CheckoutAwareLayout({
 
       <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
       {mobileNavEnabled && mobileNav}
-      <StorefrontFooter store={store} />
+      <Suspense fallback={null}><LazyStorefrontFooter store={store} /></Suspense>
 
       <Suspense fallback={null}>
         <LazyCheckoutExitDialog

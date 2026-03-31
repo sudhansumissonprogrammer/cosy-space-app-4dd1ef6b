@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
-import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import type { Session, User } from "@supabase/supabase-js";
+
+/** Lazy-load supabase client — keeps the 45KB chunk off the storefront critical path */
+let _supabasePromise: Promise<typeof import("@/integrations/supabase/client")> | null = null;
+function getSupabase() {
+  if (!_supabasePromise) _supabasePromise = import("@/integrations/supabase/client");
+  return _supabasePromise;
+}
 
 interface StorefrontCustomer {
   id: string;
@@ -40,6 +46,7 @@ export function StorefrontAuthProvider({
 
   const fetchOrCreateCustomer = useCallback(
     async (userId: string, email?: string): Promise<StorefrontCustomer | null> => {
+      const { supabase } = await getSupabase();
       const { data } = await supabase
         .from("storefront_customers")
         .select("*")
@@ -83,6 +90,7 @@ export function StorefrontAuthProvider({
 
   useEffect(() => {
     // Fast-path: if no Supabase auth token in localStorage, skip auth entirely.
+    // This avoids loading the 45KB supabase chunk for anonymous visitors.
     const hasAuthToken = (() => {
       try {
         const storageKey = `sb-soxuyuupzodkufxbbndq-auth-token`;
@@ -97,9 +105,16 @@ export function StorefrontAuthProvider({
       return;
     }
 
-    const initAuth = () => {
+    // Only load supabase when user has an auth token
+    let subscription: any;
+    let cancelled = false;
+
+    const initAuth = async () => {
+      const { supabase } = await getSupabase();
+      if (cancelled) return;
+
       const {
-        data: { subscription },
+        data: { subscription: sub },
       } = supabase.auth.onAuthStateChange((_event, sess) => {
         setSession(sess);
         setUser(sess?.user ?? null);
@@ -108,25 +123,24 @@ export function StorefrontAuthProvider({
         }
         setLoading(false);
       });
+      subscription = sub;
 
       supabase.auth.getSession().then(({ data: { session: sess } }) => {
         setSession(sess);
         setUser(sess?.user ?? null);
         setLoading(false);
       });
-
-      return subscription;
     };
 
-    let subscription: any;
     const schedule = typeof requestIdleCallback !== "undefined" ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 100);
     const handle = schedule(() => {
-      subscription = initAuth();
+      initAuth();
     });
 
     const safetyTimeout = setTimeout(() => setLoading(false), 2000);
 
     return () => {
+      cancelled = true;
       subscription?.unsubscribe();
       clearTimeout(safetyTimeout);
       if (typeof cancelIdleCallback !== "undefined" && typeof handle === "number") {
@@ -136,6 +150,7 @@ export function StorefrontAuthProvider({
   }, []);
 
   const signUp = async (email: string, password: string, name?: string) => {
+    const { supabase } = await getSupabase();
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -145,11 +160,13 @@ export function StorefrontAuthProvider({
   };
 
   const signIn = async (email: string, password: string) => {
+    const { supabase } = await getSupabase();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
 
   const signOut = async () => {
+    const { supabase } = await getSupabase();
     await supabase.auth.signOut();
     setCustomer(null);
   };
