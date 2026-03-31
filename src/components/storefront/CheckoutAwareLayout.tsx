@@ -12,15 +12,14 @@ import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
-import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
-import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const LazyDesktopNavBar = lazy(() => import("@/components/storefront/DesktopNavBar"));
 const LazyHamburgerMenu = lazy(() => import("@/components/storefront/HamburgerMenu"));
 const LazyCheckoutExitDialog = lazy(() => import("@/components/storefront/CheckoutExitDialog"));
+const LazyStorefrontFooter = lazy(() => import("@/components/storefront/StorefrontFooter"));
 
 type StoreData = Tables<"stores">;
 
