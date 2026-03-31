@@ -2564,48 +2564,84 @@ export default {
         } catch {}
       })());
 
-      // 3. v4.6: Warm active store slugs in KV for instant existence checks
-      // Fetch recently active stores and pre-cache their existence in KV
+      // 3. v4.7: Warm ALL active store slugs in KV + build slug index
       ctx.waitUntil((async () => {
         try {
-          const storesRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/stores_public?select=id,slug,custom_domain&is_suspended=eq.false&limit=50&order=updated_at.desc`,
-            {
-              headers: {
-                apikey: SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-              },
-            }
-          );
-          if (storesRes.ok) {
-            const stores = await storesRes.json();
-            const kvWrites = [];
-            for (const s of stores) {
-              if (!s.slug || !s.id) continue;
-              const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
-              // Cache in KV for store-info lookup
-              if (env?.STORE_KV) {
+          // Fetch ALL active stores (paginated if needed)
+          let allStores = [];
+          let offset = 0;
+          const pageSize = 500;
+          while (true) {
+            const storesRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/stores_public?select=id,slug,custom_domain&is_suspended=eq.false&limit=${pageSize}&offset=${offset}&order=updated_at.desc`,
+              {
+                headers: {
+                  apikey: SUPABASE_ANON_KEY,
+                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                },
+              }
+            );
+            if (!storesRes.ok) break;
+            const batch = await storesRes.json();
+            if (!batch.length) break;
+            allStores = allStores.concat(batch);
+            if (batch.length < pageSize) break; // last page
+            offset += pageSize;
+          }
+
+          if (allStores.length === 0) return;
+
+          const kvWrites = [];
+          const allSlugs = [];
+
+          for (const s of allStores) {
+            if (!s.slug || !s.id) continue;
+            allSlugs.push(s.slug);
+            const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
+            if (env?.STORE_KV) {
+              kvWrites.push(
+                env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
+              );
+              const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
+              kvWrites.push(
+                env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+              );
+              if (s.custom_domain) {
                 kvWrites.push(
-                  env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
+                  env.STORE_KV.put(`store-id:${s.custom_domain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
                 );
-                // Also cache store-id for products API
-                const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
                 kvWrites.push(
-                  env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+                  env.STORE_KV.put(`domain:${s.custom_domain}`, JSON.stringify({ slug: s.slug }), { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
                 );
-                if (s.custom_domain) {
-                  kvWrites.push(
-                    env.STORE_KV.put(`store-id:${s.custom_domain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
-                  );
-                  kvWrites.push(
-                    env.STORE_KV.put(`domain:${s.custom_domain}`, JSON.stringify({ slug: s.slug }), { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
-                  );
-                }
               }
             }
-            if (kvWrites.length > 0) await Promise.all(kvWrites);
-            console.log(`[keepalive] warmed ${stores.length} store slugs in KV`);
           }
+
+          // v4.7: Write slug index to KV (single key, read by _getSlugIndex)
+          if (env?.STORE_KV && allSlugs.length > 0) {
+            kvWrites.push(
+              env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 600 }).catch(() => {})
+            );
+            // Also update in-memory index immediately
+            _slugIndexSet = new Set(allSlugs);
+            _slugIndexExpiresAt = Date.now() + 300_000;
+          }
+
+          if (kvWrites.length > 0) await Promise.all(kvWrites);
+          console.log(`[keepalive] warmed ${allStores.length} stores in KV, slug index: ${allSlugs.length} entries`);
+
+          // 4. v4.7: Pre-warm HTML shells for top 20 stores
+          const top20 = allStores.slice(0, 20);
+          const shellWarms = top20.map(s => {
+            const storeUrl = `https://${s.slug}.${ROOT_DOMAIN}/`;
+            return fetch(storeUrl, {
+              headers: { "User-Agent": "Storivo-Prewarm/1.0" },
+              redirect: "manual",
+            }).catch(() => {});
+          });
+          await Promise.all(shellWarms);
+          console.log(`[keepalive] pre-warmed ${top20.length} store shells`);
+
         } catch (err) {
           console.log(`[keepalive] store warm failed: ${err?.message || err}`);
         }
