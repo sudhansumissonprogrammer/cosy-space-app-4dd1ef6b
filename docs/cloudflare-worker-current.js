@@ -2405,12 +2405,12 @@ export default {
       const { response: injectedResponse, dataSource } =
         await fetchAndInjectSlug(request, slug, ctx, env, hostname, url.pathname);
 
-      return addDiagnosticHeaders(injectedResponse, {
-        slug,
-        cacheStatus: "MISS",
-        dataSource,
-      });
-    }
+    return addDiagnosticHeaders(injectedResponse, {
+      slug,
+      cacheStatus: "MISS",
+      dataSource,
+    });
+  }
 
     // ─── UNKNOWN DOMAIN → 404 ───
     return new Response(
@@ -2429,5 +2429,52 @@ export default {
         },
       }
     );
+  },
+
+  /**
+   * SCHEDULED HANDLER — DB Keepalive
+   *
+   * Runs every 5 minutes via Cloudflare Cron Trigger to keep the Supabase
+   * connection pool warm. Without this, the first request after idle takes
+   * ~4s due to cold DB connections. This lightweight ping keeps it at ~200ms.
+   *
+   * Configure in Cloudflare Dashboard → Workers → Triggers → Cron:
+   *   Cron expression: *\/5 * * * *
+   */
+  async scheduled(event, env, ctx) {
+    const keepaliveStart = Date.now();
+    try {
+      // 1. Lightweight DB ping — keeps Supabase connection pool warm
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/rpc/get_platform_config_public`,
+        {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+          body: "{}",
+        }
+      );
+      clearTimeout(timeout);
+
+      const dbPingMs = Date.now() - keepaliveStart;
+
+      // 2. Also warm the SPA shell cache so it's ready for fast-shell path
+      ctx.waitUntil((async () => {
+        try {
+          await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
+        } catch {}
+      })());
+
+      console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status}`);
+    } catch (err) {
+      console.log(`[keepalive] failed: ${err?.message || err}`);
+    }
   },
 };
