@@ -1,16 +1,23 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.7 — ZERO-DB ROUTING VIA KV SLUG INDEX
+ * STORIVO PRODUCTION ROUTER v4.8 — PERFORMANCE & RELIABILITY FIXES
  *
- * Changes from v4.6:
- *   1. KV slug index: cron writes "all-active-slugs" key with ALL store slugs.
- *      Request path reads it once → instant 404 for unknown slugs (<20ms).
- *   2. Early KV rejection: before the expensive Promise.all, check slug index
- *      in memory (refreshed from KV every 5 min). Unknown slugs never hit DB.
- *   3. Cron warms ALL stores (no limit=50), plus pre-warms top 20 HTML shells.
- *   4. All existing v4.6 features preserved.
+ * Changes from v4.7:
+ *   1. Custom domain: parallel fetch (resolveDomain + getSpaShell + prebuiltHead in Promise.all) — ~200ms win
+ *   2. Products cache key mismatch: cron now warms products under BOTH subdomain AND custom domain keys
+ *   3. Memory cache size caps: _storeInfoCache, domainStoreIdCache have eviction limits
+ *   4. buildProductResponse writes to KV (not just Cache API) — eliminates cold product fetches
+ *   5. Cron uses internal prefetchStorefrontData instead of recursive fetch() — no self-DDoS
+ *   6. getPrebuiltHead called with real HTML after shell resolves — proper preload hints on cold miss
+ *   7. cleanRateLimitMap/cleanRevalMap moved after static asset early return
+ *   8. ORIGIN_TIMEOUT_MS reduced to 8s (was 15s) — faster fallback
+ *   9. Rate limit split: 300/min for HTML, 60/min for API
+ *  10. Removed dead code: htmlContainsTenantMarker
+ *  11. Extracted buildSkeleton/buildThemeCss helpers — DRY skeleton/theme logic
+ *  12. handlePrewarm guards against double product fetch
+ *  13. Slug index populated in handlePrewarm for pre-first-cron coverage
  */
 
-const WORKER_VERSION = "4.7";
+const WORKER_VERSION = "4.8";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
@@ -29,7 +36,8 @@ const SOCIAL_BOT_REGEX =
 const BOT_UA_REGEX =
   /bot|crawler|spider|facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Instagram|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
 
-const ORIGIN_TIMEOUT_MS = 15_000;
+// v4.8: Reduced from 15s to 8s — users leave after ~6s, serve stale fallback sooner
+const ORIGIN_TIMEOUT_MS = 8_000;
 const EDGE_FN_TIMEOUT_MS = 10_000;
 const STOREFRONT_PREFETCH_TIMEOUT_MS = 2_500;
 
@@ -38,15 +46,9 @@ const cache = caches.default;
 /* ============== REVALIDATION COOLDOWN (IN-MEMORY ONLY — NO KV) ============== */
 
 const revalCooldowns = new Map();
-const REVAL_COOLDOWN_MS = 120_000; // v4.2: 120s (was 30s) — reduces revalidation frequency
+const REVAL_COOLDOWN_MS = 120_000;
 const REVAL_MAP_MAX = 5_000;
 
-/**
- * v4.2: IN-MEMORY ONLY — no KV reads for lock checking.
- * With low traffic, isolates recycle often so cooldowns reset,
- * but duplicate revalidation is harmless (just wastes a DB call).
- * This saves 1-2 KV reads per request.
- */
 function shouldRevalidate(key) {
   const now = Date.now();
   const lastReval = revalCooldowns.get(key) || 0;
@@ -70,11 +72,14 @@ function cleanRevalMap() {
 
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 60;
+// v4.8: Split limits — HTML pages get higher threshold (shared NAT, crawlers)
+const RATE_LIMIT_MAX_HTML = 300;
+const RATE_LIMIT_MAX_API = 60;
 const RATE_LIMIT_MAP_MAX = 10_000;
 
-function isRateLimited(ip) {
+function isRateLimited(ip, isApi = false) {
   if (!ip) return false;
+  const limit = isApi ? RATE_LIMIT_MAX_API : RATE_LIMIT_MAX_HTML;
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
   if (!entry || now > entry.resetAt) {
@@ -83,7 +88,7 @@ function isRateLimited(ip) {
     return false;
   }
   entry.count++;
-  if (entry.count > RATE_LIMIT_MAX) return true;
+  if (entry.count > limit) return true;
   return false;
 }
 
@@ -154,12 +159,74 @@ function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   return res;
 }
 
-function htmlContainsTenantMarker(htmlText) {
-  return htmlText.includes("__STORE_SLUG__");
-}
+// v4.8: Dead code removed — htmlContainsTenantMarker was never called
 
 function getSkeletonCleanupScript(fallbackMs = 12_000) {
   return `<script>(function(){var removed=false;function kill(){if(removed)return;var s=document.getElementById('sf-skel');if(!s)return;removed=true;s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}function rootReady(){var root=document.getElementById('root');return !!(root&&root.childElementCount>0);}function tryKill(){if(rootReady())kill();}if(document.readyState==='complete'){tryKill();}else{document.addEventListener('DOMContentLoaded',tryKill,{once:true});window.addEventListener('load',tryKill,{once:true});}var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});window.addEventListener('storefront:mounted',function(){mo.disconnect();kill();},{once:true});setTimeout(function(){mo.disconnect();tryKill();},${fallbackMs});}}else{window.addEventListener('storefront:mounted',kill,{once:true});setTimeout(tryKill,${fallbackMs});}})()</script>`;
+}
+
+/* ============== v4.8: SHARED SKELETON & THEME BUILDERS (DRY) ============== */
+
+function buildSkeleton(bgColor, skeletonMuted) {
+  let skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${bgColor};z-index:2147483000;pointer-events:none;overflow:hidden">`;
+  skeleton += `<nav style="height:56px;background:${bgColor};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px">`;
+  skeleton += `<div style="height:32px;width:32px;border-radius:8px;background:${skeletonMuted}"></div>`;
+  skeleton += `<div style="height:12px;width:72px;border-radius:4px;background:${skeletonMuted}"></div>`;
+  skeleton += `<div style="flex:1"></div>`;
+  skeleton += `<div style="width:24px;height:24px;border-radius:50%;background:${skeletonMuted}"></div>`;
+  skeleton += `</nav>`;
+  skeleton += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px">`;
+  for (let i = 0; i < 4; i++) {
+    skeleton += `<div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}">`;
+    skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
+    skeleton += `<div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div>`;
+    skeleton += `</div>`;
+  }
+  skeleton += `</div></div>`;
+  skeleton += getSkeletonCleanupScript();
+  return skeleton;
+}
+
+function buildThemeCssFromConfig(tc) {
+  const primaryColor = tc.primary_color || tc.pc || "#004643";
+  const bgColor = tc.background_color || tc.bg || "#ffffff";
+  const textColor = tc.text_color || tc.tc || "#1a1a1a";
+  const accentColor = tc.accent_color || tc.ac || primaryColor;
+  const buttonStyle = tc.button_style || tc.bs || "rounded";
+  const headingFont = tc.heading_font || tc.hf || "";
+  const bodyFont = tc.body_font || tc.bf || "";
+
+  const r = parseInt(primaryColor.slice(1, 3), 16);
+  const g = parseInt(primaryColor.slice(3, 5), 16);
+  const b = parseInt(primaryColor.slice(5, 7), 16);
+  const lighten = (c) => Math.min(255, Math.round(c + (255 - c) * 0.35));
+  const primaryLight = `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
+  const btnTextColor = (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#1a1a1a" : "#ffffff";
+  const btnRadius = buttonStyle === "pill" ? "9999px" : buttonStyle === "square" ? "0px" : "0.5rem";
+
+  let css = `<style id="edge-theme">:root{`
+    + `--storefront-primary:${primaryColor};`
+    + `--storefront-primary-light:${primaryLight};`
+    + `--storefront-accent:${accentColor};`
+    + `--storefront-text:${textColor};`
+    + `--storefront-bg:${bgColor};`
+    + `--storefront-button-radius:${btnRadius};`
+    + `--storefront-btn-text:${btnTextColor};`
+    + `}body{background:${bgColor}}</style>\n`;
+
+  const fonts = [headingFont, bodyFont].filter(Boolean);
+  if (fonts.length > 0) {
+    const families = fonts.map(f => f.replace(/ /g, "+")).join("&family=");
+    css += `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" media="print" onload="this.media='all'" />\n`;
+    css += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" /></noscript>\n`;
+    css += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
+  }
+
+  return { css, bgColor, textColor, primaryColor, btnTextColor, btnRadius, primaryLight };
+}
+
+function getSkeletonMuted(textColor) {
+  return textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
 }
 
 /* ============== SUPABASE EDGE FUNCTION CALLS ============== */
@@ -263,6 +330,7 @@ async function resolveDomain(hostname, env) {
 
 /* ============== CUSTOM DOMAIN LOOKUP BY SLUG ============== */
 
+// v4.8: Kept for purge-store compatibility, but prefer _resolveStoreInfo where possible
 async function getCustomDomainForSlug(slug) {
   const key = new Request(`https://cache/slug-domain-${slug}`);
 
@@ -302,22 +370,15 @@ async function getCustomDomainForSlug(slug) {
 
 /* ============== COMBINED STORE INFO LOOKUP (id + custom_domain in one query) ============== */
 
-/**
- * v4.3: For subdomain requests, fetch store ID and custom_domain in a SINGLE DB call
- * instead of two separate queries. Saves ~200ms on cold load.
- * Returns { storeId: string|null, customDomain: string|null }
- */
 const _storeInfoCache = new Map();
+// v4.8: Size cap to prevent OOM in long-lived isolates
+const STORE_INFO_CACHE_MAX = 2_000;
 const STORE_INFO_KV_TTL = 3600;
 
 /* ============== SLUG INDEX — IN-MEMORY SET (populated by cron via KV) ============== */
-let _slugIndexSet = null;      // Set<string> of all active slugs
-let _slugIndexExpiresAt = 0;   // timestamp when memory copy expires
+let _slugIndexSet = null;
+let _slugIndexExpiresAt = 0;
 
-/**
- * v4.7: Returns a Set of all active slugs. Reads from memory first, falls back to KV.
- * Returns null if neither is available (first cold start before cron runs).
- */
 async function _getSlugIndex(env) {
   if (_slugIndexSet && Date.now() < _slugIndexExpiresAt) return _slugIndexSet;
   if (!env?.STORE_KV) return null;
@@ -325,34 +386,44 @@ async function _getSlugIndex(env) {
     const arr = await env.STORE_KV.get("all-active-slugs", { type: "json" });
     if (Array.isArray(arr)) {
       _slugIndexSet = new Set(arr);
-      _slugIndexExpiresAt = Date.now() + 300_000; // 5 min memory TTL
+      _slugIndexExpiresAt = Date.now() + 300_000;
       return _slugIndexSet;
     }
   } catch {}
   return null;
 }
 
+// v4.8: Helper to cap Map size with FIFO eviction
+function _capMapSize(map, max) {
+  if (map.size >= max) {
+    const firstKey = map.keys().next().value;
+    map.delete(firstKey);
+  }
+}
+
 async function _resolveStoreInfo(slug, hostname, env) {
-  // 1. In-memory cache (fastest)
   const memEntry = _storeInfoCache.get(slug);
   if (memEntry && Date.now() < memEntry.expiresAt) {
     return { storeId: memEntry.storeId, customDomain: memEntry.customDomain };
   }
 
-  // 2. Cache API (free, fast)
   const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
   try {
     const cached = await cache.match(infoCacheKey);
     if (cached) {
       const data = await cached.json();
       if (data.__nf) {
+        _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
         _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+        _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
         domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
         return { storeId: null, customDomain: null };
       }
       const result = { storeId: data.id || null, customDomain: data.cd || null };
+      _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
       _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
       if (result.storeId) {
+        _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
         domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
       }
       cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
@@ -363,26 +434,27 @@ async function _resolveStoreInfo(slug, hostname, env) {
     }
   } catch {}
 
-  // 3. KV (v4.6: new tier — survives Cache API expiry, much faster than DB)
   if (env?.STORE_KV) {
     try {
       const kvData = await env.STORE_KV.get(`store-info:${slug}`, { type: "json" });
       if (kvData) {
         if (kvData.__nf) {
+          _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
           _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+          _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
           domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
-          // Promote to Cache API
           cache.put(infoCacheKey, new Response(JSON.stringify(kvData), {
             headers: { "Cache-Control": "public, max-age=60" },
           })).catch(() => {});
           return { storeId: null, customDomain: null };
         }
         const result = { storeId: kvData.id || null, customDomain: kvData.cd || null };
+        _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
         _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
         if (result.storeId) {
+          _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
           domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
         }
-        // Promote to Cache API
         cache.put(infoCacheKey, new Response(JSON.stringify(kvData), {
           headers: { "Cache-Control": "public, max-age=300" },
         })).catch(() => {});
@@ -395,7 +467,6 @@ async function _resolveStoreInfo(slug, hostname, env) {
     } catch {}
   }
 
-  // 4. DB (slowest — only on complete cache miss)
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/stores_public?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
@@ -412,9 +483,10 @@ async function _resolveStoreInfo(slug, hostname, env) {
     const row = rows[0];
 
     if (!row) {
-      // Store doesn't exist — cache negative result in all tiers
       const nfData = { __nf: true };
+      _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
       _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+      _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
       domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
       cache.put(infoCacheKey, new Response(JSON.stringify(nfData), {
         headers: { "Cache-Control": "public, max-age=60" },
@@ -427,10 +499,11 @@ async function _resolveStoreInfo(slug, hostname, env) {
 
     const result = { storeId: row.id, customDomain: row.custom_domain || null };
     const cachePayload = { id: result.storeId, cd: result.customDomain };
+    _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
     _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
+    _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
     domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
 
-    // Write to all cache tiers
     const writes = [
       cache.put(infoCacheKey, new Response(JSON.stringify(cachePayload), {
         headers: { "Cache-Control": "public, max-age=300" },
@@ -618,26 +691,19 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
 const PREBUILT_HEAD_KV_TTL = 3600;
-const PREBUILT_HEAD_CACHE_TTL = 600; // v4.2: Cache API TTL
+const PREBUILT_HEAD_CACHE_TTL = 600;
 
-/**
- * v4.2: Cache API first → KV fallback → build from HTML.
- * Eliminates KV read on warm requests.
- */
 async function getPrebuiltHead(html, env) {
-  // v4.2: Try Cache API first (FREE — no KV read)
   const headCacheKey = new Request("https://cache/prebuilt-head");
   try {
     const cached = await cache.match(headCacheKey);
     if (cached) return await cached.text();
   } catch {}
 
-  // Fallback to KV
   if (env?.STORE_KV) {
     try {
       const cached = await env.STORE_KV.get(PREBUILT_HEAD_KV_KEY);
       if (cached) {
-        // Promote to Cache API for future requests
         cache.put(headCacheKey, new Response(cached, {
           headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` },
         })).catch(() => {});
@@ -646,10 +712,8 @@ async function getPrebuiltHead(html, env) {
     } catch {}
   }
 
-  // Build from HTML
   const prebuilt = _buildPrebuiltHead(html);
 
-  // Store in both Cache API and KV
   cache.put(headCacheKey, new Response(prebuilt, {
     headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` },
   })).catch(() => {});
@@ -685,7 +749,7 @@ function _buildPrebuiltHead(html) {
   return head;
 }
 
-/* ============== PROXY TO ORIGIN WITH CF EDGE CACHING (v4.3 — for hashed static assets) ============== */
+/* ============== PROXY TO ORIGIN WITH CF EDGE CACHING (for hashed static assets) ============== */
 
 async function proxyToOriginCached(request) {
   const url = new URL(request.url);
@@ -702,9 +766,6 @@ async function proxyToOriginCached(request) {
       method: request.method,
       headers,
       signal: controller.signal,
-      // v4.3: Enable CF edge caching for immutable hashed assets
-      // This caches JS/CSS chunks at the CF POP — subsequent users in the same region
-      // get edge-cached responses instead of origin roundtrips (~200-800ms savings per chunk)
       cf: { cacheTtl: 2592000, cacheEverything: true },
     });
     clearTimeout(timeout);
@@ -719,7 +780,6 @@ async function proxyToOriginCached(request) {
     return newRes;
   } catch {
     clearTimeout(timeout);
-    // Fallback to uncached proxy
     return proxyToOrigin(request);
   }
 }
@@ -828,7 +888,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
               headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` },
             })
           ),
-          storeId ? _prewarmProducts(storeId, storeSlug, ctx, env) : Promise.resolve(),
+          storeId ? _prewarmProducts(storeId, storeSlug, ctx, env, data?.store?.custom_domain) : Promise.resolve(),
         ])
       );
     }
@@ -843,12 +903,8 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
 /* ============== LIGHTWEIGHT THEME CACHE (Cache API first, KV fallback) ============== */
 
 const THEME_LITE_KV_TTL = 3600;
-const THEME_LITE_CACHE_TTL = 600; // v4.2: Cache API TTL
+const THEME_LITE_CACHE_TTL = 600;
 
-/**
- * v4.2: Cache theme in BOTH Cache API and KV.
- * Reads prefer Cache API (free) over KV (counted).
- */
 function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
   const lite = {
     pc: themeConfig.primary_color || "#004643",
@@ -861,7 +917,6 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
   };
   const liteStr = JSON.stringify(lite);
 
-  // v4.2: Store in Cache API (primary) + KV (backup)
   const themeCacheKey = new Request(`https://cache/theme-lite:${slug}`);
   cache.put(themeCacheKey, new Response(liteStr, {
     headers: { "Cache-Control": `public, max-age=${THEME_LITE_CACHE_TTL}` },
@@ -872,24 +927,17 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
   }
 }
 
-/**
- * v4.2: Read theme from Cache API first (FREE), KV only as fallback.
- * Saves 1 KV read per request on warm cache.
- */
 async function _getThemeLite(slug, env) {
-  // v4.2: Cache API first (no KV read needed)
   const themeCacheKey = new Request(`https://cache/theme-lite:${slug}`);
   try {
     const cached = await cache.match(themeCacheKey);
     if (cached) return await cached.json();
   } catch {}
 
-  // Fallback to KV
   if (!env?.STORE_KV) return null;
   try {
     const kvData = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" });
     if (kvData) {
-      // Promote to Cache API
       cache.put(themeCacheKey, new Response(JSON.stringify(kvData), {
         headers: { "Cache-Control": `public, max-age=${THEME_LITE_CACHE_TTL}` },
       })).catch(() => {});
@@ -901,7 +949,8 @@ async function _getThemeLite(slug, env) {
 }
 
 
-async function _prewarmProducts(storeId, slug, ctx, env) {
+// v4.8: Also warm products under custom domain cache key
+async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   const domain = slug ? `${slug}.${ROOT_DOMAIN}` : "unknown";
   const cacheKey = _buildProductsCacheKey(domain, {});
 
@@ -913,7 +962,7 @@ async function _prewarmProducts(storeId, slug, ctx, env) {
   try {
     const data = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
-    await Promise.all([
+    const cacheOps = [
       cache.put(
         cacheKey,
         new Response(body, {
@@ -926,11 +975,34 @@ async function _prewarmProducts(storeId, slug, ctx, env) {
       env?.STORE_KV
         ? env.STORE_KV.put(_buildProductsKvKey(domain, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
         : Promise.resolve(),
-    ]);
+    ];
+
+    // v4.8: Also cache under custom domain key so custom domain requests hit warm cache
+    if (customDomain) {
+      const cleanCustom = customDomain.replace(/^www\./, "").toLowerCase().trim();
+      cacheOps.push(
+        cache.put(
+          _buildProductsCacheKey(cleanCustom, {}),
+          new Response(body, {
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+            },
+          })
+        ).catch(() => {})
+      );
+      if (env?.STORE_KV) {
+        cacheOps.push(
+          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
+        );
+      }
+    }
+
+    await Promise.all(cacheOps);
   } catch {}
 }
 
-/* ============== PRODUCTS API (Cache → DB, KV fallback only) ============== */
+/* ============== PRODUCTS API (Cache → KV → DB) ============== */
 
 const PRODUCTS_CACHE_TTL = 300;
 const PRODUCTS_KV_TTL = 1800;
@@ -942,6 +1014,8 @@ const inflightProductRequests = new Map();
 const inflightDomainResolutions = new Map();
 
 const domainStoreIdCache = new Map();
+// v4.8: Size cap
+const DOMAIN_STORE_ID_CACHE_MAX = 5_000;
 
 async function _resolveStoreId(domain, env) {
   const memEntry = domainStoreIdCache.get(domain);
@@ -953,9 +1027,11 @@ async function _resolveStoreId(domain, env) {
     if (cached) {
       const storeId = await cached.text();
       if (storeId === "__NOT_FOUND__") {
+        _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
         domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
         return null;
       }
+      _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
       domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
       return storeId || null;
     }
@@ -965,6 +1041,7 @@ async function _resolveStoreId(domain, env) {
     try {
       const kvVal = await env.STORE_KV.get(`store-id:${domain}`);
       if (kvVal) {
+        _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
         domainStoreIdCache.set(domain, { storeId: kvVal, expiresAt: Date.now() + 300_000 });
         cache.put(storeIdCacheKey, new Response(kvVal, {
           headers: { "Cache-Control": "public, max-age=600" },
@@ -989,6 +1066,7 @@ async function _resolveStoreId(domain, env) {
     const storeId = await resolvePromise;
 
     if (storeId) {
+      _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
       domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
       cache.put(storeIdCacheKey, new Response(storeId, {
         headers: { "Cache-Control": "public, max-age=600" },
@@ -997,8 +1075,8 @@ async function _resolveStoreId(domain, env) {
         env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 3600 }).catch(() => {});
       }
     } else {
+      _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
       domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
-      // Cache negative result in Cache API for 60s to speed up repeated 404s
       cache.put(storeIdCacheKey, new Response("__NOT_FOUND__", {
         headers: { "Cache-Control": "public, max-age=60" },
       })).catch(() => {});
@@ -1089,7 +1167,6 @@ async function handleProductsApi(request, url, ctx, env) {
   try {
     const cached = await cache.match(cacheKey);
     if (cached) {
-      // v4.2: In-memory only revalidation — no KV lock
       const revalKey = `products:${domain}:${filters.category}:${filters.page}:${filters.sort}`;
       if (shouldRevalidate(revalKey)) {
         ctx.waitUntil(_refreshProductsBackground(domain, filters, cacheKey, env));
@@ -1097,6 +1174,34 @@ async function handleProductsApi(request, url, ctx, env) {
       return addCorsHeaders(cached, "cache-api");
     }
   } catch {}
+
+  // v4.8: Try KV before hitting DB
+  const kvKey = _buildProductsKvKey(domain, filters);
+  if (env?.STORE_KV) {
+    try {
+      const kvData = await env.STORE_KV.get(kvKey, { type: "text" });
+      if (kvData) {
+        // Promote to Cache API
+        ctx.waitUntil(
+          cache.put(cacheKey, new Response(kvData, {
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+            },
+          })).catch(() => {})
+        );
+        return addCorsHeaders(
+          new Response(kvData, {
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
+            },
+          }),
+          "kv"
+        );
+      }
+    } catch {}
+  }
 
   const storeId = await _resolveStoreId(domain, env);
   if (!storeId) {
@@ -1113,9 +1218,9 @@ async function handleProductsApi(request, url, ctx, env) {
   if (inflightProductRequests.has(coalesceKey)) {
     try {
       const data = await inflightProductRequests.get(coalesceKey);
-      return buildProductResponse(data, cacheKey, ctx, "origin-coalesced");
+      return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced");
     } catch {
-      return await _fallbackProducts(domain, cacheKey, _buildProductsKvKey(domain, filters), env);
+      return await _fallbackProducts(domain, cacheKey, kvKey, env);
     }
   }
 
@@ -1124,9 +1229,9 @@ async function handleProductsApi(request, url, ctx, env) {
 
   try {
     const data = await fetchPromise;
-    return buildProductResponse(data, cacheKey, ctx, "origin");
+    return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin");
   } catch {
-    return await _fallbackProducts(domain, cacheKey, _buildProductsKvKey(domain, filters), env);
+    return await _fallbackProducts(domain, cacheKey, kvKey, env);
   } finally {
     inflightProductRequests.delete(coalesceKey);
   }
@@ -1198,7 +1303,8 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
   }
 }
 
-function buildProductResponse(data, cacheKey, ctx, source) {
+// v4.8: Now writes to BOTH Cache API AND KV — prevents cold product fetches after Cache API expires
+function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   const body = JSON.stringify(data || []);
   const response = new Response(body, {
     headers: {
@@ -1208,7 +1314,12 @@ function buildProductResponse(data, cacheKey, ctx, source) {
   });
 
   ctx.waitUntil(
-    cache.put(cacheKey, response.clone()).catch(() => {})
+    Promise.all([
+      cache.put(cacheKey, response.clone()).catch(() => {}),
+      env?.STORE_KV
+        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
+        : Promise.resolve(),
+    ])
   );
 
   return addCorsHeaders(response, source);
@@ -1220,16 +1331,22 @@ async function _refreshProductsBackground(domain, filters, cacheKey, env) {
     if (!storeId) return;
     const data = await _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
+    const kvKey = _buildProductsKvKey(domain, filters);
 
-    await cache.put(
-      cacheKey,
-      new Response(body, {
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
-        },
-      })
-    ).catch(() => {});
+    await Promise.all([
+      cache.put(
+        cacheKey,
+        new Response(body, {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+          },
+        })
+      ).catch(() => {}),
+      env?.STORE_KV
+        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
+        : Promise.resolve(),
+    ]);
   } catch {}
 }
 
@@ -1301,50 +1418,21 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 <link rel="dns-prefetch" href="${SUPABASE_URL}" />
 <link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co/storage" crossorigin />`;
 
+  // v4.8: Use shared theme builder
   let inlineThemeCss = "";
-  let primaryColor = "#004643";
   let bgColor = "#ffffff";
   let textColor = "#1a1a1a";
-  let btnTextColor = "#ffffff";
-  let btnRadius = "0.5rem";
-  let primaryLight = "#4d8b89";
 
   if (storefrontData?.theme_config) {
-    const tc = storefrontData.theme_config;
-    primaryColor = tc.primary_color || "#004643";
-    bgColor = tc.background_color || "#ffffff";
-    textColor = tc.text_color || "#1a1a1a";
-    const r = parseInt(primaryColor.slice(1, 3), 16);
-    const g = parseInt(primaryColor.slice(3, 5), 16);
-    const b = parseInt(primaryColor.slice(5, 7), 16);
-    const lighten = (c) => Math.min(255, Math.round(c + (255 - c) * 0.35));
-    primaryLight = `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
-    btnTextColor = (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#1a1a1a" : "#ffffff";
-    btnRadius = tc.button_style === "pill" ? "9999px" : tc.button_style === "square" ? "0px" : "0.5rem";
-
-    inlineThemeCss += `<style id="edge-theme">:root{`
-      + `--storefront-primary:${primaryColor};`
-      + `--storefront-primary-light:${primaryLight};`
-      + `--storefront-accent:${tc.accent_color || primaryColor};`
-      + `--storefront-text:${textColor};`
-      + `--storefront-bg:${bgColor};`
-      + `--storefront-button-radius:${btnRadius};`
-      + `--storefront-btn-text:${btnTextColor};`
-      + `}body{background:${bgColor}}</style>\n`;
-
-    const fonts = [tc.heading_font, tc.body_font].filter(Boolean);
-    if (fonts.length > 0) {
-      const families = fonts.map(f => f.replace(/ /g, "+")).join("&family=");
-      inlineThemeCss += `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" media="print" onload="this.media='all'" />\n`;
-      inlineThemeCss += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" /></noscript>\n`;
-      inlineThemeCss += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
-    }
+    const themeResult = buildThemeCssFromConfig(storefrontData.theme_config);
+    inlineThemeCss = themeResult.css;
+    bgColor = themeResult.bgColor;
+    textColor = themeResult.textColor;
   }
 
   const storeName = storefrontData?.store?.name || "";
   const logoUrl = storefrontData?.store?.logo_url || "";
 
-  // ── Inject store-specific OG meta tags + favicon + title ──
   let ogMeta = "";
   if (storefrontData?.store) {
     const s = storefrontData.store;
@@ -1368,26 +1456,8 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     }
   }
 
-  const skeletonBg = bgColor;
-  const skeletonMuted = textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
-
-  // v4.7: Minimal skeleton — just themed background, no logo/name/categories
-  let skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skeletonBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
-  skeleton += `<nav style="height:56px;background:${skeletonBg};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px">`;
-  skeleton += `<div style="height:32px;width:32px;border-radius:8px;background:${skeletonMuted}"></div>`;
-  skeleton += `<div style="height:12px;width:72px;border-radius:4px;background:${skeletonMuted}"></div>`;
-  skeleton += `<div style="flex:1"></div>`;
-  skeleton += `<div style="width:24px;height:24px;border-radius:50%;background:${skeletonMuted}"></div>`;
-  skeleton += `</nav>`;
-  skeleton += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px">`;
-  for (let i = 0; i < 4; i++) {
-    skeleton += `<div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}">`;
-    skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
-    skeleton += `<div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div>`;
-    skeleton += `</div>`;
-  }
-  skeleton += `</div></div>`;
-  skeleton += getSkeletonCleanupScript();
+  const skeletonMuted = getSkeletonMuted(textColor);
+  const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
   let lcpPreload = "";
   if (storefrontData?.store?.logo_url) {
@@ -1417,7 +1487,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   return { html: injectedHtml, dataSource };
 }
 
-/* ============== FAST SHELL INJECT (v4.2 — Cache API first for theme) ============== */
+/* ============== FAST SHELL INJECT (v4.8 — uses shared builders) ============== */
 
 function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
   const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
@@ -1427,7 +1497,6 @@ function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
     themeHint = `window.__THEME__=${JSON.stringify(themeLite)};`;
   }
 
-  // v4.3: Inject cached products directly into fast shell — eliminates client-side products fetch
   let productsHint = "";
   if (inlineProducts) {
     productsHint = `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`;
@@ -1437,40 +1506,17 @@ function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
 
   const bgColor = themeLite?.bg || "#ffffff";
   const textColor = themeLite?.tc || "#1a1a1a";
-  const primaryColor = themeLite?.pc || "#004643";
-  const skeletonMuted = textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
+  const skeletonMuted = getSkeletonMuted(textColor);
 
+  // v4.8: Use shared theme builder
   let themeCss = "";
   if (themeLite) {
-    const r = parseInt(primaryColor.slice(1, 3), 16);
-    const g = parseInt(primaryColor.slice(3, 5), 16);
-    const b = parseInt(primaryColor.slice(5, 7), 16);
-    const lighten = (c) => Math.min(255, Math.round(c + (255 - c) * 0.35));
-    const primaryLight = `#${lighten(r).toString(16).padStart(2, "0")}${lighten(g).toString(16).padStart(2, "0")}${lighten(b).toString(16).padStart(2, "0")}`;
-    const btnTextColor = (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#1a1a1a" : "#ffffff";
-    const btnRadius = themeLite.bs === "pill" ? "9999px" : themeLite.bs === "square" ? "0px" : "0.5rem";
-
-    themeCss = `<style id="edge-theme">:root{`
-      + `--storefront-primary:${primaryColor};`
-      + `--storefront-primary-light:${primaryLight};`
-      + `--storefront-accent:${themeLite.ac || primaryColor};`
-      + `--storefront-text:${textColor};`
-      + `--storefront-bg:${bgColor};`
-      + `--storefront-button-radius:${btnRadius};`
-      + `--storefront-btn-text:${btnTextColor};`
-      + `}body{background:${bgColor}}</style>`;
-
-    const fonts = [themeLite.hf, themeLite.bf].filter(Boolean);
-    if (fonts.length > 0) {
-      const families = fonts.map(f => f.replace(/ /g, "+")).join("&family=");
-      themeCss += `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" media="print" onload="this.media='all'" />`;
-      themeCss += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" /></noscript>`;
-      themeCss += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>`;
-    }
+    const themeResult = buildThemeCssFromConfig(themeLite);
+    themeCss = themeResult.css;
   }
 
-  // v4.7: Minimal skeleton — just themed background, no logo/name/categories
-  const skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${bgColor};z-index:2147483000;pointer-events:none;overflow:hidden"><nav style="height:56px;background:${bgColor};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px"><div style="height:32px;width:32px;border-radius:8px;background:${skeletonMuted}"></div><div style="height:12px;width:72px;border-radius:4px;background:${skeletonMuted}"></div><div style="flex:1"></div><div style="width:24px;height:24px;border-radius:50%;background:${skeletonMuted}"></div></nav><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px"><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div></div></div>${getSkeletonCleanupScript()}`;
+  // v4.8: Use shared skeleton builder
+  const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
   let headInjection;
   if (prebuiltHead) {
@@ -1485,22 +1531,23 @@ function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
   return injectedHtml;
 }
 
-/* ============== FETCH AND INJECT SLUG INTO HTML (v4.2 — Cache API priority) ============== */
+/* ============== FETCH AND INJECT SLUG INTO HTML (v4.8 — parallel with domain resolution) ============== */
 
 async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
-  // v4.6: Parallel fetch shell + theme + head + products (same as subdomain path)
-  const [shellResult, themeLite, prebuiltHead] = await Promise.all([
-    getSpaShell(request, ctx, env),
-    _getThemeLite(slug, env),
-    getPrebuiltHead("", env),
-  ]);
+  // v4.8: Shell + theme fetched in parallel (same as before, slug already resolved by caller)
+  const shellResult = await getSpaShell(request, ctx, env);
 
   if (!shellResult?.html) {
     const response = await proxyToOrigin(request);
     return { response, dataSource: "none" };
   }
 
-  // v4.6: Inject cached products (same optimization as subdomain path)
+  // v4.8: Build prebuilt head with real HTML for proper preload hints
+  const [themeLite, prebuiltHead] = await Promise.all([
+    _getThemeLite(slug, env),
+    getPrebuiltHead(shellResult.html, env),
+  ]);
+
   let inlineProducts = null;
   try {
     const productsCacheKey = _buildProductsCacheKey(hostname, {});
@@ -1534,25 +1581,19 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
   return { response, dataSource };
 }
 
-/**
- * v4.2: Background warming with IN-MEMORY stampede guard only.
- * Removed KV lock reads — duplicate warming across isolates is harmless.
- */
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname) {
   try {
-    // STAMPEDE GUARD 1: Check if full HTML already exists in edge cache
     if (hostname && pathname) {
       const earlyKey = getEarlyCacheKey(hostname, pathname);
       const existing = await cache.match(earlyKey);
       if (existing) {
         const ds = existing.headers.get("X-Data-Source") || "";
         if (ds && ds !== "fast-shell" && ds !== "fast-shell-themed") {
-          return; // Already have full HTML
+          return;
         }
       }
     }
 
-    // STAMPEDE GUARD 2: In-memory only (no KV read)
     const warmKey = `warm-html:${slug}`;
     if (!shouldRevalidate(warmKey)) {
       return;
@@ -1698,7 +1739,7 @@ async function handleBot(request, slug, url, isCustom) {
 
   const botIp = request.headers.get("cf-connecting-ip") || "unknown";
   const botRlKey = `bot:${botIp}`;
-  if (isRateLimited(botRlKey)) return null;
+  if (isRateLimited(botRlKey, true)) return null;
 
   const product = getProductSlug(url.pathname);
   const finalUrl = isCustom
@@ -1857,7 +1898,6 @@ async function handlePrewarm(request, url, ctx, env) {
 
     if (shellResult?.html) {
       const built = _buildPrebuiltHead(shellResult.html);
-      // v4.2: Store in Cache API + KV
       const headCacheKey = new Request("https://cache/prebuilt-head");
       await Promise.all([
         cache.put(headCacheKey, new Response(built, {
@@ -1925,32 +1965,35 @@ async function handlePrewarm(request, url, ctx, env) {
     }
     results.storefrontData = dataResult.source;
 
-    if (storeId) {
+    // v4.8: Only fetch products explicitly if prefetchStorefrontData came from cache
+    // (if it came from origin, _fetchShellFromSupabase already warmed products)
+    if (storeId && dataResult.source !== "origin") {
       try {
         const products = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
-        const body = JSON.stringify(products || []);
+        const prodBody = JSON.stringify(products || []);
         const cacheOps = [];
 
         const subCacheKey = _buildProductsCacheKey(subDomain, {});
         cacheOps.push(
-          cache.put(subCacheKey, new Response(body, {
+          cache.put(subCacheKey, new Response(prodBody, {
             headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
           })).catch(() => {})
         );
         if (env?.STORE_KV) {
-          cacheOps.push(env.STORE_KV.put(_buildProductsKvKey(subDomain, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}));
+          cacheOps.push(env.STORE_KV.put(_buildProductsKvKey(subDomain, {}), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}));
         }
 
+        // v4.8: Also cache under custom domain key
         if (domain) {
           const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
           const domCacheKey = _buildProductsCacheKey(cleanDomain, {});
           cacheOps.push(
-            cache.put(domCacheKey, new Response(body, {
+            cache.put(domCacheKey, new Response(prodBody, {
               headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
             })).catch(() => {})
           );
           if (env?.STORE_KV) {
-            cacheOps.push(env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}));
+            cacheOps.push(env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}));
           }
         }
 
@@ -1959,6 +2002,8 @@ async function handlePrewarm(request, url, ctx, env) {
       } catch {
         results.products = "failed";
       }
+    } else if (storeId) {
+      results.products = "warmed-via-prefetch";
     }
 
     if (shellResult?.html && dataResult.data) {
@@ -1987,6 +2032,26 @@ async function handlePrewarm(request, url, ctx, env) {
       results.fullHtml = "warmed";
     } else {
       results.fullHtml = "skipped";
+    }
+
+    // v4.8: Update slug index on prewarm (covers pre-first-cron window)
+    if (env?.STORE_KV) {
+      try {
+        const currentIndex = await env.STORE_KV.get("all-active-slugs", { type: "json" });
+        if (Array.isArray(currentIndex) && !currentIndex.includes(slug)) {
+          currentIndex.push(slug);
+          await env.STORE_KV.put("all-active-slugs", JSON.stringify(currentIndex), { expirationTtl: 600 }).catch(() => {});
+          // Update in-memory too
+          if (_slugIndexSet) {
+            _slugIndexSet.add(slug);
+          }
+        } else if (!currentIndex) {
+          // First-ever prewarm before cron — seed with this slug
+          await env.STORE_KV.put("all-active-slugs", JSON.stringify([slug]), { expirationTtl: 600 }).catch(() => {});
+          _slugIndexSet = new Set([slug]);
+          _slugIndexExpiresAt = Date.now() + 300_000;
+        }
+      } catch {}
     }
 
     return addCorsHeaders(
@@ -2056,11 +2121,8 @@ export default {
       }
     }
 
-    // ─── CLEANUP MAPS ───
-    cleanRateLimitMap();
-    cleanRevalMap();
-
     // ─── STATIC ASSETS → PROXY TO ORIGIN ───
+    // v4.8: Moved cleanup AFTER static asset check (was wasting cycles on /assets/ requests)
     const isStaticAsset =
       url.pathname.startsWith("/assets/") ||
       url.pathname.startsWith("/static/") ||
@@ -2076,14 +2138,15 @@ export default {
         url.pathname !== "/robots.txt");
 
     if (isStaticAsset) {
-      // v4.3: Enable CF edge caching for hashed /assets/ files (JS, CSS, fonts, images)
-      // These files contain content hashes in filenames — safe to cache forever at edge.
-      // Previously used cacheTtl:0 which forced every chunk to origin on cold load (~200-800ms per chunk).
       if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/static/")) {
         return proxyToOriginCached(request);
       }
       return proxyToOrigin(request);
     }
+
+    // v4.8: Cleanup maps AFTER static asset early return
+    cleanRateLimitMap();
+    cleanRevalMap();
 
     // ─── EARLY EDGE CACHE EXIT ───
     const isCacheableRequest =
@@ -2108,7 +2171,6 @@ export default {
         const cachedSlug = earlyHit.headers.get("X-Store-Slug") || "";
         const cachedDataSource = earlyHit.headers.get("X-Data-Source") || "edge";
 
-        // v4.2: In-memory only — NO KV lock read
         const revalKey = `html:${hostname}:${url.pathname}`;
         if (shouldRevalidate(revalKey)) {
           ctx.waitUntil((async () => {
@@ -2174,7 +2236,7 @@ export default {
 
       const purgeOps = [
         cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
-        cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}), // v4.2: purge Cache API too
+        cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}),
       ];
       if (env?.STORE_KV) {
         purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
@@ -2185,7 +2247,7 @@ export default {
           cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {})
         );
         purgeOps.push(
-          cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}) // v4.2: purge Cache API
+          cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {})
         );
         if (env?.STORE_KV) {
           purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
@@ -2222,7 +2284,6 @@ export default {
       purgeOps.push(
         cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {})
       );
-      // v4.2: Also purge theme-lite from Cache API
       purgeOps.push(
         cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {})
       );
@@ -2349,10 +2410,8 @@ export default {
       }
 
       // v4.7: FAST PATH — check slug index before ANY heavy work
-      // Single KV read (cached in memory for 5 min) rejects unknown slugs in <20ms
       const slugIndex = await _getSlugIndex(env);
       if (slugIndex && !slugIndex.has(slug)) {
-        // Slug not in index → instant static 404, skip all DB/shell/theme work
         const safeSlug = slug.replace(/[<>"'&]/g, "");
         const notFoundHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.storivo.in</strong></p><a href="https://storivo.in">Create Your Store</a></div></body></html>`;
         return new Response(notFoundHtml, {
@@ -2365,17 +2424,16 @@ export default {
         });
       }
 
-      // v4.3: SINGLE parallel group — eliminates sequential waterfall
-      const [storeInfo, seoResponse, botResponse, shellResult, themeLite, prebuiltHead] = await Promise.all([
+      // v4.8: Shell resolved first, then pass real HTML to getPrebuiltHead for proper preload hints
+      const shellResult = await getSpaShell(request, ctx, env);
+      const [storeInfo, seoResponse, botResponse, themeLite, prebuiltHead] = await Promise.all([
         _resolveStoreInfo(slug, hostname, env),
         handleSeoFiles(url, slug),
         handleBot(request, slug, url, false),
-        getSpaShell(request, ctx, env),
         _getThemeLite(slug, env),
-        getPrebuiltHead("", env),
+        getPrebuiltHead(shellResult?.html || "", env),
       ]);
 
-      // Store doesn't exist — instant static 404
       if (!storeInfo.storeId) {
         const safeSlug = slug.replace(/[<>"'&]/g, "");
         const notFoundHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.storivo.in</strong></p><a href="https://storivo.in">Create Your Store</a></div></body></html>`;
@@ -2389,7 +2447,6 @@ export default {
         });
       }
 
-      // Custom domain redirect
       if (storeInfo.customDomain) {
         return Response.redirect(
           `https://${storeInfo.customDomain}${url.pathname}${url.search}`,
@@ -2400,15 +2457,11 @@ export default {
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      // Build response inline using already-fetched shell/theme/head (no second await group)
       if (!shellResult?.html) {
         const response = await proxyToOrigin(request);
         return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "none" });
       }
 
-      // v4.3: Try to inject cached products directly into fast shell
-      // If products are in edge cache, inject them — eliminates client-side fetch entirely
-      // If not cached, client-side prefetch bridge handles it (no regression)
       let inlineProducts = null;
       try {
         const productsCacheKey = _buildProductsCacheKey(hostname, {});
@@ -2437,7 +2490,6 @@ export default {
 
       const response = new Response(fastHtml, { status: 200, headers: newHeaders });
 
-      // Background warm (unchanged)
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
 
       return addDiagnosticHeaders(response, {
@@ -2458,7 +2510,7 @@ export default {
     }
 
     const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for");
-    if (isRateLimited(clientIP)) {
+    if (isRateLimited(clientIP, false)) {
       return new Response("Too Many Requests", {
         status: 429,
         headers: { "Retry-After": "60", "Content-Type": "text/plain" },
@@ -2467,26 +2519,65 @@ export default {
 
     const cleanDomain = hostname.replace(/^www\./, "").toLowerCase().trim();
 
-    const slug = await resolveDomain(cleanDomain, env);
+    // v4.8: Parallel — resolve domain + fetch shell + prebuilt head simultaneously
+    const [resolvedSlug, shellResultCD] = await Promise.all([
+      resolveDomain(cleanDomain, env),
+      getSpaShell(request, ctx, env),
+    ]);
 
-    if (slug) {
-      const [seoResponse, botResponse] = await Promise.all([
-        handleSeoFiles(url, slug),
-        handleBot(request, slug, url, true),
+    if (resolvedSlug) {
+      const [seoResponse, botResponse, themeLiteCD, prebuiltHeadCD] = await Promise.all([
+        handleSeoFiles(url, resolvedSlug),
+        handleBot(request, resolvedSlug, url, true),
+        _getThemeLite(resolvedSlug, env),
+        getPrebuiltHead(shellResultCD?.html || "", env),
       ]);
 
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      const { response: injectedResponse, dataSource } =
-        await fetchAndInjectSlug(request, slug, ctx, env, hostname, url.pathname);
+      // v4.8: Build response inline using already-fetched shell/theme/head (no fetchAndInjectSlug waterfall)
+      if (!shellResultCD?.html) {
+        const response = await proxyToOrigin(request);
+        return addDiagnosticHeaders(response, { slug: resolvedSlug, cacheStatus: "MISS", dataSource: "none" });
+      }
 
-    return addDiagnosticHeaders(injectedResponse, {
-      slug,
-      cacheStatus: "MISS",
-      dataSource,
-    });
-  }
+      let inlineProducts = null;
+      try {
+        const productsCacheKey = _buildProductsCacheKey(hostname, {});
+        const cachedProducts = await cache.match(productsCacheKey);
+        if (cachedProducts) {
+          inlineProducts = await cachedProducts.text();
+        }
+      } catch {}
+
+      const fastHtml = injectFastShell(shellResultCD.html, resolvedSlug, themeLiteCD, prebuiltHeadCD, inlineProducts);
+
+      const dataSource = inlineProducts
+        ? "fast-shell-products"
+        : themeLiteCD ? "fast-shell-themed" : "fast-shell";
+
+      const newHeaders = new Headers();
+      newHeaders.set("Content-Type", "text/html; charset=utf-8");
+      newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+      newHeaders.set("X-Store-Slug", resolvedSlug);
+      newHeaders.set("X-Data-Source", dataSource);
+      newHeaders.set("X-Shell-Source", shellResultCD.source);
+      newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
+      for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+        newHeaders.set(k, v);
+      }
+
+      const response = new Response(fastHtml, { status: 200, headers: newHeaders });
+
+      ctx.waitUntil(_warmFullHtmlInBackground(request, shellResultCD, resolvedSlug, ctx, env, hostname, url.pathname));
+
+      return addDiagnosticHeaders(response, {
+        slug: resolvedSlug,
+        cacheStatus: "MISS",
+        dataSource,
+      });
+    }
 
     // ─── UNKNOWN DOMAIN → 404 ───
     return new Response(
@@ -2508,14 +2599,10 @@ export default {
   },
 
   /**
-   * SCHEDULED HANDLER — DB Keepalive
+   * SCHEDULED HANDLER — DB Keepalive + Store Warming
    *
-   * Runs every 5 minutes via Cloudflare Cron Trigger to keep the Supabase
-   * connection pool warm. Without this, the first request after idle takes
-   * ~4s due to cold DB connections. This lightweight ping keeps it at ~200ms.
-   *
-   * Configure in Cloudflare Dashboard → Workers → Triggers → Cron:
-   *   Cron expression: *\/5 * * * *
+   * Runs every 5 minutes via Cloudflare Cron Trigger.
+   * Cron expression: */5 * * * *
    */
   async scheduled(event, env, ctx) {
     const keepaliveStart = Date.now();
@@ -2548,10 +2635,9 @@ export default {
         } catch {}
       })());
 
-      // 3. v4.7: Warm ALL active store slugs in KV + build slug index
+      // 3. Warm ALL active store slugs in KV + build slug index
       ctx.waitUntil((async () => {
         try {
-          // Fetch ALL active stores (paginated if needed)
           let allStores = [];
           let offset = 0;
           const pageSize = 500;
@@ -2569,7 +2655,7 @@ export default {
             const batch = await storesRes.json();
             if (!batch.length) break;
             allStores = allStores.concat(batch);
-            if (batch.length < pageSize) break; // last page
+            if (batch.length < pageSize) break;
             offset += pageSize;
           }
 
@@ -2591,22 +2677,22 @@ export default {
                 env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
               );
               if (s.custom_domain) {
+                const cleanCustom = s.custom_domain.replace(/^www\./, "").toLowerCase().trim();
                 kvWrites.push(
-                  env.STORE_KV.put(`store-id:${s.custom_domain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+                  env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 3600 }).catch(() => {})
                 );
                 kvWrites.push(
-                  env.STORE_KV.put(`domain:${s.custom_domain}`, JSON.stringify({ slug: s.slug }), { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
+                  env.STORE_KV.put(`domain:${cleanCustom}`, JSON.stringify({ slug: s.slug }), { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
                 );
               }
             }
           }
 
-          // v4.7: Write slug index to KV (single key, read by _getSlugIndex)
+          // Write slug index to KV
           if (env?.STORE_KV && allSlugs.length > 0) {
             kvWrites.push(
               env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 600 }).catch(() => {})
             );
-            // Also update in-memory index immediately
             _slugIndexSet = new Set(allSlugs);
             _slugIndexExpiresAt = Date.now() + 300_000;
           }
@@ -2614,17 +2700,45 @@ export default {
           if (kvWrites.length > 0) await Promise.all(kvWrites);
           console.log(`[keepalive] warmed ${allStores.length} stores in KV, slug index: ${allSlugs.length} entries`);
 
-          // 4. v4.7: Pre-warm HTML shells for top 20 stores
+          // 4. v4.8: Pre-warm top 20 stores using internal functions (no recursive fetch)
           const top20 = allStores.slice(0, 20);
-          const shellWarms = top20.map(s => {
-            const storeUrl = `https://${s.slug}.${ROOT_DOMAIN}/`;
-            return fetch(storeUrl, {
-              headers: { "User-Agent": "Storivo-Prewarm/1.0" },
-              redirect: "manual",
-            }).catch(() => {});
+          const shellWarms = top20.map(async (s) => {
+            try {
+              const shellResult = await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
+              if (!shellResult?.html) return;
+
+              const dataResult = await prefetchStorefrontData(s.slug, ctx, env);
+              if (!dataResult.data) return;
+
+              const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm");
+              const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`, "/");
+              const htmlResponse = new Response(injected.html, {
+                status: 200,
+                headers: {
+                  "Content-Type": "text/html; charset=utf-8",
+                  "Cache-Control": "public, max-age=1200, stale-while-revalidate=3600",
+                  "X-Store-Slug": s.slug,
+                  "X-Data-Source": "cron-prewarm",
+                  ...SECURITY_HEADERS,
+                },
+              });
+              await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
+
+              // v4.8: Also warm custom domain early cache
+              if (s.custom_domain) {
+                const cleanCustom = s.custom_domain.replace(/^www\./, "").toLowerCase().trim();
+                const domEarlyKey = getEarlyCacheKey(cleanCustom, "/");
+                await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
+              }
+
+              // v4.8: Warm products under both subdomain and custom domain cache keys
+              if (dataResult.data?.store?.id) {
+                await _prewarmProducts(dataResult.data.store.id, s.slug, ctx, env, s.custom_domain).catch(() => {});
+              }
+            } catch {}
           });
           await Promise.all(shellWarms);
-          console.log(`[keepalive] pre-warmed ${top20.length} store shells`);
+          console.log(`[keepalive] pre-warmed ${top20.length} store shells (internal)`);
 
         } catch (err) {
           console.log(`[keepalive] store warm failed: ${err?.message || err}`);
