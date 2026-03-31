@@ -1483,11 +1483,11 @@ function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
 /* ============== FETCH AND INJECT SLUG INTO HTML (v4.2 — Cache API priority) ============== */
 
 async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
-  // v4.2: theme-lite and prebuilt-head now check Cache API first (free), KV only as fallback
+  // v4.6: Parallel fetch shell + theme + head + products (same as subdomain path)
   const [shellResult, themeLite, prebuiltHead] = await Promise.all([
     getSpaShell(request, ctx, env),
     _getThemeLite(slug, env),
-    getPrebuiltHead("", env), // Will check Cache API first
+    getPrebuiltHead("", env),
   ]);
 
   if (!shellResult?.html) {
@@ -1495,13 +1495,27 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
     return { response, dataSource: "none" };
   }
 
-  const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead);
+  // v4.6: Inject cached products (same optimization as subdomain path)
+  let inlineProducts = null;
+  try {
+    const productsCacheKey = _buildProductsCacheKey(hostname, {});
+    const cachedProducts = await cache.match(productsCacheKey);
+    if (cachedProducts) {
+      inlineProducts = await cachedProducts.text();
+    }
+  } catch {}
+
+  const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead, inlineProducts);
+
+  const dataSource = inlineProducts
+    ? "fast-shell-products"
+    : themeLite ? "fast-shell-themed" : "fast-shell";
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
   newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
   newHeaders.set("X-Store-Slug", slug);
-  newHeaders.set("X-Data-Source", themeLite ? "fast-shell-themed" : "fast-shell");
+  newHeaders.set("X-Data-Source", dataSource);
   newHeaders.set("X-Shell-Source", shellResult.source);
   newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
@@ -1510,10 +1524,9 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
 
   const response = new Response(fastHtml, { status: 200, headers: newHeaders });
 
-  // v4.2: Background warm uses in-memory cooldown only — no KV lock
   ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname));
 
-  return { response, dataSource: themeLite ? "fast-shell-themed" : "fast-shell" };
+  return { response, dataSource };
 }
 
 /**
