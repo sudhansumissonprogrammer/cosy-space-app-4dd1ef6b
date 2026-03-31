@@ -2521,11 +2521,58 @@ export default {
 
       const dbPingMs = Date.now() - keepaliveStart;
 
-      // 2. Also warm the SPA shell cache so it's ready for fast-shell path
+      // 2. Warm the SPA shell cache
       ctx.waitUntil((async () => {
         try {
           await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
         } catch {}
+      })());
+
+      // 3. v4.6: Warm active store slugs in KV for instant existence checks
+      // Fetch recently active stores and pre-cache their existence in KV
+      ctx.waitUntil((async () => {
+        try {
+          const storesRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/stores_public?select=id,slug,custom_domain&is_suspended=eq.false&limit=50&order=updated_at.desc`,
+            {
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              },
+            }
+          );
+          if (storesRes.ok) {
+            const stores = await storesRes.json();
+            const kvWrites = [];
+            for (const s of stores) {
+              if (!s.slug || !s.id) continue;
+              const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
+              // Cache in KV for store-info lookup
+              if (env?.STORE_KV) {
+                kvWrites.push(
+                  env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
+                );
+                // Also cache store-id for products API
+                const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
+                kvWrites.push(
+                  env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+                );
+                if (s.custom_domain) {
+                  kvWrites.push(
+                    env.STORE_KV.put(`store-id:${s.custom_domain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+                  );
+                  kvWrites.push(
+                    env.STORE_KV.put(`domain:${s.custom_domain}`, JSON.stringify({ slug: s.slug }), { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
+                  );
+                }
+              }
+            }
+            if (kvWrites.length > 0) await Promise.all(kvWrites);
+            console.log(`[keepalive] warmed ${stores.length} store slugs in KV`);
+          }
+        } catch (err) {
+          console.log(`[keepalive] store warm failed: ${err?.message || err}`);
+        }
       })());
 
       console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status}`);
