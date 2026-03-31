@@ -1,15 +1,17 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.5 — DB KEEPALIVE + CACHE TTL BOOST
+ * STORIVO PRODUCTION ROUTER v4.6 — KV STORE EXISTENCE + ROUTING OPTIMIZATION
  *
- * Changes from v4.4:
- *   1. Added `scheduled()` handler — pings Supabase DB every 5 min via Cron Trigger
- *      to keep the connection pool warm (eliminates ~4s cold start).
- *   2. Increased fast-shell Cache-Control from max-age=30 to max-age=300
- *      with stale-while-revalidate=600 — reduces cache misses by 10x.
- *   3. All existing v4.4 features preserved.
+ * Changes from v4.5:
+ *   1. KV tier in _resolveStoreInfo: memory → Cache API → KV → DB
+ *      Eliminates ~200-400ms DB lookup when Cache API expires but KV is warm.
+ *   2. Custom domain product inlining: same as subdomain path, injects cached
+ *      products into fast-shell HTML (eliminates client-side fetch waterfall).
+ *   3. Subdomain fast-shell Cache-Control bumped from max-age=30 to max-age=300.
+ *   4. Cron handler warms active store slugs in KV (not just DB ping).
+ *   5. All existing v4.5 features preserved.
  */
 
-const WORKER_VERSION = "4.5";
+const WORKER_VERSION = "4.6";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
@@ -307,34 +309,31 @@ async function getCustomDomainForSlug(slug) {
  * Returns { storeId: string|null, customDomain: string|null }
  */
 const _storeInfoCache = new Map();
+const STORE_INFO_KV_TTL = 3600;
 
 async function _resolveStoreInfo(slug, hostname, env) {
-  // Check in-memory cache first
+  // 1. In-memory cache (fastest)
   const memEntry = _storeInfoCache.get(slug);
   if (memEntry && Date.now() < memEntry.expiresAt) {
     return { storeId: memEntry.storeId, customDomain: memEntry.customDomain };
   }
 
-  // Check Cache API for combined result
+  // 2. Cache API (free, fast)
   const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
   try {
     const cached = await cache.match(infoCacheKey);
     if (cached) {
       const data = await cached.json();
       if (data.__nf) {
-        // Negative cache
         _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
-        // Also seed _resolveStoreId memory cache so the 404 path stays fast
         domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
         return { storeId: null, customDomain: null };
       }
       const result = { storeId: data.id || null, customDomain: data.cd || null };
       _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
-      // Seed the _resolveStoreId memory cache too
       if (result.storeId) {
         domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
       }
-      // Seed the customDomain cache too
       cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
         JSON.stringify({ custom_domain: result.customDomain }),
         { headers: { "Cache-Control": "public, max-age=300" } }
@@ -343,7 +342,39 @@ async function _resolveStoreInfo(slug, hostname, env) {
     }
   } catch {}
 
-  // Single DB call for both id and custom_domain
+  // 3. KV (v4.6: new tier — survives Cache API expiry, much faster than DB)
+  if (env?.STORE_KV) {
+    try {
+      const kvData = await env.STORE_KV.get(`store-info:${slug}`, { type: "json" });
+      if (kvData) {
+        if (kvData.__nf) {
+          _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+          domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+          // Promote to Cache API
+          cache.put(infoCacheKey, new Response(JSON.stringify(kvData), {
+            headers: { "Cache-Control": "public, max-age=60" },
+          })).catch(() => {});
+          return { storeId: null, customDomain: null };
+        }
+        const result = { storeId: kvData.id || null, customDomain: kvData.cd || null };
+        _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
+        if (result.storeId) {
+          domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
+        }
+        // Promote to Cache API
+        cache.put(infoCacheKey, new Response(JSON.stringify(kvData), {
+          headers: { "Cache-Control": "public, max-age=300" },
+        })).catch(() => {});
+        cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
+          JSON.stringify({ custom_domain: result.customDomain }),
+          { headers: { "Cache-Control": "public, max-age=300" } }
+        )).catch(() => {});
+        return result;
+      }
+    } catch {}
+  }
+
+  // 4. DB (slowest — only on complete cache miss)
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/stores_public?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
@@ -360,30 +391,43 @@ async function _resolveStoreInfo(slug, hostname, env) {
     const row = rows[0];
 
     if (!row) {
-      // Store doesn't exist — cache negative result
+      // Store doesn't exist — cache negative result in all tiers
+      const nfData = { __nf: true };
       _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
       domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
-      cache.put(infoCacheKey, new Response(JSON.stringify({ __nf: true }), {
+      cache.put(infoCacheKey, new Response(JSON.stringify(nfData), {
         headers: { "Cache-Control": "public, max-age=60" },
       })).catch(() => {});
+      if (env?.STORE_KV) {
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 120 }).catch(() => {});
+      }
       return { storeId: null, customDomain: null };
     }
 
     const result = { storeId: row.id, customDomain: row.custom_domain || null };
+    const cachePayload = { id: result.storeId, cd: result.customDomain };
     _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
     domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
 
-    // Cache combined result + seed individual caches
-    cache.put(infoCacheKey, new Response(JSON.stringify({ id: result.storeId, cd: result.customDomain }), {
-      headers: { "Cache-Control": "public, max-age=300" },
-    })).catch(() => {});
-    cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
-      JSON.stringify({ custom_domain: result.customDomain }),
-      { headers: { "Cache-Control": "public, max-age=300" } }
-    )).catch(() => {});
-    cache.put(new Request(`https://cache/store-id:${hostname}`), new Response(result.storeId, {
-      headers: { "Cache-Control": "public, max-age=600" },
-    })).catch(() => {});
+    // Write to all cache tiers
+    const writes = [
+      cache.put(infoCacheKey, new Response(JSON.stringify(cachePayload), {
+        headers: { "Cache-Control": "public, max-age=300" },
+      })).catch(() => {}),
+      cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
+        JSON.stringify({ custom_domain: result.customDomain }),
+        { headers: { "Cache-Control": "public, max-age=300" } }
+      )).catch(() => {}),
+      cache.put(new Request(`https://cache/store-id:${hostname}`), new Response(result.storeId, {
+        headers: { "Cache-Control": "public, max-age=600" },
+      })).catch(() => {}),
+    ];
+    if (env?.STORE_KV) {
+      writes.push(
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(cachePayload), { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
+      );
+    }
+    await Promise.all(writes);
 
     return result;
   } catch {
@@ -1439,11 +1483,11 @@ function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
 /* ============== FETCH AND INJECT SLUG INTO HTML (v4.2 — Cache API priority) ============== */
 
 async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
-  // v4.2: theme-lite and prebuilt-head now check Cache API first (free), KV only as fallback
+  // v4.6: Parallel fetch shell + theme + head + products (same as subdomain path)
   const [shellResult, themeLite, prebuiltHead] = await Promise.all([
     getSpaShell(request, ctx, env),
     _getThemeLite(slug, env),
-    getPrebuiltHead("", env), // Will check Cache API first
+    getPrebuiltHead("", env),
   ]);
 
   if (!shellResult?.html) {
@@ -1451,13 +1495,27 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
     return { response, dataSource: "none" };
   }
 
-  const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead);
+  // v4.6: Inject cached products (same optimization as subdomain path)
+  let inlineProducts = null;
+  try {
+    const productsCacheKey = _buildProductsCacheKey(hostname, {});
+    const cachedProducts = await cache.match(productsCacheKey);
+    if (cachedProducts) {
+      inlineProducts = await cachedProducts.text();
+    }
+  } catch {}
+
+  const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead, inlineProducts);
+
+  const dataSource = inlineProducts
+    ? "fast-shell-products"
+    : themeLite ? "fast-shell-themed" : "fast-shell";
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
   newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
   newHeaders.set("X-Store-Slug", slug);
-  newHeaders.set("X-Data-Source", themeLite ? "fast-shell-themed" : "fast-shell");
+  newHeaders.set("X-Data-Source", dataSource);
   newHeaders.set("X-Shell-Source", shellResult.source);
   newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
@@ -1466,10 +1524,9 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
 
   const response = new Response(fastHtml, { status: 200, headers: newHeaders });
 
-  // v4.2: Background warm uses in-memory cooldown only — no KV lock
   ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname));
 
-  return { response, dataSource: themeLite ? "fast-shell-themed" : "fast-shell" };
+  return { response, dataSource };
 }
 
 /**
@@ -2349,7 +2406,7 @@ export default {
 
       const newHeaders = new Headers();
       newHeaders.set("Content-Type", "text/html; charset=utf-8");
-      newHeaders.set("Cache-Control", "public, max-age=30, stale-while-revalidate=300");
+      newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
       newHeaders.set("X-Store-Slug", slug);
       newHeaders.set("X-Data-Source", dataSource);
       newHeaders.set("X-Shell-Source", shellResult.source);
@@ -2464,11 +2521,58 @@ export default {
 
       const dbPingMs = Date.now() - keepaliveStart;
 
-      // 2. Also warm the SPA shell cache so it's ready for fast-shell path
+      // 2. Warm the SPA shell cache
       ctx.waitUntil((async () => {
         try {
           await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
         } catch {}
+      })());
+
+      // 3. v4.6: Warm active store slugs in KV for instant existence checks
+      // Fetch recently active stores and pre-cache their existence in KV
+      ctx.waitUntil((async () => {
+        try {
+          const storesRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/stores_public?select=id,slug,custom_domain&is_suspended=eq.false&limit=50&order=updated_at.desc`,
+            {
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              },
+            }
+          );
+          if (storesRes.ok) {
+            const stores = await storesRes.json();
+            const kvWrites = [];
+            for (const s of stores) {
+              if (!s.slug || !s.id) continue;
+              const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
+              // Cache in KV for store-info lookup
+              if (env?.STORE_KV) {
+                kvWrites.push(
+                  env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
+                );
+                // Also cache store-id for products API
+                const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
+                kvWrites.push(
+                  env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+                );
+                if (s.custom_domain) {
+                  kvWrites.push(
+                    env.STORE_KV.put(`store-id:${s.custom_domain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+                  );
+                  kvWrites.push(
+                    env.STORE_KV.put(`domain:${s.custom_domain}`, JSON.stringify({ slug: s.slug }), { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
+                  );
+                }
+              }
+            }
+            if (kvWrites.length > 0) await Promise.all(kvWrites);
+            console.log(`[keepalive] warmed ${stores.length} store slugs in KV`);
+          }
+        } catch (err) {
+          console.log(`[keepalive] store warm failed: ${err?.message || err}`);
+        }
       })());
 
       console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status}`);
