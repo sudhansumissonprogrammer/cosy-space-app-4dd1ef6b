@@ -2602,7 +2602,7 @@ export default {
    * SCHEDULED HANDLER — DB Keepalive + Store Warming
    *
    * Runs every 5 minutes via Cloudflare Cron Trigger.
-   * Cron expression: */5 * * * *
+   * Cron schedule: every 5 minutes.
    */
   async scheduled(event, env, ctx) {
     const keepaliveStart = Date.now();
