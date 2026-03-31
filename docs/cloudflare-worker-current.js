@@ -617,6 +617,44 @@ function _buildPrebuiltHead(html) {
   return head;
 }
 
+/* ============== PROXY TO ORIGIN WITH CF EDGE CACHING (v4.3 — for hashed static assets) ============== */
+
+async function proxyToOriginCached(request) {
+  const url = new URL(request.url);
+  url.hostname = ORIGIN_HOST;
+
+  const headers = new Headers(request.headers);
+  headers.set("Host", ORIGIN_HOST);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ORIGIN_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url.toString(), {
+      method: request.method,
+      headers,
+      signal: controller.signal,
+      // v4.3: Enable CF edge caching for immutable hashed assets
+      // This caches JS/CSS chunks at the CF POP — subsequent users in the same region
+      // get edge-cached responses instead of origin roundtrips (~200-800ms savings per chunk)
+      cf: { cacheTtl: 2592000, cacheEverything: true },
+    });
+    clearTimeout(timeout);
+
+    const newRes = new Response(res.body, res);
+    if (newRes.ok) {
+      newRes.headers.set("Cache-Control", "public, max-age=2592000, immutable");
+    }
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+      newRes.headers.set(k, v);
+    }
+    return newRes;
+  } catch {
+    clearTimeout(timeout);
+    // Fallback to uncached proxy
+    return proxyToOrigin(request);
+  }
+}
 
 const KV_STOREFRONT_TTL = 3600;
 const CACHE_STOREFRONT_TTL = 600;
