@@ -1,5 +1,5 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.8 — PERFORMANCE & RELIABILITY FIXES
+ * STORIVO PRODUCTION ROUTER v4.8.1 — CLS FIX + PRODUCTS KV FALLBACK
  *
  * Changes from v4.7:
  *   1. Custom domain: parallel fetch (resolveDomain + getSpaShell + prebuiltHead in Promise.all) — ~200ms win
@@ -17,7 +17,7 @@
  *  13. Slug index populated in handlePrewarm for pre-first-cron coverage
  */
 
-const WORKER_VERSION = "4.8";
+const WORKER_VERSION = "4.8.1";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
@@ -162,7 +162,7 @@ function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
 // v4.8: Dead code removed — htmlContainsTenantMarker was never called
 
 function getSkeletonCleanupScript(fallbackMs = 12_000) {
-  return `<script>(function(){var removed=false;function kill(){if(removed)return;var s=document.getElementById('sf-skel');if(!s)return;removed=true;s.style.opacity='0';s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();}function rootReady(){var root=document.getElementById('root');return !!(root&&root.childElementCount>0);}function tryKill(){if(rootReady())kill();}if(document.readyState==='complete'){tryKill();}else{document.addEventListener('DOMContentLoaded',tryKill,{once:true});window.addEventListener('load',tryKill,{once:true});}var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});window.addEventListener('storefront:mounted',function(){mo.disconnect();kill();},{once:true});setTimeout(function(){mo.disconnect();tryKill();},${fallbackMs});}}else{window.addEventListener('storefront:mounted',kill,{once:true});setTimeout(tryKill,${fallbackMs});}})()</script>`;
+  return `<script>(function(){var removed=false;function kill(){if(removed)return;var s=document.getElementById('sf-skel');if(!s)return;removed=true;s.style.transition='opacity 150ms ease-out';s.style.opacity='0';setTimeout(function(){s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();},160);}function rootReady(){var root=document.getElementById('root');return !!(root&&root.childElementCount>0);}function tryKill(){if(rootReady())kill();}if(document.readyState==='complete'){tryKill();}else{document.addEventListener('DOMContentLoaded',tryKill,{once:true});window.addEventListener('load',tryKill,{once:true});}var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});window.addEventListener('storefront:mounted',function(){mo.disconnect();kill();},{once:true});setTimeout(function(){mo.disconnect();tryKill();},${fallbackMs});}}else{window.addEventListener('storefront:mounted',kill,{once:true});setTimeout(tryKill,${fallbackMs});}})()</script>`;
 }
 
 /* ============== v4.8: SHARED SKELETON & THEME BUILDERS (DRY) ============== */
@@ -1548,12 +1548,29 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
     getPrebuiltHead(shellResult.html, env),
   ]);
 
+  // v4.8.1: Check Cache API first, then KV fallback for products
   let inlineProducts = null;
   try {
     const productsCacheKey = _buildProductsCacheKey(hostname, {});
     const cachedProducts = await cache.match(productsCacheKey);
     if (cachedProducts) {
       inlineProducts = await cachedProducts.text();
+    } else if (env?.STORE_KV) {
+      // KV fallback — products may be warm in KV even if Cache API expired
+      const kvKey = _buildProductsKvKey(hostname, {});
+      const kvProducts = await env.STORE_KV.get(kvKey);
+      if (kvProducts) {
+        inlineProducts = kvProducts;
+        // Re-populate Cache API from KV for next request
+        ctx.waitUntil(
+          cache.put(productsCacheKey, new Response(kvProducts, {
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
+            },
+          })).catch(() => {})
+        );
+      }
     }
   } catch {}
 
@@ -2739,6 +2756,22 @@ export default {
           });
           await Promise.all(shellWarms);
           console.log(`[keepalive] pre-warmed ${top20.length} store shells (internal)`);
+
+          // 5. v4.8.1: Warm products in KV for ALL remaining stores (lightweight — no shell/HTML)
+          const remaining = allStores.slice(20);
+          if (remaining.length > 0 && env?.STORE_KV) {
+            const batchSize = 10;
+            for (let i = 0; i < remaining.length; i += batchSize) {
+              const batch = remaining.slice(i, i + batchSize);
+              await Promise.all(batch.map(async (s) => {
+                try {
+                  if (!s.id || !s.slug) return;
+                  await _prewarmProducts(s.id, s.slug, ctx, env, s.custom_domain).catch(() => {});
+                } catch {}
+              }));
+            }
+            console.log(`[keepalive] warmed products for ${remaining.length} additional stores`);
+          }
 
         } catch (err) {
           console.log(`[keepalive] store warm failed: ${err?.message || err}`);
