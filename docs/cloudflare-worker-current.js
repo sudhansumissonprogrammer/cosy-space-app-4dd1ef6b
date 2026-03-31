@@ -296,6 +296,98 @@ async function getCustomDomainForSlug(slug) {
   }
 }
 
+/* ============== COMBINED STORE INFO LOOKUP (id + custom_domain in one query) ============== */
+
+/**
+ * v4.3: For subdomain requests, fetch store ID and custom_domain in a SINGLE DB call
+ * instead of two separate queries. Saves ~200ms on cold load.
+ * Returns { storeId: string|null, customDomain: string|null }
+ */
+const _storeInfoCache = new Map();
+
+async function _resolveStoreInfo(slug, hostname, env) {
+  // Check in-memory cache first
+  const memEntry = _storeInfoCache.get(slug);
+  if (memEntry && Date.now() < memEntry.expiresAt) {
+    return { storeId: memEntry.storeId, customDomain: memEntry.customDomain };
+  }
+
+  // Check Cache API for combined result
+  const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
+  try {
+    const cached = await cache.match(infoCacheKey);
+    if (cached) {
+      const data = await cached.json();
+      if (data.__nf) {
+        // Negative cache
+        _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+        // Also seed _resolveStoreId memory cache so the 404 path stays fast
+        domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+        return { storeId: null, customDomain: null };
+      }
+      const result = { storeId: data.id || null, customDomain: data.cd || null };
+      _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
+      // Seed the _resolveStoreId memory cache too
+      if (result.storeId) {
+        domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
+      }
+      // Seed the customDomain cache too
+      cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
+        JSON.stringify({ custom_domain: result.customDomain }),
+        { headers: { "Cache-Control": "public, max-age=300" } }
+      )).catch(() => {});
+      return result;
+    }
+  } catch {}
+
+  // Single DB call for both id and custom_domain
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/stores?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      }
+    );
+
+    if (!res.ok) return { storeId: null, customDomain: null };
+    const rows = await res.json();
+    const row = rows[0];
+
+    if (!row) {
+      // Store doesn't exist — cache negative result
+      _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+      domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+      cache.put(infoCacheKey, new Response(JSON.stringify({ __nf: true }), {
+        headers: { "Cache-Control": "public, max-age=60" },
+      })).catch(() => {});
+      return { storeId: null, customDomain: null };
+    }
+
+    const result = { storeId: row.id, customDomain: row.custom_domain || null };
+    _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
+    domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
+
+    // Cache combined result + seed individual caches
+    cache.put(infoCacheKey, new Response(JSON.stringify({ id: result.storeId, cd: result.customDomain }), {
+      headers: { "Cache-Control": "public, max-age=300" },
+    })).catch(() => {});
+    cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
+      JSON.stringify({ custom_domain: result.customDomain }),
+      { headers: { "Cache-Control": "public, max-age=300" } }
+    )).catch(() => {});
+    cache.put(new Request(`https://cache/store-id:${hostname}`), new Response(result.storeId, {
+      headers: { "Cache-Control": "public, max-age=600" },
+    })).catch(() => {});
+
+    return result;
+  } catch {
+    return { storeId: null, customDomain: null };
+  }
+}
+
 /* ============== PROXY TO ORIGIN ============== */
 
 async function proxyToOrigin(request) {
