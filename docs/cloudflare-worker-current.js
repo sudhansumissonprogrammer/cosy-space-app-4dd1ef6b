@@ -10,7 +10,7 @@
  *   5. All existing v4.1 features preserved.
  */
 
-const WORKER_VERSION = "4.2";
+const WORKER_VERSION = "4.3";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
@@ -293,6 +293,98 @@ async function getCustomDomainForSlug(slug) {
     return customDomain;
   } catch {
     return null;
+  }
+}
+
+/* ============== COMBINED STORE INFO LOOKUP (id + custom_domain in one query) ============== */
+
+/**
+ * v4.3: For subdomain requests, fetch store ID and custom_domain in a SINGLE DB call
+ * instead of two separate queries. Saves ~200ms on cold load.
+ * Returns { storeId: string|null, customDomain: string|null }
+ */
+const _storeInfoCache = new Map();
+
+async function _resolveStoreInfo(slug, hostname, env) {
+  // Check in-memory cache first
+  const memEntry = _storeInfoCache.get(slug);
+  if (memEntry && Date.now() < memEntry.expiresAt) {
+    return { storeId: memEntry.storeId, customDomain: memEntry.customDomain };
+  }
+
+  // Check Cache API for combined result
+  const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
+  try {
+    const cached = await cache.match(infoCacheKey);
+    if (cached) {
+      const data = await cached.json();
+      if (data.__nf) {
+        // Negative cache
+        _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+        // Also seed _resolveStoreId memory cache so the 404 path stays fast
+        domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+        return { storeId: null, customDomain: null };
+      }
+      const result = { storeId: data.id || null, customDomain: data.cd || null };
+      _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
+      // Seed the _resolveStoreId memory cache too
+      if (result.storeId) {
+        domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
+      }
+      // Seed the customDomain cache too
+      cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
+        JSON.stringify({ custom_domain: result.customDomain }),
+        { headers: { "Cache-Control": "public, max-age=300" } }
+      )).catch(() => {});
+      return result;
+    }
+  } catch {}
+
+  // Single DB call for both id and custom_domain
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/stores?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      }
+    );
+
+    if (!res.ok) return { storeId: null, customDomain: null };
+    const rows = await res.json();
+    const row = rows[0];
+
+    if (!row) {
+      // Store doesn't exist — cache negative result
+      _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+      domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+      cache.put(infoCacheKey, new Response(JSON.stringify({ __nf: true }), {
+        headers: { "Cache-Control": "public, max-age=60" },
+      })).catch(() => {});
+      return { storeId: null, customDomain: null };
+    }
+
+    const result = { storeId: row.id, customDomain: row.custom_domain || null };
+    _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
+    domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
+
+    // Cache combined result + seed individual caches
+    cache.put(infoCacheKey, new Response(JSON.stringify({ id: result.storeId, cd: result.customDomain }), {
+      headers: { "Cache-Control": "public, max-age=300" },
+    })).catch(() => {});
+    cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
+      JSON.stringify({ custom_domain: result.customDomain }),
+      { headers: { "Cache-Control": "public, max-age=300" } }
+    )).catch(() => {});
+    cache.put(new Request(`https://cache/store-id:${hostname}`), new Response(result.storeId, {
+      headers: { "Cache-Control": "public, max-age=600" },
+    })).catch(() => {});
+
+    return result;
+  } catch {
+    return { storeId: null, customDomain: null };
   }
 }
 
@@ -2141,9 +2233,20 @@ export default {
         return cachedFetch(request, "", ctx, false, env);
       }
 
-      // Fast store-existence check — return instant 404 for non-existent stores
-      const storeId = await _resolveStoreId(hostname, env);
-      if (!storeId) {
+      // v4.3: SINGLE parallel group — eliminates sequential waterfall
+      // Previously: _resolveStoreId → [customDomain, seo, bot] → [shell, theme, head]
+      // Now: ALL 6 operations run in parallel, saving ~400-800ms on cold load
+      const [storeInfo, seoResponse, botResponse, shellResult, themeLite, prebuiltHead] = await Promise.all([
+        _resolveStoreInfo(slug, hostname, env),
+        handleSeoFiles(url, slug),
+        handleBot(request, slug, url, false),
+        getSpaShell(request, ctx, env),
+        _getThemeLite(slug, env),
+        getPrebuiltHead("", env),
+      ]);
+
+      // Store doesn't exist — instant static 404
+      if (!storeInfo.storeId) {
         const safeSlug = slug.replace(/[<>"'&]/g, "");
         const notFoundHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.storivo.in</strong></p><a href="https://storivo.in">Create Your Store</a></div></body></html>`;
         return new Response(notFoundHtml, {
@@ -2156,15 +2259,10 @@ export default {
         });
       }
 
-      const [customDomain, seoResponse, botResponse] = await Promise.all([
-        getCustomDomainForSlug(slug),
-        handleSeoFiles(url, slug),
-        handleBot(request, slug, url, false),
-      ]);
-
-      if (customDomain) {
+      // Custom domain redirect
+      if (storeInfo.customDomain) {
         return Response.redirect(
-          `https://${customDomain}${url.pathname}${url.search}`,
+          `https://${storeInfo.customDomain}${url.pathname}${url.search}`,
           301
         );
       }
@@ -2172,19 +2270,34 @@ export default {
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      const { response: injectedResponse, dataSource } = await fetchAndInjectSlug(
-        request, slug, ctx, env, hostname, url.pathname
-      );
-
-      const contentType = injectedResponse.headers.get("content-type") || "";
-      if (injectedResponse.status === 200 && contentType.includes("text/html")) {
-        // Fast shell has short TTL; background task stores full version
+      // Build response inline using already-fetched shell/theme/head (no second await group)
+      if (!shellResult?.html) {
+        const response = await proxyToOrigin(request);
+        return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "none" });
       }
 
-      return addDiagnosticHeaders(injectedResponse, {
+      const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead);
+
+      const newHeaders = new Headers();
+      newHeaders.set("Content-Type", "text/html; charset=utf-8");
+      newHeaders.set("Cache-Control", "public, max-age=30, stale-while-revalidate=300");
+      newHeaders.set("X-Store-Slug", slug);
+      newHeaders.set("X-Data-Source", themeLite ? "fast-shell-themed" : "fast-shell");
+      newHeaders.set("X-Shell-Source", shellResult.source);
+      newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
+      for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+        newHeaders.set(k, v);
+      }
+
+      const response = new Response(fastHtml, { status: 200, headers: newHeaders });
+
+      // Background warm (unchanged)
+      ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
+
+      return addDiagnosticHeaders(response, {
         slug,
         cacheStatus: "MISS",
-        dataSource,
+        dataSource: themeLite ? "fast-shell-themed" : "fast-shell",
       });
     }
 
