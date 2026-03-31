@@ -2757,6 +2757,22 @@ export default {
           await Promise.all(shellWarms);
           console.log(`[keepalive] pre-warmed ${top20.length} store shells (internal)`);
 
+          // 5. v4.8.1: Warm products in KV for ALL remaining stores (lightweight — no shell/HTML)
+          const remaining = allStores.slice(20);
+          if (remaining.length > 0 && env?.STORE_KV) {
+            const batchSize = 10;
+            for (let i = 0; i < remaining.length; i += batchSize) {
+              const batch = remaining.slice(i, i + batchSize);
+              await Promise.all(batch.map(async (s) => {
+                try {
+                  if (!s.id || !s.slug) return;
+                  await _prewarmProducts(s.id, s.slug, ctx, env, s.custom_domain).catch(() => {});
+                } catch {}
+              }));
+            }
+            console.log(`[keepalive] warmed products for ${remaining.length} additional stores`);
+          }
+
         } catch (err) {
           console.log(`[keepalive] store warm failed: ${err?.message || err}`);
         }
