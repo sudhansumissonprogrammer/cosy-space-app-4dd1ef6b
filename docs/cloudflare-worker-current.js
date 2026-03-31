@@ -220,7 +220,7 @@ async function resolveDomain(hostname, env) {
 
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stores?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
+      `${SUPABASE_URL}/rest/v1/stores_public?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -270,7 +270,7 @@ async function getCustomDomainForSlug(slug) {
 
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stores?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      `${SUPABASE_URL}/rest/v1/stores_public?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -343,7 +343,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
   // Single DB call for both id and custom_domain
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stores?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      `${SUPABASE_URL}/rest/v1/stores_public?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -951,7 +951,7 @@ async function _fetchStoreIdFromDb(domain) {
     : `custom_domain=eq.${encodeURIComponent(domain)}`;
 
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/stores?select=id&${query}&limit=1`,
+    `${SUPABASE_URL}/rest/v1/stores_public?select=id&${query}&limit=1`,
     { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
   );
   if (!res.ok) return null;
