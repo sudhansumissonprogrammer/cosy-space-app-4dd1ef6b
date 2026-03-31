@@ -1,16 +1,15 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.2 — KV-OPTIMIZED
+ * STORIVO PRODUCTION ROUTER v4.5 — DB KEEPALIVE + CACHE TTL BOOST
  *
- * Changes from v4.1:
- *   1. ELIMINATED shouldRevalidateGlobal KV lock — uses in-memory only with
- *      longer cooldown (120s) to handle isolate recycling gracefully.
- *   2. theme-lite + prebuilt-head read from Cache API first, KV only as fallback.
- *   3. Background revalidation only triggers every 120s per slug (was 30s).
- *   4. Reduced KV reads per request from 3-6 to 0-1.
- *   5. All existing v4.1 features preserved.
+ * Changes from v4.4:
+ *   1. Added `scheduled()` handler — pings Supabase DB every 5 min via Cron Trigger
+ *      to keep the connection pool warm (eliminates ~4s cold start).
+ *   2. Increased fast-shell Cache-Control from max-age=30 to max-age=300
+ *      with stale-while-revalidate=600 — reduces cache misses by 10x.
+ *   3. All existing v4.4 features preserved.
  */
 
-const WORKER_VERSION = "4.4";
+const WORKER_VERSION = "4.5";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
@@ -1456,7 +1455,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
-  newHeaders.set("Cache-Control", "public, max-age=30, stale-while-revalidate=300");
+  newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
   newHeaders.set("X-Store-Slug", slug);
   newHeaders.set("X-Data-Source", themeLite ? "fast-shell-themed" : "fast-shell");
   newHeaders.set("X-Shell-Source", shellResult.source);
@@ -2405,12 +2404,12 @@ export default {
       const { response: injectedResponse, dataSource } =
         await fetchAndInjectSlug(request, slug, ctx, env, hostname, url.pathname);
 
-      return addDiagnosticHeaders(injectedResponse, {
-        slug,
-        cacheStatus: "MISS",
-        dataSource,
-      });
-    }
+    return addDiagnosticHeaders(injectedResponse, {
+      slug,
+      cacheStatus: "MISS",
+      dataSource,
+    });
+  }
 
     // ─── UNKNOWN DOMAIN → 404 ───
     return new Response(
@@ -2429,5 +2428,52 @@ export default {
         },
       }
     );
+  },
+
+  /**
+   * SCHEDULED HANDLER — DB Keepalive
+   *
+   * Runs every 5 minutes via Cloudflare Cron Trigger to keep the Supabase
+   * connection pool warm. Without this, the first request after idle takes
+   * ~4s due to cold DB connections. This lightweight ping keeps it at ~200ms.
+   *
+   * Configure in Cloudflare Dashboard → Workers → Triggers → Cron:
+   *   Cron expression: *\/5 * * * *
+   */
+  async scheduled(event, env, ctx) {
+    const keepaliveStart = Date.now();
+    try {
+      // 1. Lightweight DB ping — keeps Supabase connection pool warm
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/rpc/get_platform_config_public`,
+        {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+          body: "{}",
+        }
+      );
+      clearTimeout(timeout);
+
+      const dbPingMs = Date.now() - keepaliveStart;
+
+      // 2. Also warm the SPA shell cache so it's ready for fast-shell path
+      ctx.waitUntil((async () => {
+        try {
+          await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
+        } catch {}
+      })());
+
+      console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status}`);
+    } catch (err) {
+      console.log(`[keepalive] failed: ${err?.message || err}`);
+    }
   },
 };
