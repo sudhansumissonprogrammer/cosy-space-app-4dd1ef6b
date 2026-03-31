@@ -2374,7 +2374,7 @@ export default function StoreThemeSettings() {
           </div>
 
           {/* Mobile Bottom Navigation Style (Theme 1 & 14) */}
-          {(currentTheme === "theme-1" || currentTheme === "theme-14") && (
+          {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-16") && (
             <>
               <Separator />
               <div>
