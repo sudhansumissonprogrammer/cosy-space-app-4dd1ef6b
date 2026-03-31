@@ -2340,11 +2340,15 @@ export default {
 
       const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead, inlineProducts);
 
+      const dataSource = inlineProducts
+        ? "fast-shell-products"
+        : themeLite ? "fast-shell-themed" : "fast-shell";
+
       const newHeaders = new Headers();
       newHeaders.set("Content-Type", "text/html; charset=utf-8");
       newHeaders.set("Cache-Control", "public, max-age=30, stale-while-revalidate=300");
       newHeaders.set("X-Store-Slug", slug);
-      newHeaders.set("X-Data-Source", themeLite ? "fast-shell-themed" : "fast-shell");
+      newHeaders.set("X-Data-Source", dataSource);
       newHeaders.set("X-Shell-Source", shellResult.source);
       newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
@@ -2359,7 +2363,7 @@ export default {
       return addDiagnosticHeaders(response, {
         slug,
         cacheStatus: "MISS",
-        dataSource: themeLite ? "fast-shell-themed" : "fast-shell",
+        dataSource,
       });
     }
 
