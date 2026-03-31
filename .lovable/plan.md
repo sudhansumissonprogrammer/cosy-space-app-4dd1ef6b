@@ -1,114 +1,85 @@
 
 
-# Fix: Non-Existent Subdomains Taking Same Load Time as Real Stores
+# Worker v4.7 — Eliminate Supabase Cold Start Completely
 
-## Root Cause Analysis
+## What's Actually There (Correcting the Diagnosis)
 
-When you visit `abc.storivo.in` (non-existent store), here's what happens step-by-step:
+The `scheduled()` handler **already exists** at line 2500. It already:
+- Pings Supabase every 5 min to keep the DB connection pool warm
+- Warms the SPA shell cache
+- Pre-loads 50 most recent stores into KV
 
-**Worker side (lines 2128-2166):**
-1. Worker detects subdomain, extracts slug `abc`
-2. Runs THREE parallel operations: `getCustomDomainForSlug(slug)`, `handleSeoFiles()`, `handleBot()` -- all hit cache/KV/DB
-3. Then calls `fetchAndInjectSlug()` which does THREE more parallel fetches: `getSpaShell()`, `_getThemeLite()`, `getPrebuiltHead()`
-4. Worker injects `window.__STORE_SLUG__="abc"` into HTML and returns it with a skeleton
+**So the cron IS working.** The real remaining issues are:
 
-**The Worker never checks if the store exists.** It blindly injects the slug and serves the full SPA shell with skeleton. It doesn't know or care if "abc" is a real store.
+1. **Only 50 stores are warmed** — stores beyond the top 50 still hit DB on first request
+2. **No KV-first early rejection** — unknown/invalid slugs still go through the full `_resolveStoreInfo` waterfall (Memory → Cache API → KV → DB) inside the parallel `Promise.all` block, adding ~2-4s
+3. **Cron only warms the DB connection** — it doesn't warm the actual storefront shell caches for individual stores
 
-**Client side (StorefrontLayout.logic.ts):**
-1. React boots, sees `window.__STORE_SLUG__="abc"`, calls `get_storefront_shell` RPC
-2. RPC returns null/empty (store doesn't exist)
-3. `useStorefront` resolves with `store = null`
-4. `StorefrontShell` shows `<StorefrontNotFound>` -- but only after full React hydration
+## Plan (Worker v4.7)
 
-**Timeline for non-existent store:** Worker fetch (~1-2s) + JS download/parse (~2-3s) + React hydrate + RPC call (~1-2s) = **~5s** before "Store not found" appears.
+### Step 1: Warm ALL active stores in cron (not just 50)
 
-**Timeline for real store:** Same ~5s, but the store actually renders. The time is identical because the Worker does the same work regardless.
-
-## The Fix (Two Parts)
-
-### Part 1: Worker-Level Store Existence Check (Primary Fix)
-
-In the subdomain handler (line 2128), **check if the store exists before serving the full SPA**. If the store doesn't exist, return an instant static "Store Not Found" HTML page -- no SPA, no JS download, no React hydration needed.
-
-```text
-Current flow:
-  subdomain request → inject slug → serve full SPA → React boots → RPC → "not found"
-  (~5 seconds)
-
-New flow:
-  subdomain request → check store exists? → NO → instant static 404 HTML
-  (~200ms)
+In the `scheduled()` handler, change:
 ```
+limit=50 → remove limit (or set limit=500)
+```
+Also add pagination if there are >1000 stores. This ensures **every** active store has a KV entry.
 
-**How:** The `prefetchStorefrontData(slug)` call already happens in `_warmFullHtmlInBackground`. We move a lightweight store-existence check earlier. The `_resolveStoreId` function already does exactly this (checks if a store ID exists for a domain). If it returns null, serve a static 404.
+### Step 2: Add KV-first early rejection for subdomains
 
-Worker change (subdomain section, around line 2128):
+Before the expensive `Promise.all` block (line 2349), add a fast KV check:
+
 ```javascript
-// ─── SUBDOMAIN ───
-if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-  const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
-  if (!slug || slug.includes(".") || slug === "www") {
-    return cachedFetch(request, "", ctx, false, env);
+// FAST PATH: If KV is available and slug is NOT in KV, instant 404
+if (env?.STORE_KV) {
+  const kvCheck = await env.STORE_KV.get(`store-info:${slug}`);
+  if (kvCheck) {
+    const parsed = JSON.parse(kvCheck);
+    if (parsed.__nf) {
+      // Known non-existent store → instant 404 (<20ms)
+      return instant404(slug);
+    }
   }
-
-  // NEW: Fast store-existence check before heavy SPA serving
-  const storeId = await _resolveStoreId(hostname, env);
-  if (!storeId) {
-    // Cache the 404 for 60s to prevent repeated DB lookups
-    const notFoundHtml = `<!DOCTYPE html><html><head><title>Store Not Found</title>
-      <style>body{font-family:'Inter',sans-serif;display:flex;align-items:center;
-      justify-content:center;min-height:100vh;margin:0;background:#fafafa;color:#333}
-      .c{text-align:center}.c h1{font-size:1.5rem;margin-bottom:8px}
-      .c p{color:#666;margin-bottom:16px}
-      .c a{color:#4361ee;text-decoration:none}</style></head>
-      <body><div class="c"><h1>Store Not Found</h1>
-      <p>No store exists at "${escapeHtml(slug)}.storivo.in"</p>
-      <a href="https://storivo.in">Create your store →</a></div></body></html>`;
-    return new Response(notFoundHtml, {
-      status: 404,
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=60",
-        ...SECURITY_HEADERS,
-      },
-    });
-  }
-
-  // Existing flow continues for valid stores...
-  const [customDomain, seoResponse, botResponse] = await Promise.all([...]);
-  // ...
 }
 ```
 
-This makes non-existent subdomains return in **~200ms** instead of ~5s.
+This skips the entire `Promise.all` for known-bad slugs. For known-good slugs, the data is already in KV so `_resolveStoreInfo` will be fast anyway.
 
-### Part 2: Cache Negative Results
+### Step 3: Warm individual store shells in cron
 
-The `_resolveStoreId` function already caches negative results in memory for 60s (line 798). But on cold starts, it still hits the DB. Add Cache API caching for negative results too:
+For the top 20 most active stores, also pre-warm their full HTML shell by making a lightweight fetch to their subdomain URL. This ensures the Cache API has the full rendered HTML ready.
+
+### Step 4: Store a "slug index" in KV
+
+During cron, write a master key `all-slugs` containing a Set of all active slugs. Then in the request path, check this set first — if the slug isn't in it, instant 404 without any DB/KV per-key lookup.
 
 ```javascript
-// In _resolveStoreId, after DB returns null:
-if (!storeId) {
-  // Cache negative result in Cache API for 60s
-  cache.put(storeIdCacheKey, new Response("", {
-    headers: { "Cache-Control": "public, max-age=60" },
-  })).catch(() => {});
+// In cron: store all slugs as a JSON array
+await env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 600 });
+
+// In request: single KV read to validate
+const allSlugs = await env.STORE_KV.get("all-active-slugs", { type: "json" });
+if (allSlugs && !allSlugs.includes(slug)) {
+  return instant404(slug); // <20ms
 }
 ```
-
-## Files to Modify
-
-1. `docs/cloudflare-worker-current.js` -- Add store-existence check in subdomain handler + cache negative results
-
-**After updating the worker code, it must be manually redeployed to Cloudflare.**
 
 ## Expected Impact
 
-| Scenario | Before | After |
+| Scenario | Before (v4.6) | After (v4.7) |
 |---|---|---|
-| Non-existent subdomain (cold) | ~5s | ~200-400ms |
-| Non-existent subdomain (warm cache) | ~5s | ~50ms |
-| Existing store (no change) | ~5s | ~5s (unchanged) |
+| Known store, warm cache | ~300ms | ~300ms (same) |
+| Known store, cold cache | 4-5s | ~500ms (KV hit → skip DB) |
+| Unknown/invalid slug | 2-4s (DB roundtrip) | <50ms (KV slug index) |
+| New store (not yet in KV) | 4-5s | ~500ms (next cron populates) |
 
-The fix adds only one lightweight DB query (`_resolveStoreId`) to the critical path for subdomains, but this is already cached in Cache API / KV / memory for real stores. For non-existent stores, this single fast check replaces the entire SPA download + hydration cycle.
+## Files Changed
+
+- `docs/cloudflare-worker-current.js` — all changes in the Worker only
+
+## Technical Details
+
+- The "slug index" KV key is a single JSON array (~5KB for 500 stores). One KV read (~10ms) replaces the entire `_resolveStoreInfo` chain for rejection.
+- Memory cache of the slug index (refreshed every 5 min from KV) makes repeated checks essentially free.
+- No Supabase or app code changes needed.
 
