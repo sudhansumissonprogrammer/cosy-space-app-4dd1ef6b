@@ -180,7 +180,7 @@ export default function CheckoutAwareLayout({
 
       <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
       {mobileNavEnabled && mobileNav}
-      <StorefrontFooter store={store} />
+      <Suspense fallback={null}><LazyStorefrontFooter store={store} /></Suspense>
 
       <Suspense fallback={null}>
         <LazyCheckoutExitDialog
