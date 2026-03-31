@@ -1371,34 +1371,17 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   const skeletonBg = bgColor;
   const skeletonMuted = textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
 
-  let skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skeletonBg};font-family:'Inter',sans-serif;z-index:2147483000;pointer-events:none;overflow:hidden">`;
+  // v4.7: Minimal skeleton — just themed background, no logo/name/categories
+  let skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skeletonBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
   skeleton += `<nav style="height:56px;background:${skeletonBg};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px">`;
-  if (logoUrl) {
-    skeleton += `<img src="${escapeHtml(logoUrl)}" alt="" style="height:36px;width:36px;border-radius:8px;object-fit:cover" />`;
-  } else {
-    skeleton += `<div style="height:36px;width:36px;border-radius:8px;background:${skeletonMuted}"></div>`;
-  }
-  skeleton += `<div style="font-weight:600;font-size:16px;color:${textColor}">${escapeHtml(storeName)}</div>`;
+  skeleton += `<div style="height:32px;width:32px;border-radius:8px;background:${skeletonMuted}"></div>`;
+  skeleton += `<div style="height:12px;width:72px;border-radius:4px;background:${skeletonMuted}"></div>`;
   skeleton += `<div style="flex:1"></div>`;
-  skeleton += `<div style="width:28px;height:28px;border-radius:50%;background:${skeletonMuted}"></div>`;
+  skeleton += `<div style="width:24px;height:24px;border-radius:50%;background:${skeletonMuted}"></div>`;
   skeleton += `</nav>`;
-  skeleton += `<div style="padding:12px 16px"><div style="height:40px;border-radius:9999px;background:${skeletonMuted}"></div></div>`;
-  const cats = storefrontData?.categories;
-  if (cats && cats.length > 0) {
-    skeleton += `<div style="padding:0 16px 8px;display:flex;gap:16px;overflow:hidden">`;
-    for (let i = 0; i < Math.min(cats.length, 5); i++) {
-      const c = cats[i];
-      if (c.image_url) {
-        skeleton += `<div style="flex-shrink:0;text-align:center"><img src="${escapeHtml(c.image_url)}" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover" /><div style="font-size:11px;margin-top:4px;color:${textColor}">${escapeHtml(c.name || "")}</div></div>`;
-      } else {
-        skeleton += `<div style="flex-shrink:0"><div style="width:64px;height:64px;border-radius:50%;background:${skeletonMuted}"></div><div style="height:10px;width:50px;margin:4px auto 0;border-radius:4px;background:${skeletonMuted}"></div></div>`;
-      }
-    }
-    skeleton += `</div>`;
-  }
   skeleton += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px">`;
   for (let i = 0; i < 4; i++) {
-    skeleton += `<div style="border-radius:12px;overflow:hidden;background:${skeletonBg};border:1px solid ${skeletonMuted}">`;
+    skeleton += `<div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}">`;
     skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
     skeleton += `<div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div>`;
     skeleton += `</div>`;
@@ -1486,7 +1469,8 @@ function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
     }
   }
 
-  const skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${bgColor};font-family:'Inter',sans-serif;z-index:2147483000;pointer-events:none;overflow:hidden"><nav style="height:56px;background:${bgColor};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px"><div style="height:36px;width:36px;border-radius:8px;background:${skeletonMuted}"></div><div style="height:14px;width:80px;border-radius:4px;background:${skeletonMuted}"></div><div style="flex:1"></div><div style="width:28px;height:28px;border-radius:50%;background:${skeletonMuted}"></div></nav><div style="padding:12px 16px"><div style="height:40px;border-radius:9999px;background:${skeletonMuted}"></div></div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px"><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div></div></div>${getSkeletonCleanupScript()}`;
+  // v4.7: Minimal skeleton — just themed background, no logo/name/categories
+  const skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${bgColor};z-index:2147483000;pointer-events:none;overflow:hidden"><nav style="height:56px;background:${bgColor};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px"><div style="height:32px;width:32px;border-radius:8px;background:${skeletonMuted}"></div><div style="height:12px;width:72px;border-radius:4px;background:${skeletonMuted}"></div><div style="flex:1"></div><div style="width:24px;height:24px;border-radius:50%;background:${skeletonMuted}"></div></nav><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px"><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div><div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}"><div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div><div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div></div></div></div>${getSkeletonCleanupScript()}`;
 
   let headInjection;
   if (prebuiltHead) {
