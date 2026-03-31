@@ -49,12 +49,14 @@ function Theme16Inner({
   mobileNavEnabled,
   marqueeEnabled,
   marqueeText,
+  headerStyle,
 }: {
   store: any;
   mobileNavStyle: string;
   mobileNavEnabled: boolean;
   marqueeEnabled: boolean;
   marqueeText?: string;
+  headerStyle: string;
 }) {
   const location = useLocation();
   const isCheckout = location.pathname.includes("/checkout");
