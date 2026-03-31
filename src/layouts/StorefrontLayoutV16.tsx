@@ -28,6 +28,7 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
         const mobileNavStyle = (themeConfig as any)?.mobile_nav_style || "classic";
         const mobileNavEnabled = themeConfig?.mobile_nav_enabled ?? true;
         const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
+        const headerStyle = (themeConfig as any)?.header_style || "normal";
 
         return <Theme16Inner
           store={store}
@@ -35,6 +36,7 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
           mobileNavEnabled={mobileNavEnabled}
           marqueeEnabled={marqueeEnabled}
           marqueeText={themeConfig?.marquee_text}
+          headerStyle={headerStyle}
         />;
       }}
     </StorefrontShell>
@@ -47,12 +49,14 @@ function Theme16Inner({
   mobileNavEnabled,
   marqueeEnabled,
   marqueeText,
+  headerStyle,
 }: {
   store: any;
   mobileNavStyle: string;
   mobileNavEnabled: boolean;
   marqueeEnabled: boolean;
   marqueeText?: string;
+  headerStyle: string;
 }) {
   const location = useLocation();
   const isCheckout = location.pathname.includes("/checkout");
@@ -77,7 +81,7 @@ function Theme16Inner({
     <>
       {!isCheckout && marqueeEnabled && <StorefrontMarquee text={marqueeText} />}
 
-      <Theme16Header store={store} onOrderPlaced={orderPlaced} />
+      <Theme16Header store={store} onOrderPlaced={orderPlaced} headerStyle={headerStyle} />
 
       <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}>
         <Suspense fallback={<StorefrontContentSkeleton />}>
