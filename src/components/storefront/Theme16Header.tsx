@@ -64,6 +64,7 @@ export default function Theme16Header({ store, onOrderPlaced, headerStyle = "nor
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.includes("/checkout");
+  const hs = getHeaderStyles(headerStyle);
   const { cartCount, openCart } = useCart();
   const { wishlistCount } = useWishlist();
   const { user, loading: authLoading } = useStorefrontAuth();
