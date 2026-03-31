@@ -1,17 +1,16 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.6 — KV STORE EXISTENCE + ROUTING OPTIMIZATION
+ * STORIVO PRODUCTION ROUTER v4.7 — ZERO-DB ROUTING VIA KV SLUG INDEX
  *
- * Changes from v4.5:
- *   1. KV tier in _resolveStoreInfo: memory → Cache API → KV → DB
- *      Eliminates ~200-400ms DB lookup when Cache API expires but KV is warm.
- *   2. Custom domain product inlining: same as subdomain path, injects cached
- *      products into fast-shell HTML (eliminates client-side fetch waterfall).
- *   3. Subdomain fast-shell Cache-Control bumped from max-age=30 to max-age=300.
- *   4. Cron handler warms active store slugs in KV (not just DB ping).
- *   5. All existing v4.5 features preserved.
+ * Changes from v4.6:
+ *   1. KV slug index: cron writes "all-active-slugs" key with ALL store slugs.
+ *      Request path reads it once → instant 404 for unknown slugs (<20ms).
+ *   2. Early KV rejection: before the expensive Promise.all, check slug index
+ *      in memory (refreshed from KV every 5 min). Unknown slugs never hit DB.
+ *   3. Cron warms ALL stores (no limit=50), plus pre-warms top 20 HTML shells.
+ *   4. All existing v4.6 features preserved.
  */
 
-const WORKER_VERSION = "4.6";
+const WORKER_VERSION = "4.7";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
