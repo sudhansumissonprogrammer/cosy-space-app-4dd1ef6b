@@ -10,7 +10,7 @@
  *   5. All existing v4.1 features preserved.
  */
 
-const WORKER_VERSION = "4.2";
+const WORKER_VERSION = "4.3";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
