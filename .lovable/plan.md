@@ -1,102 +1,114 @@
 
 
-# Universal Cold-Load Optimization — All Themes to 4-5s
+# Fix: Non-Existent Subdomains Taking Same Load Time as Real Stores
 
-## Problem
-Theme 16 was optimized to ~5s, but themes 1-3, 10-15 still take 7-10s on cold loads. The same bottlenecks exist across all themes but haven't been addressed universally.
+## Root Cause Analysis
 
-## What Changes (No Design Changes)
+When you visit `abc.storivo.in` (non-existent store), here's what happens step-by-step:
 
-### 1. Priority Image Optimization for ProductCardStyle2, Style3, Style4
-**Currently**: Styles 2, 3, and 4 always load images at quality 60 with srcSet [300, 400, 600] — even for above-fold cards.
-**Fix**: Apply the same priority optimization already in Style1: when `priority=true`, use quality 45 and srcSet [200, 400]. This cuts ~40% off above-fold image bytes for all themes using these card styles (themes 2, 3, 10, 11, 12, 13, 14, 15).
+**Worker side (lines 2128-2166):**
+1. Worker detects subdomain, extracts slug `abc`
+2. Runs THREE parallel operations: `getCustomDomainForSlug(slug)`, `handleSeoFiles()`, `handleBot()` -- all hit cache/KV/DB
+3. Then calls `fetchAndInjectSlug()` which does THREE more parallel fetches: `getSpaShell()`, `_getThemeLite()`, `getPrebuiltHead()`
+4. Worker injects `window.__STORE_SLUG__="abc"` into HTML and returns it with a skeleton
 
-Files: `ProductCardStyle2.tsx`, `ProductCardStyle3.tsx`, `ProductCardStyle4.tsx`
+**The Worker never checks if the store exists.** It blindly injects the slug and serves the full SPA shell with skeleton. It doesn't know or care if "abc" is a real store.
 
-### 2. Eliminate Double Lazy Waterfall for Re-Export Home Pages
-**Currently**: `StorefrontHomeV11` re-exports from V3, `StorefrontHomeV12` re-exports from V10, `StorefrontHomeV15` re-exports from V14. These are lazy-loaded in App.tsx, creating a double chunk download (the re-export file + the actual component).
-**Fix**: In `storefrontChildRoutes()`, map these themes directly to their parent home component — same pattern already applied for Theme 16.
+**Client side (StorefrontLayout.logic.ts):**
+1. React boots, sees `window.__STORE_SLUG__="abc"`, calls `get_storefront_shell` RPC
+2. RPC returns null/empty (store doesn't exist)
+3. `useStorefront` resolves with `store = null`
+4. `StorefrontShell` shows `<StorefrontNotFound>` -- but only after full React hydration
 
-File: `App.tsx` (lines ~164-166)
+**Timeline for non-existent store:** Worker fetch (~1-2s) + JS download/parse (~2-3s) + React hydrate + RPC call (~1-2s) = **~5s** before "Store not found" appears.
 
-### 3. Eager Home Chunk Prefetch for All Themes
-**Currently**: `prefetchHomeChunk()` already covers all themes — no change needed here. Already optimized.
+**Timeline for real store:** Same ~5s, but the store actually renders. The time is identical because the Worker does the same work regardless.
 
-### 4. Static Imports for Thin Re-Export Home Pages
-**Fix**: Convert `StorefrontHomeV11.tsx`, `StorefrontHomeV12.tsx`, `StorefrontHomeV15.tsx` to use static imports (like V16 was already fixed), so if they're ever loaded directly, they don't create a waterfall.
+## The Fix (Two Parts)
 
-Files: `StorefrontHomeV11.tsx`, `StorefrontHomeV12.tsx`, `StorefrontHomeV15.tsx`
+### Part 1: Worker-Level Store Existence Check (Primary Fix)
 
-### 5. Defer StorefrontInstagramSection Import in V2, V3, V10, V13
-**Currently**: Some home pages statically import `StorefrontInstagramSection` and `StorefrontTrustStrip` even though they render below the fold.
-**Fix**: Make these lazy imports where they aren't already (V2, V3 already lazy-load search overlay but not Instagram). This reduces initial chunk size.
+In the subdomain handler (line 2128), **check if the store exists before serving the full SPA**. If the store doesn't exist, return an instant static "Store Not Found" HTML page -- no SPA, no JS download, no React hydration needed.
 
-Files: `StorefrontHomeV2.tsx`, `StorefrontHomeV3.tsx`, `StorefrontHomeV10.tsx`, `StorefrontHomeV13.tsx`
+```text
+Current flow:
+  subdomain request → inject slug → serve full SPA → React boots → RPC → "not found"
+  (~5 seconds)
 
-### 6. PAGE_SIZE Alignment
-**Currently**: `PAGE_SIZE = 20` but edge worker inlines 14 products. The mismatch means React discards the 14 inline products and re-fetches 20.
-**Fix**: Change `PAGE_SIZE` to 14 to match the edge worker's inline count, eliminating a redundant API call on cold load.
-
-File: `useStorefrontProducts.ts`
-
-## Technical Details
-
-### ProductCardStyle2/3 image fix (example):
-```typescript
-// Before:
-src={optimizeImageUrl(images[0], 400)}
-srcSet={getImageSrcSet(images[0], [300, 400, 600])}
-
-// After:
-src={optimizeImageUrl(images[0], priority ? 200 : 400, priority ? 45 : undefined)}
-srcSet={getImageSrcSet(images[0], priority ? [200, 400] : [300, 400, 600], priority ? 45 : undefined)}
+New flow:
+  subdomain request → check store exists? → NO → instant static 404 HTML
+  (~200ms)
 ```
 
-### App.tsx storefrontChildRoutes fix:
-```typescript
-// Map re-export themes to their parent home component
-const HomeComponent =
-  theme === "theme-16" ? StorefrontHome :      // already done
-  theme === "theme-15" ? StorefrontHomeV14 :    // V15 re-exports V14
-  theme === "theme-11" ? StorefrontHomeV3 :     // V11 re-exports V3
-  theme === "theme-12" ? StorefrontHomeV10 :    // V12 re-exports V10  
-  // ... rest unchanged
+**How:** The `prefetchStorefrontData(slug)` call already happens in `_warmFullHtmlInBackground`. We move a lightweight store-existence check earlier. The `_resolveStoreId` function already does exactly this (checks if a store ID exists for a domain). If it returns null, serve a static 404.
+
+Worker change (subdomain section, around line 2128):
+```javascript
+// ─── SUBDOMAIN ───
+if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
+  const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
+  if (!slug || slug.includes(".") || slug === "www") {
+    return cachedFetch(request, "", ctx, false, env);
+  }
+
+  // NEW: Fast store-existence check before heavy SPA serving
+  const storeId = await _resolveStoreId(hostname, env);
+  if (!storeId) {
+    // Cache the 404 for 60s to prevent repeated DB lookups
+    const notFoundHtml = `<!DOCTYPE html><html><head><title>Store Not Found</title>
+      <style>body{font-family:'Inter',sans-serif;display:flex;align-items:center;
+      justify-content:center;min-height:100vh;margin:0;background:#fafafa;color:#333}
+      .c{text-align:center}.c h1{font-size:1.5rem;margin-bottom:8px}
+      .c p{color:#666;margin-bottom:16px}
+      .c a{color:#4361ee;text-decoration:none}</style></head>
+      <body><div class="c"><h1>Store Not Found</h1>
+      <p>No store exists at "${escapeHtml(slug)}.storivo.in"</p>
+      <a href="https://storivo.in">Create your store →</a></div></body></html>`;
+    return new Response(notFoundHtml, {
+      status: 404,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, max-age=60",
+        ...SECURITY_HEADERS,
+      },
+    });
+  }
+
+  // Existing flow continues for valid stores...
+  const [customDomain, seoResponse, botResponse] = await Promise.all([...]);
+  // ...
+}
 ```
 
-Wait — V15 and V12 pass different props (defaultCardStyle, etc.), so they can't simply be replaced by their parent. Only V11 (exact re-export) can be mapped directly. V12 and V15 need static imports instead.
+This makes non-existent subdomains return in **~200ms** instead of ~5s.
 
-### Corrected approach for V12/V15:
-Keep them as separate lazy components but ensure their re-export files use static imports to avoid chain loading.
+### Part 2: Cache Negative Results
 
-### PAGE_SIZE change:
-```typescript
-// useStorefrontProducts.ts line 4
-const PAGE_SIZE = 14; // Match edge worker inline count
+The `_resolveStoreId` function already caches negative results in memory for 60s (line 798). But on cold starts, it still hits the DB. Add Cache API caching for negative results too:
+
+```javascript
+// In _resolveStoreId, after DB returns null:
+if (!storeId) {
+  // Cache negative result in Cache API for 60s
+  cache.put(storeIdCacheKey, new Response("", {
+    headers: { "Cache-Control": "public, max-age=60" },
+  })).catch(() => {});
+}
 ```
-
-## Expected Impact per Theme
-
-| Optimization | Savings | Themes Affected |
-|---|---|---|
-| Priority image quality reduction | ~0.5s | 2, 3, 10, 11, 12, 13, 14, 15 |
-| Eliminate V11 double lazy | ~0.8s | 11 |
-| Static imports for V12, V15 | ~0.5s | 12, 15 |
-| Lazy Instagram/TrustStrip | ~0.3s | 2, 3, 10, 13 |
-| PAGE_SIZE 20→14 alignment | ~1-2s | ALL themes |
-
-**Combined: ~2-3s reduction across all themes**, bringing 7-10s cold loads down to ~4-6s.
 
 ## Files to Modify
-1. `src/components/storefront/ProductCardStyle2.tsx` — priority image optimization
-2. `src/components/storefront/ProductCardStyle3.tsx` — priority image optimization
-3. `src/components/storefront/ProductCardStyle4.tsx` — priority image optimization
-4. `src/App.tsx` — map V11 directly to V3 home in storefrontChildRoutes
-5. `src/pages/StorefrontHomeV11.tsx` — static import instead of re-export
-6. `src/pages/StorefrontHomeV12.tsx` — static import instead of re-export
-7. `src/pages/StorefrontHomeV15.tsx` — static import instead of re-export
-8. `src/pages/StorefrontHomeV2.tsx` — lazy import StorefrontInstagramSection
-9. `src/pages/StorefrontHomeV3.tsx` — lazy import StorefrontInstagramSection
-10. `src/pages/StorefrontHomeV10.tsx` — lazy import StorefrontInstagramSection (already lazy — verify)
-11. `src/pages/StorefrontHomeV13.tsx` — lazy import StorefrontInstagramSection
-12. `src/hooks/useStorefrontProducts.ts` — PAGE_SIZE 20 → 14
+
+1. `docs/cloudflare-worker-current.js` -- Add store-existence check in subdomain handler + cache negative results
+
+**After updating the worker code, it must be manually redeployed to Cloudflare.**
+
+## Expected Impact
+
+| Scenario | Before | After |
+|---|---|---|
+| Non-existent subdomain (cold) | ~5s | ~200-400ms |
+| Non-existent subdomain (warm cache) | ~5s | ~50ms |
+| Existing store (no change) | ~5s | ~5s (unchanged) |
+
+The fix adds only one lightweight DB query (`_resolveStoreId`) to the critical path for subdomains, but this is already cached in Cache API / KV / memory for real stores. For non-existent stores, this single fast check replaces the entire SPA download + hydration cycle.
 
