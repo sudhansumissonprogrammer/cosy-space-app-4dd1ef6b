@@ -332,7 +332,7 @@ export default function StorefrontHomeV3() {
       )}
 
       {/* Product Grid */}
-      <div className="px-3 pb-6 space-y-3">
+      <div className="px-3 pb-6 space-y-3" style={{ minHeight: 560, contain: "layout style" }}>
         {/* Sort header */}
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>
