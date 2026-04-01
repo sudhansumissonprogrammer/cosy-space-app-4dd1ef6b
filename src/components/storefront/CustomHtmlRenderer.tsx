@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import DOMPurify from "dompurify";
 
 interface CustomHtmlRendererProps {
@@ -6,75 +6,70 @@ interface CustomHtmlRendererProps {
   className?: string;
 }
 
-function extractRenderableHtml(html: string) {
-  if (typeof window === "undefined" || !/(<html|<head|<body)/i.test(html)) {
-    return html;
+function buildSrcDoc(html: string) {
+  const trimmed = html.trim();
+  if (/(<!doctype|<html|<head|<body)/i.test(trimmed)) {
+    return trimmed;
   }
 
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    const headStyles = Array.from(doc.head.querySelectorAll("style"))
-      .map((styleTag) => styleTag.outerHTML)
-      .join("\n");
-    const bodyHtml = doc.body?.innerHTML?.trim() || html;
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+      }
 
-    return `${headStyles}\n${bodyHtml}`.trim();
-  } catch {
-    return html;
-  }
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
+      img, video, iframe {
+        max-width: 100%;
+        height: auto;
+      }
+
+      iframe {
+        width: 100%;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+    </style>
+  </head>
+  <body>
+    ${trimmed}
+  </body>
+</html>`;
 }
 
 export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlRendererProps) {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const shadowRootRef = useRef<ShadowRoot | null>(null);
-
-  const sanitized = useMemo(() => {
-    const renderableHtml = extractRenderableHtml(html);
-
-    return DOMPurify.sanitize(renderableHtml, {
-      ADD_TAGS: ["iframe", "style"],
-      ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "target", "loading"],
+  const srcDoc = useMemo(() => {
+    const sanitized = DOMPurify.sanitize(html, {
+      ADD_TAGS: ["iframe", "style", "link"],
+      ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "target", "loading", "rel", "href", "media"],
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|data):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
       FORBID_TAGS: ["script"],
       FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover", "onfocus", "onblur"],
     });
+
+    return buildSrcDoc(sanitized);
   }, [html]);
 
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-
-    const shadowRoot = shadowRootRef.current ?? host.attachShadow({ mode: "open" });
-    shadowRootRef.current = shadowRoot;
-
-    shadowRoot.innerHTML = `
-      <style>
-        :host {
-          display: block;
-          color: hsl(var(--foreground));
-        }
-
-        *, *::before, *::after {
-          box-sizing: border-box;
-        }
-
-        img, video, iframe {
-          max-width: 100%;
-          height: auto;
-        }
-
-        iframe {
-          width: 100%;
-        }
-
-        table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-      </style>
-      ${sanitized}
-    `;
-  }, [sanitized]);
-
-  return <div ref={hostRef} className={`storefront-custom-html ${className}`} />;
+  return (
+    <div className={className}>
+      <iframe
+        title="Custom HTML content"
+        srcDoc={srcDoc}
+        className="storefront-custom-html min-h-[600px] w-full border-0 bg-transparent"
+        sandbox="allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+      />
+    </div>
+  );
 }
+
