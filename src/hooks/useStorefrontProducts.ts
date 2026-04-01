@@ -82,7 +82,22 @@ export function useStorefrontProducts(storeId: string | undefined) {
     enabled: !!storeId,
   });
 
-  return { products: data || [], isLoading };
+  // Signal content-ready once products arrive — removes Worker #sf-skel
+  const signalled = useRef(false);
+  useEffect(() => {
+    if (!signalled.current && data && data.length > 0) {
+      signalled.current = true;
+      // Wait one frame so React has painted the product cards
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event("storefront:content-ready"));
+      });
+    }
+  }, [data]);
+
+  /** True when the Worker #sf-skel is still covering the page — lets home pages skip their own skeleton */
+  const edgeSkelVisible = typeof document !== "undefined" && !!document.getElementById("sf-skel");
+
+  return { products: data || [], isLoading, edgeSkelVisible };
 }
 
 export { PRODUCT_COLUMNS, PRODUCT_COLUMNS_FULL, PAGE_SIZE };
