@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -13,15 +13,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Upload, X, Plus, Trash2, Award, Code, Eye, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Upload, X, Plus, Trash2, Award } from "lucide-react";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { getDefaultContent } from "@/lib/defaultPageContent";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 const ICON_OPTIONS = [
   { value: "Award", label: "Award" },
@@ -57,13 +51,6 @@ export default function StorePageEditor() {
   const [imageRemoved, setImageRemoved] = useState(false);
   const [features, setFeatures] = useState<Feature[]>([]);
 
-  // Custom HTML state
-  const [useCustomHtml, setUseCustomHtml] = useState(false);
-  const [customHtml, setCustomHtml] = useState("");
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-
   const { data: store } = useStoreData(storeId);
 
   const { data: page, isLoading } = useQuery({
@@ -81,11 +68,12 @@ export default function StorePageEditor() {
   });
 
   const pageType = (page as any)?.page_type;
-  const showFeatures = pageType === "about_us" || pageType === "about" || pageType === "contact";
+  const showFeatures = pageType === "about_us" || pageType === "contact";
 
   useEffect(() => {
     if (page) {
       setTitle((page as any).title || "");
+      // If content is empty for a system page, pre-fill with default template
       const existingContent = (page as any).content || "";
       if (existingContent) {
         setContent(existingContent);
@@ -95,13 +83,6 @@ export default function StorePageEditor() {
       setSlug((page as any).slug || "");
       setIsActive((page as any).is_active ?? true);
       if ((page as any).image_url) setImagePreview((page as any).image_url);
-
-      // Load custom HTML
-      const existingHtml = (page as any).custom_html || "";
-      if (existingHtml.trim()) {
-        setUseCustomHtml(true);
-        setCustomHtml(existingHtml);
-      }
     }
   }, [page, store]);
 
@@ -117,34 +98,6 @@ export default function StorePageEditor() {
 
   const generateSlug = (text: string) =>
     text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
-  const handleAiGenerate = async () => {
-    if (!aiPrompt.trim()) {
-      toast.error("Please enter a prompt describing what you want");
-      return;
-    }
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-page-html", {
-        body: {
-          prompt: aiPrompt.trim(),
-          storeName: store?.name || "",
-          storeDescription: store?.description || "",
-          pageType: pageType || "custom",
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      if (data?.html) {
-        setCustomHtml(data.html);
-        toast.success("HTML generated! Review and edit as needed.");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to generate HTML");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -162,7 +115,6 @@ export default function StorePageEditor() {
         slug: slug.trim() || generateSlug(title),
         is_active: isActive,
         image_url: imageUrl,
-        custom_html: useCustomHtml && customHtml.trim() ? customHtml.trim() : null,
       };
 
       if (isNew) {
@@ -178,7 +130,7 @@ export default function StorePageEditor() {
         if (error) throw error;
 
         // Sync back to stores table for backward compatibility
-        if (pageType === "about_us" || pageType === "about") {
+        if (pageType === "about_us") {
           await supabase.from("stores").update({
             about_us_text: payload.content,
             about_us_image_url: imageUrl,
@@ -186,6 +138,7 @@ export default function StorePageEditor() {
           } as any).eq("id", storeId!);
           queryClient.invalidateQueries({ queryKey: ["store", storeId] });
         } else if (pageType === "contact") {
+          // Features are shared — sync them back too
           await supabase.from("stores").update({
             features: features.length > 0 ? features : null,
           } as any).eq("id", storeId!);
@@ -220,7 +173,6 @@ export default function StorePageEditor() {
   }
 
   const isSystemPage = pageType && pageType !== "custom";
-  const isHtmlEligible = !pageType || pageType === "custom" || pageType === "about_us" || pageType === "about" || pageType === "contact";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -275,95 +227,21 @@ export default function StorePageEditor() {
               </div>
             )}
 
-            {/* Custom HTML Toggle — only for eligible page types */}
-            {isHtmlEligible && (
-              <div className="flex items-center justify-between rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
-                <div className="flex items-center gap-2">
-                  <Code className="h-4 w-4 text-primary" />
-                  <div>
-                    <Label className="text-sm font-medium">Use Custom HTML</Label>
-                    <p className="text-xs text-muted-foreground">Replace default content with your own HTML code</p>
-                  </div>
-                </div>
-                <Switch checked={useCustomHtml} onCheckedChange={setUseCustomHtml} />
-              </div>
-            )}
-
-            {/* Custom HTML Editor */}
-            {useCustomHtml && isHtmlEligible ? (
-              <div className="space-y-4">
-                {/* AI Generate */}
-                <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <Label className="text-sm font-medium">AI Generate HTML</Label>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="e.g., Create a modern about page with team section, mission statement, and image gallery"
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      maxLength={500}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAiGenerate}
-                      disabled={isGenerating || !aiPrompt.trim()}
-                      className="shrink-0"
-                    >
-                      {isGenerating ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1 h-4 w-4" />}
-                      Generate
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Describe the layout you want and AI will generate HTML for you</p>
-                </div>
-
-                {/* Code Editor */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>HTML Code</Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowPreview(true)}
-                      disabled={!customHtml.trim()}
-                    >
-                      <Eye className="mr-1 h-4 w-4" /> Preview
-                    </Button>
-                  </div>
-                  <textarea
-                    value={customHtml}
-                    onChange={(e) => setCustomHtml(e.target.value)}
-                    rows={16}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    placeholder="<div style='text-align: center; padding: 40px;'>&#10;  <h2>Welcome to Our Store</h2>&#10;  <p>Your custom HTML goes here...</p>&#10;</div>"
-                    spellCheck={false}
-                  />
-                  <p className="text-xs text-muted-foreground">{customHtml.length} characters • Scripts and event handlers are stripped for security</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="page-content">Content</Label>
-                  <Textarea
-                    id="page-content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    rows={12}
-                    placeholder="Write your page content here..."
-                    maxLength={10000}
-                  />
-                  <p className="text-xs text-muted-foreground">{content.length}/10000 characters</p>
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="page-content">Content</Label>
+              <Textarea
+                id="page-content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={12}
+                placeholder="Write your page content here..."
+                maxLength={10000}
+              />
+              <p className="text-xs text-muted-foreground">{content.length}/10000 characters</p>
+            </div>
 
             {/* Page Image — hide for policy pages */}
-            {(!pageType || pageType === "custom" || pageType === "about_us" || pageType === "about" || pageType === "contact") && (
+            {(!pageType || pageType === "custom" || pageType === "about_us" || pageType === "contact") && (
             <div className="space-y-2">
               <Label>Page Image (optional)</Label>
               {imagePreview ? (
@@ -451,23 +329,6 @@ export default function StorePageEditor() {
           </Button>
         </div>
       </form>
-
-      {/* HTML Preview Dialog */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>HTML Preview</DialogTitle>
-          </DialogHeader>
-          <div className="overflow-auto rounded-lg border bg-white">
-            <iframe
-              srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:16px;font-family:system-ui,-apple-system,sans-serif;color:#1a1a1a;}</style></head><body>${customHtml}</body></html>`}
-              className="w-full min-h-[400px] border-0"
-              title="HTML Preview"
-              sandbox="allow-same-origin"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

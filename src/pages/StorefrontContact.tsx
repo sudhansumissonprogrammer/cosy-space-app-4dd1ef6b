@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import CustomHtmlRenderer from "@/components/storefront/CustomHtmlRenderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,25 +44,6 @@ export default function StorefrontContact() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
 
-  // Fetch custom_html for contact page
-  const { data: contactPage } = useQuery({
-    queryKey: ["storefront-contact-page-html", store.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("store_pages")
-        .select("custom_html")
-        .eq("store_id", store.id)
-        .eq("page_type", "contact")
-        .eq("is_active", true)
-        .single();
-      return data;
-    },
-    enabled: !!store.id,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const customHtml = (contactPage as any)?.custom_html as string | null;
-
   const features: Feature[] = (store.features as unknown as Feature[]) || [];
   const businessHours = (store.business_hours as Record<string, string>) || {};
   const hasHours = Object.values(businessHours).some((v) => v?.trim());
@@ -97,42 +77,6 @@ export default function StorefrontContact() {
     }
     submitMutation.mutate();
   };
-
-  // Render custom HTML if available (contact form still shown below)
-  if (customHtml?.trim()) {
-    return (
-      <div className="min-h-[70vh]">
-        <CustomHtmlRenderer html={customHtml} className="mx-auto max-w-5xl px-4 py-8" />
-        {/* Always keep the contact form for lead capture */}
-        <section className="mx-auto max-w-3xl px-4 pb-16">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-            <h2 className="text-2xl font-bold text-foreground">Send us a Message</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Fill out the form and we'll respond as soon as possible.</p>
-            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-medium">Your Name</Label>
-                  <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} className="h-11 rounded-xl" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-sm font-medium">Phone Number *</Label>
-                  <Input id="phone" placeholder="+1234567890" value={phone} onChange={(e) => setPhone(e.target.value)} required maxLength={20} className="h-11 rounded-xl" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="message" className="text-sm font-medium">Message</Label>
-                <Textarea id="message" placeholder="Tell us how we can help you..." value={message} onChange={(e) => setMessage(e.target.value)} rows={5} maxLength={1000} className="rounded-xl resize-none" />
-              </div>
-              <Button type="submit" className="h-12 w-full rounded-xl text-base font-semibold" disabled={submitMutation.isPending}>
-                {submitMutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
-                Send Message
-              </Button>
-            </form>
-          </div>
-        </section>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-[70vh]">

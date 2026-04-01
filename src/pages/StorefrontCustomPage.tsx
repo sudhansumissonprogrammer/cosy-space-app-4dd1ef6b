@@ -1,8 +1,8 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useStoreData } from "@/hooks/useStoreData";
 import { Skeleton } from "@/components/ui/skeleton";
-import CustomHtmlRenderer from "@/components/storefront/CustomHtmlRenderer";
 
 export default function StorefrontCustomPage() {
   const { pageSlug, slug } = useParams<{ pageSlug: string; slug?: string }>();
@@ -55,12 +55,6 @@ export default function StorefrontCustomPage() {
         <p className="mt-2 text-muted-foreground">The page you're looking for doesn't exist.</p>
       </div>
     );
-  }
-
-  // Render custom HTML if available
-  const customHtml = (page as any).custom_html as string | null;
-  if (customHtml?.trim()) {
-    return <CustomHtmlRenderer html={customHtml} className="mx-auto max-w-5xl px-4 py-8" />;
   }
 
   return (

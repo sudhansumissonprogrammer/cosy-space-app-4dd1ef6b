@@ -1138,7 +1138,6 @@ export type Database = {
         Row: {
           content: string | null
           created_at: string
-          custom_html: string | null
           display_order: number
           id: string
           image_url: string | null
@@ -1152,7 +1151,6 @@ export type Database = {
         Insert: {
           content?: string | null
           created_at?: string
-          custom_html?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
@@ -1166,7 +1164,6 @@ export type Database = {
         Update: {
           content?: string | null
           created_at?: string
-          custom_html?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
