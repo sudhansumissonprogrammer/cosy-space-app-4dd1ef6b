@@ -81,7 +81,7 @@ export default function StorePageEditor() {
   });
 
   const pageType = (page as any)?.page_type;
-  const showFeatures = pageType === "about_us" || pageType === "contact";
+  const showFeatures = pageType === "about_us" || pageType === "about" || pageType === "contact";
 
   useEffect(() => {
     if (page) {
@@ -178,7 +178,7 @@ export default function StorePageEditor() {
         if (error) throw error;
 
         // Sync back to stores table for backward compatibility
-        if (pageType === "about_us") {
+        if (pageType === "about_us" || pageType === "about") {
           await supabase.from("stores").update({
             about_us_text: payload.content,
             about_us_image_url: imageUrl,
@@ -220,7 +220,7 @@ export default function StorePageEditor() {
   }
 
   const isSystemPage = pageType && pageType !== "custom";
-  const isHtmlEligible = !pageType || pageType === "custom" || pageType === "about_us" || pageType === "contact";
+  const isHtmlEligible = !pageType || pageType === "custom" || pageType === "about_us" || pageType === "about" || pageType === "contact";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -363,7 +363,7 @@ export default function StorePageEditor() {
             )}
 
             {/* Page Image — hide for policy pages */}
-            {(!pageType || pageType === "custom" || pageType === "about_us" || pageType === "contact") && (
+            {(!pageType || pageType === "custom" || pageType === "about_us" || pageType === "about" || pageType === "contact") && (
             <div className="space-y-2">
               <Label>Page Image (optional)</Label>
               {imagePreview ? (
