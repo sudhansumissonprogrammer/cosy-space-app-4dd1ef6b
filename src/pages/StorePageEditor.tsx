@@ -81,7 +81,7 @@ export default function StorePageEditor() {
   });
 
   const pageType = (page as any)?.page_type;
-  const showFeatures = pageType === "about_us" || pageType === "contact";
+  const showFeatures = pageType === "about_us" || pageType === "about" || pageType === "contact";
 
   useEffect(() => {
     if (page) {
