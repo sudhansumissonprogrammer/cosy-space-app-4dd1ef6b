@@ -1763,6 +1763,10 @@ ${img ? `<meta name="twitter:image" content="${img}">` : ""}
 
 async function handleBot(request, slug, url, isCustom) {
   const ua = request.headers.get("User-Agent") || "";
+
+  // v4.8.2: Let social in-app browsers (Instagram, Snapchat) through to the SPA
+  if (isSocialInAppBrowser(ua)) return null;
+
   if (!BOT_UA_REGEX.test(ua)) return null;
 
   const botIp = request.headers.get("cf-connecting-ip") || "unknown";
