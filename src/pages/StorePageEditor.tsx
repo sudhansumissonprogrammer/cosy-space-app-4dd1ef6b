@@ -363,7 +363,7 @@ export default function StorePageEditor() {
             )}
 
             {/* Page Image — hide for policy pages */}
-            {(!pageType || pageType === "custom" || pageType === "about_us" || pageType === "contact") && (
+            {(!pageType || pageType === "custom" || pageType === "about_us" || pageType === "about" || pageType === "contact") && (
             <div className="space-y-2">
               <Label>Page Image (optional)</Label>
               {imagePreview ? (
