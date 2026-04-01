@@ -136,7 +136,7 @@ export default function StorefrontHome() {
   }, [initialNonBestSelling, extraProducts, isDefaultSort]);
 
   // Show loading state for custom sorts on first fetch
-  const showSkeleton = isInitialLoading || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
+  const showSkeleton = (isInitialLoading && !edgeSkelVisible) || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
 
   // Stable observer — uses refs to avoid recreating IntersectionObserver on every state change
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
