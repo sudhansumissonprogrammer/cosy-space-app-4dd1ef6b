@@ -45,7 +45,7 @@ export default function StorefrontHome() {
   });
 
   // Fetch initial products independently (shell no longer includes products)
-  const { products: initialProducts, isLoading: isInitialLoading } = useStorefrontProducts(store.id);
+  const { products: initialProducts, isLoading: isInitialLoading, edgeSkelVisible } = useStorefrontProducts(store.id);
 
   const allCachedProducts = initialProducts;
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
