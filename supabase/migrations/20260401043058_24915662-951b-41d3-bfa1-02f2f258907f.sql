@@ -1,0 +1,1 @@
+ALTER TABLE public.store_pages ADD COLUMN custom_html text DEFAULT NULL;

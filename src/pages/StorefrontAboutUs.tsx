@@ -1,6 +1,9 @@
 import { useOutletContext } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Instagram, Facebook, MessageCircle, Heart, Award, Leaf, Shield, Star, Sparkles, Truck, ThumbsUp } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
+import CustomHtmlRenderer from "@/components/storefront/CustomHtmlRenderer";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 
@@ -126,6 +129,29 @@ export default function StorefrontAboutUs() {
   const store = useOutletContext<StoreData>();
   const aboutUsText = (store as any).about_us_text as string | null;
   const aboutUsImage = (store as any).about_us_image_url as string | null;
+
+  // Fetch custom_html for about_us page
+  const { data: aboutPage } = useQuery({
+    queryKey: ["storefront-about-page-html", store.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("store_pages")
+        .select("custom_html")
+        .eq("store_id", store.id)
+        .eq("page_type", "about_us")
+        .eq("is_active", true)
+        .single();
+      return data;
+    },
+    enabled: !!store.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const customHtml = (aboutPage as any)?.custom_html as string | null;
+
+  if (customHtml?.trim()) {
+    return <CustomHtmlRenderer html={customHtml} className="mx-auto max-w-5xl px-4 py-8" />;
+  }
 
   return (
     <div className="min-h-[70vh]">
