@@ -163,7 +163,7 @@ serve(async (req) => {
       store_description: (parsed.store_description || "").substring(0, 500),
       meta_title: (parsed.meta_title || "").substring(0, 60),
       meta_description: (parsed.meta_description || "").substring(0, 150),
-      about_us: (parsed.about_us || "").substring(0, 2000),
+      about_us: (parsed.about_us || "").substring(0, 4000),
       provider,
     };
 
