@@ -52,7 +52,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
     customDomain: (store as any)?.custom_domain,
   });
 
-  const { products: initialProducts, isLoading: isInitialLoading } = useStorefrontProducts(store.id);
+  const { products: initialProducts, isLoading: isInitialLoading, edgeSkelVisible } = useStorefrontProducts(store.id);
   const allCachedProducts = initialProducts;
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
@@ -134,7 +134,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
     return extraProducts;
   }, [initialNonBestSelling, extraProducts, isDefaultSort]);
 
-  const showSkeleton = isInitialLoading || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
+  const showSkeleton = (isInitialLoading && !edgeSkelVisible) || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
 
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
   scrollStateRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage };

@@ -18,14 +18,12 @@ const rootElement = document.getElementById("root")!;
 
 createRoot(rootElement).render(<App />);
 
+// Dispatch storefront:mounted after two rAFs (React has painted).
+// NOTE: #sf-skel removal is now handled by storefront:content-ready
+// in useStorefrontProducts or the 12s fallback in index.html.
 requestAnimationFrame(() => {
   requestAnimationFrame(() => {
     window.dispatchEvent(new Event("storefront:mounted"));
-
-    const edgeSkel = document.getElementById("sf-skel");
-    if (edgeSkel && rootElement.childElementCount > 0) {
-      edgeSkel.remove();
-    }
   });
 });
 

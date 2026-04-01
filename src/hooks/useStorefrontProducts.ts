@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const PAGE_SIZE = 14;
@@ -81,7 +82,21 @@ export function useStorefrontProducts(storeId: string | undefined) {
     enabled: !!storeId,
   });
 
-  return { products: data || [], isLoading };
+  // Signal content-ready once products arrive — removes Worker #sf-skel
+  const signalled = useRef(false);
+  useEffect(() => {
+    if (!signalled.current && data !== undefined && !isLoading) {
+      signalled.current = true;
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event("storefront:content-ready"));
+      });
+    }
+  }, [data, isLoading]);
+
+  /** True when the Worker #sf-skel is still covering the page — lets home pages skip their own skeleton */
+  const edgeSkelVisible = typeof document !== "undefined" && !!document.getElementById("sf-skel");
+
+  return { products: data || [], isLoading, edgeSkelVisible };
 }
 
 export { PRODUCT_COLUMNS, PRODUCT_COLUMNS_FULL, PAGE_SIZE };

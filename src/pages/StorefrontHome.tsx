@@ -45,7 +45,7 @@ export default function StorefrontHome() {
   });
 
   // Fetch initial products independently (shell no longer includes products)
-  const { products: initialProducts, isLoading: isInitialLoading } = useStorefrontProducts(store.id);
+  const { products: initialProducts, isLoading: isInitialLoading, edgeSkelVisible } = useStorefrontProducts(store.id);
 
   const allCachedProducts = initialProducts;
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
@@ -136,7 +136,7 @@ export default function StorefrontHome() {
   }, [initialNonBestSelling, extraProducts, isDefaultSort]);
 
   // Show loading state for custom sorts on first fetch
-  const showSkeleton = isInitialLoading || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
+  const showSkeleton = (isInitialLoading && !edgeSkelVisible) || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
 
   // Stable observer — uses refs to avoid recreating IntersectionObserver on every state change
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
