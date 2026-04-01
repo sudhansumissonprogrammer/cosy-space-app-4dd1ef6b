@@ -11,7 +11,7 @@ const SYSTEM_PROMPT = `You are an e-commerce copywriter. You will receive a stor
 - store_description: 2-3 short lines describing the store
 - meta_title: max 60 chars, SEO-friendly
 - meta_description: max 150 chars, SEO-friendly
-- about_us: 5-7 short lines, friendly tone, include a few emojis
+- about_us: 3-4 lines welcome paragraph about the store. Friendly tone, mention what makes them special. Include 1-2 emojis. This is ONLY a short welcome intro, NOT the full about page.
 
 Rules:
 - Keep everything concise
