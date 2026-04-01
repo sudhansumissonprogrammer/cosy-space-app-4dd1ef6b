@@ -178,7 +178,7 @@ export default function StorePageEditor() {
         if (error) throw error;
 
         // Sync back to stores table for backward compatibility
-        if (pageType === "about_us") {
+        if (pageType === "about_us" || pageType === "about") {
           await supabase.from("stores").update({
             about_us_text: payload.content,
             about_us_image_url: imageUrl,
