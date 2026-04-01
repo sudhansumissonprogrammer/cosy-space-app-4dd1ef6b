@@ -98,6 +98,42 @@ export default function StorefrontContact() {
     submitMutation.mutate();
   };
 
+  // Render custom HTML if available (contact form still shown below)
+  if (customHtml?.trim()) {
+    return (
+      <div className="min-h-[70vh]">
+        <CustomHtmlRenderer html={customHtml} className="mx-auto max-w-5xl px-4 py-8" />
+        {/* Always keep the contact form for lead capture */}
+        <section className="mx-auto max-w-3xl px-4 pb-16">
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+            <h2 className="text-2xl font-bold text-foreground">Send us a Message</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Fill out the form and we'll respond as soon as possible.</p>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium">Your Name</Label>
+                  <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} className="h-11 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium">Phone Number *</Label>
+                  <Input id="phone" placeholder="+1234567890" value={phone} onChange={(e) => setPhone(e.target.value)} required maxLength={20} className="h-11 rounded-xl" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="message" className="text-sm font-medium">Message</Label>
+                <Textarea id="message" placeholder="Tell us how we can help you..." value={message} onChange={(e) => setMessage(e.target.value)} rows={5} maxLength={1000} className="rounded-xl resize-none" />
+              </div>
+              <Button type="submit" className="h-12 w-full rounded-xl text-base font-semibold" disabled={submitMutation.isPending}>
+                {submitMutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
+                Send Message
+              </Button>
+            </form>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[70vh]">
       {/* Hero Section */}
