@@ -220,7 +220,7 @@ export default function StorePageEditor() {
   }
 
   const isSystemPage = pageType && pageType !== "custom";
-  const isHtmlEligible = !pageType || pageType === "custom" || pageType === "about_us" || pageType === "contact";
+  const isHtmlEligible = !pageType || pageType === "custom" || pageType === "about_us" || pageType === "about" || pageType === "contact";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
