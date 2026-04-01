@@ -45,6 +45,25 @@ export default function StorefrontContact() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
 
+  // Fetch custom_html for contact page
+  const { data: contactPage } = useQuery({
+    queryKey: ["storefront-contact-page-html", store.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("store_pages")
+        .select("custom_html")
+        .eq("store_id", store.id)
+        .eq("page_type", "contact")
+        .eq("is_active", true)
+        .single();
+      return data;
+    },
+    enabled: !!store.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const customHtml = (contactPage as any)?.custom_html as string | null;
+
   const features: Feature[] = (store.features as unknown as Feature[]) || [];
   const businessHours = (store.business_hours as Record<string, string>) || {};
   const hasHours = Object.values(businessHours).some((v) => v?.trim());
