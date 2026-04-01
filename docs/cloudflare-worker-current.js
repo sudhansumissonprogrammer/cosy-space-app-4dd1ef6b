@@ -1811,7 +1811,7 @@ async function handleBot(request, slug, url, isCustom) {
     } catch {}
   }
 
-  if (SOCIAL_BOT_REGEX.test(ua)) {
+  if (SOCIAL_BOT_REGEX.test(ua) || INSTAGRAM_CRAWLER_REGEX.test(ua)) {
     try {
       const ogCacheKey = new Request(
         `https://cache/og/${slug}/${product || "home"}`
