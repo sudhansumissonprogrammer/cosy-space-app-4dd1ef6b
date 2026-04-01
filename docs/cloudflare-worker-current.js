@@ -31,10 +31,21 @@ const SEARCH_BOT_REGEX =
   /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot/i;
 
 const SOCIAL_BOT_REGEX =
-  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Instagram|Snapchat/i;
+  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
+
+// v4.8.2: Instagram removed from SOCIAL_BOT_REGEX — its in-app browser sends
+// a full Mozilla/5.0 UA and must load the SPA, not the OG-only page.
+// Instagram's crawler (if any) still matches via BOT_UA_REGEX fallback.
+const INSTAGRAM_CRAWLER_REGEX = /Instagram(?!.*Mozilla\/5\.0.*AppleWebKit)/i;
 
 const BOT_UA_REGEX =
-  /bot|crawler|spider|facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Instagram|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
+  /bot|crawler|spider|facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
+
+// v4.8.2: Detects real in-app browsers (Instagram, Snapchat) that include
+// "Instagram" in UA but are full WebKit browsers — these must get the SPA.
+function isSocialInAppBrowser(ua) {
+  return /Instagram|Snapchat/i.test(ua) && /Mozilla\/5\.0.*AppleWebKit/i.test(ua);
+}
 
 // v4.8: Reduced from 15s to 8s — users leave after ~6s, serve stale fallback sooner
 const ORIGIN_TIMEOUT_MS = 8_000;
@@ -1752,6 +1763,10 @@ ${img ? `<meta name="twitter:image" content="${img}">` : ""}
 
 async function handleBot(request, slug, url, isCustom) {
   const ua = request.headers.get("User-Agent") || "";
+
+  // v4.8.2: Let social in-app browsers (Instagram, Snapchat) through to the SPA
+  if (isSocialInAppBrowser(ua)) return null;
+
   if (!BOT_UA_REGEX.test(ua)) return null;
 
   const botIp = request.headers.get("cf-connecting-ip") || "unknown";
@@ -1796,7 +1811,7 @@ async function handleBot(request, slug, url, isCustom) {
     } catch {}
   }
 
-  if (SOCIAL_BOT_REGEX.test(ua)) {
+  if (SOCIAL_BOT_REGEX.test(ua) || INSTAGRAM_CRAWLER_REGEX.test(ua)) {
     try {
       const ogCacheKey = new Request(
         `https://cache/og/${slug}/${product || "home"}`
