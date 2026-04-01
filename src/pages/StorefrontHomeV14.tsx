@@ -134,7 +134,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
     return extraProducts;
   }, [initialNonBestSelling, extraProducts, isDefaultSort]);
 
-  const showSkeleton = isInitialLoading || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
+  const showSkeleton = (isInitialLoading && !edgeSkelVisible) || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
 
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
   scrollStateRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage };
