@@ -138,9 +138,10 @@ export default function StorefrontAboutUs() {
         .from("store_pages")
         .select("custom_html")
         .eq("store_id", store.id)
-        .eq("page_type", "about_us")
+        .in("page_type", ["about_us", "about"])
         .eq("is_active", true)
-        .single();
+        .limit(1)
+        .maybeSingle();
       return data;
     },
     enabled: !!store.id,
