@@ -1,83 +1,80 @@
+## Plan: Enhanced Default About Us Page with Rich Template
 
+### Problem
 
-# Custom HTML Code Feature for Store Pages
+The current AI-generated `about_us` text is a short 5-7 line paragraph. The user wants a rich, structured About Us page (like the Madhtara example) with sections for Welcome, Our Mission, Why Choose Us, Our Promise, and Contact — all dynamically populated from store data.
 
-## What We're Building
+### Changes
 
-Add a **Custom HTML** toggle to the page editor (About Us, Contact Us, and Custom pages) that lets store owners replace the default page content with their own HTML. The storefront header, mobile nav, and footer remain intact — only the page body becomes custom HTML. An optional **AI Generate** button helps owners create HTML without coding.
+#### 1. Update AI Prompt to Generate Richer About Us Content
 
-## Database Change
+**File:** `supabase/functions/generate-store-content/index.ts`
 
-Add a `custom_html` column to the `store_pages` table:
+- Change the `about_us` field in the AI prompt to request structured, multi-section content (Welcome intro, Mission statement, Why Choose Us with emoji bullet points, Our Promise, Contact info placeholder)
+- Increase `about_us` max length from 2000 to 4000 chars
+- The AI will generate content using the store name and description, making each store's About Us unique
 
-```sql
-ALTER TABLE public.store_pages ADD COLUMN custom_html text DEFAULT NULL;
-```
+#### 2. Redesign the Default About Us Page with Rich Template
 
-When `custom_html` is not null/empty, the storefront renders that HTML instead of the default page layout.
+**File:** `src/pages/StorefrontAboutUs.tsx`
 
-## Dashboard: Page Editor Changes (`StorePageEditor.tsx`)
+Replace `DefaultAboutContent` with a new rich template that:
 
-1. Add a **"Use Custom HTML"** toggle switch at the top of the editor
-2. When enabled, show:
-   - A full-width code editor (monospace `<textarea>`) for raw HTML input
-   - An **"AI Generate HTML"** button that calls a backend function to generate page HTML based on a user prompt + store metadata
-   - A **Preview** button that opens an iframe preview of the HTML
-3. When disabled, show the existing text content editor (current behavior)
-4. Save `custom_html` field alongside existing fields
+- Shows the **uploaded image** at the top (already works, keeping it)
+- Renders `about_us_text` with proper formatting (headings, paragraphs, emoji bullets) using a smart parser that detects section headers and bullet points
+- When `about_us_text` is empty, falls back to a dynamically generated template using store data (name, description, location, WhatsApp, social links)
+- The fallback template mirrors the Madhtara example structure:
+  - **ABOUT US** — Welcome section using store description
+  - **Our Mission** — Generic mission statement with store name
+  - **Why Choose Us?** — 4 bullet points with emojis (Authentic Designs, Quality, Reliable Delivery, Customer Support)
+  - **Our Promise** — Trust statement with store name
+  - **Contact Us** — WhatsApp number, location, social links from store data
+- When **Custom HTML is ON** → hide all default content, show only custom HTML (already works, keeping it)
 
-## AI HTML Generation (Backend Function)
+#### 3. Smart Text Renderer for Stored About Us Content
 
-Create an edge function `generate-page-html` that:
-- Accepts: `{ prompt, storeName, storeDescription, pageType }`
-- Uses Lovable AI (Gemini) to generate a complete HTML section
-- Returns sanitized HTML (no `<script>` tags for security)
-- Examples: landing-style about page, testimonial sections, team profiles, product showcases
+**File:** `src/pages/StorefrontAboutUs.tsx`
 
-## Storefront Rendering Changes
+Add a `RichTextRenderer` component that parses the stored `about_us_text` and:
 
-### `StorefrontAboutUs.tsx`
-- Check if `store_pages` has `custom_html` for `about_us`
-- If present, render via `dangerouslySetInnerHTML` inside a sandboxed container with DOMPurify sanitization
-- Otherwise, render existing default content
+- Detects lines starting with common heading patterns (e.g., "Our Mission", "Why Choose Us") → renders as `<h2>`
+- Detects lines starting with emoji bullets (✨, 💎, 🚚, 💬) → renders as styled list items
+- Renders other lines as paragraphs
+- This makes AI-generated multi-section text look properly formatted
 
-### `StorefrontContact.tsx`
-- Same pattern: fetch `custom_html` from `store_pages` for `contact` type
-- If present, render sanitized HTML above or instead of the contact form
-- Keep the contact form always visible (it captures leads)
+### What stays unchanged
 
-### `StorefrontCustomPage.tsx`
-- If `custom_html` exists on the page record, render it instead of plain text content
-- Apply DOMPurify sanitization
+- Image upload in editor — kept as is, image displays on top
+- Custom HTML toggle — when enabled, replaces entire page content
+- Store isolation — all data scoped by `store_id`
+- Contact Us page — no changes
 
-## Security
+### Technical Details
 
-- **DOMPurify** sanitization on all rendered HTML (strip `<script>`, `onclick`, etc.)
-- HTML is scoped per-store via `store_id` — no cross-store leakage
-- Rendered inside a `<div>` with `storefront-custom-html` class for style isolation
-
-## What Store Owners Can Do With Custom HTML
-
-| Capability | Example |
-|---|---|
-| Custom landing sections | Hero banners, team introductions, brand story with images |
-| Embedded content | YouTube videos, Google Maps, Calendly widgets |
-| Custom styling | Inline CSS for unique layouts, gradients, animations |
-| Testimonials/reviews | Customer quote cards, star ratings |
-| FAQ accordions | HTML/CSS-only collapsible sections |
-| Image galleries | Grid layouts, before/after comparisons |
-| Announcements | Sale banners, event promotions, seasonal content |
-| Trust badges | Custom certification logos, partner logos |
-
-## Files to Create/Modify
-
-| File | Change |
-|---|---|
-| **Migration** | Add `custom_html` column to `store_pages` |
-| `supabase/functions/generate-page-html/index.ts` | New edge function for AI HTML generation |
-| `src/pages/StorePageEditor.tsx` | Add custom HTML toggle, code editor, AI generate button, preview |
-| `src/pages/StorefrontAboutUs.tsx` | Check & render `custom_html` with DOMPurify |
-| `src/pages/StorefrontContact.tsx` | Check & render `custom_html` with DOMPurify |
-| `src/pages/StorefrontCustomPage.tsx` | Render `custom_html` if present |
-| `package.json` | Add `dompurify` + `@types/dompurify` |
-
+- The `about_us_text` column already supports up to 4000+ chars (text type)
+- No database migration needed
+- Existing stores keep their current `about_us_text`; the new template is only the fallback when text is empty
+- New stores get richer AI-generated text automatically **ABOUT US**
+  Welcome to **Madhtara** — where **style meets tradition**.  
+  We are passionate about bringing you beautifully crafted jewellery and accessories that celebrate timeless elegance, artistry, and culture. Based in **Saharanpur**, our collection is inspired by India’s rich heritage and designed for today’s modern generation.
+  At **Madhtara**, we believe jewellery isn’t just an accessory — it’s a story.  
+  Every piece we offer is carefully selected for its quality, craftsmanship, and unique design, so you can express yourself with confidence and grace. Whether you’re dressing for a festive celebration, a wedding, or a casual day out, Madhtara adds that special sparkle to every moment.
+  ---
+  ### **Our Mission**
+  To make premium-quality jewellery accessible and affordable for everyone, blending traditional charm with contemporary style. We aim to bring artistry to your doorstep with trusted service, authentic designs, and an unmatched shopping experience.
+  ---
+  ### **Why Choose Madhtara?**
+  - ✨ **Authentic & Handpicked Designs:** Every item is sourced and crafted with precision and care.
+  - 💎 **Quality You Can Trust:** We prioritise durability, beauty, and attention to detail.
+  - 🚚 **Reliable Delivery:** Fast and safe shipping across India.
+  - 💬 **Customer Support:** Our friendly team is always ready to assist you.
+  ---
+  ### **Our Promise**
+  We promise to deliver products that reflect our dedication to quality, creativity, and trust. Your satisfaction is at the heart of everything we do — because at **Madhtara**, you’re not just buying jewellery; you’re becoming part of our story.
+  ---
+  ### **Contact Us**
+  📧 **Email:** [madhtara2025@gmail.com](mailto:madhtara2025@gmail.com)  
+  📞 **Phone:** +91 8126721276  
+  🏠 **Address:** Sarafa Bazar, Lakshmi Market, Saharanpur, India
+  Follow us on social media and stay updated with our latest collections, offers, and trends. no donet genrate conten thismuch from ai only use this content but put some varibale add that from 3-4 liine description generate by ai so for every store it will diffennt strictly dont generate all prfrom ai
+- &nbsp;
