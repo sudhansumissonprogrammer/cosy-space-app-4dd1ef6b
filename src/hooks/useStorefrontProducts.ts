@@ -85,14 +85,13 @@ export function useStorefrontProducts(storeId: string | undefined) {
   // Signal content-ready once products arrive — removes Worker #sf-skel
   const signalled = useRef(false);
   useEffect(() => {
-    if (!signalled.current && data && data.length > 0) {
+    if (!signalled.current && data !== undefined && !isLoading) {
       signalled.current = true;
-      // Wait one frame so React has painted the product cards
       requestAnimationFrame(() => {
         window.dispatchEvent(new Event("storefront:content-ready"));
       });
     }
-  }, [data]);
+  }, [data, isLoading]);
 
   /** True when the Worker #sf-skel is still covering the page — lets home pages skip their own skeleton */
   const edgeSkelVisible = typeof document !== "undefined" && !!document.getElementById("sf-skel");
