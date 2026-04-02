@@ -60,7 +60,7 @@ export default function StorefrontCustomPage() {
   // Render custom HTML if available
   const customHtml = (page as any).custom_html as string | null;
   if (customHtml?.trim()) {
-    return <CustomHtmlRenderer html={customHtml} className="mx-auto max-w-5xl px-4 py-8" />;
+    return <CustomHtmlRenderer html={customHtml} className="" />;
   }
 
   return (
