@@ -170,17 +170,28 @@ export default function StorefrontShell({
   };
 
   // Sync theme CSS vars to document.body so portal-rendered components (Sheet, Dialog) inherit them
+  const appliedVarsRef = useRef<string[]>([]);
   const themeVarsKey = useMemo(() => JSON.stringify(themeStyle), [themeStyle]);
   useEffect(() => {
-    const appliedVars = Object.entries(themeStyle).filter(([key, value]) => key.startsWith("--") && typeof value === "string") as Array<[string, string]>;
-    // Single cssText assignment instead of per-property setProperty calls
-    const existing = document.body.style.cssText;
-    const varsCss = appliedVars.map(([k, v]) => `${k}:${v}`).join(";");
-    document.body.style.cssText = existing + ";" + varsCss;
+    // Clean up previous vars first
+    appliedVarsRef.current.forEach((key) => {
+      document.body.style.removeProperty(key);
+    });
+
+    const newVars = Object.entries(themeStyle).filter(
+      ([key, value]) => key.startsWith("--") && typeof value === "string"
+    ) as Array<[string, string]>;
+
+    newVars.forEach(([key, value]) => {
+      document.body.style.setProperty(key, value);
+    });
+    appliedVarsRef.current = newVars.map(([k]) => k);
+
     return () => {
-      appliedVars.forEach(([key]) => {
+      appliedVarsRef.current.forEach((key) => {
         document.body.style.removeProperty(key);
       });
+      appliedVarsRef.current = [];
     };
   }, [themeVarsKey]);
 

@@ -14,12 +14,9 @@ export function useStorefrontThemeConfig(storeId?: string) {
   const { data: themeConfig } = useQuery({
     queryKey: ["storefront-theme-config", storeId],
     queryFn: async () => {
-      // First check if cache was already seeded by the bulk query
-      const cached = queryClient.getQueryData(["storefront-theme-config", storeId]);
-      if (cached) return cached;
-
-      // Fallback: fetch directly from DB (handles edge case where
-      // bulk query hasn't seeded the cache yet, e.g. on refresh)
+      // Always fetch from DB — this ensures stale cache is properly refreshed.
+      // The bulk RPC seeds this cache via setQueryData, so this queryFn only
+      // runs on cache miss or when staleTime expires (background refetch).
       const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("store_theme_config")
@@ -32,6 +29,10 @@ export function useStorefrontThemeConfig(storeId?: string) {
     enabled: !!storeId,
     staleTime: 60_000, // Allow refetch after 1 min to pick up changes
     gcTime: 10 * 60 * 1000,
+    // If the cache was already seeded by the bulk RPC, use it as placeholder
+    // so there's no loading flash — but still allow background refetch
+    placeholderData: () =>
+      queryClient.getQueryData(["storefront-theme-config", storeId]) as any,
   });
 
   return themeConfig as Record<string, any> | null;

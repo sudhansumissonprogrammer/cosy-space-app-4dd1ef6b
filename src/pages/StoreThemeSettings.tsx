@@ -1939,12 +1939,12 @@ export default function StoreThemeSettings() {
       // independent of the theme template (category_style, mobile_nav_style, etc.)
       const preservedSettings: Partial<ThemeConfig> = themeConfig
         ? {
-            category_style: themeConfig.category_style || config.category_style,
-            mobile_nav_style: (themeConfig as any).mobile_nav_style || config.mobile_nav_style,
+            category_style: themeConfig.category_style ?? config.category_style,
+            mobile_nav_style: (themeConfig as any).mobile_nav_style ?? config.mobile_nav_style,
             mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? config.mobile_nav_enabled,
-            header_logo_alignment: themeConfig.header_logo_alignment || config.header_logo_alignment,
-            header_style: themeConfig.header_style || config.header_style,
-            marquee_text: themeConfig.marquee_text || config.marquee_text,
+            header_logo_alignment: themeConfig.header_logo_alignment ?? config.header_logo_alignment,
+            header_style: themeConfig.header_style ?? config.header_style,
+            marquee_text: themeConfig.marquee_text ?? config.marquee_text,
             marquee_enabled: themeConfig.marquee_enabled ?? config.marquee_enabled,
           }
         : {};
