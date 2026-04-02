@@ -20,6 +20,7 @@ import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
+import CategoryProductsDialog from "@/components/CategoryProductsDialog";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -35,6 +36,7 @@ export default function CategoryManagement() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [productsDialogCat, setProductsDialogCat] = useState<string | null>(null);
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ["categories", storeId],
@@ -184,7 +186,7 @@ export default function CategoryManagement() {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {categories.map((cat) => (
-            <Card key={cat.id} className="group overflow-hidden">
+            <Card key={cat.id} className="group overflow-hidden cursor-pointer" onClick={() => setProductsDialogCat(cat.name)}>
               <div className="relative aspect-square bg-muted">
                 {cat.image_url ? (
                   <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
@@ -194,7 +196,7 @@ export default function CategoryManagement() {
                   </div>
                 )}
                 <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                  <div className="flex w-full justify-end gap-1 p-2">
+                  <div className="flex w-full justify-end gap-1 p-2" onClick={(e) => e.stopPropagation()}>
                     <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => openEdit(cat)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -307,6 +309,15 @@ export default function CategoryManagement() {
               setImagePreview(urls[0]);
             }
           }}
+        />
+      )}
+
+      {storeId && productsDialogCat && (
+        <CategoryProductsDialog
+          open={!!productsDialogCat}
+          onClose={() => setProductsDialogCat(null)}
+          categoryName={productsDialogCat}
+          storeId={storeId}
         />
       )}
     </div>
