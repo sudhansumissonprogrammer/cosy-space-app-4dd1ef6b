@@ -1120,7 +1120,7 @@ export default function CheckoutPage() {
         )}
         {couponDiscount > 0 && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-primary">Coupon Discount</span>
+            <span className="text-primary">{t("Coupon Discount", "कूपन छूट")}</span>
             <span className="text-primary font-medium">-{currency} {couponDiscount.toFixed(2)}</span>
           </div>
         )}
