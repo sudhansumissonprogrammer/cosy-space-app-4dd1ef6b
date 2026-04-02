@@ -1038,7 +1038,7 @@ export default function CheckoutPage() {
                   </div>
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Credit / Debit Card</p>
+                    <p className="text-sm font-medium text-foreground">{t("Credit / Debit Card", "क्रेडिट / डेबिट कार्ड")}</p>
                     <p className="text-[11px] text-muted-foreground">Visa, Mastercard, RuPay</p>
                   </div>
                 </button>
