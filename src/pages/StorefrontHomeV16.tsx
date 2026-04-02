@@ -352,27 +352,15 @@ export default function StorefrontHomeV16() {
           )}
 
           {/* Per-category sections in sorted order */}
-          {sortedCategories.map((cat: any, idx: number) => (
-            idx < 2 ? (
-              <CategorySection
-                key={cat.id}
-                category={cat}
-                storeId={store.id}
-                slug={slug!}
-                store={store}
-                cardStyle={cardStyle}
-              />
-            ) : (
-              <LazyRender key={cat.id} minHeight={400} rootMargin="400px">
-                <CategorySection
-                  category={cat}
-                  storeId={store.id}
-                  slug={slug!}
-                  store={store}
-                  cardStyle={cardStyle}
-                />
-              </LazyRender>
-            )
+          {sortedCategories.map((cat: any) => (
+            <CategorySection
+              key={cat.id}
+              category={cat}
+              storeId={store.id}
+              slug={slug!}
+              store={store}
+              cardStyle={cardStyle}
+            />
           ))}
         </div>
 
