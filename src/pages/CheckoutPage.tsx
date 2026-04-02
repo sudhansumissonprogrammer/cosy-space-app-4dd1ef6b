@@ -1169,7 +1169,7 @@ export default function CheckoutPage() {
               </button>
             ))}
             <Separator className="my-3" />
-            <p className="text-xs font-medium text-muted-foreground mb-2">Add New Address</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{t("Add New Address", "नया पता जोड़ें")}</p>
             <div className="space-y-2.5">
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
