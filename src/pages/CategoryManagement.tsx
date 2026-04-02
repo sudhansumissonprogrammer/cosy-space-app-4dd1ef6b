@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,12 +45,35 @@ export default function CategoryManagement() {
         .from("categories")
         .select("*")
         .eq("store_id", storeId!)
+        .order("display_order")
         .order("name");
       if (error) throw error;
       return data;
     },
     enabled: !!storeId,
   });
+
+  const [reordering, setReordering] = useState(false);
+
+  const moveCategory = useCallback(async (index: number, direction: "up" | "down") => {
+    if (!categories || reordering) return;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= categories.length) return;
+    setReordering(true);
+    try {
+      const a = categories[index];
+      const b = categories[newIndex];
+      await Promise.all([
+        supabase.from("categories").update({ display_order: newIndex } as any).eq("id", a.id),
+        supabase.from("categories").update({ display_order: index } as any).eq("id", b.id),
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+    } catch {
+      toast.error("Failed to reorder");
+    } finally {
+      setReordering(false);
+    }
+  }, [categories, reordering, storeId, queryClient]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -185,7 +208,7 @@ export default function CategoryManagement() {
         </Card>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {categories.map((cat) => (
+          {categories.map((cat, idx) => (
             <Card key={cat.id} className="group overflow-hidden cursor-pointer" onClick={() => setProductsDialogCat(cat.name)}>
               <div className="relative aspect-square bg-muted">
                 {cat.image_url ? (
@@ -196,34 +219,56 @@ export default function CategoryManagement() {
                   </div>
                 )}
                 <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                  <div className="flex w-full justify-end gap-1 p-2" onClick={(e) => e.stopPropagation()}>
-                    <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => openEdit(cat)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="icon" variant="destructive" className="h-8 w-8">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete "{cat.name}"?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will remove the category. Products in this category won't be deleted.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={() => deleteMutation.mutate(cat.id)}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                  <div className="flex w-full justify-between gap-1 p-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex gap-1">
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="h-8 w-8"
+                        disabled={idx === 0 || reordering}
+                        onClick={() => moveCategory(idx, "up")}
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="h-8 w-8"
+                        disabled={idx === categories.length - 1 || reordering}
+                        onClick={() => moveCategory(idx, "down")}
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => openEdit(cat)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="destructive" className="h-8 w-8">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete "{cat.name}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will remove the category. Products in this category won't be deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => deleteMutation.mutate(cat.id)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </div>
               </div>
