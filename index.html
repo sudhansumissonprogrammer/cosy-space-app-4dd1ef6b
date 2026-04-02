@@ -101,10 +101,6 @@
         }
         /* Listen for content-ready (products rendered) instead of just React mount */
         window.addEventListener('storefront:content-ready',function(){kill();},{once:true});
-        /* Legacy fallback: storefront:mounted still works for non-home pages */
-        window.addEventListener('storefront:mounted',function(){
-          setTimeout(kill,100);
-        },{once:true});
         /* Hard fallback: 12s timeout */
         setTimeout(kill,12000);
       })();
