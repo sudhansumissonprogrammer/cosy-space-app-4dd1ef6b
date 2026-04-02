@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Loader2, FolderOpen, Image as ImageIcon, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
