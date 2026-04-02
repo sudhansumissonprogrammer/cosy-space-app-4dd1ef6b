@@ -252,6 +252,8 @@ export default function CheckoutPage() {
   }, [hasCod, hasRazorpay]);
 
   const currency = store.currency || "USD";
+  const isHindi = store.theme === "theme-16";
+  const t = (en: string, hi: string) => isHindi ? `${en} / ${hi}` : en;
 
   const checkoutItems = isSingleMode && product
     ? [{
@@ -402,9 +404,9 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-        <h1 className="text-xl font-semibold text-foreground">Product not found</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t("Product not found", "उत्पाद नहीं मिला")}</h1>
         <Button asChild variant="outline" className="mt-4">
-          <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
+          <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />{t("Back to store", "स्टोर पर वापस जाएं")}</Link>
         </Button>
       </div>
     );
@@ -414,9 +416,9 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-        <h1 className="text-xl font-semibold text-foreground">Your cart is empty</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t("Your cart is empty", "आपकी कार्ट खाली है")}</h1>
         <Button asChild variant="outline" className="mt-4">
-          <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
+          <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />{t("Back to store", "स्टोर पर वापस जाएं")}</Link>
         </Button>
       </div>
     );
@@ -668,12 +670,12 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
-    if (!phone.trim() || phone.trim().length < 10) { toast.error("Please enter a valid phone number"); return; }
-    if (!streetAddress.trim()) { toast.error("Please enter your street address"); return; }
-    if (!city.trim()) { toast.error("Please enter your city"); return; }
-    if (!state.trim()) { toast.error("Please enter your state"); return; }
-    if (!pincode.trim()) { toast.error("Please enter your pincode"); return; }
+    if (!fullName.trim()) { toast.error(t("Please enter your full name", "कृपया अपना पूरा नाम दर्ज करें")); return; }
+    if (!phone.trim() || phone.trim().length < 10) { toast.error(t("Please enter a valid phone number", "कृपया एक वैध फ़ोन नंबर दर्ज करें")); return; }
+    if (!streetAddress.trim()) { toast.error(t("Please enter your street address", "कृपया अपना पता दर्ज करें")); return; }
+    if (!city.trim()) { toast.error(t("Please enter your city", "कृपया अपना शहर दर्ज करें")); return; }
+    if (!state.trim()) { toast.error(t("Please enter your state", "कृपया अपना राज्य दर्ज करें")); return; }
+    if (!pincode.trim()) { toast.error(t("Please enter your pincode", "कृपया अपना पिनकोड दर्ज करें")); return; }
 
     setPlacing(true);
     try {
@@ -772,16 +774,16 @@ export default function CheckoutPage() {
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-primary) 15%, transparent)" }}>
           <CheckCircle2 className="h-8 w-8" style={{ color: "var(--storefront-primary)" }} />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
-        <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
-        {(orderNumber || orderId) && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span></p>}
+        <h1 className="text-2xl font-bold text-foreground">{t("Order Placed!", "ऑर्डर हो गया!")}</h1>
+        <p className="mt-2 text-muted-foreground">{t("Your order has been placed successfully. The store will contact you shortly.", "आपका ऑर्डर सफलतापूर्वक दे दिया गया है। स्टोर जल्द ही आपसे संपर्क करेगा।")}</p>
+        {(orderNumber || orderId) && <p className="mt-2 text-xs text-muted-foreground">{t("Order ID", "ऑर्डर आईडी")}: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span></p>}
         <div className="mt-4 rounded-lg p-3" style={{ borderColor: "color-mix(in srgb, var(--storefront-primary) 20%, transparent)", border: "1px solid", backgroundColor: "color-mix(in srgb, var(--storefront-primary) 5%, transparent)" }}>
-          <p className="text-sm text-foreground font-medium">✅ Order confirmed!</p>
-          <p className="text-xs text-muted-foreground mt-1">We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.</p>
+          <p className="text-sm text-foreground font-medium">✅ {t("Order confirmed!", "ऑर्डर कन्फर्म!")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("We'll send updates to", "हम अपडेट भेजेंगे")} <strong>{phone}</strong>{email ? ` ${t("and", "और")} ${email}` : ""}.</p>
         </div>
         <div className="mt-6 flex flex-col gap-2 items-center">
-          <Link to={storefrontPath(store.slug, "account")} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>View My Orders</Link>
-          <Link to={storefrontPath(store.slug)} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>Continue Shopping</Link>
+          <Link to={storefrontPath(store.slug, "account")} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("View My Orders", "मेरे ऑर्डर देखें")}</Link>
+          <Link to={storefrontPath(store.slug)} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("Continue Shopping", "शॉपिंग जारी रखें")}</Link>
         </div>
       </div>
     );
@@ -797,7 +799,7 @@ export default function CheckoutPage() {
         <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Order Summary ({itemCount} {itemCount === 1 ? "item" : "items"})</span>
+            <span className="text-sm font-medium text-foreground">{t("Order Summary", "ऑर्डर सारांश")} ({itemCount} {itemCount === 1 ? t("item", "आइटम") : t("items", "आइटम")})</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">{currency} {subtotal.toFixed(2)}</span>
@@ -817,7 +819,7 @@ export default function CheckoutPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                  <p className="text-xs text-muted-foreground">{t("Qty", "मात्रा")}: {item.quantity}</p>
                 </div>
                 <p className="text-sm font-semibold text-foreground whitespace-nowrap">{currency} {(item.price * item.quantity).toFixed(2)}</p>
               </div>
@@ -865,7 +867,7 @@ export default function CheckoutPage() {
       <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-4">
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">Delivery Details</span>
+          <span className="text-sm font-medium text-foreground">{t("Delivery Details", "डिलीवरी विवरण")}</span>
         </div>
 
         {/* Express mode for returning users with localStorage data (not logged in with saved addresses) */}
@@ -907,37 +909,37 @@ export default function CheckoutPage() {
           <>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label htmlFor="phone" className="text-xs">Phone Number *</Label>
+                <Label htmlFor="phone" className="text-xs">{t("Phone Number", "फ़ोन नंबर")} *</Label>
                 <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} autoFocus />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="fullName" className="text-xs">Full Name *</Label>
-                <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+                <Label htmlFor="fullName" className="text-xs">{t("Full Name", "पूरा नाम")} *</Label>
+                <Input id="fullName" placeholder={isHindi ? "अपना नाम लिखें" : "John Doe"} value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
             </div>
             {/* Use my location button - hidden for now */}
             <div className="space-y-1">
-              <Label htmlFor="pincode" className="text-xs">Pincode * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
-              <Input id="pincode" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
+              <Label htmlFor="pincode" className="text-xs">{t("Pincode", "पिनकोड")} * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
+              <Input id="pincode" placeholder={isHindi ? "पिनकोड डालें" : "Enter pincode to auto-fill city & state"} value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="street" className="text-xs">Street Address *</Label>
-              <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+              <Label htmlFor="street" className="text-xs">{t("Street Address", "पता")} *</Label>
+              <Input id="street" placeholder={isHindi ? "मकान/फ्लैट नंबर, बिल्डिंग, गली" : "House/Flat No., Building, Street"} value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label htmlFor="city" className="text-xs">City *</Label>
-                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+                <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
+                <Input id="city" placeholder={isHindi ? "शहर" : "Mumbai"} value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="state" className="text-xs">State *</Label>
-                <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+                <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
+                <Input id="state" placeholder={isHindi ? "राज्य" : "Maharashtra"} value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
               </div>
             </div>
             {/* Email optional — collapsible */}
             <Collapsible>
               <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <Plus className="h-3 w-3" /> Add email for order updates (optional)
+                <Plus className="h-3 w-3" /> {t("Add email for order updates (optional)", "ईमेल जोड़ें (वैकल्पिक)")}
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-2">
                 <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
@@ -952,7 +954,7 @@ export default function CheckoutPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Pay via</span>
+            <span className="text-sm font-medium text-foreground">{t("Pay via", "भुगतान करें")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {couponDiscount > 0 && (
@@ -1021,7 +1023,7 @@ export default function CheckoutPage() {
             {/* More Payment Options — Collapsible */}
             <Collapsible open={morePaymentOpen} onOpenChange={setMorePaymentOpen}>
               <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <span className="font-medium">More payment options</span>
+                <span className="font-medium">{t("More payment options", "और भुगतान विकल्प")}</span>
                 <ChevronRight className={`h-4 w-4 transition-transform ${morePaymentOpen ? "rotate-90" : ""}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-2 pt-1">
@@ -1036,7 +1038,7 @@ export default function CheckoutPage() {
                   </div>
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Credit / Debit Card</p>
+                    <p className="text-sm font-medium text-foreground">{t("Credit / Debit Card", "क्रेडिट / डेबिट कार्ड")}</p>
                     <p className="text-[11px] text-muted-foreground">Visa, Mastercard, RuPay</p>
                   </div>
                 </button>
@@ -1052,8 +1054,8 @@ export default function CheckoutPage() {
                   </div>
                   <Wallet className="h-4 w-4 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Net Banking</p>
-                    <p className="text-[11px] text-muted-foreground">All major banks</p>
+                    <p className="text-sm font-medium text-foreground">{t("Net Banking", "नेट बैंकिंग")}</p>
+                    <p className="text-[11px] text-muted-foreground">{t("All major banks", "सभी प्रमुख बैंक")}</p>
                   </div>
                 </button>
 
@@ -1068,7 +1070,7 @@ export default function CheckoutPage() {
                   </div>
                   <Smartphone className="h-4 w-4 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Wallets</p>
+                    <p className="text-sm font-medium text-foreground">{t("Wallets", "वॉलेट")}</p>
                     <p className="text-[11px] text-muted-foreground">Paytm, Mobikwik, Freecharge</p>
                   </div>
                 </button>
@@ -1089,8 +1091,8 @@ export default function CheckoutPage() {
             </div>
             <Banknote className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium text-foreground">Cash on Delivery</p>
-              <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
+              <p className="text-sm font-medium text-foreground">{t("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
+              <p className="text-xs text-muted-foreground">{t("Pay when your order arrives", "ऑर्डर आने पर भुगतान करें")}</p>
             </div>
           </button>
         )}
@@ -1099,15 +1101,15 @@ export default function CheckoutPage() {
       {/* 5. Price Breakdown + Place Order */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
+          <span className="text-muted-foreground">{t("Subtotal", "उप-कुल")}</span>
           <span className="text-foreground">{currency} {subtotal.toFixed(2)}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Shipping</span>
+          <span className="text-muted-foreground">{t("Shipping", "शिपिंग")}</span>
           {shippingCharge > 0 ? (
             <span className="text-foreground">{currency} {shippingCharge.toFixed(2)}</span>
           ) : (
-            <span className="text-primary font-medium">Free</span>
+            <span className="text-primary font-medium">{t("Free", "मुफ़्त")}</span>
           )}
         </div>
         {taxActive && (
@@ -1118,13 +1120,13 @@ export default function CheckoutPage() {
         )}
         {couponDiscount > 0 && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-primary">Coupon Discount</span>
+            <span className="text-primary">{t("Coupon Discount", "कूपन छूट")}</span>
             <span className="text-primary font-medium">-{currency} {couponDiscount.toFixed(2)}</span>
           </div>
         )}
         <Separator />
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-foreground">Total</span>
+          <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
           <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
         </div>
         <button
@@ -1134,7 +1136,7 @@ export default function CheckoutPage() {
           disabled={placing}
         >
           {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {paymentMethod === "razorpay" ? `Pay ${currency} ${total.toFixed(2)}` : `Place Order · ${currency} ${total.toFixed(2)}`}
+          {paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`}
         </button>
       </div>
 
@@ -1142,8 +1144,8 @@ export default function CheckoutPage() {
       <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Choose Address</DialogTitle>
-            <DialogDescription>Select a saved address or add a new one.</DialogDescription>
+            <DialogTitle>{t("Choose Address", "पता चुनें")}</DialogTitle>
+            <DialogDescription>{t("Select a saved address or add a new one.", "सेव किया हुआ पता चुनें या नया जोड़ें।")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             {savedAddresses?.map((addr: any) => (
@@ -1167,7 +1169,7 @@ export default function CheckoutPage() {
               </button>
             ))}
             <Separator className="my-3" />
-            <p className="text-xs font-medium text-muted-foreground mb-2">Add New Address</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{t("Add New Address", "नया पता जोड़ें")}</p>
             <div className="space-y-2.5">
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
@@ -1236,7 +1238,7 @@ export default function CheckoutPage() {
                   } catch { toast.error("Failed to save address"); }
                 }}
               >
-                Save & Use This Address
+                {t("Save & Use This Address", "पता सेव करें और इस्तेमाल करें")}
               </button>
             </div>
           </div>
