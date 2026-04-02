@@ -37,6 +37,7 @@ async function rpcGetStorefrontShell(slug: string) {
  */
 export function useStorefront(slugOverride?: string) {
   const { slug: paramSlug } = useParams<{ slug: string }>();
+  const location = useLocation();
   const slug = slugOverride || paramSlug || getSubdomainSlug() || undefined;
   const queryClient = useQueryClient();
   const seeded = useRef(false);
