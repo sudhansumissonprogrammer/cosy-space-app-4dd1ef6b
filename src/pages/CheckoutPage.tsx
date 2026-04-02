@@ -819,7 +819,7 @@ export default function CheckoutPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                  <p className="text-xs text-muted-foreground">{t("Qty", "मात्रा")}: {item.quantity}</p>
                 </div>
                 <p className="text-sm font-semibold text-foreground whitespace-nowrap">{currency} {(item.price * item.quantity).toFixed(2)}</p>
               </div>
