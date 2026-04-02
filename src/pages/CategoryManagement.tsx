@@ -45,12 +45,35 @@ export default function CategoryManagement() {
         .from("categories")
         .select("*")
         .eq("store_id", storeId!)
+        .order("display_order")
         .order("name");
       if (error) throw error;
       return data;
     },
     enabled: !!storeId,
   });
+
+  const [reordering, setReordering] = useState(false);
+
+  const moveCategory = useCallback(async (index: number, direction: "up" | "down") => {
+    if (!categories || reordering) return;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= categories.length) return;
+    setReordering(true);
+    try {
+      const a = categories[index];
+      const b = categories[newIndex];
+      await Promise.all([
+        supabase.from("categories").update({ display_order: newIndex } as any).eq("id", a.id),
+        supabase.from("categories").update({ display_order: index } as any).eq("id", b.id),
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+    } catch {
+      toast.error("Failed to reorder");
+    } finally {
+      setReordering(false);
+    }
+  }, [categories, reordering, storeId, queryClient]);
 
   const openCreate = () => {
     setEditingId(null);
