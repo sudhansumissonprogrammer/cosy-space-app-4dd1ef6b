@@ -416,9 +416,9 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-        <h1 className="text-xl font-semibold text-foreground">Your cart is empty</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t("Your cart is empty", "आपकी कार्ट खाली है")}</h1>
         <Button asChild variant="outline" className="mt-4">
-          <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />Back to store</Link>
+          <Link to={storefrontPath(store.slug)}><ArrowLeft className="mr-2 h-4 w-4" />{t("Back to store", "स्टोर पर वापस जाएं")}</Link>
         </Button>
       </div>
     );
