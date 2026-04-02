@@ -9,7 +9,7 @@ import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { useVariantCount } from "@/hooks/useVariantCounts";
 
 interface Props {
-  product: Tables<"products">;
+  product: Tables<"products"> | (Omit<Tables<"products">, "display_order"> & { display_order?: number });
   slug: string;
   store: Tables<"stores">;
   priority?: boolean;
