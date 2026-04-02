@@ -954,7 +954,7 @@ export default function CheckoutPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Pay via</span>
+            <span className="text-sm font-medium text-foreground">{t("Pay via", "भुगतान करें")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {couponDiscount > 0 && (
