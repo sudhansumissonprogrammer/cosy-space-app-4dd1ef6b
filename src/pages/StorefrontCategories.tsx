@@ -18,6 +18,7 @@ export default function StorefrontCategories() {
         .from("categories")
         .select("id, name, slug, image_url")
         .eq("store_id", store.id)
+        .order("display_order" as any)
         .order("name");
       if (error) throw error;
       return data;
