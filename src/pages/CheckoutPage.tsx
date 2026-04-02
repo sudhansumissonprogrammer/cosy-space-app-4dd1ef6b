@@ -909,12 +909,12 @@ export default function CheckoutPage() {
           <>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label htmlFor="phone" className="text-xs">Phone Number *</Label>
+                <Label htmlFor="phone" className="text-xs">{t("Phone Number", "फ़ोन नंबर")} *</Label>
                 <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} autoFocus />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="fullName" className="text-xs">Full Name *</Label>
-                <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+                <Label htmlFor="fullName" className="text-xs">{t("Full Name", "पूरा नाम")} *</Label>
+                <Input id="fullName" placeholder={isHindi ? "अपना नाम लिखें" : "John Doe"} value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
             </div>
             {/* Use my location button - hidden for now */}
