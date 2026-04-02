@@ -1144,8 +1144,8 @@ export default function CheckoutPage() {
       <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Choose Address</DialogTitle>
-            <DialogDescription>Select a saved address or add a new one.</DialogDescription>
+            <DialogTitle>{t("Choose Address", "पता चुनें")}</DialogTitle>
+            <DialogDescription>{t("Select a saved address or add a new one.", "सेव किया हुआ पता चुनें या नया जोड़ें।")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             {savedAddresses?.map((addr: any) => (
