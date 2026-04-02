@@ -774,16 +774,16 @@ export default function CheckoutPage() {
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-primary) 15%, transparent)" }}>
           <CheckCircle2 className="h-8 w-8" style={{ color: "var(--storefront-primary)" }} />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
-        <p className="mt-2 text-muted-foreground">Your order has been placed successfully. The store will contact you shortly.</p>
-        {(orderNumber || orderId) && <p className="mt-2 text-xs text-muted-foreground">Order ID: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span></p>}
+        <h1 className="text-2xl font-bold text-foreground">{t("Order Placed!", "ऑर्डर हो गया!")}</h1>
+        <p className="mt-2 text-muted-foreground">{t("Your order has been placed successfully. The store will contact you shortly.", "आपका ऑर्डर सफलतापूर्वक दे दिया गया है। स्टोर जल्द ही आपसे संपर्क करेगा।")}</p>
+        {(orderNumber || orderId) && <p className="mt-2 text-xs text-muted-foreground">{t("Order ID", "ऑर्डर आईडी")}: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span></p>}
         <div className="mt-4 rounded-lg p-3" style={{ borderColor: "color-mix(in srgb, var(--storefront-primary) 20%, transparent)", border: "1px solid", backgroundColor: "color-mix(in srgb, var(--storefront-primary) 5%, transparent)" }}>
-          <p className="text-sm text-foreground font-medium">✅ Order confirmed!</p>
-          <p className="text-xs text-muted-foreground mt-1">We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.</p>
+          <p className="text-sm text-foreground font-medium">✅ {t("Order confirmed!", "ऑर्डर कन्फर्म!")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("We'll send updates to", "हम अपडेट भेजेंगे")} <strong>{phone}</strong>{email ? ` ${t("and", "और")} ${email}` : ""}.</p>
         </div>
         <div className="mt-6 flex flex-col gap-2 items-center">
-          <Link to={storefrontPath(store.slug, "account")} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>View My Orders</Link>
-          <Link to={storefrontPath(store.slug)} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>Continue Shopping</Link>
+          <Link to={storefrontPath(store.slug, "account")} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("View My Orders", "मेरे ऑर्डर देखें")}</Link>
+          <Link to={storefrontPath(store.slug)} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("Continue Shopping", "शॉपिंग जारी रखें")}</Link>
         </div>
       </div>
     );
