@@ -799,7 +799,7 @@ export default function CheckoutPage() {
         <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Order Summary ({itemCount} {itemCount === 1 ? "item" : "items"})</span>
+            <span className="text-sm font-medium text-foreground">{t("Order Summary", "ऑर्डर सारांश")} ({itemCount} {itemCount === 1 ? t("item", "आइटम") : t("items", "आइटम")})</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">{currency} {subtotal.toFixed(2)}</span>
