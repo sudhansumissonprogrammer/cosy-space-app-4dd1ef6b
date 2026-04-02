@@ -1105,7 +1105,7 @@ export default function CheckoutPage() {
           <span className="text-foreground">{currency} {subtotal.toFixed(2)}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Shipping</span>
+          <span className="text-muted-foreground">{t("Shipping", "शिपिंग")}</span>
           {shippingCharge > 0 ? (
             <span className="text-foreground">{currency} {shippingCharge.toFixed(2)}</span>
           ) : (
