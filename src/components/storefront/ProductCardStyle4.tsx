@@ -79,8 +79,8 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
         return (
           <div className="group/img relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
             <img
-              src={optimizeImageUrl(images[0], 200)}
-              srcSet={getImageSrcSet(images[0], [100, 200])}
+              src={optimizeImageUrl(images[0], 400, 80)}
+              srcSet={getImageSrcSet(images[0], [200, 400], 80)}
               sizes="96px"
               alt={product.name}
               width={200}
