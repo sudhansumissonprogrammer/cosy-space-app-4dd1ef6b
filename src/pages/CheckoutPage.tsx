@@ -252,6 +252,8 @@ export default function CheckoutPage() {
   }, [hasCod, hasRazorpay]);
 
   const currency = store.currency || "USD";
+  const isHindi = store.theme === "theme-16";
+  const t = (en: string, hi: string) => isHindi ? `${en} / ${hi}` : en;
 
   const checkoutItems = isSingleMode && product
     ? [{
