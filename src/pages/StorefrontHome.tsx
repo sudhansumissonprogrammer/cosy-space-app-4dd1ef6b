@@ -267,14 +267,16 @@ export default function StorefrontHome() {
                   ))}
                 </div>
                 {bestSellingProducts.length > ABOVE_FOLD_COUNT && (
-                  <LazyRender minHeight={400} rootMargin="300px">
                     <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4">
                       {bestSellingProducts.slice(ABOVE_FOLD_COUNT).map((product) => (
                         <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
                       ))}
                     </div>
-                  </LazyRender>
                 )}
+                {/* Best-seller infinite scroll sentinel */}
+                <div ref={bsSentinelRef} className="flex justify-center py-4">
+                  {bsIsFetching && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                </div>
               </section>
             )}
           </Suspense>
