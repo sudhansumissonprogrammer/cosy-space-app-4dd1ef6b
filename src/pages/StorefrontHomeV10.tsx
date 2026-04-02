@@ -72,7 +72,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
   });
 
   const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
-  const { data: allBestSellers = [] } = useBestSellingProducts(store.id);
+  const { products: allBestSellers } = useBestSellingProducts(store.id);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || defaultCardStyle;

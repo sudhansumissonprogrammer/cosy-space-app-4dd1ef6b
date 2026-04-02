@@ -65,7 +65,26 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
   const marqueeText = themeConfig?.marquee_text;
   const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
 
-  const { data: bestSellingProducts = [] } = useBestSellingProducts(store.id);
+  const { products: bestSellingProducts, hasNextPage: bsHasNext, isFetchingNextPage: bsIsFetching, fetchNextPage: bsFetchNext } = useBestSellingProducts(store.id);
+  const bsSentinelRef = useRef<HTMLDivElement>(null);
+  const bsScrollRef = useRef({ hasNextPage: bsHasNext, isFetchingNextPage: bsIsFetching, fetchNextPage: bsFetchNext });
+  bsScrollRef.current = { hasNextPage: bsHasNext, isFetchingNextPage: bsIsFetching, fetchNextPage: bsFetchNext };
+
+  useEffect(() => {
+    const el = bsSentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const s = bsScrollRef.current;
+        if (entry.isIntersecting && s.hasNextPage && !s.isFetchingNextPage) {
+          s.fetchNextPage();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const isDefaultSort = sortBy === "popular";
 
@@ -240,14 +259,15 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
                   ))}
                 </div>
                 {bestSellingProducts.length > ABOVE_FOLD_COUNT && (
-                  <LazyRender minHeight={400} rootMargin="300px">
                     <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4">
                       {bestSellingProducts.slice(ABOVE_FOLD_COUNT).map((product) => (
                         <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
                       ))}
                     </div>
-                  </LazyRender>
                 )}
+                <div ref={bsSentinelRef} className="flex justify-center py-4">
+                  {bsIsFetching && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                </div>
               </section>
             )}
           </Suspense>
