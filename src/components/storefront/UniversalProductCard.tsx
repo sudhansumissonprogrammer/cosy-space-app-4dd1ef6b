@@ -9,9 +9,9 @@ import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { useVariantCount } from "@/hooks/useVariantCounts";
 
 interface Props {
-  product: Tables<"products"> | (Omit<Tables<"products">, "display_order"> & { display_order?: number });
+  product: any;
   slug: string;
-  store: Tables<"stores">;
+  store: any;
   priority?: boolean;
   cardStyle?: string;
 }
