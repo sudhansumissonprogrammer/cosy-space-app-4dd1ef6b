@@ -829,6 +829,29 @@ export default function ProductsList() { // v2
               </div>
             </div>
           </div>
+          <div className="space-y-2 mt-4">
+            <Label>Best Seller</Label>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={bulkBestSellerMutation.isPending}
+                onClick={() => bulkBestSellerMutation.mutate(true)}
+              >
+                <Star className="h-3.5 w-3.5 mr-1.5 fill-yellow-400 text-yellow-500" />
+                Mark as Best Seller
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={bulkBestSellerMutation.isPending}
+                onClick={() => bulkBestSellerMutation.mutate(false)}
+              >
+                <Star className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                Remove Best Seller
+              </Button>
+            </div>
+          </div>
           <div className="flex gap-2 mt-6">
             <Button variant="outline" className="flex-1" onClick={() => setBulkActionOpen(false)}>Cancel</Button>
             <Button
