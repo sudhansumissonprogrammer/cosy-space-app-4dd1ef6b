@@ -171,7 +171,7 @@ export default function BestSellerManagement() {
                   {product.sale_price ? (
                     <>
                       <span className="line-through mr-1">{fmt(product.price)}</span>
-                      <span className="text-green-600 font-medium">{fmt(product.sale_price)}</span>
+                      <span className="text-foreground font-medium">{fmt(product.sale_price)}</span>
                     </>
                   ) : (
                     fmt(product.price)
