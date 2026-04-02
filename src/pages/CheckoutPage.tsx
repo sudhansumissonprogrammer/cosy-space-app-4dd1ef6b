@@ -1238,7 +1238,7 @@ export default function CheckoutPage() {
                   } catch { toast.error("Failed to save address"); }
                 }}
               >
-                Save & Use This Address
+                {t("Save & Use This Address", "पता सेव करें और इस्तेमाल करें")}
               </button>
             </div>
           </div>
