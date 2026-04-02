@@ -53,7 +53,7 @@ export default function StorefrontCategories() {
               >
                 {cat.image_url ? (
                   <img
-                    src={optimizeImageUrl(cat.image_url, 300)}
+                    src={optimizeImageUrl(cat.image_url, 400, 85)}
                     alt={cat.name}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loading="lazy"

@@ -44,8 +44,8 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
           return (
             <>
               <img
-                src={optimizeImageUrl(images[0], priority ? 200 : 400, priority ? 65 : undefined)}
-                srcSet={getImageSrcSet(images[0], priority ? [200, 400] : [300, 400, 600], priority ? 65 : undefined)}
+                src={optimizeImageUrl(images[0], 400, 80)}
+                srcSet={getImageSrcSet(images[0], [400, 800], 80)}
                 sizes={PRODUCT_CARD_SIZES}
                 alt={product.name}
                 width={400}

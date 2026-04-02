@@ -44,8 +44,8 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
           return (
             <>
               <img
-                src={optimizeImageUrl(images[0], priority ? 200 : 400, priority ? 65 : undefined)}
-                srcSet={getImageSrcSet(images[0], priority ? [200, 400] : [300, 400, 600], priority ? 65 : undefined)}
+                src={optimizeImageUrl(images[0], 400, 80)}
+                srcSet={getImageSrcSet(images[0], [400, 800], 80)}
                 sizes={PRODUCT_CARD_SIZES}
                 alt={product.name}
                 width={400}
@@ -56,7 +56,7 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
                 decoding={priority ? "sync" : "async"}
               />
               {hasSecond && (
-                <img src={optimizeImageUrl(images[1], 400)} srcSet={getImageSrcSet(images[1], [300, 400, 600])} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" decoding="async" />
+                <img src={optimizeImageUrl(images[1], 400, 80)} srcSet={getImageSrcSet(images[1], [400, 800], 80)} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" decoding="async" />
               )}
             </>
           );
