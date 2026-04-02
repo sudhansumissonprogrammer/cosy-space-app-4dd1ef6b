@@ -1054,8 +1054,8 @@ export default function CheckoutPage() {
                   </div>
                   <Wallet className="h-4 w-4 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Net Banking</p>
-                    <p className="text-[11px] text-muted-foreground">All major banks</p>
+                    <p className="text-sm font-medium text-foreground">{t("Net Banking", "नेट बैंकिंग")}</p>
+                    <p className="text-[11px] text-muted-foreground">{t("All major banks", "सभी प्रमुख बैंक")}</p>
                   </div>
                 </button>
 
