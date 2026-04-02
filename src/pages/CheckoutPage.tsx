@@ -670,12 +670,12 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!fullName.trim()) { toast.error("Please enter your full name"); return; }
-    if (!phone.trim() || phone.trim().length < 10) { toast.error("Please enter a valid phone number"); return; }
-    if (!streetAddress.trim()) { toast.error("Please enter your street address"); return; }
-    if (!city.trim()) { toast.error("Please enter your city"); return; }
-    if (!state.trim()) { toast.error("Please enter your state"); return; }
-    if (!pincode.trim()) { toast.error("Please enter your pincode"); return; }
+    if (!fullName.trim()) { toast.error(t("Please enter your full name", "कृपया अपना पूरा नाम दर्ज करें")); return; }
+    if (!phone.trim() || phone.trim().length < 10) { toast.error(t("Please enter a valid phone number", "कृपया एक वैध फ़ोन नंबर दर्ज करें")); return; }
+    if (!streetAddress.trim()) { toast.error(t("Please enter your street address", "कृपया अपना पता दर्ज करें")); return; }
+    if (!city.trim()) { toast.error(t("Please enter your city", "कृपया अपना शहर दर्ज करें")); return; }
+    if (!state.trim()) { toast.error(t("Please enter your state", "कृपया अपना राज्य दर्ज करें")); return; }
+    if (!pincode.trim()) { toast.error(t("Please enter your pincode", "कृपया अपना पिनकोड दर्ज करें")); return; }
 
     setPlacing(true);
     try {
