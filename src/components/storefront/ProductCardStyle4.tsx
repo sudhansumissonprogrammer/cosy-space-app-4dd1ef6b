@@ -90,7 +90,7 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
               decoding="async"
             />
             {hasSecond && (
-              <img src={optimizeImageUrl(images[1], 200)} alt={product.name} width={200} height={200} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover/img:opacity-100" loading="lazy" />
+              <img src={optimizeImageUrl(images[1], 400, 80)} alt={product.name} width={400} height={400} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover/img:opacity-100" loading="lazy" />
             )}
             {hasDiscount && (
               <div className="absolute left-1 top-1 rounded-md bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-destructive-foreground">
