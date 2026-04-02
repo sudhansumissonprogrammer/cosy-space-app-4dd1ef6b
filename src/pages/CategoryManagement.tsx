@@ -36,6 +36,7 @@ export default function CategoryManagement() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [productsDialogCat, setProductsDialogCat] = useState<string | null>(null);
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ["categories", storeId],
