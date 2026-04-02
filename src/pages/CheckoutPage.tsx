@@ -1126,7 +1126,7 @@ export default function CheckoutPage() {
         )}
         <Separator />
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-foreground">Total</span>
+          <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
           <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
         </div>
         <button
