@@ -143,11 +143,12 @@ export function useStorefront(slugOverride?: string) {
         delete (window as any).__STOREFRONT_DATA__;
       }
 
-      // ── PRODUCT PAGE PREFETCH ──
-      // When landing directly on /product/:slug, start fetching the product data
-      // immediately instead of waiting for the ProductDetail component to mount.
-      // This eliminates ~500-800ms of waterfall on slow connections.
+      // ── DIRECT-LINK PREFETCH ──
+      // When landing directly on any storefront page, prefetch the data that
+      // page will need so it renders instantly instead of showing a spinner.
       const path = location.pathname;
+
+      // Product page: /product/:slug
       const productMatch = path.match(/\/product\/([^/]+)/);
       if (productMatch && store) {
         const productSlug = decodeURIComponent(productMatch[1]);
@@ -174,7 +175,6 @@ export function useStorefront(slugOverride?: string) {
               error = result.error;
             }
             if (error) throw error;
-            // Also prefetch images in parallel
             if (prod) {
               queryClient.prefetchQuery({
                 queryKey: ["product-images", prod.id],
@@ -193,6 +193,89 @@ export function useStorefront(slugOverride?: string) {
             return prod;
           },
           staleTime: 2 * 60 * 1000,
+        });
+      }
+
+      // Shop page: /shop — prefetch first page of all products
+      if (path.match(/\/shop\/?$/) && store) {
+        queryClient.prefetchInfiniteQuery({
+          queryKey: ["storefront-shop-all", store.id],
+          queryFn: async () => {
+            const { supabase } = await import("@/integrations/supabase/client");
+            const { data: prods, error } = await supabase
+              .from("products")
+              .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+              .eq("store_id", store.id)
+              .eq("is_active", true)
+              .order("is_best_selling", { ascending: false })
+              .order("created_at", { ascending: false })
+              .range(0, 13);
+            if (error) throw error;
+            return { data: prods ?? [], nextPage: (prods?.length ?? 0) >= 14 ? 1 : undefined };
+          },
+          initialPageParam: 0,
+          staleTime: 2 * 60 * 1000,
+        });
+      }
+
+      // Category page: /category/:categorySlug — prefetch category + its products
+      const categoryMatch = path.match(/\/category\/([^/]+)/);
+      if (categoryMatch && store) {
+        const catSlug = decodeURIComponent(categoryMatch[1]);
+        queryClient.prefetchQuery({
+          queryKey: ["category", store.id, catSlug],
+          queryFn: async () => {
+            const { supabase } = await import("@/integrations/supabase/client");
+            const { data: cat, error } = await supabase
+              .from("categories")
+              .select("*")
+              .eq("store_id", store.id)
+              .eq("slug", catSlug)
+              .maybeSingle();
+            if (error) throw error;
+            // Also prefetch products for this category
+            if (cat) {
+              queryClient.prefetchInfiniteQuery({
+                queryKey: ["category-products", store.id, cat.name],
+                queryFn: async () => {
+                  const { supabase: sb } = await import("@/integrations/supabase/client");
+                  const { data: prods, error: pErr } = await sb
+                    .from("products")
+                    .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+                    .eq("store_id", store.id)
+                    .eq("category", cat.name)
+                    .eq("is_active", true)
+                    .order("created_at", { ascending: false })
+                    .range(0, 13);
+                  if (pErr) throw pErr;
+                  return { data: prods ?? [], nextPage: (prods?.length ?? 0) >= 14 ? 1 : undefined };
+                },
+                initialPageParam: 0,
+                staleTime: 2 * 60 * 1000,
+              });
+            }
+            return cat;
+          },
+          staleTime: 5 * 60 * 1000,
+        });
+      }
+
+      // About page: /about — prefetch store pages content
+      if (path.match(/\/(about|contact)\/?$/) && store) {
+        queryClient.prefetchQuery({
+          queryKey: ["storefront-custom-pages", store.id],
+          queryFn: async () => {
+            const { supabase } = await import("@/integrations/supabase/client");
+            const { data: pages } = await supabase
+              .from("store_pages")
+              .select("id, title, slug, content, image_url")
+              .eq("store_id", store.id)
+              .eq("page_type", "custom")
+              .eq("is_active", true)
+              .order("display_order", { ascending: true });
+            return pages ?? [];
+          },
+          staleTime: 5 * 60 * 1000,
         });
       }
     }
