@@ -82,8 +82,12 @@ export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlR
     listenerAttached.current = true;
   }
 
+  const isFullWidth = !className;
   return (
-    <div className={className} style={{ width: className ? undefined : "100%" }}>
+    <div
+      className={className}
+      style={isFullWidth ? { width: "100vw", marginLeft: "calc(-50vw + 50%)" } : undefined}
+    >
       <iframe
         ref={iframeRef}
         title="Custom HTML content"
