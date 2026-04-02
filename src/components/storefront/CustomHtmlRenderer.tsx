@@ -83,13 +83,13 @@ export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlR
   }
 
   return (
-    <div className={className} style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
+    <div className={className} style={{ width: className ? undefined : "100%" }}>
       <iframe
         ref={iframeRef}
         title="Custom HTML content"
         srcDoc={srcDoc}
         className="w-full border-0 bg-transparent"
-        style={{ minHeight: "400px" }}
+        style={{ minHeight: "400px", display: "block" }}
         sandbox="allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts"
       />
     </div>

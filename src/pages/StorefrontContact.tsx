@@ -102,7 +102,7 @@ export default function StorefrontContact() {
   if (customHtml?.trim()) {
     return (
       <div className="min-h-[70vh]">
-        <CustomHtmlRenderer html={customHtml} className="mx-auto max-w-5xl px-4 py-8" />
+        <CustomHtmlRenderer html={customHtml} className="" />
         {/* Always keep the contact form for lead capture */}
         <section className="mx-auto max-w-3xl px-4 pb-16">
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
