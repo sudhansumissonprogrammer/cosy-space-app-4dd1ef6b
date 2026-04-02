@@ -1101,7 +1101,7 @@ export default function CheckoutPage() {
       {/* 5. Price Breakdown + Place Order */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
+          <span className="text-muted-foreground">{t("Subtotal", "उप-कुल")}</span>
           <span className="text-foreground">{currency} {subtotal.toFixed(2)}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
