@@ -123,6 +123,7 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/pages/:pageId/edit" element={<StorePageEditor />} />
           <Route path="stores/:storeSlug/whatsapp" element={<WhatsAppMarketing />} />
           <Route path="stores/:storeSlug/tracking" element={<StoreTracking />} />
+          <Route path="stores/:storeSlug/best-sellers" element={<BestSellerManagement />} />
           
           <Route path="analytics" element={<StoreAnalytics />} />
           <Route path="settings" element={<UserSettings />} />
