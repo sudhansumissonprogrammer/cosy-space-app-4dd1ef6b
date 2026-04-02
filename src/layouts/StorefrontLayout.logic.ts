@@ -196,7 +196,7 @@ export function useStorefront(slugOverride?: string) {
         });
       }
     }
-  }, [data, queryClient]);
+  }, [data, queryClient, location.pathname]);
 
   const store = (data as any)?.store as StoreData | undefined;
 
