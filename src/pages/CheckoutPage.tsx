@@ -1023,7 +1023,7 @@ export default function CheckoutPage() {
             {/* More Payment Options — Collapsible */}
             <Collapsible open={morePaymentOpen} onOpenChange={setMorePaymentOpen}>
               <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <span className="font-medium">More payment options</span>
+                <span className="font-medium">{t("More payment options", "और भुगतान विकल्प")}</span>
                 <ChevronRight className={`h-4 w-4 transition-transform ${morePaymentOpen ? "rotate-90" : ""}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-2 pt-1">
