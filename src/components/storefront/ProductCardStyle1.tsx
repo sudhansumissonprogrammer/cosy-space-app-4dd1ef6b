@@ -80,8 +80,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
         </div>
       </Link>
       <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
-        <div className="flex items-center justify-between">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{categoryLabel}</p>
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-0.5">
             <Star className="h-3 w-3 fill-warning text-warning" />
             <span className="text-[10px] font-bold text-foreground">{getProductRating(product.id)}</span>
