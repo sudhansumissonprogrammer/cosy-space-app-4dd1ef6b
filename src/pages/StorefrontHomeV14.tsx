@@ -10,6 +10,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
+import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
@@ -64,9 +65,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
   const marqueeText = themeConfig?.marquee_text;
   const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
 
-  const bestSellingProducts = useMemo(() => {
-    return allCachedProducts.filter((p: any) => p.is_best_selling);
-  }, [allCachedProducts]);
+  const { data: bestSellingProducts = [] } = useBestSellingProducts(store.id);
 
   const isDefaultSort = sortBy === "popular";
 

@@ -33,8 +33,9 @@ export function HomeSectionHeader({ title, slug, linkTo, fontFallback = "'Alegre
 }
 
 /** Best selling section — respects store carousel setting. Shared by V10/V12 */
-export function HomeBestSellingSection({ products, slug, store, cardStyle }: { products: any[]; slug: string; store: StoreData; cardStyle: string }) {
-  const bestSellers = useMemo(() => products.filter((p: any) => p.is_best_selling), [products]);
+export function HomeBestSellingSection({ products, slug, store, cardStyle, bestSellers: bestSellersProp }: { products: any[]; slug: string; store: StoreData; cardStyle: string; bestSellers?: any[] }) {
+  const filteredBestSellers = useMemo(() => products.filter((p: any) => p.is_best_selling), [products]);
+  const bestSellers = bestSellersProp && bestSellersProp.length > 0 ? bestSellersProp : filteredBestSellers;
   if (bestSellers.length === 0) return null;
 
   const useCarousel = (store as any).best_selling_carousel;

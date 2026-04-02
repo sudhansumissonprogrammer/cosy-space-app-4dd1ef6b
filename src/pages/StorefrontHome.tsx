@@ -3,6 +3,7 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
+import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
@@ -56,10 +57,8 @@ export default function StorefrontHome() {
   const headerLayout = themeConfig?.header_logo_alignment || "left";
   const hideSearchBar = headerLayout === "left-with-search";
 
-  // ── Best-selling products ──
-  const bestSellingProducts = useMemo(() => {
-    return allCachedProducts.filter((p: any) => p.is_best_selling);
-  }, [allCachedProducts]);
+  // ── Best-selling products (dedicated query — no page limit) ──
+  const { data: bestSellingProducts = [] } = useBestSellingProducts(store.id);
 
   // ── Sort mode determines data strategy ──
   // "popular" (default): use cached initial products + paginate from offset 20

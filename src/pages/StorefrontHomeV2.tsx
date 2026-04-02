@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from "react
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
+import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Search, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -242,10 +243,7 @@ export default function StorefrontHomeV2() {
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
 
-  const bestSellingProducts = useMemo(() => {
-    if (!products) return [];
-    return products.filter((p: any) => p.is_best_selling);
-  }, [products]);
+  const { data: bestSellingProducts = [] } = useBestSellingProducts(store.id);
 
   const allSorted = useMemo(() => {
     if (!products) return [];
