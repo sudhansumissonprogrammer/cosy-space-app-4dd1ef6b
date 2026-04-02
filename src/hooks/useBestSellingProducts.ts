@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 const BEST_SELLER_COLUMNS =
   "id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id,display_order";
@@ -10,7 +11,7 @@ export const BEST_SELLER_PAGE_SIZE = 12;
  * Sorted by display_order so the merchant's manual order is respected.
  */
 export function useBestSellingProducts(storeId: string | undefined) {
-  return useInfiniteQuery({
+  const query = useInfiniteQuery({
     queryKey: ["storefront-best-sellers", storeId],
     queryFn: async ({ pageParam = 0 }) => {
       const { supabase } = await import("@/integrations/supabase/client");
@@ -35,4 +36,15 @@ export function useBestSellingProducts(storeId: string | undefined) {
     staleTime: 5 * 60 * 1000,
     enabled: !!storeId,
   });
+
+  const flatProducts = useMemo(
+    () => query.data?.pages.flatMap((p) => p.products) ?? [],
+    [query.data],
+  );
+
+  return {
+    ...query,
+    /** Flattened array of all loaded best-selling products */
+    products: flatProducts,
+  };
 }
