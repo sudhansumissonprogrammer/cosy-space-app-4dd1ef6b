@@ -44,12 +44,32 @@ function CategorySection({
   cardStyle: string;
 }) {
   const [products, setProducts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const pageRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollState = useRef({ hasMore: true, isFetchingMore: false });
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const hasFetched = useRef(false);
+
+  // Only become visible (and start fetching) when section enters viewport
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const fetchPage = useCallback(async (page: number) => {
     const from = page * CATEGORY_PAGE_SIZE;
@@ -69,6 +89,9 @@ function CategorySection({
   }, [storeId, category.name]);
 
   useEffect(() => {
+    if (!isVisible || hasFetched.current) return;
+    hasFetched.current = true;
+    setIsLoading(true);
     let cancelled = false;
     fetchPage(0).then((data) => {
       if (cancelled) return;
@@ -109,12 +132,17 @@ function CategorySection({
     return () => observer.disconnect();
   }, [fetchPage]);
 
-  if (!isLoading && products.length === 0) return null;
+  if (!isVisible) {
+    // Render a lightweight placeholder so IntersectionObserver can track it
+    return <section ref={sectionRef} style={{ minHeight: 200 }} />;
+  }
+
+  if (!isLoading && hasFetched.current && products.length === 0) return null;
 
   const categoryPath = storefrontPath(slug, `category/${category.slug}`);
 
   return (
-    <section>
+    <section ref={sectionRef}>
       <div className="flex items-center gap-3 mb-4">
         <div className="h-px flex-1 bg-border" />
         <h2
@@ -324,27 +352,15 @@ export default function StorefrontHomeV16() {
           )}
 
           {/* Per-category sections in sorted order */}
-          {sortedCategories.map((cat: any, idx: number) => (
-            idx < 2 ? (
-              <CategorySection
-                key={cat.id}
-                category={cat}
-                storeId={store.id}
-                slug={slug!}
-                store={store}
-                cardStyle={cardStyle}
-              />
-            ) : (
-              <LazyRender key={cat.id} minHeight={400} rootMargin="400px">
-                <CategorySection
-                  category={cat}
-                  storeId={store.id}
-                  slug={slug!}
-                  store={store}
-                  cardStyle={cardStyle}
-                />
-              </LazyRender>
-            )
+          {sortedCategories.map((cat: any) => (
+            <CategorySection
+              key={cat.id}
+              category={cat}
+              storeId={store.id}
+              slug={slug!}
+              store={store}
+              cardStyle={cardStyle}
+            />
           ))}
         </div>
 
