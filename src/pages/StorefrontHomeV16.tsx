@@ -59,6 +59,7 @@ function CategorySection({
       .select("id, name, slug, price, sale_price, image_url, currency, is_best_selling, stock_quantity, category, display_order, product_images:product_images(id, image_url, display_order)")
       .eq("store_id", storeId)
       .eq("is_active", true)
+      .eq("is_best_selling", false)
       .eq("category", category.name)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: false })
