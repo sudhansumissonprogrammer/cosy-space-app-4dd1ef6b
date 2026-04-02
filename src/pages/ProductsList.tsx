@@ -432,6 +432,15 @@ export default function ProductsList() { // v2
             </AlertDialog>
             <Button
               size="sm"
+              variant="outline"
+              disabled={bulkSelected.size === 0 || bulkBestSellerMutation.isPending}
+              onClick={() => bulkBestSellerMutation.mutate(true)}
+            >
+              <Star className="h-3.5 w-3.5 mr-1 fill-yellow-400 text-yellow-500" />
+              Best Seller
+            </Button>
+            <Button
+              size="sm"
               disabled={bulkSelected.size === 0}
               onClick={() => setBulkActionOpen(true)}
             >
