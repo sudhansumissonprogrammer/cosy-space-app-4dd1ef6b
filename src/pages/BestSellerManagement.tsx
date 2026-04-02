@@ -103,7 +103,7 @@ export default function BestSellerManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Star className="h-5 w-5 text-amber-500 fill-amber-500" />
+            <Star className="h-5 w-5 text-primary fill-primary" />
             Best Sellers
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
