@@ -18,14 +18,8 @@ const rootElement = document.getElementById("root")!;
 
 createRoot(rootElement).render(<App />);
 
-// Dispatch storefront:mounted after two rAFs (React has painted).
-// NOTE: #sf-skel removal is now handled by storefront:content-ready
-// in useStorefrontProducts or the 12s fallback in index.html.
-requestAnimationFrame(() => {
-  requestAnimationFrame(() => {
-    window.dispatchEvent(new Event("storefront:mounted"));
-  });
-});
+// storefront:mounted is no longer used for skeleton removal.
+// Worker skeleton is removed only by storefront:content-ready or 12s fallback.
 
 /**
  * Determine if current host is a storefront (custom domain or subdomain).

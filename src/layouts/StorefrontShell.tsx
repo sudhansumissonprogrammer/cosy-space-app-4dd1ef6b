@@ -184,12 +184,9 @@ export default function StorefrontShell({
     };
   }, [themeVarsKey]);
 
-  // Loading state — suppress React skeleton when Worker #sf-skel is already visible
-  const edgeSkelPresent = typeof document !== "undefined" && !!document.getElementById("sf-skel");
+  // Loading state — always render empty div; Worker skeleton handles the visual loading state
   if (isLoading) {
-    // If Worker skeleton is covering the page, render an empty div (no white flash)
-    if (edgeSkelPresent) return <div className="min-h-screen" />;
-    return <>{skeleton || <DefaultSkeleton />}</>;
+    return <div className="min-h-screen" />;
   }
 
   // Not found
