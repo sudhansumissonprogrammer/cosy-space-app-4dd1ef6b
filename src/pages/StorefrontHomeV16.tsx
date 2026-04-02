@@ -2,7 +2,7 @@
  * Theme 16 Home — Best Sellers + per-category product sections (13 each + View All card).
  * No "Popular Products" section.
  */
-import { useState, useMemo, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -27,9 +27,9 @@ const StorefrontInstagramSection = lazy(() => import("@/components/storefront/St
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 4;
-const CATEGORY_PRODUCT_LIMIT = 13;
+const CATEGORY_PAGE_SIZE = 12;
 
-/* ─── Per-category section ─── */
+/* ─── Per-category section with infinite scroll ─── */
 function CategorySection({
   category,
   storeId,
@@ -43,25 +43,72 @@ function CategorySection({
   store: StoreData;
   cardStyle: string;
 }) {
-  const { data: products, isLoading } = useQuery({
-    queryKey: ["storefront-category-products", storeId, category.name],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, name, slug, price, sale_price, image_url, currency, is_best_selling, stock_quantity, category, display_order, product_images:product_images(id, image_url, display_order)")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .eq("category", category.name)
-        .order("display_order", { ascending: true })
-        .order("created_at", { ascending: false })
-        .limit(CATEGORY_PRODUCT_LIMIT);
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const pageRef = useRef(0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const scrollState = useRef({ hasMore: true, isFetchingMore: false });
 
-  if (!isLoading && (!products || products.length === 0)) return null;
+  const fetchPage = useCallback(async (page: number) => {
+    const from = page * CATEGORY_PAGE_SIZE;
+    const to = from + CATEGORY_PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, slug, price, sale_price, image_url, currency, is_best_selling, stock_quantity, category, display_order, product_images:product_images(id, image_url, display_order)")
+      .eq("store_id", storeId)
+      .eq("is_active", true)
+      .eq("category", category.name)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: false })
+      .range(from, to);
+    if (error) throw error;
+    return data || [];
+  }, [storeId, category.name]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPage(0).then((data) => {
+      if (cancelled) return;
+      setProducts(data);
+      setHasMore(data.length === CATEGORY_PAGE_SIZE);
+      scrollState.current.hasMore = data.length === CATEGORY_PAGE_SIZE;
+      setIsLoading(false);
+    }).catch(() => { if (!cancelled) setIsLoading(false); });
+    return () => { cancelled = true; };
+  }, [fetchPage]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const s = scrollState.current;
+        if (entry.isIntersecting && s.hasMore && !s.isFetchingMore) {
+          s.isFetchingMore = true;
+          setIsFetchingMore(true);
+          const nextPage = pageRef.current + 1;
+          fetchPage(nextPage).then((data) => {
+            pageRef.current = nextPage;
+            setProducts((prev) => [...prev, ...data]);
+            const more = data.length === CATEGORY_PAGE_SIZE;
+            setHasMore(more);
+            scrollState.current = { hasMore: more, isFetchingMore: false };
+            setIsFetchingMore(false);
+          }).catch(() => {
+            scrollState.current.isFetchingMore = false;
+            setIsFetchingMore(false);
+          });
+        }
+      },
+      { rootMargin: "300px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fetchPage]);
+
+  if (!isLoading && products.length === 0) return null;
 
   const categoryPath = storefrontPath(slug, `category/${category.slug}`);
 
@@ -85,35 +132,39 @@ function CategorySection({
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {products!.map((product: any, idx: number) => (
-            <UniversalProductCard
-              key={product.id}
-              product={product}
-              slug={slug}
-              store={store}
-              priority={false}
-              cardStyle={cardStyle}
-            />
-          ))}
-          {/* View All card */}
-          <Link
-            to={categoryPath}
-            className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-accent/30 transition-all hover:border-foreground/30 hover:bg-accent/50"
-            style={{ aspectRatio: "4/5" }}
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/10 transition-colors group-hover:bg-foreground/20">
-              <ArrowRight className="h-5 w-5 text-foreground" />
-            </div>
-            <span className="mt-3 text-sm font-semibold text-foreground">View All</span>
-            <span className="text-xs text-muted-foreground">{category.name}</span>
-          </Link>
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {products.map((product: any) => (
+              <UniversalProductCard
+                key={product.id}
+                product={product}
+                slug={slug}
+                store={store}
+                priority={false}
+                cardStyle={cardStyle}
+              />
+            ))}
+            {/* View All card */}
+            <Link
+              to={categoryPath}
+              className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-accent/30 transition-all hover:border-foreground/30 hover:bg-accent/50"
+              style={{ aspectRatio: "4/5" }}
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/10 transition-colors group-hover:bg-foreground/20">
+                <ArrowRight className="h-5 w-5 text-foreground" />
+              </div>
+              <span className="mt-3 text-sm font-semibold text-foreground">View All</span>
+              <span className="text-xs text-muted-foreground">{category.name}</span>
+            </Link>
+          </div>
+          <div ref={sentinelRef} className="flex justify-center py-4">
+            {isFetchingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+          </div>
+        </>
       )}
     </section>
   );
 }
-
 export default function StorefrontHomeV16() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
