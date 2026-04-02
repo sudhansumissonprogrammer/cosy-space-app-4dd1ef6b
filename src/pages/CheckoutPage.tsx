@@ -1109,7 +1109,7 @@ export default function CheckoutPage() {
           {shippingCharge > 0 ? (
             <span className="text-foreground">{currency} {shippingCharge.toFixed(2)}</span>
           ) : (
-            <span className="text-primary font-medium">Free</span>
+            <span className="text-primary font-medium">{t("Free", "मुफ़्त")}</span>
           )}
         </div>
         {taxActive && (
