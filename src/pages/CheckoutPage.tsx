@@ -867,7 +867,7 @@ export default function CheckoutPage() {
       <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-4">
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">Delivery Details</span>
+          <span className="text-sm font-medium text-foreground">{t("Delivery Details", "डिलीवरी विवरण")}</span>
         </div>
 
         {/* Express mode for returning users with localStorage data (not logged in with saved addresses) */}
