@@ -1070,7 +1070,7 @@ export default function CheckoutPage() {
                   </div>
                   <Smartphone className="h-4 w-4 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Wallets</p>
+                    <p className="text-sm font-medium text-foreground">{t("Wallets", "वॉलेट")}</p>
                     <p className="text-[11px] text-muted-foreground">Paytm, Mobikwik, Freecharge</p>
                   </div>
                 </button>
