@@ -928,12 +928,12 @@ export default function CheckoutPage() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label htmlFor="city" className="text-xs">City *</Label>
-                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+                <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
+                <Input id="city" placeholder={isHindi ? "शहर" : "Mumbai"} value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="state" className="text-xs">State *</Label>
-                <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+                <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
+                <Input id="state" placeholder={isHindi ? "राज्य" : "Maharashtra"} value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
               </div>
             </div>
             {/* Email optional — collapsible */}
