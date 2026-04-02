@@ -311,6 +311,15 @@ export default function CategoryManagement() {
           }}
         />
       )}
+
+      {storeId && productsDialogCat && (
+        <CategoryProductsDialog
+          open={!!productsDialogCat}
+          onClose={() => setProductsDialogCat(null)}
+          categoryName={productsDialogCat}
+          storeId={storeId}
+        />
+      )}
     </div>
   );
 }
