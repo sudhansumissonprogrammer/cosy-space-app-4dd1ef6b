@@ -58,7 +58,26 @@ export default function StorefrontHome() {
   const hideSearchBar = headerLayout === "left-with-search";
 
   // ── Best-selling products (dedicated query — no page limit) ──
-  const { data: bestSellingProducts = [] } = useBestSellingProducts(store.id);
+  const { products: bestSellingProducts, hasNextPage: bsHasNext, isFetchingNextPage: bsIsFetching, fetchNextPage: bsFetchNext } = useBestSellingProducts(store.id);
+  const bsSentinelRef = useRef<HTMLDivElement>(null);
+  const bsScrollRef = useRef({ hasNextPage: bsHasNext, isFetchingNextPage: bsIsFetching, fetchNextPage: bsFetchNext });
+  bsScrollRef.current = { hasNextPage: bsHasNext, isFetchingNextPage: bsIsFetching, fetchNextPage: bsFetchNext };
+
+  useEffect(() => {
+    const el = bsSentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const s = bsScrollRef.current;
+        if (entry.isIntersecting && s.hasNextPage && !s.isFetchingNextPage) {
+          s.fetchNextPage();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // ── Sort mode determines data strategy ──
   // "popular" (default): use cached initial products + paginate from offset 20
