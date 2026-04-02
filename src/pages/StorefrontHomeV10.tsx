@@ -72,6 +72,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
   });
 
   const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
+  const { data: allBestSellers = [] } = useBestSellingProducts(store.id);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || defaultCardStyle;
@@ -83,8 +84,8 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
       <ResponsiveHeroBanner store={store} HeroBannerCarousel={HeroBannerCarousel} />
       <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
       {(themeConfig?.marquee_enabled ?? true) && <AnnouncementStrip customText={themeConfig?.marquee_text} />}
-      {products && products.length > 0 && (
-        <HomeBestSellingSection products={products} slug={effectiveSlug} store={store} cardStyle={cardStyle} />
+      {(allBestSellers.length > 0 || (products && products.length > 0)) && (
+        <HomeBestSellingSection products={products || []} slug={effectiveSlug} store={store} cardStyle={cardStyle} bestSellers={allBestSellers} />
       )}
       <StorySection store={store} />
       <div className="py-4">
