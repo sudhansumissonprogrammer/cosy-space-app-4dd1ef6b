@@ -142,6 +142,59 @@ export function useStorefront(slugOverride?: string) {
       if ((window as any).__STOREFRONT_DATA__) {
         delete (window as any).__STOREFRONT_DATA__;
       }
+
+      // ── PRODUCT PAGE PREFETCH ──
+      // When landing directly on /product/:slug, start fetching the product data
+      // immediately instead of waiting for the ProductDetail component to mount.
+      // This eliminates ~500-800ms of waterfall on slow connections.
+      const path = location.pathname;
+      const productMatch = path.match(/\/product\/([^/]+)/);
+      if (productMatch && store) {
+        const productSlug = decodeURIComponent(productMatch[1]);
+        queryClient.prefetchQuery({
+          queryKey: ["storefront-product", store.id, productSlug],
+          queryFn: async () => {
+            const { supabase } = await import("@/integrations/supabase/client");
+            let { data: prod, error } = await supabase
+              .from("products")
+              .select("*")
+              .eq("store_id", store.id)
+              .eq("slug", productSlug)
+              .eq("is_active", true)
+              .maybeSingle();
+            if (!prod && !error) {
+              const result = await supabase
+                .from("products")
+                .select("*")
+                .eq("store_id", store.id)
+                .eq("id", productSlug)
+                .eq("is_active", true)
+                .maybeSingle();
+              prod = result.data;
+              error = result.error;
+            }
+            if (error) throw error;
+            // Also prefetch images in parallel
+            if (prod) {
+              queryClient.prefetchQuery({
+                queryKey: ["product-images", prod.id],
+                queryFn: async () => {
+                  const { supabase: sb } = await import("@/integrations/supabase/client");
+                  const { data: imgs } = await sb
+                    .from("product_images")
+                    .select("id, image_url, display_order")
+                    .eq("product_id", prod!.id)
+                    .order("display_order");
+                  return imgs ?? [];
+                },
+                staleTime: 5 * 60 * 1000,
+              });
+            }
+            return prod;
+          },
+          staleTime: 2 * 60 * 1000,
+        });
+      }
     }
   }, [data, queryClient]);
 
