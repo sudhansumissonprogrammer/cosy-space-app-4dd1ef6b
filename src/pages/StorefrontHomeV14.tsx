@@ -269,8 +269,6 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
                   {bsIsFetching && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
                 </div>
               </section>
-                )}
-              </section>
             )}
           </Suspense>
         )}
