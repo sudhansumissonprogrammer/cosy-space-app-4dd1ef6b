@@ -28,7 +28,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
   Plus, Pencil, Trash2, Package, AlertCircle, Upload, Download,
-  Search, SlidersHorizontal, ArrowUpDown, X, Check,
+  Search, SlidersHorizontal, ArrowUpDown, X, Check, Star,
 } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
