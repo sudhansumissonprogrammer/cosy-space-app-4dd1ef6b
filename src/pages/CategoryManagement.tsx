@@ -196,7 +196,7 @@ export default function CategoryManagement() {
                   </div>
                 )}
                 <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                  <div className="flex w-full justify-end gap-1 p-2">
+                  <div className="flex w-full justify-end gap-1 p-2" onClick={(e) => e.stopPropagation()}>
                     <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => openEdit(cat)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
