@@ -939,7 +939,7 @@ export default function CheckoutPage() {
             {/* Email optional — collapsible */}
             <Collapsible>
               <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <Plus className="h-3 w-3" /> Add email for order updates (optional)
+                <Plus className="h-3 w-3" /> {t("Add email for order updates (optional)", "ईमेल जोड़ें (वैकल्पिक)")}
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-2">
                 <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
