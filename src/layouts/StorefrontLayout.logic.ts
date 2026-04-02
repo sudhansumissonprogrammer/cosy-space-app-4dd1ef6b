@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSubdomainSlug } from "@/lib/subdomain";
 import type { Tables } from "@/integrations/supabase/types";
@@ -37,6 +37,7 @@ async function rpcGetStorefrontShell(slug: string) {
  */
 export function useStorefront(slugOverride?: string) {
   const { slug: paramSlug } = useParams<{ slug: string }>();
+  const location = useLocation();
   const slug = slugOverride || paramSlug || getSubdomainSlug() || undefined;
   const queryClient = useQueryClient();
   const seeded = useRef(false);
@@ -141,8 +142,61 @@ export function useStorefront(slugOverride?: string) {
       if ((window as any).__STOREFRONT_DATA__) {
         delete (window as any).__STOREFRONT_DATA__;
       }
+
+      // ── PRODUCT PAGE PREFETCH ──
+      // When landing directly on /product/:slug, start fetching the product data
+      // immediately instead of waiting for the ProductDetail component to mount.
+      // This eliminates ~500-800ms of waterfall on slow connections.
+      const path = location.pathname;
+      const productMatch = path.match(/\/product\/([^/]+)/);
+      if (productMatch && store) {
+        const productSlug = decodeURIComponent(productMatch[1]);
+        queryClient.prefetchQuery({
+          queryKey: ["storefront-product", store.id, productSlug],
+          queryFn: async () => {
+            const { supabase } = await import("@/integrations/supabase/client");
+            let { data: prod, error } = await supabase
+              .from("products")
+              .select("*")
+              .eq("store_id", store.id)
+              .eq("slug", productSlug)
+              .eq("is_active", true)
+              .maybeSingle();
+            if (!prod && !error) {
+              const result = await supabase
+                .from("products")
+                .select("*")
+                .eq("store_id", store.id)
+                .eq("id", productSlug)
+                .eq("is_active", true)
+                .maybeSingle();
+              prod = result.data;
+              error = result.error;
+            }
+            if (error) throw error;
+            // Also prefetch images in parallel
+            if (prod) {
+              queryClient.prefetchQuery({
+                queryKey: ["product-images", prod.id],
+                queryFn: async () => {
+                  const { supabase: sb } = await import("@/integrations/supabase/client");
+                  const { data: imgs } = await sb
+                    .from("product_images")
+                    .select("id, image_url, display_order")
+                    .eq("product_id", prod!.id)
+                    .order("display_order");
+                  return imgs ?? [];
+                },
+                staleTime: 5 * 60 * 1000,
+              });
+            }
+            return prod;
+          },
+          staleTime: 2 * 60 * 1000,
+        });
+      }
     }
-  }, [data, queryClient]);
+  }, [data, queryClient, location.pathname]);
 
   const store = (data as any)?.store as StoreData | undefined;
 
