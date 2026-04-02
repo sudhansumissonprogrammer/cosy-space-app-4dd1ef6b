@@ -186,7 +186,7 @@ export default function CategoryManagement() {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {categories.map((cat) => (
-            <Card key={cat.id} className="group overflow-hidden">
+            <Card key={cat.id} className="group overflow-hidden cursor-pointer" onClick={() => setProductsDialogCat(cat.name)}>
               <div className="relative aspect-square bg-muted">
                 {cat.image_url ? (
                   <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
