@@ -54,6 +54,7 @@ const MediaLibrary = lazy(() => import("@/pages/MediaLibrary"));
 const StorePages = lazy(() => import("@/pages/StorePages"));
 const StorePageEditor = lazy(() => import("@/pages/StorePageEditor"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const BestSellerManagement = lazy(() => import("@/pages/BestSellerManagement"));
 const InstallApp = lazy(() => import("@/pages/InstallApp"));
 
 export default function AuthRoutes() {
