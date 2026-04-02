@@ -56,10 +56,8 @@ export default function StorefrontHome() {
   const headerLayout = themeConfig?.header_logo_alignment || "left";
   const hideSearchBar = headerLayout === "left-with-search";
 
-  // ── Best-selling products ──
-  const bestSellingProducts = useMemo(() => {
-    return allCachedProducts.filter((p: any) => p.is_best_selling);
-  }, [allCachedProducts]);
+  // ── Best-selling products (dedicated query — no page limit) ──
+  const { data: bestSellingProducts = [] } = useBestSellingProducts(store.id);
 
   // ── Sort mode determines data strategy ──
   // "popular" (default): use cached initial products + paginate from offset 20

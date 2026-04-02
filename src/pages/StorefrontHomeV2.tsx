@@ -242,10 +242,7 @@ export default function StorefrontHomeV2() {
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
 
-  const bestSellingProducts = useMemo(() => {
-    if (!products) return [];
-    return products.filter((p: any) => p.is_best_selling);
-  }, [products]);
+  const { data: bestSellingProducts = [] } = useBestSellingProducts(store.id);
 
   const allSorted = useMemo(() => {
     if (!products) return [];

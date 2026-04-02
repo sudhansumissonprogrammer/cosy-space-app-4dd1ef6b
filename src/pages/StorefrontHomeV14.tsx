@@ -64,9 +64,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
   const marqueeText = themeConfig?.marquee_text;
   const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
 
-  const bestSellingProducts = useMemo(() => {
-    return allCachedProducts.filter((p: any) => p.is_best_selling);
-  }, [allCachedProducts]);
+  const { data: bestSellingProducts = [] } = useBestSellingProducts(store.id);
 
   const isDefaultSort = sortBy === "popular";
 
