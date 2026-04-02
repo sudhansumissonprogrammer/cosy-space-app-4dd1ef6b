@@ -28,7 +28,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
   Plus, Pencil, Trash2, Package, AlertCircle, Upload, Download,
-  Search, SlidersHorizontal, ArrowUpDown, X, Check,
+  Search, SlidersHorizontal, ArrowUpDown, X, Check, Star,
 } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
@@ -239,6 +239,21 @@ export default function ProductsList() { // v2
     onError: (err: any) => toast.error(err.message || "Bulk delete failed"),
   });
 
+  const bulkBestSellerMutation = useMutation({
+    mutationFn: async (value: boolean) => {
+      const ids = Array.from(bulkSelected);
+      if (ids.length === 0) throw new Error("No products selected");
+      const { error } = await supabase.from("products").update({ is_best_selling: value }).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: (_, value) => {
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
+      toast.success(`${bulkSelected.size} products ${value ? "marked as" : "removed from"} best sellers`);
+      exitBulkMode();
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update best seller status"),
+  });
+
   const activeFilterCount =
     (stockFilter !== "all" ? 1 : 0) +
     (categoryFilter.length > 0 ? 1 : 0);
@@ -415,6 +430,15 @@ export default function ProductsList() { // v2
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkSelected.size === 0 || bulkBestSellerMutation.isPending}
+              onClick={() => bulkBestSellerMutation.mutate(true)}
+            >
+              <Star className="h-3.5 w-3.5 mr-1 fill-yellow-400 text-yellow-500" />
+              Best Seller
+            </Button>
             <Button
               size="sm"
               disabled={bulkSelected.size === 0}
@@ -803,6 +827,29 @@ export default function ProductsList() { // v2
                   onChange={(e) => setBulkStockChange(e.target.value)}
                 />
               </div>
+            </div>
+          </div>
+          <div className="space-y-2 mt-4">
+            <Label>Best Seller</Label>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={bulkBestSellerMutation.isPending}
+                onClick={() => bulkBestSellerMutation.mutate(true)}
+              >
+                <Star className="h-3.5 w-3.5 mr-1.5 fill-yellow-400 text-yellow-500" />
+                Mark as Best Seller
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={bulkBestSellerMutation.isPending}
+                onClick={() => bulkBestSellerMutation.mutate(false)}
+              >
+                <Star className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                Remove Best Seller
+              </Button>
             </div>
           </div>
           <div className="flex gap-2 mt-6">
