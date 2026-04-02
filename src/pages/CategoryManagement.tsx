@@ -20,6 +20,7 @@ import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
+import CategoryProductsDialog from "@/components/CategoryProductsDialog";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
