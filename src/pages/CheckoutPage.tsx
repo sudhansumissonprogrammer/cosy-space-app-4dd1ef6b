@@ -1062,7 +1062,63 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {hasRazorpay && (
+        {/* Partial Payment Option */}
+        {hasAnyPartialPayment && hasRazorpay && (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => { setPartialPaymentMode("partial"); setPaymentMethod("razorpay"); }}
+              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${partialPaymentMode === "partial" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+            >
+              <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${partialPaymentMode === "partial" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                {partialPaymentMode === "partial" && <Check className="h-3 w-3 text-primary-foreground" />}
+              </div>
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-foreground">{t("Pay Advance Only", "सिर्फ़ एडवांस दें")}</p>
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{t("Recommended", "अनुशंसित")}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t("Pay", "भुगतान")} {currency} {partialAdvanceTotal.toFixed(0)} {t("now", "अभी")} + {currency} {partialBalanceDue.toFixed(0)} {t("on delivery (COD)", "डिलीवरी पर (COD)")}
+                </p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setPartialPaymentMode("full"); setPaymentMethod("razorpay"); }}
+              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${partialPaymentMode === "full" && paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+            >
+              <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${partialPaymentMode === "full" && paymentMethod === "razorpay" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                {partialPaymentMode === "full" && paymentMethod === "razorpay" && <Check className="h-3 w-3 text-primary-foreground" />}
+              </div>
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">{t("Pay Full Amount Online", "पूरा ऑनलाइन भुगतान")}</p>
+                <p className="text-xs text-muted-foreground">{currency} {total.toFixed(2)} — {t("UPI, Cards, Net Banking", "UPI, कार्ड, नेट बैंकिंग")}</p>
+              </div>
+            </button>
+            {hasCod && (
+              <button
+                type="button"
+                onClick={() => { setPartialPaymentMode("full"); setPaymentMethod("cod"); }}
+                className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+              >
+                <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                  {paymentMethod === "cod" && <Check className="h-3 w-3 text-primary-foreground" />}
+                </div>
+                <Banknote className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
+                  <p className="text-xs text-muted-foreground">{t("Pay full amount when your order arrives", "ऑर्डर आने पर पूरा भुगतान")}</p>
+                </div>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Standard payment options (no partial payment products) */}
+        {!hasAnyPartialPayment && hasRazorpay && (
           <button
             type="button"
             onClick={() => { setPaymentMethod("razorpay"); }}
@@ -1079,8 +1135,8 @@ export default function CheckoutPage() {
           </button>
         )}
 
-        {/* COD */}
-        {hasCod && (
+        {/* COD (only when no partial payment products) */}
+        {!hasAnyPartialPayment && hasCod && (
           <button
             type="button"
             onClick={() => { setPaymentMethod("cod"); }}
