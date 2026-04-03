@@ -68,6 +68,36 @@ export default function CheckoutAwareLayout({
 
   useEffect(() => { if (!isCheckout) setOrderPlaced(false); }, [isCheckout]);
 
+  // ShipRocket-style checkout lock: prevent refresh, back button, and tab close
+  useEffect(() => {
+    if (!isCheckout || orderPlaced) return;
+
+    // 1. Warn on refresh / tab close
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "You have an active checkout. Are you sure you want to leave?";
+      return e.returnValue;
+    };
+
+    // 2. Push fake history entries to intercept browser back button
+    window.history.pushState({ checkoutLock: true }, "");
+    window.history.pushState({ checkoutLock: true }, "");
+
+    const handlePopState = (e: PopStateEvent) => {
+      // Re-push state to keep user on page and show exit dialog
+      window.history.pushState({ checkoutLock: true }, "");
+      setShowExitDialog(true);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isCheckout, orderPlaced]);
+
   const handleBackClick = () => { if (orderPlaced) { navigate(storefrontPath(store.slug)); return; } setShowExitDialog(true); };
   const handleExitConfirm = () => { setShowExitDialog(false); navigate(storefrontPath(store.slug, "cart")); };
 
