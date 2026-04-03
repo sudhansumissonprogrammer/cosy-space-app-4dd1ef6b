@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
       lead,
       coupon_id,
       abandoned_cart_id,
+      checkout_token,
     }: {
       store_id: string;
       order: {
@@ -82,6 +83,7 @@ Deno.serve(async (req) => {
       };
       coupon_id?: string | null;
       abandoned_cart_id?: string | null;
+      checkout_token?: string | null;
     } = await req.json();
 
     if (!store_id || !order || !Array.isArray(items) || items.length === 0) {
