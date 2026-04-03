@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
         payment_method: "cod" | "razorpay";
         notes?: string;
         storefront_customer_id?: string | null;
+        payment_type?: "full" | "partial";
       };
       items: CheckoutItem[];
       lead?: {
