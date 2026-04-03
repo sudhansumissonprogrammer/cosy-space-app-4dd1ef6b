@@ -762,6 +762,106 @@ export default function CheckoutPage() {
     });
   };
 
+  // Open Razorpay modal for an existing order (used for both initial and retry)
+  const openRazorpayForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
+    const loaded = await loadRazorpayScript();
+    if (!loaded) throw new Error("Failed to load payment gateway");
+
+    const rzpData = await callEdgeFunction("razorpay-order", {
+      store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
+    });
+
+    const handlePaymentSuccess = async (response: any) => {
+      try {
+        try {
+          await callEdgeFunction("razorpay-verify", {
+            ...response, order_id: order.id, store_id: store.id,
+          });
+        } catch (verifyErr) {
+          console.warn("Razorpay verify failed, trying status fallback:", verifyErr);
+          const statusData = await callEdgeFunction("razorpay-payment-status", {
+            razorpay_payment_id: response.razorpay_payment_id,
+            store_id: store.id, order_id: order.id,
+          });
+          if (statusData.status !== "captured" && statusData.status !== "authorized") {
+            throw new Error("Payment verification failed");
+          }
+        }
+        setPlacing(false);
+        setPaymentFailed(false);
+        setPendingOrder(null);
+        finalizeOrder(order.id, order.number, order.profit);
+      } catch (err: any) {
+        console.error("Payment verification error:", err);
+        setPlacing(false);
+        setPendingOrder(order);
+        setPaymentFailed(true);
+        toast.error(err?.message || "Payment verification failed. You can retry below.");
+      }
+    };
+
+    const options: any = {
+      key: rzpData.key_id,
+      amount: rzpData.amount,
+      currency: rzpData.currency,
+      name: store.name,
+      description: isPartialOrder ? `Advance for Order ${order.number || '#' + order.id.slice(0, 8)}` : `Order ${order.number || '#' + order.id.slice(0, 8)}`,
+      image: store.logo_url || undefined,
+      order_id: rzpData.razorpay_order_id,
+      handler: handlePaymentSuccess,
+      prefill: { name: fullName, email: email || undefined, contact: phone },
+      notes: { order_id: order.id, store_id: store.id },
+      theme: { color: "#6366f1" },
+      remember_customer: true,
+      modal: {
+        confirm_close: true,
+        ondismiss: async () => {
+          try {
+            await new Promise(r => setTimeout(r, 2000));
+            const statusData = await callEdgeFunction("razorpay-payment-status", {
+              razorpay_payment_id: "check_order", store_id: store.id, order_id: order.id,
+            });
+            if (statusData.status === "captured" || statusData.status === "authorized") {
+              setPlacing(false);
+              setPaymentFailed(false);
+              setPendingOrder(null);
+              finalizeOrder(order.id, order.number, order.profit);
+              return;
+            }
+          } catch {}
+          // Payment not completed — show retry
+          setPendingOrder(order);
+          setPaymentFailed(true);
+          setPlacing(false);
+        },
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", (resp: any) => {
+      console.error("Razorpay payment failed:", resp?.error);
+      setPendingOrder(order);
+      setPaymentFailed(true);
+      setPlacing(false);
+      toast.error(resp?.error?.description || "Payment failed. You can retry below.");
+    });
+    rzp.open();
+  };
+
+  // Retry payment for a pending order
+  const handleRetryPayment = async () => {
+    if (!pendingOrder) return;
+    setPlacing(true);
+    setPaymentFailed(false);
+    try {
+      await openRazorpayForOrder(pendingOrder);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to retry payment");
+      setPlacing(false);
+      setPaymentFailed(true);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error(t("Please enter your full name", "कृपया अपना पूरा नाम दर्ज करें")); return; }
     if (!phone.trim() || phone.trim().length < 10) { toast.error(t("Please enter a valid phone number", "कृपया एक वैध फ़ोन नंबर दर्ज करें")); return; }
@@ -771,92 +871,12 @@ export default function CheckoutPage() {
     if (!pincode.trim()) { toast.error(t("Please enter your pincode", "कृपया अपना पिनकोड दर्ज करें")); return; }
 
     setPlacing(true);
+    setPaymentFailed(false);
     try {
       const newOrder = await createOrder();
 
       if (paymentMethod === "razorpay" || isPartialOrder) {
-        const loaded = await loadRazorpayScript();
-        if (!loaded) throw new Error("Failed to load payment gateway");
-
-        const rzpData = await callEdgeFunction("razorpay-order", {
-          store_id: store.id, amount: chargeAmount, currency, order_id: newOrder.id,
-        });
-
-        const handlePaymentSuccess = async (response: any) => {
-          try {
-            // Verify signature on backend
-            try {
-              await callEdgeFunction("razorpay-verify", {
-                ...response, order_id: newOrder.id, store_id: store.id,
-              });
-            } catch (verifyErr) {
-              console.warn("Razorpay verify failed, trying status fallback:", verifyErr);
-              const statusData = await callEdgeFunction("razorpay-payment-status", {
-                razorpay_payment_id: response.razorpay_payment_id,
-                store_id: store.id, order_id: newOrder.id,
-              });
-              if (statusData.status !== "captured" && statusData.status !== "authorized") {
-                throw new Error("Payment verification failed");
-              }
-            }
-            setPlacing(false);
-            finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
-          } catch (err: any) {
-            console.error("Payment verification error:", err);
-            setPlacing(false);
-            toast.error(err?.message || "Payment verification failed. Please contact the store if amount was deducted.");
-          }
-        };
-
-        // WooCommerce-style Razorpay options — let Razorpay handle all payment methods natively
-        const options: any = {
-          key: rzpData.key_id,
-          amount: rzpData.amount,
-          currency: rzpData.currency,
-          name: store.name,
-          description: isPartialOrder ? `Advance for Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}` : `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
-          image: store.logo_url || undefined,
-          order_id: rzpData.razorpay_order_id,
-          handler: handlePaymentSuccess,
-          prefill: {
-            name: fullName,
-            email: email || undefined,
-            contact: phone,
-          },
-          notes: {
-            order_id: newOrder.id,
-            store_id: store.id,
-          },
-          theme: { color: "#6366f1" },
-          remember_customer: true,
-          modal: {
-            confirm_close: true,
-            ondismiss: async () => {
-              // Poll for payment status — payment may have completed before dismiss
-              try {
-                await new Promise(r => setTimeout(r, 2000));
-                const statusData = await callEdgeFunction("razorpay-payment-status", {
-                  razorpay_payment_id: "check_order", store_id: store.id, order_id: newOrder.id,
-                });
-                if (statusData.status === "captured" || statusData.status === "authorized") {
-                  setPlacing(false);
-                  finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
-                  return;
-                }
-              } catch {}
-              toast.error("Payment cancelled.");
-              setPlacing(false);
-            },
-          },
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.on("payment.failed", (resp: any) => {
-          console.error("Razorpay payment failed:", resp?.error);
-          toast.error(resp?.error?.description || "Payment failed. Please try again.");
-          setPlacing(false);
-        });
-        rzp.open();
+        await openRazorpayForOrder(newOrder);
         return;
       }
 
