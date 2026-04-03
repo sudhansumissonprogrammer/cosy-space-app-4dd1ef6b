@@ -260,6 +260,31 @@ export default function CheckoutPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch partial payment config for cart products
+  const cartProductIds = !isSingleMode ? cartItems.map((i) => i.productId) : [];
+  const { data: cartPartialPaymentData } = useQuery({
+    queryKey: ["cart-partial-payment", cartProductIds.join(",")],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, partial_payment_enabled, partial_payment_type, partial_payment_value")
+        .in("id", cartProductIds)
+        .eq("partial_payment_enabled", true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: cartProductIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+  const cartPartialPaymentMap = useMemo(() => {
+    if (!cartPartialPaymentData) return {};
+    const map: Record<string, { partial_payment_enabled: boolean; partial_payment_type: string; partial_payment_value: number | null }> = {};
+    for (const p of cartPartialPaymentData) {
+      map[p.id] = p;
+    }
+    return map;
+  }, [cartPartialPaymentData]);
+
   const availableMethods = paymentConfig?.payment_methods || ["cod"];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");

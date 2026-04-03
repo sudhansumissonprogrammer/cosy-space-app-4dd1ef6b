@@ -757,6 +757,20 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onDelete, 
 
       {/* ── Bottom Actions ── */}
       <div className="border-t px-4 py-3 space-y-2.5 bg-background" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+        {order.payment_type === "partial" && order.status !== "delivered" && Number(order.balance_due) > 0 && (
+          <Button
+            variant="outline"
+            className="w-full h-10 text-sm font-medium border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950/30"
+            onClick={() => {
+              (supabase as any).from("orders").update({ balance_due: 0, status: "delivered" }).eq("id", order.id).then(() => {
+                toast.success("Order marked as fully paid");
+                onStatusChange("delivered");
+              });
+            }}
+          >
+            ✅ Mark as Fully Paid (Collected {order.currency} {Number(order.balance_due).toFixed(0)})
+          </Button>
+        )}
         <div className="flex gap-2">
           <Select value={order.status} onValueChange={onStatusChange}>
             <SelectTrigger className="flex-1 h-11 text-sm font-medium">
