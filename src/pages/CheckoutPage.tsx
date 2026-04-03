@@ -75,6 +75,9 @@ export default function CheckoutPage() {
   const [expressMode, setExpressMode] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [partialPaymentMode, setPartialPaymentMode] = useState<"full" | "partial">("partial"); // default to partial
+  const [orderAdvancePaid, setOrderAdvancePaid] = useState(0);
+  const [orderBalanceDue, setOrderBalanceDue] = useState(0);
 
   // Form — pre-fill from localStorage for returning users
   // Theme-16 BuyNowPhoneModal stores checkout_phone & checkout_address
@@ -278,6 +281,9 @@ export default function CheckoutPage() {
         originalPrice: product.price,
         quantity: 1,
         image: product.image_url,
+        partialPaymentEnabled: (product as any).partial_payment_enabled ?? false,
+        partialPaymentType: (product as any).partial_payment_type || "percentage",
+        partialPaymentValue: (product as any).partial_payment_value ?? null,
       }]
     : cartItems.map((i) => ({
         productId: i.productId,
@@ -286,6 +292,9 @@ export default function CheckoutPage() {
         originalPrice: i.price,
         quantity: i.quantity,
         image: i.image || null,
+        partialPaymentEnabled: false,
+        partialPaymentType: "percentage" as const,
+        partialPaymentValue: null as number | null,
       }));
 
   const subtotal = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -313,6 +322,35 @@ export default function CheckoutPage() {
   }
 
   const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
+
+  // Partial payment calculation
+  const hasAnyPartialPayment = checkoutItems.some((i) => i.partialPaymentEnabled);
+  const partialAdvanceTotal = (() => {
+    if (!hasAnyPartialPayment) return total;
+    let advance = 0;
+    for (const item of checkoutItems) {
+      if (item.partialPaymentEnabled && item.partialPaymentValue) {
+        let itemAdvance: number;
+        if (item.partialPaymentType === "percentage") {
+          itemAdvance = Math.round(item.price * (item.partialPaymentValue / 100));
+        } else {
+          itemAdvance = Math.min(item.partialPaymentValue, item.price);
+        }
+        itemAdvance = Math.max(itemAdvance, 50); // min ₹50
+        advance += itemAdvance * item.quantity;
+      } else {
+        advance += item.price * item.quantity;
+      }
+    }
+    // Add tax + shipping proportionally, subtract coupon
+    const ratio = subtotal > 0 ? advance / subtotal : 1;
+    advance += (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge;
+    advance -= couponDiscount * ratio;
+    return Math.max(50, Math.round(advance));
+  })();
+  const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
+  const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasRazorpay;
+  const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
 
   // Coupon logic
   const applyCoupon = async () => {
@@ -457,9 +495,10 @@ export default function CheckoutPage() {
           city: city.trim(),
           state: state.trim(),
           pincode: pincode.trim(),
-          payment_method: paymentMethod,
+          payment_method: isPartialOrder ? "razorpay" : paymentMethod,
           notes: orderNotes,
           storefront_customer_id: customer?.id ?? null,
+          payment_type: isPartialOrder ? "partial" : "full",
         },
         items: checkoutItems.map((item) => ({
           productId: item.productId,
@@ -638,6 +677,10 @@ export default function CheckoutPage() {
   const finalizeOrder = (newOrderId: string, newOrderNumber: string | null, profit?: number | null) => {
     setOrderId(newOrderId);
     setOrderNumber(newOrderNumber);
+    if (isPartialOrder) {
+      setOrderAdvancePaid(chargeAmount);
+      setOrderBalanceDue(total - chargeAmount);
+    }
     setShowUpsell(true);
     setOrderPlaced(true);
     if (!isSingleMode) clearCart();
@@ -696,12 +739,12 @@ export default function CheckoutPage() {
     try {
       const newOrder = await createOrder();
 
-      if (paymentMethod === "razorpay") {
+      if (paymentMethod === "razorpay" || isPartialOrder) {
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Failed to load payment gateway");
 
         const rzpData = await callEdgeFunction("razorpay-order", {
-          store_id: store.id, amount: total, currency, order_id: newOrder.id,
+          store_id: store.id, amount: chargeAmount, currency, order_id: newOrder.id,
         });
 
         const handlePaymentSuccess = async (response: any) => {
@@ -736,7 +779,7 @@ export default function CheckoutPage() {
           amount: rzpData.amount,
           currency: rzpData.currency,
           name: store.name,
-          description: `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
+          description: isPartialOrder ? `Advance for Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}` : `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
           image: store.logo_url || undefined,
           order_id: rzpData.razorpay_order_id,
           handler: handlePaymentSuccess,
@@ -787,7 +830,7 @@ export default function CheckoutPage() {
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
-      if (paymentMethod !== "razorpay") setPlacing(false);
+      if (paymentMethod !== "razorpay" && !isPartialOrder) setPlacing(false);
     }
   };
 
@@ -821,6 +864,21 @@ export default function CheckoutPage() {
           <p className="text-sm text-foreground font-medium">✅ {t("Order confirmed!", "ऑर्डर कन्फर्म!")}</p>
           <p className="text-xs text-muted-foreground mt-1">{t("We'll send updates to", "हम अपडेट भेजेंगे")} <strong>{phone}</strong>{email ? ` ${t("and", "और")} ${email}` : ""}.</p>
         </div>
+        {orderAdvancePaid > 0 && orderBalanceDue > 0 && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3">
+            <p className="text-sm font-semibold text-foreground">💰 {t("Partial Payment", "आंशिक भुगतान")}</p>
+            <div className="mt-1.5 space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">{t("Advance Paid Online", "अग्रिम भुगतान")}</span>
+                <span className="font-semibold text-emerald-600">{currency} {orderAdvancePaid.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">{t("Balance on Delivery (COD)", "डिलीवरी पर शेष")}</span>
+                <span className="font-semibold text-foreground">{currency} {orderBalanceDue.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="mt-6 flex flex-col gap-2 items-center">
           <Link to={storefrontPath(store.slug, "account")} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("View My Orders", "मेरे ऑर्डर देखें")}</Link>
           <Link to={storefrontPath(store.slug)} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("Continue Shopping", "शॉपिंग जारी रखें")}</Link>
@@ -1004,7 +1062,63 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {hasRazorpay && (
+        {/* Partial Payment Option */}
+        {hasAnyPartialPayment && hasRazorpay && (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => { setPartialPaymentMode("partial"); setPaymentMethod("razorpay"); }}
+              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${partialPaymentMode === "partial" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+            >
+              <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${partialPaymentMode === "partial" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                {partialPaymentMode === "partial" && <Check className="h-3 w-3 text-primary-foreground" />}
+              </div>
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-foreground">{t("Pay Advance Only", "सिर्फ़ एडवांस दें")}</p>
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{t("Recommended", "अनुशंसित")}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t("Pay", "भुगतान")} {currency} {partialAdvanceTotal.toFixed(0)} {t("now", "अभी")} + {currency} {partialBalanceDue.toFixed(0)} {t("on delivery (COD)", "डिलीवरी पर (COD)")}
+                </p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setPartialPaymentMode("full"); setPaymentMethod("razorpay"); }}
+              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${partialPaymentMode === "full" && paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+            >
+              <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${partialPaymentMode === "full" && paymentMethod === "razorpay" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                {partialPaymentMode === "full" && paymentMethod === "razorpay" && <Check className="h-3 w-3 text-primary-foreground" />}
+              </div>
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">{t("Pay Full Amount Online", "पूरा ऑनलाइन भुगतान")}</p>
+                <p className="text-xs text-muted-foreground">{currency} {total.toFixed(2)} — {t("UPI, Cards, Net Banking", "UPI, कार्ड, नेट बैंकिंग")}</p>
+              </div>
+            </button>
+            {hasCod && (
+              <button
+                type="button"
+                onClick={() => { setPartialPaymentMode("full"); setPaymentMethod("cod"); }}
+                className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+              >
+                <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                  {paymentMethod === "cod" && <Check className="h-3 w-3 text-primary-foreground" />}
+                </div>
+                <Banknote className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
+                  <p className="text-xs text-muted-foreground">{t("Pay full amount when your order arrives", "ऑर्डर आने पर पूरा भुगतान")}</p>
+                </div>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Standard payment options (no partial payment products) */}
+        {!hasAnyPartialPayment && hasRazorpay && (
           <button
             type="button"
             onClick={() => { setPaymentMethod("razorpay"); }}
@@ -1021,8 +1135,8 @@ export default function CheckoutPage() {
           </button>
         )}
 
-        {/* COD */}
-        {hasCod && (
+        {/* COD (only when no partial payment products) */}
+        {!hasAnyPartialPayment && hasCod && (
           <button
             type="button"
             onClick={() => { setPaymentMethod("cod"); }}
@@ -1078,7 +1192,7 @@ export default function CheckoutPage() {
           disabled={placing}
         >
           {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`}
+          {isPartialOrder ? `${t("Pay Advance", "एडवांस दें")} ${currency} ${chargeAmount.toFixed(2)}` : paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`}
         </button>
       </div>
 
