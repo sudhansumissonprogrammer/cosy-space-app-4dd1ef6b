@@ -779,7 +779,7 @@ export default function CheckoutPage() {
           amount: rzpData.amount,
           currency: rzpData.currency,
           name: store.name,
-          description: `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
+          description: isPartialOrder ? `Advance for Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}` : `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
           image: store.logo_url || undefined,
           order_id: rzpData.razorpay_order_id,
           handler: handlePaymentSuccess,
