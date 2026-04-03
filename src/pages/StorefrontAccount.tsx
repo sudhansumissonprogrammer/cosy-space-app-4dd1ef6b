@@ -50,6 +50,7 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
     shipped: "bg-purple-100 text-purple-800",
     delivered: "bg-green-100 text-green-800",
     cancelled: "bg-red-100 text-red-800",
+    partially_paid: "bg-purple-100 text-purple-800",
   };
 
   const STATUSES = ["confirmed", "shipped", "delivered"];
