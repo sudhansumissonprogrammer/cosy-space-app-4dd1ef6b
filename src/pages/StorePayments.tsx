@@ -14,7 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import {
   Loader2, MessageCircle, Globe, CreditCard, Banknote,
-  ChevronDown, ExternalLink, ShieldCheck, Layers,
+  ChevronDown, ExternalLink, ShieldCheck, Layers, IndianRupee, Percent,
 } from "lucide-react";
 
 type OrderMode = "whatsapp" | "website" | "both";
