@@ -344,6 +344,18 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               <span>Total</span>
               <span className="tabular-nums">{currencySymbol}{Number(order.total).toFixed(2)}</span>
             </div>
+            {order.payment_type === "partial" && (
+              <>
+                <div className="flex justify-between text-[9px] mt-1">
+                  <span className="text-purple-700 dark:text-purple-400 font-semibold">Advance Paid</span>
+                  <span className="tabular-nums text-emerald-600 font-semibold">{currencySymbol}{Number(order.advance_paid || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[9px]">
+                  <span className="text-purple-700 dark:text-purple-400 font-semibold">Balance Due (COD)</span>
+                  <span className="tabular-nums font-semibold text-foreground">{currencySymbol}{Number(order.balance_due || 0).toFixed(2)}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
