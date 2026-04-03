@@ -697,10 +697,24 @@ export default function CheckoutPage() {
               const { error: verifyError } = await supabase.functions.invoke("razorpay-verify", {
                 body: { ...response, order_id: newOrder.id, store_id: store.id },
               });
-              if (verifyError) throw new Error("Verification failed");
+              if (verifyError) {
+                // Verification failed — try fallback status check
+                // Payment may have been captured even if signature verify had an issue
+                console.error("Razorpay verify error, trying status fallback:", verifyError);
+                const { data: statusData, error: statusErr } = await supabase.functions.invoke("razorpay-payment-status", {
+                  body: { razorpay_payment_id: response.razorpay_payment_id, store_id: store.id, order_id: newOrder.id },
+                });
+                if (statusErr || !statusData || (statusData.status !== "captured" && statusData.status !== "authorized")) {
+                  throw new Error("Payment verification failed");
+                }
+                // Fallback confirmed payment is captured/authorized
+              }
               setPlacing(false);
-               finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
-          } catch { setPlacing(false); toast.error("Payment verification failed."); }
+              finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
+          } catch (err: any) {
+            setPlacing(false);
+            toast.error(err?.message || "Payment verification failed. Please contact the store if amount was deducted.");
+          }
         };
 
         const options: any = {
@@ -710,7 +724,16 @@ export default function CheckoutPage() {
           handler: handlePaymentSuccess,
           prefill: { name: fullName, email, contact: phone },
           theme: { color: "#6366f1" },
-          modal: { ondismiss: () => { toast.error("Payment cancelled."); setPlacing(false); } },
+          modal: {
+            ondismiss: () => {
+              // When modal is dismissed, check if payment went through in background
+              supabase.functions.invoke("razorpay-payment-status", {
+                body: { razorpay_payment_id: "check_order", store_id: store.id, order_id: newOrder.id },
+              }).catch(() => {});
+              toast.error("Payment cancelled.");
+              setPlacing(false);
+            },
+          },
         };
 
         // When UPI is selected, show ONLY UPI payment option (no other tabs)
@@ -738,6 +761,11 @@ export default function CheckoutPage() {
         }
 
         const rzp = new window.Razorpay(options);
+        rzp.on("payment.failed", (resp: any) => {
+          console.error("Razorpay payment failed:", resp?.error);
+          toast.error(resp?.error?.description || "Payment failed. Please try again.");
+          setPlacing(false);
+        });
         rzp.open();
         return;
       }
