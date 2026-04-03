@@ -300,6 +300,11 @@ export default function CheckoutPage() {
     else if (hasRazorpay) setPaymentMethod("razorpay");
   }, [hasCod, hasRazorpay]);
 
+  // Preload Razorpay script eagerly so it's ready instantly when user clicks Pay
+  useEffect(() => {
+    if (hasRazorpay) loadRazorpayScript();
+  }, [hasRazorpay]);
+
   const currency = store.currency || "USD";
   const isHindi = store.theme === "theme-16";
   const t = (en: string, hi: string) => isHindi ? `${en} / ${hi}` : en;
