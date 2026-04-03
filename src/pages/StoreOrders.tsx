@@ -477,7 +477,14 @@ export default function StoreOrders() {
                         <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
                           {[order.street_address, order.city, order.state, order.pincode].filter(Boolean).join(", ")}
                         </TableCell>
-                        <TableCell className="text-right">{order.currency} {Number(order.total).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          <span>{order.currency} {Number(order.total).toFixed(2)}</span>
+                          {order.payment_type === "partial" && (
+                            <div className="text-[10px] text-purple-600 dark:text-purple-400 mt-0.5">
+                              Adv: {order.currency}{Number(order.advance_paid || 0).toFixed(0)} | Due: {order.currency}{Number(order.balance_due || 0).toFixed(0)}
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
                         <TableCell>
                           <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
