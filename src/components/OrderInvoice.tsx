@@ -81,11 +81,12 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     letter-spacing: 0.3px;
     border: 1px solid #000;
   }
-  .badge-pending { background: #fff3cd; color: #856404; border-color: #856404; }
-  .badge-confirmed { background: #d1ecf1; color: #0c5460; border-color: #0c5460; }
-  .badge-shipped { background: #cce5ff; color: #004085; border-color: #004085; }
-  .badge-delivered { background: #d4edda; color: #155724; border-color: #155724; }
-  .badge-cancelled { background: #f8d7da; color: #721c24; border-color: #721c24; }
+   .badge-pending { background: #fff3cd; color: #856404; border-color: #856404; }
+   .badge-confirmed { background: #d1ecf1; color: #0c5460; border-color: #0c5460; }
+   .badge-shipped { background: #cce5ff; color: #004085; border-color: #004085; }
+   .badge-delivered { background: #d4edda; color: #155724; border-color: #155724; }
+   .badge-cancelled { background: #f8d7da; color: #721c24; border-color: #721c24; }
+   .badge-partially_paid { background: #e8daef; color: #6c3483; border-color: #6c3483; }
 
   /* Divider */
   .divider { border: none; border-top: 1px dashed #aaa; margin: 2.5mm 0; }
