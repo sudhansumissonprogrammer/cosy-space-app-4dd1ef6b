@@ -75,9 +75,15 @@ export default function CheckoutPage() {
   const [expressMode, setExpressMode] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [partialPaymentMode, setPartialPaymentMode] = useState<"full" | "partial">("partial"); // default to partial
+  const [partialPaymentMode, setPartialPaymentMode] = useState<"full" | "partial">("partial");
   const [orderAdvancePaid, setOrderAdvancePaid] = useState(0);
   const [orderBalanceDue, setOrderBalanceDue] = useState(0);
+
+  // Idempotency token to prevent duplicate orders
+  const [checkoutToken] = useState(() => crypto.randomUUID());
+  // Payment retry state: store created order for retry
+  const [pendingOrder, setPendingOrder] = useState<{ id: string; number: string | null; profit: number | null } | null>(null);
+  const [paymentFailed, setPaymentFailed] = useState(false);
 
   // Form — pre-fill from localStorage for returning users
   // Theme-16 BuyNowPhoneModal stores checkout_phone & checkout_address
