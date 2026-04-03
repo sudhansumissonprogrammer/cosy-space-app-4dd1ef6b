@@ -495,9 +495,10 @@ export default function CheckoutPage() {
           city: city.trim(),
           state: state.trim(),
           pincode: pincode.trim(),
-          payment_method: paymentMethod,
+          payment_method: isPartialOrder ? "razorpay" : paymentMethod,
           notes: orderNotes,
           storefront_customer_id: customer?.id ?? null,
+          payment_type: isPartialOrder ? "partial" : "full",
         },
         items: checkoutItems.map((item) => ({
           productId: item.productId,
