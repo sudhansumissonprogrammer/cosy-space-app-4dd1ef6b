@@ -121,13 +121,46 @@ Deno.serve(async (req) => {
       if (customer?.id) storefrontCustomerId = customer.id;
     }
 
+    // Server-side partial payment calculation
+    const isPartial = order.payment_type === "partial";
+    let advancePaid = 0;
+    let balanceDue = 0;
+
+    if (isPartial) {
+      const productIds = items.map((i) => i.productId).filter(Boolean);
+      const { data: partialProducts } = await supabase
+        .from("products")
+        .select("id, price, sale_price, partial_payment_enabled, partial_payment_type, partial_payment_value")
+        .in("id", productIds);
+
+      let totalAdvance = 0;
+      for (const item of items) {
+        const prod = partialProducts?.find((p: any) => p.id === item.productId);
+        if (prod?.partial_payment_enabled && prod?.partial_payment_value) {
+          let itemAdv: number;
+          const itemPrice = Number(item.price);
+          if (prod.partial_payment_type === "percentage") {
+            itemAdv = Math.round(itemPrice * (Number(prod.partial_payment_value) / 100));
+          } else {
+            itemAdv = Math.min(Number(prod.partial_payment_value), itemPrice);
+          }
+          itemAdv = Math.max(itemAdv, 50);
+          totalAdvance += itemAdv * Number(item.quantity);
+        } else {
+          totalAdvance += Number(item.price) * Number(item.quantity);
+        }
+      }
+      advancePaid = Math.max(50, Math.round(totalAdvance));
+      balanceDue = Math.max(0, Number(order.total) - advancePaid);
+    }
+
     const { data: createdOrder, error: orderErr } = await supabase
       .from("orders")
       .insert({
         store_id,
         total: Number(order.total),
         currency: order.currency,
-        status: order.status,
+        status: isPartial ? "partially_paid" : order.status,
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
         street_address: order.street_address,
@@ -137,6 +170,9 @@ Deno.serve(async (req) => {
         payment_method: order.payment_method,
         notes: order.notes,
         storefront_customer_id: storefrontCustomerId,
+        payment_type: isPartial ? "partial" : "full",
+        advance_paid: advancePaid,
+        balance_due: balanceDue,
       })
       .select("id")
       .single();

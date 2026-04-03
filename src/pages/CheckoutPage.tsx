@@ -1192,7 +1192,7 @@ export default function CheckoutPage() {
           disabled={placing}
         >
           {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`}
+          {isPartialOrder ? `${t("Pay Advance", "एडवांस दें")} ${currency} ${chargeAmount.toFixed(2)}` : paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`}
         </button>
       </div>
 
