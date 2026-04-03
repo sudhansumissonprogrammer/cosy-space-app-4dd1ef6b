@@ -194,6 +194,7 @@ Deno.serve(async (req) => {
         payment_type: isPartial ? "partial" : "full",
         advance_paid: advancePaid,
         balance_due: balanceDue,
+        checkout_token: checkout_token || null,
       })
       .select("id")
       .single();
