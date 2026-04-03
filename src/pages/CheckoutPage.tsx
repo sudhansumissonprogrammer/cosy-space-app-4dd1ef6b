@@ -830,7 +830,7 @@ export default function CheckoutPage() {
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
     } finally {
-      if (paymentMethod !== "razorpay") setPlacing(false);
+      if (paymentMethod !== "razorpay" && !isPartialOrder) setPlacing(false);
     }
   };
 
