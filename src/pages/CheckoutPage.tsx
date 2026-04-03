@@ -677,6 +677,10 @@ export default function CheckoutPage() {
   const finalizeOrder = (newOrderId: string, newOrderNumber: string | null, profit?: number | null) => {
     setOrderId(newOrderId);
     setOrderNumber(newOrderNumber);
+    if (isPartialOrder) {
+      setOrderAdvancePaid(chargeAmount);
+      setOrderBalanceDue(total - chargeAmount);
+    }
     setShowUpsell(true);
     setOrderPlaced(true);
     if (!isSingleMode) clearCart();
