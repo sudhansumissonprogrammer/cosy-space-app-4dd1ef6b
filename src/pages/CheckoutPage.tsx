@@ -1008,118 +1008,20 @@ export default function CheckoutPage() {
         </div>
 
         {hasRazorpay && (
-          <>
-            {/* UPI App Grid */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">UPI</p>
-              <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                {/* Google Pay */}
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("upi"); setUpiApp("google_pay"); }}
-                  className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 p-3 sm:p-4 transition-all ${paymentMethod === "razorpay" && upiApp === "google_pay" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/30 hover:shadow-sm"}`}
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted/60">
-                    <img src="/icons/gpay.svg" alt="Google Pay" className="h-7 w-7 object-contain" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-foreground">GPay</span>
-                </button>
-
-                {/* PhonePe */}
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("upi"); setUpiApp("phonepe"); }}
-                  className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 p-3 sm:p-4 transition-all ${paymentMethod === "razorpay" && upiApp === "phonepe" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/30 hover:shadow-sm"}`}
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted/60">
-                    <img src="/icons/phonepe.svg" alt="PhonePe" className="h-7 w-7 object-contain" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-foreground">PhonePe</span>
-                </button>
-
-                {/* Paytm */}
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("upi"); setUpiApp("paytm"); }}
-                  className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 p-3 sm:p-4 transition-all ${paymentMethod === "razorpay" && upiApp === "paytm" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/30 hover:shadow-sm"}`}
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted/60">
-                    <img src="/icons/paytm.svg" alt="Paytm" className="h-7 w-7 object-contain" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-foreground">Paytm</span>
-                </button>
-
-                {/* Others */}
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("upi"); setUpiApp("other"); }}
-                  className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 p-3 sm:p-4 transition-all ${paymentMethod === "razorpay" && upiApp === "other" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/30 hover:shadow-sm"}`}
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted/60">
-                    <Smartphone className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-foreground">Others</span>
-                </button>
-              </div>
+          <button
+            type="button"
+            onClick={() => { setPaymentMethod("razorpay"); }}
+            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+          >
+            <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+              {paymentMethod === "razorpay" && <Check className="h-3 w-3 text-primary-foreground" />}
             </div>
-
-            {/* More Payment Options — Collapsible */}
-            <Collapsible open={morePaymentOpen} onOpenChange={setMorePaymentOpen}>
-              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <span className="font-medium">{t("More payment options", "और भुगतान विकल्प")}</span>
-                <ChevronRight className={`h-4 w-4 transition-transform ${morePaymentOpen ? "rotate-90" : ""}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2 pt-1">
-                {/* Cards */}
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("card"); setUpiApp(null); }}
-                  className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition-all ${paymentMethod === "razorpay" && razorpayMethod === "card" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-                >
-                  <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" && razorpayMethod === "card" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-                    {paymentMethod === "razorpay" && razorpayMethod === "card" && <Check className="h-3 w-3 text-primary-foreground" />}
-                  </div>
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{t("Credit / Debit Card", "क्रेडिट / डेबिट कार्ड")}</p>
-                    <p className="text-[11px] text-muted-foreground">Visa, Mastercard, RuPay</p>
-                  </div>
-                </button>
-
-                {/* Net Banking */}
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("netbanking"); setUpiApp(null); }}
-                  className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition-all ${paymentMethod === "razorpay" && razorpayMethod === "netbanking" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-                >
-                  <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" && razorpayMethod === "netbanking" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-                    {paymentMethod === "razorpay" && razorpayMethod === "netbanking" && <Check className="h-3 w-3 text-primary-foreground" />}
-                  </div>
-                  <Wallet className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{t("Net Banking", "नेट बैंकिंग")}</p>
-                    <p className="text-[11px] text-muted-foreground">{t("All major banks", "सभी प्रमुख बैंक")}</p>
-                  </div>
-                </button>
-
-                {/* Wallets */}
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod("razorpay"); setRazorpayMethod("wallet"); setUpiApp(null); }}
-                  className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition-all ${paymentMethod === "razorpay" && razorpayMethod === "wallet" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-                >
-                  <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" && razorpayMethod === "wallet" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-                    {paymentMethod === "razorpay" && razorpayMethod === "wallet" && <Check className="h-3 w-3 text-primary-foreground" />}
-                  </div>
-                  <Smartphone className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{t("Wallets", "वॉलेट")}</p>
-                    <p className="text-[11px] text-muted-foreground">Paytm, Mobikwik, Freecharge</p>
-                  </div>
-                </button>
-              </CollapsibleContent>
-            </Collapsible>
-          </>
+            <CreditCard className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium text-foreground">{t("Pay Online", "ऑनलाइन भुगतान")}</p>
+              <p className="text-xs text-muted-foreground">{t("UPI, Cards, Net Banking, Wallets", "UPI, कार्ड, नेट बैंकिंग, वॉलेट")}</p>
+            </div>
+          </button>
         )}
 
         {/* COD */}
