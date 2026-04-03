@@ -257,6 +257,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       setIsActive(existingProduct.is_active);
       setIsBestSelling((existingProduct as any).is_best_selling ?? false);
       if (existingProduct.image_url) setImagePreview(existingProduct.image_url);
+      // Partial payment
+      setPartialPaymentEnabled((existingProduct as any).partial_payment_enabled ?? false);
+      setPartialPaymentType((existingProduct as any).partial_payment_type || "percentage");
+      setPartialPaymentValue((existingProduct as any).partial_payment_value ? String((existingProduct as any).partial_payment_value) : "");
     }
   }, [existingProduct]);
 
