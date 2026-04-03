@@ -695,6 +695,19 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onDelete, 
             <span className="text-sm font-semibold text-foreground">Total</span>
             <span className="text-lg font-bold text-foreground">{order.currency} {Number(order.total).toFixed(0)}</span>
           </div>
+          {order.payment_type === "partial" && (
+            <div className="mt-2 rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/30 p-2.5 space-y-1">
+              <p className="text-xs font-semibold text-purple-700 dark:text-purple-400">💰 Partial Payment</p>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Advance Paid</span>
+                <span className="font-semibold text-emerald-600">{order.currency} {Number(order.advance_paid || 0).toFixed(0)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Balance Due (COD)</span>
+                <span className="font-semibold text-foreground">{order.currency} {Number(order.balance_due || 0).toFixed(0)}</span>
+              </div>
+            </div>
+          )}
         </section>
 
         <Separator />
