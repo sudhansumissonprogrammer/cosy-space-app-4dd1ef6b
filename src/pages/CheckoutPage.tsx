@@ -75,9 +75,15 @@ export default function CheckoutPage() {
   const [expressMode, setExpressMode] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [partialPaymentMode, setPartialPaymentMode] = useState<"full" | "partial">("partial"); // default to partial
+  const [partialPaymentMode, setPartialPaymentMode] = useState<"full" | "partial">("partial");
   const [orderAdvancePaid, setOrderAdvancePaid] = useState(0);
   const [orderBalanceDue, setOrderBalanceDue] = useState(0);
+
+  // Idempotency token to prevent duplicate orders
+  const [checkoutToken] = useState(() => crypto.randomUUID());
+  // Payment retry state: store created order for retry
+  const [pendingOrder, setPendingOrder] = useState<{ id: string; number: string | null; profit: number | null } | null>(null);
+  const [paymentFailed, setPaymentFailed] = useState(false);
 
   // Form — pre-fill from localStorage for returning users
   // Theme-16 BuyNowPhoneModal stores checkout_phone & checkout_address
@@ -513,6 +519,7 @@ export default function CheckoutPage() {
     const { data, error } = await supabase.functions.invoke("place-order", {
       body: {
         store_id: store.id,
+        checkout_token: checkoutToken,
         order: {
           total,
           currency,
@@ -755,6 +762,106 @@ export default function CheckoutPage() {
     });
   };
 
+  // Open Razorpay modal for an existing order (used for both initial and retry)
+  const openRazorpayForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
+    const loaded = await loadRazorpayScript();
+    if (!loaded) throw new Error("Failed to load payment gateway");
+
+    const rzpData = await callEdgeFunction("razorpay-order", {
+      store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
+    });
+
+    const handlePaymentSuccess = async (response: any) => {
+      try {
+        try {
+          await callEdgeFunction("razorpay-verify", {
+            ...response, order_id: order.id, store_id: store.id,
+          });
+        } catch (verifyErr) {
+          console.warn("Razorpay verify failed, trying status fallback:", verifyErr);
+          const statusData = await callEdgeFunction("razorpay-payment-status", {
+            razorpay_payment_id: response.razorpay_payment_id,
+            store_id: store.id, order_id: order.id,
+          });
+          if (statusData.status !== "captured" && statusData.status !== "authorized") {
+            throw new Error("Payment verification failed");
+          }
+        }
+        setPlacing(false);
+        setPaymentFailed(false);
+        setPendingOrder(null);
+        finalizeOrder(order.id, order.number, order.profit);
+      } catch (err: any) {
+        console.error("Payment verification error:", err);
+        setPlacing(false);
+        setPendingOrder(order);
+        setPaymentFailed(true);
+        toast.error(err?.message || "Payment verification failed. You can retry below.");
+      }
+    };
+
+    const options: any = {
+      key: rzpData.key_id,
+      amount: rzpData.amount,
+      currency: rzpData.currency,
+      name: store.name,
+      description: isPartialOrder ? `Advance for Order ${order.number || '#' + order.id.slice(0, 8)}` : `Order ${order.number || '#' + order.id.slice(0, 8)}`,
+      image: store.logo_url || undefined,
+      order_id: rzpData.razorpay_order_id,
+      handler: handlePaymentSuccess,
+      prefill: { name: fullName, email: email || undefined, contact: phone },
+      notes: { order_id: order.id, store_id: store.id },
+      theme: { color: "#6366f1" },
+      remember_customer: true,
+      modal: {
+        confirm_close: true,
+        ondismiss: async () => {
+          try {
+            await new Promise(r => setTimeout(r, 2000));
+            const statusData = await callEdgeFunction("razorpay-payment-status", {
+              razorpay_payment_id: "check_order", store_id: store.id, order_id: order.id,
+            });
+            if (statusData.status === "captured" || statusData.status === "authorized") {
+              setPlacing(false);
+              setPaymentFailed(false);
+              setPendingOrder(null);
+              finalizeOrder(order.id, order.number, order.profit);
+              return;
+            }
+          } catch {}
+          // Payment not completed — show retry
+          setPendingOrder(order);
+          setPaymentFailed(true);
+          setPlacing(false);
+        },
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", (resp: any) => {
+      console.error("Razorpay payment failed:", resp?.error);
+      setPendingOrder(order);
+      setPaymentFailed(true);
+      setPlacing(false);
+      toast.error(resp?.error?.description || "Payment failed. You can retry below.");
+    });
+    rzp.open();
+  };
+
+  // Retry payment for a pending order
+  const handleRetryPayment = async () => {
+    if (!pendingOrder) return;
+    setPlacing(true);
+    setPaymentFailed(false);
+    try {
+      await openRazorpayForOrder(pendingOrder);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to retry payment");
+      setPlacing(false);
+      setPaymentFailed(true);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error(t("Please enter your full name", "कृपया अपना पूरा नाम दर्ज करें")); return; }
     if (!phone.trim() || phone.trim().length < 10) { toast.error(t("Please enter a valid phone number", "कृपया एक वैध फ़ोन नंबर दर्ज करें")); return; }
@@ -764,92 +871,12 @@ export default function CheckoutPage() {
     if (!pincode.trim()) { toast.error(t("Please enter your pincode", "कृपया अपना पिनकोड दर्ज करें")); return; }
 
     setPlacing(true);
+    setPaymentFailed(false);
     try {
       const newOrder = await createOrder();
 
       if (paymentMethod === "razorpay" || isPartialOrder) {
-        const loaded = await loadRazorpayScript();
-        if (!loaded) throw new Error("Failed to load payment gateway");
-
-        const rzpData = await callEdgeFunction("razorpay-order", {
-          store_id: store.id, amount: chargeAmount, currency, order_id: newOrder.id,
-        });
-
-        const handlePaymentSuccess = async (response: any) => {
-          try {
-            // Verify signature on backend
-            try {
-              await callEdgeFunction("razorpay-verify", {
-                ...response, order_id: newOrder.id, store_id: store.id,
-              });
-            } catch (verifyErr) {
-              console.warn("Razorpay verify failed, trying status fallback:", verifyErr);
-              const statusData = await callEdgeFunction("razorpay-payment-status", {
-                razorpay_payment_id: response.razorpay_payment_id,
-                store_id: store.id, order_id: newOrder.id,
-              });
-              if (statusData.status !== "captured" && statusData.status !== "authorized") {
-                throw new Error("Payment verification failed");
-              }
-            }
-            setPlacing(false);
-            finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
-          } catch (err: any) {
-            console.error("Payment verification error:", err);
-            setPlacing(false);
-            toast.error(err?.message || "Payment verification failed. Please contact the store if amount was deducted.");
-          }
-        };
-
-        // WooCommerce-style Razorpay options — let Razorpay handle all payment methods natively
-        const options: any = {
-          key: rzpData.key_id,
-          amount: rzpData.amount,
-          currency: rzpData.currency,
-          name: store.name,
-          description: isPartialOrder ? `Advance for Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}` : `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
-          image: store.logo_url || undefined,
-          order_id: rzpData.razorpay_order_id,
-          handler: handlePaymentSuccess,
-          prefill: {
-            name: fullName,
-            email: email || undefined,
-            contact: phone,
-          },
-          notes: {
-            order_id: newOrder.id,
-            store_id: store.id,
-          },
-          theme: { color: "#6366f1" },
-          remember_customer: true,
-          modal: {
-            confirm_close: true,
-            ondismiss: async () => {
-              // Poll for payment status — payment may have completed before dismiss
-              try {
-                await new Promise(r => setTimeout(r, 2000));
-                const statusData = await callEdgeFunction("razorpay-payment-status", {
-                  razorpay_payment_id: "check_order", store_id: store.id, order_id: newOrder.id,
-                });
-                if (statusData.status === "captured" || statusData.status === "authorized") {
-                  setPlacing(false);
-                  finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
-                  return;
-                }
-              } catch {}
-              toast.error("Payment cancelled.");
-              setPlacing(false);
-            },
-          },
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.on("payment.failed", (resp: any) => {
-          console.error("Razorpay payment failed:", resp?.error);
-          toast.error(resp?.error?.description || "Payment failed. Please try again.");
-          setPlacing(false);
-        });
-        rzp.open();
+        await openRazorpayForOrder(newOrder);
         return;
       }
 
@@ -1213,11 +1240,27 @@ export default function CheckoutPage() {
           <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
           <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
         </div>
+        {/* Payment retry banner */}
+        {paymentFailed && pendingOrder && (
+          <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-center">
+            <p className="text-sm font-semibold text-destructive mb-1">{t("Payment failed or cancelled", "भुगतान विफल या रद्द")}</p>
+            <p className="text-xs text-muted-foreground mb-2">{t("Your order is saved. No amount was deducted. Retry to complete payment.", "आपका ऑर्डर सेव है। कोई राशि नहीं काटी गई। भुगतान पूरा करने के लिए पुनः प्रयास करें।")}</p>
+            <button
+              className="flex h-10 w-full items-center justify-center gap-2 text-sm font-bold btn-gold disabled:opacity-50"
+              style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+              onClick={handleRetryPayment}
+              disabled={placing}
+            >
+              {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("Retry Payment", "भुगतान पुनः प्रयास करें")} · {currency} {chargeAmount.toFixed(2)}
+            </button>
+          </div>
+        )}
         <button
           className="flex h-12 w-full items-center justify-center gap-2 text-sm font-bold btn-gold disabled:opacity-50"
           style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
           onClick={handlePlaceOrder}
-          disabled={placing}
+          disabled={placing || paymentFailed}
         >
           {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isPartialOrder ? `${t("Pay Advance", "एडवांस दें")} ${currency} ${chargeAmount.toFixed(2)}` : paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`}

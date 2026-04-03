@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
       lead,
       coupon_id,
       abandoned_cart_id,
+      checkout_token,
     }: {
       store_id: string;
       order: {
@@ -82,6 +83,7 @@ Deno.serve(async (req) => {
       };
       coupon_id?: string | null;
       abandoned_cart_id?: string | null;
+      checkout_token?: string | null;
     } = await req.json();
 
     if (!store_id || !order || !Array.isArray(items) || items.length === 0) {
@@ -107,6 +109,25 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Idempotency: if checkout_token already exists, return the existing order
+    if (checkout_token) {
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("id, order_number")
+        .eq("store_id", store_id)
+        .eq("checkout_token", checkout_token)
+        .maybeSingle();
+
+      if (existingOrder) {
+        const orderNumber = existingOrder.order_number
+          ? `#${1000 + existingOrder.order_number}`
+          : `#${existingOrder.id.slice(0, 8).toUpperCase()}`;
+        return new Response(JSON.stringify({ success: true, order_id: existingOrder.id, order_number: orderNumber, profit: null }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     let storefrontCustomerId: string | null = null;
@@ -173,6 +194,7 @@ Deno.serve(async (req) => {
         payment_type: isPartial ? "partial" : "full",
         advance_paid: advancePaid,
         balance_due: balanceDue,
+        checkout_token: checkout_token || null,
       })
       .select("id")
       .single();

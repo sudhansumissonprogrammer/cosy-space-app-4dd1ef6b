@@ -618,6 +618,7 @@ export type Database = {
         Row: {
           advance_paid: number
           balance_due: number
+          checkout_token: string | null
           city: string | null
           created_at: string
           currency: string
@@ -643,6 +644,7 @@ export type Database = {
         Insert: {
           advance_paid?: number
           balance_due?: number
+          checkout_token?: string | null
           city?: string | null
           created_at?: string
           currency?: string
@@ -668,6 +670,7 @@ export type Database = {
         Update: {
           advance_paid?: number
           balance_due?: number
+          checkout_token?: string | null
           city?: string | null
           created_at?: string
           currency?: string
