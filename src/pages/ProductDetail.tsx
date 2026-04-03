@@ -552,8 +552,31 @@ export default function ProductDetail() {
               <p className="mt-1 text-xs font-semibold text-emerald-600">
                 You save {currency} {(product.price - product.sale_price!).toFixed(2)} on this order
               </p>
-            )}
+           )}
           </div>
+
+          {/* Partial Payment Badge */}
+          {(product as any).partial_payment_enabled && (product as any).partial_payment_value && (
+            (() => {
+              const ppType = (product as any).partial_payment_type;
+              const ppValue = Number((product as any).partial_payment_value);
+              const advance = ppType === "percentage"
+                ? Math.max(50, Math.round(variantPrice * (ppValue / 100)))
+                : Math.max(50, Math.min(ppValue, variantPrice));
+              const balance = Math.max(0, variantPrice - advance);
+              return balance > 0 ? (
+                <div className="mt-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-3 flex items-center gap-3">
+                  <CreditCard className="h-5 w-5 text-primary shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-foreground">
+                      Pay {currency} {advance.toFixed(0)} now, {currency} {balance.toFixed(0)} on delivery
+                    </p>
+                    <p className="text-xs text-muted-foreground">Book with small advance • Pay rest via COD</p>
+                  </div>
+                </div>
+              ) : null;
+            })()
+          )}
 
           {/* Live viewers */}
           <div className="mt-3 flex items-center gap-2">

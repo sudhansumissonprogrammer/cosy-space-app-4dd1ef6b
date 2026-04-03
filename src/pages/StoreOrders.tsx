@@ -477,7 +477,14 @@ export default function StoreOrders() {
                         <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
                           {[order.street_address, order.city, order.state, order.pincode].filter(Boolean).join(", ")}
                         </TableCell>
-                        <TableCell className="text-right">{order.currency} {Number(order.total).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          <span>{order.currency} {Number(order.total).toFixed(2)}</span>
+                          {order.payment_type === "partial" && (
+                            <div className="text-[10px] text-purple-600 dark:text-purple-400 mt-0.5">
+                              Adv: {order.currency}{Number(order.advance_paid || 0).toFixed(0)} | Due: {order.currency}{Number(order.balance_due || 0).toFixed(0)}
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
                         <TableCell>
                           <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
@@ -750,6 +757,20 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onDelete, 
 
       {/* ── Bottom Actions ── */}
       <div className="border-t px-4 py-3 space-y-2.5 bg-background" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+        {order.payment_type === "partial" && order.status !== "delivered" && Number(order.balance_due) > 0 && (
+          <Button
+            variant="outline"
+            className="w-full h-10 text-sm font-medium border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950/30"
+            onClick={() => {
+              (supabase as any).from("orders").update({ balance_due: 0, status: "delivered" }).eq("id", order.id).then(() => {
+                toast.success("Order marked as fully paid");
+                onStatusChange("delivered");
+              });
+            }}
+          >
+            ✅ Mark as Fully Paid (Collected {order.currency} {Number(order.balance_due).toFixed(0)})
+          </Button>
+        )}
         <div className="flex gap-2">
           <Select value={order.status} onValueChange={onStatusChange}>
             <SelectTrigger className="flex-1 h-11 text-sm font-medium">
