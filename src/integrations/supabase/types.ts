@@ -616,6 +616,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          advance_paid: number
+          balance_due: number
           city: string | null
           created_at: string
           currency: string
@@ -626,6 +628,7 @@ export type Database = {
           notes: string | null
           order_number: number
           payment_method: string
+          payment_type: string
           pincode: string | null
           state: string | null
           status: string
@@ -638,6 +641,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          advance_paid?: number
+          balance_due?: number
           city?: string | null
           created_at?: string
           currency?: string
@@ -648,6 +653,7 @@ export type Database = {
           notes?: string | null
           order_number?: number
           payment_method?: string
+          payment_type?: string
           pincode?: string | null
           state?: string | null
           status?: string
@@ -660,6 +666,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          advance_paid?: number
+          balance_due?: number
           city?: string | null
           created_at?: string
           currency?: string
@@ -670,6 +678,7 @@ export type Database = {
           notes?: string | null
           order_number?: number
           payment_method?: string
+          payment_type?: string
           pincode?: string | null
           state?: string | null
           status?: string
@@ -961,6 +970,9 @@ export type Database = {
           is_active: boolean
           is_best_selling: boolean
           name: string
+          partial_payment_enabled: boolean
+          partial_payment_type: string
+          partial_payment_value: number | null
           price: number
           sale_price: number | null
           sku: string | null
@@ -981,6 +993,9 @@ export type Database = {
           is_active?: boolean
           is_best_selling?: boolean
           name: string
+          partial_payment_enabled?: boolean
+          partial_payment_type?: string
+          partial_payment_value?: number | null
           price?: number
           sale_price?: number | null
           sku?: string | null
@@ -1001,6 +1016,9 @@ export type Database = {
           is_active?: boolean
           is_best_selling?: boolean
           name?: string
+          partial_payment_enabled?: boolean
+          partial_payment_type?: string
+          partial_payment_value?: number | null
           price?: number
           sale_price?: number | null
           sku?: string | null
