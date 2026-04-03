@@ -709,13 +709,12 @@ export default function CheckoutPage() {
 
         const handlePaymentSuccess = async (response: any) => {
           try {
-            // Try signature verification first
+            // Verify signature on backend
             try {
               await callEdgeFunction("razorpay-verify", {
                 ...response, order_id: newOrder.id, store_id: store.id,
               });
             } catch (verifyErr) {
-              // Fallback: check payment status directly from Razorpay API
               console.warn("Razorpay verify failed, trying status fallback:", verifyErr);
               const statusData = await callEdgeFunction("razorpay-payment-status", {
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -734,18 +733,32 @@ export default function CheckoutPage() {
           }
         };
 
+        // WooCommerce-style Razorpay options — let Razorpay handle all payment methods natively
         const options: any = {
-          key: rzpData.key_id, amount: rzpData.amount, currency: rzpData.currency,
-          name: store.name, description: `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
+          key: rzpData.key_id,
+          amount: rzpData.amount,
+          currency: rzpData.currency,
+          name: store.name,
+          description: `Order ${newOrder.number || '#' + newOrder.id.slice(0, 8)}`,
+          image: store.logo_url || undefined,
           order_id: rzpData.razorpay_order_id,
           handler: handlePaymentSuccess,
-          prefill: { name: fullName, email, contact: phone },
+          prefill: {
+            name: fullName,
+            email: email || undefined,
+            contact: phone,
+          },
+          notes: {
+            order_id: newOrder.id,
+            store_id: store.id,
+          },
           theme: { color: "#6366f1" },
+          remember_customer: true,
           modal: {
+            confirm_close: true,
             ondismiss: async () => {
-              // Poll for payment status in case payment completed but modal was dismissed
+              // Poll for payment status — payment may have completed before dismiss
               try {
-                // Small delay to let Razorpay process
                 await new Promise(r => setTimeout(r, 2000));
                 const statusData = await callEdgeFunction("razorpay-payment-status", {
                   razorpay_payment_id: "check_order", store_id: store.id, order_id: newOrder.id,
@@ -761,30 +774,6 @@ export default function CheckoutPage() {
             },
           },
         };
-
-        // When UPI is selected, show ONLY UPI payment option (no other tabs)
-        if (razorpayMethod === "upi") {
-          options.prefill.method = "upi";
-          options.config = {
-            display: {
-              blocks: {
-                utib: { name: "Pay using UPI", instruments: [{ method: "upi" }] }
-              },
-              sequence: ["block.utib"],
-              preferences: { show_default_blocks: false },
-            },
-          };
-        } else {
-          options.config = {
-            display: {
-              blocks: {
-                highlighted: { instruments: [{ method: razorpayMethod }] }
-              },
-              sequence: ["block.highlighted", "block.other"],
-              preferences: { show_default_blocks: true },
-            },
-          };
-        }
 
         const rzp = new window.Razorpay(options);
         rzp.on("payment.failed", (resp: any) => {
