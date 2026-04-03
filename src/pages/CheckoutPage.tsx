@@ -735,12 +735,12 @@ export default function CheckoutPage() {
     try {
       const newOrder = await createOrder();
 
-      if (paymentMethod === "razorpay") {
+      if (paymentMethod === "razorpay" || isPartialOrder) {
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Failed to load payment gateway");
 
         const rzpData = await callEdgeFunction("razorpay-order", {
-          store_id: store.id, amount: total, currency, order_id: newOrder.id,
+          store_id: store.id, amount: chargeAmount, currency, order_id: newOrder.id,
         });
 
         const handlePaymentSuccess = async (response: any) => {
