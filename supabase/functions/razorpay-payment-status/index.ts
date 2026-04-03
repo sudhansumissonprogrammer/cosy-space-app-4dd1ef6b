@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   try {
     const { razorpay_payment_id, store_id, order_id } = await req.json();
 
-    if (!razorpay_payment_id || !store_id || !order_id) {
+    if (!store_id || !order_id) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -41,6 +41,26 @@ Deno.serve(async (req) => {
     }
 
     const authHeader = "Basic " + btoa(`${config.razorpay_key_id}:${config.razorpay_key_secret}`);
+
+    // If no real payment_id, check the order status in our DB
+    if (!razorpay_payment_id || razorpay_payment_id === "check_order") {
+      const { data: order } = await supabase
+        .from("orders")
+        .select("status, notes")
+        .eq("id", order_id)
+        .single();
+
+      if (order?.status === "confirmed") {
+        return new Response(
+          JSON.stringify({ status: "captured", payment_id: order.notes }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      return new Response(
+        JSON.stringify({ status: "pending" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Fetch payment status from Razorpay
     const payRes = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {

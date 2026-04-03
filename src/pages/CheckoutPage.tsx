@@ -38,6 +38,24 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
+const SUPABASE_FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+async function callEdgeFunction(fnName: string, body: Record<string, any>) {
+  const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/${fnName}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: ANON_KEY,
+      Authorization: `Bearer ${ANON_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || `Edge function ${fnName} failed`);
+  return data;
+}
+
 
 
 export default function CheckoutPage() {
@@ -684,34 +702,33 @@ export default function CheckoutPage() {
       if (paymentMethod === "razorpay") {
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Failed to load payment gateway");
-        const { data: rzpData, error: rzpError } = await supabase.functions.invoke("razorpay-order", {
-          body: { store_id: store.id, amount: total, currency, order_id: newOrder.id },
-        });
 
-        if (rzpError || !rzpData) {
-          throw new Error(rzpError?.message || "Payment initiation failed");
-        }
+        const rzpData = await callEdgeFunction("razorpay-order", {
+          store_id: store.id, amount: total, currency, order_id: newOrder.id,
+        });
 
         const handlePaymentSuccess = async (response: any) => {
           try {
-              const { error: verifyError } = await supabase.functions.invoke("razorpay-verify", {
-                body: { ...response, order_id: newOrder.id, store_id: store.id },
+            // Try signature verification first
+            try {
+              await callEdgeFunction("razorpay-verify", {
+                ...response, order_id: newOrder.id, store_id: store.id,
               });
-              if (verifyError) {
-                // Verification failed — try fallback status check
-                // Payment may have been captured even if signature verify had an issue
-                console.error("Razorpay verify error, trying status fallback:", verifyError);
-                const { data: statusData, error: statusErr } = await supabase.functions.invoke("razorpay-payment-status", {
-                  body: { razorpay_payment_id: response.razorpay_payment_id, store_id: store.id, order_id: newOrder.id },
-                });
-                if (statusErr || !statusData || (statusData.status !== "captured" && statusData.status !== "authorized")) {
-                  throw new Error("Payment verification failed");
-                }
-                // Fallback confirmed payment is captured/authorized
+            } catch (verifyErr) {
+              // Fallback: check payment status directly from Razorpay API
+              console.warn("Razorpay verify failed, trying status fallback:", verifyErr);
+              const statusData = await callEdgeFunction("razorpay-payment-status", {
+                razorpay_payment_id: response.razorpay_payment_id,
+                store_id: store.id, order_id: newOrder.id,
+              });
+              if (statusData.status !== "captured" && statusData.status !== "authorized") {
+                throw new Error("Payment verification failed");
               }
-              setPlacing(false);
-              finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
+            }
+            setPlacing(false);
+            finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
           } catch (err: any) {
+            console.error("Payment verification error:", err);
             setPlacing(false);
             toast.error(err?.message || "Payment verification failed. Please contact the store if amount was deducted.");
           }
@@ -725,11 +742,20 @@ export default function CheckoutPage() {
           prefill: { name: fullName, email, contact: phone },
           theme: { color: "#6366f1" },
           modal: {
-            ondismiss: () => {
-              // When modal is dismissed, check if payment went through in background
-              supabase.functions.invoke("razorpay-payment-status", {
-                body: { razorpay_payment_id: "check_order", store_id: store.id, order_id: newOrder.id },
-              }).catch(() => {});
+            ondismiss: async () => {
+              // Poll for payment status in case payment completed but modal was dismissed
+              try {
+                // Small delay to let Razorpay process
+                await new Promise(r => setTimeout(r, 2000));
+                const statusData = await callEdgeFunction("razorpay-payment-status", {
+                  razorpay_payment_id: "check_order", store_id: store.id, order_id: newOrder.id,
+                });
+                if (statusData.status === "captured" || statusData.status === "authorized") {
+                  setPlacing(false);
+                  finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
+                  return;
+                }
+              } catch {}
               toast.error("Payment cancelled.");
               setPlacing(false);
             },
