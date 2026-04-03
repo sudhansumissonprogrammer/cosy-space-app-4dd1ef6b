@@ -323,6 +323,35 @@ export default function CheckoutPage() {
 
   const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
+  // Partial payment calculation
+  const hasAnyPartialPayment = checkoutItems.some((i) => i.partialPaymentEnabled);
+  const partialAdvanceTotal = (() => {
+    if (!hasAnyPartialPayment) return total;
+    let advance = 0;
+    for (const item of checkoutItems) {
+      if (item.partialPaymentEnabled && item.partialPaymentValue) {
+        let itemAdvance: number;
+        if (item.partialPaymentType === "percentage") {
+          itemAdvance = Math.round(item.price * (item.partialPaymentValue / 100));
+        } else {
+          itemAdvance = Math.min(item.partialPaymentValue, item.price);
+        }
+        itemAdvance = Math.max(itemAdvance, 50); // min ₹50
+        advance += itemAdvance * item.quantity;
+      } else {
+        advance += item.price * item.quantity;
+      }
+    }
+    // Add tax + shipping proportionally, subtract coupon
+    const ratio = subtotal > 0 ? advance / subtotal : 1;
+    advance += (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge;
+    advance -= couponDiscount * ratio;
+    return Math.max(50, Math.round(advance));
+  })();
+  const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
+  const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasRazorpay;
+  const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
+
   // Coupon logic
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
