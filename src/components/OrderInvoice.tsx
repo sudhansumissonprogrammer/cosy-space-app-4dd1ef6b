@@ -81,11 +81,12 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     letter-spacing: 0.3px;
     border: 1px solid #000;
   }
-  .badge-pending { background: #fff3cd; color: #856404; border-color: #856404; }
-  .badge-confirmed { background: #d1ecf1; color: #0c5460; border-color: #0c5460; }
-  .badge-shipped { background: #cce5ff; color: #004085; border-color: #004085; }
-  .badge-delivered { background: #d4edda; color: #155724; border-color: #155724; }
-  .badge-cancelled { background: #f8d7da; color: #721c24; border-color: #721c24; }
+   .badge-pending { background: #fff3cd; color: #856404; border-color: #856404; }
+   .badge-confirmed { background: #d1ecf1; color: #0c5460; border-color: #0c5460; }
+   .badge-shipped { background: #cce5ff; color: #004085; border-color: #004085; }
+   .badge-delivered { background: #d4edda; color: #155724; border-color: #155724; }
+   .badge-cancelled { background: #f8d7da; color: #721c24; border-color: #721c24; }
+   .badge-partially_paid { background: #e8daef; color: #6c3483; border-color: #6c3483; }
 
   /* Divider */
   .divider { border: none; border-top: 1px dashed #aaa; margin: 2.5mm 0; }
@@ -206,6 +207,10 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
       <tr><td>Subtotal</td><td class="r">${currencySymbol}${subtotal.toFixed(2)}</td></tr>
       ${Number(order.total) !== subtotal ? `<tr><td>${(Number(order.total) - subtotal) < 0 ? 'Discount' : 'Shipping/Tax'}</td><td class="r">${currencySymbol}${(Number(order.total) - subtotal).toFixed(2)}</td></tr>` : ""}
       <tr class="grand"><td>Total</td><td class="r">${currencySymbol}${Number(order.total).toFixed(2)}</td></tr>
+      ${order.payment_type === "partial" ? `
+      <tr><td style="color:#6c3483;font-weight:600;">Advance Paid</td><td class="r" style="color:#155724;font-weight:600;">${currencySymbol}${Number(order.advance_paid || 0).toFixed(2)}</td></tr>
+      <tr><td style="color:#6c3483;font-weight:600;">Balance Due (COD)</td><td class="r" style="font-weight:600;">${currencySymbol}${Number(order.balance_due || 0).toFixed(2)}</td></tr>
+      ` : ""}
     </table>
   </div>
 
@@ -241,6 +246,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
     shipped: "bg-blue-100 text-blue-800 border-blue-300",
     delivered: "bg-emerald-100 text-emerald-800 border-emerald-300",
     cancelled: "bg-red-100 text-red-800 border-red-300",
+    partially_paid: "bg-purple-100 text-purple-800 border-purple-300",
   };
 
   return (
@@ -338,6 +344,18 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               <span>Total</span>
               <span className="tabular-nums">{currencySymbol}{Number(order.total).toFixed(2)}</span>
             </div>
+            {order.payment_type === "partial" && (
+              <>
+                <div className="flex justify-between text-[9px] mt-1">
+                  <span className="text-purple-700 dark:text-purple-400 font-semibold">Advance Paid</span>
+                  <span className="tabular-nums text-emerald-600 font-semibold">{currencySymbol}{Number(order.advance_paid || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[9px]">
+                  <span className="text-purple-700 dark:text-purple-400 font-semibold">Balance Due (COD)</span>
+                  <span className="tabular-nums font-semibold text-foreground">{currencySymbol}{Number(order.balance_due || 0).toFixed(2)}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
