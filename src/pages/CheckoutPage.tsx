@@ -1025,7 +1025,7 @@ export default function CheckoutPage() {
         {hasCod && (
           <button
             type="button"
-            onClick={() => { setPaymentMethod("cod"); setUpiApp(null); }}
+            onClick={() => { setPaymentMethod("cod"); }}
             className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
           >
             <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
