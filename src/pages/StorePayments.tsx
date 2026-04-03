@@ -333,6 +333,160 @@ export default function StorePayments() {
         </Card>
       )}
 
+      {/* Section 3: Partial Payment Defaults */}
+      {showPaymentConfig && razorpayEnabled && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <IndianRupee className="h-5 w-5" /> Partial Payment (Advance + COD)
+            </CardTitle>
+            <CardDescription>
+              Set default advance payment for all products. Customers pay a portion online and the rest on delivery.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable Partial Payment</p>
+                <p className="text-xs text-muted-foreground">Require advance payment on all products</p>
+              </div>
+              <Switch checked={partialEnabled} onCheckedChange={setPartialEnabled} />
+            </div>
+
+            {partialEnabled && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-sm">Advance Type</Label>
+                  <RadioGroup
+                    value={partialType}
+                    onValueChange={(v) => setPartialType(v as "percentage" | "fixed")}
+                    className="flex gap-4"
+                  >
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-all ${
+                      partialType === "percentage" ? "border-primary bg-primary/5" : "border-input"
+                    }`}>
+                      <RadioGroupItem value="percentage" />
+                      <Percent className="h-4 w-4" />
+                      <span className="text-sm font-medium">Percentage</span>
+                    </label>
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-all ${
+                      partialType === "fixed" ? "border-primary bg-primary/5" : "border-input"
+                    }`}>
+                      <RadioGroupItem value="fixed" />
+                      <IndianRupee className="h-4 w-4" />
+                      <span className="text-sm font-medium">Fixed ₹</span>
+                    </label>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>
+                    {partialType === "percentage" ? "Advance Percentage (%)" : "Advance Amount (₹)"}
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder={partialType === "percentage" ? "e.g. 30" : "e.g. 200"}
+                    value={partialValue}
+                    onChange={(e) => setPartialValue(e.target.value)}
+                    min={partialType === "percentage" ? 10 : 50}
+                    max={partialType === "percentage" ? 80 : undefined}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {partialType === "percentage"
+                      ? "Min 10%, Max 80%. Customer pays this % online, rest as COD."
+                      : "Min ₹50. Customer pays this fixed amount online, rest as COD."}
+                  </p>
+                </div>
+
+                {/* Preview */}
+                {partialValue && Number(partialValue) > 0 && (
+                  <div className="rounded-lg border bg-accent/30 p-3">
+                    <p className="text-xs font-medium text-foreground mb-1">Preview (for ₹1,000 product):</p>
+                    <p className="text-sm text-foreground">
+                      {partialType === "percentage"
+                        ? `Pay ₹${Math.round(1000 * Number(partialValue) / 100)} now, ₹${1000 - Math.round(1000 * Number(partialValue) / 100)} on delivery`
+                        : `Pay ₹${Math.min(Number(partialValue), 1000)} now, ₹${Math.max(1000 - Number(partialValue), 0)} on delivery`}
+                    </p>
+                  </div>
+                )}
+
+                {/* Apply to all products */}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={applyingToAll || !partialValue || Number(partialValue) <= 0}
+                  onClick={async () => {
+                    const val = Number(partialValue);
+                    if (partialType === "percentage" && (val < 10 || val > 80)) {
+                      toast.error("Percentage must be between 10% and 80%");
+                      return;
+                    }
+                    if (partialType === "fixed" && val < 50) {
+                      toast.error("Fixed amount must be at least ₹50");
+                      return;
+                    }
+                    setApplyingToAll(true);
+                    try {
+                      const { error } = await (supabase as any)
+                        .from("products")
+                        .update({
+                          partial_payment_enabled: true,
+                          partial_payment_type: partialType,
+                          partial_payment_value: val,
+                        })
+                        .eq("store_id", storeId!)
+                        .eq("is_active", true);
+                      if (error) throw error;
+                      toast.success("Partial payment applied to all active products!");
+                      queryClient.invalidateQueries({ queryKey: ["products"] });
+                    } catch (err: any) {
+                      toast.error(err.message || "Failed to apply");
+                    } finally {
+                      setApplyingToAll(false);
+                    }
+                  }}
+                >
+                  {applyingToAll ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Apply to All Products
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full text-destructive hover:text-destructive"
+                  disabled={applyingToAll}
+                  onClick={async () => {
+                    setApplyingToAll(true);
+                    try {
+                      const { error } = await (supabase as any)
+                        .from("products")
+                        .update({
+                          partial_payment_enabled: false,
+                          partial_payment_value: null,
+                        })
+                        .eq("store_id", storeId!)
+                        .eq("is_active", true);
+                      if (error) throw error;
+                      setPartialEnabled(false);
+                      setPartialValue("");
+                      toast.success("Partial payment removed from all products");
+                      queryClient.invalidateQueries({ queryKey: ["products"] });
+                    } catch (err: any) {
+                      toast.error(err.message || "Failed");
+                    } finally {
+                      setApplyingToAll(false);
+                    }
+                  }}
+                >
+                  Remove from All Products
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Button
         className="w-full"
         onClick={() => saveMutation.mutate()}
