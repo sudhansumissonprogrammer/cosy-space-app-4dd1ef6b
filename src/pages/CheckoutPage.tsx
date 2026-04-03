@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useOutletContext, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
