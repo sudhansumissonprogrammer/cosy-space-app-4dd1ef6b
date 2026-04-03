@@ -207,6 +207,10 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
       <tr><td>Subtotal</td><td class="r">${currencySymbol}${subtotal.toFixed(2)}</td></tr>
       ${Number(order.total) !== subtotal ? `<tr><td>${(Number(order.total) - subtotal) < 0 ? 'Discount' : 'Shipping/Tax'}</td><td class="r">${currencySymbol}${(Number(order.total) - subtotal).toFixed(2)}</td></tr>` : ""}
       <tr class="grand"><td>Total</td><td class="r">${currencySymbol}${Number(order.total).toFixed(2)}</td></tr>
+      ${order.payment_type === "partial" ? `
+      <tr><td style="color:#6c3483;font-weight:600;">Advance Paid</td><td class="r" style="color:#155724;font-weight:600;">${currencySymbol}${Number(order.advance_paid || 0).toFixed(2)}</td></tr>
+      <tr><td style="color:#6c3483;font-weight:600;">Balance Due (COD)</td><td class="r" style="font-weight:600;">${currencySymbol}${Number(order.balance_due || 0).toFixed(2)}</td></tr>
+      ` : ""}
     </table>
   </div>
 
