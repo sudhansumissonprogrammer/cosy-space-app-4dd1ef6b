@@ -296,9 +296,10 @@ export default function CheckoutPage() {
   const hasRazorpay = availableMethods.includes("razorpay");
 
   useEffect(() => {
-    if (hasCod) setPaymentMethod("cod");
+    if (hasAnyPartialPayment && hasRazorpay) setPaymentMethod("razorpay");
+    else if (hasCod) setPaymentMethod("cod");
     else if (hasRazorpay) setPaymentMethod("razorpay");
-  }, [hasCod, hasRazorpay]);
+  }, [hasCod, hasRazorpay, hasAnyPartialPayment]);
 
   // Preload Razorpay script eagerly so it's ready instantly when user clicks Pay
   useEffect(() => {
