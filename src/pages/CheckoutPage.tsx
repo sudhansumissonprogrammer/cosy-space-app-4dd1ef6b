@@ -141,6 +141,11 @@ export default function CheckoutPage() {
   // Lazily fetch/create customer record on checkout
   useEffect(() => { ensureCustomer(); }, [ensureCustomer]);
 
+  // Preload Razorpay script eagerly so it's ready when user clicks Pay
+  useEffect(() => {
+    if (hasRazorpay) loadRazorpayScript();
+  }, [hasRazorpay]);
+
   // Fetch ALL saved addresses for logged-in customer
   const { data: savedAddresses } = useQuery({
     queryKey: ["checkout-saved-addresses", customer?.id],
