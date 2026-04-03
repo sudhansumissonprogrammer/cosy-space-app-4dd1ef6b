@@ -1160,22 +1160,7 @@ export default function CheckoutPage() {
                 <p className="text-xs text-muted-foreground">{currency} {total.toFixed(2)} — {t("UPI, Cards, Net Banking", "UPI, कार्ड, नेट बैंकिंग")}</p>
               </div>
             </button>
-            {hasCod && (
-              <button
-                type="button"
-                onClick={() => { setPartialPaymentMode("full"); setPaymentMethod("cod"); }}
-                className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-              >
-                <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-                  {paymentMethod === "cod" && <Check className="h-3 w-3 text-primary-foreground" />}
-                </div>
-                <Banknote className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{t("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
-                  <p className="text-xs text-muted-foreground">{t("Pay full amount when your order arrives", "ऑर्डर आने पर पूरा भुगतान")}</p>
-                </div>
-              </button>
-            )}
+            {/* COD disabled when partial payment products are in cart */}
           </div>
         )}
 
