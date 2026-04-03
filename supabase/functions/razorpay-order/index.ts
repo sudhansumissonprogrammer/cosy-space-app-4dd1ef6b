@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const methods = config.payment_methods as string[];
+    const methods = Array.isArray(config.payment_methods) ? config.payment_methods : [];
     if (!methods.includes("razorpay") || !config.razorpay_key_id || !config.razorpay_key_secret) {
       return new Response(JSON.stringify({ error: "Razorpay not configured" }), {
         status: 400,
