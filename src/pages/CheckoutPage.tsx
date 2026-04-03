@@ -281,6 +281,9 @@ export default function CheckoutPage() {
         originalPrice: product.price,
         quantity: 1,
         image: product.image_url,
+        partialPaymentEnabled: (product as any).partial_payment_enabled ?? false,
+        partialPaymentType: (product as any).partial_payment_type || "percentage",
+        partialPaymentValue: (product as any).partial_payment_value ?? null,
       }]
     : cartItems.map((i) => ({
         productId: i.productId,
@@ -289,6 +292,9 @@ export default function CheckoutPage() {
         originalPrice: i.price,
         quantity: i.quantity,
         image: i.image || null,
+        partialPaymentEnabled: false,
+        partialPaymentType: "percentage" as const,
+        partialPaymentValue: null as number | null,
       }));
 
   const subtotal = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
