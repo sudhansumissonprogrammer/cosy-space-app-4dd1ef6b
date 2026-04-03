@@ -92,7 +92,7 @@ export default function StoreOrders() {
     queryFn: async () => {
       let query = supabase
         .from("orders")
-        .select("id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, order_items(id, product_name, quantity, unit_price, total, product_id)")
+        .select("id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, order_items(id, product_name, quantity, unit_price, total, product_id)")
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
         .range(pagination.from, pagination.to);
