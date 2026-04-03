@@ -38,6 +38,24 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
+const SUPABASE_FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+async function callEdgeFunction(fnName: string, body: Record<string, any>) {
+  const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/${fnName}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: ANON_KEY,
+      Authorization: `Bearer ${ANON_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || `Edge function ${fnName} failed`);
+  return data;
+}
+
 
 
 export default function CheckoutPage() {
