@@ -74,8 +74,6 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [expressMode, setExpressMode] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
-  const [morePaymentOpen, setMorePaymentOpen] = useState(false);
-  const [morePaymentOpen, setMorePaymentOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
 
   // Form — pre-fill from localStorage for returning users
