@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const STATUS_OPTIONS = ["confirmed", "shipped", "delivered", "cancelled"] as const;
+const STATUS_OPTIONS = ["confirmed", "shipped", "delivered", "cancelled", "partially_paid"] as const;
 
 const statusColor = (status: string) => {
   switch (status) {
