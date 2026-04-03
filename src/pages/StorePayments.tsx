@@ -31,6 +31,12 @@ export default function StorePayments() {
   const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
   const [razorpayOpen, setRazorpayOpen] = useState(false);
 
+  // Partial payment defaults
+  const [partialEnabled, setPartialEnabled] = useState(false);
+  const [partialType, setPartialType] = useState<"percentage" | "fixed">("percentage");
+  const [partialValue, setPartialValue] = useState("");
+  const [applyingToAll, setApplyingToAll] = useState(false);
+
   const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
   const { data: paymentConfig, isLoading: configLoading } = useQuery({
