@@ -1,23 +1,21 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.8.1 — CLS FIX + PRODUCTS KV FALLBACK
+ * STORIVO PRODUCTION ROUTER v4.9.0 — FULL PARALLEL + STREAMING
  *
- * Changes from v4.7:
- *   1. Custom domain: parallel fetch (resolveDomain + getSpaShell + prebuiltHead in Promise.all) — ~200ms win
- *   2. Products cache key mismatch: cron now warms products under BOTH subdomain AND custom domain keys
- *   3. Memory cache size caps: _storeInfoCache, domainStoreIdCache have eviction limits
- *   4. buildProductResponse writes to KV (not just Cache API) — eliminates cold product fetches
- *   5. Cron uses internal prefetchStorefrontData instead of recursive fetch() — no self-DDoS
- *   6. getPrebuiltHead called with real HTML after shell resolves — proper preload hints on cold miss
- *   7. cleanRateLimitMap/cleanRevalMap moved after static asset early return
- *   8. ORIGIN_TIMEOUT_MS reduced to 8s (was 15s) — faster fallback
- *   9. Rate limit split: 300/min for HTML, 60/min for API
- *  10. Removed dead code: htmlContainsTenantMarker
- *  11. Extracted buildSkeleton/buildThemeCss helpers — DRY skeleton/theme logic
- *  12. handlePrewarm guards against double product fetch
- *  13. Slug index populated in handlePrewarm for pre-first-cron coverage
+ * Changes from v4.8.1:
+ *   1. Full parallel critical path: shell + storeInfo + theme + prebuiltHead + products all concurrent
+ *   2. _getInlineProductsOrNull: products fetched in parallel on critical path (Cache → KV)
+ *   3. _getCachedPrebuiltHead: cache-only lookup (no build) for streaming head phase
+ *   4. prefetchStorefrontDataWithDeadline: races DB fetch vs 1.2s deadline — fast fail on cold
+ *   5. serveStreamedHtml: flushes <head> immediately → browser loads assets while body builds
+ *   6. _buildLinkPreloadHeader: Link rel=preload on every HTML response
+ *   7. Subdomain handler: full Promise.all → stream head → fetch storefront → stream body
+ *   8. Custom domain handler: same parallel + streaming pattern
+ *   9. fetchAndInjectSlug: injects full storefront data when available within deadline
+ *  10. STOREFRONT_PREFETCH_TIMEOUT_MS reduced 2500 → 1200ms
+ *  11. Eliminates client-side Supabase data fetch when storefront is warm in KV (~700ms saved)
  */
 
-const WORKER_VERSION = "4.8.1";
+const WORKER_VERSION = "4.9.0";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
@@ -33,28 +31,24 @@ const SEARCH_BOT_REGEX =
 const SOCIAL_BOT_REGEX =
   /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
 
-// v4.8.2: Instagram removed from SOCIAL_BOT_REGEX — its in-app browser sends
-// a full Mozilla/5.0 UA and must load the SPA, not the OG-only page.
-// Instagram's crawler (if any) still matches via BOT_UA_REGEX fallback.
 const INSTAGRAM_CRAWLER_REGEX = /Instagram(?!.*Mozilla\/5\.0.*AppleWebKit)/i;
 
 const BOT_UA_REGEX =
   /bot|crawler|spider|facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
 
-// v4.8.2: Detects real in-app browsers (Instagram, Snapchat) that include
-// "Instagram" in UA but are full WebKit browsers — these must get the SPA.
 function isSocialInAppBrowser(ua) {
   return /Instagram|Snapchat/i.test(ua) && /Mozilla\/5\.0.*AppleWebKit/i.test(ua);
 }
 
-// v4.8: Reduced from 15s to 8s — users leave after ~6s, serve stale fallback sooner
 const ORIGIN_TIMEOUT_MS = 8_000;
 const EDGE_FN_TIMEOUT_MS = 10_000;
-const STOREFRONT_PREFETCH_TIMEOUT_MS = 2_500;
+// v4.9: Reduced from 2500 → 1200ms. If warm in KV it's <50ms anyway.
+// On cold DB fetch we fail fast and return fast-shell; background warm populates KV.
+const STOREFRONT_PREFETCH_TIMEOUT_MS = 1_200;
 
 const cache = caches.default;
 
-/* ============== REVALIDATION COOLDOWN (IN-MEMORY ONLY — NO KV) ============== */
+/* ============== REVALIDATION COOLDOWN ============== */
 
 const revalCooldowns = new Map();
 const REVAL_COOLDOWN_MS = 120_000;
@@ -83,7 +77,6 @@ function cleanRevalMap() {
 
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW_MS = 60_000;
-// v4.8: Split limits — HTML pages get higher threshold (shared NAT, crawlers)
 const RATE_LIMIT_MAX_HTML = 300;
 const RATE_LIMIT_MAX_API = 60;
 const RATE_LIMIT_MAP_MAX = 10_000;
@@ -119,8 +112,7 @@ const SECURITY_HEADERS = {
   "X-Frame-Options": "SAMEORIGIN",
   "X-Content-Type-Options": "nosniff",
   "X-XSS-Protection": "1; mode=block",
-  "Strict-Transport-Security":
-    "max-age=31536000; includeSubDomains; preload",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
@@ -149,9 +141,7 @@ function buildSubdomainUrl(slug, path, search = "") {
 
 function getCacheKey(request, slug = "") {
   const url = new URL(request.url);
-  ["fbclid", "gclid", "utm_source", "utm_medium", "utm_campaign"].forEach(
-    (p) => url.searchParams.delete(p)
-  );
+  ["fbclid", "gclid", "utm_source", "utm_medium", "utm_campaign"].forEach((p) => url.searchParams.delete(p));
   const host = request.headers.get("host") || url.hostname;
   return new Request(`https://cache/${host}/${slug}${url.pathname}${url.search}`);
 }
@@ -169,28 +159,84 @@ function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   if (dataSource) res.headers.set("X-Data-Source", dataSource);
   return res;
 }
+function getSkeletonCleanupScript(fallbackMs = 12000) {
+  return `<script>(function(){
+    var removed = false;
 
-// v4.8: Dead code removed — htmlContainsTenantMarker was never called
+    function kill(){
+      if(removed) return;
+      var s = document.getElementById('sf-skel');
+      if(!s) return;
+      removed = true;
+      s.style.transition = 'opacity 180ms ease-out';
+      s.style.opacity = '0';
+      setTimeout(function(){
+        s.style.visibility = 'hidden';
+        s.style.display = 'none';
+        if(s.remove) s.remove();
+      }, 200);
+    }
 
-function getSkeletonCleanupScript(fallbackMs = 12_000) {
-  return `<script>(function(){var removed=false;function kill(){if(removed)return;var s=document.getElementById('sf-skel');if(!s)return;removed=true;s.style.transition='opacity 150ms ease-out';s.style.opacity='0';setTimeout(function(){s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();},160);}function rootReady(){var root=document.getElementById('root');return !!(root&&root.childElementCount>0);}function tryKill(){if(rootReady())kill();}if(document.readyState==='complete'){tryKill();}else{document.addEventListener('DOMContentLoaded',tryKill,{once:true});window.addEventListener('load',tryKill,{once:true});}var root=document.getElementById('root');if(root){if(root.childElementCount>0){kill();}else{var mo=new MutationObserver(function(){if(root.childElementCount>0){mo.disconnect();kill();}});mo.observe(root,{childList:true});window.addEventListener('storefront:mounted',function(){mo.disconnect();kill();},{once:true});setTimeout(function(){mo.disconnect();tryKill();},${fallbackMs});}}else{window.addEventListener('storefront:mounted',kill,{once:true});setTimeout(tryKill,${fallbackMs});}})()</script>`;
+    // ✅ ONLY remove when storefront fully ready
+    window.addEventListener('storefront:mounted', kill, { once: true });
+
+    // ⛑️ fallback (if something breaks)
+    setTimeout(kill, ${fallbackMs});
+
+  })()</script>`;
 }
 
-/* ============== v4.8: SHARED SKELETON & THEME BUILDERS (DRY) ============== */
-
+/* ============== SHARED SKELETON & THEME BUILDERS ============== */
 function buildSkeleton(bgColor, skeletonMuted) {
-  let skeleton = `<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${bgColor};z-index:2147483000;pointer-events:none;overflow:hidden">`;
-  skeleton += `<nav style="height:56px;background:${bgColor};border-bottom:1px solid ${skeletonMuted};display:flex;align-items:center;padding:0 16px;gap:12px">`;
-  skeleton += `<div style="height:32px;width:32px;border-radius:8px;background:${skeletonMuted}"></div>`;
-  skeleton += `<div style="height:12px;width:72px;border-radius:4px;background:${skeletonMuted}"></div>`;
+  // v4.9.1: Always use white skeleton regardless of theme color.
+  // White-theme stores were showing blank because bgColor=#ffffff matched
+  // the page background, making the skeleton invisible.
+  // Product card placeholders use a shimmer animation so users see
+  // "something loading" even on first paint.
+
+  const skelBg = "#ffffff";
+  const skelBase = "#f0f0f0"; // card background
+  const skelShimmer = "#e0e0e0"; // shimmer highlight
+
+  const shimmerKeyframes = `
+    <style id="sf-skel-anim">
+      @keyframes sf-shimmer {
+        0%   { background-position: -400px 0; }
+        100% { background-position:  400px 0; }
+      }
+      .sf-ph {
+        background: linear-gradient(90deg, ${skelBase} 25%, ${skelShimmer} 50%, ${skelBase} 75%);
+        background-size: 800px 100%;
+        animation: sf-shimmer 1.4s ease-in-out infinite;
+        border-radius: 4px;
+      }
+    </style>`;
+
+  let skeleton = `${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
+
+  // Nav bar placeholder
+  skeleton += `<nav style="height:56px;background:#fff;border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
+  skeleton += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
+  skeleton += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
   skeleton += `<div style="flex:1"></div>`;
-  skeleton += `<div style="width:24px;height:24px;border-radius:50%;background:${skeletonMuted}"></div>`;
+  skeleton += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%"></div>`;
   skeleton += `</nav>`;
-  skeleton += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px">`;
+
+  // Optional banner strip
+  skeleton += `<div class="sf-ph" style="height:6px;width:100%;border-radius:0;margin-bottom:16px"></div>`;
+
+  // Product grid — 2 columns, 4 cards
+  skeleton += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 12px">`;
   for (let i = 0; i < 4; i++) {
-    skeleton += `<div style="border-radius:12px;overflow:hidden;border:1px solid ${skeletonMuted}">`;
-    skeleton += `<div style="width:100%;aspect-ratio:4/5;background:${skeletonMuted}"></div>`;
-    skeleton += `<div style="padding:8px"><div style="height:10px;width:60%;border-radius:4px;background:${skeletonMuted};margin-bottom:6px"></div><div style="height:10px;width:40%;border-radius:4px;background:${skeletonMuted}"></div></div>`;
+    skeleton += `<div style="border-radius:12px;overflow:hidden;background:#fff;border:1px solid #ececec;box-shadow:0 1px 4px rgba(0,0,0,0.05)">`;
+    // Image area
+    skeleton += `<div class="sf-ph" style="width:100%;aspect-ratio:4/5;border-radius:0"></div>`;
+    // Text lines
+    skeleton += `<div style="padding:10px 10px 12px">`;
+    skeleton += `<div class="sf-ph" style="height:11px;width:75%;margin-bottom:8px"></div>`;
+    skeleton += `<div class="sf-ph" style="height:11px;width:45%;margin-bottom:10px"></div>`;
+    skeleton += `<div class="sf-ph" style="height:28px;width:100%;border-radius:6px"></div>`; // "Add to cart" button
+    skeleton += `</div>`;
     skeleton += `</div>`;
   }
   skeleton += `</div></div>`;
@@ -215,19 +261,20 @@ function buildThemeCssFromConfig(tc) {
   const btnTextColor = (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#1a1a1a" : "#ffffff";
   const btnRadius = buttonStyle === "pill" ? "9999px" : buttonStyle === "square" ? "0px" : "0.5rem";
 
-  let css = `<style id="edge-theme">:root{`
-    + `--storefront-primary:${primaryColor};`
-    + `--storefront-primary-light:${primaryLight};`
-    + `--storefront-accent:${accentColor};`
-    + `--storefront-text:${textColor};`
-    + `--storefront-bg:${bgColor};`
-    + `--storefront-button-radius:${btnRadius};`
-    + `--storefront-btn-text:${btnTextColor};`
-    + `}body{background:${bgColor}}</style>\n`;
+  let css =
+    `<style id="edge-theme">:root{` +
+    `--storefront-primary:${primaryColor};` +
+    `--storefront-primary-light:${primaryLight};` +
+    `--storefront-accent:${accentColor};` +
+    `--storefront-text:${textColor};` +
+    `--storefront-bg:${bgColor};` +
+    `--storefront-button-radius:${btnRadius};` +
+    `--storefront-btn-text:${btnTextColor};` +
+    `}body{background:${bgColor}}</style>\n`;
 
   const fonts = [headingFont, bodyFont].filter(Boolean);
   if (fonts.length > 0) {
-    const families = fonts.map(f => f.replace(/ /g, "+")).join("&family=");
+    const families = fonts.map((f) => f.replace(/ /g, "+")).join("&family=");
     css += `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" media="print" onload="this.media='all'" />\n`;
     css += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" /></noscript>\n`;
     css += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
@@ -238,6 +285,203 @@ function buildThemeCssFromConfig(tc) {
 
 function getSkeletonMuted(textColor) {
   return textColor === "#1a1a1a" ? "#e8e8e8" : "rgba(255,255,255,0.12)";
+}
+
+/* ============== v4.9: NEW HELPERS ============== */
+
+/**
+ * v4.9: Fetch inline products from Cache API then KV — used in parallel on critical path.
+ * Repopulates Cache API from KV in background if needed.
+ */
+async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
+  try {
+    const productsCacheKey = _buildProductsCacheKey(hostname, {});
+    const cached = await cache.match(productsCacheKey);
+    if (cached) return await cached.text();
+
+    if (env?.STORE_KV) {
+      const kvKey = _buildProductsKvKey(hostname, {});
+      const kvProducts = await env.STORE_KV.get(kvKey);
+      if (kvProducts) {
+        // Repopulate Cache API in background for next request
+        ctx.waitUntil(
+          cache
+            .put(
+              productsCacheKey,
+              new Response(kvProducts, {
+                headers: {
+                  "Content-Type": "application/json",
+                  "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+                },
+              }),
+            )
+            .catch(() => {}),
+        );
+        return kvProducts;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * v4.9: Cache-only prebuilt head lookup (no build fallback).
+ * Used in parallel phase so we don't block on shell-dependent head building.
+ */
+async function _getCachedPrebuiltHead(env) {
+  const headCacheKey = new Request("https://cache/prebuilt-head");
+  try {
+    const cached = await cache.match(headCacheKey);
+    if (cached) return await cached.text();
+  } catch {}
+
+  if (env?.STORE_KV) {
+    try {
+      const cached = await env.STORE_KV.get(PREBUILT_HEAD_KV_KEY);
+      if (cached) {
+        cache
+          .put(
+            headCacheKey,
+            new Response(cached, {
+              headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` },
+            }),
+          )
+          .catch(() => {});
+        return cached;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+/**
+ * v4.9: Race storefront fetch against a wall-clock deadline.
+ * On KV hit this resolves in <50ms. On cold DB fetch we fail fast at deadlineMs
+ * and return fast-shell; background warm will populate KV for next request.
+ */
+async function prefetchStorefrontDataWithDeadline(slug, ctx, env, deadlineMs = 1200) {
+  const deadline = new Promise((resolve) =>
+    setTimeout(() => resolve({ data: null, source: "deadline-timeout" }), deadlineMs),
+  );
+  return Promise.race([prefetchStorefrontData(slug, ctx, env), deadline]);
+}
+
+/**
+ * v4.9: Build Link rel=preload header value from shell HTML.
+ * Sent on every HTML response so browser starts fetching assets before parsing body.
+ */
+function _buildLinkPreloadHeader(html) {
+  if (!html) return "";
+  const DASH_CHUNK = /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
+  const links = [];
+
+  const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
+  if (cssMatch) links.push(`<${cssMatch[1]}>; rel=preload; as=style`);
+
+  const seen = new Set();
+  for (const m of [...html.matchAll(/src="(\/assets\/[^"]+\.js)"/g)]) {
+    if (!seen.has(m[1]) && !DASH_CHUNK.test(m[1])) {
+      seen.add(m[1]);
+      links.push(`<${m[1]}>; rel=modulepreload`);
+      if (links.length >= 6) break; // cap to avoid oversized header
+    }
+  }
+
+  return links.join(", ");
+}
+
+/**
+ * v4.9: Stream HTML response — sends <head> immediately so browser can start
+ * loading assets, then resolves storefront data promise and writes body.
+ *
+ * Flow:
+ *   1. Build head string (slug script + theme css + prebuilt head) → flush to browser
+ *   2. Await storefrontPromise (already racing, resolves from KV in ~50ms or times out at 1.2s)
+ *   3. Build body (skeleton + root + storefront data script) → flush
+ */
+async function serveStreamedHtml(
+  slug,
+  shellResult,
+  themeLite,
+  prebuiltHead,
+  inlineProducts,
+  storefrontPromise,
+  responseHeaders,
+) {
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const enc = new TextEncoder();
+
+  (async () => {
+    try {
+      const html = shellResult.html;
+      const headEnd = html.indexOf("</head>");
+
+      // Graceful fallback: if shell is malformed, write full html at once
+      if (headEnd === -1) {
+        await writer.write(enc.encode(html));
+        return;
+      }
+
+      const bgColor = themeLite?.bg || "#ffffff";
+      const textColor = themeLite?.tc || "#1a1a1a";
+      const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
+
+      // Build head injection (slug + theme hint + products hint + theme css + preload)
+      const productsHint = inlineProducts
+        ? `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`
+        : "";
+      const themeHint = themeLite ? `window.__THEME__=${JSON.stringify(themeLite)};` : "";
+      const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}</script>`;
+
+      // Assemble head chunk: everything from start of html up to and including </head>
+      let headChunk = html.slice(0, headEnd);
+      headChunk = headChunk.replace("<head>", `<head>${slugScript}${themeCss}${prebuiltHead || ""}`);
+      headChunk += "</head>";
+
+      // ---- FLUSH HEAD — browser starts fetching assets NOW ----
+      await writer.write(enc.encode(headChunk));
+
+      // Await storefront data (racing, resolves from KV fast or times out)
+      const storefrontResult = await storefrontPromise;
+
+      // Build body chunk: everything after </head>
+      const skeletonMuted = getSkeletonMuted(textColor);
+      const skeleton = buildSkeleton(bgColor, skeletonMuted);
+
+      let bodyChunk = html.slice(headEnd + 7); // skip "</head>"
+      bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}<div id="root">`);
+
+      // Inject storefront data before </body> so SPA hydrates without a round-trip
+      if (storefrontResult?.data) {
+        const jsonStr = JSON.stringify(storefrontResult.data).replace(/<\/script/gi, "<\\/script");
+        const dataScript = `<script>window.__STOREFRONT_DATA__=${jsonStr};</script>`;
+        bodyChunk = bodyChunk.replace("</body>", `${dataScript}</body>`);
+      }
+
+      // Also inject OG meta / favicon as late-head via JS if we have storefront data
+      // (bots are handled separately, this helps client-side title/favicon)
+      if (storefrontResult?.data?.store) {
+        const s = storefrontResult.data.store;
+        const ogTitle = escapeHtml(s.meta_title || `${s.name} — Shop Online`);
+        const faviconUrl = escapeHtml(s.logo_url || "");
+        let metaScript = `<script>(function(){document.title=${JSON.stringify(s.meta_title || `${s.name} — Shop Online`)};`;
+        if (faviconUrl) {
+          metaScript += `var li=document.querySelector("link[rel~='icon']");if(!li){li=document.createElement('link');li.rel='icon';document.head.appendChild(li);}li.href=${JSON.stringify(faviconUrl)};`;
+        }
+        metaScript += `})()</script>`;
+        bodyChunk = bodyChunk.replace("</body>", `${metaScript}</body>`);
+      }
+
+      // ---- FLUSH BODY ----
+      await writer.write(enc.encode(bodyChunk));
+    } catch {
+    } finally {
+      writer.close();
+    }
+  })();
+
+  return new Response(readable, { status: 200, headers: responseHeaders });
 }
 
 /* ============== SUPABASE EDGE FUNCTION CALLS ============== */
@@ -274,7 +518,10 @@ async function callEdgeFunction(name, params = {}) {
 const KV_DOMAIN_TTL = 3600;
 
 async function resolveDomain(hostname, env) {
-  const domain = hostname.replace(/^www\./, "").toLowerCase().trim();
+  const domain = hostname
+    .replace(/^www\./, "")
+    .toLowerCase()
+    .trim();
 
   const key = new Request(`https://cache/domain-${domain}`);
   try {
@@ -289,12 +536,14 @@ async function resolveDomain(hostname, env) {
     try {
       const kvData = await env.STORE_KV.get(`domain:${domain}`, { type: "json" });
       if (kvData) {
-        cache.put(
-          key,
-          new Response(JSON.stringify(kvData), {
-            headers: { "Cache-Control": "public, max-age=300" },
-          })
-        ).catch(() => {});
+        cache
+          .put(
+            key,
+            new Response(JSON.stringify(kvData), {
+              headers: { "Cache-Control": "public, max-age=300" },
+            }),
+          )
+          .catch(() => {});
         return kvData.slug || null;
       }
     } catch {}
@@ -308,7 +557,7 @@ async function resolveDomain(hostname, env) {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         },
-      }
+      },
     );
 
     if (!res.ok) return null;
@@ -323,13 +572,11 @@ async function resolveDomain(hostname, env) {
         key,
         new Response(cacheData, {
           headers: { "Cache-Control": `public, max-age=${ttl}` },
-        })
+        }),
       ),
     ];
     if (env?.STORE_KV && slug) {
-      writes.push(
-        env.STORE_KV.put(`domain:${domain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL })
-      );
+      writes.push(env.STORE_KV.put(`domain:${domain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }));
     }
     await Promise.all(writes);
 
@@ -341,7 +588,6 @@ async function resolveDomain(hostname, env) {
 
 /* ============== CUSTOM DOMAIN LOOKUP BY SLUG ============== */
 
-// v4.8: Kept for purge-store compatibility, but prefer _resolveStoreInfo where possible
 async function getCustomDomainForSlug(slug) {
   const key = new Request(`https://cache/slug-domain-${slug}`);
 
@@ -359,7 +605,7 @@ async function getCustomDomainForSlug(slug) {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         },
-      }
+      },
     );
 
     if (!res.ok) return null;
@@ -370,7 +616,7 @@ async function getCustomDomainForSlug(slug) {
       key,
       new Response(JSON.stringify({ custom_domain: customDomain }), {
         headers: { "Cache-Control": "public, max-age=300" },
-      })
+      }),
     );
 
     return customDomain;
@@ -379,14 +625,14 @@ async function getCustomDomainForSlug(slug) {
   }
 }
 
-/* ============== COMBINED STORE INFO LOOKUP (id + custom_domain in one query) ============== */
+/* ============== COMBINED STORE INFO LOOKUP ============== */
 
 const _storeInfoCache = new Map();
-// v4.8: Size cap to prevent OOM in long-lived isolates
 const STORE_INFO_CACHE_MAX = 2_000;
 const STORE_INFO_KV_TTL = 3600;
 
-/* ============== SLUG INDEX — IN-MEMORY SET (populated by cron via KV) ============== */
+/* ============== SLUG INDEX ============== */
+
 let _slugIndexSet = null;
 let _slugIndexExpiresAt = 0;
 
@@ -404,7 +650,6 @@ async function _getSlugIndex(env) {
   return null;
 }
 
-// v4.8: Helper to cap Map size with FIFO eviction
 function _capMapSize(map, max) {
   if (map.size >= max) {
     const firstKey = map.keys().next().value;
@@ -437,10 +682,14 @@ async function _resolveStoreInfo(slug, hostname, env) {
         _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
         domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
       }
-      cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
-        JSON.stringify({ custom_domain: result.customDomain }),
-        { headers: { "Cache-Control": "public, max-age=300" } }
-      )).catch(() => {});
+      cache
+        .put(
+          new Request(`https://cache/slug-domain-${slug}`),
+          new Response(JSON.stringify({ custom_domain: result.customDomain }), {
+            headers: { "Cache-Control": "public, max-age=300" },
+          }),
+        )
+        .catch(() => {});
       return result;
     }
   } catch {}
@@ -454,9 +703,14 @@ async function _resolveStoreInfo(slug, hostname, env) {
           _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
           _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
           domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
-          cache.put(infoCacheKey, new Response(JSON.stringify(kvData), {
-            headers: { "Cache-Control": "public, max-age=60" },
-          })).catch(() => {});
+          cache
+            .put(
+              infoCacheKey,
+              new Response(JSON.stringify(kvData), {
+                headers: { "Cache-Control": "public, max-age=60" },
+              }),
+            )
+            .catch(() => {});
           return { storeId: null, customDomain: null };
         }
         const result = { storeId: kvData.id || null, customDomain: kvData.cd || null };
@@ -466,13 +720,22 @@ async function _resolveStoreInfo(slug, hostname, env) {
           _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
           domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
         }
-        cache.put(infoCacheKey, new Response(JSON.stringify(kvData), {
-          headers: { "Cache-Control": "public, max-age=300" },
-        })).catch(() => {});
-        cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
-          JSON.stringify({ custom_domain: result.customDomain }),
-          { headers: { "Cache-Control": "public, max-age=300" } }
-        )).catch(() => {});
+        cache
+          .put(
+            infoCacheKey,
+            new Response(JSON.stringify(kvData), {
+              headers: { "Cache-Control": "public, max-age=300" },
+            }),
+          )
+          .catch(() => {});
+        cache
+          .put(
+            new Request(`https://cache/slug-domain-${slug}`),
+            new Response(JSON.stringify({ custom_domain: result.customDomain }), {
+              headers: { "Cache-Control": "public, max-age=300" },
+            }),
+          )
+          .catch(() => {});
         return result;
       }
     } catch {}
@@ -486,7 +749,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         },
-      }
+      },
     );
 
     if (!res.ok) return { storeId: null, customDomain: null };
@@ -499,9 +762,14 @@ async function _resolveStoreInfo(slug, hostname, env) {
       _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
       _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
       domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
-      cache.put(infoCacheKey, new Response(JSON.stringify(nfData), {
-        headers: { "Cache-Control": "public, max-age=60" },
-      })).catch(() => {});
+      cache
+        .put(
+          infoCacheKey,
+          new Response(JSON.stringify(nfData), {
+            headers: { "Cache-Control": "public, max-age=60" },
+          }),
+        )
+        .catch(() => {});
       if (env?.STORE_KV) {
         env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 120 }).catch(() => {});
       }
@@ -516,20 +784,36 @@ async function _resolveStoreInfo(slug, hostname, env) {
     domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
 
     const writes = [
-      cache.put(infoCacheKey, new Response(JSON.stringify(cachePayload), {
-        headers: { "Cache-Control": "public, max-age=300" },
-      })).catch(() => {}),
-      cache.put(new Request(`https://cache/slug-domain-${slug}`), new Response(
-        JSON.stringify({ custom_domain: result.customDomain }),
-        { headers: { "Cache-Control": "public, max-age=300" } }
-      )).catch(() => {}),
-      cache.put(new Request(`https://cache/store-id:${hostname}`), new Response(result.storeId, {
-        headers: { "Cache-Control": "public, max-age=600" },
-      })).catch(() => {}),
+      cache
+        .put(
+          infoCacheKey,
+          new Response(JSON.stringify(cachePayload), {
+            headers: { "Cache-Control": "public, max-age=300" },
+          }),
+        )
+        .catch(() => {}),
+      cache
+        .put(
+          new Request(`https://cache/slug-domain-${slug}`),
+          new Response(JSON.stringify({ custom_domain: result.customDomain }), {
+            headers: { "Cache-Control": "public, max-age=300" },
+          }),
+        )
+        .catch(() => {}),
+      cache
+        .put(
+          new Request(`https://cache/store-id:${hostname}`),
+          new Response(result.storeId, {
+            headers: { "Cache-Control": "public, max-age=600" },
+          }),
+        )
+        .catch(() => {}),
     ];
     if (env?.STORE_KV) {
       writes.push(
-        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(cachePayload), { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(cachePayload), {
+          expirationTtl: STORE_INFO_KV_TTL,
+        }).catch(() => {}),
       );
     }
     await Promise.all(writes);
@@ -571,16 +855,10 @@ async function proxyToOrigin(request) {
       contentType.includes("font")
     ) {
       if (newRes.ok) {
-        newRes.headers.set(
-          "Cache-Control",
-          "public, max-age=2592000, immutable"
-        );
+        newRes.headers.set("Cache-Control", "public, max-age=2592000, immutable");
       }
     } else if (contentType.includes("text/html")) {
-      newRes.headers.set(
-        "Cache-Control",
-        "public, max-age=300, stale-while-revalidate=3600"
-      );
+      newRes.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
     }
 
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
@@ -591,10 +869,7 @@ async function proxyToOrigin(request) {
   } catch {
     clearTimeout(timeout);
     return new Response(
-      `<!DOCTYPE html>
-<html><head>
-<title>Store Temporarily Unavailable</title>
-</head>
+      `<!DOCTYPE html><html><head><title>Store Temporarily Unavailable</title></head>
 <body style="font-family:sans-serif;text-align:center;padding:50px">
 <h2>Store Temporarily Unavailable</h2>
 <p>The storefront origin timed out. Please retry in a few seconds.</p>
@@ -605,7 +880,7 @@ async function proxyToOrigin(request) {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
         },
-      }
+      },
     );
   }
 }
@@ -634,15 +909,17 @@ async function getSpaShell(request, ctx, env) {
       if (kvHtml) {
         if (ctx) {
           ctx.waitUntil(
-            cache.put(
-              shellCacheKey,
-              new Response(kvHtml, {
-                headers: {
-                  "Content-Type": "text/html; charset=utf-8",
-                  "Cache-Control": `public, max-age=${SPA_SHELL_CACHE_TTL}`,
-                },
-              })
-            ).catch(() => {})
+            cache
+              .put(
+                shellCacheKey,
+                new Response(kvHtml, {
+                  headers: {
+                    "Content-Type": "text/html; charset=utf-8",
+                    "Cache-Control": `public, max-age=${SPA_SHELL_CACHE_TTL}`,
+                  },
+                }),
+              )
+              .catch(() => {}),
           );
         }
         return { html: kvHtml, source: "kv-shell" };
@@ -654,7 +931,9 @@ async function getSpaShell(request, ctx, env) {
     try {
       const html = await inflightShellFetch;
       return html ? { html, source: "origin-coalesced" } : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
   const fetchPromise = _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey);
@@ -663,8 +942,11 @@ async function getSpaShell(request, ctx, env) {
   try {
     const html = await fetchPromise;
     return html ? { html, source: "origin" } : null;
-  } catch { return null; }
-  finally { inflightShellFetch = null; }
+  } catch {
+    return null;
+  } finally {
+    inflightShellFetch = null;
+  }
 }
 
 async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
@@ -689,16 +971,16 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
               "Content-Type": "text/html; charset=utf-8",
               "Cache-Control": `public, max-age=${SPA_SHELL_CACHE_TTL}`,
             },
-          })
+          }),
         ),
-      ]).catch(() => {})
+      ]).catch(() => {}),
     );
   }
 
   return html;
 }
 
-/* ============== PREBUILT HEAD — cached in Cache API + KV ============== */
+/* ============== PREBUILT HEAD ============== */
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
 const PREBUILT_HEAD_KV_TTL = 3600;
@@ -715,9 +997,14 @@ async function getPrebuiltHead(html, env) {
     try {
       const cached = await env.STORE_KV.get(PREBUILT_HEAD_KV_KEY);
       if (cached) {
-        cache.put(headCacheKey, new Response(cached, {
-          headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` },
-        })).catch(() => {});
+        cache
+          .put(
+            headCacheKey,
+            new Response(cached, {
+              headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` },
+            }),
+          )
+          .catch(() => {});
         return cached;
       }
     } catch {}
@@ -725,9 +1012,14 @@ async function getPrebuiltHead(html, env) {
 
   const prebuilt = _buildPrebuiltHead(html);
 
-  cache.put(headCacheKey, new Response(prebuilt, {
-    headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` },
-  })).catch(() => {});
+  cache
+    .put(
+      headCacheKey,
+      new Response(prebuilt, {
+        headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` },
+      }),
+    )
+    .catch(() => {});
   if (env?.STORE_KV) {
     env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, prebuilt, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(() => {});
   }
@@ -747,7 +1039,8 @@ function _buildPrebuiltHead(html) {
     head += `<link rel="preload" href="${cssMatch[1]}" as="style" />`;
   }
 
-  const DASHBOARD_CHUNK_PATTERN = /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
+  const DASHBOARD_CHUNK_PATTERN =
+    /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
   const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
   const seen = new Set();
   for (const m of chunkMatches) {
@@ -760,7 +1053,7 @@ function _buildPrebuiltHead(html) {
   return head;
 }
 
-/* ============== PROXY TO ORIGIN WITH CF EDGE CACHING (for hashed static assets) ============== */
+/* ============== PROXY TO ORIGIN WITH CF EDGE CACHING ============== */
 
 async function proxyToOriginCached(request) {
   const url = new URL(request.url);
@@ -799,6 +1092,7 @@ const KV_STOREFRONT_TTL = 3600;
 const CACHE_STOREFRONT_TTL = 600;
 
 /* ============== REQUEST COALESCING ============== */
+
 const inflightRequests = new Map();
 
 async function prefetchStorefrontData(slug, ctx, env) {
@@ -819,12 +1113,14 @@ async function prefetchStorefrontData(slug, ctx, env) {
       if (kvData) {
         if (ctx) {
           ctx.waitUntil(
-            cache.put(
-              dataCacheKey,
-              new Response(JSON.stringify(kvData), {
-                headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` },
-              })
-            ).catch(() => {})
+            cache
+              .put(
+                dataCacheKey,
+                new Response(JSON.stringify(kvData), {
+                  headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` },
+                }),
+              )
+              .catch(() => {}),
           );
         }
         return { data: kvData, source: "kv" };
@@ -862,19 +1158,16 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
   const timeout = setTimeout(() => controller.abort(), STOREFRONT_PREFETCH_TIMEOUT_MS);
 
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/rpc/get_storefront_shell`,
-      {
-        method: "POST",
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-        body: JSON.stringify({ _slug: slug }),
-      }
-    );
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_storefront_shell`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({ _slug: slug }),
+    });
     clearTimeout(timeout);
     if (!res.ok) return null;
     const data = await res.json();
@@ -890,17 +1183,15 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
 
       ctx.waitUntil(
         Promise.all([
-          env?.STORE_KV
-            ? env.STORE_KV.put(kvKey, dataStr, { expirationTtl: KV_STOREFRONT_TTL })
-            : Promise.resolve(),
+          env?.STORE_KV ? env.STORE_KV.put(kvKey, dataStr, { expirationTtl: KV_STOREFRONT_TTL }) : Promise.resolve(),
           cache.put(
             dataCacheKey,
             new Response(dataStr, {
               headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` },
-            })
+            }),
           ),
           storeId ? _prewarmProducts(storeId, storeSlug, ctx, env, data?.store?.custom_domain) : Promise.resolve(),
-        ])
+        ]),
       );
     }
 
@@ -911,7 +1202,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
   }
 }
 
-/* ============== LIGHTWEIGHT THEME CACHE (Cache API first, KV fallback) ============== */
+/* ============== LIGHTWEIGHT THEME CACHE ============== */
 
 const THEME_LITE_KV_TTL = 3600;
 const THEME_LITE_CACHE_TTL = 600;
@@ -929,9 +1220,14 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
   const liteStr = JSON.stringify(lite);
 
   const themeCacheKey = new Request(`https://cache/theme-lite:${slug}`);
-  cache.put(themeCacheKey, new Response(liteStr, {
-    headers: { "Cache-Control": `public, max-age=${THEME_LITE_CACHE_TTL}` },
-  })).catch(() => {});
+  cache
+    .put(
+      themeCacheKey,
+      new Response(liteStr, {
+        headers: { "Cache-Control": `public, max-age=${THEME_LITE_CACHE_TTL}` },
+      }),
+    )
+    .catch(() => {});
 
   if (env?.STORE_KV) {
     env.STORE_KV.put(`theme-lite:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL }).catch(() => {});
@@ -949,9 +1245,14 @@ async function _getThemeLite(slug, env) {
   try {
     const kvData = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" });
     if (kvData) {
-      cache.put(themeCacheKey, new Response(JSON.stringify(kvData), {
-        headers: { "Cache-Control": `public, max-age=${THEME_LITE_CACHE_TTL}` },
-      })).catch(() => {});
+      cache
+        .put(
+          themeCacheKey,
+          new Response(JSON.stringify(kvData), {
+            headers: { "Cache-Control": `public, max-age=${THEME_LITE_CACHE_TTL}` },
+          }),
+        )
+        .catch(() => {});
     }
     return kvData;
   } catch {
@@ -959,8 +1260,8 @@ async function _getThemeLite(slug, env) {
   }
 }
 
+/* ============== PRODUCTS PREWARM ============== */
 
-// v4.8: Also warm products under custom domain cache key
 async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   const domain = slug ? `${slug}.${ROOT_DOMAIN}` : "unknown";
   const cacheKey = _buildProductsCacheKey(domain, {});
@@ -974,37 +1275,45 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
     const data = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
     const cacheOps = [
-      cache.put(
-        cacheKey,
-        new Response(body, {
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
-          },
-        })
-      ).catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(_buildProductsKvKey(domain, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
-        : Promise.resolve(),
-    ];
-
-    // v4.8: Also cache under custom domain key so custom domain requests hit warm cache
-    if (customDomain) {
-      const cleanCustom = customDomain.replace(/^www\./, "").toLowerCase().trim();
-      cacheOps.push(
-        cache.put(
-          _buildProductsCacheKey(cleanCustom, {}),
+      cache
+        .put(
+          cacheKey,
           new Response(body, {
             headers: {
               "Content-Type": "application/json",
               "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
             },
-          })
-        ).catch(() => {})
+          }),
+        )
+        .catch(() => {}),
+      env?.STORE_KV
+        ? env.STORE_KV.put(_buildProductsKvKey(domain, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
+        : Promise.resolve(),
+    ];
+
+    if (customDomain) {
+      const cleanCustom = customDomain
+        .replace(/^www\./, "")
+        .toLowerCase()
+        .trim();
+      cacheOps.push(
+        cache
+          .put(
+            _buildProductsCacheKey(cleanCustom, {}),
+            new Response(body, {
+              headers: {
+                "Content-Type": "application/json",
+                "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+              },
+            }),
+          )
+          .catch(() => {}),
       );
       if (env?.STORE_KV) {
         cacheOps.push(
-          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
+          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(
+            () => {},
+          ),
         );
       }
     }
@@ -1013,19 +1322,19 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   } catch {}
 }
 
-/* ============== PRODUCTS API (Cache → KV → DB) ============== */
+/* ============== PRODUCTS API ============== */
 
 const PRODUCTS_CACHE_TTL = 300;
 const PRODUCTS_KV_TTL = 1800;
 const PRODUCTS_DB_TIMEOUT_MS = 3000;
 const PRODUCTS_PAGE_SIZE = 20;
-const PRODUCT_COLUMNS = "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+const PRODUCT_COLUMNS =
+  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
 const inflightProductRequests = new Map();
 const inflightDomainResolutions = new Map();
 
 const domainStoreIdCache = new Map();
-// v4.8: Size cap
 const DOMAIN_STORE_ID_CACHE_MAX = 5_000;
 
 async function _resolveStoreId(domain, env) {
@@ -1054,9 +1363,14 @@ async function _resolveStoreId(domain, env) {
       if (kvVal) {
         _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
         domainStoreIdCache.set(domain, { storeId: kvVal, expiresAt: Date.now() + 300_000 });
-        cache.put(storeIdCacheKey, new Response(kvVal, {
-          headers: { "Cache-Control": "public, max-age=600" },
-        })).catch(() => {});
+        cache
+          .put(
+            storeIdCacheKey,
+            new Response(kvVal, {
+              headers: { "Cache-Control": "public, max-age=600" },
+            }),
+          )
+          .catch(() => {});
         return kvVal;
       }
     } catch {}
@@ -1079,18 +1393,28 @@ async function _resolveStoreId(domain, env) {
     if (storeId) {
       _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
       domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
-      cache.put(storeIdCacheKey, new Response(storeId, {
-        headers: { "Cache-Control": "public, max-age=600" },
-      })).catch(() => {});
+      cache
+        .put(
+          storeIdCacheKey,
+          new Response(storeId, {
+            headers: { "Cache-Control": "public, max-age=600" },
+          }),
+        )
+        .catch(() => {});
       if (env?.STORE_KV) {
         env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 3600 }).catch(() => {});
       }
     } else {
       _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
       domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
-      cache.put(storeIdCacheKey, new Response("__NOT_FOUND__", {
-        headers: { "Cache-Control": "public, max-age=60" },
-      })).catch(() => {});
+      cache
+        .put(
+          storeIdCacheKey,
+          new Response("__NOT_FOUND__", {
+            headers: { "Cache-Control": "public, max-age=60" },
+          }),
+        )
+        .catch(() => {});
     }
 
     return storeId;
@@ -1107,10 +1431,9 @@ async function _fetchStoreIdFromDb(domain) {
     ? `slug=eq.${encodeURIComponent(domain.replace(`.${ROOT_DOMAIN}`, ""))}`
     : `custom_domain=eq.${encodeURIComponent(domain)}`;
 
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/stores_public?select=id&${query}&limit=1`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-  );
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/stores_public?select=id&${query}&limit=1`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+  });
   if (!res.ok) return null;
   const rows = await res.json();
   return rows[0]?.id || null;
@@ -1138,9 +1461,7 @@ async function handlePurgeProducts(request, url, ctx, env) {
   const defaultCacheKey = _buildProductsCacheKey(domain, {});
   const defaultKvKey = _buildProductsKvKey(domain, {});
 
-  const purgeOps = [
-    cache.delete(defaultCacheKey).catch(() => {}),
-  ];
+  const purgeOps = [cache.delete(defaultCacheKey).catch(() => {})];
 
   if (env?.STORE_KV) {
     purgeOps.push(env.STORE_KV.delete(defaultKvKey).catch(() => {}));
@@ -1160,7 +1481,7 @@ async function handlePurgeProducts(request, url, ctx, env) {
     new Response(JSON.stringify({ purged: true, domain }), {
       headers: { "Content-Type": "application/json" },
     }),
-    "purge"
+    "purge",
   );
 }
 
@@ -1186,20 +1507,23 @@ async function handleProductsApi(request, url, ctx, env) {
     }
   } catch {}
 
-  // v4.8: Try KV before hitting DB
   const kvKey = _buildProductsKvKey(domain, filters);
   if (env?.STORE_KV) {
     try {
       const kvData = await env.STORE_KV.get(kvKey, { type: "text" });
       if (kvData) {
-        // Promote to Cache API
         ctx.waitUntil(
-          cache.put(cacheKey, new Response(kvData, {
-            headers: {
-              "Content-Type": "application/json",
-              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
-            },
-          })).catch(() => {})
+          cache
+            .put(
+              cacheKey,
+              new Response(kvData, {
+                headers: {
+                  "Content-Type": "application/json",
+                  "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+                },
+              }),
+            )
+            .catch(() => {}),
         );
         return addCorsHeaders(
           new Response(kvData, {
@@ -1208,7 +1532,7 @@ async function handleProductsApi(request, url, ctx, env) {
               "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
             },
           }),
-          "kv"
+          "kv",
         );
       }
     } catch {}
@@ -1220,7 +1544,7 @@ async function handleProductsApi(request, url, ctx, env) {
       new Response("[]", {
         headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60" },
       }),
-      "no-store"
+      "no-store",
     );
   }
 
@@ -1314,7 +1638,6 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
   }
 }
 
-// v4.8: Now writes to BOTH Cache API AND KV — prevents cold product fetches after Cache API expires
 function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   const body = JSON.stringify(data || []);
   const response = new Response(body, {
@@ -1330,7 +1653,7 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
       env?.STORE_KV
         ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
         : Promise.resolve(),
-    ])
+    ]),
   );
 
   return addCorsHeaders(response, source);
@@ -1345,15 +1668,17 @@ async function _refreshProductsBackground(domain, filters, cacheKey, env) {
     const kvKey = _buildProductsKvKey(domain, filters);
 
     await Promise.all([
-      cache.put(
-        cacheKey,
-        new Response(body, {
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
-          },
-        })
-      ).catch(() => {}),
+      cache
+        .put(
+          cacheKey,
+          new Response(body, {
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+            },
+          }),
+        )
+        .catch(() => {}),
       env?.STORE_KV
         ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
         : Promise.resolve(),
@@ -1370,24 +1695,26 @@ async function _fallbackProducts(domain, cacheKey, kvKey, env) {
   if (env?.STORE_KV) {
     try {
       const stale = await env.STORE_KV.get(kvKey, { type: "text" });
-      if (stale) return addCorsHeaders(
-        new Response(stale, {
-          headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-        }),
-        "kv-stale"
-      );
+      if (stale)
+        return addCorsHeaders(
+          new Response(stale, {
+            headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          }),
+          "kv-stale",
+        );
     } catch {}
 
     const defaultKvKey = _buildProductsKvKey(domain, {});
     if (defaultKvKey !== kvKey) {
       try {
         const defaultStale = await env.STORE_KV.get(defaultKvKey, { type: "text" });
-        if (defaultStale) return addCorsHeaders(
-          new Response(defaultStale, {
-            headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-          }),
-          "kv-default-stale"
-        );
+        if (defaultStale)
+          return addCorsHeaders(
+            new Response(defaultStale, {
+              headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+            }),
+            "kv-default-stale",
+          );
       } catch {}
     }
   }
@@ -1402,7 +1729,7 @@ async function _fallbackProducts(domain, cacheKey, kvKey, env) {
     new Response("[]", {
       headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     }),
-    "fallback-empty"
+    "fallback-empty",
   );
 }
 
@@ -1429,7 +1756,6 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 <link rel="dns-prefetch" href="${SUPABASE_URL}" />
 <link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co/storage" crossorigin />`;
 
-  // v4.8: Use shared theme builder
   let inlineThemeCss = "";
   let bgColor = "#ffffff";
   let textColor = "#1a1a1a";
@@ -1441,14 +1767,15 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     textColor = themeResult.textColor;
   }
 
-  const storeName = storefrontData?.store?.name || "";
   const logoUrl = storefrontData?.store?.logo_url || "";
 
   let ogMeta = "";
   if (storefrontData?.store) {
     const s = storefrontData.store;
     const ogTitle = escapeHtml(s.meta_title || `${s.name} — Shop Online`);
-    const ogDesc = escapeHtml(s.meta_description || s.description || `Shop the best products at ${s.name}. Fast delivery & easy returns.`);
+    const ogDesc = escapeHtml(
+      s.meta_description || s.description || `Shop the best products at ${s.name}. Fast delivery & easy returns.`,
+    );
     const ogImage = escapeHtml(s.og_image_url || s.banner_url || s.logo_url || "");
     ogMeta += `<title>${ogTitle}</title>`;
     ogMeta += `<meta name="description" content="${ogDesc}">`;
@@ -1481,7 +1808,8 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     cssPreload = `<link rel="preload" href="${cssMatch[1]}" as="style" />\n`;
   }
 
-  const DASHBOARD_CHUNK_PATTERN = /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
+  const DASHBOARD_CHUNK_PATTERN =
+    /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
   const chunkMatches = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)];
   let modulePreloads = "";
   const seen = new Set();
@@ -1492,13 +1820,16 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
     }
   }
 
-  let injectedHtml = html.replace("<head>", `<head>${injection}${ogMeta}${inlineThemeCss}${lcpPreload}${cssPreload}${modulePreloads}`);
+  let injectedHtml = html.replace(
+    "<head>",
+    `<head>${injection}${ogMeta}${inlineThemeCss}${lcpPreload}${cssPreload}${modulePreloads}`,
+  );
   injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}<div id="root">`);
 
   return { html: injectedHtml, dataSource };
 }
 
-/* ============== FAST SHELL INJECT (v4.8 — uses shared builders) ============== */
+/* ============== FAST SHELL INJECT (fallback when storefront times out) ============== */
 
 function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
   const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
@@ -1519,14 +1850,12 @@ function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
   const textColor = themeLite?.tc || "#1a1a1a";
   const skeletonMuted = getSkeletonMuted(textColor);
 
-  // v4.8: Use shared theme builder
   let themeCss = "";
   if (themeLite) {
     const themeResult = buildThemeCssFromConfig(themeLite);
     themeCss = themeResult.css;
   }
 
-  // v4.8: Use shared skeleton builder
   const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
   let headInjection;
@@ -1542,71 +1871,53 @@ function injectFastShell(html, slug, themeLite, prebuiltHead, inlineProducts) {
   return injectedHtml;
 }
 
-/* ============== FETCH AND INJECT SLUG INTO HTML (v4.8 — parallel with domain resolution) ============== */
+/* ============== v4.9: UPDATED fetchAndInjectSlug ============== */
 
 async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname) {
-  // v4.8: Shell + theme fetched in parallel (same as before, slug already resolved by caller)
-  const shellResult = await getSpaShell(request, ctx, env);
+  // v4.9: Fetch shell + theme + prebuilt head + products all at once
+  const [shellResult, themeLite, cachedHead, inlineProducts] = await Promise.all([
+    getSpaShell(request, ctx, env),
+    _getThemeLite(slug, env),
+    _getCachedPrebuiltHead(env),
+    _getInlineProductsOrNull(hostname, slug, env, ctx),
+  ]);
 
   if (!shellResult?.html) {
     const response = await proxyToOrigin(request);
     return { response, dataSource: "none" };
   }
 
-  // v4.8: Build prebuilt head with real HTML for proper preload hints
-  const [themeLite, prebuiltHead] = await Promise.all([
-    _getThemeLite(slug, env),
-    getPrebuiltHead(shellResult.html, env),
-  ]);
+  const prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
+  const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
-  // v4.8.1: Check Cache API first, then KV fallback for products
-  let inlineProducts = null;
-  try {
-    const productsCacheKey = _buildProductsCacheKey(hostname, {});
-    const cachedProducts = await cache.match(productsCacheKey);
-    if (cachedProducts) {
-      inlineProducts = await cachedProducts.text();
-    } else if (env?.STORE_KV) {
-      // KV fallback — products may be warm in KV even if Cache API expired
-      const kvKey = _buildProductsKvKey(hostname, {});
-      const kvProducts = await env.STORE_KV.get(kvKey);
-      if (kvProducts) {
-        inlineProducts = kvProducts;
-        // Re-populate Cache API from KV for next request
-        ctx.waitUntil(
-          cache.put(productsCacheKey, new Response(kvProducts, {
-            headers: {
-              "Content-Type": "application/json",
-              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
-            },
-          })).catch(() => {})
-        );
-      }
-    }
-  } catch {}
-
-  const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead, inlineProducts);
-
-  const dataSource = inlineProducts
-    ? "fast-shell-products"
-    : themeLite ? "fast-shell-themed" : "fast-shell";
+  // v4.9: Race storefront data against deadline — inject full data if available
+  const storefrontPromise = prefetchStorefrontDataWithDeadline(slug, ctx, env, 1200);
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
   newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
   newHeaders.set("X-Store-Slug", slug);
-  newHeaders.set("X-Data-Source", dataSource);
   newHeaders.set("X-Shell-Source", shellResult.source);
   newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
+  newHeaders.set("X-Data-Source", "streaming");
+  if (linkHeader) newHeaders.set("Link", linkHeader);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
     newHeaders.set(k, v);
   }
 
-  const response = new Response(fastHtml, { status: 200, headers: newHeaders });
+  const response = await serveStreamedHtml(
+    slug,
+    shellResult,
+    themeLite,
+    prebuiltHead,
+    inlineProducts,
+    storefrontPromise,
+    newHeaders,
+  );
 
   ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname));
 
-  return { response, dataSource };
+  return { response, dataSource: "streaming" };
 }
 
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname) {
@@ -1616,16 +1927,14 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
       const existing = await cache.match(earlyKey);
       if (existing) {
         const ds = existing.headers.get("X-Data-Source") || "";
-        if (ds && ds !== "fast-shell" && ds !== "fast-shell-themed") {
+        if (ds && ds !== "fast-shell" && ds !== "fast-shell-themed" && ds !== "streaming") {
           return;
         }
       }
     }
 
     const warmKey = `warm-html:${slug}`;
-    if (!shouldRevalidate(warmKey)) {
-      return;
-    }
+    if (!shouldRevalidate(warmKey)) return;
 
     const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
     if (!prefetchResult.data) return;
@@ -1656,9 +1965,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
 
 function storeInEdgeCache(ctx, hostname, pathname, slug, response) {
   const earlyKey = getEarlyCacheKey(hostname, pathname);
-  ctx.waitUntil(
-    cache.put(earlyKey, response.clone()).catch(() => {})
-  );
+  ctx.waitUntil(cache.put(earlyKey, response.clone()).catch(() => {}));
 }
 
 /* ============== CACHED FETCH (HARDENED) ============== */
@@ -1726,9 +2033,7 @@ function buildOgHtml(og, finalUrl) {
   const title = escapeHtml(og.title || "");
   const desc = escapeHtml(og.description || "");
   const img = escapeHtml(og.image || "");
-  const siteName = escapeHtml(
-    og.title?.split("—")[0]?.trim() || og.title || ""
-  );
+  const siteName = escapeHtml(og.title?.split("—")[0]?.trim() || og.title || "");
   const safeUrl = escapeHtml(finalUrl);
 
   return `<!DOCTYPE html>
@@ -1742,9 +2047,13 @@ function buildOgHtml(og, finalUrl) {
 <meta property="og:url" content="${safeUrl}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="${siteName}">
-${img ? `<meta property="og:image" content="${img}">
+${
+  img
+    ? `<meta property="og:image" content="${img}">
 <meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">` : ""}
+<meta property="og:image:height" content="630">`
+    : ""
+}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${desc}">
@@ -1764,9 +2073,7 @@ ${img ? `<meta name="twitter:image" content="${img}">` : ""}
 async function handleBot(request, slug, url, isCustom) {
   const ua = request.headers.get("User-Agent") || "";
 
-  // v4.8.2: Let social in-app browsers (Instagram, Snapchat) through to the SPA
   if (isSocialInAppBrowser(ua)) return null;
-
   if (!BOT_UA_REGEX.test(ua)) return null;
 
   const botIp = request.headers.get("cf-connecting-ip") || "unknown";
@@ -1781,9 +2088,7 @@ async function handleBot(request, slug, url, isCustom) {
   if (SEARCH_BOT_REGEX.test(ua)) {
     try {
       const domainType = isCustom ? "custom" : "sub";
-      const botCacheKey = new Request(
-        `https://cache/bot-render/${domainType}/${slug}/${product || "home"}`
-      );
+      const botCacheKey = new Request(`https://cache/bot-render/${domainType}/${slug}/${product || "home"}`);
       const cached = await cache.match(botCacheKey);
       if (cached) return cached;
 
@@ -1804,7 +2109,6 @@ async function handleBot(request, slug, url, isCustom) {
             "X-Bot-Render": "true",
           },
         });
-
         await cache.put(botCacheKey, response.clone());
         return response;
       }
@@ -1813,9 +2117,7 @@ async function handleBot(request, slug, url, isCustom) {
 
   if (SOCIAL_BOT_REGEX.test(ua) || INSTAGRAM_CRAWLER_REGEX.test(ua)) {
     try {
-      const ogCacheKey = new Request(
-        `https://cache/og/${slug}/${product || "home"}`
-      );
+      const ogCacheKey = new Request(`https://cache/og/${slug}/${product || "home"}`);
       const cached = await cache.match(ogCacheKey);
       if (cached) return cached;
 
@@ -1838,7 +2140,6 @@ async function handleBot(request, slug, url, isCustom) {
             "X-OG-Render": "true",
           },
         });
-
         await cache.put(ogCacheKey, response.clone());
         return response;
       }
@@ -1857,10 +2158,7 @@ async function handleSeoFiles(url, slug) {
     if (cachedSitemap) return cachedSitemap;
 
     try {
-      const res = await callEdgeFunction("seo-page", {
-        slug,
-        type: "sitemap",
-      });
+      const res = await callEdgeFunction("seo-page", { slug, type: "sitemap" });
       if (res.ok) {
         const body = await res.text();
         const response = new Response(body, {
@@ -1905,7 +2203,7 @@ async function handlePrewarm(request, url, ctx, env) {
         status: 400,
         headers: { "Content-Type": "application/json" },
       }),
-      "prewarm-error"
+      "prewarm-error",
     );
   }
 
@@ -1918,7 +2216,7 @@ async function handlePrewarm(request, url, ctx, env) {
         status: 400,
         headers: { "Content-Type": "application/json" },
       }),
-      "prewarm-error"
+      "prewarm-error",
     );
   }
 
@@ -1932,9 +2230,14 @@ async function handlePrewarm(request, url, ctx, env) {
       const built = _buildPrebuiltHead(shellResult.html);
       const headCacheKey = new Request("https://cache/prebuilt-head");
       await Promise.all([
-        cache.put(headCacheKey, new Response(built, {
-          headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` },
-        })).catch(() => {}),
+        cache
+          .put(
+            headCacheKey,
+            new Response(built, {
+              headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` },
+            }),
+          )
+          .catch(() => {}),
         env?.STORE_KV
           ? env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, built, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(() => {})
           : Promise.resolve(),
@@ -1943,18 +2246,26 @@ async function handlePrewarm(request, url, ctx, env) {
     }
 
     if (domain) {
-      const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
+      const cleanDomain = domain
+        .replace(/^www\./, "")
+        .toLowerCase()
+        .trim();
       const domainKey = new Request(`https://cache/domain-${cleanDomain}`);
       const cacheData = JSON.stringify({ slug });
 
       const writes = [
-        cache.put(domainKey, new Response(cacheData, {
-          headers: { "Cache-Control": "public, max-age=300" },
-        })).catch(() => {}),
+        cache
+          .put(
+            domainKey,
+            new Response(cacheData, {
+              headers: { "Cache-Control": "public, max-age=300" },
+            }),
+          )
+          .catch(() => {}),
       ];
       if (env?.STORE_KV) {
         writes.push(
-          env.STORE_KV.put(`domain:${cleanDomain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
+          env.STORE_KV.put(`domain:${cleanDomain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }).catch(() => {}),
         );
       }
       await Promise.all(writes);
@@ -1975,30 +2286,42 @@ async function handlePrewarm(request, url, ctx, env) {
     if (storeId) {
       const storeIdStr = storeId;
       const idWrites = [
-        cache.put(new Request(`https://cache/store-id:${subDomain}`), new Response(storeIdStr, {
-          headers: { "Cache-Control": "public, max-age=600" },
-        })).catch(() => {}),
+        cache
+          .put(
+            new Request(`https://cache/store-id:${subDomain}`),
+            new Response(storeIdStr, {
+              headers: { "Cache-Control": "public, max-age=600" },
+            }),
+          )
+          .catch(() => {}),
       ];
       if (env?.STORE_KV) {
         idWrites.push(env.STORE_KV.put(`store-id:${subDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(() => {}));
       }
       if (domain) {
-        const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
+        const cleanDomain = domain
+          .replace(/^www\./, "")
+          .toLowerCase()
+          .trim();
         idWrites.push(
-          cache.put(new Request(`https://cache/store-id:${cleanDomain}`), new Response(storeIdStr, {
-            headers: { "Cache-Control": "public, max-age=600" },
-          })).catch(() => {})
+          cache
+            .put(
+              new Request(`https://cache/store-id:${cleanDomain}`),
+              new Response(storeIdStr, {
+                headers: { "Cache-Control": "public, max-age=600" },
+              }),
+            )
+            .catch(() => {}),
         );
         if (env?.STORE_KV) {
-          idWrites.push(env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(() => {}));
+          idWrites.push(
+            env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(() => {}),
+          );
         }
       }
       await Promise.all(idWrites);
     }
-    results.storefrontData = dataResult.source;
 
-    // v4.8: Only fetch products explicitly if prefetchStorefrontData came from cache
-    // (if it came from origin, _fetchShellFromSupabase already warmed products)
     if (storeId && dataResult.source !== "origin") {
       try {
         const products = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
@@ -2007,25 +2330,51 @@ async function handlePrewarm(request, url, ctx, env) {
 
         const subCacheKey = _buildProductsCacheKey(subDomain, {});
         cacheOps.push(
-          cache.put(subCacheKey, new Response(prodBody, {
-            headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
-          })).catch(() => {})
+          cache
+            .put(
+              subCacheKey,
+              new Response(prodBody, {
+                headers: {
+                  "Content-Type": "application/json",
+                  "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+                },
+              }),
+            )
+            .catch(() => {}),
         );
         if (env?.STORE_KV) {
-          cacheOps.push(env.STORE_KV.put(_buildProductsKvKey(subDomain, {}), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}));
+          cacheOps.push(
+            env.STORE_KV.put(_buildProductsKvKey(subDomain, {}), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(
+              () => {},
+            ),
+          );
         }
 
-        // v4.8: Also cache under custom domain key
         if (domain) {
-          const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
+          const cleanDomain = domain
+            .replace(/^www\./, "")
+            .toLowerCase()
+            .trim();
           const domCacheKey = _buildProductsCacheKey(cleanDomain, {});
           cacheOps.push(
-            cache.put(domCacheKey, new Response(prodBody, {
-              headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
-            })).catch(() => {})
+            cache
+              .put(
+                domCacheKey,
+                new Response(prodBody, {
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
+                  },
+                }),
+              )
+              .catch(() => {}),
           );
           if (env?.STORE_KV) {
-            cacheOps.push(env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}));
+            cacheOps.push(
+              env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}), prodBody, {
+                expirationTtl: PRODUCTS_KV_TTL,
+              }).catch(() => {}),
+            );
           }
         }
 
@@ -2056,7 +2405,10 @@ async function handlePrewarm(request, url, ctx, env) {
       await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
 
       if (domain) {
-        const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
+        const cleanDomain = domain
+          .replace(/^www\./, "")
+          .toLowerCase()
+          .trim();
         const domEarlyKey = getEarlyCacheKey(cleanDomain, "/");
         await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
       }
@@ -2066,19 +2418,16 @@ async function handlePrewarm(request, url, ctx, env) {
       results.fullHtml = "skipped";
     }
 
-    // v4.8: Update slug index on prewarm (covers pre-first-cron window)
     if (env?.STORE_KV) {
       try {
         const currentIndex = await env.STORE_KV.get("all-active-slugs", { type: "json" });
         if (Array.isArray(currentIndex) && !currentIndex.includes(slug)) {
           currentIndex.push(slug);
-          await env.STORE_KV.put("all-active-slugs", JSON.stringify(currentIndex), { expirationTtl: 600 }).catch(() => {});
-          // Update in-memory too
-          if (_slugIndexSet) {
-            _slugIndexSet.add(slug);
-          }
+          await env.STORE_KV.put("all-active-slugs", JSON.stringify(currentIndex), { expirationTtl: 600 }).catch(
+            () => {},
+          );
+          if (_slugIndexSet) _slugIndexSet.add(slug);
         } else if (!currentIndex) {
-          // First-ever prewarm before cron — seed with this slug
           await env.STORE_KV.put("all-active-slugs", JSON.stringify([slug]), { expirationTtl: 600 }).catch(() => {});
           _slugIndexSet = new Set([slug]);
           _slugIndexExpiresAt = Date.now() + 300_000;
@@ -2090,7 +2439,7 @@ async function handlePrewarm(request, url, ctx, env) {
       new Response(JSON.stringify({ success: true, slug, domain: domain || null, results }), {
         headers: { "Content-Type": "application/json" },
       }),
-      "prewarm"
+      "prewarm",
     );
   } catch (err) {
     return addCorsHeaders(
@@ -2098,9 +2447,15 @@ async function handlePrewarm(request, url, ctx, env) {
         status: 500,
         headers: { "Content-Type": "application/json" },
       }),
-      "prewarm-error"
+      "prewarm-error",
     );
   }
+}
+
+/* ============== NOT FOUND HTML ============== */
+
+function buildNotFoundHtml(safeSlug, rootDomain) {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.${rootDomain}</strong></p><a href="https://${rootDomain}">Create Your Store</a></div></body></html>`;
 }
 
 /* ============== MAIN HANDLER ============== */
@@ -2110,7 +2465,7 @@ export default {
     const url = new URL(request.url);
     const hostname = (request.headers.get("host") || url.hostname).toLowerCase().trim();
 
-    // ─── HEALTH CHECK ENDPOINT ───
+    // ─── HEALTH CHECK ───
     if (url.pathname === "/__health") {
       try {
         const controller = new AbortController();
@@ -2143,18 +2498,22 @@ export default {
           {
             status: originCheck.ok ? 200 : 503,
             headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-          }
+          },
         );
       } catch {
         return new Response(
-          JSON.stringify({ status: "unhealthy", origin: "timeout", workerVersion: WORKER_VERSION, timestamp: new Date().toISOString() }),
-          { status: 503, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }
+          JSON.stringify({
+            status: "unhealthy",
+            origin: "timeout",
+            workerVersion: WORKER_VERSION,
+            timestamp: new Date().toISOString(),
+          }),
+          { status: 503, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } },
         );
       }
     }
 
-    // ─── STATIC ASSETS → PROXY TO ORIGIN ───
-    // v4.8: Moved cleanup AFTER static asset check (was wasting cycles on /assets/ requests)
+    // ─── STATIC ASSETS ───
     const isStaticAsset =
       url.pathname.startsWith("/assets/") ||
       url.pathname.startsWith("/static/") ||
@@ -2176,7 +2535,7 @@ export default {
       return proxyToOrigin(request);
     }
 
-    // v4.8: Cleanup maps AFTER static asset early return
+    // Cleanup maps after static asset early return
     cleanRateLimitMap();
     cleanRevalMap();
 
@@ -2205,37 +2564,50 @@ export default {
 
         const revalKey = `html:${hostname}:${url.pathname}`;
         if (shouldRevalidate(revalKey)) {
-          ctx.waitUntil((async () => {
-            try {
-              let revalSlug = cachedSlug;
-              if (!revalSlug && !hostname.endsWith(`.${ROOT_DOMAIN}`) && hostname !== ROOT_DOMAIN) {
-                revalSlug = await resolveDomain(hostname.replace(/^www\./, "").toLowerCase().trim(), env);
-              } else if (!revalSlug && hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-                revalSlug = hostname.replace(`.${ROOT_DOMAIN}`, "");
-              }
-              if (revalSlug) {
-                const [shellResult, prefetchResult] = await Promise.all([
-                  getSpaShell(request, ctx, env),
-                  prefetchStorefrontData(revalSlug, ctx, env),
-                ]);
-                if (shellResult?.html && prefetchResult.data) {
-                  const result = injectIntoHtml(shellResult.html, revalSlug, prefetchResult.data, prefetchResult.source);
-                  const fullHeaders = new Headers();
-                  fullHeaders.set("Content-Type", "text/html; charset=utf-8");
-                  fullHeaders.set("Cache-Control", "public, max-age=1200, stale-while-revalidate=3600");
-                  fullHeaders.set("X-Store-Slug", revalSlug);
-                  fullHeaders.set("X-Data-Source", prefetchResult.source);
-                  fullHeaders.set("X-Shell-Source", shellResult.source);
-                  fullHeaders.set("X-Cache-Timestamp", new Date().toISOString());
-                  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
-                    fullHeaders.set(k, v);
-                  }
-                  const fullResponse = new Response(result.html, { status: 200, headers: fullHeaders });
-                  storeInEdgeCache(ctx, hostname, url.pathname, revalSlug, fullResponse);
+          ctx.waitUntil(
+            (async () => {
+              try {
+                let revalSlug = cachedSlug;
+                if (!revalSlug && !hostname.endsWith(`.${ROOT_DOMAIN}`) && hostname !== ROOT_DOMAIN) {
+                  revalSlug = await resolveDomain(
+                    hostname
+                      .replace(/^www\./, "")
+                      .toLowerCase()
+                      .trim(),
+                    env,
+                  );
+                } else if (!revalSlug && hostname.endsWith(`.${ROOT_DOMAIN}`)) {
+                  revalSlug = hostname.replace(`.${ROOT_DOMAIN}`, "");
                 }
-              }
-            } catch {}
-          })());
+                if (revalSlug) {
+                  const [shellResult, prefetchResult] = await Promise.all([
+                    getSpaShell(request, ctx, env),
+                    prefetchStorefrontData(revalSlug, ctx, env),
+                  ]);
+                  if (shellResult?.html && prefetchResult.data) {
+                    const result = injectIntoHtml(
+                      shellResult.html,
+                      revalSlug,
+                      prefetchResult.data,
+                      prefetchResult.source,
+                    );
+                    const fullHeaders = new Headers();
+                    fullHeaders.set("Content-Type", "text/html; charset=utf-8");
+                    fullHeaders.set("Cache-Control", "public, max-age=1200, stale-while-revalidate=3600");
+                    fullHeaders.set("X-Store-Slug", revalSlug);
+                    fullHeaders.set("X-Data-Source", prefetchResult.source);
+                    fullHeaders.set("X-Shell-Source", shellResult.source);
+                    fullHeaders.set("X-Cache-Timestamp", new Date().toISOString());
+                    for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+                      fullHeaders.set(k, v);
+                    }
+                    const fullResponse = new Response(result.html, { status: 200, headers: fullHeaders });
+                    storeInEdgeCache(ctx, hostname, url.pathname, revalSlug, fullResponse);
+                  }
+                }
+              } catch {}
+            })(),
+          );
         }
 
         return addDiagnosticHeaders(earlyHit, {
@@ -2246,7 +2618,7 @@ export default {
       }
     }
 
-    // ─── /api/products → Products API ───
+    // ─── /api/products ───
     if (url.pathname === "/api/products" && request.method === "GET") {
       return handleProductsApi(request, url, ctx, env);
     }
@@ -2263,7 +2635,14 @@ export default {
         purgeSlug = hostname.replace(`.${ROOT_DOMAIN}`, "");
       }
       if (!purgeSlug && hostname !== ROOT_DOMAIN && !hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-        purgeSlug = await resolveDomain(hostname.replace(/^www\./, "").toLowerCase().trim(), env) || "";
+        purgeSlug =
+          (await resolveDomain(
+            hostname
+              .replace(/^www\./, "")
+              .toLowerCase()
+              .trim(),
+            env,
+          )) || "";
       }
 
       const purgeOps = [
@@ -2275,12 +2654,8 @@ export default {
         purgeOps.push(env.STORE_KV.delete(PREBUILT_HEAD_KV_KEY).catch(() => {}));
       }
       if (purgeSlug) {
-        purgeOps.push(
-          cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {})
-        );
-        purgeOps.push(
-          cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {})
-        );
+        purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
+        purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
         if (env?.STORE_KV) {
           purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
           purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
@@ -2290,10 +2665,18 @@ export default {
       }
       await Promise.all(purgeOps);
       return addCorsHeaders(
-        new Response(JSON.stringify({ purged: true, key: SPA_SHELL_KV_KEY, slug: purgeSlug || null, storefrontDataPurged: !!purgeSlug }), {
-          headers: { "Content-Type": "application/json" },
-        }),
-        "purge-shell"
+        new Response(
+          JSON.stringify({
+            purged: true,
+            key: SPA_SHELL_KV_KEY,
+            slug: purgeSlug || null,
+            storefrontDataPurged: !!purgeSlug,
+          }),
+          {
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+        "purge-shell",
       );
     }
 
@@ -2306,19 +2689,15 @@ export default {
             status: 400,
             headers: { "Content-Type": "application/json" },
           }),
-          "purge-store-error"
+          "purge-store-error",
         );
       }
 
       const purgeOps = [];
       const subDomain = `${purgeSlug}.${ROOT_DOMAIN}`;
 
-      purgeOps.push(
-        cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {})
-      );
-      purgeOps.push(
-        cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {})
-      );
+      purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
+      purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
       if (env?.STORE_KV) {
         purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
         purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
@@ -2334,7 +2713,10 @@ export default {
 
       const customDomain = await getCustomDomainForSlug(purgeSlug);
       if (customDomain) {
-        const cleanDomain = customDomain.replace(/^www\./, "").toLowerCase().trim();
+        const cleanDomain = customDomain
+          .replace(/^www\./, "")
+          .toLowerCase()
+          .trim();
         purgeOps.push(cache.delete(getEarlyCacheKey(cleanDomain, "/")).catch(() => {}));
         const domCacheKey = _buildProductsCacheKey(cleanDomain, {});
         purgeOps.push(cache.delete(domCacheKey).catch(() => {}));
@@ -2348,15 +2730,18 @@ export default {
       await Promise.all(purgeOps);
 
       return addCorsHeaders(
-        new Response(JSON.stringify({
-          purged: true,
-          slug: purgeSlug,
-          customDomain: customDomain || null,
-          scope: "store-only",
-        }), {
-          headers: { "Content-Type": "application/json" },
-        }),
-        "purge-store"
+        new Response(
+          JSON.stringify({
+            purged: true,
+            slug: purgeSlug,
+            customDomain: customDomain || null,
+            scope: "store-only",
+          }),
+          {
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+        "purge-store",
       );
     }
 
@@ -2377,11 +2762,9 @@ export default {
       });
     }
 
-    // ─── SUPABASE API → pass through ───
+    // ─── SUPABASE API PASS-THROUGH ───
     if (url.pathname.startsWith("/api") || url.pathname.startsWith("/rest")) {
-      const isStorefrontRpc =
-        request.method === "GET" &&
-        url.pathname.includes("/rpc/get_storefront_data");
+      const isStorefrontRpc = request.method === "GET" && url.pathname.includes("/rpc/get_storefront_data");
 
       if (isStorefrontRpc) {
         const apiCacheKey = new Request(`https://cache/api${url.pathname}${url.search}`);
@@ -2403,31 +2786,20 @@ export default {
 
     // ─── ROOT DOMAIN ───
     if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
-      const storeMatch = url.pathname.match(
-        /^\/store\/([a-zA-Z0-9_-]+)(\/.*)?$/
-      );
+      const storeMatch = url.pathname.match(/^\/store\/([a-zA-Z0-9_-]+)(\/.*)?$/);
 
       if (storeMatch) {
         const redirectSlug = storeMatch[1];
         const remainingPath = storeMatch[2] || "";
         const customDomain = await getCustomDomainForSlug(redirectSlug);
         if (customDomain) {
-          return Response.redirect(
-            `https://${customDomain}${remainingPath}${url.search}`,
-            301
-          );
+          return Response.redirect(`https://${customDomain}${remainingPath}${url.search}`, 301);
         }
-        return Response.redirect(
-          `https://${redirectSlug}.${ROOT_DOMAIN}${remainingPath}${url.search}`,
-          301
-        );
+        return Response.redirect(`https://${redirectSlug}.${ROOT_DOMAIN}${remainingPath}${url.search}`, 301);
       }
 
       if (hostname === `www.${ROOT_DOMAIN}`) {
-        return Response.redirect(
-          `https://${ROOT_DOMAIN}${url.pathname}${url.search}`,
-          301
-        );
+        return Response.redirect(`https://${ROOT_DOMAIN}${url.pathname}${url.search}`, 301);
       }
 
       return cachedFetch(request, "", ctx, false, env);
@@ -2441,12 +2813,11 @@ export default {
         return cachedFetch(request, "", ctx, false, env);
       }
 
-      // v4.7: FAST PATH — check slug index before ANY heavy work
+      // Fast path: slug index check (in-memory, no KV round-trip)
       const slugIndex = await _getSlugIndex(env);
       if (slugIndex && !slugIndex.has(slug)) {
         const safeSlug = slug.replace(/[<>"'&]/g, "");
-        const notFoundHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.storivo.in</strong></p><a href="https://storivo.in">Create Your Store</a></div></body></html>`;
-        return new Response(notFoundHtml, {
+        return new Response(buildNotFoundHtml(safeSlug, ROOT_DOMAIN), {
           status: 404,
           headers: {
             "Content-Type": "text/html; charset=utf-8",
@@ -2456,20 +2827,20 @@ export default {
         });
       }
 
-      // v4.8: Shell resolved first, then pass real HTML to getPrebuiltHead for proper preload hints
-      const shellResult = await getSpaShell(request, ctx, env);
-      const [storeInfo, seoResponse, botResponse, themeLite, prebuiltHead] = await Promise.all([
+      // v4.9: FULLY PARALLEL — shell + storeInfo + theme + cachedHead + products all at once
+      // (storeInfo and products are fast KV reads; shell is also KV on warm isolate)
+      const [shellResult, storeInfo, themeLite, cachedHead, inlineProducts] = await Promise.all([
+        getSpaShell(request, ctx, env),
         _resolveStoreInfo(slug, hostname, env),
-        handleSeoFiles(url, slug),
-        handleBot(request, slug, url, false),
         _getThemeLite(slug, env),
-        getPrebuiltHead(shellResult?.html || "", env),
+        _getCachedPrebuiltHead(env),
+        _getInlineProductsOrNull(hostname, slug, env, ctx),
       ]);
 
+      // Guard checks (sync after parallel fetch)
       if (!storeInfo.storeId) {
         const safeSlug = slug.replace(/[<>"'&]/g, "");
-        const notFoundHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.storivo.in</strong></p><a href="https://storivo.in">Create Your Store</a></div></body></html>`;
-        return new Response(notFoundHtml, {
+        return new Response(buildNotFoundHtml(safeSlug, ROOT_DOMAIN), {
           status: 404,
           headers: {
             "Content-Type": "text/html; charset=utf-8",
@@ -2480,13 +2851,13 @@ export default {
       }
 
       if (storeInfo.customDomain) {
-        return Response.redirect(
-          `https://${storeInfo.customDomain}${url.pathname}${url.search}`,
-          301
-        );
+        return Response.redirect(`https://${storeInfo.customDomain}${url.pathname}${url.search}`, 301);
       }
 
+      // SEO and bot (fast regex for normal users)
+      const seoResponse = await handleSeoFiles(url, slug);
       if (seoResponse) return seoResponse;
+      const botResponse = await handleBot(request, slug, url, false);
       if (botResponse) return botResponse;
 
       if (!shellResult?.html) {
@@ -2494,51 +2865,48 @@ export default {
         return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "none" });
       }
 
-      let inlineProducts = null;
-      try {
-        const productsCacheKey = _buildProductsCacheKey(hostname, {});
-        const cachedProducts = await cache.match(productsCacheKey);
-        if (cachedProducts) {
-          inlineProducts = await cachedProducts.text();
-        }
-      } catch {}
+      // Ensure prebuiltHead (build from shell if not in cache; typically warm)
+      const prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
+      const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
-      const fastHtml = injectFastShell(shellResult.html, slug, themeLite, prebuiltHead, inlineProducts);
-
-      const dataSource = inlineProducts
-        ? "fast-shell-products"
-        : themeLite ? "fast-shell-themed" : "fast-shell";
-
-      const newHeaders = new Headers();
-      newHeaders.set("Content-Type", "text/html; charset=utf-8");
-      newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
-      newHeaders.set("X-Store-Slug", slug);
-      newHeaders.set("X-Data-Source", dataSource);
-      newHeaders.set("X-Shell-Source", shellResult.source);
-      newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
+      const responseHeaders = new Headers();
+      responseHeaders.set("Content-Type", "text/html; charset=utf-8");
+      responseHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+      responseHeaders.set("X-Store-Slug", slug);
+      responseHeaders.set("X-Shell-Source", shellResult.source);
+      responseHeaders.set("X-Cache-Timestamp", new Date().toISOString());
+      responseHeaders.set("X-Data-Source", "streaming");
+      if (linkHeader) responseHeaders.set("Link", linkHeader);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
-        newHeaders.set(k, v);
+        responseHeaders.set(k, v);
       }
 
-      const response = new Response(fastHtml, { status: 200, headers: newHeaders });
+      // v4.9: Race storefront data (KV ~50ms, DB max 1.2s) — start BEFORE building response
+      // Browser gets <head> with preload hints immediately; body arrives with full store data
+      const storefrontPromise = prefetchStorefrontDataWithDeadline(slug, ctx, env, 1200);
 
+      const response = await serveStreamedHtml(
+        slug,
+        shellResult,
+        themeLite,
+        prebuiltHead,
+        inlineProducts,
+        storefrontPromise,
+        responseHeaders,
+      );
+
+      // Warm full HTML in edge cache in background for subsequent HIT responses
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
 
-      return addDiagnosticHeaders(response, {
-        slug,
-        cacheStatus: "MISS",
-        dataSource,
-      });
+      return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "streaming" });
     }
 
     // ─── CUSTOM DOMAIN ───
 
+    // www redirect
     if (hostname.startsWith("www.")) {
       const apex = hostname.slice(4);
-      return Response.redirect(
-        `https://${apex}${url.pathname}${url.search}`,
-        301
-      );
+      return Response.redirect(`https://${apex}${url.pathname}${url.search}`, 301);
     }
 
     const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for");
@@ -2549,65 +2917,74 @@ export default {
       });
     }
 
-    const cleanDomain = hostname.replace(/^www\./, "").toLowerCase().trim();
+    const cleanDomain = hostname
+      .replace(/^www\./, "")
+      .toLowerCase()
+      .trim();
 
-    // v4.8: Parallel — resolve domain + fetch shell + prebuilt head simultaneously
-    const [resolvedSlug, shellResultCD] = await Promise.all([
+    // v4.9: Parallel — resolve domain + shell + theme + cachedHead + products simultaneously
+    const [resolvedSlug, shellResultCD, themeLiteCD, cachedHeadCD, inlineProductsCD] = await Promise.all([
       resolveDomain(cleanDomain, env),
       getSpaShell(request, ctx, env),
+      // theme and products need slug — resolved after domain lookup, so we fetch them after
+      // But we can still start domain resolution and shell in parallel
+      Promise.resolve(null), // placeholder for themeLiteCD — resolved below
+      Promise.resolve(null), // placeholder for cachedHeadCD — resolved below
+      Promise.resolve(null), // placeholder for inlineProductsCD — resolved below
     ]);
 
     if (resolvedSlug) {
-      const [seoResponse, botResponse, themeLiteCD, prebuiltHeadCD] = await Promise.all([
+      // v4.9: Now that we have slug, fetch theme + head + products + storefront all in parallel
+      const [seoResponse, botResponse, themeLiteCDReal, cachedHeadCDReal, inlineProductsCDReal] = await Promise.all([
         handleSeoFiles(url, resolvedSlug),
         handleBot(request, resolvedSlug, url, true),
         _getThemeLite(resolvedSlug, env),
-        getPrebuiltHead(shellResultCD?.html || "", env),
+        _getCachedPrebuiltHead(env),
+        _getInlineProductsOrNull(hostname, resolvedSlug, env, ctx),
       ]);
 
       if (seoResponse) return seoResponse;
       if (botResponse) return botResponse;
 
-      // v4.8: Build response inline using already-fetched shell/theme/head (no fetchAndInjectSlug waterfall)
       if (!shellResultCD?.html) {
         const response = await proxyToOrigin(request);
         return addDiagnosticHeaders(response, { slug: resolvedSlug, cacheStatus: "MISS", dataSource: "none" });
       }
 
-      let inlineProducts = null;
-      try {
-        const productsCacheKey = _buildProductsCacheKey(hostname, {});
-        const cachedProducts = await cache.match(productsCacheKey);
-        if (cachedProducts) {
-          inlineProducts = await cachedProducts.text();
-        }
-      } catch {}
+      const prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
+      const linkHeaderCD = _buildLinkPreloadHeader(shellResultCD.html);
 
-      const fastHtml = injectFastShell(shellResultCD.html, resolvedSlug, themeLiteCD, prebuiltHeadCD, inlineProducts);
-
-      const dataSource = inlineProducts
-        ? "fast-shell-products"
-        : themeLiteCD ? "fast-shell-themed" : "fast-shell";
-
-      const newHeaders = new Headers();
-      newHeaders.set("Content-Type", "text/html; charset=utf-8");
-      newHeaders.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
-      newHeaders.set("X-Store-Slug", resolvedSlug);
-      newHeaders.set("X-Data-Source", dataSource);
-      newHeaders.set("X-Shell-Source", shellResultCD.source);
-      newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
+      const responseHeadersCD = new Headers();
+      responseHeadersCD.set("Content-Type", "text/html; charset=utf-8");
+      responseHeadersCD.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+      responseHeadersCD.set("X-Store-Slug", resolvedSlug);
+      responseHeadersCD.set("X-Shell-Source", shellResultCD.source);
+      responseHeadersCD.set("X-Cache-Timestamp", new Date().toISOString());
+      responseHeadersCD.set("X-Data-Source", "streaming");
+      if (linkHeaderCD) responseHeadersCD.set("Link", linkHeaderCD);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
-        newHeaders.set(k, v);
+        responseHeadersCD.set(k, v);
       }
 
-      const response = new Response(fastHtml, { status: 200, headers: newHeaders });
+      // v4.9: Race storefront data before building streaming response
+      const storefrontPromiseCD = prefetchStorefrontDataWithDeadline(resolvedSlug, ctx, env, 1200);
+
+      const responseCD = await serveStreamedHtml(
+        resolvedSlug,
+        shellResultCD,
+        themeLiteCDReal,
+        prebuiltHeadCD,
+        inlineProductsCDReal,
+        storefrontPromiseCD,
+        responseHeadersCD,
+      );
 
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResultCD, resolvedSlug, ctx, env, hostname, url.pathname));
 
-      return addDiagnosticHeaders(response, {
+      return addDiagnosticHeaders(responseCD, {
         slug: resolvedSlug,
         cacheStatus: "MISS",
-        dataSource,
+        dataSource: "streaming",
       });
     }
 
@@ -2626,206 +3003,206 @@ export default {
           "X-Worker-Version": WORKER_VERSION,
           ...SECURITY_HEADERS,
         },
-      }
+      },
     );
   },
 
   /**
    * SCHEDULED HANDLER — DB Keepalive + Store Warming
-   *
    * Runs every 5 minutes via Cloudflare Cron Trigger.
-   * Cron schedule: every 5 minutes.
    */
   async scheduled(event, env, ctx) {
     const keepaliveStart = Date.now();
     try {
-      // 1. Lightweight DB ping — keeps Supabase connection pool warm
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
 
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/rpc/get_platform_config_public`,
-        {
-          method: "POST",
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            "Content-Type": "application/json",
-          },
-          signal: controller.signal,
-          body: "{}",
-        }
-      );
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_platform_config_public`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+        body: "{}",
+      });
       clearTimeout(timeout);
 
       const dbPingMs = Date.now() - keepaliveStart;
 
       // 2. Warm the SPA shell cache
-      ctx.waitUntil((async () => {
-        try {
-          await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
-        } catch {}
-      })());
+      ctx.waitUntil(
+        (async () => {
+          try {
+            await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
+          } catch {}
+        })(),
+      );
 
       // 3. Warm ALL active store slugs in KV + build slug index
-      ctx.waitUntil((async () => {
-        try {
-          let allStores = [];
-          let offset = 0;
-          const pageSize = 500;
-          while (true) {
-            const storesRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/stores_public?select=id,slug,custom_domain&is_suspended=eq.false&limit=${pageSize}&offset=${offset}&order=updated_at.desc`,
-              {
-                headers: {
-                  apikey: SUPABASE_ANON_KEY,
-                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      ctx.waitUntil(
+        (async () => {
+          try {
+            let allStores = [];
+            let offset = 0;
+            const pageSize = 500;
+            while (true) {
+              const storesRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/stores_public?select=id,slug,custom_domain&is_suspended=eq.false&limit=${pageSize}&offset=${offset}&order=updated_at.desc`,
+                {
+                  headers: {
+                    apikey: SUPABASE_ANON_KEY,
+                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                  },
                 },
-              }
-            );
-            if (!storesRes.ok) break;
-            const batch = await storesRes.json();
-            if (!batch.length) break;
-            allStores = allStores.concat(batch);
-            if (batch.length < pageSize) break;
-            offset += pageSize;
-          }
-
-          if (allStores.length === 0) return;
-
-          const kvWrites = [];
-          const kvReads = [];
-          const allSlugs = [];
-          let kvWriteCount = 0;
-          let kvSkipCount = 0;
-
-          // ── SMART CONDITIONAL WRITES ──
-          // Read existing KV values first, only write if data changed.
-          // Converts expensive KV writes (~$5/M) into cheap KV reads (~$0.50/M).
-          // For a stable store set, this reduces writes by ~95%.
-
-          if (env?.STORE_KV) {
-            // Phase 1: Batch-read existing KV values for all stores
-            const readPromises = [];
-            for (const s of allStores) {
-              if (!s.slug || !s.id) continue;
-              allSlugs.push(s.slug);
-              readPromises.push(
-                env.STORE_KV.get(`store-info:${s.slug}`).catch(() => null)
               );
+              if (!storesRes.ok) break;
+              const batch = await storesRes.json();
+              if (!batch.length) break;
+              allStores = allStores.concat(batch);
+              if (batch.length < pageSize) break;
+              offset += pageSize;
             }
-            const existingValues = await Promise.all(readPromises);
 
-            // Phase 2: Compare and write only changed entries
-            for (let i = 0; i < allSlugs.length; i++) {
-              const s = allStores.find(st => st.slug === allSlugs[i]);
-              if (!s) continue;
+            if (allStores.length === 0) return;
 
-              const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
-              const existing = existingValues[i];
+            const kvWrites = [];
+            const allSlugs = [];
+            let kvWriteCount = 0;
+            let kvSkipCount = 0;
 
-              // Only write if data actually changed
-              if (existing !== payload) {
-                kvWrites.push(
-                  env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(() => {})
-                );
-                const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
-                kvWrites.push(
-                  env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {})
-                );
-                if (s.custom_domain) {
-                  const cleanCustom = s.custom_domain.replace(/^www\./, "").toLowerCase().trim();
+            if (env?.STORE_KV) {
+              // Phase 1: Batch-read existing KV values
+              const readPromises = [];
+              for (const s of allStores) {
+                if (!s.slug || !s.id) continue;
+                allSlugs.push(s.slug);
+                readPromises.push(env.STORE_KV.get(`store-info:${s.slug}`).catch(() => null));
+              }
+              const existingValues = await Promise.all(readPromises);
+
+              // Phase 2: Write only changed entries (smart-write)
+              for (let i = 0; i < allSlugs.length; i++) {
+                const s = allStores.find((st) => st.slug === allSlugs[i]);
+                if (!s) continue;
+
+                const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
+                const existing = existingValues[i];
+
+                if (existing !== payload) {
                   kvWrites.push(
-                    env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 3600 }).catch(() => {})
+                    env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(
+                      () => {},
+                    ),
                   );
+                  const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
                   kvWrites.push(
-                    env.STORE_KV.put(`domain:${cleanCustom}`, JSON.stringify({ slug: s.slug }), { expirationTtl: KV_DOMAIN_TTL }).catch(() => {})
+                    env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {}),
                   );
+                  if (s.custom_domain) {
+                    const cleanCustom = s.custom_domain
+                      .replace(/^www\./, "")
+                      .toLowerCase()
+                      .trim();
+                    kvWrites.push(
+                      env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 3600 }).catch(() => {}),
+                    );
+                    kvWrites.push(
+                      env.STORE_KV.put(`domain:${cleanCustom}`, JSON.stringify({ slug: s.slug }), {
+                        expirationTtl: KV_DOMAIN_TTL,
+                      }).catch(() => {}),
+                    );
+                  }
+                  kvWriteCount++;
+                } else {
+                  kvSkipCount++;
                 }
-                kvWriteCount++;
-              } else {
-                kvSkipCount++;
+              }
+            } else {
+              for (const s of allStores) {
+                if (!s.slug || !s.id) continue;
+                allSlugs.push(s.slug);
               }
             }
-          } else {
-            for (const s of allStores) {
-              if (!s.slug || !s.id) continue;
-              allSlugs.push(s.slug);
-            }
-          }
 
-          // Write slug index to KV (always write — small payload, critical for routing)
-          if (env?.STORE_KV && allSlugs.length > 0) {
-            kvWrites.push(
-              env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 600 }).catch(() => {})
+            // Write slug index (always — small payload, critical for fast-path routing)
+            if (env?.STORE_KV && allSlugs.length > 0) {
+              kvWrites.push(
+                env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 600 }).catch(() => {}),
+              );
+              _slugIndexSet = new Set(allSlugs);
+              _slugIndexExpiresAt = Date.now() + 300_000;
+            }
+
+            if (kvWrites.length > 0) await Promise.all(kvWrites);
+            console.log(
+              `[keepalive] warmed ${allStores.length} stores — KV writes: ${kvWriteCount} changed, ${kvSkipCount} skipped`,
             );
-            _slugIndexSet = new Set(allSlugs);
-            _slugIndexExpiresAt = Date.now() + 300_000;
-          }
 
-          if (kvWrites.length > 0) await Promise.all(kvWrites);
-          console.log(`[keepalive] warmed ${allStores.length} stores — KV writes: ${kvWriteCount} changed, ${kvSkipCount} skipped (smart-write)`);
+            // 4. Pre-warm top 20 stores (shell + storefront + products)
+            const top20 = allStores.slice(0, 20);
+            const shellWarms = top20.map(async (s) => {
+              try {
+                const shellResult = await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
+                if (!shellResult?.html) return;
 
-          // 4. v4.8: Pre-warm top 20 stores using internal functions (no recursive fetch)
-          const top20 = allStores.slice(0, 20);
-          const shellWarms = top20.map(async (s) => {
-            try {
-              const shellResult = await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
-              if (!shellResult?.html) return;
+                const dataResult = await prefetchStorefrontData(s.slug, ctx, env);
+                if (!dataResult.data) return;
 
-              const dataResult = await prefetchStorefrontData(s.slug, ctx, env);
-              if (!dataResult.data) return;
+                const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm");
+                const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`, "/");
+                const htmlResponse = new Response(injected.html, {
+                  status: 200,
+                  headers: {
+                    "Content-Type": "text/html; charset=utf-8",
+                    "Cache-Control": "public, max-age=1200, stale-while-revalidate=3600",
+                    "X-Store-Slug": s.slug,
+                    "X-Data-Source": "cron-prewarm",
+                    ...SECURITY_HEADERS,
+                  },
+                });
+                await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
 
-              const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm");
-              const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`, "/");
-              const htmlResponse = new Response(injected.html, {
-                status: 200,
-                headers: {
-                  "Content-Type": "text/html; charset=utf-8",
-                  "Cache-Control": "public, max-age=1200, stale-while-revalidate=3600",
-                  "X-Store-Slug": s.slug,
-                  "X-Data-Source": "cron-prewarm",
-                  ...SECURITY_HEADERS,
-                },
-              });
-              await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
+                if (s.custom_domain) {
+                  const cleanCustom = s.custom_domain
+                    .replace(/^www\./, "")
+                    .toLowerCase()
+                    .trim();
+                  const domEarlyKey = getEarlyCacheKey(cleanCustom, "/");
+                  await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
+                }
 
-              // v4.8: Also warm custom domain early cache
-              if (s.custom_domain) {
-                const cleanCustom = s.custom_domain.replace(/^www\./, "").toLowerCase().trim();
-                const domEarlyKey = getEarlyCacheKey(cleanCustom, "/");
-                await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
+                if (dataResult.data?.store?.id) {
+                  await _prewarmProducts(dataResult.data.store.id, s.slug, ctx, env, s.custom_domain).catch(() => {});
+                }
+              } catch {}
+            });
+            await Promise.all(shellWarms);
+            console.log(`[keepalive] pre-warmed ${top20.length} store shells`);
+
+            // 5. Warm products for remaining stores (lightweight — no shell/HTML)
+            const remaining = allStores.slice(20);
+            if (remaining.length > 0 && env?.STORE_KV) {
+              const batchSize = 10;
+              for (let i = 0; i < remaining.length; i += batchSize) {
+                const batch = remaining.slice(i, i + batchSize);
+                await Promise.all(
+                  batch.map(async (s) => {
+                    try {
+                      if (!s.id || !s.slug) return;
+                      await _prewarmProducts(s.id, s.slug, ctx, env, s.custom_domain).catch(() => {});
+                    } catch {}
+                  }),
+                );
               }
-
-              // v4.8: Warm products under both subdomain and custom domain cache keys
-              if (dataResult.data?.store?.id) {
-                await _prewarmProducts(dataResult.data.store.id, s.slug, ctx, env, s.custom_domain).catch(() => {});
-              }
-            } catch {}
-          });
-          await Promise.all(shellWarms);
-          console.log(`[keepalive] pre-warmed ${top20.length} store shells (internal)`);
-
-          // 5. v4.8.1: Warm products in KV for ALL remaining stores (lightweight — no shell/HTML)
-          const remaining = allStores.slice(20);
-          if (remaining.length > 0 && env?.STORE_KV) {
-            const batchSize = 10;
-            for (let i = 0; i < remaining.length; i += batchSize) {
-              const batch = remaining.slice(i, i + batchSize);
-              await Promise.all(batch.map(async (s) => {
-                try {
-                  if (!s.id || !s.slug) return;
-                  await _prewarmProducts(s.id, s.slug, ctx, env, s.custom_domain).catch(() => {});
-                } catch {}
-              }));
+              console.log(`[keepalive] warmed products for ${remaining.length} additional stores`);
             }
-            console.log(`[keepalive] warmed products for ${remaining.length} additional stores`);
+          } catch (err) {
+            console.log(`[keepalive] store warm failed: ${err?.message || err}`);
           }
-
-        } catch (err) {
-          console.log(`[keepalive] store warm failed: ${err?.message || err}`);
-        }
-      })());
+        })(),
+      );
 
       console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status}`);
     } catch (err) {
