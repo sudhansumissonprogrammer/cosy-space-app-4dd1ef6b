@@ -519,6 +519,7 @@ export default function CheckoutPage() {
     const { data, error } = await supabase.functions.invoke("place-order", {
       body: {
         store_id: store.id,
+        checkout_token: checkoutToken,
         order: {
           total,
           currency,
