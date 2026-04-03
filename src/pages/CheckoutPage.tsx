@@ -769,12 +769,14 @@ export default function CheckoutPage() {
 
   // Open Razorpay modal for an existing order (used for both initial and retry)
   const openRazorpayForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
-    const loaded = await loadRazorpayScript();
+    // Parallelize: load Razorpay script + create Razorpay order simultaneously
+    const [loaded, rzpData] = await Promise.all([
+      loadRazorpayScript(),
+      callEdgeFunction("razorpay-order", {
+        store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
+      }),
+    ]);
     if (!loaded) throw new Error("Failed to load payment gateway");
-
-    const rzpData = await callEdgeFunction("razorpay-order", {
-      store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
-    });
 
     const handlePaymentSuccess = async (response: any) => {
       try {
