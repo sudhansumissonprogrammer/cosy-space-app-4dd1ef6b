@@ -391,6 +391,11 @@ export default function CheckoutPage() {
   const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasRazorpay;
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
 
+  // When partial payment products are in cart, force Razorpay (disable COD)
+  useEffect(() => {
+    if (hasAnyPartialPayment && hasRazorpay) setPaymentMethod("razorpay");
+  }, [hasAnyPartialPayment, hasRazorpay]);
+
   // Coupon logic
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
