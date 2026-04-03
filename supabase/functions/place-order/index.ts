@@ -111,6 +111,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Idempotency: if checkout_token already exists, return the existing order
+    if (checkout_token) {
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("id, order_number")
+        .eq("store_id", store_id)
+        .eq("checkout_token", checkout_token)
+        .maybeSingle();
+
+      if (existingOrder) {
+        const orderNumber = existingOrder.order_number
+          ? `#${1000 + existingOrder.order_number}`
+          : `#${existingOrder.id.slice(0, 8).toUpperCase()}`;
+        return new Response(JSON.stringify({ success: true, order_id: existingOrder.id, order_number: orderNumber, profit: null }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     let storefrontCustomerId: string | null = null;
     if (order.storefront_customer_id) {
       const { data: customer } = await supabase
