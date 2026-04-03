@@ -1240,11 +1240,27 @@ export default function CheckoutPage() {
           <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
           <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
         </div>
+        {/* Payment retry banner */}
+        {paymentFailed && pendingOrder && (
+          <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-center">
+            <p className="text-sm font-semibold text-destructive mb-1">{t("Payment failed or cancelled", "भुगतान विफल या रद्द")}</p>
+            <p className="text-xs text-muted-foreground mb-2">{t("Your order is saved. No amount was deducted. Retry to complete payment.", "आपका ऑर्डर सेव है। कोई राशि नहीं काटी गई। भुगतान पूरा करने के लिए पुनः प्रयास करें।")}</p>
+            <button
+              className="flex h-10 w-full items-center justify-center gap-2 text-sm font-bold btn-gold disabled:opacity-50"
+              style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+              onClick={handleRetryPayment}
+              disabled={placing}
+            >
+              {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("Retry Payment", "भुगतान पुनः प्रयास करें")} · {currency} {chargeAmount.toFixed(2)}
+            </button>
+          </div>
+        )}
         <button
           className="flex h-12 w-full items-center justify-center gap-2 text-sm font-bold btn-gold disabled:opacity-50"
           style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
           onClick={handlePlaceOrder}
-          disabled={placing}
+          disabled={placing || paymentFailed}
         >
           {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isPartialOrder ? `${t("Pay Advance", "एडवांस दें")} ${currency} ${chargeAmount.toFixed(2)}` : paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`}
