@@ -685,9 +685,13 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onDelete, 
             {items.map((item: any, idx: number) => (
               <div key={item.id || idx} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  {item.products?.image_url ? (
+                    <img src={item.products.image_url} alt={item.product_name} className="h-14 w-14 rounded-lg object-cover shrink-0 border" />
+                  ) : (
+                    <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.product_name}</p>
                     <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {order.currency} {Number(item.unit_price).toFixed(0)}</p>
