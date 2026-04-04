@@ -32,6 +32,20 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Fetch order to determine payment_type
+    const { data: orderData } = await supabase
+      .from("orders")
+      .select("payment_type")
+      .eq("id", order_id)
+      .single();
+
+    const isPartial = orderData?.payment_type === "partial";
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     // Fetch key_secret
     const { data: config, error: configErr } = await supabase
       .from("store_payment_config")
