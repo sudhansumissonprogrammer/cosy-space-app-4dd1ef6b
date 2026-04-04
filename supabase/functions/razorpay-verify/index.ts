@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     const { error: updateErr } = await supabase
       .from("orders")
       .update({
-        status: "confirmed",
+        status: isPartial ? "partially_paid" : "confirmed",
         payment_method: "razorpay",
         notes: `Razorpay Payment ID: ${razorpay_payment_id}`,
       })

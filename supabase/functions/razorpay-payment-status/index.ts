@@ -87,10 +87,11 @@ Deno.serve(async (req) => {
 
     // If captured or authorized, update order
     if (status === "captured" || status === "authorized") {
+      const newStatus = isPartialOrder ? "partially_paid" : "confirmed";
       await supabase
         .from("orders")
         .update({
-          status: "confirmed",
+          status: newStatus,
           payment_method: "razorpay",
           notes: `Razorpay Payment ID: ${razorpay_payment_id}`,
         })
