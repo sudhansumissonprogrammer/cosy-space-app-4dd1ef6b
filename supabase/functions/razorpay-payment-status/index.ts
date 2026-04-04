@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
         .eq("id", order_id)
         .single();
 
-      if (order?.status === "confirmed") {
+      if (order?.status === "confirmed" || order?.status === "partially_paid") {
         return new Response(
           JSON.stringify({ status: "captured", payment_id: order.notes }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
