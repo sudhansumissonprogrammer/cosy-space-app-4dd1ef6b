@@ -420,13 +420,7 @@ function AdminWebOrderDetail({ order, onCopy }: { order: any; onCopy: (t: string
             {items.map((item: any, idx: number) => (
               <div key={item.id || idx} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  {item.products?.image_url ? (
-                    <img src={item.products.image_url} alt={item.product_name} className="h-14 w-14 rounded-lg object-cover shrink-0 border" />
-                  ) : (
-                    <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  )}
+                  <OrderItemImage imageUrl={item.products?.image_url} productName={item.product_name} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.product_name}</p>
                     <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {order.currency} {Number(item.unit_price).toFixed(0)}</p>
