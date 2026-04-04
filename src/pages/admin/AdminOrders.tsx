@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Separator } from "@/components/ui/separator";
 import { ShoppingBag, ChevronRight, Phone, MapPin, CreditCard, Package, Copy, Truck } from "lucide-react";
 import { TableSkeleton } from "@/components/admin/AdminSkeletons";
+import OrderItemImage from "@/components/OrderItemImage";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
