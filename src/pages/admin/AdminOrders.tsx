@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Separator } from "@/components/ui/separator";
 import { ShoppingBag, ChevronRight, Phone, MapPin, CreditCard, Package, Copy, Truck } from "lucide-react";
 import { TableSkeleton } from "@/components/admin/AdminSkeletons";
+import OrderItemImage from "@/components/OrderItemImage";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
@@ -334,13 +335,7 @@ function AdminWaOrderDetail({ order, onCopy }: { order: any; onCopy: (t: string)
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Product</h3>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              {(order.products as any)?.image_url ? (
-                <img src={(order.products as any).image_url} alt={order.product_name} className="h-14 w-14 rounded-lg object-cover shrink-0 border" />
-              ) : (
-                <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                  <Package className="h-5 w-5 text-muted-foreground" />
-                </div>
-              )}
+              <OrderItemImage imageUrl={(order.products as any)?.image_url} productName={order.product_name} />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{order.product_name}</p>
                 <p className="text-xs text-muted-foreground">Qty: {order.quantity}</p>
@@ -426,13 +421,7 @@ function AdminWebOrderDetail({ order, onCopy }: { order: any; onCopy: (t: string
             {items.map((item: any, idx: number) => (
               <div key={item.id || idx} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  {item.products?.image_url ? (
-                    <img src={item.products.image_url} alt={item.product_name} className="h-14 w-14 rounded-lg object-cover shrink-0 border" />
-                  ) : (
-                    <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  )}
+                  <OrderItemImage imageUrl={item.products?.image_url} productName={item.product_name} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.product_name}</p>
                     <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {order.currency} {Number(item.unit_price).toFixed(0)}</p>
