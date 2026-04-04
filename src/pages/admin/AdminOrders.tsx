@@ -50,7 +50,7 @@ export default function AdminOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_orders")
-        .select("*, stores:store_id(name)")
+        .select("*, stores:store_id(name), products:product_id(image_url)")
         .order("created_at", { ascending: false })
         .range(waPag.from, waPag.to);
       if (error) throw error;
