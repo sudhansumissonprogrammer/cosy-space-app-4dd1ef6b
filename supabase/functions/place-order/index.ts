@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
         store_id,
         total: Number(order.total),
         currency: order.currency,
-        status: isPartial ? "partially_paid" : order.status,
+        status: order.status,
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
         street_address: order.street_address,
