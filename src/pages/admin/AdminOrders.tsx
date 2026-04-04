@@ -50,7 +50,7 @@ export default function AdminOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_orders")
-        .select("*, stores:store_id(name)")
+        .select("*, stores:store_id(name), products:product_id(image_url)")
         .order("created_at", { ascending: false })
         .range(waPag.from, waPag.to);
       if (error) throw error;
@@ -75,7 +75,7 @@ export default function AdminOrders() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("orders")
-        .select("*, stores:store_id(name), order_items(*)")
+        .select("*, stores:store_id(name), order_items(*, products:product_id(image_url))")
         .order("created_at", { ascending: false })
         .range(webPag.from, webPag.to);
       if (error) throw error;
@@ -334,9 +334,13 @@ function AdminWaOrderDetail({ order, onCopy }: { order: any; onCopy: (t: string)
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Product</h3>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </div>
+              {(order.products as any)?.image_url ? (
+                <img src={(order.products as any).image_url} alt={order.product_name} className="h-14 w-14 rounded-lg object-cover shrink-0 border" />
+              ) : (
+                <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                </div>
+              )}
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{order.product_name}</p>
                 <p className="text-xs text-muted-foreground">Qty: {order.quantity}</p>
@@ -422,9 +426,13 @@ function AdminWebOrderDetail({ order, onCopy }: { order: any; onCopy: (t: string
             {items.map((item: any, idx: number) => (
               <div key={item.id || idx} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  {item.products?.image_url ? (
+                    <img src={item.products.image_url} alt={item.product_name} className="h-14 w-14 rounded-lg object-cover shrink-0 border" />
+                  ) : (
+                    <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.product_name}</p>
                     <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {order.currency} {Number(item.unit_price).toFixed(0)}</p>
