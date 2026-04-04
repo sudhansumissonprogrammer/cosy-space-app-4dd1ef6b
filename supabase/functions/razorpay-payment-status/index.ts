@@ -26,6 +26,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Fetch order to determine payment_type
+    const { data: orderInfo } = await supabase
+      .from("orders")
+      .select("payment_type")
+      .eq("id", order_id)
+      .single();
+    const isPartialOrder = orderInfo?.payment_type === "partial";
+
     // Fetch key
     const { data: config, error: configErr } = await supabase
       .from("store_payment_config")
@@ -50,7 +58,7 @@ Deno.serve(async (req) => {
         .eq("id", order_id)
         .single();
 
-      if (order?.status === "confirmed") {
+      if (order?.status === "confirmed" || order?.status === "partially_paid") {
         return new Response(
           JSON.stringify({ status: "captured", payment_id: order.notes }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -79,10 +87,11 @@ Deno.serve(async (req) => {
 
     // If captured or authorized, update order
     if (status === "captured" || status === "authorized") {
+      const newStatus = isPartialOrder ? "partially_paid" : "confirmed";
       await supabase
         .from("orders")
         .update({
-          status: "confirmed",
+          status: newStatus,
           payment_method: "razorpay",
           notes: `Razorpay Payment ID: ${razorpay_payment_id}`,
         })
