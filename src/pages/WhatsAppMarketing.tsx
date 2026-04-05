@@ -2782,7 +2782,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-        {/* Storivo Marketing Card */}
+        {/* ShopBanao Marketing Card */}
         <Card
           className={cn(
             "cursor-pointer transition-all hover:shadow-md border-2",
@@ -2797,12 +2797,12 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
             <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
               <Zap className="h-6 w-6 text-green-600" />
             </div>
-            <CardTitle className="text-base">Storivo Marketing</CardTitle>
+            <CardTitle className="text-base">ShopBanao Marketing</CardTitle>
             <CardDescription className="text-xs">Recommended • No setup needed</CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-3">
             <p className="text-sm text-muted-foreground">
-              Messages sent from Storivo's WhatsApp number. Order confirmations, shipping updates, abandoned cart recovery — all automated instantly.
+              Messages sent from ShopBanao's WhatsApp number. Order confirmations, shipping updates, abandoned cart recovery — all automated instantly.
             </p>
             <ul className="text-xs text-muted-foreground space-y-1">
               <li className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-green-500" /> Zero setup required</li>
@@ -2814,7 +2814,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
               disabled={selectMutation.isPending}
               variant={selecting === "storivo" ? "default" : "outline"}
             >
-              {selecting === "storivo" && selectMutation.isPending ? "Setting up..." : "Use Storivo Marketing"}
+              {selecting === "storivo" && selectMutation.isPending ? "Setting up..." : "Use ShopBanao Marketing"}
             </Button>
           </CardContent>
         </Card>
@@ -2860,7 +2860,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
   );
 }
 
-// ─── Storivo Mode Dashboard ─────────────────────────────────────────
+// ─── ShopBanao Mode Dashboard ─────────────────────────────────────────
 function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitchMode: () => void }) {
   const [activeTab, setActiveTab] = useState("automations");
   const [bulkNumbers, setBulkNumbers] = useState<string[]>([]);
@@ -2876,15 +2876,15 @@ function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSw
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <MessageSquare className="h-6 w-6 text-green-600" />
-            Storivo Marketing
+            ShopBanao Marketing
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Automated WhatsApp messages via Storivo's number
+            Automated WhatsApp messages via ShopBanao's number
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Badge className="bg-green-100 text-green-700 border-green-200">
-            <Zap className="h-3 w-3 mr-1" /> Storivo Mode
+            <Zap className="h-3 w-3 mr-1" /> ShopBanao Mode
           </Badge>
           <Button variant="ghost" size="sm" onClick={onSwitchMode} className="text-xs">
             Switch to Own API
@@ -2980,7 +2980,7 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
             </Badge>
           )}
           <Button variant="ghost" size="sm" onClick={onSwitchMode} className="text-xs">
-            Switch to Storivo
+            Switch to ShopBanao
           </Button>
         </div>
       </div>

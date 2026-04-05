@@ -379,7 +379,7 @@ export default function CreateStore() {
             </div>
             <DialogTitle className="text-xl">You Already Have a Store!</DialogTitle>
             <DialogDescription className="text-sm">
-              Your store <span className="font-semibold text-primary">{existingStoreSlug}.storivo.in</span> is already live and ready for business.
+              Your store <span className="font-semibold text-primary">{existingStoreSlug}.shopbanao.in</span> is already live and ready for business.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-2">
@@ -406,7 +406,7 @@ export default function CreateStore() {
               size="sm"
               onClick={() => {
                 if (existingStoreSlug) {
-                  window.open(`https://${existingStoreSlug}.storivo.in`, "_blank");
+                  window.open(`https://${existingStoreSlug}.shopbanao.in`, "_blank");
                 }
               }}
               className="w-full text-xs gap-1.5"
@@ -522,7 +522,7 @@ export default function CreateStore() {
                     <p className="text-xs text-muted-foreground">Your store will be live at:</p>
                     <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                       <Globe className="h-3.5 w-3.5 text-primary" />
-                      {slug}.storivo.in
+                      {slug}.shopbanao.in
                     </p>
                     <p className="text-[10px] text-muted-foreground">You can connect your own custom domain later in Settings → Domain</p>
                   </div>

@@ -2633,7 +2633,7 @@ export default function StoreThemeSettings() {
                       <div className="h-2.5 w-2.5 rounded-full bg-warning/60" />
                       <div className="h-2.5 w-2.5 rounded-full bg-success/60" />
                       <div className="flex-1 mx-8 rounded-full bg-background/80 border border-border px-3 py-0.5">
-                        <span className="text-[9px] text-muted-foreground">{store.slug}.storivo.in</span>
+                        <span className="text-[9px] text-muted-foreground">{store.slug}.shopbanao.in</span>
                       </div>
                     </div>
                     <div style={{ width: "100%", height: "680px", overflow: "hidden" }}>

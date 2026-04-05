@@ -108,7 +108,7 @@ export default function Signup() {
 
       // If session is returned (auto-confirm enabled), go to dashboard
       if (signUpData?.session) {
-        toast.success("Account created! Welcome to Storivo.");
+        toast.success("Account created! Welcome to ShopBanao.");
         navigate("/dashboard");
       } else {
         toast.success("Account created! Please check your email to confirm.");

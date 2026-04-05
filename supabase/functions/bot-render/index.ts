@@ -6,7 +6,7 @@ const corsHeaders = {
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const ROOT_DOMAIN = "storivo.in";
+const ROOT_DOMAIN = "shopbanao.in";
 
 function esc(str: string = ""): string {
   return str

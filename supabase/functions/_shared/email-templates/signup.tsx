@@ -30,11 +30,11 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Welcome to Storivo — confirm your email</Preview>
+    <Preview>Welcome to ShopBanao — confirm your email</Preview>
     <Body style={main}>
       <Container style={container}>
         <div style={logoSection}>
-          <Text style={logoText}>Storivo</Text>
+          <Text style={logoText}>ShopBanao</Text>
         </div>
         <Hr style={divider} />
         <Heading style={h1}>Welcome aboard! 🎉</Heading>

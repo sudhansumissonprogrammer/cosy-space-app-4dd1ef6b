@@ -29,7 +29,7 @@ export const RecoveryEmail = ({
     <Body style={main}>
       <Container style={container}>
         <div style={logoSection}>
-          <Text style={logoText}>Storivo</Text>
+          <Text style={logoText}>ShopBanao</Text>
         </div>
         <Hr style={divider} />
         <Heading style={h1}>Reset your password</Heading>

@@ -32,7 +32,7 @@ export const InviteEmail = ({
     <Body style={main}>
       <Container style={container}>
         <div style={logoSection}>
-          <Text style={logoText}>Storivo</Text>
+          <Text style={logoText}>ShopBanao</Text>
         </div>
         <Hr style={divider} />
         <Heading style={h1}>You're invited! 🎉</Heading>

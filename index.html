@@ -18,9 +18,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet" />
-    <title>Storivo — Create Your Online Store</title>
+    <title>ShopBanao — Create Your Online Store</title>
     <meta name="description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
-    <meta name="author" content="Storivo" />
+    <meta name="author" content="ShopBanao" />
     <meta name="theme-color" content="#4361ee" />
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <meta property="og:type" content="website" />
@@ -51,8 +51,8 @@
         if(!slug){var p=location.pathname;if(p.indexOf('/store/')===0){slug=p.split('/store/')[1];if(slug)slug=slug.split('/')[0];}}
         if(!slug){
           var h=location.hostname;
-          if(h.endsWith('.storivo.in')&&h!=='storivo.in'&&h!=='www.storivo.in'){
-            var sub=h.replace('.storivo.in','');
+          if(h.endsWith('.shopbanao.in')&&h!=='shopbanao.in'&&h!=='www.shopbanao.in'){
+            var sub=h.replace('.shopbanao.in','');
             if(sub&&sub.indexOf('.')===-1)slug=sub;
           }
         }
@@ -83,8 +83,8 @@
   
   
   
-  <meta property="og:title" content="Storivo — Create Your Online Store">
-  <meta name="twitter:title" content="Storivo — Create Your Online Store">
+  <meta property="og:title" content="ShopBanao — Create Your Online Store">
+  <meta name="twitter:title" content="ShopBanao — Create Your Online Store">
   <meta property="og:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
   <meta name="twitter:description" content="Launch your online store in minutes. Manage products, categories, and orders with built-in WhatsApp ordering. Free to use.">
 </head>
@@ -116,8 +116,8 @@
         var p=location.pathname;
         var isStorefront=p.indexOf('/store/')===0;
         var h=location.hostname;
-        if(!isStorefront && h.endsWith('.storivo.in') && h!=='storivo.in' && h!=='www.storivo.in'){
-          var sub=h.replace('.storivo.in','');
+        if(!isStorefront && h.endsWith('.shopbanao.in') && h!=='shopbanao.in' && h!=='www.shopbanao.in'){
+          var sub=h.replace('.shopbanao.in','');
           if(sub && sub.indexOf('.')===-1) isStorefront=true;
         }
         if(!isStorefront && !h.endsWith('.lovable.app') && h!=='localhost' && !p.startsWith('/dashboard') && !p.startsWith('/admin') && !p.startsWith('/login') && !p.startsWith('/signup')){
