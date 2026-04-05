@@ -1032,7 +1032,7 @@ function _buildPrebuiltHead(html) {
 
   head += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />`;
   head += `<link rel="dns-prefetch" href="${SUPABASE_URL}" />`;
-  head += `<link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co/storage" crossorigin />`;
+  head += `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
   if (cssMatch) {
@@ -1754,7 +1754,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" crossorigin />
 <link rel="dns-prefetch" href="${SUPABASE_URL}" />
-<link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co/storage" crossorigin />`;
+<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
 
   let inlineThemeCss = "";
   let bgColor = "#ffffff";
