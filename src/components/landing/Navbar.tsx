@@ -40,7 +40,7 @@ const Navbar = () => {
           <a href="/#faq" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>FAQ</a>
           <div className="pt-4 border-t-2 border-foreground space-y-3">
             <a href="/login" className="block font-bold uppercase tracking-wider text-foreground">Sign In</a>
-            <a href="/login" className="block text-center bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider px-6 py-3 border-2 border-foreground shadow-bauhaus">Start Free</a>
+            <a href="/signup" className="block text-center bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider px-6 py-3 border-2 border-foreground shadow-bauhaus">Start Free</a>
           </div>
         </div>
       )}
