@@ -2782,7 +2782,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-        {/* Storivo Marketing Card */}
+        {/* ShopBanao Marketing Card */}
         <Card
           className={cn(
             "cursor-pointer transition-all hover:shadow-md border-2",
