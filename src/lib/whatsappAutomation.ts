@@ -23,7 +23,7 @@ export async function sendOrderWhatsApp(
   try {
     if (!orderData.customer_phone) return;
 
-    // Check if store has any whatsapp config (storivo or own)
+    // Check if store has any whatsapp config (shopbanao or own)
     const { data: config } = await supabase
       .from("whatsapp_config")
       .select("id, is_active, marketing_mode" as any)
