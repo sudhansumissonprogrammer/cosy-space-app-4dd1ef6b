@@ -1,19 +1,35 @@
-import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp } from "lucide-react";
-import jewelryHome from "@/assets/showcase-jewelry-home.webp";
-import jewelryProduct from "@/assets/showcase-jewelry-product.webp";
+import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp, ExternalLink } from "lucide-react";
+import overlaysMobile from "@/assets/showcase-overlays-mobile.png";
+import serdiyaMobile from "@/assets/showcase-serdiya-mobile.png";
 
-const PhoneMockup = ({ img, label, className = "" }: { img: string; label: string; className?: string }) => (
-  <div className={`flex flex-col items-center ${className}`}>
+const liveStores = [
+  { img: overlaysMobile, label: "Overlays", url: "https://overlays.shopbanao.in" },
+  { img: serdiyaMobile, label: "Serdiya Jewellers", url: "https://serdiyajewellers.shop" },
+];
+
+const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: string; url: string; className?: string }) => (
+  <a
+    href={url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={`group flex flex-col items-center ${className}`}
+  >
     <div className="relative w-full">
-      <div className="bg-foreground rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] p-[5px] sm:p-[6px] shadow-2xl">
+      <div className="bg-foreground rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] p-[5px] sm:p-[6px] shadow-2xl transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1">
         <div className="absolute top-[5px] sm:top-[6px] left-1/2 -translate-x-1/2 w-12 sm:w-14 lg:w-16 h-3 sm:h-4 bg-foreground rounded-b-xl z-20" />
         <div className="rounded-[17px] sm:rounded-[20px] lg:rounded-[22px] overflow-hidden bg-background">
-          <img src={img} alt={label} className="w-full h-auto block" />
+          <img src={img} alt={`${label} live store`} className="w-full h-auto block" />
         </div>
       </div>
+      {/* Hover overlay */}
+      <div className="absolute inset-0 rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-30">
+        <span className="flex items-center gap-1.5 bg-bauhaus-white text-foreground font-bold text-[9px] sm:text-[10px] uppercase tracking-wider px-3 py-1.5 border-2 border-foreground shadow-bauhaus">
+          Visit Store <ExternalLink className="h-3 w-3" />
+        </span>
+      </div>
     </div>
-    <span className="mt-2 lg:mt-3 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-white/80">{label}</span>
-  </div>
+    <span className="mt-2 lg:mt-3 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-white/80 group-hover:underline">{label}</span>
+  </a>
 );
 
 const Hero = () => {
@@ -66,8 +82,8 @@ const Hero = () => {
             <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
             <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
             <div className="relative z-10 flex items-end gap-5 xl:gap-7 px-6">
-              <PhoneMockup img={jewelryHome} label="Home Page" className="w-[190px] xl:w-[210px] -rotate-3 translate-y-3" />
-              <PhoneMockup img={jewelryProduct} label="Product Page" className="w-[190px] xl:w-[210px] rotate-3 -translate-y-3" />
+              <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} className="w-[190px] xl:w-[210px] -rotate-3 translate-y-3" />
+              <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[190px] xl:w-[210px] rotate-3 -translate-y-3" />
             </div>
             <div className="absolute bottom-5 left-5 bg-bauhaus-white border-3 border-foreground shadow-bauhaus-lg p-3 w-44 z-20">
               <div className="flex items-center justify-between mb-1.5">
@@ -90,8 +106,8 @@ const Hero = () => {
 
       <div className="lg:hidden bg-bauhaus-blue border-t-4 border-foreground">
         <div className="flex justify-center gap-4 py-6 px-5 overflow-hidden">
-          <PhoneMockup img={jewelryHome} label="Home Page" className="w-[145px] sm:w-[165px] -rotate-2" />
-          <PhoneMockup img={jewelryProduct} label="Product Page" className="w-[145px] sm:w-[165px] rotate-2" />
+          <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} className="w-[145px] sm:w-[165px] -rotate-2" />
+          <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[145px] sm:w-[165px] rotate-2" />
         </div>
         <div className="grid grid-cols-3 border-t-4 border-foreground">
           <div className="bg-bauhaus-white border-r-2 border-foreground p-3 sm:p-4">
