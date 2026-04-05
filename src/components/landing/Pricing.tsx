@@ -41,7 +41,7 @@ const Pricing = () => {
                 ))}
               </div>
               <div className="p-6 pt-0">
-                <a href="/login" className={`flex items-center justify-center gap-2 w-full ${colorMap[p.color].bg} ${colorMap[p.color].text} font-bold uppercase tracking-wider text-sm px-6 py-3.5 border-2 border-foreground shadow-bauhaus hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200`}>
+                <a href="/signup" className={`flex items-center justify-center gap-2 w-full ${colorMap[p.color].bg} ${colorMap[p.color].text} font-bold uppercase tracking-wider text-sm px-6 py-3.5 border-2 border-foreground shadow-bauhaus hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200`}>
                   Start Free Trial <ArrowRight className="h-4 w-4" />
                 </a>
               </div>
