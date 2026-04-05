@@ -24,7 +24,7 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-4">
           <a href="/login" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-blue transition-colors duration-200">Sign In</a>
-          <a href="/signup" className="bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-6 py-2.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Start Free</a>
+          <a href="/login" className="bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-6 py-2.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Start Free</a>
         </div>
 
         <button className="md:hidden p-2 border-2 border-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
