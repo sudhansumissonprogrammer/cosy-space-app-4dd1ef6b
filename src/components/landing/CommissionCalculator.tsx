@@ -43,7 +43,7 @@ const CommissionCalculator = () => {
             </div>
           </div>
           <div className="mt-8 text-center">
-            <a href="/signup" className="inline-flex items-center gap-2 bg-bauhaus-yellow text-foreground font-bold uppercase tracking-wider px-8 py-3.5 border-2 border-foreground shadow-bauhaus-md hover:bg-bauhaus-yellow/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
+            <a href="/login" className="inline-flex items-center gap-2 bg-bauhaus-yellow text-foreground font-bold uppercase tracking-wider px-8 py-3.5 border-2 border-foreground shadow-bauhaus-md hover:bg-bauhaus-yellow/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
               Stop Losing Money — Start Free
             </a>
           </div>
