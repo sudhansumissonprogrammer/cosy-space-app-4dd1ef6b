@@ -193,7 +193,7 @@ function buildInvoiceHtml(order: any, items: any[], store: any, isOwner: boolean
   </div>
 
   <!-- Sub-footer -->
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin:16px 0 0">Powered by Storivo</p>
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin:16px 0 0">Powered by ShopBanao</p>
 </div>
 </body>
 </html>`;

@@ -2980,7 +2980,7 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
             </Badge>
           )}
           <Button variant="ghost" size="sm" onClick={onSwitchMode} className="text-xs">
-            Switch to Storivo
+            Switch to ShopBanao
           </Button>
         </div>
       </div>

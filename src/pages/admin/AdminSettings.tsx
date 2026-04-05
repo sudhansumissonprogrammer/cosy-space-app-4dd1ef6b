@@ -104,10 +104,10 @@ export default function AdminSettings() {
       <Card className="max-w-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <MessageSquare className="h-4 w-4 text-green-600" /> Platform WhatsApp (Storivo Marketing)
+            <MessageSquare className="h-4 w-4 text-green-600" /> Platform WhatsApp (ShopBanao Marketing)
           </CardTitle>
           <CardDescription>
-            These credentials are used for stores using Storivo Marketing mode. All automated messages will be sent from this number.
+            These credentials are used for stores using ShopBanao Marketing mode. All automated messages will be sent from this number.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
