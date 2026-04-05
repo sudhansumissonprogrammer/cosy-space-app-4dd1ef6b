@@ -60,7 +60,6 @@ const Index = lazy(() => import("@/pages/Index"));
 
 export default function AuthRoutes() {
   return (
-    <>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
