@@ -336,10 +336,12 @@ export default function CreateStore() {
         // Non-critical — store still works, just first visit may be slower
       }
 
+      setCreatingAnimation(false);
+      setStoreCreated(true);
+      setCreatedSlug(slug.trim());
       setShowConfetti(true);
       toast.success("Store created successfully! 🎉");
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
-      setTimeout(() => navigate("/dashboard", { replace: true }), 2500);
     } catch (err: any) {
       setCreatingAnimation(false);
       toast.error(err.message || "Failed to create store");
