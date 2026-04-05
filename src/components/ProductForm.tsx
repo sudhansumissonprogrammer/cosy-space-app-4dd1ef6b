@@ -896,64 +896,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
               </div>
             </div>
 
-            {/* Partial Payment Section */}
-            {(store as any)?.order_mode !== "whatsapp" && (
-              <div className="space-y-3 rounded-lg border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="partial-payment" className="text-sm font-semibold">Partial Payment (Advance + COD)</Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">Let customers pay a small advance online, rest on delivery</p>
-                  </div>
-                  <Switch id="partial-payment" checked={partialPaymentEnabled} onCheckedChange={setPartialPaymentEnabled} />
-                </div>
-                {partialPaymentEnabled && (
-                  <div className="space-y-3 pt-1">
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setPartialPaymentType("percentage")}
-                        className={cn("flex-1 rounded-lg border-2 p-2.5 text-center text-sm font-medium transition-all", partialPaymentType === "percentage" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30")}
-                      >
-                        Percentage %
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPartialPaymentType("fixed")}
-                        className={cn("flex-1 rounded-lg border-2 p-2.5 text-center text-sm font-medium transition-all", partialPaymentType === "fixed" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30")}
-                      >
-                        Fixed ₹
-                      </button>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">
-                        {partialPaymentType === "percentage" ? "Advance Percentage (10-80%)" : "Fixed Advance Amount (min ₹50)"}
-                      </Label>
-                      <Input
-                        type="number"
-                        min={partialPaymentType === "percentage" ? "10" : "50"}
-                        max={partialPaymentType === "percentage" ? "80" : undefined}
-                        step={partialPaymentType === "percentage" ? "1" : "0.01"}
-                        placeholder={partialPaymentType === "percentage" ? "e.g. 30" : "e.g. 200"}
-                        value={partialPaymentValue}
-                        onChange={(e) => setPartialPaymentValue(e.target.value)}
-                      />
-                      {partialPaymentValue && price && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {(() => {
-                            const p = parseFloat(price);
-                            const v = parseFloat(partialPaymentValue);
-                            if (!p || !v) return null;
-                            const advance = partialPaymentType === "percentage" ? Math.round(p * v / 100) : Math.min(v, p);
-                            const balance = Math.max(0, p - advance);
-                            return `Preview: Customer pays ₹${advance} online + ₹${balance} on delivery`;
-                          })()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Variants */}
             <div className="space-y-3">
