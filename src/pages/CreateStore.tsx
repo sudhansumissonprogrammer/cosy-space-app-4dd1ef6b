@@ -62,10 +62,11 @@ export default function CreateStore() {
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [checkingStore, setCheckingStore] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
-
   const [showExistingStoreDialog, setShowExistingStoreDialog] = useState(false);
   const [existingStoreSlug, setExistingStoreSlug] = useState<string | null>(null);
   const [creatingAnimation, setCreatingAnimation] = useState(false);
+  const [storeCreated, setStoreCreated] = useState(false);
+  const [createdSlug, setCreatedSlug] = useState<string>("");
 
   // Fetch available plans
   const { data: plans } = useQuery({
