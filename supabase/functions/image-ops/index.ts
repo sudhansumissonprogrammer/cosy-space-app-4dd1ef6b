@@ -41,7 +41,7 @@ async function handleResize(url: URL) {
   }
 
   const imageResponse = await fetch(imageUrl, {
-    headers: { "User-Agent": "Storivo-ImageProxy/1.0" },
+    headers: { "User-Agent": "ShopBanao-ImageProxy/1.0" },
   });
 
   if (!imageResponse.ok) {
