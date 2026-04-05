@@ -35,33 +35,17 @@ export default function StorePayments() {
   const [partialEnabled, setPartialEnabled] = useState(false);
   const [partialType, setPartialType] = useState<"percentage" | "fixed">("percentage");
   const [partialValue, setPartialValue] = useState("");
-  const [applyingToAll, setApplyingToAll] = useState(false);
 
   const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
-  // Load existing partial payment state from products
-  const { data: partialProducts } = useQuery({
-    queryKey: ["partial-payment-products", storeId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("products")
-        .select("partial_payment_enabled, partial_payment_type, partial_payment_value")
-        .eq("store_id", storeId!)
-        .eq("partial_payment_enabled", true)
-        .limit(1);
-      return data || [];
-    },
-    enabled: !!storeId,
-  });
-
-  // Initialize partial payment toggle from DB
+  // Initialize partial payment from store
   useEffect(() => {
-    if (partialProducts && partialProducts.length > 0) {
-      setPartialEnabled(true);
-      setPartialType(partialProducts[0].partial_payment_type || "percentage");
-      setPartialValue(String(partialProducts[0].partial_payment_value || ""));
+    if (store) {
+      setPartialEnabled((store as any).partial_payment_enabled ?? false);
+      setPartialType((store as any).partial_payment_type || "percentage");
+      setPartialValue((store as any).partial_payment_value ? String((store as any).partial_payment_value) : "");
     }
-  }, [partialProducts]);
+  }, [store]);
 
   const { data: paymentConfig, isLoading: configLoading } = useQuery({
     queryKey: ["payment-config", storeId],
@@ -104,10 +88,28 @@ export default function StorePayments() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // 1. Update order_mode on store
+      // 1. Update order_mode + partial payment on store
+      const partialUpdate: Record<string, any> = {
+        order_mode: orderMode,
+        partial_payment_enabled: partialEnabled && razorpayEnabled,
+        partial_payment_type: partialType,
+        partial_payment_value: partialEnabled && partialValue ? Number(partialValue) : null,
+      };
+      
+      // Validate partial payment values
+      if (partialEnabled && razorpayEnabled && partialValue) {
+        const val = Number(partialValue);
+        if (partialType === "percentage" && (val < 10 || val > 80)) {
+          throw new Error("Percentage must be between 10% and 80%");
+        }
+        if (partialType === "fixed" && val < 50) {
+          throw new Error("Fixed amount must be at least ₹50");
+        }
+      }
+      
       const { error: storeErr } = await (supabase as any)
         .from("stores")
-        .update({ order_mode: orderMode })
+        .update(partialUpdate)
         .eq("id", storeId!);
       if (storeErr) throw storeErr;
 
@@ -434,77 +436,9 @@ export default function StorePayments() {
                   </div>
                 )}
 
-                {/* Apply to all products */}
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  disabled={applyingToAll || !partialValue || Number(partialValue) <= 0}
-                  onClick={async () => {
-                    const val = Number(partialValue);
-                    if (partialType === "percentage" && (val < 10 || val > 80)) {
-                      toast.error("Percentage must be between 10% and 80%");
-                      return;
-                    }
-                    if (partialType === "fixed" && val < 50) {
-                      toast.error("Fixed amount must be at least ₹50");
-                      return;
-                    }
-                    setApplyingToAll(true);
-                    try {
-                      const { error } = await (supabase as any)
-                        .from("products")
-                        .update({
-                          partial_payment_enabled: true,
-                          partial_payment_type: partialType,
-                          partial_payment_value: val,
-                        })
-                        .eq("store_id", storeId!)
-                        .eq("is_active", true);
-                      if (error) throw error;
-                      toast.success("Partial payment applied to all active products!");
-                      queryClient.invalidateQueries({ queryKey: ["products"] });
-                    } catch (err: any) {
-                      toast.error(err.message || "Failed to apply");
-                    } finally {
-                      setApplyingToAll(false);
-                    }
-                  }}
-                >
-                  {applyingToAll ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Apply to All Products
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  className="w-full text-destructive hover:text-destructive"
-                  disabled={applyingToAll}
-                  onClick={async () => {
-                    setApplyingToAll(true);
-                    try {
-                      const { error } = await (supabase as any)
-                        .from("products")
-                        .update({
-                          partial_payment_enabled: false,
-                          partial_payment_value: null,
-                        })
-                        .eq("store_id", storeId!)
-                        .eq("is_active", true);
-                      if (error) throw error;
-                      setPartialEnabled(false);
-                      setPartialValue("");
-                      toast.success("Partial payment removed from all products");
-                      queryClient.invalidateQueries({ queryKey: ["products"] });
-                    } catch (err: any) {
-                      toast.error(err.message || "Failed");
-                    } finally {
-                      setApplyingToAll(false);
-                    }
-                  }}
-                >
-                  Remove from All Products
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  This setting applies to all products in your store. Click "Save Settings" below to apply.
+                </p>
               </>
             )}
           </CardContent>

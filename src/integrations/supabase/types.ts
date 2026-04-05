@@ -1574,6 +1574,9 @@ export type Database = {
           order_mode: string
           owner_email: string | null
           owner_id: string
+          partial_payment_enabled: boolean
+          partial_payment_type: string
+          partial_payment_value: number | null
           return_policy: string | null
           shipping_policy: string | null
           slug: string
@@ -1615,6 +1618,9 @@ export type Database = {
           order_mode?: string
           owner_email?: string | null
           owner_id: string
+          partial_payment_enabled?: boolean
+          partial_payment_type?: string
+          partial_payment_value?: number | null
           return_policy?: string | null
           shipping_policy?: string | null
           slug: string
@@ -1656,6 +1662,9 @@ export type Database = {
           order_mode?: string
           owner_email?: string | null
           owner_id?: string
+          partial_payment_enabled?: boolean
+          partial_payment_type?: string
+          partial_payment_value?: number | null
           return_policy?: string | null
           shipping_policy?: string | null
           slug?: string
