@@ -543,10 +543,9 @@ export default function CreateStore() {
 
                 {plans && plans.length > 0 ? (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {plans.map((plan) => {
+                    {plans.map((plan, idx) => {
                       const isSelected = selectedPlanId === plan.id;
-                      const features = PLAN_FEATURES[plan.slug] || [];
-                      const isGrowth = plan.slug === "growth";
+                      const isPopular = plans.length > 1 && idx === plans.length - 1;
                       return (
                         <button
                           key={plan.id}
@@ -558,17 +557,14 @@ export default function CreateStore() {
                               : "border-input hover:border-primary/40 hover:shadow-md"
                           }`}
                         >
-                          {isGrowth && (
+                          {isPopular && (
                             <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
                               Most Popular
                             </span>
                           )}
 
-                          {/* Selection indicator */}
                           <div className={`absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all ${
-                            isSelected
-                              ? "border-primary bg-primary"
-                              : "border-muted-foreground/30"
+                            isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
                           }`}>
                             {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />}
                           </div>
@@ -578,20 +574,9 @@ export default function CreateStore() {
                             <span className="text-3xl font-black text-foreground">₹{plan.price}</span>
                             <span className="text-sm text-muted-foreground">/month</span>
                           </div>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {plan.product_limit ? `Up to ${plan.product_limit} products` : "Unlimited products"}
+                          <p className="mt-2 text-sm font-medium text-primary">
+                            {plan.product_limit ? `${plan.product_limit} Products` : "Unlimited Products"}
                           </p>
-
-                          <div className="mt-4 space-y-2">
-                            {features.map((f) => (
-                              <div key={f} className="flex items-center gap-2">
-                                <div className={`flex h-4 w-4 items-center justify-center rounded-full ${isSelected ? "bg-primary" : "bg-muted-foreground/20"}`}>
-                                  <Check className={`h-2.5 w-2.5 ${isSelected ? "text-primary-foreground" : "text-muted-foreground"}`} strokeWidth={3} />
-                                </div>
-                                <span className="text-xs text-foreground">{f}</span>
-                              </div>
-                            ))}
-                          </div>
                         </button>
                       );
                     })}
