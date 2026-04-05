@@ -2884,7 +2884,7 @@ function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSw
         </div>
         <div className="flex items-center gap-2">
           <Badge className="bg-green-100 text-green-700 border-green-200">
-            <Zap className="h-3 w-3 mr-1" /> Storivo Mode
+            <Zap className="h-3 w-3 mr-1" /> ShopBanao Mode
           </Badge>
           <Button variant="ghost" size="sm" onClick={onSwitchMode} className="text-xs">
             Switch to Own API
