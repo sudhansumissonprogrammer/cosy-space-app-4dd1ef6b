@@ -1,7 +1,14 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v4.9.0 — FULL PARALLEL + STREAMING
+ * SHOPBANAO PRODUCTION ROUTER v4.9.1 — INSTANT NEW STORE FIX
  *
- * Changes from v4.8.1:
+ * Changes from v4.9.0:
+ *   1. Slug index is now a SOFT hint — missing slugs still proceed to DB lookup
+ *   2. Negative cache TTLs reduced from 60s to 15s (in-memory + Cache API + KV)
+ *   3. Prewarm handler purges negative cache entries before re-fetching store info
+ *   4. buildNotFoundHtml includes auto-retry JS (3 retries, 2s+3s intervals)
+ *   5. 404 Cache-Control reduced from max-age=60 to max-age=10
+ *
+ * Previous v4.9.0 changes:
  *   1. Full parallel critical path: shell + storeInfo + theme + prebuiltHead + products all concurrent
  *   2. _getInlineProductsOrNull: products fetched in parallel on critical path (Cache → KV)
  *   3. _getCachedPrebuiltHead: cache-only lookup (no build) for streaming head phase
