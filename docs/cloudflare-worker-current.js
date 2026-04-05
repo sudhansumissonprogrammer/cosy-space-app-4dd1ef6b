@@ -759,19 +759,19 @@ async function _resolveStoreInfo(slug, hostname, env) {
     if (!row) {
       const nfData = { __nf: true };
       _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
-      _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+      _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 15_000 });
       _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
-      domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+      domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 15_000 });
       cache
         .put(
           infoCacheKey,
           new Response(JSON.stringify(nfData), {
-            headers: { "Cache-Control": "public, max-age=60" },
+            headers: { "Cache-Control": "public, max-age=15" },
           }),
         )
         .catch(() => {});
       if (env?.STORE_KV) {
-        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 120 }).catch(() => {});
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 30 }).catch(() => {});
       }
       return { storeId: null, customDomain: null };
     }
