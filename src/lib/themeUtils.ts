@@ -64,8 +64,11 @@ export function buildThemeStyle(
     "--primary-foreground": primaryFgHsl,
   };
 
+  // Footer text color: contrasts against primary (used as footer bg)
+  const footerTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
+
   const themeStyle: React.CSSProperties = (previewOverride
-    ? { ...previewOverride, ...baseOverrides }
+    ? { ...previewOverride, ...baseOverrides, "--storefront-footer-text": footerTextColor }
     : themeConfig
     ? {
         "--storefront-primary": themeConfig.primary_color,
@@ -79,6 +82,7 @@ export function buildThemeStyle(
           themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : defaultButtonRadius,
         "--storefront-marquee-gradient": themeConfig.marquee_gradient,
         "--storefront-btn-text": btnTextColor,
+        "--storefront-footer-text": footerTextColor,
         ...baseOverrides,
       }
     : { ...baseOverrides }) as any;

@@ -16,7 +16,13 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
 
   return (
-    <footer className="mt-16 border-t" style={{ backgroundColor: "var(--storefront-accent, hsl(var(--card)))", color: "#ffffff" }}>
+    <footer
+      className="mt-16 border-t"
+      style={{
+        backgroundColor: "var(--storefront-primary, #1a1a1a)",
+        color: "var(--storefront-footer-text, #ffffff)",
+      }}
+    >
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Column 1: Brand */}
@@ -25,11 +31,11 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
               {store.logo_url ? (
                 <img src={optimizeImageUrl(store.logo_url, 120, 80)} alt={store.name} width={120} height={40} className="h-10 w-auto max-w-[120px] object-contain" loading="lazy" decoding="async" />
               ) : (
-                <StoreTextLogo storeName={store.name} size="text-lg" color="white" />
+                <StoreTextLogo storeName={store.name} size="text-lg" color="inherit" />
               )}
             </div>
             {store.description && (
-              <p className="text-sm leading-relaxed text-white/90 line-clamp-3">
+              <p className="text-sm leading-relaxed opacity-80 line-clamp-3">
                 {store.description}
               </p>
             )}
@@ -37,7 +43,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
 
           {/* Column 2: Quick Links */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Quick Links</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Quick Links</h3>
             <nav className="flex flex-col gap-2">
               {[
                 { to: storefrontPath(store.slug), label: "Home" },
@@ -51,7 +57,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 <Link
                   key={link.label}
                   to={link.to}
-                  className="text-sm text-white/80 transition-colors hover:text-white"
+                  className="text-sm opacity-75 transition-opacity hover:opacity-100"
+                  style={{ color: "inherit" }}
                 >
                   {link.label}
                 </Link>
@@ -62,15 +69,15 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           {/* Column 3: Business Hours */}
           {hasHours && (
             <div className="space-y-3">
-              <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-white">
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider">
                 <Clock className="h-3.5 w-3.5" /> Business Hours
               </h3>
               <div className="space-y-1">
                 {Object.entries(hours!).map(([day, time]) =>
                   time?.trim() ? (
                     <div key={day} className="flex justify-between text-sm">
-                      <span className="capitalize text-white/80">{day}</span>
-                      <span className="text-white">{time}</span>
+                      <span className="capitalize opacity-75">{day}</span>
+                      <span>{time}</span>
                     </div>
                   ) : null
                 )}
@@ -80,10 +87,10 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
 
           {/* Column 4: Contact & Address */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Contact</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Contact</h3>
             <div className="space-y-2.5">
               {address && (
-                <p className="flex items-start gap-2 text-sm text-white/80">
+                <p className="flex items-start gap-2 text-sm opacity-75">
                   <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {address}
                 </p>
@@ -93,7 +100,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
+                  className="flex items-center gap-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                  style={{ color: "inherit" }}
                 >
                   <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                 </a>
@@ -103,7 +111,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
+                  className="flex items-center gap-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                  style={{ color: "inherit" }}
                 >
                   <Instagram className="h-3.5 w-3.5" /> Instagram
                 </a>
@@ -113,7 +122,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.facebook_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
+                  className="flex items-center gap-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                  style={{ color: "inherit" }}
                 >
                   <Facebook className="h-3.5 w-3.5" /> Facebook
                 </a>
@@ -123,8 +133,9 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 border-t border-white/20 pt-6 text-center">
-          <p className="text-xs text-white/70">
+        <div className="mt-8 border-t pt-6 text-center" style={{ borderColor: "currentcolor", borderTopWidth: "1px", opacity: 1 }}>
+          <div style={{ borderColor: "inherit" }} />
+          <p className="text-xs opacity-60">
             © {year} {store.name}. All rights reserved.
           </p>
         </div>
