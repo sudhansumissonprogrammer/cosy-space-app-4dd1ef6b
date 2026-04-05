@@ -63,7 +63,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
           {
             label: "Set up payments",
             hint: "Payments page in sidebar",
-            done: !!paymentsRes.data,
+            done: !!paymentsRes.data || store?.order_mode === 'both',
             url: `/dashboard/stores/${storeSlug}/payments`,
             icon: CreditCard,
           },
