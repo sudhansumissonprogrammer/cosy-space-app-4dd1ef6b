@@ -326,14 +326,19 @@ export default function CreateStore() {
         }
       }
 
-      import("@/lib/prewarmStore").then(({ prewarmStore }) => {
-        prewarmStore(slug.trim());
-      }).catch(() => {});
+      // Prewarm store cache (blocking) — ensures Cloudflare Worker slug index
+      // is updated before the user could visit their subdomain
+      try {
+        const { prewarmStore } = await import("@/lib/prewarmStore");
+        await prewarmStore(slug.trim());
+      } catch {
+        // Non-critical — store still works, just first visit may be slower
+      }
 
       setShowConfetti(true);
       toast.success("Store created successfully! 🎉");
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
-      setTimeout(() => navigate("/dashboard", { replace: true }), 2000);
+      setTimeout(() => navigate("/dashboard", { replace: true }), 2500);
     } catch (err: any) {
       setCreatingAnimation(false);
       toast.error(err.message || "Failed to create store");
