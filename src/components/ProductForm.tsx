@@ -361,9 +361,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         is_active: isActive,
         is_best_selling: isBestSelling,
         image_url: imageUrl,
-        partial_payment_enabled: partialPaymentEnabled,
-        partial_payment_type: partialPaymentType,
-        partial_payment_value: partialPaymentEnabled && partialPaymentValue ? parseFloat(partialPaymentValue) : null,
       } as any;
 
       let savedProductId = productId;
