@@ -333,24 +333,20 @@ export default function CheckoutPage() {
 
   const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
-  // Partial payment calculation
-  const hasAnyPartialPayment = checkoutItems.some((i) => i.partialPaymentEnabled);
+  // Partial payment calculation (store-level)
+  const hasAnyPartialPayment = storePartialEnabled && !!storePartialValue;
   const partialAdvanceTotal = (() => {
     if (!hasAnyPartialPayment) return total;
     let advance = 0;
     for (const item of checkoutItems) {
-      if (item.partialPaymentEnabled && item.partialPaymentValue) {
-        let itemAdvance: number;
-        if (item.partialPaymentType === "percentage") {
-          itemAdvance = Math.round(item.price * (item.partialPaymentValue / 100));
-        } else {
-          itemAdvance = Math.min(item.partialPaymentValue, item.price);
-        }
-        itemAdvance = Math.max(itemAdvance, 50); // min ₹50
-        advance += itemAdvance * item.quantity;
+      let itemAdvance: number;
+      if (storePartialType === "percentage") {
+        itemAdvance = Math.round(item.price * (storePartialValue / 100));
       } else {
-        advance += item.price * item.quantity;
+        itemAdvance = Math.min(storePartialValue, item.price);
       }
+      itemAdvance = Math.max(itemAdvance, 50); // min ₹50
+      advance += itemAdvance * item.quantity;
     }
     // Add tax + shipping proportionally, subtract coupon
     const ratio = subtotal > 0 ? advance / subtotal : 1;
@@ -362,7 +358,7 @@ export default function CheckoutPage() {
   const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasRazorpay;
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
 
-  // When partial payment products are in cart, force Razorpay (disable COD)
+  // When partial payment is enabled, force Razorpay (disable COD)
   useEffect(() => {
     if (hasAnyPartialPayment && hasRazorpay) setPaymentMethod("razorpay");
   }, [hasAnyPartialPayment, hasRazorpay]);
