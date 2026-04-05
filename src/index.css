@@ -48,6 +48,13 @@
 
     --radius: 0.5rem;
 
+    --bauhaus-red: 0 75% 47%;
+    --bauhaus-blue: 220 85% 40%;
+    --bauhaus-yellow: 43 85% 53%;
+    --bauhaus-black: 0 0% 7%;
+    --bauhaus-white: 0 0% 100%;
+    --bauhaus-canvas: 0 0% 94%;
+
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 10% 46%;
     --sidebar-primary: 230 75% 57%;
