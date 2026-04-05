@@ -20,7 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
   Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Zap,
-  Rocket, Crown, ShoppingBag, CreditCard,
+  Rocket, Crown, ShoppingBag, CreditCard, ExternalLink, Copy,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
