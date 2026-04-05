@@ -2876,7 +2876,7 @@ function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSw
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <MessageSquare className="h-6 w-6 text-green-600" />
-            Storivo Marketing
+            ShopBanao Marketing
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Automated WhatsApp messages via Storivo's number
