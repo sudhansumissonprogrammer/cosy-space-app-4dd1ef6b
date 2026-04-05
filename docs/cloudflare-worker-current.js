@@ -19,9 +19,9 @@ const WORKER_VERSION = "4.9.0";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
-const SUPABASE_URL = "https://soxuyuupzodkufxbbndq.supabase.co";
+const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNveHV5dXVwem9ka3VmeGJibmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTI5ODYsImV4cCI6MjA5MDE2ODk4Nn0.cnK4FujigfVvNaXfNwQBb9qUQei8IQecHbDoVjFewQU";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
 
 /* ============== BOT DETECTION ============== */
 
@@ -1032,7 +1032,7 @@ function _buildPrebuiltHead(html) {
 
   head += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />`;
   head += `<link rel="dns-prefetch" href="${SUPABASE_URL}" />`;
-  head += `<link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co/storage" crossorigin />`;
+  head += `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
   if (cssMatch) {
@@ -1754,7 +1754,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   injection += `</script>
 <link rel="preconnect" href="${SUPABASE_URL}" crossorigin />
 <link rel="dns-prefetch" href="${SUPABASE_URL}" />
-<link rel="preconnect" href="https://soxuyuupzodkufxbbndq.supabase.co/storage" crossorigin />`;
+<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
 
   let inlineThemeCss = "";
   let bgColor = "#ffffff";

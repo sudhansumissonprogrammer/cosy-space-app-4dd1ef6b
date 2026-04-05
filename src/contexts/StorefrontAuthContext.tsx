@@ -93,7 +93,7 @@ export function StorefrontAuthProvider({
     // This avoids loading the 45KB supabase chunk for anonymous visitors.
     const hasAuthToken = (() => {
       try {
-        const storageKey = `sb-soxuyuupzodkufxbbndq-auth-token`;
+        const storageKey = `sb-dqepeywgftbpxeeqfuwt-auth-token`;
         return !!localStorage.getItem(storageKey);
       } catch {
         return false;
