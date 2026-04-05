@@ -20,8 +20,11 @@ const StartRiskFree = () => {
           </div>
         </div>
         <div>
-          <a href="/signup" className="inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-8 py-4 border-2 border-foreground shadow-bauhaus-md hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
+          <a href="/login" className="inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-8 py-4 border-2 border-foreground shadow-bauhaus-md hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
             Create Your Store Now <ArrowRight className="h-5 w-5" />
+          </a>
+          <a href="/login" className="inline-flex items-center justify-center gap-2 bg-bauhaus-white text-foreground font-bold uppercase tracking-wider text-sm px-8 py-4 border-2 border-foreground shadow-bauhaus-md hover:bg-muted active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200 ml-3">
+            Login
           </a>
         </div>
       </div>
