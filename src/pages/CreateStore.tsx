@@ -379,7 +379,7 @@ export default function CreateStore() {
             </div>
             <DialogTitle className="text-xl">You Already Have a Store!</DialogTitle>
             <DialogDescription className="text-sm">
-              Your store <span className="font-semibold text-primary">{existingStoreSlug}.storivo.in</span> is already live and ready for business.
+              Your store <span className="font-semibold text-primary">{existingStoreSlug}.shopbanao.in</span> is already live and ready for business.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-2">
