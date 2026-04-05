@@ -1,5 +1,5 @@
 /**
- * STORIVO PRODUCTION ROUTER v4.9.0 — FULL PARALLEL + STREAMING
+ * SHOPBANAO PRODUCTION ROUTER v4.9.0 — FULL PARALLEL + STREAMING
  *
  * Changes from v4.8.1:
  *   1. Full parallel critical path: shell + storeInfo + theme + prebuiltHead + products all concurrent

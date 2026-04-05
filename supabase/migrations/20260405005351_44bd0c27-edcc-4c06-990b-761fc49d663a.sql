@@ -1,0 +1,1 @@
+ALTER TABLE public.whatsapp_config ALTER COLUMN marketing_mode SET DEFAULT 'shopbanao';
