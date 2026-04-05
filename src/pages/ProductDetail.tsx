@@ -496,7 +496,7 @@ export default function ProductDetail() {
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
-              : `https://${store.slug}.storivo.in`;
+              : `https://${store.slug}.shopbanao.in`;
             const shareUrl = `${storeHost}/product/${product.slug || product.id}`;
             if (navigator.share) {
               try { await navigator.share({ title: product.name, url: shareUrl }); } catch {}
