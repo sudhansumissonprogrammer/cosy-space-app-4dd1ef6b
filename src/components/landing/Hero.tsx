@@ -106,8 +106,8 @@ const Hero = () => {
 
       <div className="lg:hidden bg-bauhaus-blue border-t-4 border-foreground">
         <div className="flex justify-center gap-4 py-6 px-5 overflow-hidden">
-          <PhoneMockup img={jewelryHome} label="Home Page" className="w-[145px] sm:w-[165px] -rotate-2" />
-          <PhoneMockup img={jewelryProduct} label="Product Page" className="w-[145px] sm:w-[165px] rotate-2" />
+          <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} className="w-[145px] sm:w-[165px] -rotate-2" />
+          <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[145px] sm:w-[165px] rotate-2" />
         </div>
         <div className="grid grid-cols-3 border-t-4 border-foreground">
           <div className="bg-bauhaus-white border-r-2 border-foreground p-3 sm:p-4">
