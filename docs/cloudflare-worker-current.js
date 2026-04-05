@@ -1,7 +1,14 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v4.9.0 — FULL PARALLEL + STREAMING
+ * SHOPBANAO PRODUCTION ROUTER v4.9.1 — INSTANT NEW STORE FIX
  *
- * Changes from v4.8.1:
+ * Changes from v4.9.0:
+ *   1. Slug index is now a SOFT hint — missing slugs still proceed to DB lookup
+ *   2. Negative cache TTLs reduced from 60s to 15s (in-memory + Cache API + KV)
+ *   3. Prewarm handler purges negative cache entries before re-fetching store info
+ *   4. buildNotFoundHtml includes auto-retry JS (3 retries, 2s+3s intervals)
+ *   5. 404 Cache-Control reduced from max-age=60 to max-age=10
+ *
+ * Previous v4.9.0 changes:
  *   1. Full parallel critical path: shell + storeInfo + theme + prebuiltHead + products all concurrent
  *   2. _getInlineProductsOrNull: products fetched in parallel on critical path (Cache → KV)
  *   3. _getCachedPrebuiltHead: cache-only lookup (no build) for streaming head phase
@@ -15,7 +22,7 @@
  *  11. Eliminates client-side Supabase data fetch when storefront is warm in KV (~700ms saved)
  */
 
-const WORKER_VERSION = "4.9.0";
+const WORKER_VERSION = "4.9.1";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -670,9 +677,9 @@ async function _resolveStoreInfo(slug, hostname, env) {
       const data = await cached.json();
       if (data.__nf) {
         _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
-        _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+        _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 15_000 });
         _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
-        domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+        domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 15_000 });
         return { storeId: null, customDomain: null };
       }
       const result = { storeId: data.id || null, customDomain: data.cd || null };
@@ -700,14 +707,14 @@ async function _resolveStoreInfo(slug, hostname, env) {
       if (kvData) {
         if (kvData.__nf) {
           _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
-          _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+          _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 15_000 });
           _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
-          domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+          domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 15_000 });
           cache
             .put(
               infoCacheKey,
               new Response(JSON.stringify(kvData), {
-                headers: { "Cache-Control": "public, max-age=60" },
+                headers: { "Cache-Control": "public, max-age=15" },
               }),
             )
             .catch(() => {});
@@ -759,19 +766,19 @@ async function _resolveStoreInfo(slug, hostname, env) {
     if (!row) {
       const nfData = { __nf: true };
       _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
-      _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+      _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 15_000 });
       _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
-      domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+      domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 15_000 });
       cache
         .put(
           infoCacheKey,
           new Response(JSON.stringify(nfData), {
-            headers: { "Cache-Control": "public, max-age=60" },
+            headers: { "Cache-Control": "public, max-age=15" },
           }),
         )
         .catch(() => {});
       if (env?.STORE_KV) {
-        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 120 }).catch(() => {});
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 30 }).catch(() => {});
       }
       return { storeId: null, customDomain: null };
     }
@@ -2274,6 +2281,17 @@ async function handlePrewarm(request, url, ctx, env) {
 
     const subDomain = `${slug}.${ROOT_DOMAIN}`;
     let storeId = null;
+
+    // v4.9.1: Purge negative caches before re-fetching
+    // This ensures newly created stores aren't blocked by stale "not found" entries
+    const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
+    await cache.delete(infoCacheKey).catch(() => {});
+    _storeInfoCache.delete(slug);
+    domainStoreIdCache.delete(subDomain);
+    if (env?.STORE_KV) {
+      await env.STORE_KV.delete(`store-info:${slug}`).catch(() => {});
+    }
+
     const dataResult = await prefetchStorefrontData(slug, ctx, env);
     storeId = dataResult.data?.store?.id;
     results.storefrontData = dataResult.source;
@@ -2455,7 +2473,7 @@ async function handlePrewarm(request, url, ctx, env) {
 /* ============== NOT FOUND HTML ============== */
 
 function buildNotFoundHtml(safeSlug, rootDomain) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.${rootDomain}</strong></p><a href="https://${rootDomain}">Create Your Store</a></div></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}.retry{color:#999;font-size:0.8rem;margin-top:12px}.spin{display:inline-block;width:14px;height:14px;border:2px solid #ccc;border-top-color:#4361ee;border-radius:50%;animation:sp .6s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.${rootDomain}</strong></p><a href="https://${rootDomain}">Create Your Store</a><p class="retry" id="rt"><span class="spin"></span> Checking again...</p></div><script>var n=0,mx=3;function ck(){if(n>=mx){var e=document.getElementById("rt");if(e)e.textContent="Store not available. Try again later.";return}n++;fetch(location.href,{method:"HEAD",cache:"no-store"}).then(function(r){if(r.ok&&r.headers.get("content-type")&&r.headers.get("content-type").indexOf("text/html")>-1&&r.headers.get("x-store-slug")){location.reload()}else{setTimeout(ck,3000)}}).catch(function(){setTimeout(ck,3000)})}setTimeout(ck,2000)</script></body></html>`;
 }
 
 /* ============== MAIN HANDLER ============== */
@@ -2814,18 +2832,11 @@ export default {
       }
 
       // Fast path: slug index check (in-memory, no KV round-trip)
+      // v4.9.1: Slug index is now a SOFT hint, not a hard block.
+      // New stores may not be in the index yet (multi-isolate lag).
+      // If slug is missing from index, we still proceed to DB lookup.
       const slugIndex = await _getSlugIndex(env);
-      if (slugIndex && !slugIndex.has(slug)) {
-        const safeSlug = slug.replace(/[<>"'&]/g, "");
-        return new Response(buildNotFoundHtml(safeSlug, ROOT_DOMAIN), {
-          status: 404,
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=60",
-            ...SECURITY_HEADERS,
-          },
-        });
-      }
+      const slugInIndex = slugIndex ? slugIndex.has(slug) : true; // no index = assume valid
 
       // v4.9: FULLY PARALLEL — shell + storeInfo + theme + cachedHead + products all at once
       // (storeInfo and products are fast KV reads; shell is also KV on warm isolate)
@@ -2839,12 +2850,14 @@ export default {
 
       // Guard checks (sync after parallel fetch)
       if (!storeInfo.storeId) {
+        // If slug wasn't in index either, it's likely truly not found
+        // If slug WAS in index but storeInfo failed, could be a cache issue
         const safeSlug = slug.replace(/[<>"'&]/g, "");
         return new Response(buildNotFoundHtml(safeSlug, ROOT_DOMAIN), {
           status: 404,
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=60",
+            "Cache-Control": "public, max-age=10",
             ...SECURITY_HEADERS,
           },
         });
