@@ -13,7 +13,7 @@ export async function purgeStoreCache(
   slug: string,
   customDomain?: string | null
 ): Promise<boolean> {
-  const domains: string[] = [`https://${slug}.storivo.in`];
+  const domains: string[] = [`https://${slug}.shopbanao.in`];
   if (customDomain) {
     domains.push(`https://${customDomain}`);
   }

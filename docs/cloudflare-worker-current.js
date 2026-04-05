@@ -16,8 +16,8 @@
  */
 
 const WORKER_VERSION = "4.9.0";
-const ROOT_DOMAIN = "storivo.in";
-const ORIGIN_HOST = "dear-console.lovable.app";
+const ROOT_DOMAIN = "shopbanao.in";
+const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPABASE_ANON_KEY =

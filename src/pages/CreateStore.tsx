@@ -522,7 +522,7 @@ export default function CreateStore() {
                     <p className="text-xs text-muted-foreground">Your store will be live at:</p>
                     <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                       <Globe className="h-3.5 w-3.5 text-primary" />
-                      {slug}.storivo.in
+                      {slug}.shopbanao.in
                     </p>
                     <p className="text-[10px] text-muted-foreground">You can connect your own custom domain later in Settings → Domain</p>
                   </div>

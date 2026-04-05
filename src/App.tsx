@@ -111,7 +111,7 @@ const LoadingSpinner = () => {
   const path = window.location.pathname;
   const hostname = window.location.hostname;
   const isStorefront = path.startsWith("/store/") ||
-    (hostname.endsWith(".storivo.in") && hostname !== "storivo.in" && hostname !== "www.storivo.in") ||
+    (hostname.endsWith(".shopbanao.in") && hostname !== "shopbanao.in" && hostname !== "www.shopbanao.in") ||
     !!(window as any).__STORE_SLUG__;
 
   if (!isStorefront) {

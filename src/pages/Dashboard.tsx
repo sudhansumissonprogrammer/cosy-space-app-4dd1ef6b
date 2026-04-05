@@ -203,7 +203,7 @@ export default function Dashboard() {
               <p className="text-sm font-medium text-foreground truncate">{store.slug}.shopbanao.in</p>
             </div>
             <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 shrink-0" asChild>
-              <a href={`https://${store.slug}.storivo.in`} target="_blank" rel="noopener noreferrer">
+              <a href={`https://${store.slug}.shopbanao.in`} target="_blank" rel="noopener noreferrer">
                 <Eye className="h-3 w-3" /> View
               </a>
             </Button>

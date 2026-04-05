@@ -1,4 +1,4 @@
-const ROOT_DOMAIN = "storivo.in";
+const ROOT_DOMAIN = "shopbanao.in";
 
 declare global {
   interface Window {

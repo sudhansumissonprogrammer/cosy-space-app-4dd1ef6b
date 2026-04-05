@@ -1554,7 +1554,7 @@ function AccordionItem({
 
 /* ── Share Buttons ── */
 function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName: string; storeSlug: string; productSlugOrId: string }) {
-  const shareUrl = `https://${storeSlug}.storivo.in/product/${productSlugOrId}`;
+  const shareUrl = `https://${storeSlug}.shopbanao.in/product/${productSlugOrId}`;
   const text = `Check out ${productName}!`;
   const copyLink = async () => {
     try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); } catch { toast.error("Failed to copy"); }
