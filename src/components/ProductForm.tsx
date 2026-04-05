@@ -54,10 +54,6 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [category, setCategory] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  // Partial payment state
-  const [partialPaymentEnabled, setPartialPaymentEnabled] = useState(false);
-  const [partialPaymentType, setPartialPaymentType] = useState<"fixed" | "percentage">("percentage");
-  const [partialPaymentValue, setPartialPaymentValue] = useState("");
   const [isBestSelling, setIsBestSelling] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
