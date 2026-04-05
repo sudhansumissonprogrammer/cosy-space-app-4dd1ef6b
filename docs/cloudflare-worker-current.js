@@ -2274,6 +2274,17 @@ async function handlePrewarm(request, url, ctx, env) {
 
     const subDomain = `${slug}.${ROOT_DOMAIN}`;
     let storeId = null;
+
+    // v4.9.1: Purge negative caches before re-fetching
+    // This ensures newly created stores aren't blocked by stale "not found" entries
+    const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
+    await cache.delete(infoCacheKey).catch(() => {});
+    _storeInfoCache.delete(slug);
+    domainStoreIdCache.delete(subDomain);
+    if (env?.STORE_KV) {
+      await env.STORE_KV.delete(`store-info:${slug}`).catch(() => {});
+    }
+
     const dataResult = await prefetchStorefrontData(slug, ctx, env);
     storeId = dataResult.data?.store?.id;
     results.storefrontData = dataResult.source;
