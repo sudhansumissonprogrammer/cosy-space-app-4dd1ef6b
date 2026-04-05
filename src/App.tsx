@@ -405,7 +405,7 @@ function AppRouter() {
   const subdomainSlug = getSubdomainSlug();
   const { slug: customDomainSlug, loading: customDomainLoading, isCustomDomain } = useCustomDomainSlug();
 
-  // ── STOREFRONT: Subdomain (slug.storivo.in) ──
+  // ── STOREFRONT: Subdomain (slug.shopbanao.in) ──
   if (subdomainSlug) {
     return <ThemeAwareStorefront slugOverride={subdomainSlug} />;
   }

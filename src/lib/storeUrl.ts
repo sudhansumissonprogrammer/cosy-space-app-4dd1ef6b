@@ -6,7 +6,7 @@ import { ROOT_DOMAIN, isCustomDomainHost, isSubdomainHost } from "@/lib/subdomai
  * Priority:
  *   1. If we're currently ON a custom domain → use window.location.origin
  *   2. If store has a custom_domain configured → use it
- *   3. Fallback → {slug}.storivo.in
+ *   3. Fallback → {slug}.shopbanao.in
  *
  * This ensures canonical URLs, JSON-LD, OG tags, and sitemaps
  * always reference the primary domain — matching Shopify behaviour.

@@ -116,8 +116,8 @@
         var p=location.pathname;
         var isStorefront=p.indexOf('/store/')===0;
         var h=location.hostname;
-        if(!isStorefront && h.endsWith('.storivo.in') && h!=='storivo.in' && h!=='www.storivo.in'){
-          var sub=h.replace('.storivo.in','');
+        if(!isStorefront && h.endsWith('.shopbanao.in') && h!=='shopbanao.in' && h!=='www.shopbanao.in'){
+          var sub=h.replace('.shopbanao.in','');
           if(sub && sub.indexOf('.')===-1) isStorefront=true;
         }
         if(!isStorefront && !h.endsWith('.lovable.app') && h!=='localhost' && !p.startsWith('/dashboard') && !p.startsWith('/admin') && !p.startsWith('/login') && !p.startsWith('/signup')){
