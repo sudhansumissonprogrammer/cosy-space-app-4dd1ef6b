@@ -9,40 +9,21 @@ interface StorefrontFooterProps {
   store: StoreData;
 }
 
-/**
- * Determines if a hex color is "light" (luminance > 0.55).
- * Used to pick contrasting text color for the footer.
- */
-function isLightColor(hex: string): boolean {
-  const clean = hex.replace("#", "");
-  if (clean.length < 6) return false;
-  const r = parseInt(clean.substring(0, 2), 16) / 255;
-  const g = parseInt(clean.substring(2, 4), 16) / 255;
-  const b = parseInt(clean.substring(4, 6), 16) / 255;
-  // Relative luminance (sRGB)
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.55;
-}
-
 export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const year = new Date().getFullYear();
   const hours = store.business_hours as Record<string, string> | null;
   const hasHours = hours && Object.values(hours).some((v) => v?.trim());
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
 
-  // Use storefront primary color as footer bg for a branded look.
-  // Dynamically pick text color based on bg luminance.
-  const footerBg = "var(--storefront-primary, #1a1a1a)";
-  // We need the actual hex to compute contrast — read from CSS variable at runtime isn't possible,
-  // so we'll use CSS classes that adapt via the storefront's text color system.
-  // Fallback: dark bg with white text. For light primary colors, invert.
-
   return (
     <footer
       className="mt-16 border-t"
-      style={{ backgroundColor: footerBg }}
+      style={{
+        backgroundColor: "var(--storefront-primary, #1a1a1a)",
+        color: "var(--storefront-footer-text, #ffffff)",
+      }}
     >
-      <div className="mx-auto max-w-6xl px-4 py-10 footer-adaptive-text">
+      <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Column 1: Brand */}
           <div className="space-y-3">
@@ -76,7 +57,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 <Link
                   key={link.label}
                   to={link.to}
-                  className="text-sm opacity-80 transition-opacity hover:opacity-100"
+                  className="text-sm opacity-75 transition-opacity hover:opacity-100"
+                  style={{ color: "inherit" }}
                 >
                   {link.label}
                 </Link>
@@ -94,7 +76,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 {Object.entries(hours!).map(([day, time]) =>
                   time?.trim() ? (
                     <div key={day} className="flex justify-between text-sm">
-                      <span className="capitalize opacity-80">{day}</span>
+                      <span className="capitalize opacity-75">{day}</span>
                       <span>{time}</span>
                     </div>
                   ) : null
@@ -108,7 +90,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             <h3 className="text-sm font-semibold uppercase tracking-wider">Contact</h3>
             <div className="space-y-2.5">
               {address && (
-                <p className="flex items-start gap-2 text-sm opacity-80">
+                <p className="flex items-start gap-2 text-sm opacity-75">
                   <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {address}
                 </p>
@@ -118,7 +100,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm opacity-80 transition-opacity hover:opacity-100"
+                  className="flex items-center gap-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                  style={{ color: "inherit" }}
                 >
                   <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                 </a>
@@ -128,7 +111,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm opacity-80 transition-opacity hover:opacity-100"
+                  className="flex items-center gap-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                  style={{ color: "inherit" }}
                 >
                   <Instagram className="h-3.5 w-3.5" /> Instagram
                 </a>
@@ -138,7 +122,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.facebook_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm opacity-80 transition-opacity hover:opacity-100"
+                  className="flex items-center gap-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                  style={{ color: "inherit" }}
                 >
                   <Facebook className="h-3.5 w-3.5" /> Facebook
                 </a>
@@ -148,8 +133,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 border-t border-current/20 pt-6 text-center">
-          <p className="text-xs opacity-60">
+        <div className="mt-8 pt-6 text-center" style={{ borderTop: "1px solid currentColor", borderTopColor: "inherit", opacity: 0.2 }}>
+          <p className="text-xs" style={{ opacity: 1 }}>
             © {year} {store.name}. All rights reserved.
           </p>
         </div>
