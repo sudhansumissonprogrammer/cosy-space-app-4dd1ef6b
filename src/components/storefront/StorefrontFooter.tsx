@@ -9,15 +9,40 @@ interface StorefrontFooterProps {
   store: StoreData;
 }
 
+/**
+ * Determines if a hex color is "light" (luminance > 0.55).
+ * Used to pick contrasting text color for the footer.
+ */
+function isLightColor(hex: string): boolean {
+  const clean = hex.replace("#", "");
+  if (clean.length < 6) return false;
+  const r = parseInt(clean.substring(0, 2), 16) / 255;
+  const g = parseInt(clean.substring(2, 4), 16) / 255;
+  const b = parseInt(clean.substring(4, 6), 16) / 255;
+  // Relative luminance (sRGB)
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.55;
+}
+
 export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const year = new Date().getFullYear();
   const hours = store.business_hours as Record<string, string> | null;
   const hasHours = hours && Object.values(hours).some((v) => v?.trim());
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
 
+  // Use storefront primary color as footer bg for a branded look.
+  // Dynamically pick text color based on bg luminance.
+  const footerBg = "var(--storefront-primary, #1a1a1a)";
+  // We need the actual hex to compute contrast — read from CSS variable at runtime isn't possible,
+  // so we'll use CSS classes that adapt via the storefront's text color system.
+  // Fallback: dark bg with white text. For light primary colors, invert.
+
   return (
-    <footer className="mt-16 border-t" style={{ backgroundColor: "var(--storefront-accent, hsl(var(--card)))", color: "#ffffff" }}>
-      <div className="mx-auto max-w-6xl px-4 py-10">
+    <footer
+      className="mt-16 border-t"
+      style={{ backgroundColor: footerBg }}
+    >
+      <div className="mx-auto max-w-6xl px-4 py-10 footer-adaptive-text">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Column 1: Brand */}
           <div className="space-y-3">
@@ -25,11 +50,11 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
               {store.logo_url ? (
                 <img src={optimizeImageUrl(store.logo_url, 120, 80)} alt={store.name} width={120} height={40} className="h-10 w-auto max-w-[120px] object-contain" loading="lazy" decoding="async" />
               ) : (
-                <StoreTextLogo storeName={store.name} size="text-lg" color="white" />
+                <StoreTextLogo storeName={store.name} size="text-lg" color="inherit" />
               )}
             </div>
             {store.description && (
-              <p className="text-sm leading-relaxed text-white/90 line-clamp-3">
+              <p className="text-sm leading-relaxed opacity-80 line-clamp-3">
                 {store.description}
               </p>
             )}
@@ -37,7 +62,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
 
           {/* Column 2: Quick Links */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Quick Links</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Quick Links</h3>
             <nav className="flex flex-col gap-2">
               {[
                 { to: storefrontPath(store.slug), label: "Home" },
@@ -51,7 +76,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 <Link
                   key={link.label}
                   to={link.to}
-                  className="text-sm text-white/80 transition-colors hover:text-white"
+                  className="text-sm opacity-80 transition-opacity hover:opacity-100"
                 >
                   {link.label}
                 </Link>
@@ -62,15 +87,15 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           {/* Column 3: Business Hours */}
           {hasHours && (
             <div className="space-y-3">
-              <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-white">
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider">
                 <Clock className="h-3.5 w-3.5" /> Business Hours
               </h3>
               <div className="space-y-1">
                 {Object.entries(hours!).map(([day, time]) =>
                   time?.trim() ? (
                     <div key={day} className="flex justify-between text-sm">
-                      <span className="capitalize text-white/80">{day}</span>
-                      <span className="text-white">{time}</span>
+                      <span className="capitalize opacity-80">{day}</span>
+                      <span>{time}</span>
                     </div>
                   ) : null
                 )}
@@ -80,10 +105,10 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
 
           {/* Column 4: Contact & Address */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Contact</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Contact</h3>
             <div className="space-y-2.5">
               {address && (
-                <p className="flex items-start gap-2 text-sm text-white/80">
+                <p className="flex items-start gap-2 text-sm opacity-80">
                   <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {address}
                 </p>
@@ -93,7 +118,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
+                  className="flex items-center gap-2 text-sm opacity-80 transition-opacity hover:opacity-100"
                 >
                   <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                 </a>
@@ -103,7 +128,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
+                  className="flex items-center gap-2 text-sm opacity-80 transition-opacity hover:opacity-100"
                 >
                   <Instagram className="h-3.5 w-3.5" /> Instagram
                 </a>
@@ -113,7 +138,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.facebook_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
+                  className="flex items-center gap-2 text-sm opacity-80 transition-opacity hover:opacity-100"
                 >
                   <Facebook className="h-3.5 w-3.5" /> Facebook
                 </a>
@@ -123,8 +148,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 border-t border-white/20 pt-6 text-center">
-          <p className="text-xs text-white/70">
+        <div className="mt-8 border-t border-current/20 pt-6 text-center">
+          <p className="text-xs opacity-60">
             © {year} {store.name}. All rights reserved.
           </p>
         </div>
