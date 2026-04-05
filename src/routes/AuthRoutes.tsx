@@ -56,12 +56,13 @@ const StorePageEditor = lazy(() => import("@/pages/StorePageEditor"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const BestSellerManagement = lazy(() => import("@/pages/BestSellerManagement"));
 const InstallApp = lazy(() => import("@/pages/InstallApp"));
+const Index = lazy(() => import("@/pages/Index"));
 
 export default function AuthRoutes() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
