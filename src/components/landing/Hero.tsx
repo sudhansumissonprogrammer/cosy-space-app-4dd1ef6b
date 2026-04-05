@@ -1,19 +1,35 @@
-import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp } from "lucide-react";
-import jewelryHome from "@/assets/showcase-jewelry-home.webp";
-import jewelryProduct from "@/assets/showcase-jewelry-product.webp";
+import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp, ExternalLink } from "lucide-react";
+import overlaysMobile from "@/assets/showcase-overlays-mobile.png";
+import serdiyaMobile from "@/assets/showcase-serdiya-mobile.png";
 
-const PhoneMockup = ({ img, label, className = "" }: { img: string; label: string; className?: string }) => (
-  <div className={`flex flex-col items-center ${className}`}>
+const liveStores = [
+  { img: overlaysMobile, label: "Overlays", url: "https://overlays.shopbanao.in" },
+  { img: serdiyaMobile, label: "Serdiya Jewellers", url: "https://serdiyajewellers.shop" },
+];
+
+const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: string; url: string; className?: string }) => (
+  <a
+    href={url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={`group flex flex-col items-center ${className}`}
+  >
     <div className="relative w-full">
-      <div className="bg-foreground rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] p-[5px] sm:p-[6px] shadow-2xl">
+      <div className="bg-foreground rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] p-[5px] sm:p-[6px] shadow-2xl transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1">
         <div className="absolute top-[5px] sm:top-[6px] left-1/2 -translate-x-1/2 w-12 sm:w-14 lg:w-16 h-3 sm:h-4 bg-foreground rounded-b-xl z-20" />
         <div className="rounded-[17px] sm:rounded-[20px] lg:rounded-[22px] overflow-hidden bg-background">
-          <img src={img} alt={label} className="w-full h-auto block" />
+          <img src={img} alt={`${label} live store`} className="w-full h-auto block" />
         </div>
       </div>
+      {/* Hover overlay */}
+      <div className="absolute inset-0 rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-30">
+        <span className="flex items-center gap-1.5 bg-bauhaus-white text-foreground font-bold text-[9px] sm:text-[10px] uppercase tracking-wider px-3 py-1.5 border-2 border-foreground shadow-bauhaus">
+          Visit Store <ExternalLink className="h-3 w-3" />
+        </span>
+      </div>
     </div>
-    <span className="mt-2 lg:mt-3 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-white/80">{label}</span>
-  </div>
+    <span className="mt-2 lg:mt-3 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-white/80 group-hover:underline">{label}</span>
+  </a>
 );
 
 const Hero = () => {
