@@ -69,6 +69,20 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        bauhaus: {
+          red: "hsl(var(--bauhaus-red))",
+          blue: "hsl(var(--bauhaus-blue))",
+          yellow: "hsl(var(--bauhaus-yellow))",
+          black: "hsl(var(--bauhaus-black))",
+          white: "hsl(var(--bauhaus-white))",
+          canvas: "hsl(var(--bauhaus-canvas))",
+        },
+      },
+      boxShadow: {
+        "bauhaus-sm": "3px 3px 0px 0px hsl(var(--bauhaus-black))",
+        "bauhaus": "4px 4px 0px 0px hsl(var(--bauhaus-black))",
+        "bauhaus-md": "6px 6px 0px 0px hsl(var(--bauhaus-black))",
+        "bauhaus-lg": "8px 8px 0px 0px hsl(var(--bauhaus-black))",
       },
       borderRadius: {
         lg: "var(--radius)",
