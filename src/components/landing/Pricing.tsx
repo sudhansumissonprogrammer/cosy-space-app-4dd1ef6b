@@ -2,7 +2,7 @@ import { Check, ArrowRight } from "lucide-react";
 
 const plans = [
   { name: "Starter", price: "₹499", period: "/month", desc: "Perfect for getting started", features: ["50 Products", "Custom Domain", "UPI Payments", "WhatsApp Orders", "Basic Analytics", "Email Support"], color: "blue", popular: false },
-  { name: "Growth", price: "₹999", period: "/month", desc: "Best for serious sellers", features: ["500 Products", "Custom Domain", "All Payment Options", "WhatsApp + SMS", "Advanced Analytics Dashboard", "Facebook Pixel + Tracking", "Priority Support", "Coupons & Discounts", "SEO Tools", "App Integration"], color: "red", popular: true },
+  { name: "Growth", price: "₹999", period: "/month", desc: "Best for serious sellers", features: ["500 Products", "Custom Domain", "All Payment Options", "WhatsApp + SMS", "Advanced Analytics Dashboard", "Facebook Pixel + Tracking", "Priority Support", "Coupons & Discounts", "SEO Tools", "App Integration", "Mobile App", "Payment Gateway Integration", "AI Product Descriptions", "AI Store Content Generator"], color: "red", popular: true },
   { name: "Pro", price: "₹2,499", period: "/month", desc: "For established brands", features: ["Unlimited Products", "Multiple Domains", "All Payment Options", "Full Marketing Suite", "API Access", "Dedicated Manager", "Custom Integrations", "White-label"], color: "yellow", popular: false },
 ];
 
