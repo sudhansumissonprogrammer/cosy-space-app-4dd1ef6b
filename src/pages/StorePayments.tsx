@@ -436,77 +436,9 @@ export default function StorePayments() {
                   </div>
                 )}
 
-                {/* Apply to all products */}
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  disabled={applyingToAll || !partialValue || Number(partialValue) <= 0}
-                  onClick={async () => {
-                    const val = Number(partialValue);
-                    if (partialType === "percentage" && (val < 10 || val > 80)) {
-                      toast.error("Percentage must be between 10% and 80%");
-                      return;
-                    }
-                    if (partialType === "fixed" && val < 50) {
-                      toast.error("Fixed amount must be at least ₹50");
-                      return;
-                    }
-                    setApplyingToAll(true);
-                    try {
-                      const { error } = await (supabase as any)
-                        .from("products")
-                        .update({
-                          partial_payment_enabled: true,
-                          partial_payment_type: partialType,
-                          partial_payment_value: val,
-                        })
-                        .eq("store_id", storeId!)
-                        .eq("is_active", true);
-                      if (error) throw error;
-                      toast.success("Partial payment applied to all active products!");
-                      queryClient.invalidateQueries({ queryKey: ["products"] });
-                    } catch (err: any) {
-                      toast.error(err.message || "Failed to apply");
-                    } finally {
-                      setApplyingToAll(false);
-                    }
-                  }}
-                >
-                  {applyingToAll ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Apply to All Products
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  className="w-full text-destructive hover:text-destructive"
-                  disabled={applyingToAll}
-                  onClick={async () => {
-                    setApplyingToAll(true);
-                    try {
-                      const { error } = await (supabase as any)
-                        .from("products")
-                        .update({
-                          partial_payment_enabled: false,
-                          partial_payment_value: null,
-                        })
-                        .eq("store_id", storeId!)
-                        .eq("is_active", true);
-                      if (error) throw error;
-                      setPartialEnabled(false);
-                      setPartialValue("");
-                      toast.success("Partial payment removed from all products");
-                      queryClient.invalidateQueries({ queryKey: ["products"] });
-                    } catch (err: any) {
-                      toast.error(err.message || "Failed");
-                    } finally {
-                      setApplyingToAll(false);
-                    }
-                  }}
-                >
-                  Remove from All Products
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  This setting applies to all products in your store. Click "Save Settings" below to apply.
+                </p>
               </>
             )}
           </CardContent>
