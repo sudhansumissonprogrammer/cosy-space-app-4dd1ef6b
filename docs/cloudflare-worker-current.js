@@ -19,9 +19,9 @@ const WORKER_VERSION = "4.9.0";
 const ROOT_DOMAIN = "storivo.in";
 const ORIGIN_HOST = "dear-console.lovable.app";
 
-const SUPABASE_URL = "https://soxuyuupzodkufxbbndq.supabase.co";
+const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNveHV5dXVwem9ka3VmeGJibmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTI5ODYsImV4cCI6MjA5MDE2ODk4Nn0.cnK4FujigfVvNaXfNwQBb9qUQei8IQecHbDoVjFewQU";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
 
 /* ============== BOT DETECTION ============== */
 
