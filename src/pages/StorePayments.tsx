@@ -35,33 +35,17 @@ export default function StorePayments() {
   const [partialEnabled, setPartialEnabled] = useState(false);
   const [partialType, setPartialType] = useState<"percentage" | "fixed">("percentage");
   const [partialValue, setPartialValue] = useState("");
-  const [applyingToAll, setApplyingToAll] = useState(false);
 
   const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
-  // Load existing partial payment state from products
-  const { data: partialProducts } = useQuery({
-    queryKey: ["partial-payment-products", storeId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("products")
-        .select("partial_payment_enabled, partial_payment_type, partial_payment_value")
-        .eq("store_id", storeId!)
-        .eq("partial_payment_enabled", true)
-        .limit(1);
-      return data || [];
-    },
-    enabled: !!storeId,
-  });
-
-  // Initialize partial payment toggle from DB
+  // Initialize partial payment from store
   useEffect(() => {
-    if (partialProducts && partialProducts.length > 0) {
-      setPartialEnabled(true);
-      setPartialType(partialProducts[0].partial_payment_type || "percentage");
-      setPartialValue(String(partialProducts[0].partial_payment_value || ""));
+    if (store) {
+      setPartialEnabled((store as any).partial_payment_enabled ?? false);
+      setPartialType((store as any).partial_payment_type || "percentage");
+      setPartialValue((store as any).partial_payment_value ? String((store as any).partial_payment_value) : "");
     }
-  }, [partialProducts]);
+  }, [store]);
 
   const { data: paymentConfig, isLoading: configLoading } = useQuery({
     queryKey: ["payment-config", storeId],
