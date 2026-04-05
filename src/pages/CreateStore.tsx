@@ -406,7 +406,7 @@ export default function CreateStore() {
               size="sm"
               onClick={() => {
                 if (existingStoreSlug) {
-                  window.open(`https://${existingStoreSlug}.storivo.in`, "_blank");
+                  window.open(`https://${existingStoreSlug}.shopbanao.in`, "_blank");
                 }
               }}
               className="w-full text-xs gap-1.5"
