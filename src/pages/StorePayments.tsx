@@ -88,10 +88,28 @@ export default function StorePayments() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // 1. Update order_mode on store
+      // 1. Update order_mode + partial payment on store
+      const partialUpdate: Record<string, any> = {
+        order_mode: orderMode,
+        partial_payment_enabled: partialEnabled && razorpayEnabled,
+        partial_payment_type: partialType,
+        partial_payment_value: partialEnabled && partialValue ? Number(partialValue) : null,
+      };
+      
+      // Validate partial payment values
+      if (partialEnabled && razorpayEnabled && partialValue) {
+        const val = Number(partialValue);
+        if (partialType === "percentage" && (val < 10 || val > 80)) {
+          throw new Error("Percentage must be between 10% and 80%");
+        }
+        if (partialType === "fixed" && val < 50) {
+          throw new Error("Fixed amount must be at least ₹50");
+        }
+      }
+      
       const { error: storeErr } = await (supabase as any)
         .from("stores")
-        .update({ order_mode: orderMode })
+        .update(partialUpdate)
         .eq("id", storeId!);
       if (storeErr) throw storeErr;
 
