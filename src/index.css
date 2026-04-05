@@ -251,3 +251,28 @@
     bottom: 9rem !important;
   }
 }
+
+/* Landing page (Bauhaus) scoped overrides — matches source project exactly */
+.font-outfit {
+  --background: 0 0% 94%;
+  --foreground: 0 0% 7%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 7%;
+  --primary: 0 75% 47%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 85% 40%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 88%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 43 85% 53%;
+  --accent-foreground: 0 0% 7%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 7%;
+  --input: 0 0% 7%;
+  --ring: 0 0% 7%;
+  --radius: 0px;
+  font-family: 'Outfit', sans-serif;
+}
