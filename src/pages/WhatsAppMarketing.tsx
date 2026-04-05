@@ -2802,7 +2802,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
           </CardHeader>
           <CardContent className="text-center space-y-3">
             <p className="text-sm text-muted-foreground">
-              Messages sent from Storivo's WhatsApp number. Order confirmations, shipping updates, abandoned cart recovery — all automated instantly.
+              Messages sent from ShopBanao's WhatsApp number. Order confirmations, shipping updates, abandoned cart recovery — all automated instantly.
             </p>
             <ul className="text-xs text-muted-foreground space-y-1">
               <li className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-green-500" /> Zero setup required</li>

@@ -100,7 +100,7 @@ async function handleCopy(req: Request) {
   try {
     response = await fetch(url, {
       signal: controller.signal,
-      headers: { "User-Agent": "Storivo-ImageCopy/1.0" },
+      headers: { "User-Agent": "ShopBanao-ImageCopy/1.0" },
     });
   } finally {
     clearTimeout(timeout);

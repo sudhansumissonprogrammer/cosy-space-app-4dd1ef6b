@@ -131,7 +131,7 @@ export default function SmartInstallPrompt({
           </div>
 
           <div className="px-5 py-4 space-y-2.5">
-            {(appName.toLowerCase().includes("storivo")
+            {(appName.toLowerCase().includes("shopbanao")
               ? [
                   { emoji: "⚡", text: "Manage orders on the go" },
                   { emoji: "🔔", text: "Instant order notifications" },
