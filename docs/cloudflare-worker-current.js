@@ -670,9 +670,9 @@ async function _resolveStoreInfo(slug, hostname, env) {
       const data = await cached.json();
       if (data.__nf) {
         _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
-        _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 60_000 });
+        _storeInfoCache.set(slug, { storeId: null, customDomain: null, expiresAt: Date.now() + 15_000 });
         _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
-        domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 60_000 });
+        domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 15_000 });
         return { storeId: null, customDomain: null };
       }
       const result = { storeId: data.id || null, customDomain: data.cd || null };
