@@ -51,10 +51,7 @@ const STEPS = [
   { id: 5, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
 ];
 
-const PLAN_FEATURES: Record<string, string[]> = {
-  starter: ["50 Products", "Custom Domain", "UPI Payments", "WhatsApp Orders", "Basic Analytics", "Email Support"],
-  growth: ["500 Products", "Custom Domain", "All Payment Options", "WhatsApp + SMS", "Advanced Analytics", "Facebook Pixel + Tracking", "Priority Support", "Coupons & Discounts", "SEO Tools", "AI Tools", "Mobile App", "Payment Gateway"],
-};
+// Features are fully dynamic — pulled from plans table in admin panel
 
 export default function CreateStore() {
   const { user } = useAuth();
