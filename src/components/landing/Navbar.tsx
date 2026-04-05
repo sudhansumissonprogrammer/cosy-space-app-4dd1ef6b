@@ -1,0 +1,51 @@
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import logo from "@/assets/shopbanao-logo.png";
+
+const Navbar = () => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <nav className="sticky top-0 z-50 bg-bauhaus-white border-b-4 border-foreground">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between h-14 md:h-20">
+        <a href="/" className="flex items-center -space-x-1">
+          <img src={logo} alt="ShopBanao" className="h-14 md:h-16 w-auto" />
+          <span className="text-2xl md:text-3xl text-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>
+            ShopBanao
+          </span>
+        </a>
+
+        <div className="hidden md:flex items-center gap-8">
+          <a href="/#features" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Features</a>
+          <a href="/#pricing" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Pricing</a>
+          <a href="/#sellers" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">For Sellers</a>
+          <a href="/#faq" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">FAQ</a>
+        </div>
+
+        <div className="hidden md:flex items-center gap-4">
+          <a href="/login" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-blue transition-colors duration-200">Sign In</a>
+          <a href="/signup" className="bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-6 py-2.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Start Free</a>
+        </div>
+
+        <button className="md:hidden p-2 border-2 border-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
+          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+      </div>
+
+      {mobileOpen && (
+        <div className="md:hidden border-t-4 border-foreground bg-bauhaus-white px-4 py-6 space-y-4">
+          <a href="/#features" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Features</a>
+          <a href="/#pricing" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Pricing</a>
+          <a href="/#sellers" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>For Sellers</a>
+          <a href="/#faq" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>FAQ</a>
+          <div className="pt-4 border-t-2 border-foreground space-y-3">
+            <a href="/login" className="block font-bold uppercase tracking-wider text-foreground">Sign In</a>
+            <a href="/signup" className="block text-center bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider px-6 py-3 border-2 border-foreground shadow-bauhaus">Start Free</a>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
+
+export default Navbar;
