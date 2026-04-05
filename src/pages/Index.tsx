@@ -40,7 +40,7 @@ const Index = () => {
       <ComparisonTable />
       <WhyNotWebsite />
       <FeaturesGrid />
-      <StoreShowcases />
+      {/* <StoreShowcases /> */}
       <StoreLookShowcase showOverlays={false} />
       <WhoUses />
       <CitiesGrid />
