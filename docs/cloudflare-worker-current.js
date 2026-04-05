@@ -15,7 +15,7 @@
  *  11. Eliminates client-side Supabase data fetch when storefront is warm in KV (~700ms saved)
  */
 
-const WORKER_VERSION = "4.9.0";
+const WORKER_VERSION = "4.9.1";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
