@@ -2814,7 +2814,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
               disabled={selectMutation.isPending}
               variant={selecting === "storivo" ? "default" : "outline"}
             >
-              {selecting === "storivo" && selectMutation.isPending ? "Setting up..." : "Use Storivo Marketing"}
+              {selecting === "storivo" && selectMutation.isPending ? "Setting up..." : "Use ShopBanao Marketing"}
             </Button>
           </CardContent>
         </Card>
