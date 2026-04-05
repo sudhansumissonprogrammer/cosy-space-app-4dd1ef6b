@@ -556,10 +556,10 @@ export default function ProductDetail() {
           </div>
 
           {/* Partial Payment Badge */}
-          {(product as any).partial_payment_enabled && (product as any).partial_payment_value && (
+          {(store as any).partial_payment_enabled && (store as any).partial_payment_value && (
             (() => {
-              const ppType = (product as any).partial_payment_type;
-              const ppValue = Number((product as any).partial_payment_value);
+              const ppType = (store as any).partial_payment_type;
+              const ppValue = Number((store as any).partial_payment_value);
               const advance = ppType === "percentage"
                 ? Math.max(50, Math.round(variantPrice * (ppValue / 100)))
                 : Math.max(50, Math.min(ppValue, variantPrice));
