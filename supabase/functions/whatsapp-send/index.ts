@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     // Determine marketing mode and credentials
-    const marketingMode = config?.marketing_mode || "storivo";
+    const marketingMode = config?.marketing_mode || "shopbanao";
     let phoneNumberId: string;
     let accessToken: string;
 
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
       phoneNumberId = config.phone_number_id;
       accessToken = config.access_token;
     } else {
-      // Storivo mode: use platform credentials
+      // ShopBanao mode: use platform credentials
       const { data: platformConfig } = await adminClient
         .from("platform_config")
         .select("wa_phone_number_id, wa_access_token")

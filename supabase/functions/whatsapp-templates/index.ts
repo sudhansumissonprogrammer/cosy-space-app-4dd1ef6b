@@ -51,12 +51,12 @@ Deno.serve(async (req) => {
       .eq("store_id", store_id)
       .maybeSingle();
 
-    const marketingMode = (config as any)?.marketing_mode || "storivo";
+    const marketingMode = (config as any)?.marketing_mode || "shopbanao";
     let waba_id = (config as any)?.waba_id;
     let access_token = (config as any)?.access_token;
 
-    // For storivo mode or missing own credentials, fall back to platform config
-    if (!waba_id || !access_token || marketingMode === "storivo") {
+    // For shopbanao mode or missing own credentials, fall back to platform config
+    if (!waba_id || !access_token || marketingMode === "shopbanao") {
       const { data: platformConfig } = await supabase
         .from("platform_config")
         .select("*")
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
 
       if (platformConfig) {
         // platform_config doesn't have waba_id column, so we check if store has it
-        // For storivo mode, use platform access_token but still need waba_id somewhere
+        // For shopbanao mode, use platform access_token but still need waba_id somewhere
         access_token = (platformConfig as any).wa_access_token || access_token;
       }
     }

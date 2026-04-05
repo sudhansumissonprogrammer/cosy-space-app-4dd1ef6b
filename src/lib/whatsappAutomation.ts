@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Attempts to send an automated WhatsApp message for an order event.
- * Works with both Storivo mode (platform credentials) and Own mode (store credentials).
+ * Works with both ShopBanao mode (platform credentials) and Own mode (store credentials).
  * Silently fails if WhatsApp is not configured at all.
  */
 export async function sendOrderWhatsApp(
@@ -30,7 +30,7 @@ export async function sendOrderWhatsApp(
       .eq("store_id", storeId)
       .maybeSingle();
 
-    const marketingMode = (config as any)?.marketing_mode || "storivo";
+    const marketingMode = (config as any)?.marketing_mode || "shopbanao";
 
     // For 'own' mode, require active config
     if (marketingMode === "own" && (!config || !(config as any).is_active)) return;
@@ -44,12 +44,12 @@ export async function sendOrderWhatsApp(
       .eq("is_active", true)
       .maybeSingle();
 
-    // For storivo mode without a template, use a default message
+    // For shopbanao mode without a template, use a default message
     let body = "";
     if (template) {
       body = (template as any).body_text || "";
-    } else if (marketingMode === "storivo") {
-      // Default templates for storivo mode
+    } else if (marketingMode === "shopbanao") {
+      // Default templates for shopbanao mode
       const defaults: Record<string, string> = {
         order_confirmation: "Hi {{name}}! 🎉 Your order #{{order_id}} for {{product_names}} has been confirmed. Total: {{total}}. Thank you for shopping with {{store_name}}!",
         shipping_update: "Hi {{name}}! 📦 Your order #{{order_id}} has been shipped. Track here: {{tracking_url}}",
@@ -57,7 +57,7 @@ export async function sendOrderWhatsApp(
       };
       body = defaults[messageType] || "";
     } else {
-      return; // No template and not storivo mode
+      return; // No template and not shopbanao mode
     }
 
     // Replace template variables
@@ -109,7 +109,7 @@ export async function sendAbandonedCartWhatsApp(
       .eq("store_id", storeId)
       .maybeSingle();
 
-    const marketingMode = (config as any)?.marketing_mode || "storivo";
+    const marketingMode = (config as any)?.marketing_mode || "shopbanao";
 
     if (marketingMode === "own" && (!config || !(config as any).is_active)) return;
 
@@ -124,7 +124,7 @@ export async function sendAbandonedCartWhatsApp(
     let body = "";
     if (template) {
       body = (template as any).body_text || "";
-    } else if (marketingMode === "storivo") {
+    } else if (marketingMode === "shopbanao") {
       body = "Hi {{name}}! 👋 You left {{product_names}} in your cart. Complete your purchase now! Total: {{cart_total}}. Shop at {{store_name}}";
     } else {
       return;

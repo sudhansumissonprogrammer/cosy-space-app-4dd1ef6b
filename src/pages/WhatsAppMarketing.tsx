@@ -1927,7 +1927,7 @@ function OptOutTab({ storeId }: { storeId: string }) {
             {`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/whatsapp-webhook`}
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Verify Token: <code className="bg-muted px-1 rounded">storivo_webhook_verify</code>
+            Verify Token: <code className="bg-muted px-1 rounded">shopbanao_webhook_verify</code>
           </p>
           <p className="text-[11px] text-muted-foreground">
             Subscribe to: <strong>messages</strong> and <strong>message_deliveries</strong>
@@ -2728,12 +2728,12 @@ function MetaTemplatesTab({ storeId }: { storeId: string }) {
 }
 
 // ─── Mode Selection Screen ──────────────────────────────────────────
-function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect: (mode: "storivo" | "own") => void }) {
+function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect: (mode: "shopbanao" | "own") => void }) {
   const queryClient = useQueryClient();
   const [selecting, setSelecting] = useState<string | null>(null);
 
   const selectMutation = useMutation({
-    mutationFn: async (mode: "storivo" | "own") => {
+    mutationFn: async (mode: "shopbanao" | "own") => {
       // Check if config exists
       const { data: existing } = await supabase
         .from("whatsapp_config")
@@ -2753,7 +2753,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
           marketing_mode: mode,
           access_token: "",
           phone_number_id: "",
-          is_active: mode === "storivo",
+          is_active: mode === "shopbanao",
         });
         if (error) throw error;
       }
@@ -2786,11 +2786,11 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
         <Card
           className={cn(
             "cursor-pointer transition-all hover:shadow-md border-2",
-            selecting === "storivo" ? "border-green-500 bg-green-50/50" : "border-border hover:border-green-300"
+            selecting === "shopbanao" ? "border-green-500 bg-green-50/50" : "border-border hover:border-green-300"
           )}
           onClick={() => {
-            setSelecting("storivo");
-            selectMutation.mutate("storivo");
+            setSelecting("shopbanao");
+            selectMutation.mutate("shopbanao");
           }}
         >
           <CardHeader className="text-center pb-2">
@@ -2812,9 +2812,9 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
             <Button
               className="w-full"
               disabled={selectMutation.isPending}
-              variant={selecting === "storivo" ? "default" : "outline"}
+              variant={selecting === "shopbanao" ? "default" : "outline"}
             >
-              {selecting === "storivo" && selectMutation.isPending ? "Setting up..." : "Use ShopBanao Marketing"}
+              {selecting === "shopbanao" && selectMutation.isPending ? "Setting up..." : "Use ShopBanao Marketing"}
             </Button>
           </CardContent>
         </Card>

@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    if (mode === "subscribe" && token === "storivo_webhook_verify") {
+    if (mode === "subscribe" && token === "shopbanao_webhook_verify") {
       return new Response(challenge, { status: 200, headers: corsHeaders });
     }
     return new Response("Forbidden", { status: 403, headers: corsHeaders });
