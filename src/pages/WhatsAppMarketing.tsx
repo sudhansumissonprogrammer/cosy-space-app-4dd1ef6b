@@ -2861,7 +2861,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
 }
 
 // ─── ShopBanao Mode Dashboard ─────────────────────────────────────────
-function StorivoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitchMode: () => void }) {
+function ShopBanaoModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitchMode: () => void }) {
   const [activeTab, setActiveTab] = useState("automations");
   const [bulkNumbers, setBulkNumbers] = useState<string[]>([]);
 
