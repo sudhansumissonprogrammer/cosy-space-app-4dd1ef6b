@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
   Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Zap,
-  Rocket, Crown, ShoppingBag,
+  Rocket, Crown, ShoppingBag, CreditCard,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
@@ -44,11 +44,17 @@ const CURRENCIES = [
 ];
 
 const STEPS = [
-  { id: 1, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
-  { id: 2, title: "Location", icon: MapPin, desc: "Where you are", motivation: "Great start! Keep going 💪" },
-  { id: 3, title: "Contact", icon: Phone, desc: "How to reach you", motivation: "Almost there! 🎯" },
-  { id: 4, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
+  { id: 1, title: "Plan", icon: CreditCard, desc: "Choose your plan", motivation: "Pick the perfect plan for your business! 🎯" },
+  { id: 2, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
+  { id: 3, title: "Location", icon: MapPin, desc: "Where you are", motivation: "Great start! Keep going 💪" },
+  { id: 4, title: "Contact", icon: Phone, desc: "How to reach you", motivation: "Almost there! 🎯" },
+  { id: 5, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
 ];
+
+const PLAN_FEATURES: Record<string, string[]> = {
+  starter: ["50 Products", "Custom Domain", "UPI Payments", "WhatsApp Orders", "Basic Analytics", "Email Support"],
+  growth: ["500 Products", "Custom Domain", "All Payment Options", "WhatsApp + SMS", "Advanced Analytics", "Facebook Pixel + Tracking", "Priority Support", "Coupons & Discounts", "SEO Tools", "AI Tools", "Mobile App", "Payment Gateway"],
+};
 
 export default function CreateStore() {
   const { user } = useAuth();
@@ -64,6 +70,20 @@ export default function CreateStore() {
   const [existingStoreSlug, setExistingStoreSlug] = useState<string | null>(null);
   const [creatingAnimation, setCreatingAnimation] = useState(false);
 
+  // Fetch available plans
+  const { data: plans } = useQuery({
+    queryKey: ["available-plans"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("plans")
+        .select("id, name, slug, price, product_limit, currency")
+        .eq("is_active", true)
+        .order("price", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -73,7 +93,6 @@ export default function CreateStore() {
       .limit(1)
       .then(({ data }) => {
         if (data && data.length > 0) {
-          // User already has a store — redirect to dashboard immediately
           navigate("/dashboard", { replace: true });
           return;
         }
@@ -81,7 +100,10 @@ export default function CreateStore() {
       });
   }, [user, navigate]);
 
-  // Step 1
+  // Step 1 - Plan
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+
+  // Step 2
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -94,20 +116,27 @@ export default function CreateStore() {
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
 
-  // Step 2
+  // Step 3
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [location, setLocation] = useState("");
 
-  // Step 3
+  // Step 4
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
 
-  // Step 4
+  // Step 5
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
 
   const theme = "theme-1";
+
+  // Auto-select first plan when plans load
+  useEffect(() => {
+    if (plans && plans.length > 0 && !selectedPlanId) {
+      setSelectedPlanId(plans[0].id);
+    }
+  }, [plans, selectedPlanId]);
 
   const generateSlug = (value: string) =>
     value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -148,12 +177,16 @@ export default function CreateStore() {
   };
 
   const goNext = () => {
-    if (step === 1 && (!name.trim() || !slug.trim())) {
+    if (step === 1 && !selectedPlanId) {
+      toast.error("Please select a plan to continue");
+      return;
+    }
+    if (step === 2 && (!name.trim() || !slug.trim())) {
       toast.error("Store name and slug are required");
       return;
     }
     setDirection("forward");
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, STEPS.length));
   };
 
   const goBack = () => {
@@ -166,7 +199,6 @@ export default function CreateStore() {
     setCreatingAnimation(true);
     setLoading(true);
 
-    // Brief magical delay for the animation
     await new Promise(r => setTimeout(r, 1200));
 
     try {
@@ -217,8 +249,18 @@ export default function CreateStore() {
         return;
       }
 
-      // Create default theme config — Elegant Black & White + Algeria SC + Center + Transparent + Mobile Nav
       if (newStore?.id) {
+        // Assign the chosen plan to this store
+        if (selectedPlanId) {
+          await (supabase as any).from("store_plan_assignments")
+            .upsert({
+              store_id: newStore.id,
+              plan_id: selectedPlanId,
+              status: "active",
+            }, { onConflict: "store_id" });
+        }
+
+        // Create default theme config
         await (supabase as any).from("store_theme_config").insert({
           store_id: newStore.id,
           primary_color: "#1a1a1a",
@@ -240,7 +282,7 @@ export default function CreateStore() {
           if (themeErr) console.warn("Theme config insert failed:", themeErr.message);
         });
 
-        // AI-powered content generation (non-blocking for store creation)
+        // AI-powered content generation (non-blocking)
         try {
           const { data: aiData, error: aiErr } = await supabase.functions.invoke(
             "generate-store-content",
@@ -253,7 +295,6 @@ export default function CreateStore() {
           );
 
           if (!aiErr && aiData && !aiData.error) {
-            // Update store with AI-generated content
             const updatePayload: Record<string, string> = {};
             if (aiData.store_description) updatePayload.description = aiData.store_description;
             if (aiData.meta_title) updatePayload.meta_title = aiData.meta_title;
@@ -267,7 +308,6 @@ export default function CreateStore() {
                 .eq("id", newStore.id);
             }
 
-            // Create About Us page with AI content
             if (aiData.about_us) {
               await (supabase as any).from("store_pages").insert({
                 store_id: newStore.id,
@@ -289,7 +329,6 @@ export default function CreateStore() {
         }
       }
 
-      // Pre-warm edge caches so first visitor gets instant load
       import("@/lib/prewarmStore").then(({ prewarmStore }) => {
         prewarmStore(slug.trim());
       }).catch(() => {});
@@ -321,7 +360,6 @@ export default function CreateStore() {
   if (creatingAnimation) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
-        {/* Animated rings */}
         <div className="relative flex items-center justify-center">
           <div className="absolute h-32 w-32 rounded-full border-2 border-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
           <div className="absolute h-24 w-24 rounded-full border-2 border-primary/30 animate-ping" style={{ animationDuration: "1.5s", animationDelay: "0.3s" }} />
@@ -331,7 +369,6 @@ export default function CreateStore() {
           </div>
         </div>
 
-        {/* Floating particles */}
         {Array.from({ length: 12 }).map((_, i) => (
           <div
             key={i}
@@ -367,6 +404,8 @@ export default function CreateStore() {
       </div>
     );
   }
+
+  const selectedPlan = plans?.find(p => p.id === selectedPlanId);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-8 relative">
@@ -497,8 +536,89 @@ export default function CreateStore() {
             className="animate-fade-in"
             style={{ animationDuration: "0.35s" }}
           >
-            {/* Step 1: Store Info */}
+            {/* Step 1: Choose Plan */}
             {step === 1 && (
+              <div className="space-y-5">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold text-foreground">Choose Your Plan</h2>
+                  <p className="text-sm text-muted-foreground">Select the plan that fits your business needs</p>
+                </div>
+
+                {plans && plans.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {plans.map((plan) => {
+                      const isSelected = selectedPlanId === plan.id;
+                      const features = PLAN_FEATURES[plan.slug] || [];
+                      const isGrowth = plan.slug === "growth";
+                      return (
+                        <button
+                          key={plan.id}
+                          type="button"
+                          onClick={() => setSelectedPlanId(plan.id)}
+                          className={`relative text-left rounded-2xl border-2 p-5 transition-all duration-200 ${
+                            isSelected
+                              ? "border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20"
+                              : "border-input hover:border-primary/40 hover:shadow-md"
+                          }`}
+                        >
+                          {isGrowth && (
+                            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                              Most Popular
+                            </span>
+                          )}
+
+                          {/* Selection indicator */}
+                          <div className={`absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all ${
+                            isSelected
+                              ? "border-primary bg-primary"
+                              : "border-muted-foreground/30"
+                          }`}>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />}
+                          </div>
+
+                          <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
+                          <div className="mt-1 flex items-baseline gap-1">
+                            <span className="text-3xl font-black text-foreground">₹{plan.price}</span>
+                            <span className="text-sm text-muted-foreground">/month</span>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {plan.product_limit ? `Up to ${plan.product_limit} products` : "Unlimited products"}
+                          </p>
+
+                          <div className="mt-4 space-y-2">
+                            {features.map((f) => (
+                              <div key={f} className="flex items-center gap-2">
+                                <div className={`flex h-4 w-4 items-center justify-center rounded-full ${isSelected ? "bg-primary" : "bg-muted-foreground/20"}`}>
+                                  <Check className={`h-2.5 w-2.5 ${isSelected ? "text-primary-foreground" : "text-muted-foreground"}`} strokeWidth={3} />
+                                </div>
+                                <span className="text-xs text-foreground">{f}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                )}
+
+                <div className="rounded-xl border bg-accent/30 p-4">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="mt-0.5 h-5 w-5 text-primary shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">You can upgrade anytime!</p>
+                      <p className="text-xs text-muted-foreground">Start with any plan and upgrade later as your business grows. No data loss.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Store Info */}
+            {step === 2 && (
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Store Information</h2>
@@ -554,7 +674,7 @@ export default function CreateStore() {
                   </Select>
                 </div>
 
-                {/* Order Mode — 3 options */}
+                {/* Order Mode */}
                 <div className="space-y-2">
                   <Label>How do you want to take orders?</Label>
                   <RadioGroup
@@ -652,8 +772,8 @@ export default function CreateStore() {
               </div>
             )}
 
-            {/* Step 2: Location */}
-            {step === 2 && (
+            {/* Step 3: Location */}
+            {step === 3 && (
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Location Details</h2>
@@ -693,8 +813,8 @@ export default function CreateStore() {
               </div>
             )}
 
-            {/* Step 3: Contact */}
-            {step === 3 && (
+            {/* Step 4: Contact */}
+            {step === 4 && (
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Contact Details</h2>
@@ -751,8 +871,8 @@ export default function CreateStore() {
               </div>
             )}
 
-            {/* Step 4: Social Media */}
-            {step === 4 && (
+            {/* Step 5: Social Media */}
+            {step === 5 && (
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Social Media</h2>
@@ -779,12 +899,29 @@ export default function CreateStore() {
                   </div>
                 </div>
 
+                {/* Plan summary before launching */}
+                {selectedPlan && (
+                  <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <CreditCard className="mt-0.5 h-5 w-5 text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          Launching with <span className="text-primary font-bold">{selectedPlan.name}</span> plan
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ₹{selectedPlan.price}/month • {selectedPlan.product_limit ? `${selectedPlan.product_limit} products` : "Unlimited products"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="rounded-xl border bg-accent/30 p-4">
                   <div className="flex items-start gap-3">
                     <Sparkles className="mt-0.5 h-5 w-5 text-primary" />
                     <div>
                       <p className="text-sm font-medium text-foreground">You're all set! 🎉</p>
-                      <p className="text-xs text-muted-foreground">Click "Create Store" to launch your store. You can always update everything later.</p>
+                      <p className="text-xs text-muted-foreground">Click "Launch My Store" to create your store. You can always update everything later.</p>
                     </div>
                   </div>
                 </div>
@@ -802,7 +939,7 @@ export default function CreateStore() {
               <div />
             )}
 
-            {step < 4 ? (
+            {step < STEPS.length ? (
               <Button type="button" onClick={goNext} className="gap-2 px-6">
                 Next <ArrowRight className="h-4 w-4" />
               </Button>
