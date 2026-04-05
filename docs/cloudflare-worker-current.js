@@ -2832,12 +2832,14 @@ export default {
 
       // Guard checks (sync after parallel fetch)
       if (!storeInfo.storeId) {
+        // If slug wasn't in index either, it's likely truly not found
+        // If slug WAS in index but storeInfo failed, could be a cache issue
         const safeSlug = slug.replace(/[<>"'&]/g, "");
         return new Response(buildNotFoundHtml(safeSlug, ROOT_DOMAIN), {
           status: 404,
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=60",
+            "Cache-Control": "public, max-age=10",
             ...SECURITY_HEADERS,
           },
         });
