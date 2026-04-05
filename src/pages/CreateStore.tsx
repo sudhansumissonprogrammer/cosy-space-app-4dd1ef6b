@@ -20,7 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
   Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Zap,
-  Rocket, Crown, ShoppingBag, CreditCard,
+  Rocket, Crown, ShoppingBag, CreditCard, ExternalLink, Copy,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
@@ -62,10 +62,11 @@ export default function CreateStore() {
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [checkingStore, setCheckingStore] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
-
   const [showExistingStoreDialog, setShowExistingStoreDialog] = useState(false);
   const [existingStoreSlug, setExistingStoreSlug] = useState<string | null>(null);
   const [creatingAnimation, setCreatingAnimation] = useState(false);
+  const [storeCreated, setStoreCreated] = useState(false);
+  const [createdSlug, setCreatedSlug] = useState<string>("");
 
   // Fetch available plans
   const { data: plans } = useQuery({
@@ -335,10 +336,12 @@ export default function CreateStore() {
         // Non-critical — store still works, just first visit may be slower
       }
 
+      setCreatingAnimation(false);
+      setStoreCreated(true);
+      setCreatedSlug(slug.trim());
       setShowConfetti(true);
       toast.success("Store created successfully! 🎉");
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
-      setTimeout(() => navigate("/dashboard", { replace: true }), 2500);
     } catch (err: any) {
       setCreatingAnimation(false);
       toast.error(err.message || "Failed to create store");
@@ -354,6 +357,97 @@ export default function CreateStore() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Full-screen success screen — store is live!
+  if (storeCreated) {
+    const storeUrl = `https://${createdSlug}.shopbanao.in`;
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background px-4">
+        {/* Confetti */}
+        {showConfetti && (
+          <div className="fixed inset-0 pointer-events-none">
+            {Array.from({ length: 24 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: `${6 + Math.random() * 8}px`,
+                  height: `${6 + Math.random() * 8}px`,
+                  backgroundColor: ['hsl(var(--primary))', '#22c55e', '#f59e0b', '#3b82f6', '#ec4899'][i % 5],
+                  left: `${5 + Math.random() * 90}%`,
+                  top: `${5 + Math.random() * 90}%`,
+                  animation: `confetti-fall ${1 + Math.random() * 2}s ease-out forwards`,
+                  animationDelay: `${Math.random() * 0.5}s`,
+                  opacity: 0.8,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="relative flex items-center justify-center mb-6">
+          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-green-500/10">
+            <Check className="h-12 w-12 text-green-500" />
+          </div>
+        </div>
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground text-center">
+          Your Store is Live! 🎉
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground text-center max-w-md">
+          <span className="font-semibold text-primary">{name || createdSlug}</span> is now live and ready for customers.
+        </p>
+
+        {/* Store URL Card */}
+        <div className="mt-6 w-full max-w-md rounded-2xl border-2 border-primary/20 bg-primary/5 p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Globe className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">Your store URL</p>
+              <p className="text-sm font-semibold text-foreground truncate">{storeUrl}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button asChild className="flex-1 gap-2" size="lg">
+              <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                Visit Your Store
+              </a>
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="flex-1 gap-2"
+              onClick={() => {
+                navigator.clipboard.writeText(storeUrl);
+                toast.success("Link copied!");
+              }}
+            >
+              <Copy className="h-4 w-4" />
+              Copy Link
+            </Button>
+          </div>
+        </div>
+
+        {/* Go to Dashboard */}
+        <Button
+          variant="ghost"
+          className="mt-6 gap-2 text-muted-foreground"
+          onClick={() => navigate("/dashboard", { replace: true })}
+        >
+          <ArrowRight className="h-4 w-4" />
+          Go to Dashboard
+        </Button>
+
+        <p className="mt-4 text-xs text-muted-foreground/60 text-center max-w-sm">
+          You can manage products, orders, and customize your store from the dashboard.
+        </p>
       </div>
     );
   }
