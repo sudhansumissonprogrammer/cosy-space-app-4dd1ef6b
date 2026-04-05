@@ -133,9 +133,8 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 pt-6 text-center" style={{ borderTop: "1px solid", borderColor: "currentColor", opacity: 0.3 }}>
-        </div>
-        <div className="text-center">
+        <div className="mt-8 border-t pt-6 text-center" style={{ borderColor: "currentcolor", borderTopWidth: "1px", opacity: 1 }}>
+          <div style={{ borderColor: "inherit" }} />
           <p className="text-xs opacity-60">
             © {year} {store.name}. All rights reserved.
           </p>
