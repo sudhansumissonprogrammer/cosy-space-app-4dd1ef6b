@@ -2814,18 +2814,11 @@ export default {
       }
 
       // Fast path: slug index check (in-memory, no KV round-trip)
+      // v4.9.1: Slug index is now a SOFT hint, not a hard block.
+      // New stores may not be in the index yet (multi-isolate lag).
+      // If slug is missing from index, we still proceed to DB lookup.
       const slugIndex = await _getSlugIndex(env);
-      if (slugIndex && !slugIndex.has(slug)) {
-        const safeSlug = slug.replace(/[<>"'&]/g, "");
-        return new Response(buildNotFoundHtml(safeSlug, ROOT_DOMAIN), {
-          status: 404,
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=60",
-            ...SECURITY_HEADERS,
-          },
-        });
-      }
+      const slugInIndex = slugIndex ? slugIndex.has(slug) : true; // no index = assume valid
 
       // v4.9: FULLY PARALLEL — shell + storeInfo + theme + cachedHead + products all at once
       // (storeInfo and products are fast KV reads; shell is also KV on warm isolate)
