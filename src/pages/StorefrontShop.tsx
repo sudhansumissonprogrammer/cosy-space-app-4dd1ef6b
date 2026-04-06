@@ -8,6 +8,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
+import { useProductListJsonLd } from "@/hooks/useJsonLd";
 
 const PAGE_SIZE = 14;
 
@@ -63,6 +64,13 @@ export default function StorefrontShop() {
   });
 
   const products = data?.pages.flatMap((p) => p.products) || [];
+
+  useProductListJsonLd({
+    products,
+    storeSlug: slug || store.slug,
+    listName: "Shop All",
+    customDomain: (store as any)?.custom_domain,
+  });
 
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);

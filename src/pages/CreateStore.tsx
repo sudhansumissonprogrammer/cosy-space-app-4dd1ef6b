@@ -217,9 +217,10 @@ export default function CreateStore() {
         mobileHeroUrl = await uploadFile(heroFile, "store-banners", `${user.id}/${slug}-mobile-hero.${ext}`);
       }
 
+      const storeName = name.trim();
       const { data: newStore, error } = await (supabase as any).from("stores").insert({
         owner_id: user.id,
-        name: name.trim(),
+        name: storeName,
         slug: slug.trim(),
         description: description.trim() || null,
         whatsapp_number: whatsappNumber.trim() || null,
@@ -235,6 +236,8 @@ export default function CreateStore() {
         mobile_hero_url: mobileHeroUrl,
         theme,
         owner_email: ownerEmail.trim() || null,
+        meta_title: `${storeName} — Shop Online | Free Delivery`,
+        meta_description: `Shop the best products at ${storeName}. ✓ Cash on Delivery ✓ Easy Returns ✓ Fast Shipping`,
       }).select("id").single();
 
       if (error) {

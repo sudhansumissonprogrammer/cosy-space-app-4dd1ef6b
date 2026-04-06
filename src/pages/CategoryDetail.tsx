@@ -9,6 +9,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
+import { useProductListJsonLd } from "@/hooks/useJsonLd";
 
 const PAGE_SIZE = 14;
 
@@ -69,6 +70,33 @@ export default function CategoryDetail() {
   });
 
   const products = data?.pages.flatMap((p) => p.products) || [];
+
+  // Category-level meta tags
+  useEffect(() => {
+    if (!category || !store) return;
+    const prevTitle = document.title;
+    const count = products.length;
+    document.title = `${category.name} — ${store.name} | Shop Online`;
+    let metaDesc = document.querySelector('meta[name="description"]');
+    const prevDesc = metaDesc?.getAttribute("content") || "";
+    if (!metaDesc) {
+      metaDesc = document.createElement("meta");
+      metaDesc.setAttribute("name", "description");
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute("content", `Browse ${count > 0 ? count + " " : ""}products in ${category.name} at ${store.name}. Fast delivery & easy returns.`);
+    return () => {
+      document.title = prevTitle;
+      metaDesc?.setAttribute("content", prevDesc);
+    };
+  }, [category, store, products.length]);
+
+  useProductListJsonLd({
+    products,
+    storeSlug: slug || store.slug,
+    listName: category?.name || "Category",
+    customDomain: (store as any)?.custom_domain,
+  });
 
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);

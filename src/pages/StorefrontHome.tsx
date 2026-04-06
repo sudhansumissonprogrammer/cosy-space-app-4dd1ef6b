@@ -14,7 +14,7 @@ const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/Store
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import LazyRender from "@/components/storefront/LazyRender";
-import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import { useStoreJsonLd, useProductListJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import SortDropdown from "@/components/storefront/SortDropdown";
@@ -43,12 +43,24 @@ export default function StorefrontHome() {
     location: store.location,
     whatsappNumber: store.whatsapp_number,
     customDomain: (store as any)?.custom_domain,
+    instagramUrl: (store as any)?.instagram_url,
+    facebookUrl: (store as any)?.facebook_url,
+    city: (store as any)?.city,
+    state: (store as any)?.state,
+    businessHours: (store as any)?.business_hours,
   });
 
   // Fetch initial products independently (shell no longer includes products)
   const { products: initialProducts, isLoading: isInitialLoading, edgeSkelVisible } = useStorefrontProducts(store.id);
 
   const allCachedProducts = initialProducts;
+
+  useProductListJsonLd({
+    products: initialProducts || [],
+    storeSlug: store.slug,
+    listName: `${store.name} — All Products`,
+    customDomain: (store as any)?.custom_domain,
+  });
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
 

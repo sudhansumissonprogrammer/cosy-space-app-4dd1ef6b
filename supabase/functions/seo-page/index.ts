@@ -476,7 +476,7 @@ async function handleProductFeed(url: URL) {
 
   const baseUrl = store.custom_domain
     ? `https://${store.custom_domain}`
-    : `https://${store.slug}.storiva.in`;
+    : `https://${store.slug}.shopbanao.in`;
 
   const currency = store.currency || "INR";
   const now = new Date().toISOString();
