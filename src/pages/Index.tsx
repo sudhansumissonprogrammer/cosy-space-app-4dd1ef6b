@@ -1,5 +1,6 @@
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
+import PaymentTrustStrip from "@/components/landing/PaymentTrustStrip";
 import CommissionCalculator from "@/components/landing/CommissionCalculator";
 import ProblemAwareness from "@/components/landing/ProblemAwareness";
 import WhoUses from "@/components/landing/WhoUses";
@@ -18,6 +19,7 @@ const Index = () => {
     <div className="min-h-screen bg-background font-outfit">
       <Navbar />
       <Hero />
+      <PaymentTrustStrip />
       <CommissionCalculator />
       <ProblemAwareness />
       <WhoUses />
