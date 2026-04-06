@@ -317,6 +317,12 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_gradient: "linear-gradient(90deg, #000000, #333333, #000000)",
     marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
   },
+  "theme-17": {
+    primary_color: "#1B1B3A", accent_color: "#F56E0F", text_color: "#1a1a1a", background_color: "#FAFAF8",
+    heading_font: "Alegreya SC", body_font: "Inter", button_style: "pill",
+    marquee_gradient: "linear-gradient(90deg, #1B1B3A, #F56E0F, #1B1B3A)",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-5", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
+  },
 };
 
 const THEMES = [
