@@ -1,3 +1,7 @@
+import { useRef, useEffect, useLayoutEffect } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
 import jewelryHome from "@/assets/showcase-jewelry-home.webp";
 import jewelryProduct from "@/assets/showcase-jewelry-product.webp";
 import jewelryCart from "@/assets/showcase-jewelry-cart.webp";
@@ -10,50 +14,213 @@ import overlaysHome from "@/assets/showcase-overlays-home.webp";
 import overlaysProduct from "@/assets/showcase-overlays-product.webp";
 import overlaysWishlist from "@/assets/showcase-overlays-wishlist.webp";
 
+gsap.registerPlugin(ScrollTrigger);
+
 const stores = [
-  { name: "Serdiya Jewellers", type: "Jewellery Store", screens: [{ label: "Home Page", img: jewelryHome }, { label: "Shop Page", img: jewelryShop }, { label: "Product Page", img: jewelryProduct }, { label: "Cart Page", img: jewelryCart }] },
-  { name: "Fashion Brand", type: "Clothing Store", screens: [{ label: "Home Page", img: fashionHome }, { label: "Best Selling", img: fashionCategory }, { label: "Categories", img: fashionAllCategories }, { label: "Search & Deals", img: fashionSearch }] },
-  { name: "Overlays", type: "Streetwear Store", screens: [{ label: "Home Page", img: overlaysHome }, { label: "Product Page", img: overlaysProduct }, { label: "Wishlist", img: overlaysWishlist }] },
+  {
+    name: "Serdiya Jewellers",
+    type: "Jewellery Store",
+    color: "bg-bauhaus-red",
+    screens: [
+      { label: "Home Page", img: jewelryHome },
+      { label: "Shop Page", img: jewelryShop },
+      { label: "Product Page", img: jewelryProduct },
+      { label: "Cart Page", img: jewelryCart },
+    ],
+  },
+  {
+    name: "Fashion Brand",
+    type: "Clothing Store",
+    color: "bg-bauhaus-yellow",
+    screens: [
+      { label: "Home Page", img: fashionHome },
+      { label: "Best Selling", img: fashionCategory },
+      { label: "Categories", img: fashionAllCategories },
+      { label: "Search & Deals", img: fashionSearch },
+    ],
+  },
+  {
+    name: "Overlays",
+    type: "Streetwear Store",
+    color: "bg-bauhaus-blue",
+    screens: [
+      { label: "Home Page", img: overlaysHome },
+      { label: "Product Page", img: overlaysProduct },
+      { label: "Wishlist", img: overlaysWishlist },
+    ],
+  },
 ];
 
-const StoreLookShowcase = ({ showOverlays = true }: { showOverlays?: boolean }) => {
-  const displayStores = showOverlays ? stores : stores.filter(s => s.name !== "Overlays");
+function HorizontalScrollStore({
+  store,
+  storeIdx,
+}: {
+  store: (typeof stores)[0];
+  storeIdx: number;
+}) {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const section = sectionRef.current;
+    const track = trackRef.current;
+    if (!section || !track) return;
+
+    const ctx = gsap.context(() => {
+      // How far the track needs to travel
+      const getScrollAmount = () => track.scrollWidth - window.innerWidth;
+
+      const tween = gsap.to(track, {
+        x: () => -getScrollAmount(),
+        ease: "none",
+        scrollTrigger: {
+          trigger: section,
+          start: "top top",
+          end: () => `+=${getScrollAmount()}`,
+          pin: true,
+          scrub: 1,
+          invalidateOnRefresh: true,
+          anticipatePin: 1,
+        },
+      });
+
+      // Subtle scale animation on each card
+      const cards = track.querySelectorAll(".phone-card");
+      cards.forEach((card) => {
+        gsap.fromTo(
+          card,
+          { scale: 0.92, opacity: 0.6 },
+          {
+            scale: 1,
+            opacity: 1,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: card,
+              containerAnimation: tween,
+              start: "left 80%",
+              end: "left 40%",
+              scrub: true,
+            },
+          }
+        );
+      });
+    }, section);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section id="showcase" className="border-b-4 border-foreground bg-bauhaus-white py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(hsl(var(--foreground)) 1.5px, transparent 1.5px)", backgroundSize: "24px 24px" }} />
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center mb-10 sm:mb-16">
-          <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">Mobile Optimized</span>
-          <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-6xl tracking-tighter leading-[0.9] text-foreground">
-            How Your Store<br /><span className="text-bauhaus-blue font-['Alegreya_SC',serif] italic">Actually Looks</span>
-          </h2>
-          <p className="mt-4 text-sm sm:text-base text-muted-foreground font-medium max-w-xl mx-auto">
-            Beautiful, fast, mobile-first stores that your customers will love. Every page is optimized for conversions.
-          </p>
-        </div>
-        {displayStores.map((store, storeIdx) => (
-          <div key={store.name} className={`${storeIdx > 0 ? "mt-12 sm:mt-20" : ""}`}>
-            <div className="flex items-center gap-3 mb-6 sm:mb-8">
-              <div className={`w-4 h-4 ${storeIdx === 0 ? "bg-bauhaus-red" : storeIdx === 1 ? "bg-bauhaus-yellow" : "bg-bauhaus-blue"} border-2 border-foreground rotate-45`} />
-              <h3 className="font-black uppercase text-lg sm:text-2xl tracking-tight text-foreground">{store.name}</h3>
-              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-2 border-foreground px-2 py-0.5">{store.type}</span>
+    <div ref={sectionRef} className="relative overflow-hidden">
+      {/* Horizontal track */}
+      <div
+        ref={trackRef}
+        className="flex items-center h-screen will-change-transform"
+        style={{ width: "max-content" }}
+      >
+        {/* Leading space with store header */}
+        <div className="flex-shrink-0 w-screen h-full flex flex-col justify-center px-6 sm:px-10 lg:px-16">
+          <div className="max-w-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className={`w-5 h-5 ${store.color} border-2 border-foreground rotate-45`}
+              />
+              <h3 className="font-black uppercase text-2xl sm:text-3xl lg:text-4xl tracking-tight text-foreground">
+                {store.name}
+              </h3>
             </div>
-            <div className="flex gap-4 sm:gap-6 lg:gap-8 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide justify-start lg:justify-center">
-              {store.screens.map((screen) => (
-                <div key={screen.label} className="flex-shrink-0 snap-center flex flex-col items-center">
-                  <div className="relative w-[200px] sm:w-[220px] lg:w-[260px]">
-                    <div className="bg-foreground rounded-[24px] sm:rounded-[28px] p-[6px] sm:p-[8px] shadow-bauhaus-lg">
-                      <div className="absolute top-[6px] sm:top-[8px] left-1/2 -translate-x-1/2 w-16 sm:w-20 h-4 sm:h-5 bg-foreground rounded-b-xl z-20" />
-                      <div className="rounded-[18px] sm:rounded-[20px] overflow-hidden bg-background">
-                        <img src={screen.img} alt={`${store.name} - ${screen.label}`} className="w-full h-auto block" loading="lazy" />
-                      </div>
-                    </div>
-                  </div>
-                  <span className="mt-3 font-bold uppercase tracking-wider text-xs text-foreground">{screen.label}</span>
-                </div>
-              ))}
-            </div>
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-2 border-foreground px-3 py-1 inline-block">
+              {store.type}
+            </span>
+            <p className="mt-4 text-sm sm:text-base text-muted-foreground font-medium">
+              Scroll to explore every page of this store →
+            </p>
           </div>
+        </div>
+
+        {/* Phone cards */}
+        {store.screens.map((screen, i) => (
+          <div
+            key={screen.label}
+            className="phone-card flex-shrink-0 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8"
+          >
+            <div className="relative w-[220px] sm:w-[250px] lg:w-[280px]">
+              <div className="bg-foreground rounded-[28px] sm:rounded-[32px] p-[7px] sm:p-[8px] shadow-2xl">
+                {/* Notch */}
+                <div className="absolute top-[7px] sm:top-[8px] left-1/2 -translate-x-1/2 w-20 sm:w-24 h-5 sm:h-6 bg-foreground rounded-b-2xl z-20" />
+                {/* Screen */}
+                <div className="rounded-[21px] sm:rounded-[24px] overflow-hidden bg-background">
+                  <img
+                    src={screen.img}
+                    alt={`${store.name} - ${screen.label}`}
+                    className="w-full h-auto block"
+                    loading={storeIdx === 0 && i === 0 ? "eager" : "lazy"}
+                  />
+                </div>
+              </div>
+              {/* Reflection glow */}
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-foreground/10 rounded-full blur-xl" />
+            </div>
+            <span className="mt-5 font-bold uppercase tracking-[0.2em] text-xs sm:text-sm text-foreground">
+              {screen.label}
+            </span>
+          </div>
+        ))}
+
+        {/* Trailing space */}
+        <div className="flex-shrink-0 w-[20vw]" />
+      </div>
+    </div>
+  );
+}
+
+const StoreLookShowcase = ({
+  showOverlays = true,
+}: {
+  showOverlays?: boolean;
+}) => {
+  const displayStores = showOverlays
+    ? stores
+    : stores.filter((s) => s.name !== "Overlays");
+
+  return (
+    <section
+      id="showcase"
+      className="border-b-4 border-foreground bg-bauhaus-white relative"
+    >
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{
+          backgroundImage:
+            "radial-gradient(hsl(var(--foreground)) 1.5px, transparent 1.5px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
+      {/* Section header */}
+      <div className="text-center pt-14 sm:pt-20 lg:pt-24 pb-4 sm:pb-6 px-5 sm:px-8 relative z-10">
+        <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">
+          Mobile Optimized
+        </span>
+        <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-6xl tracking-tighter leading-[0.9] text-foreground">
+          How Your Store
+          <br />
+          <span className="text-bauhaus-blue font-['Alegreya_SC',serif] italic">
+            Actually Looks
+          </span>
+        </h2>
+        <p className="mt-4 text-sm sm:text-base text-muted-foreground font-medium max-w-xl mx-auto">
+          Beautiful, fast, mobile-first stores that your customers will love.
+          Every page is optimized for conversions.
+        </p>
+      </div>
+
+      {/* Horizontal scroll sections */}
+      <div className="relative z-10">
+        {displayStores.map((store, storeIdx) => (
+          <HorizontalScrollStore
+            key={store.name}
+            store={store}
+            storeIdx={storeIdx}
+          />
         ))}
       </div>
     </section>
