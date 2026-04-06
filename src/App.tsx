@@ -115,10 +115,29 @@ const LoadingSpinner = () => {
     !!(window as any).__STORE_SLUG__;
 
   if (!isStorefront) {
-    // Dashboard/admin/auth — minimal spinner, no storefront skeleton
+    // Dashboard/admin/auth/landing — skeleton instead of black spinner
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-foreground" />
+      <div className="min-h-screen bg-background animate-pulse">
+        {/* Navbar skeleton */}
+        <div className="sticky top-0 z-30 border-b border-border/40 bg-background">
+          <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+            <div className="h-8 w-28 rounded bg-muted/50" />
+            <div className="flex-1" />
+            <div className="h-8 w-20 rounded bg-muted/50" />
+            <div className="h-8 w-20 rounded bg-muted/50" />
+          </div>
+        </div>
+        {/* Hero skeleton */}
+        <div className="mx-auto max-w-4xl px-4 pt-12 pb-8 text-center space-y-4">
+          <div className="h-5 w-40 mx-auto rounded bg-muted/40" />
+          <div className="h-10 w-3/4 mx-auto rounded bg-muted/40" />
+          <div className="h-10 w-1/2 mx-auto rounded bg-muted/40" />
+          <div className="h-5 w-2/3 mx-auto rounded bg-muted/30" />
+          <div className="flex justify-center gap-3 pt-4">
+            <div className="h-12 w-40 rounded-lg bg-muted/50" />
+            <div className="h-12 w-32 rounded-lg bg-muted/30" />
+          </div>
+        </div>
       </div>
     );
   }
