@@ -235,6 +235,7 @@ function getInstantTheme(slug: string | undefined): string {
 
 function getLayoutComponent(theme: string) {
   switch (theme) {
+    case "theme-17": return StorefrontLayoutV17;
     case "theme-16": return StorefrontLayoutV16;
     case "theme-15": return StorefrontLayoutV15;
     case "theme-14": return StorefrontLayoutV14;
