@@ -168,7 +168,7 @@ function PillCategories({ storeId, slug }: { storeId: string; slug: string }) {
           return (
             <Link
               key={cat.id}
-              to={storefrontPath(slug, `category/${cat.slug}`)}
+              to={storefrontPath(slug!, `category/${cat.slug}`)}
               className="flex shrink-0 items-center gap-2.5 rounded-full px-5 py-2.5 text-white shadow-md transition-transform duration-300 active:scale-95"
               style={{ background: gradients[i % gradients.length] }}
             >
@@ -204,7 +204,7 @@ function TrendingStrip({ products, slug, store }: { products: any[]; slug: strin
           Trending Now
         </h2>
         <Link
-          to={storefrontPath(slug, "shop")}
+          to={storefrontPath(slug!, "shop")}
           className="flex items-center gap-1 text-xs font-semibold"
           style={{ color: "var(--storefront-primary)" }}
         >
@@ -218,7 +218,7 @@ function TrendingStrip({ products, slug, store }: { products: any[]; slug: strin
           return (
             <Link
               key={p.id}
-              to={storefrontPath(slug, `product/${p.slug || p.id}`)}
+              to={storefrontPath(slug!, `product/${p.slug || p.id}`)}
               className="group relative shrink-0 overflow-hidden rounded-xl"
               style={{ width: "140px", height: "140px" }}
             >
@@ -300,7 +300,7 @@ export default function StorefrontHomeV17() {
                 Best Sellers
               </h2>
               <Link
-                to={storefrontPath(slug, "best-sellers")}
+                to={storefrontPath(slug!, "best-sellers")}
                 className="flex items-center gap-1 text-xs font-semibold text-white/80 hover:text-white"
               >
                 See All <ArrowRight className="h-3.5 w-3.5" />
@@ -311,7 +311,7 @@ export default function StorefrontHomeV17() {
               {/* Large featured card */}
               <div className="overflow-hidden rounded-2xl" style={{ aspectRatio: "16/10" }}>
                 <Link
-                  to={storefrontPath(slug, `product/${bestSellers[0]?.slug || bestSellers[0]?.id}`)}
+                  to={storefrontPath(slug!, `product/${bestSellers[0]?.slug || bestSellers[0]?.id}`)}
                   className="group relative block h-full"
                 >
                   <img
