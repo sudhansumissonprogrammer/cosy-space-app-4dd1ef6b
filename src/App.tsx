@@ -276,11 +276,137 @@ function usePrefetchStorefrontData(slug: string | undefined) {
           _slug: slug,
         });
         if (error) throw error;
+
+        // 🚀 As soon as store data arrives, start prefetching target page data
+        // This runs IN the queryFn so it fires immediately, not after React re-renders
+        const storeId = (data as any)?.store?.id;
+        if (storeId) {
+          prefetchTargetPageData(queryClient, storeId, window.location.pathname);
+        }
+
         return data;
       },
       staleTime: 30_000,
     });
   }, [slug, queryClient]);
+}
+
+/** Start fetching target page data immediately when store ID is known */
+async function prefetchTargetPageData(
+  queryClient: ReturnType<typeof useQueryClient>,
+  storeId: string,
+  path: string
+) {
+  const { supabase } = await import("@/integrations/supabase/client");
+
+  // Product page: /product/:slug
+  const productMatch = path.match(/\/product\/([^/]+)/);
+  if (productMatch) {
+    const productSlug = decodeURIComponent(productMatch[1]);
+    if (!queryClient.getQueryData(["storefront-product", storeId, productSlug])) {
+      queryClient.prefetchQuery({
+        queryKey: ["storefront-product", storeId, productSlug],
+        queryFn: async () => {
+          let { data: prod, error } = await supabase
+            .from("products")
+            .select("*")
+            .eq("store_id", storeId)
+            .eq("slug", productSlug)
+            .eq("is_active", true)
+            .maybeSingle();
+          if (!prod && !error) {
+            const result = await supabase
+              .from("products")
+              .select("*")
+              .eq("store_id", storeId)
+              .eq("id", productSlug)
+              .eq("is_active", true)
+              .maybeSingle();
+            prod = result.data;
+          }
+          if (prod) {
+            queryClient.prefetchQuery({
+              queryKey: ["product-images", prod.id],
+              queryFn: async () => {
+                const { data: imgs } = await supabase
+                  .from("product_images")
+                  .select("id, image_url, display_order")
+                  .eq("product_id", prod!.id)
+                  .order("display_order");
+                return imgs ?? [];
+              },
+              staleTime: 5 * 60 * 1000,
+            });
+          }
+          return prod;
+        },
+        staleTime: 2 * 60 * 1000,
+      });
+    }
+    return;
+  }
+
+  // Category page: /category/:categorySlug
+  const categoryMatch = path.match(/\/category\/([^/]+)/);
+  if (categoryMatch) {
+    const catSlug = decodeURIComponent(categoryMatch[1]);
+    if (!queryClient.getQueryData(["category", storeId, catSlug])) {
+      queryClient.prefetchQuery({
+        queryKey: ["category", storeId, catSlug],
+        queryFn: async () => {
+          const { data: cat, error } = await supabase
+            .from("categories")
+            .select("*")
+            .eq("store_id", storeId)
+            .eq("slug", catSlug)
+            .maybeSingle();
+          if (error) throw error;
+          if (cat) {
+            queryClient.prefetchInfiniteQuery({
+              queryKey: ["category-products", storeId, cat.name],
+              queryFn: async () => {
+                const { data: prods, error: pErr } = await supabase
+                  .from("products")
+                  .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+                  .eq("store_id", storeId)
+                  .eq("category", cat.name)
+                  .eq("is_active", true)
+                  .order("created_at", { ascending: false })
+                  .range(0, 13);
+                if (pErr) throw pErr;
+                return { data: prods ?? [], nextPage: (prods?.length ?? 0) >= 14 ? 1 : undefined };
+              },
+              initialPageParam: 0,
+              staleTime: 2 * 60 * 1000,
+            });
+          }
+          return cat;
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+    return;
+  }
+
+  // Shop page: /shop
+  if (/\/shop\/?$/.test(path)) {
+    queryClient.prefetchInfiniteQuery({
+      queryKey: ["storefront-shop-all", storeId],
+      queryFn: async () => {
+        const { data: prods, error } = await supabase
+          .from("products")
+          .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .range(0, 13);
+        if (error) throw error;
+        return { data: prods ?? [], nextPage: (prods?.length ?? 0) >= 14 ? 1 : undefined };
+      },
+      initialPageParam: 0,
+      staleTime: 2 * 60 * 1000,
+    });
+  }
 }
 
 /** Eagerly start loading the home page chunk so it downloads alongside the layout */
@@ -299,6 +425,30 @@ function prefetchHomeChunk(theme: string) {
   }
 }
 
+/** Eagerly prefetch the chunk for the page the user is landing on */
+function prefetchTargetPageChunk(path: string) {
+  // Product page
+  if (/\/product\//.test(path)) {
+    import("./pages/ProductDetail").catch(() => {});
+    return;
+  }
+  // Category page
+  if (/\/category\//.test(path)) {
+    import("./pages/CategoryDetail").catch(() => {});
+    return;
+  }
+  // Shop page
+  if (/\/shop\/?$/.test(path)) {
+    import("./pages/StorefrontShop").catch(() => {});
+    return;
+  }
+  // Cart page
+  if (/\/cart\/?$/.test(path)) {
+    import("./pages/CartPage").catch(() => {});
+    return;
+  }
+}
+
 function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -313,11 +463,20 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   // 🚀 KEY OPTIMIZATION: Start data fetch IMMEDIATELY, in parallel with chunk loading
   usePrefetchStorefrontData(effectiveSlug);
 
-  // 🚀 Eagerly start loading the home page chunk (don't wait for layout to mount)
-  const homeChunkStarted = useRef(false);
-  if (!homeChunkStarted.current) {
-    homeChunkStarted.current = true;
-    prefetchHomeChunk(theme).catch(() => {});
+  // 🚀 Eagerly start loading the TARGET page chunk (not just home)
+  const chunkStarted = useRef(false);
+  if (!chunkStarted.current) {
+    chunkStarted.current = true;
+    const path = window.location.pathname;
+    // If landing on home, prefetch home chunk; otherwise prefetch target page chunk
+    const isHomePage = path === "/" || /\/store\/[^/]+\/?$/.test(path);
+    if (isHomePage) {
+      prefetchHomeChunk(theme).catch(() => {});
+    } else {
+      prefetchTargetPageChunk(path);
+      // Also prefetch home chunk at lower priority for back navigation
+      requestIdleCallback?.(() => prefetchHomeChunk(theme).catch(() => {}));
+    }
   }
 
   // Subscribe to query cache — when fresh data arrives with a different theme, switch instantly
