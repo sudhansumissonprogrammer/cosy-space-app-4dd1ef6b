@@ -130,33 +130,22 @@ function HorizontalScrollStore({
         {store.screens.map((screen, i) => (
           <div
             key={screen.label}
-            className="phone-card flex-shrink-0 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8"
+            className="phone-card flex-shrink-0 flex flex-col items-center justify-center px-2 sm:px-3 lg:px-5"
           >
-            <div className="relative w-[220px] sm:w-[250px] lg:w-[280px]">
-              <div className="bg-foreground rounded-[28px] sm:rounded-[32px] p-[7px] sm:p-[8px] shadow-2xl">
-                {/* Notch */}
-                <div className="absolute top-[7px] sm:top-[8px] left-1/2 -translate-x-1/2 w-20 sm:w-24 h-5 sm:h-6 bg-foreground rounded-b-2xl z-20" />
-                {/* Screen */}
-                <div className="rounded-[21px] sm:rounded-[24px] overflow-hidden bg-background">
-                  <img
-                    src={screen.img}
-                    alt={`${store.name} - ${screen.label}`}
-                    className="w-full h-auto block"
-                    loading={storeIdx === 0 && i === 0 ? "eager" : "lazy"}
-                  />
+            <div className="relative w-[180px] sm:w-[210px] lg:w-[240px]">
+              <div className="bg-foreground rounded-[22px] sm:rounded-[26px] p-[5px] sm:p-[7px] shadow-2xl">
+                <div className="absolute top-[5px] sm:top-[7px] left-1/2 -translate-x-1/2 w-14 sm:w-18 h-3.5 sm:h-4 bg-foreground rounded-b-xl z-20" />
+                <div className="rounded-[17px] sm:rounded-[19px] overflow-hidden bg-background">
+                  <img src={screen.img} alt={`${store.name} - ${screen.label}`} className="w-full h-auto block" loading={storeIdx === 0 && i === 0 ? "eager" : "lazy"} />
                 </div>
               </div>
-              {/* Reflection glow */}
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-foreground/10 rounded-full blur-xl" />
             </div>
-            <span className="mt-5 font-bold uppercase tracking-[0.2em] text-xs sm:text-sm text-foreground">
-              {screen.label}
-            </span>
+            <span className="mt-3 font-bold uppercase tracking-wider text-[10px] sm:text-xs text-foreground">{screen.label}</span>
           </div>
         ))}
 
         {/* Trailing space */}
-        <div className="flex-shrink-0 w-[20vw]" />
+        <div className="flex-shrink-0 w-[10vw]" />
       </div>
     </div>
   );
