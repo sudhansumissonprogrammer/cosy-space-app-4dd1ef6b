@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
-import { getProductRating } from "@/lib/productUtils";
 
 const SCRIPT_ID = "json-ld-structured-data";
 const BREADCRUMB_SCRIPT_ID = "json-ld-breadcrumb";
+const ITEM_LIST_SCRIPT_ID = "json-ld-item-list";
 
 function setJsonLd(data: Record<string, any>, id = SCRIPT_ID) {
   let el = document.getElementById(id) as HTMLScriptElement | null;
@@ -38,11 +38,12 @@ interface ProductJsonLdOptions {
   };
   storeSlug: string;
   storeName: string;
-  /** Custom domain for canonical URLs */
   customDomain?: string | null;
+  /** Real review data — omit aggregateRating if empty */
+  reviews?: { rating: number }[];
 }
 
-export function useProductJsonLd({ product, storeSlug, storeName, customDomain }: ProductJsonLdOptions) {
+export function useProductJsonLd({ product, storeSlug, storeName, customDomain, reviews }: ProductJsonLdOptions) {
   useEffect(() => {
     const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
     const productUrl = `${baseUrl}/product/${product.slug || product.id}`;
@@ -50,7 +51,6 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain }
       ? product.sale_price
       : product.price;
 
-    // Build images array for Google Shopping
     const images: string[] = [];
     if (product.image_url) images.push(product.image_url);
     if (product.extraImages) images.push(...product.extraImages);
@@ -80,14 +80,19 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain }
         priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         itemCondition: "https://schema.org/NewCondition",
       },
-      aggregateRating: {
+    };
+
+    // Only add aggregateRating if we have real reviews
+    if (reviews && reviews.length > 0) {
+      const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      data.aggregateRating = {
         "@type": "AggregateRating",
-        ratingValue: getProductRatingForSchema(product.id),
-        reviewCount: getProductReviewCountForSchema(product.id),
+        ratingValue: avg.toFixed(1),
+        reviewCount: reviews.length,
         bestRating: "5",
         worstRating: "1",
-      },
-    };
+      };
+    }
 
     if (product.description) data.description = product.description;
     if (images.length > 0) data.image = images.length === 1 ? images[0] : images;
@@ -131,20 +136,7 @@ export function useProductJsonLd({ product, storeSlug, storeName, customDomain }
       removeJsonLd();
       removeJsonLd(BREADCRUMB_SCRIPT_ID);
     };
-  }, [product, storeSlug, storeName, customDomain]);
-}
-
-function getProductRatingForSchema(productId: string): string {
-  return getProductRating(productId).toFixed(1);
-}
-
-function getProductReviewCountForSchema(productId: string): number {
-  let hash = 0;
-  for (let i = 0; i < productId.length; i++) {
-    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
-    hash |= 0;
-  }
-  return 12 + (Math.abs(hash) % 188);
+  }, [product, storeSlug, storeName, customDomain, reviews]);
 }
 
 interface StoreJsonLdOptions {
@@ -154,11 +146,18 @@ interface StoreJsonLdOptions {
   logo?: string | null;
   location?: string | null;
   whatsappNumber?: string | null;
-  /** Custom domain for canonical URLs */
   customDomain?: string | null;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  city?: string | null;
+  state?: string | null;
+  businessHours?: any | null;
 }
 
-export function useStoreJsonLd({ storeName, storeSlug, description, logo, location, whatsappNumber, customDomain }: StoreJsonLdOptions) {
+export function useStoreJsonLd({
+  storeName, storeSlug, description, logo, location, whatsappNumber, customDomain,
+  instagramUrl, facebookUrl, city, state, businessHours,
+}: StoreJsonLdOptions) {
   useEffect(() => {
     const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
     const data: Record<string, any> = {
@@ -169,7 +168,18 @@ export function useStoreJsonLd({ storeName, storeSlug, description, logo, locati
     };
     if (description) data.description = description;
     if (logo) data.logo = logo;
-    if (location) data.address = { "@type": "PostalAddress", addressLocality: location };
+
+    // Address
+    if (city || state || location) {
+      data.address = {
+        "@type": "PostalAddress",
+        ...(city && { addressLocality: city }),
+        ...(state && { addressRegion: state }),
+        ...(location && { streetAddress: location }),
+        addressCountry: "IN",
+      };
+    }
+
     if (whatsappNumber) {
       data.contactPoint = {
         "@type": "ContactPoint",
@@ -178,7 +188,55 @@ export function useStoreJsonLd({ storeName, storeSlug, description, logo, locati
       };
     }
 
+    // sameAs social links
+    const sameAs: string[] = [];
+    if (instagramUrl) sameAs.push(instagramUrl);
+    if (facebookUrl) sameAs.push(facebookUrl);
+    if (sameAs.length > 0) data.sameAs = sameAs;
+
+    // Search action
+    data.potentialAction = {
+      "@type": "SearchAction",
+      target: `${baseUrl}/shop?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    };
+
+    data.priceRange = "₹";
+
     setJsonLd(data);
     return () => removeJsonLd();
-  }, [storeName, storeSlug, description, logo, location, whatsappNumber, customDomain]);
+  }, [storeName, storeSlug, description, logo, location, whatsappNumber, customDomain, instagramUrl, facebookUrl, city, state, businessHours]);
+}
+
+/** ItemList schema for product listing pages (Shop All, Category, Home) */
+interface ProductListJsonLdOptions {
+  products: { id: string; name: string; slug?: string | null; image_url?: string | null; price: number; sale_price?: number | null; currency?: string }[];
+  storeSlug: string;
+  listName?: string;
+  customDomain?: string | null;
+}
+
+export function useProductListJsonLd({ products, storeSlug, listName, customDomain }: ProductListJsonLdOptions) {
+  useEffect(() => {
+    if (!products || products.length === 0) {
+      removeJsonLd(ITEM_LIST_SCRIPT_ID);
+      return;
+    }
+    const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
+    const data: Record<string, any> = {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: listName || "Products",
+      numberOfItems: products.length,
+      itemListElement: products.slice(0, 30).map((p, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `${baseUrl}/product/${p.slug || p.id}`,
+        name: p.name,
+        image: p.image_url || undefined,
+      })),
+    };
+    setJsonLd(data, ITEM_LIST_SCRIPT_ID);
+    return () => removeJsonLd(ITEM_LIST_SCRIPT_ID);
+  }, [products, storeSlug, listName, customDomain]);
 }
