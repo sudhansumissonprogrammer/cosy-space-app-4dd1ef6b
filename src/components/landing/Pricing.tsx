@@ -56,7 +56,12 @@ const Pricing = () => {
                   <div className={`font-black text-4xl ${colorMap[p.color].text} mt-2`}>
                     {fmt(price)}<span className="font-medium text-base opacity-80">{period}</span>
                   </div>
-                  {annual && <div className={`font-medium text-xs ${colorMap[p.color].text} opacity-70 line-through mt-1`}>{fmt(p.price)}/month</div>}
+                  {annual && (
+                    <div className="mt-1 space-y-0.5">
+                      <div className={`font-medium text-xs ${colorMap[p.color].text} opacity-70 line-through`}>{fmt(p.price)}/month</div>
+                      <div className={`font-bold text-sm ${colorMap[p.color].text} opacity-90`}>{fmt(price * 12)}/year</div>
+                    </div>
+                  )}
                   <p className={`font-medium text-sm ${colorMap[p.color].text} opacity-80 mt-1`}>{p.desc}</p>
                 </div>
                 <div className="p-6 space-y-3">
