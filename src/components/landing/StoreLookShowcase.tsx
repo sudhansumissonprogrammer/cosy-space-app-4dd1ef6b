@@ -135,9 +135,40 @@ function HorizontalScrollStore({
             className="phone-card flex-shrink-0 flex flex-col items-center px-2 sm:px-3"
           >
             <div className="w-[160px] sm:w-[190px] lg:w-[220px]">
-              <div className="relative bg-foreground rounded-[20px] sm:rounded-[24px] p-[4px] sm:p-[6px] shadow-xl">
-                <div className="absolute top-[4px] sm:top-[6px] left-1/2 -translate-x-1/2 w-12 sm:w-16 h-3 sm:h-3.5 bg-foreground rounded-b-lg z-20" />
-                <div className="rounded-[16px] sm:rounded-[18px] overflow-hidden bg-background">
+              {/* iPhone-style premium frame */}
+              <div
+                className="relative rounded-[28px] sm:rounded-[34px] p-[2.5px] sm:p-[3px] shadow-[0_8px_30px_rgba(0,0,0,0.35)]"
+                style={{
+                  background: "linear-gradient(145deg, #2a2a2e 0%, #1a1a1d 40%, #0d0d0f 100%)",
+                }}
+              >
+                {/* Titanium edge highlight */}
+                <div
+                  className="absolute inset-0 rounded-[28px] sm:rounded-[34px] pointer-events-none z-10"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.05) 100%)",
+                  }}
+                />
+                {/* Dynamic Island */}
+                <div className="absolute top-[8px] sm:top-[10px] left-1/2 -translate-x-1/2 w-[60px] sm:w-[72px] h-[16px] sm:h-[20px] bg-black rounded-full z-30 flex items-center justify-center gap-[6px]">
+                  <div className="w-[5px] h-[5px] sm:w-[6px] sm:h-[6px] rounded-full bg-[#1a1a2e] ring-1 ring-[#2a2a3e]" />
+                </div>
+                {/* Side button (power) */}
+                <div
+                  className="absolute -right-[1.5px] top-[28%] w-[2px] sm:w-[2.5px] h-[28px] sm:h-[34px] rounded-r-sm z-10"
+                  style={{ background: "linear-gradient(180deg, #3a3a3e, #1a1a1d)" }}
+                />
+                {/* Volume buttons */}
+                <div
+                  className="absolute -left-[1.5px] top-[22%] w-[2px] sm:w-[2.5px] h-[14px] sm:h-[17px] rounded-l-sm z-10"
+                  style={{ background: "linear-gradient(180deg, #3a3a3e, #1a1a1d)" }}
+                />
+                <div
+                  className="absolute -left-[1.5px] top-[30%] w-[2px] sm:w-[2.5px] h-[14px] sm:h-[17px] rounded-l-sm z-10"
+                  style={{ background: "linear-gradient(180deg, #3a3a3e, #1a1a1d)" }}
+                />
+                {/* Screen */}
+                <div className="rounded-[26px] sm:rounded-[32px] overflow-hidden bg-black relative">
                   <img
                     src={screen.img}
                     alt={`${store.name} - ${screen.label}`}
@@ -147,7 +178,7 @@ function HorizontalScrollStore({
                 </div>
               </div>
             </div>
-            <span className="mt-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-foreground">
+            <span className="mt-2.5 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-foreground">
               {screen.label}
             </span>
           </div>
