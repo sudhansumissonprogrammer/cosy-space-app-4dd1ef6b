@@ -65,6 +65,13 @@ export default function StorefrontShop() {
 
   const products = data?.pages.flatMap((p) => p.products) || [];
 
+  useProductListJsonLd({
+    products,
+    storeSlug: slug || store.slug,
+    listName: "Shop All",
+    customDomain: (store as any)?.custom_domain,
+  });
+
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 

@@ -54,6 +54,13 @@ export default function StorefrontHome() {
   const { products: initialProducts, isLoading: isInitialLoading, edgeSkelVisible } = useStorefrontProducts(store.id);
 
   const allCachedProducts = initialProducts;
+
+  useProductListJsonLd({
+    products: initialProducts || [],
+    storeSlug: store.slug,
+    listName: `${store.name} — All Products`,
+    customDomain: (store as any)?.custom_domain,
+  });
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
