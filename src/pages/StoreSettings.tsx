@@ -100,7 +100,6 @@ export default function StoreSettings() {
       setMetaDescription((store as any).meta_description || "");
       setOgImageUrl((store as any).og_image_url || "");
       if ((store as any).og_image_url) setOgImagePreview((store as any).og_image_url);
-      setOwnerEmail((store as any).owner_email || "");
       setDefaultProfitMargin((store as any).default_profit_margin ?? 30);
     }
   }, [store]);
