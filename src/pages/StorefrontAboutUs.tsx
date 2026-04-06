@@ -2,6 +2,7 @@ import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Instagram, Facebook, MessageCircle } from "lucide-react";
+import { useMemo } from "react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import CustomHtmlRenderer from "@/components/storefront/CustomHtmlRenderer";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -49,7 +50,15 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
   const whatsapp = (store as any).whatsapp_number as string | null;
   const instagram = (store as any).instagram_url as string | null;
   const facebook = (store as any).facebook_url as string | null;
-  const ownerEmail = (store as any).owner_email as string | null;
+
+  const { data: ownerEmail } = useQuery({
+    queryKey: ["store-public-email", store.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
+      return (data as string) || null;
+    },
+    staleTime: 300000,
+  });
 
   return (
     <div className="space-y-10">
