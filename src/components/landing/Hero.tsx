@@ -34,12 +34,12 @@ const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: 
 
 const heroVariants = [
   {
-    headline: <>Stop Paying 25% Commission —<br />Launch Your Own Store with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-    sub: "Keep 100% of your revenue. Your own online store with custom domain, UPI payments — live in 10 minutes.",
+    headline: <>Launch Your Own Store in 5 Minutes —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
+    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — live in 10 minutes.",
   },
   {
-    headline: <>Build your store within minutes using<br /><span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-    sub: "Create your own professional online store with custom domain, UPI payments, and zero commission. Start selling in minutes.",
+    headline: <>Launch Your Own Store in 5 Minutes —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
+    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — live in 10 minutes.",
   },
 ];
 
