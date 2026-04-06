@@ -2,9 +2,9 @@ import { Check, ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 const monthly = [
-  { name: "Starter", price: 499, desc: "Perfect for getting started", features: ["50 Products", "Custom Domain", "UPI Payments", "WhatsApp Orders", "Basic Analytics", "Email Support"], color: "blue", popular: false },
-  { name: "Growth", price: 999, desc: "Best for serious sellers", features: ["500 Products", "Custom Domain", "All Payment Options", "WhatsApp + SMS", "Advanced Analytics Dashboard", "Facebook Pixel + Tracking", "Priority Support", "Coupons & Discounts", "SEO Tools", "App Integration", "Mobile App", "Payment Gateway Integration", "AI Product Descriptions", "AI Store Content Generator"], color: "red", popular: true },
-  { name: "Pro", price: 2499, desc: "For established brands", features: ["Unlimited Products", "Multiple Domains", "All Payment Options", "Full Marketing Suite", "Advanced Analytics Dashboard", "Facebook Pixel + Tracking", "Coupons & Discounts", "SEO Tools", "AI Product Descriptions", "AI Store Content Generator", "Mobile App", "Custom Theme Design", "Sales Funnel Builder", "Dedicated Account Manager", "Priority WhatsApp Support", "API Access", "White-label Branding"], color: "yellow", popular: false },
+  { name: "Starter", price: 499, desc: "Perfect for getting started", features: ["50 Products", "Custom Domain", "UPI Payments", "WhatsApp Orders", "Basic Analytics", "Email Support"], color: "blue", popular: false, includesFrom: null as string | null },
+  { name: "Growth", price: 999, desc: "Best for serious sellers", features: ["500 Products", "Custom Domain", "All Payment Options", "WhatsApp + SMS", "Advanced Analytics Dashboard", "Facebook Pixel + Tracking", "Priority Support", "Coupons & Discounts", "SEO Tools", "App Integration", "Mobile App", "Payment Gateway Integration", "AI Product Descriptions", "AI Store Content Generator"], color: "red", popular: true, includesFrom: null as string | null },
+  { name: "Pro", price: 2499, desc: "For established brands", features: ["Unlimited Products", "Multiple Domains", "Custom Theme Design", "Sales Funnel Builder", "Dedicated Account Manager", "Priority WhatsApp Support", "API Access", "White-label Branding"], color: "yellow", popular: false, includesFrom: "Growth" },
 ];
 
 const colorMap: Record<string, { bg: string; text: string }> = {
