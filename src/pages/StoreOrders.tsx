@@ -493,7 +493,8 @@ export default function StoreOrders() {
                       {order.order_items.map((i: any) => i.product_name).join(", ")}
                     </p>
                   )}
-                </button>
+                  </button>
+                </div>
               ))}
             </div>
           ) : (
