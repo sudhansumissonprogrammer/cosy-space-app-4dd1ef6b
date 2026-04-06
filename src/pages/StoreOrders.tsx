@@ -219,6 +219,24 @@ export default function StoreOrders() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const bulkDeleteOrders = useMutation({
+    mutationFn: async (orderIds: string[]) => {
+      for (const id of orderIds) {
+        await (supabase as any).from("order_items").delete().eq("order_id", id);
+        const { error } = await (supabase as any).from("orders").delete().eq("id", id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, orderIds) => {
+      queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
+      toast.success(`${orderIds.length} order${orderIds.length > 1 ? "s" : ""} deleted`);
+      setSelectedOrders(new Set());
+      setMobileDetailOrder(null);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const toggleOrderSelection = (orderId: string) => {
     setSelectedOrders(prev => {
       const next = new Set(prev);
