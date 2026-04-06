@@ -15,9 +15,9 @@ const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: 
     className={`group flex flex-col items-center ${className}`}
   >
     <div className="relative w-full">
-      <div className="bg-foreground rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] p-[5px] sm:p-[6px] shadow-2xl transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1">
-        <div className="absolute top-[5px] sm:top-[6px] left-1/2 -translate-x-1/2 w-12 sm:w-14 lg:w-16 h-3 sm:h-4 bg-foreground rounded-b-xl z-20" />
-        <div className="rounded-[17px] sm:rounded-[20px] lg:rounded-[22px] overflow-hidden bg-background">
+      <div className="bg-foreground rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] p-[3px] sm:p-[3px] shadow-2xl transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1">
+        <div className="absolute top-[3px] left-1/2 -translate-x-1/2 w-10 sm:w-12 lg:w-14 h-2.5 sm:h-3 bg-foreground rounded-b-lg z-20" />
+        <div className="rounded-[19px] sm:rounded-[23px] lg:rounded-[25px] overflow-hidden">
           <img src={img} alt={`${label} live store`} className="w-full h-auto block" />
         </div>
       </div>
