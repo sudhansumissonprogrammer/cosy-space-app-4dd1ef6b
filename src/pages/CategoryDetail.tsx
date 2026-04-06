@@ -55,7 +55,7 @@ export default function CategoryDetail() {
         .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
         .eq("store_id", store.id)
         .eq("is_active", true)
-        .ilike("category", `%${category!.name}%`)
+        .eq("category", category!.name)
         .order("created_at", { ascending: false })
         .order("id", { ascending: true })
         .range(from, to);

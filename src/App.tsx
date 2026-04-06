@@ -299,6 +299,30 @@ function prefetchHomeChunk(theme: string) {
   }
 }
 
+/** Eagerly prefetch the chunk for the page the user is landing on */
+function prefetchTargetPageChunk(path: string) {
+  // Product page
+  if (/\/product\//.test(path)) {
+    import("./pages/ProductDetail").catch(() => {});
+    return;
+  }
+  // Category page
+  if (/\/category\//.test(path)) {
+    import("./pages/CategoryDetail").catch(() => {});
+    return;
+  }
+  // Shop page
+  if (/\/shop\/?$/.test(path)) {
+    import("./pages/StorefrontShop").catch(() => {});
+    return;
+  }
+  // Cart page
+  if (/\/cart\/?$/.test(path)) {
+    import("./pages/CartPage").catch(() => {});
+    return;
+  }
+}
+
 function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -313,11 +337,20 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   // 🚀 KEY OPTIMIZATION: Start data fetch IMMEDIATELY, in parallel with chunk loading
   usePrefetchStorefrontData(effectiveSlug);
 
-  // 🚀 Eagerly start loading the home page chunk (don't wait for layout to mount)
-  const homeChunkStarted = useRef(false);
-  if (!homeChunkStarted.current) {
-    homeChunkStarted.current = true;
-    prefetchHomeChunk(theme).catch(() => {});
+  // 🚀 Eagerly start loading the TARGET page chunk (not just home)
+  const chunkStarted = useRef(false);
+  if (!chunkStarted.current) {
+    chunkStarted.current = true;
+    const path = window.location.pathname;
+    // If landing on home, prefetch home chunk; otherwise prefetch target page chunk
+    const isHomePage = path === "/" || /\/store\/[^/]+\/?$/.test(path);
+    if (isHomePage) {
+      prefetchHomeChunk(theme).catch(() => {});
+    } else {
+      prefetchTargetPageChunk(path);
+      // Also prefetch home chunk at lower priority for back navigation
+      requestIdleCallback?.(() => prefetchHomeChunk(theme).catch(() => {}));
+    }
   }
 
   // Subscribe to query cache — when fresh data arrives with a different theme, switch instantly
