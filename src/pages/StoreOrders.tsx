@@ -219,6 +219,24 @@ export default function StoreOrders() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const bulkDeleteOrders = useMutation({
+    mutationFn: async (orderIds: string[]) => {
+      for (const id of orderIds) {
+        await (supabase as any).from("order_items").delete().eq("order_id", id);
+        const { error } = await (supabase as any).from("orders").delete().eq("id", id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, orderIds) => {
+      queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
+      toast.success(`${orderIds.length} order${orderIds.length > 1 ? "s" : ""} deleted`);
+      setSelectedOrders(new Set());
+      setMobileDetailOrder(null);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const toggleOrderSelection = (orderId: string) => {
     setSelectedOrders(prev => {
       const next = new Set(prev);
@@ -396,6 +414,29 @@ export default function StoreOrders() {
                 >
                   {bulkUpdateStatus.isPending ? "Updating..." : "Apply"}
                 </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive" className="h-8 text-xs gap-1">
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {selectedOrders.size} order{selectedOrders.size > 1 ? "s" : ""}?</AlertDialogTitle>
+                      <AlertDialogDescription>This action cannot be undone. All selected orders and their items will be permanently deleted.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => bulkDeleteOrders.mutate(Array.from(selectedOrders))}
+                      >
+                        {bulkDeleteOrders.isPending ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <button
                   onClick={() => setSelectedOrders(new Set())}
                   className="ml-auto text-xs text-muted-foreground hover:text-foreground"
@@ -409,12 +450,28 @@ export default function StoreOrders() {
           {/* ── MOBILE: Card list view ── */}
           {isMobile ? (
             <div className="space-y-2">
+              {/* Mobile select all */}
+              <div className="flex items-center gap-2 px-1">
+                <Checkbox
+                  checked={paginatedOrders.length > 0 && selectedOrders.size === paginatedOrders.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+                <span className="text-xs text-muted-foreground">Select all</span>
+              </div>
               {paginatedOrders.map((order: any) => (
-                <button
+                <div
                   key={order.id}
-                  onClick={() => setMobileDetailOrder(order)}
-                  className="w-full text-left rounded-xl border bg-card p-3.5 active:bg-accent/50 transition-colors"
+                  className="flex items-start gap-2 rounded-xl border bg-card p-3.5 transition-colors"
                 >
+                  <Checkbox
+                    checked={selectedOrders.has(order.id)}
+                    onCheckedChange={() => toggleOrderSelection(order.id)}
+                    className="mt-1 shrink-0"
+                  />
+                  <button
+                    onClick={() => setMobileDetailOrder(order)}
+                    className="flex-1 text-left active:bg-accent/50 transition-colors"
+                  >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-mono text-xs font-semibold text-foreground">{getOrderDisplayId(order)}</span>
@@ -436,7 +493,8 @@ export default function StoreOrders() {
                       {order.order_items.map((i: any) => i.product_name).join(", ")}
                     </p>
                   )}
-                </button>
+                  </button>
+                </div>
               ))}
             </div>
           ) : (
