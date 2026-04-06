@@ -2335,6 +2335,7 @@ export type Database = {
         Args: { _limit?: number; _product_id: string }
         Returns: string[]
       }
+      get_own_domain_token: { Args: { _store_id: string }; Returns: string }
       get_own_payment_secret: { Args: { _store_id: string }; Returns: string }
       get_own_store_meta_token: { Args: { _store_id: string }; Returns: string }
       get_platform_config_public: {
@@ -2346,6 +2347,7 @@ export type Database = {
         }[]
       }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
+      get_store_public_email: { Args: { _store_id: string }; Returns: string }
       get_store_usage_stats: { Args: never; Returns: Json }
       get_store_views: {
         Args: { _store_ids: string[] }
