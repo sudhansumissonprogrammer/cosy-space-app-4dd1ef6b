@@ -3,7 +3,7 @@
  * pill categories, wave dividers, trending strip, and style-5 product cards.
  */
 import { useMemo, useRef, useEffect, lazy, Suspense } from "react";
-import { useOutletContext, Link } from "react-router-dom";
+import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
