@@ -32,7 +32,29 @@ const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: 
   </a>
 );
 
+const heroVariants = [
+  {
+    headline: <>Stop Paying 25% Commission —<br />Launch Your Own Store with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
+    sub: "Keep 100% of your revenue. Your own online store with custom domain, UPI payments — live in 10 minutes.",
+  },
+  {
+    headline: <>Build your store within minutes using<br /><span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
+    sub: "Create your own professional online store with custom domain, UPI payments, and zero commission. Start selling in minutes.",
+  },
+];
+
 const Hero = () => {
+  // Simple A/B: variant 0 (outcome-based) vs variant 1 (original)
+  const variant = typeof window !== "undefined"
+    ? (parseInt(localStorage.getItem("hero_ab") ?? String(Math.random() < 0.5 ? 0 : 1)) || 0)
+    : 0;
+
+  if (typeof window !== "undefined" && !localStorage.getItem("hero_ab")) {
+    localStorage.setItem("hero_ab", String(variant));
+  }
+
+  const { headline, sub } = heroVariants[variant] ?? heroVariants[0];
+
   return (
     <section className="border-b-4 border-foreground">
       <div className="px-5 sm:px-8 lg:px-12 xl:px-16 py-14 sm:py-16 lg:py-0 min-h-[72svh] sm:min-h-0 flex flex-col justify-center">
@@ -43,13 +65,11 @@ const Hero = () => {
             </div>
 
             <h1 className="font-black text-[28px] sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-[1.1] text-foreground mb-4 sm:mb-5">
-              Build your store within minutes using
-              <br />
-              <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span>
+              {headline}
             </h1>
 
             <p className="font-medium text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed mb-7 sm:mb-8 max-w-md">
-              Create your own professional online store with custom domain, UPI payments, and zero commission. Start selling in minutes.
+              {sub}
             </p>
 
             <div className="flex flex-row gap-3 mb-6 sm:mb-7">
