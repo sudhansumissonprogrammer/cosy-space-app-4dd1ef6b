@@ -67,20 +67,19 @@ function HorizontalScrollStore({
     if (!section || !track) return;
 
     const ctx = gsap.context(() => {
-      const getScrollAmount = () => track.scrollWidth - window.innerWidth;
+      const getScrollAmount = () => Math.max(0, track.scrollWidth - window.innerWidth);
 
       const tween = gsap.to(track, {
         x: () => -getScrollAmount(),
         ease: "none",
         scrollTrigger: {
           trigger: section,
-          start: "top 10%",
+          start: "top top",
           end: () => `+=${getScrollAmount()}`,
           pin: true,
           pinSpacing: true,
           scrub: 0.5,
           invalidateOnRefresh: true,
-          anticipatePin: 1,
         },
       });
 
