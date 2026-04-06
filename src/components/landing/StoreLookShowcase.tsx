@@ -134,7 +134,7 @@ function HorizontalScrollStore({
             key={screen.label}
             className="phone-card flex-shrink-0 flex flex-col items-center px-2 sm:px-3"
           >
-            <div className="w-[160px] sm:w-[190px] lg:w-[220px]">
+            <div className="w-[140px] sm:w-[190px] lg:w-[220px]">
               {/* iPhone-style premium frame */}
               <div
                 className="relative rounded-[28px] sm:rounded-[34px] p-[2.5px] sm:p-[3px] shadow-[0_8px_30px_rgba(0,0,0,0.35)]"
