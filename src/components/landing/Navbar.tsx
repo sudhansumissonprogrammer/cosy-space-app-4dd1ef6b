@@ -28,7 +28,7 @@ const Navbar = () => {
         </div>
 
         <div className="flex md:hidden items-center gap-2">
-          <a href="/signup" className="bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs px-3 py-1.5 border-2 border-foreground shadow-bauhaus">Start Free</a>
+
           <button className="p-2 border-2 border-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
