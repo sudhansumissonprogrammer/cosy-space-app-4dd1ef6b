@@ -193,6 +193,11 @@ export default function ProductDetail() {
         .maybeSingle();
 
       if (!data && !error) {
+        // Only attempt UUID lookup if slug looks like a UUID — prevents PostgREST 400 errors
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productSlug!)) {
+          if (error) throw error;
+          return data;
+        }
         const result = await supabase
           .from("products")
           .select("*")
