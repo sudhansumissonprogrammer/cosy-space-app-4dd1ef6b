@@ -37,7 +37,7 @@ const Index = () => {
       <FAQ />
       <FinalCTA />
       <Footer />
-      <StickyMobileCTA />
+      
       <LandingWhatsApp />
       <ExitIntentPopup />
     </div>
