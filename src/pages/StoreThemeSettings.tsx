@@ -215,6 +215,12 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
+  "theme-17": [
+    "midnight-navy", "coral-sunset", "crimson-royale", "electric-violet", "lux-black-gold",
+    "app-blue-orange", "plum-cream", "crimson-sand", "ghost-persian", "elegant-black-white",
+    "teal-elegance", "teal-conversion", "ocean-teal", "emerald-luxe", "lilac-mist",
+    "saffron-bloom", "mint-fresh", "lux-cream-brown", "velvet-merlot", "app-purple-pink",
+  ],
 };
 
 /* ── Get sorted color combinations for a given theme ── */
