@@ -5,8 +5,6 @@ const problems = [
   { icon: Clock, problem: "Shop band to sales band — raat mein koi order nahi aata.", solution: "24/7 online store — raat mein bhi orders aate hain." },
   { icon: TrendingDown, problem: "Competitor online bech raha hai, aapke customers uske paas ja rahe hain.", solution: "Apna online store banao — customers ko kho mat do." },
   { icon: ShieldX, problem: "Social media pe products dalte ho lekin trust nahi banta — log fake samajhte hain.", solution: "Professional store se brand trust aur credibility milti hai." },
-  { icon: Users, problem: "Customer gaya to gaya — repeat sale ka koi system nahi.", solution: "WhatsApp se ek click mein repeat orders lao." },
-  { icon: IndianRupee, problem: "Website banwana mehenga aur complicated lagta hai.", solution: "Hum free mein banate hain — 1–2 orders mein recover." },
 ];
 
 const ProblemAwareness = () => {
