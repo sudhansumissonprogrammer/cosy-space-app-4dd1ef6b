@@ -13,6 +13,7 @@ import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 import StickyMobileCTA from "@/components/landing/StickyMobileCTA";
+import LandingWhatsApp from "@/components/landing/LandingWhatsApp";
 
 const Index = () => {
   return (
@@ -32,6 +33,7 @@ const Index = () => {
       <FinalCTA />
       <Footer />
       <StickyMobileCTA />
+      <LandingWhatsApp />
     </div>
   );
 };
