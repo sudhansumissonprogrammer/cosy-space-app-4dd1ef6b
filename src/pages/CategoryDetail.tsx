@@ -71,6 +71,20 @@ export default function CategoryDetail() {
 
   const products = data?.pages.flatMap((p) => p.products) || [];
 
+  const contentReadyRef = useRef(false);
+
+  useEffect(() => {
+    contentReadyRef.current = false;
+  }, [categorySlug]);
+
+  useEffect(() => {
+    if (contentReadyRef.current || categoryLoading || productsLoading) return;
+    contentReadyRef.current = true;
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event("storefront:content-ready"));
+    });
+  }, [categoryLoading, productsLoading, categorySlug]);
+
   // Category-level meta tags
   useEffect(() => {
     if (!category || !store) return;

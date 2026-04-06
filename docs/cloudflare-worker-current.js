@@ -185,7 +185,7 @@ function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   if (dataSource) res.headers.set("X-Data-Source", dataSource);
   return res;
 }
-function getSkeletonCleanupScript(fallbackMs = 12000) {
+function getSkeletonCleanupScript(fallbackMs = 5000) {
   return `<script>(function(){
     var removed = false;
 
@@ -203,7 +203,8 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
       }, 200);
     }
 
-    // ✅ ONLY remove when storefront fully ready
+    // ✅ Remove as soon as actual storefront content is ready
+    window.addEventListener('storefront:content-ready', kill, { once: true });
     window.addEventListener('storefront:mounted', kill, { once: true });
 
     // ⛑️ fallback (if something breaks)

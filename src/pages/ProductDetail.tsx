@@ -217,6 +217,20 @@ export default function ProductDetail() {
     staleTime: 2 * 60 * 1000,
   });
 
+  const contentReadyRef = useRef(false);
+
+  useEffect(() => {
+    contentReadyRef.current = false;
+  }, [productSlug]);
+
+  useEffect(() => {
+    if (contentReadyRef.current || isLoading) return;
+    contentReadyRef.current = true;
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event("storefront:content-ready"));
+    });
+  }, [isLoading, productSlug]);
+
   const productId = product?.id;
 
   // Use cached product_images from RPC data as initialData
