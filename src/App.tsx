@@ -276,11 +276,137 @@ function usePrefetchStorefrontData(slug: string | undefined) {
           _slug: slug,
         });
         if (error) throw error;
+
+        // 🚀 As soon as store data arrives, start prefetching target page data
+        // This runs IN the queryFn so it fires immediately, not after React re-renders
+        const storeId = (data as any)?.store?.id;
+        if (storeId) {
+          prefetchTargetPageData(queryClient, storeId, window.location.pathname);
+        }
+
         return data;
       },
       staleTime: 30_000,
     });
   }, [slug, queryClient]);
+}
+
+/** Start fetching target page data immediately when store ID is known */
+async function prefetchTargetPageData(
+  queryClient: ReturnType<typeof useQueryClient>,
+  storeId: string,
+  path: string
+) {
+  const { supabase } = await import("@/integrations/supabase/client");
+
+  // Product page: /product/:slug
+  const productMatch = path.match(/\/product\/([^/]+)/);
+  if (productMatch) {
+    const productSlug = decodeURIComponent(productMatch[1]);
+    if (!queryClient.getQueryData(["storefront-product", storeId, productSlug])) {
+      queryClient.prefetchQuery({
+        queryKey: ["storefront-product", storeId, productSlug],
+        queryFn: async () => {
+          let { data: prod, error } = await supabase
+            .from("products")
+            .select("*")
+            .eq("store_id", storeId)
+            .eq("slug", productSlug)
+            .eq("is_active", true)
+            .maybeSingle();
+          if (!prod && !error) {
+            const result = await supabase
+              .from("products")
+              .select("*")
+              .eq("store_id", storeId)
+              .eq("id", productSlug)
+              .eq("is_active", true)
+              .maybeSingle();
+            prod = result.data;
+          }
+          if (prod) {
+            queryClient.prefetchQuery({
+              queryKey: ["product-images", prod.id],
+              queryFn: async () => {
+                const { data: imgs } = await supabase
+                  .from("product_images")
+                  .select("id, image_url, display_order")
+                  .eq("product_id", prod!.id)
+                  .order("display_order");
+                return imgs ?? [];
+              },
+              staleTime: 5 * 60 * 1000,
+            });
+          }
+          return prod;
+        },
+        staleTime: 2 * 60 * 1000,
+      });
+    }
+    return;
+  }
+
+  // Category page: /category/:categorySlug
+  const categoryMatch = path.match(/\/category\/([^/]+)/);
+  if (categoryMatch) {
+    const catSlug = decodeURIComponent(categoryMatch[1]);
+    if (!queryClient.getQueryData(["category", storeId, catSlug])) {
+      queryClient.prefetchQuery({
+        queryKey: ["category", storeId, catSlug],
+        queryFn: async () => {
+          const { data: cat, error } = await supabase
+            .from("categories")
+            .select("*")
+            .eq("store_id", storeId)
+            .eq("slug", catSlug)
+            .maybeSingle();
+          if (error) throw error;
+          if (cat) {
+            queryClient.prefetchInfiniteQuery({
+              queryKey: ["category-products", storeId, cat.name],
+              queryFn: async () => {
+                const { data: prods, error: pErr } = await supabase
+                  .from("products")
+                  .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+                  .eq("store_id", storeId)
+                  .eq("category", cat.name)
+                  .eq("is_active", true)
+                  .order("created_at", { ascending: false })
+                  .range(0, 13);
+                if (pErr) throw pErr;
+                return { data: prods ?? [], nextPage: (prods?.length ?? 0) >= 14 ? 1 : undefined };
+              },
+              initialPageParam: 0,
+              staleTime: 2 * 60 * 1000,
+            });
+          }
+          return cat;
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+    return;
+  }
+
+  // Shop page: /shop
+  if (/\/shop\/?$/.test(path)) {
+    queryClient.prefetchInfiniteQuery({
+      queryKey: ["storefront-shop-all", storeId],
+      queryFn: async () => {
+        const { data: prods, error } = await supabase
+          .from("products")
+          .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .range(0, 13);
+        if (error) throw error;
+        return { data: prods ?? [], nextPage: (prods?.length ?? 0) >= 14 ? 1 : undefined };
+      },
+      initialPageParam: 0,
+      staleTime: 2 * 60 * 1000,
+    });
+  }
 }
 
 /** Eagerly start loading the home page chunk so it downloads alongside the layout */
