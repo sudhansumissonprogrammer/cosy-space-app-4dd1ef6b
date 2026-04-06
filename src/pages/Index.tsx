@@ -21,6 +21,7 @@ import LandingJsonLd from "@/components/landing/LandingJsonLd";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background font-outfit">
+      <LandingJsonLd />
       <Navbar />
       <Hero />
       <PaymentTrustStrip />
