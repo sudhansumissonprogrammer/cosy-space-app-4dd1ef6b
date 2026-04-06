@@ -65,6 +65,12 @@ const Pricing = () => {
                   <p className={`font-medium text-sm ${colorMap[p.color].text} opacity-80 mt-1`}>{p.desc}</p>
                 </div>
                 <div className="p-6 space-y-3">
+                  {p.includesFrom && (
+                    <div className="flex items-center gap-2 pb-3 mb-1 border-b-2 border-dashed border-muted">
+                      <Check className="h-4 w-4 text-bauhaus-red flex-shrink-0" strokeWidth={3} />
+                      <span className="font-bold text-sm text-foreground">Everything in {p.includesFrom}</span>
+                    </div>
+                  )}
                   {p.features.map((f) => (
                     <div key={f} className="flex items-center gap-3">
                       <div className={`w-5 h-5 rounded-full ${colorMap[p.color].bg} flex items-center justify-center flex-shrink-0`}><Check className={`h-3 w-3 ${colorMap[p.color].text}`} strokeWidth={3} /></div>
