@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState, useEffect, useRef } from "react";
+import { lazy, Suspense, useMemo, useState, useEffect, useRef, useCallback } from "react";
 // Sonner moved into DashboardProviders — not needed on storefront critical path
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
@@ -327,18 +327,33 @@ async function prefetchTargetPageData(
             prod = result.data;
           }
           if (prod) {
-            queryClient.prefetchQuery({
-              queryKey: ["product-images", prod.id],
-              queryFn: async () => {
-                const { data: imgs } = await supabase
-                  .from("product_images")
-                  .select("id, image_url, display_order")
-                  .eq("product_id", prod!.id)
-                  .order("display_order");
-                return imgs ?? [];
-              },
-              staleTime: 5 * 60 * 1000,
-            });
+            await Promise.allSettled([
+              queryClient.prefetchQuery({
+                queryKey: ["product-images", prod.id],
+                queryFn: async () => {
+                  const { data: imgs } = await supabase
+                    .from("product_images")
+                    .select("id, image_url, display_order")
+                    .eq("product_id", prod.id)
+                    .order("display_order");
+                  return imgs ?? [];
+                },
+                staleTime: 5 * 60 * 1000,
+              }),
+              queryClient.prefetchQuery({
+                queryKey: ["product-variants", prod.id],
+                queryFn: async () => {
+                  const { data: vars } = await supabase
+                    .from("product_variants")
+                    .select("id, name, price, sku, stock_quantity, display_order")
+                    .eq("product_id", prod.id)
+                    .eq("is_active", true)
+                    .order("display_order");
+                  return vars ?? [];
+                },
+                staleTime: 5 * 60 * 1000,
+              }),
+            ]);
           }
           return prod;
         },
@@ -366,7 +381,9 @@ async function prefetchTargetPageData(
           if (cat) {
             queryClient.prefetchInfiniteQuery({
               queryKey: ["category-products", storeId, cat.name],
-              queryFn: async () => {
+              queryFn: async ({ pageParam = 0 }) => {
+                const from = pageParam * 14;
+                const to = from + 13;
                 const { data: prods, error: pErr } = await supabase
                   .from("products")
                   .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
@@ -374,9 +391,10 @@ async function prefetchTargetPageData(
                   .eq("category", cat.name)
                   .eq("is_active", true)
                   .order("created_at", { ascending: false })
-                  .range(0, 13);
+                  .order("id", { ascending: true })
+                  .range(from, to);
                 if (pErr) throw pErr;
-                return { data: prods ?? [], nextPage: (prods?.length ?? 0) >= 14 ? 1 : undefined };
+                return { products: prods ?? [], page: pageParam };
               },
               initialPageParam: 0,
               staleTime: 2 * 60 * 1000,
@@ -394,16 +412,19 @@ async function prefetchTargetPageData(
   if (/\/shop\/?$/.test(path)) {
     queryClient.prefetchInfiniteQuery({
       queryKey: ["storefront-shop-all", storeId],
-      queryFn: async () => {
+      queryFn: async ({ pageParam = 0 }) => {
+        const from = pageParam * 14;
+        const to = from + 13;
         const { data: prods, error } = await supabase
           .from("products")
           .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
           .eq("store_id", storeId)
           .eq("is_active", true)
           .order("created_at", { ascending: false })
-          .range(0, 13);
+          .order("id", { ascending: true })
+          .range(from, to);
         if (error) throw error;
-        return { data: prods ?? [], nextPage: (prods?.length ?? 0) >= 14 ? 1 : undefined };
+        return { products: prods ?? [], page: pageParam };
       },
       initialPageParam: 0,
       staleTime: 2 * 60 * 1000,
@@ -460,10 +481,26 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
   // Start with cached/injected theme instantly (no spinner)
   const [theme, setTheme] = useState(() => getInstantTheme(effectiveSlug));
   const themeRef = useRef(theme);
+  const routePrefetchKeyRef = useRef("");
   themeRef.current = theme;
+
+  const startRoutePrefetch = useCallback((storeId?: string | null) => {
+    if (!storeId) return;
+    const prefetchKey = `${storeId}:${location.pathname}`;
+    if (routePrefetchKeyRef.current === prefetchKey) return;
+    routePrefetchKeyRef.current = prefetchKey;
+    prefetchTargetPageData(queryClient, storeId, location.pathname);
+  }, [location.pathname, queryClient]);
 
   // 🚀 KEY OPTIMIZATION: Start data fetch IMMEDIATELY, in parallel with chunk loading
   usePrefetchStorefrontData(effectiveSlug);
+
+  useEffect(() => {
+    const cachedBulk = effectiveSlug
+      ? (queryClient.getQueryData(["storefront-bulk", effectiveSlug]) as any)
+      : undefined;
+    startRoutePrefetch((window as any).__STOREFRONT_DATA__?.store?.id || cachedBulk?.store?.id);
+  }, [effectiveSlug, queryClient, startRoutePrefetch]);
 
   // 🚀 Eagerly start loading the TARGET page chunk (not just home)
   const chunkStarted = useRef(false);
@@ -487,6 +524,7 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
       if (event?.query?.queryKey?.[0] === "storefront-bulk" && event?.query?.queryKey?.[1] === effectiveSlug) {
         const freshData = event.query.state.data as any;
+        startRoutePrefetch(freshData?.store?.id);
         const freshTheme = freshData?.store?.theme;
         if (freshTheme && freshTheme !== themeRef.current) {
           setTheme(freshTheme);
@@ -496,7 +534,7 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
       }
     });
     return unsubscribe;
-  }, [effectiveSlug, queryClient]);
+  }, [effectiveSlug, queryClient, startRoutePrefetch]);
 
   const basePath = slugOverride ? "/" : "/store/:slug";
   const LayoutComponent = getLayoutComponent(theme);
