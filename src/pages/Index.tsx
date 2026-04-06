@@ -31,7 +31,7 @@ const Index = () => {
       <Hero />
       <LiveStorePreview />
       <ProblemAwareness />
-      <SolutionFlow />
+      
       <TrustReasons />
       <AfterYouStart />
       <StatsBar />
