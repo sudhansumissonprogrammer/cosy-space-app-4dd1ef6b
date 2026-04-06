@@ -1,51 +1,38 @@
 
 
-## Plan: Major CRO Changes (Items 3, 4, 5, 8, 10)
+## Plan: Remaining CRO Items
 
-Items 3 (hero rewrite) and 4 (sticky mobile CTA) are already implemented. This plan covers the remaining three:
+### 1. Fix FinalCTA Consistency
+**File: `src/components/landing/FinalCTA.tsx`**
+Change "Create Your Online Store in 1 Minute" → "Create Your Online Store in 10 Minutes" to match Hero and FAQ claims. Add risk-reversal subtext: "7-day free trial • Zero commission • No card required".
 
----
+### 2. Condense ProblemAwareness to 4 Items
+**File: `src/components/landing/ProblemAwareness.tsx`**
+Remove items 5 (repeat sale) and 6 (expensive website) — weakest impact. Keep the 4 strongest: Local reach, 24/7 sales, competitor threat, trust/credibility.
 
-### 1. Payment Partner Trust Strip Below Hero (Item 5)
+### 3. Add FAQ Schema Markup (JSON-LD)
+**File: `src/components/landing/FAQ.tsx`**
+Inject a `<script type="application/ld+json">` block with FAQPage structured data using the existing `faqs` array. This gives Google rich results for free.
 
-**New component: `src/components/landing/PaymentTrustStrip.tsx`**
+### 4. Improve Mobile Navbar CTA
+**File: `src/components/landing/Navbar.tsx`**
+Add a compact "Start Free" CTA button visible on mobile in the top bar (next to hamburger), so users don't need to open the menu to find signup.
 
-A slim horizontal bar placed directly after the Hero section showing payment partner logos (UPI, GPay, PhonePe, Paytm, Razorpay) with a label like "TRUSTED PAYMENT PARTNERS". Uses existing SVG/PNG assets from `public/icons/`. Bauhaus-style with border treatment, grayscale logos for subtlety.
+### 5. Landing Page WhatsApp Chat Widget
+**File: `src/components/landing/LandingWhatsApp.tsx`** (New)
+A floating WhatsApp button (bottom-right, above sticky CTA on mobile) linking to a pre-filled message like "Hi! I want to know more about ShopBanao". Hardcoded phone number for the ShopBanao support line.
 
-**Update `src/pages/Index.tsx`**: Insert `<PaymentTrustStrip />` between `<Hero />` and `<CommissionCalculator />`.
-
----
-
-### 2. Stronger Testimonials with Results & Specifics (Item 8)
-
-**Update `src/components/landing/Testimonials.tsx`**:
-
-- Add a bold metric callout to each testimonial (e.g., "Saved ₹15,000/month", "34 orders/week", "Setup in 15 min")
-- Make quotes more specific with revenue numbers and timeframes
-- Add star ratings (5 stars) for visual trust
-- Revised testimonials:
-  - Priya: "Saved ₹45,000 in 3 months" — commission savings story
-  - Rahul: "34 orders/week" — growth story with WhatsApp integration
-  - Anita: "₹15,000/month saved" — direct cost comparison story
-
----
-
-### 3. Urgency & Scarcity in Pricing Section (Item 10)
-
-**Update `src/components/landing/Pricing.tsx`**:
-
-- Add a countdown-style urgency banner at the top: "🔥 Launch Offer — Lock in these prices before they increase"
-- Add "Limited slots available" badge on the Growth plan
-- Add an annual pricing toggle showing savings (e.g., "Save 20% with annual")
-- Add a risk-reversal line under each CTA: "7-day free trial • Cancel anytime • No card required"
+**File: `src/pages/Index.tsx`** — Add `<LandingWhatsApp />`.
 
 ---
 
 ### Files Changed
 | File | Action |
 |------|--------|
-| `src/components/landing/PaymentTrustStrip.tsx` | Create |
-| `src/components/landing/Testimonials.tsx` | Edit |
-| `src/components/landing/Pricing.tsx` | Edit |
-| `src/pages/Index.tsx` | Edit (add PaymentTrustStrip) |
+| `src/components/landing/FinalCTA.tsx` | Edit |
+| `src/components/landing/ProblemAwareness.tsx` | Edit |
+| `src/components/landing/FAQ.tsx` | Edit |
+| `src/components/landing/Navbar.tsx` | Edit |
+| `src/components/landing/LandingWhatsApp.tsx` | Create |
+| `src/pages/Index.tsx` | Edit |
 
