@@ -74,7 +74,7 @@ function HorizontalScrollStore({
         ease: "none",
         scrollTrigger: {
           trigger: section,
-          start: "top 60%",
+          start: "top 50%",
           end: () => `+=${getScrollAmount()}`,
           pin: true,
           pinSpacing: true,
