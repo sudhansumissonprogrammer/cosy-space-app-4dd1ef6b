@@ -16,6 +16,7 @@ import Footer from "@/components/landing/Footer";
 import StickyMobileCTA from "@/components/landing/StickyMobileCTA";
 import LandingWhatsApp from "@/components/landing/LandingWhatsApp";
 import ExitIntentPopup from "@/components/landing/ExitIntentPopup";
+import LandingJsonLd from "@/components/landing/LandingJsonLd";
 
 const Index = () => {
   return (
