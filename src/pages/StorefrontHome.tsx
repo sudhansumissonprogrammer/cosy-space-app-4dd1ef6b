@@ -14,7 +14,7 @@ const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/Store
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import LazyRender from "@/components/storefront/LazyRender";
-import { useStoreJsonLd } from "@/hooks/useJsonLd";
+import { useStoreJsonLd, useProductListJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import SortDropdown from "@/components/storefront/SortDropdown";
