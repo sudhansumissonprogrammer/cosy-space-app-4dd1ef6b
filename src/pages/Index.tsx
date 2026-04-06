@@ -3,7 +3,7 @@ import Hero from "@/components/landing/Hero";
 import LiveStorePreview from "@/components/landing/LiveStorePreview";
 
 import ProblemAwareness from "@/components/landing/ProblemAwareness";
-import SolutionFlow from "@/components/landing/SolutionFlow";
+
 import TrustReasons from "@/components/landing/TrustReasons";
 import AfterYouStart from "@/components/landing/AfterYouStart";
 import StatsBar from "@/components/landing/StatsBar";
@@ -31,7 +31,7 @@ const Index = () => {
       <Hero />
       <LiveStorePreview />
       <ProblemAwareness />
-      <SolutionFlow />
+      
       <TrustReasons />
       <AfterYouStart />
       <StatsBar />
