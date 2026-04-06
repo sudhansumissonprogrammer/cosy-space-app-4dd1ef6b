@@ -74,7 +74,23 @@ export default function StoreSettings() {
 
   const { data: store, isLoading } = useStoreData(storeId);
 
+  // Fetch owner_email via secure RPC (column revoked from direct SELECT)
+  const { data: ownerEmailFromDb } = useQuery({
+    queryKey: ["store-public-email", storeId],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_store_public_email", { _store_id: storeId! });
+      return (data as string) || "";
+    },
+    enabled: !!storeId,
+  });
+
   useEffect(() => {
+    if (ownerEmailFromDb !== undefined) {
+      setOwnerEmail(ownerEmailFromDb);
+    }
+  }, [ownerEmailFromDb]);
+
+
     if (store) {
       setName(store.name);
       setDescription(store.description || "");
