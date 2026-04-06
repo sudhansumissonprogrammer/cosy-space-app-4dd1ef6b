@@ -450,12 +450,28 @@ export default function StoreOrders() {
           {/* ── MOBILE: Card list view ── */}
           {isMobile ? (
             <div className="space-y-2">
+              {/* Mobile select all */}
+              <div className="flex items-center gap-2 px-1">
+                <Checkbox
+                  checked={paginatedOrders.length > 0 && selectedOrders.size === paginatedOrders.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+                <span className="text-xs text-muted-foreground">Select all</span>
+              </div>
               {paginatedOrders.map((order: any) => (
-                <button
+                <div
                   key={order.id}
-                  onClick={() => setMobileDetailOrder(order)}
-                  className="w-full text-left rounded-xl border bg-card p-3.5 active:bg-accent/50 transition-colors"
+                  className="flex items-start gap-2 rounded-xl border bg-card p-3.5 transition-colors"
                 >
+                  <Checkbox
+                    checked={selectedOrders.has(order.id)}
+                    onCheckedChange={() => toggleOrderSelection(order.id)}
+                    className="mt-1 shrink-0"
+                  />
+                  <button
+                    onClick={() => setMobileDetailOrder(order)}
+                    className="flex-1 text-left active:bg-accent/50 transition-colors"
+                  >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-mono text-xs font-semibold text-foreground">{getOrderDisplayId(order)}</span>
