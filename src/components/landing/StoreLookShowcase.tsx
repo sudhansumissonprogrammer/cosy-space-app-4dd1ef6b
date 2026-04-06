@@ -67,19 +67,20 @@ function HorizontalScrollStore({
     if (!section || !track) return;
 
     const ctx = gsap.context(() => {
-      const getScrollAmount = () => Math.max(0, track.scrollWidth - window.innerWidth);
+      const getScrollAmount = () => track.scrollWidth - window.innerWidth;
 
       const tween = gsap.to(track, {
         x: () => -getScrollAmount(),
         ease: "none",
         scrollTrigger: {
           trigger: section,
-          start: "top 50%",
+          start: "top 10%",
           end: () => `+=${getScrollAmount()}`,
           pin: true,
           pinSpacing: true,
           scrub: 0.5,
           invalidateOnRefresh: true,
+          anticipatePin: 1,
         },
       });
 
@@ -135,7 +136,7 @@ function HorizontalScrollStore({
           >
             <div className="w-[160px] sm:w-[190px] lg:w-[220px]">
               <div className="relative bg-foreground rounded-[20px] sm:rounded-[24px] p-[4px] sm:p-[6px] shadow-xl">
-                
+                <div className="absolute top-[4px] sm:top-[6px] left-1/2 -translate-x-1/2 w-12 sm:w-16 h-3 sm:h-3.5 bg-foreground rounded-b-lg z-20" />
                 <div className="rounded-[16px] sm:rounded-[18px] overflow-hidden bg-background">
                   <img
                     src={screen.img}
