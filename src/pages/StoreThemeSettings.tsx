@@ -343,6 +343,7 @@ const THEMES = [
   { id: "theme-12", name: "Starter Classic", description: "Clean classic storefront with hero, carousel & product grid", available: true },
   { id: "theme-13", name: "Restaurant QR Menu", description: "WhatsApp-first QR ordering for restaurants & cafés — no checkout, just scan & order", available: true },
   { id: "theme-16", name: "Classic + Quick Buy", description: "Classic theme with phone-first Buy Now flow — collects number & auto-fills address", available: true },
+  { id: "theme-17", name: "Luxe Mobile", description: "Premium mobile-first with glassmorphism hero, pill categories & overlay product cards", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
