@@ -33,14 +33,14 @@ const SolutionFlow = () => {
         </div>
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <div className="bg-bauhaus-white border-2 md:border-4 border-foreground shadow-[4px_4px_0px_0px_hsl(var(--foreground))] md:shadow-bauhaus p-5 md:p-6">
-            <p className="text-lg md:text-xl font-black text-[#16a34a] uppercase tracking-wide">👉 Sab Kuch Automatic — Selling, Ordering, Tracking</p>
+            <p className="text-lg md:text-xl font-black text-[#16a34a] uppercase tracking-wide">👉 Fully Automated — Selling, Ordering & Tracking</p>
           </div>
           <p className="text-sm md:text-base text-muted-foreground font-medium leading-relaxed">
-            Aaj agar aapke <span className="font-black text-foreground">1000 customers</span> ho gaye… To agle mahine <span className="font-black text-foreground">10–15 orders daily</span> aa sakte hain repeat customers se.
+            Once you reach <span className="font-black text-foreground">1,000 customers</span>, expect <span className="font-black text-foreground">10–15 daily orders</span> from repeat buyers alone.
           </p>
           <div className="flex flex-col items-center gap-2 pt-4">
             <a href="/signup" className="inline-block bg-bauhaus-red text-bauhaus-white font-black text-base md:text-lg uppercase tracking-wider px-8 py-4 border-2 md:border-4 border-foreground shadow-[4px_4px_0px_0px_hsl(var(--foreground))] md:shadow-bauhaus hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_hsl(var(--foreground))] transition-all duration-200">
-              Create Your Store in 1 Minute
+              Create Your Store in 10 Minutes
             </a>
             <span className="text-xs md:text-sm text-muted-foreground font-semibold">7-day free trial • No setup cost</span>
           </div>
