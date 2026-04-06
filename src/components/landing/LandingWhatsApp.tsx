@@ -1,6 +1,6 @@
 import { MessageCircle } from "lucide-react";
 
-const PHONE = "919876543210";
+const PHONE = "919692282485";
 const MESSAGE = encodeURIComponent("Hi! I want to know more about ShopBanao");
 
 const LandingWhatsApp = () => (
