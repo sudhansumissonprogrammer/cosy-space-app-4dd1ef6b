@@ -243,7 +243,8 @@ function TrendingStrip({ products, slug, store }: { products: any[]; slug: strin
 
 /* ── Main Home Component ── */
 export default function StorefrontHomeV17() {
-  const { store, slug } = useOutletContext<{ store: StoreData; slug: string }>();
+  const store = useOutletContext<StoreData>();
+  const { slug } = useParams<{ slug: string }>();
   const themeConfig = useStorefrontThemeConfig(store?.id);
   const cardStyle = (themeConfig as any)?.product_card_style || "style-5";
 
