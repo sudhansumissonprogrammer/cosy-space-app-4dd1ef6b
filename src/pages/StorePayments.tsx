@@ -50,19 +50,26 @@ export default function StorePayments() {
   const { data: paymentConfig, isLoading: configLoading } = useQuery({
     queryKey: ["payment-config", storeId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("store_payment_config")
-        .select("*")
-        .eq("store_id", storeId!)
-        .maybeSingle();
-      if (error) throw error;
-      return data as {
+      const [configRes, secretRes] = await Promise.all([
+        (supabase as any)
+          .from("store_payment_config")
+          .select("id, store_id, payment_methods, razorpay_key_id, created_at, updated_at")
+          .eq("store_id", storeId!)
+          .maybeSingle(),
+        supabase.rpc("get_own_payment_secret", { _store_id: storeId! }),
+      ]);
+      if (configRes.error) throw configRes.error;
+      if (!configRes.data) return null;
+      return {
+        ...configRes.data,
+        razorpay_key_secret: (secretRes.data as string) || null,
+      } as {
         id: string;
         store_id: string;
         payment_methods: string[];
         razorpay_key_id: string | null;
         razorpay_key_secret: string | null;
-      } | null;
+      };
     },
     enabled: !!storeId,
   });
