@@ -1,4 +1,4 @@
-import { Store, Clock, Users, IndianRupee, TrendingDown, ShieldX } from "lucide-react";
+import { Store, Clock, TrendingDown, ShieldX } from "lucide-react";
 
 const problems = [
   { icon: Store, problem: "Shop sirf local area tak limited hai — bahar ka customer kabhi nahi aata.", solution: "Online store se poore India mein sell karo." },

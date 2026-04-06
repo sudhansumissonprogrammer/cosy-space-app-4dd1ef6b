@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
 const faqs = [
@@ -12,8 +12,31 @@ const faqs = [
   { q: "Can I migrate from another platform?", a: "Absolutely. We offer free migration support. Our team will help you move your products, customers, and orders seamlessly." },
 ];
 
+const FAQ_SCRIPT_ID = "faq-jsonld";
+
 const FAQ = () => {
   const [open, setOpen] = useState<number | null>(null);
+
+  useEffect(() => {
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqs.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    };
+    let el = document.getElementById(FAQ_SCRIPT_ID) as HTMLScriptElement | null;
+    if (!el) {
+      el = document.createElement("script");
+      el.id = FAQ_SCRIPT_ID;
+      el.type = "application/ld+json";
+      document.head.appendChild(el);
+    }
+    el.textContent = JSON.stringify(schema);
+    return () => { document.getElementById(FAQ_SCRIPT_ID)?.remove(); };
+  }, []);
 
   return (
     <section id="faq" className="border-b-4 border-foreground py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8 bg-bauhaus-canvas">

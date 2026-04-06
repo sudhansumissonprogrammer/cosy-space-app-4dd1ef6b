@@ -33,6 +33,7 @@ const Index = () => {
       <FinalCTA />
       <Footer />
       <StickyMobileCTA />
+      <LandingWhatsApp />
     </div>
   );
 };

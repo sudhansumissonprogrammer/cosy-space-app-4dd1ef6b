@@ -27,9 +27,12 @@ const Navbar = () => {
           <a href="/signup" className="bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-6 py-2.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Start Free</a>
         </div>
 
-        <button className="md:hidden p-2 border-2 border-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        <div className="flex md:hidden items-center gap-2">
+          <a href="/signup" className="bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs px-3 py-1.5 border-2 border-foreground shadow-bauhaus">Start Free</a>
+          <button className="p-2 border-2 border-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
+            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
 
       {mobileOpen && (
