@@ -2,9 +2,9 @@
  * Theme 17 Home — "Luxe Mobile" premium storefront with glassmorphism hero,
  * pill categories, wave dividers, trending strip, and style-5 product cards.
  */
-import { useState, useMemo, useRef, useEffect, useCallback, lazy, Suspense } from "react";
+import { useMemo, useRef, useEffect, lazy, Suspense } from "react";
 import { useOutletContext, Link } from "react-router-dom";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
@@ -20,10 +20,10 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
+import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
-import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 6;
 
@@ -51,12 +51,11 @@ function GlassmorphismHero({ store }: { store: StoreData }) {
     return store.mobile_hero_url ? [store.mobile_hero_url] : [];
   })();
 
-  const desktopBanner = store.banner_url;
+  const desktopImages = store.banner_url ? [store.banner_url] : [];
   const hasMobileHero = mobileHeroImages.length > 0;
-  const hasDesktopBanner = !!desktopBanner;
+  const hasDesktopBanner = desktopImages.length > 0;
 
   if (!hasMobileHero && !hasDesktopBanner) {
-    // Fallback: gradient hero with store name
     return (
       <section className="relative overflow-hidden" style={{ minHeight: "380px" }}>
         <div
@@ -94,16 +93,18 @@ function GlassmorphismHero({ store }: { store: StoreData }) {
 
   return (
     <section className="relative">
-      {/* Mobile hero */}
       {hasMobileHero && (
         <div className="block sm:hidden">
-          <StorefrontMobileHero store={store} />
+          <StorefrontMobileHero
+            mobileHeroUrl={store.mobile_hero_url}
+            mobileHeroImages={store.mobile_hero_images}
+            storeName={store.name}
+          />
         </div>
       )}
-      {/* Desktop banner */}
       {hasDesktopBanner && (
         <div className={hasMobileHero ? "hidden sm:block" : ""}>
-          <HeroBannerCarousel store={store} />
+          <HeroBannerCarousel images={desktopImages} storeName={store.name} />
         </div>
       )}
       {/* Floating store badge */}
@@ -247,59 +248,38 @@ export default function StorefrontHomeV17() {
   const cardStyle = (themeConfig as any)?.product_card_style || "style-5";
 
   // JSON-LD
-  useStoreJsonLd(store);
+  useStoreJsonLd({
+    storeName: store?.name || "",
+    storeSlug: store?.slug || "",
+    description: store?.description,
+    logo: store?.logo_url,
+    location: store?.location,
+    whatsappNumber: store?.whatsapp_number,
+    customDomain: store?.custom_domain,
+    instagramUrl: store?.instagram_url,
+    facebookUrl: store?.facebook_url,
+    city: store?.city,
+    state: store?.state,
+    businessHours: store?.business_hours,
+  });
 
   // Products
-  const {
-    data: productsData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useStorefrontProducts(store?.id);
-
-  const products = useMemo(
-    () => productsData?.pages?.flatMap((p) => p.items) || [],
-    [productsData]
-  );
+  const { products, isLoading } = useStorefrontProducts(store?.id);
 
   // Best sellers
   const { data: bestSellers = [] } = useBestSellingProducts(store?.id);
 
-  // Infinite scroll sentinel
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { rootMargin: "600px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
   // All product IDs for variant count provider
   const allProductIds = useMemo(() => {
-    const ids = products.map((p) => p.id);
-    bestSellers.forEach((p: any) => { if (!ids.includes(p.id)) ids.push(p.id); });
+    const ids = products.map((p: any) => p.id);
+    (bestSellers as any[]).forEach((p: any) => { if (!ids.includes(p.id)) ids.push(p.id); });
     return ids;
   }, [products, bestSellers]);
-
-  // Content ready event
-  useEffect(() => {
-    if (products.length > 0) {
-      window.dispatchEvent(new CustomEvent("storefront:content-ready"));
-    }
-  }, [products.length]);
 
   if (!store) return null;
 
   return (
-    <VariantCountProvider productIds={allProductIds} storeId={store.id}>
+    <VariantCountProvider productIds={allProductIds}>
       {/* 1. Glassmorphism Hero */}
       <GlassmorphismHero store={store} />
 
@@ -307,7 +287,7 @@ export default function StorefrontHomeV17() {
       <PillCategories storeId={store.id} slug={slug} />
 
       {/* 3. Best Sellers with wave divider */}
-      {bestSellers.length > 0 && (
+      {(bestSellers as any[]).length > 0 && (
         <div>
           <WaveDivider color="var(--storefront-primary, #1B1B3A)" />
           <section
@@ -326,36 +306,35 @@ export default function StorefrontHomeV17() {
               </Link>
             </div>
 
-            {/* Featured first item large + grid below */}
             <div className="space-y-4">
               {/* Large featured card */}
               <div className="overflow-hidden rounded-2xl" style={{ aspectRatio: "16/10" }}>
                 <Link
-                  to={storefrontPath(slug, `product/${bestSellers[0]?.slug || bestSellers[0]?.id}`)}
+                  to={storefrontPath(slug, `product/${(bestSellers as any[])[0]?.slug || (bestSellers as any[])[0]?.id}`)}
                   className="group relative block h-full"
                 >
                   <img
-                    src={splitImageUrls(bestSellers[0]?.image_url)[0] ? optimizeImageUrl(splitImageUrls(bestSellers[0]?.image_url)[0], 600) : "/placeholder.svg"}
-                    alt={bestSellers[0]?.name}
+                    src={splitImageUrls((bestSellers as any[])[0]?.image_url)[0] ? optimizeImageUrl(splitImageUrls((bestSellers as any[])[0]?.image_url)[0], 600) : "/placeholder.svg"}
+                    alt={(bestSellers as any[])[0]?.name}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4">
                     <h3 className="text-lg font-bold text-white" style={{ fontFamily: "'Alegreya SC', serif" }}>
-                      {bestSellers[0]?.name}
+                      {(bestSellers as any[])[0]?.name}
                     </h3>
                     <p className="text-sm font-semibold text-white/90">
                       {store.currency === "USD" ? "$" : "₹"}
-                      {(bestSellers[0]?.sale_price || bestSellers[0]?.price || 0).toLocaleString("en-IN")}
+                      {((bestSellers as any[])[0]?.sale_price || (bestSellers as any[])[0]?.price || 0).toLocaleString("en-IN")}
                     </p>
                   </div>
                 </Link>
               </div>
 
               {/* 2-col grid for rest */}
-              {bestSellers.length > 1 && (
+              {(bestSellers as any[]).length > 1 && (
                 <div className="grid grid-cols-2 gap-3">
-                  {bestSellers.slice(1, 5).map((p: any) => (
+                  {(bestSellers as any[]).slice(1, 5).map((p: any) => (
                     <UniversalProductCard
                       key={p.id}
                       product={p}
@@ -387,7 +366,7 @@ export default function StorefrontHomeV17() {
           All Products
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {products.slice(0, ABOVE_FOLD_COUNT).map((p) => (
+          {products.slice(0, ABOVE_FOLD_COUNT).map((p: any) => (
             <UniversalProductCard
               key={p.id}
               product={p}
@@ -397,7 +376,7 @@ export default function StorefrontHomeV17() {
               cardStyle={cardStyle}
             />
           ))}
-          {products.slice(ABOVE_FOLD_COUNT).map((p) => (
+          {products.slice(ABOVE_FOLD_COUNT).map((p: any) => (
             <UniversalProductCard
               key={p.id}
               product={p}
@@ -407,21 +386,11 @@ export default function StorefrontHomeV17() {
             />
           ))}
         </div>
-
-        {/* Loading / sentinel */}
-        <div ref={sentinelRef} className="py-4" />
-        {isFetchingNextPage && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <ProductCardSkeleton key={i} />
-            ))}
-          </div>
-        )}
       </section>
 
       {/* 6. Trust Strip */}
       <LazyRender rootMargin="200px">
-        <StorefrontTrustStrip />
+        <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
       </LazyRender>
 
       {/* 7. Instagram Section */}

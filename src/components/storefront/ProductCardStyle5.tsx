@@ -17,8 +17,8 @@ interface Props {
 
 export default function ProductCardStyle5({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { addToCart } = useCart();
-  const { isInWishlist, toggleWishlist } = useWishlist();
-  const wishlisted = isInWishlist(product.id);
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  const wishlisted = isWishlisted(product.id);
 
   const price = product.sale_price || product.price;
   const originalPrice = product.sale_price ? product.price : null;
@@ -45,8 +45,16 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
   const handleWishlist = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleWishlist(product.id);
-  }, [toggleWishlist, product.id]);
+    toggleWishlist({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      salePrice: product.sale_price ?? undefined,
+      image: images[0] || undefined,
+      slug: product.slug ?? undefined,
+      category: product.category ?? undefined,
+    });
+  }, [toggleWishlist, product, images]);
 
   const productUrl = storefrontPath(slug, `product/${product.slug || product.id}`);
 
