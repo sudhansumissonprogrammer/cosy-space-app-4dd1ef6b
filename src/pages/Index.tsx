@@ -13,7 +13,7 @@ import Pricing from "@/components/landing/Pricing";
 import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
-import StickyMobileCTA from "@/components/landing/StickyMobileCTA";
+
 import LandingWhatsApp from "@/components/landing/LandingWhatsApp";
 import ExitIntentPopup from "@/components/landing/ExitIntentPopup";
 import LandingJsonLd from "@/components/landing/LandingJsonLd";
@@ -37,7 +37,7 @@ const Index = () => {
       <FAQ />
       <FinalCTA />
       <Footer />
-      <StickyMobileCTA />
+      
       <LandingWhatsApp />
       <ExitIntentPopup />
     </div>
