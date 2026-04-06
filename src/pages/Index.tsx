@@ -1,22 +1,24 @@
+import { lazy, Suspense } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import PaymentTrustStrip from "@/components/landing/PaymentTrustStrip";
 import StatsBar from "@/components/landing/StatsBar";
-import ProblemAwareness from "@/components/landing/ProblemAwareness";
-import CommissionCalculator from "@/components/landing/CommissionCalculator";
-import WhoUses from "@/components/landing/WhoUses";
-import SolutionFlow from "@/components/landing/SolutionFlow";
-import StoreLookShowcase from "@/components/landing/StoreLookShowcase";
-import Testimonials from "@/components/landing/Testimonials";
-import ComparisonTable from "@/components/landing/ComparisonTable";
-import Pricing from "@/components/landing/Pricing";
-import FAQ from "@/components/landing/FAQ";
-import FinalCTA from "@/components/landing/FinalCTA";
-import Footer from "@/components/landing/Footer";
-
-import LandingWhatsApp from "@/components/landing/LandingWhatsApp";
-import ExitIntentPopup from "@/components/landing/ExitIntentPopup";
 import LandingJsonLd from "@/components/landing/LandingJsonLd";
+
+// Below-fold: lazy load to keep initial bundle small & fast
+const ProblemAwareness = lazy(() => import("@/components/landing/ProblemAwareness"));
+const CommissionCalculator = lazy(() => import("@/components/landing/CommissionCalculator"));
+const WhoUses = lazy(() => import("@/components/landing/WhoUses"));
+const SolutionFlow = lazy(() => import("@/components/landing/SolutionFlow"));
+const StoreLookShowcase = lazy(() => import("@/components/landing/StoreLookShowcase"));
+const Testimonials = lazy(() => import("@/components/landing/Testimonials"));
+const ComparisonTable = lazy(() => import("@/components/landing/ComparisonTable"));
+const Pricing = lazy(() => import("@/components/landing/Pricing"));
+const FAQ = lazy(() => import("@/components/landing/FAQ"));
+const FinalCTA = lazy(() => import("@/components/landing/FinalCTA"));
+const Footer = lazy(() => import("@/components/landing/Footer"));
+const LandingWhatsApp = lazy(() => import("@/components/landing/LandingWhatsApp"));
+const ExitIntentPopup = lazy(() => import("@/components/landing/ExitIntentPopup"));
 
 const Index = () => {
   return (
@@ -26,20 +28,21 @@ const Index = () => {
       <Hero />
       <PaymentTrustStrip />
       <StatsBar />
-      <ProblemAwareness />
-      <CommissionCalculator />
-      <WhoUses />
-      <SolutionFlow />
-      <StoreLookShowcase showOverlays={false} />
-      <Testimonials />
-      <ComparisonTable />
-      <Pricing />
-      <FAQ />
-      <FinalCTA />
-      <Footer />
-      
-      <LandingWhatsApp />
-      <ExitIntentPopup />
+      <Suspense fallback={null}>
+        <ProblemAwareness />
+        <CommissionCalculator />
+        <WhoUses />
+        <SolutionFlow />
+        <StoreLookShowcase showOverlays={false} />
+        <Testimonials />
+        <ComparisonTable />
+        <Pricing />
+        <FAQ />
+        <FinalCTA />
+        <Footer />
+        <LandingWhatsApp />
+        <ExitIntentPopup />
+      </Suspense>
     </div>
   );
 };
