@@ -109,10 +109,10 @@ function HorizontalScrollStore({
   }, []);
 
   return (
-    <div ref={sectionRef} className="relative overflow-hidden">
+    <div ref={sectionRef} className="relative overflow-visible">
       <div
         ref={trackRef}
-        className="flex items-center will-change-transform py-6"
+        className="flex items-center will-change-transform py-4"
         style={{ width: "max-content" }}
       >
         {/* Store label - compact */}
