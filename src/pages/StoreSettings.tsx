@@ -90,7 +90,7 @@ export default function StoreSettings() {
     }
   }, [ownerEmailFromDb]);
 
-
+  useEffect(() => {
     if (store) {
       setName(store.name);
       setDescription(store.description || "");
