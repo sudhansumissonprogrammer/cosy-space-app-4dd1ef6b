@@ -1,7 +1,9 @@
 import { useRef, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Printer, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OrderInvoiceProps {
   order: any;
@@ -11,6 +13,16 @@ interface OrderInvoiceProps {
 
 export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProps) {
   const printRef = useRef<HTMLDivElement>(null);
+
+  const { data: ownerEmail } = useQuery({
+    queryKey: ["store-public-email", store?.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
+      return (data as string) || "";
+    },
+    enabled: !!store?.id,
+    staleTime: 300000,
+  });
 
   const items = order.order_items || [];
   const currency = order.currency || store?.currency || "INR";
