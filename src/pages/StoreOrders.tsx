@@ -414,6 +414,29 @@ export default function StoreOrders() {
                 >
                   {bulkUpdateStatus.isPending ? "Updating..." : "Apply"}
                 </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive" className="h-8 text-xs gap-1">
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {selectedOrders.size} order{selectedOrders.size > 1 ? "s" : ""}?</AlertDialogTitle>
+                      <AlertDialogDescription>This action cannot be undone. All selected orders and their items will be permanently deleted.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => bulkDeleteOrders.mutate(Array.from(selectedOrders))}
+                      >
+                        {bulkDeleteOrders.isPending ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <button
                   onClick={() => setSelectedOrders(new Set())}
                   className="ml-auto text-xs text-muted-foreground hover:text-foreground"
