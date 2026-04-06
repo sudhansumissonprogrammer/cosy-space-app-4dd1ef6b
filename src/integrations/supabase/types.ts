@@ -2335,6 +2335,8 @@ export type Database = {
         Args: { _limit?: number; _product_id: string }
         Returns: string[]
       }
+      get_own_payment_secret: { Args: { _store_id: string }; Returns: string }
+      get_own_store_meta_token: { Args: { _store_id: string }; Returns: string }
       get_platform_config_public: {
         Args: never
         Returns: {

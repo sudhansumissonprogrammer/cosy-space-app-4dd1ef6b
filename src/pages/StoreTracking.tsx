@@ -43,12 +43,27 @@ export default function StoreTracking() {
     staleTime: 60000,
   });
 
+  // Fetch meta_access_token via secure RPC (column revoked from direct SELECT)
+  const { data: metaTokenFromDb } = useQuery({
+    queryKey: ["store-meta-token", storeId],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_own_store_meta_token", { _store_id: storeId! });
+      return (data as string) || "";
+    },
+    enabled: !!storeId,
+  });
+
   useEffect(() => {
     if (store) {
       setFacebookPixelId((store as any).facebook_pixel_id || "");
-      setMetaAccessToken((store as any).meta_access_token || "");
     }
   }, [store]);
+
+  useEffect(() => {
+    if (metaTokenFromDb !== undefined) {
+      setMetaAccessToken(metaTokenFromDb);
+    }
+  }, [metaTokenFromDb]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
