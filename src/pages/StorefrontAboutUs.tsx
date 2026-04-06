@@ -2,6 +2,7 @@ import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Instagram, Facebook, MessageCircle } from "lucide-react";
+import { useMemo } from "react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import CustomHtmlRenderer from "@/components/storefront/CustomHtmlRenderer";
 import type { StoreData } from "@/layouts/StorefrontLayout";
