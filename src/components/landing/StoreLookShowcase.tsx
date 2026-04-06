@@ -136,7 +136,7 @@ function HorizontalScrollStore({
           >
             <div className="w-[160px] sm:w-[190px] lg:w-[220px]">
               <div className="relative bg-foreground rounded-[20px] sm:rounded-[24px] p-[4px] sm:p-[6px] shadow-xl">
-                <div className="absolute top-[4px] sm:top-[6px] left-1/2 -translate-x-1/2 w-12 sm:w-16 h-3 sm:h-3.5 bg-foreground rounded-b-lg z-20" />
+                <div className="absolute top-[4px] sm:top-[6px] left-1/2 -translate-x-1/2 w-12 sm:w-16 h-3 sm:h-3.5 bg-foreground rounded-full z-20" />
                 <div className="rounded-[16px] sm:rounded-[18px] overflow-hidden bg-background">
                   <img
                     src={screen.img}
