@@ -43,6 +43,11 @@ export default function StorefrontHome() {
     location: store.location,
     whatsappNumber: store.whatsapp_number,
     customDomain: (store as any)?.custom_domain,
+    instagramUrl: (store as any)?.instagram_url,
+    facebookUrl: (store as any)?.facebook_url,
+    city: (store as any)?.city,
+    state: (store as any)?.state,
+    businessHours: (store as any)?.business_hours,
   });
 
   // Fetch initial products independently (shell no longer includes products)
