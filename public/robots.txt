@@ -14,7 +14,7 @@ User-agent: *
 Allow: /
 Disallow: /dashboard/
 Disallow: /admin/
-Disallow: /login
-Disallow: /signup
 Disallow: /checkout
 Disallow: /cart
+
+Sitemap: https://shopbanao.in/sitemap.xml
