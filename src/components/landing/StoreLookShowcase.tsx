@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -67,7 +67,6 @@ function HorizontalScrollStore({
     if (!section || !track) return;
 
     const ctx = gsap.context(() => {
-      // How far the track needs to travel
       const getScrollAmount = () => track.scrollWidth - window.innerWidth;
 
       const tween = gsap.to(track, {
@@ -75,21 +74,21 @@ function HorizontalScrollStore({
         ease: "none",
         scrollTrigger: {
           trigger: section,
-          start: "top top",
+          start: "top 10%",
           end: () => `+=${getScrollAmount()}`,
           pin: true,
-          scrub: 1,
+          pinSpacing: true,
+          scrub: 0.5,
           invalidateOnRefresh: true,
           anticipatePin: 1,
         },
       });
 
-      // Subtle scale animation on each card
       const cards = track.querySelectorAll(".phone-card");
       cards.forEach((card) => {
         gsap.fromTo(
           card,
-          { scale: 0.92, opacity: 0.6 },
+          { scale: 0.9, opacity: 0.5 },
           {
             scale: 1,
             opacity: 1,
@@ -97,8 +96,8 @@ function HorizontalScrollStore({
             scrollTrigger: {
               trigger: card,
               containerAnimation: tween,
-              start: "left 80%",
-              end: "left 40%",
+              start: "left 85%",
+              end: "left 50%",
               scrub: true,
             },
           }
@@ -111,41 +110,50 @@ function HorizontalScrollStore({
 
   return (
     <div ref={sectionRef} className="relative overflow-hidden">
-      {/* Horizontal track */}
       <div
         ref={trackRef}
-        className="flex items-center h-screen will-change-transform"
+        className="flex items-center will-change-transform py-6"
         style={{ width: "max-content" }}
       >
-        {/* Leading space with store header */}
-        <div className="flex-shrink-0 w-[50vw] sm:w-[40vw] lg:w-[30vw] h-full flex flex-col justify-center pl-5 sm:pl-8 lg:pl-12 pr-2">
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`w-4 h-4 ${store.color} border-2 border-foreground rotate-45`} />
-            <h3 className="font-black uppercase text-lg sm:text-2xl lg:text-3xl tracking-tight text-foreground">{store.name}</h3>
+        {/* Store label - compact */}
+        <div className="flex-shrink-0 flex flex-col justify-center pl-5 sm:pl-8 lg:pl-12 pr-4 sm:pr-6">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className={`w-3.5 h-3.5 ${store.color} border-2 border-foreground rotate-45`} />
+            <h3 className="font-black uppercase text-base sm:text-xl lg:text-2xl tracking-tight text-foreground">
+              {store.name}
+            </h3>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-2 border-foreground px-2 py-0.5 inline-block w-fit">{store.type}</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground border-2 border-foreground px-1.5 py-0.5 inline-block w-fit">
+            {store.type}
+          </span>
         </div>
 
-        {/* Phone cards */}
+        {/* Phone cards - tight spacing */}
         {store.screens.map((screen, i) => (
           <div
             key={screen.label}
-            className="phone-card flex-shrink-0 flex flex-col items-center justify-center px-2 sm:px-3 lg:px-5"
+            className="phone-card flex-shrink-0 flex flex-col items-center px-2 sm:px-3"
           >
-            <div className="relative w-[180px] sm:w-[210px] lg:w-[240px]">
-              <div className="bg-foreground rounded-[22px] sm:rounded-[26px] p-[5px] sm:p-[7px] shadow-2xl">
-                <div className="absolute top-[5px] sm:top-[7px] left-1/2 -translate-x-1/2 w-14 sm:w-18 h-3.5 sm:h-4 bg-foreground rounded-b-xl z-20" />
-                <div className="rounded-[17px] sm:rounded-[19px] overflow-hidden bg-background">
-                  <img src={screen.img} alt={`${store.name} - ${screen.label}`} className="w-full h-auto block" loading={storeIdx === 0 && i === 0 ? "eager" : "lazy"} />
+            <div className="w-[160px] sm:w-[190px] lg:w-[220px]">
+              <div className="bg-foreground rounded-[20px] sm:rounded-[24px] p-[4px] sm:p-[6px] shadow-xl">
+                <div className="absolute top-[4px] sm:top-[6px] left-1/2 -translate-x-1/2 w-12 sm:w-16 h-3 sm:h-3.5 bg-foreground rounded-b-lg z-20" />
+                <div className="rounded-[16px] sm:rounded-[18px] overflow-hidden bg-background relative">
+                  <img
+                    src={screen.img}
+                    alt={`${store.name} - ${screen.label}`}
+                    className="w-full h-auto block"
+                    loading={storeIdx === 0 && i === 0 ? "eager" : "lazy"}
+                  />
                 </div>
               </div>
             </div>
-            <span className="mt-3 font-bold uppercase tracking-wider text-[10px] sm:text-xs text-foreground">{screen.label}</span>
+            <span className="mt-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-foreground">
+              {screen.label}
+            </span>
           </div>
         ))}
 
-        {/* Trailing space */}
-        <div className="flex-shrink-0 w-[10vw]" />
+        <div className="flex-shrink-0 w-4" />
       </div>
     </div>
   );
@@ -174,24 +182,22 @@ const StoreLookShowcase = ({
         }}
       />
       {/* Section header */}
-      <div className="text-center pt-14 sm:pt-20 lg:pt-24 pb-4 sm:pb-6 px-5 sm:px-8 relative z-10">
+      <div className="text-center pt-10 sm:pt-14 lg:pt-20 pb-2 sm:pb-4 px-5 sm:px-8 relative z-10">
         <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">
           Mobile Optimized
         </span>
-        <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-6xl tracking-tighter leading-[0.9] text-foreground">
+        <h2 className="font-black uppercase text-2xl sm:text-4xl lg:text-5xl tracking-tighter leading-[0.9] text-foreground">
           How Your Store
           <br />
           <span className="text-bauhaus-blue font-['Alegreya_SC',serif] italic">
             Actually Looks
           </span>
         </h2>
-        <p className="mt-4 text-sm sm:text-base text-muted-foreground font-medium max-w-xl mx-auto">
-          Beautiful, fast, mobile-first stores that your customers will love.
-          Every page is optimized for conversions.
+        <p className="mt-3 text-sm sm:text-base text-muted-foreground font-medium max-w-xl mx-auto">
+          Beautiful, fast, mobile-first stores your customers will love.
         </p>
       </div>
 
-      {/* Horizontal scroll sections */}
       <div className="relative z-10">
         {displayStores.map((store, storeIdx) => (
           <HorizontalScrollStore
