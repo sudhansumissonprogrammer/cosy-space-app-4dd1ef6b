@@ -1,4 +1,5 @@
 import { Check, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const rows = [
   { feature: "Monthly cost", shopbanao: "₹499–₹2,499", shopify: "₹1,500–₹20,000", dukaan: "₹499–₹2,999", whatsapp: "Free but chaotic", shopbanaoType: "neutral", shopifyType: "bad", dukaanType: "neutral", whatsappType: "bad" },
@@ -22,6 +23,8 @@ const CellContent = ({ value, type }: { value: string; type: string }) => {
 };
 
 const ComparisonTable = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="border-b-4 border-foreground py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -54,7 +57,23 @@ const ComparisonTable = () => {
             </div>
           ))}
         </div>
-        <p className="text-center text-muted-foreground text-xs mt-4">Prices and features as of 2024. ShopBanao charges 0% commission on all plans, always.</p>
+        <p className="text-center text-muted-foreground text-xs mt-4">Prices and features as of 2025. ShopBanao charges 0% commission on all plans, always.</p>
+
+        {/* Mid-funnel CTA */}
+        <div className="mt-8 sm:mt-12 text-center border-2 sm:border-4 border-foreground bg-bauhaus-blue/5 p-6 sm:p-10 shadow-bauhaus">
+          <h3 className="font-black uppercase text-xl sm:text-2xl tracking-tight text-foreground mb-2">
+            Ready to Switch?
+          </h3>
+          <p className="text-muted-foreground font-medium text-sm mb-5 max-w-md mx-auto">
+            Join hundreds of Indian sellers who moved to ShopBanao — zero commission, live in 10 minutes.
+          </p>
+          <button
+            onClick={() => navigate("/signup")}
+            className="bg-bauhaus-red text-bauhaus-white font-black uppercase tracking-wider text-sm px-8 py-3.5 border-3 border-foreground shadow-[4px_4px_0px_0px_hsl(var(--foreground))] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all duration-150"
+          >
+            Start Free Trial →
+          </button>
+        </div>
       </div>
     </section>
   );

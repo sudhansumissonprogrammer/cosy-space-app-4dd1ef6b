@@ -1,10 +1,10 @@
 import { Store, Clock, TrendingDown, ShieldX } from "lucide-react";
 
 const problems = [
-  { icon: Store, problem: "Shop sirf local area tak limited hai — bahar ka customer kabhi nahi aata.", solution: "Online store se poore India mein sell karo." },
-  { icon: Clock, problem: "Shop band to sales band — raat mein koi order nahi aata.", solution: "24/7 online store — raat mein bhi orders aate hain." },
-  { icon: TrendingDown, problem: "Competitor online bech raha hai, aapke customers uske paas ja rahe hain.", solution: "Apna online store banao — customers ko kho mat do." },
-  { icon: ShieldX, problem: "Social media pe products dalte ho lekin trust nahi banta — log fake samajhte hain.", solution: "Professional store se brand trust aur credibility milti hai." },
+  { icon: Store, problem: "Your shop only serves the local area — customers beyond your street never find you.", solution: "Go online and sell to customers across India, 24/7." },
+  { icon: Clock, problem: "When the shop is closed, sales stop — no orders come in overnight or on holidays.", solution: "An online store never sleeps — orders flow in round the clock." },
+  { icon: TrendingDown, problem: "Your competitors are already selling online — your customers are switching to them.", solution: "Launch your own store before you lose more business." },
+  { icon: ShieldX, problem: "Posting on social media doesn't build trust — people assume it's not a real brand.", solution: "A professional online store gives you instant credibility." },
 ];
 
 const ProblemAwareness = () => {

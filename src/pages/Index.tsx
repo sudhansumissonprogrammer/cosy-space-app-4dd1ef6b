@@ -1,12 +1,13 @@
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import PaymentTrustStrip from "@/components/landing/PaymentTrustStrip";
-import CommissionCalculator from "@/components/landing/CommissionCalculator";
+import StatsBar from "@/components/landing/StatsBar";
 import ProblemAwareness from "@/components/landing/ProblemAwareness";
+import CommissionCalculator from "@/components/landing/CommissionCalculator";
 import WhoUses from "@/components/landing/WhoUses";
 import SolutionFlow from "@/components/landing/SolutionFlow";
-import Testimonials from "@/components/landing/Testimonials";
 import StoreLookShowcase from "@/components/landing/StoreLookShowcase";
+import Testimonials from "@/components/landing/Testimonials";
 import ComparisonTable from "@/components/landing/ComparisonTable";
 import Pricing from "@/components/landing/Pricing";
 import FAQ from "@/components/landing/FAQ";
@@ -14,6 +15,7 @@ import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 import StickyMobileCTA from "@/components/landing/StickyMobileCTA";
 import LandingWhatsApp from "@/components/landing/LandingWhatsApp";
+import ExitIntentPopup from "@/components/landing/ExitIntentPopup";
 
 const Index = () => {
   return (
@@ -21,12 +23,13 @@ const Index = () => {
       <Navbar />
       <Hero />
       <PaymentTrustStrip />
-      <CommissionCalculator />
+      <StatsBar />
       <ProblemAwareness />
+      <CommissionCalculator />
       <WhoUses />
       <SolutionFlow />
-      <Testimonials />
       <StoreLookShowcase showOverlays={false} />
+      <Testimonials />
       <ComparisonTable />
       <Pricing />
       <FAQ />
@@ -34,6 +37,7 @@ const Index = () => {
       <Footer />
       <StickyMobileCTA />
       <LandingWhatsApp />
+      <ExitIntentPopup />
     </div>
   );
 };
