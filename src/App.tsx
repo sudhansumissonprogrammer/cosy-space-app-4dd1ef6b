@@ -298,6 +298,7 @@ async function prefetchTargetPageData(
   path: string
 ) {
   const { supabase } = await import("@/integrations/supabase/client");
+  const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
   // Product page: /product/:slug
   const productMatch = path.match(/\/product\/([^/]+)/);
@@ -315,6 +316,7 @@ async function prefetchTargetPageData(
             .eq("is_active", true)
             .maybeSingle();
           if (!prod && !error) {
+            if (!isUUID(productSlug)) return prod;
             const result = await supabase
               .from("products")
               .select("*")
