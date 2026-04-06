@@ -268,7 +268,7 @@ export default function StorefrontHomeV17() {
   const { products, isLoading } = useStorefrontProducts(store?.id);
 
   // Best sellers
-  const { data: bestSellers = [] } = useBestSellingProducts(store?.id);
+  const { products: bestSellers } = useBestSellingProducts(store?.id);
 
   // All product IDs for variant count provider
   const allProductIds = useMemo(() => {
