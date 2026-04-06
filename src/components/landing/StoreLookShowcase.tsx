@@ -118,56 +118,34 @@ function HorizontalScrollStore({
         style={{ width: "max-content" }}
       >
         {/* Leading space with store header */}
-        <div className="flex-shrink-0 w-screen h-full flex flex-col justify-center px-6 sm:px-10 lg:px-16">
-          <div className="max-w-lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className={`w-5 h-5 ${store.color} border-2 border-foreground rotate-45`}
-              />
-              <h3 className="font-black uppercase text-2xl sm:text-3xl lg:text-4xl tracking-tight text-foreground">
-                {store.name}
-              </h3>
-            </div>
-            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-2 border-foreground px-3 py-1 inline-block">
-              {store.type}
-            </span>
-            <p className="mt-4 text-sm sm:text-base text-muted-foreground font-medium">
-              Scroll to explore every page of this store →
-            </p>
+        <div className="flex-shrink-0 w-[50vw] sm:w-[40vw] lg:w-[30vw] h-full flex flex-col justify-center pl-5 sm:pl-8 lg:pl-12 pr-2">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-4 h-4 ${store.color} border-2 border-foreground rotate-45`} />
+            <h3 className="font-black uppercase text-lg sm:text-2xl lg:text-3xl tracking-tight text-foreground">{store.name}</h3>
           </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-2 border-foreground px-2 py-0.5 inline-block w-fit">{store.type}</span>
         </div>
 
         {/* Phone cards */}
         {store.screens.map((screen, i) => (
           <div
             key={screen.label}
-            className="phone-card flex-shrink-0 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8"
+            className="phone-card flex-shrink-0 flex flex-col items-center justify-center px-2 sm:px-3 lg:px-5"
           >
-            <div className="relative w-[220px] sm:w-[250px] lg:w-[280px]">
-              <div className="bg-foreground rounded-[28px] sm:rounded-[32px] p-[7px] sm:p-[8px] shadow-2xl">
-                {/* Notch */}
-                <div className="absolute top-[7px] sm:top-[8px] left-1/2 -translate-x-1/2 w-20 sm:w-24 h-5 sm:h-6 bg-foreground rounded-b-2xl z-20" />
-                {/* Screen */}
-                <div className="rounded-[21px] sm:rounded-[24px] overflow-hidden bg-background">
-                  <img
-                    src={screen.img}
-                    alt={`${store.name} - ${screen.label}`}
-                    className="w-full h-auto block"
-                    loading={storeIdx === 0 && i === 0 ? "eager" : "lazy"}
-                  />
+            <div className="relative w-[180px] sm:w-[210px] lg:w-[240px]">
+              <div className="bg-foreground rounded-[22px] sm:rounded-[26px] p-[5px] sm:p-[7px] shadow-2xl">
+                <div className="absolute top-[5px] sm:top-[7px] left-1/2 -translate-x-1/2 w-14 sm:w-18 h-3.5 sm:h-4 bg-foreground rounded-b-xl z-20" />
+                <div className="rounded-[17px] sm:rounded-[19px] overflow-hidden bg-background">
+                  <img src={screen.img} alt={`${store.name} - ${screen.label}`} className="w-full h-auto block" loading={storeIdx === 0 && i === 0 ? "eager" : "lazy"} />
                 </div>
               </div>
-              {/* Reflection glow */}
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-foreground/10 rounded-full blur-xl" />
             </div>
-            <span className="mt-5 font-bold uppercase tracking-[0.2em] text-xs sm:text-sm text-foreground">
-              {screen.label}
-            </span>
+            <span className="mt-3 font-bold uppercase tracking-wider text-[10px] sm:text-xs text-foreground">{screen.label}</span>
           </div>
         ))}
 
         {/* Trailing space */}
-        <div className="flex-shrink-0 w-[20vw]" />
+        <div className="flex-shrink-0 w-[10vw]" />
       </div>
     </div>
   );
