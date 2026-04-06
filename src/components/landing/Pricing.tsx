@@ -36,8 +36,8 @@ const Pricing = () => {
           {/* Annual toggle */}
           <div className="flex items-center justify-center gap-3 mt-6">
             <span className={`font-bold text-sm ${!annual ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
-            <button onClick={() => setAnnual(!annual)} className={`relative w-14 h-7 rounded-full border-2 border-foreground transition-colors ${annual ? "bg-bauhaus-blue" : "bg-muted"}`}>
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-bauhaus-white border-2 border-foreground transition-transform ${annual ? "translate-x-7" : "translate-x-0.5"}`} />
+            <button onClick={() => setAnnual(!annual)} aria-label="Toggle annual billing" className={`relative inline-flex h-8 w-[52px] items-center rounded-full border-2 border-foreground transition-colors duration-300 ${annual ? "bg-bauhaus-blue" : "bg-muted"}`}>
+              <span className={`inline-block h-5 w-5 rounded-full bg-bauhaus-white border-2 border-foreground transition-transform duration-300 ${annual ? "translate-x-[26px]" : "translate-x-[4px]"}`} />
             </button>
             <span className={`font-bold text-sm ${annual ? "text-foreground" : "text-muted-foreground"}`}>Annual</span>
             {annual && <span className="bg-bauhaus-blue text-primary-foreground font-bold text-xs px-2 py-1 border border-foreground">Save 20%</span>}
@@ -56,7 +56,12 @@ const Pricing = () => {
                   <div className={`font-black text-4xl ${colorMap[p.color].text} mt-2`}>
                     {fmt(price)}<span className="font-medium text-base opacity-80">{period}</span>
                   </div>
-                  {annual && <div className={`font-medium text-xs ${colorMap[p.color].text} opacity-70 line-through mt-1`}>{fmt(p.price)}/month</div>}
+                  {annual && (
+                    <div className="mt-1 space-y-0.5">
+                      <div className={`font-medium text-xs ${colorMap[p.color].text} opacity-70 line-through`}>{fmt(p.price)}/month</div>
+                      <div className={`font-bold text-sm ${colorMap[p.color].text} opacity-90`}>{fmt(price * 12)}/year</div>
+                    </div>
+                  )}
                   <p className={`font-medium text-sm ${colorMap[p.color].text} opacity-80 mt-1`}>{p.desc}</p>
                 </div>
                 <div className="p-6 space-y-3">
