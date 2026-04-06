@@ -273,7 +273,7 @@ export default function StorefrontHomeV17() {
   // All product IDs for variant count provider
   const allProductIds = useMemo(() => {
     const ids = products.map((p: any) => p.id);
-    (bestSellers as any[]).forEach((p: any) => { if (!ids.includes(p.id)) ids.push(p.id); });
+    bestSellers.forEach((p: any) => { if (!ids.includes(p.id)) ids.push(p.id); });
     return ids;
   }, [products, bestSellers]);
 
@@ -288,7 +288,7 @@ export default function StorefrontHomeV17() {
       <PillCategories storeId={store.id} slug={slug} />
 
       {/* 3. Best Sellers with wave divider */}
-      {(bestSellers as any[]).length > 0 && (
+      {bestSellers.length > 0 && (
         <div>
           <WaveDivider color="var(--storefront-primary, #1B1B3A)" />
           <section
@@ -311,31 +311,31 @@ export default function StorefrontHomeV17() {
               {/* Large featured card */}
               <div className="overflow-hidden rounded-2xl" style={{ aspectRatio: "16/10" }}>
                 <Link
-                  to={storefrontPath(slug, `product/${(bestSellers as any[])[0]?.slug || (bestSellers as any[])[0]?.id}`)}
+                  to={storefrontPath(slug, `product/${bestSellers[0]?.slug || bestSellers[0]?.id}`)}
                   className="group relative block h-full"
                 >
                   <img
-                    src={splitImageUrls((bestSellers as any[])[0]?.image_url)[0] ? optimizeImageUrl(splitImageUrls((bestSellers as any[])[0]?.image_url)[0], 600) : "/placeholder.svg"}
-                    alt={(bestSellers as any[])[0]?.name}
+                    src={splitImageUrls(bestSellers[0]?.image_url)[0] ? optimizeImageUrl(splitImageUrls(bestSellers[0]?.image_url)[0], 600) : "/placeholder.svg"}
+                    alt={bestSellers[0]?.name}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4">
                     <h3 className="text-lg font-bold text-white" style={{ fontFamily: "'Alegreya SC', serif" }}>
-                      {(bestSellers as any[])[0]?.name}
+                      {bestSellers[0]?.name}
                     </h3>
                     <p className="text-sm font-semibold text-white/90">
                       {store.currency === "USD" ? "$" : "₹"}
-                      {((bestSellers as any[])[0]?.sale_price || (bestSellers as any[])[0]?.price || 0).toLocaleString("en-IN")}
+                      {(bestSellers[0]?.sale_price || bestSellers[0]?.price || 0).toLocaleString("en-IN")}
                     </p>
                   </div>
                 </Link>
               </div>
 
               {/* 2-col grid for rest */}
-              {(bestSellers as any[]).length > 1 && (
+              {bestSellers.length > 1 && (
                 <div className="grid grid-cols-2 gap-3">
-                  {(bestSellers as any[]).slice(1, 5).map((p: any) => (
+                  {bestSellers.slice(1, 5).map((p: any) => (
                     <UniversalProductCard
                       key={p.id}
                       product={p}
