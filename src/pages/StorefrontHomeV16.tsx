@@ -343,11 +343,12 @@ export default function StorefrontHomeV16() {
                       ))}
                     </div>
                   )}
-                  <div ref={bsSentinelRef} className="flex justify-center py-4">
-                    {bsIsFetching && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-                  </div>
                 </section>
               )}
+              {/* Infinite scroll sentinel — always active for both carousel & grid */}
+              <div ref={bsSentinelRef} className="flex justify-center py-4">
+                {bsIsFetching && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+              </div>
             </Suspense>
           )}
 
