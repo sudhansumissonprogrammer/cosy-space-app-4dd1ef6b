@@ -96,8 +96,8 @@ function HorizontalScrollStore({
             scrollTrigger: {
               trigger: card,
               containerAnimation: tween,
-              start: "left 85%",
-              end: "left 50%",
+              start: "left 70%",
+              end: "left 40%",
               scrub: true,
             },
           }
