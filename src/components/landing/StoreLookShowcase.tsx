@@ -118,23 +118,12 @@ function HorizontalScrollStore({
         style={{ width: "max-content" }}
       >
         {/* Leading space with store header */}
-        <div className="flex-shrink-0 w-screen h-full flex flex-col justify-center px-6 sm:px-10 lg:px-16">
-          <div className="max-w-lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className={`w-5 h-5 ${store.color} border-2 border-foreground rotate-45`}
-              />
-              <h3 className="font-black uppercase text-2xl sm:text-3xl lg:text-4xl tracking-tight text-foreground">
-                {store.name}
-              </h3>
-            </div>
-            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-2 border-foreground px-3 py-1 inline-block">
-              {store.type}
-            </span>
-            <p className="mt-4 text-sm sm:text-base text-muted-foreground font-medium">
-              Scroll to explore every page of this store →
-            </p>
+        <div className="flex-shrink-0 w-[50vw] sm:w-[40vw] lg:w-[30vw] h-full flex flex-col justify-center pl-5 sm:pl-8 lg:pl-12 pr-2">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-4 h-4 ${store.color} border-2 border-foreground rotate-45`} />
+            <h3 className="font-black uppercase text-lg sm:text-2xl lg:text-3xl tracking-tight text-foreground">{store.name}</h3>
           </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-2 border-foreground px-2 py-0.5 inline-block w-fit">{store.type}</span>
         </div>
 
         {/* Phone cards */}
