@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +37,7 @@ interface UserStoreRow {
 
 export default function AdminUsersStores() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const { data: rows, isLoading } = useQuery({
@@ -222,7 +224,7 @@ export default function AdminUsersStores() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.open(`/dashboard/stores/${row.store_slug}/products`, "_blank")}
+                            onClick={() => navigate(`/dashboard/stores/${row.store_slug}/products`)}
                             title="Open store dashboard"
                           >
                             <ExternalLink className="mr-1 h-3 w-3" /> Dashboard
