@@ -7,11 +7,13 @@ const ExitIntentPopup = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (sessionStorage.getItem("exit_shown")) return;
+    const cooldownUntil = sessionStorage.getItem("exit_cooldown");
+    if (cooldownUntil && Date.now() < Number(cooldownUntil)) return;
 
     const handleMouseLeave = (e: MouseEvent) => {
+      const cooldown = sessionStorage.getItem("exit_cooldown");
+      if (cooldown && Date.now() < Number(cooldown)) return;
       if (e.clientY <= 0) {
-        sessionStorage.setItem("exit_shown", "1");
         setShow(true);
       }
     };
@@ -26,7 +28,10 @@ const ExitIntentPopup = () => {
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative bg-bauhaus-white border-4 border-foreground shadow-bauhaus-lg max-w-md w-[92%] p-8 text-center">
         <button
-          onClick={() => setShow(false)}
+          onClick={() => {
+            sessionStorage.setItem("exit_cooldown", String(Date.now() + 2 * 60 * 1000));
+            setShow(false);
+          }}
           className="absolute top-3 right-3 text-foreground hover:opacity-70"
           aria-label="Close"
         >
