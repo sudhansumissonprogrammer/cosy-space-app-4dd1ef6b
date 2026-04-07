@@ -4,19 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Centralized hook for fetching store data by storeId.
- * Uses a shared query key ["store", storeId] so all pages
- * that need store data share the same cached result.
- * 
- * Cache is pre-seeded by useMyStore() in DashboardLayout,
- * so most child pages get an instant cache hit.
- *
- * Uses SELECT * because child pages (StoreSettings, StoreDomain, etc.)
- * need varying sets of columns.
- *
- * staleTime is set high (10 min) since store settings rarely change
- * and are invalidated on mutation.
+ * Supports admin mode where owner_id check is skipped.
  */
-export function useStoreData(storeId?: string) {
+export function useStoreData(storeId?: string, isAdminView?: boolean) {
   const { user } = useAuth();
 
   return useQuery({
@@ -24,6 +14,16 @@ export function useStoreData(storeId?: string) {
     staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     queryFn: async () => {
+      if (isAdminView) {
+        // Admin viewing — fetch without owner filter using slug lookup
+        // We already have storeId from admin RPC, so query by id
+        const { data, error } = await supabase.rpc("get_store_as_admin", {
+          _slug: storeId!, // We'll pass slug here
+        });
+        if (error) throw error;
+        return data as any;
+      }
+
       const { data, error } = await supabase
         .from("stores")
         .select("*")
@@ -33,6 +33,6 @@ export function useStoreData(storeId?: string) {
       if (error) throw error;
       return data;
     },
-    enabled: !!storeId && !!user,
+    enabled: !!storeId && (isAdminView || !!user),
   });
 }

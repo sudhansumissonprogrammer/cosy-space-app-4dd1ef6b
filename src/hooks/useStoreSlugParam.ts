@@ -1,24 +1,31 @@
 import { useParams } from "react-router-dom";
 import { useMyStore } from "@/hooks/useMyStore";
+import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 
 /**
  * Resolves the :storeSlug URL param to a store UUID.
- * Uses the cached my-store data (already loaded by DashboardLayout)
- * so there's zero extra network requests.
- *
- * Returns { storeId, storeSlug, store } for compatibility with
- * all existing dashboard pages that previously used storeId from params.
+ * Supports admin viewing other stores via admin RPC.
  */
 export function useStoreSlugParam() {
   const { storeSlug } = useParams<{ storeSlug: string }>();
-  const { data: store } = useMyStore();
+  const { data: ownStore } = useMyStore();
+  const { isAdminView, adminStore } = useAdminStoreView(ownStore);
 
-  // Match by slug first, then fall back to UUID match for backward compatibility
-  const storeId = store?.slug === storeSlug
-    ? store.id
-    : store?.id === storeSlug
-      ? store.id
+  if (isAdminView && adminStore) {
+    return {
+      storeId: adminStore.id as string,
+      storeSlug: adminStore.slug as string,
+      store: adminStore,
+      isAdminView: true,
+    };
+  }
+
+  // Normal flow — match by slug first, then fall back to UUID
+  const storeId = ownStore?.slug === storeSlug
+    ? ownStore.id
+    : ownStore?.id === storeSlug
+      ? ownStore.id
       : undefined;
 
-  return { storeId, storeSlug: store?.slug || storeSlug, store };
+  return { storeId, storeSlug: ownStore?.slug || storeSlug, store: ownStore, isAdminView: false };
 }
