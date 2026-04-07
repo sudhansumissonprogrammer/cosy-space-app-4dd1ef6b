@@ -13,7 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Users } from "lucide-react";
+import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Users, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { TableSkeleton } from "@/components/admin/AdminSkeletons";
 
@@ -217,6 +217,18 @@ export default function AdminUsersStores() {
                     {/* Actions */}
                     <TableCell>
                       <div className="flex gap-1">
+                        {/* Open store dashboard */}
+                        {row.store_id && row.store_slug && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`/dashboard/stores/${row.store_slug}/products`, "_blank")}
+                            title="Open store dashboard"
+                          >
+                            <ExternalLink className="mr-1 h-3 w-3" /> Dashboard
+                          </Button>
+                        )}
+
                         {/* Block/Unblock user */}
                         {row.is_blocked ? (
                           <Button variant="outline" size="sm" onClick={() => toggleBlock.mutate({ userId: row.user_id, block: false })}>
