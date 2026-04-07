@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export default function StoreTracking() {
-  const { storeId } = useStoreSlugParam();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
