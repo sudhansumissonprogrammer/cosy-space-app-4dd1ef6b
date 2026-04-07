@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Heart, ShoppingCart, Tag } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl, getImageSrcSet, splitImageUrls, PRODUCT_CARD_SIZES } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet, resolveProductImages, PRODUCT_CARD_SIZES } from "@/lib/imageOptimize";
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
@@ -32,7 +32,7 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
     >
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4", borderRadius: "12px" }}>
         {(() => {
-          const images = splitImageUrls(product.image_url);
+          const images = resolveProductImages(product);
           if (images.length === 0) {
             return (
               <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)08" }}>

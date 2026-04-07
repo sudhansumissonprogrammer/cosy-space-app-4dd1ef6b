@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import type { Tables } from "@/integrations/supabase/types";
-import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
+import { optimizeImageUrl, resolveProductImages } from "@/lib/imageOptimize";
 import { storefrontPath } from "@/lib/subdomain";
 
 interface Props {
@@ -26,7 +26,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
   const discountPercent = hasDiscount ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
   const currency = store.currency === "USD" ? "$" : "₹";
 
-  const images = splitImageUrls(product.image_url);
+  const images = resolveProductImages(product);
   const imgSrc = images[0] ? optimizeImageUrl(images[0], 480) : "/placeholder.svg";
 
   const handleAddToCart = useCallback((e: React.MouseEvent) => {

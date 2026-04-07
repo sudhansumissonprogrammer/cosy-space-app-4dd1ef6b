@@ -129,6 +129,24 @@ export function splitImageUrls(url: string | null | undefined): string[] {
 }
 
 /**
+ * Resolve all available images for a product, combining image_url and product_images.
+ * Falls back to product_images if image_url is empty.
+ */
+export function resolveProductImages(product: any): string[] {
+  const fromUrl = splitImageUrls(product?.image_url);
+  if (fromUrl.length > 0) return fromUrl;
+  // Fallback to product_images array from RPC data
+  const piArr = product?.product_images;
+  if (Array.isArray(piArr) && piArr.length > 0) {
+    return piArr
+      .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
+      .map((pi: any) => pi.image_url)
+      .filter((u: string) => !!u);
+  }
+  return [];
+}
+
+/**
  * Get a srcSet string for responsive images.
  *
  * For pipeline-optimized images: uses actual stored variant files (200w, 400w, 800w).

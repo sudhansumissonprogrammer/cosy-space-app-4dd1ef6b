@@ -107,7 +107,7 @@ export default function CheckoutAwareLayout({
   const LogoElement = (
     <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0" aria-label={`${store.name} home`}>
       {store.logo_url ? (
-        <img src={store.logo_url} alt={store.name} width={160} height={48} className="h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[160px] object-contain" loading="eager" decoding="sync" fetchPriority="high" />
+        <img src={store.logo_url} alt={store.name} width={200} height={56} className="h-12 sm:h-14 w-auto max-w-[160px] sm:max-w-[200px] object-contain" loading="eager" decoding="sync" fetchPriority="high" />
       ) : (
         <StoreTextLogo storeName={store.name} size="text-lg" />
       )}
