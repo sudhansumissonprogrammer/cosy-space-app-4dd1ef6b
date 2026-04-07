@@ -263,53 +263,59 @@ export default function DashboardLayout() {
   // Desktop layout with sidebar
   if (!isMobile) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
-          <AppSidebar />
-          <div className="flex-1 flex flex-col min-w-0">
-            {/* PWA install prompts temporarily disabled */}
-            <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger />
-                <span className="text-sm font-semibold text-foreground">
-                  {store?.name || "Dashboard"}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                {store?.slug && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 gap-1.5 text-xs"
-                    onClick={handlePurgeCache}
-                    disabled={isPurging}
-                    title="Purge edge cache — instantly refresh your live store"
-                  >
-                    <RefreshCw className={cn("h-3.5 w-3.5", isPurging && "animate-spin")} />
-                    {isPurging ? "Purging…" : "Purge Cache"}
-                  </Button>
-                )}
-                {store?.slug && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => window.open(`/store/${store.slug}`, "_blank")}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                )}
-                {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
-              </div>
-            </header>
-            <main className="flex-1 overflow-auto p-6">
-              <Suspense fallback={<ContentSkeleton />}>
-                <Outlet />
-              </Suspense>
-            </main>
+      <AdminViewProvider value={adminViewValue}>
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
+            <AppSidebar />
+            <div className="flex-1 flex flex-col min-w-0">
+              {isAdminView && (
+                <div className="bg-amber-500 text-amber-950 text-center text-xs font-semibold py-1.5 px-4">
+                  ⚡ Admin View — Viewing "{store?.name}" dashboard (read-only)
+                </div>
+              )}
+              <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
+                <div className="flex items-center gap-2">
+                  <SidebarTrigger />
+                  <span className="text-sm font-semibold text-foreground">
+                    {store?.name || "Dashboard"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {store?.slug && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      onClick={handlePurgeCache}
+                      disabled={isPurging}
+                      title="Purge edge cache — instantly refresh your live store"
+                    >
+                      <RefreshCw className={cn("h-3.5 w-3.5", isPurging && "animate-spin")} />
+                      {isPurging ? "Purging…" : "Purge Cache"}
+                    </Button>
+                  )}
+                  {store?.slug && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => window.open(`/store/${store.slug}`, "_blank")}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
+                </div>
+              </header>
+              <main className="flex-1 overflow-auto p-6">
+                <Suspense fallback={<ContentSkeleton />}>
+                  <Outlet />
+                </Suspense>
+              </main>
+            </div>
           </div>
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      </AdminViewProvider>
     );
   }
 
