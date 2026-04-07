@@ -136,6 +136,20 @@ export default function CreateStore() {
     }
   }, [plans, selectedPlanId]);
 
+  const assignPlanToStore = async (storeId: string) => {
+    const { data, error } = await supabase.functions.invoke("assign-store-plan", {
+      body: {
+        storeId,
+        planId: selectedPlanId,
+      },
+    });
+
+    const payload = data as { error?: string } | null;
+    if (error || payload?.error) {
+      throw new Error(payload?.error || error?.message || "Failed to apply selected plan");
+    }
+  };
+
   const generateSlug = (value: string) =>
     value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
@@ -251,14 +265,20 @@ export default function CreateStore() {
       }
 
       if (newStore?.id) {
-        // Assign the chosen plan to this store
-        if (selectedPlanId) {
-          await (supabase as any).from("store_plan_assignments")
-            .upsert({
-              store_id: newStore.id,
-              plan_id: selectedPlanId,
-              status: "active",
-            }, { onConflict: "store_id" });
+        try {
+          await assignPlanToStore(newStore.id);
+        } catch (planError: any) {
+          await (supabase as any)
+            .from("stores")
+            .delete()
+            .eq("id", newStore.id)
+            .then(({ error: cleanupError }: any) => {
+              if (cleanupError) {
+                console.warn("Store cleanup after plan assignment failure failed:", cleanupError.message);
+              }
+            });
+
+          throw new Error(planError?.message || "Failed to apply selected plan");
         }
 
         // Create default theme config
@@ -345,6 +365,8 @@ export default function CreateStore() {
       setShowConfetti(true);
       toast.success("Store created successfully! 🎉");
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
+      queryClient.invalidateQueries({ queryKey: ["my-store-plan"] });
+      queryClient.invalidateQueries({ queryKey: ["product-limit"] });
     } catch (err: any) {
       setCreatingAnimation(false);
       toast.error(err.message || "Failed to create store");

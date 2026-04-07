@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,7 +114,20 @@ function GlobalPlansSection({ plans, queryClient }: { plans: any[]; queryClient:
 function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: any }) {
   const [search, setSearch] = useState("");
 
-  const { data: storeAssignments, isLoading } = useQuery({
+  const { data: stores, isLoading: storesLoading } = useQuery({
+    queryKey: ["admin-stores-for-plan-assignments"],
+    staleTime: 2 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stores")
+        .select("id, name, slug, logo_url")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const { data: storeAssignments, isLoading: assignmentsLoading } = useQuery({
     queryKey: ["admin-store-plan-assignments"],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
@@ -127,7 +140,32 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
     },
   });
 
-  const filtered = (storeAssignments || []).filter((a: any) => {
+  const combinedAssignments = useMemo(() => {
+    const assignmentMap = new Map((storeAssignments || []).map((assignment: any) => [assignment.store_id, assignment]));
+
+    return (stores || []).map((store: any) => {
+      const assignment = assignmentMap.get(store.id);
+      if (assignment) return assignment;
+
+      return {
+        id: `unassigned-${store.id}`,
+        store_id: store.id,
+        plan_id: "",
+        custom_plan_name: null,
+        custom_price: null,
+        custom_product_limit: null,
+        is_free_lifetime: false,
+        is_one_time: false,
+        notes: null,
+        status: "unassigned",
+        stores: store,
+        plans: null,
+        is_unassigned: true,
+      };
+    });
+  }, [storeAssignments, stores]);
+
+  const filtered = combinedAssignments.filter((a: any) => {
     if (!search) return true;
     const storeName = (a.stores as any)?.name?.toLowerCase() || "";
     return storeName.includes(search.toLowerCase());
@@ -135,6 +173,7 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-store-plan-assignments"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-stores-for-plan-assignments"] });
   };
 
   return (
@@ -147,7 +186,7 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
         </div>
       </div>
 
-      {isLoading ? (
+      {storesLoading || assignmentsLoading ? (
         <Card><CardContent className="flex min-h-[100px] items-center justify-center"><p className="text-muted-foreground">Loading...</p></CardContent></Card>
       ) : filtered.length > 0 ? (
         <Card>
@@ -188,7 +227,7 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                       <TableCell>
                         <Badge variant="outline">
                           <Crown className="mr-1 h-3 w-3" />
-                          {assignment.custom_plan_name || plan?.name || "—"}
+                          {assignment.custom_plan_name || plan?.name || "No plan assigned"}
                         </Badge>
                         {assignment.custom_plan_name && (
                           <span className="ml-1 text-xs text-muted-foreground">(custom)</span>
@@ -229,7 +268,7 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
         <Card>
           <CardContent className="flex min-h-[100px] items-center justify-center">
             <Store className="mr-2 h-5 w-5 text-muted-foreground" />
-            <p className="text-muted-foreground">No store plan assignments found</p>
+            <p className="text-muted-foreground">No stores found</p>
           </CardContent>
         </Card>
       )}
@@ -241,10 +280,11 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
 
 function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any; plans: any[]; onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
+  const hasPersistedAssignment = !assignment.is_unassigned;
   const isCustom = !!assignment.custom_plan_name;
   const [useCustomPlan, setUseCustomPlan] = useState(isCustom);
   const [customPlanName, setCustomPlanName] = useState(assignment.custom_plan_name || "");
-  const [planId, setPlanId] = useState(assignment.plan_id || "");
+  const [planId, setPlanId] = useState(assignment.plan_id || plans.find((plan) => plan.is_active)?.id || "");
   const [customPrice, setCustomPrice] = useState(assignment.custom_price?.toString() || "");
   const [isFreeLifetime, setIsFreeLifetime] = useState(assignment.is_free_lifetime || false);
   const [isOneTime, setIsOneTime] = useState(assignment.is_one_time || false);
@@ -258,6 +298,7 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
     setLoading(true);
     try {
       const payload: any = {
+        store_id: assignment.store_id,
         plan_id: planId,
         custom_plan_name: useCustomPlan ? customPlanName.trim() || null : null,
         custom_price: useCustomPlan || !isFreeLifetime ? (customPrice ? parseFloat(customPrice) : null) : 0,
@@ -272,12 +313,13 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
         payload.custom_price = 0;
       }
 
-      const { error } = await supabase
-        .from("store_plan_assignments" as any)
-        .update(payload)
-        .eq("id", assignment.id);
+      const query = hasPersistedAssignment
+        ? supabase.from("store_plan_assignments" as any).update(payload).eq("id", assignment.id)
+        : supabase.from("store_plan_assignments" as any).insert(payload);
+
+      const { error } = await query;
       if (error) throw error;
-      toast.success(`Plan updated for ${store?.name}`);
+      toast.success(hasPersistedAssignment ? `Plan updated for ${store?.name}` : `Plan assigned to ${store?.name}`);
       onSuccess();
       setOpen(false);
     } catch (err: any) {
@@ -412,7 +454,7 @@ function PlanDialog({ plan, onSuccess }: { plan?: any; onSuccess: () => void }) 
       } else {
         const { error } = await supabase.from("plans").insert(payload);
         if (error) throw error;
-        toast.success("Plan created & auto-assigned to stores");
+        toast.success("Plan created");
       }
       onSuccess();
       setOpen(false);
