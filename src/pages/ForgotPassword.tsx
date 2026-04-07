@@ -20,8 +20,14 @@ export default function ForgotPassword() {
       return;
     }
     setLoading(true);
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const redirectOrigin =
+      window.location.hostname.endsWith(".lovableproject.com") && projectId
+        ? `https://id-preview--${projectId}.lovable.app`
+        : window.location.origin;
+
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: `${redirectOrigin}/auth/callback`,
     });
     setLoading(false);
     if (error) {
