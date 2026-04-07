@@ -70,7 +70,7 @@ export function ElegantHeader({ store, colors }: { store: StoreData; colors: The
         </Sheet>
 
         <Link to={storefrontPath(store.slug)} className="absolute left-1/2 -translate-x-1/2">
-          {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[130px] object-contain" /> : <StoreTextLogo storeName={store.name} size="text-xl" color={`var(--storefront-text, ${colors.defaultText})`} />}
+          {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-14 w-auto max-w-[200px] object-contain" /> : <StoreTextLogo storeName={store.name} size="text-xl" color={`var(--storefront-text, ${colors.defaultText})`} />}
         </Link>
 
         <div className="flex items-center gap-0.5">

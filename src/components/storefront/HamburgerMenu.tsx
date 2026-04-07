@@ -28,7 +28,7 @@ export default function HamburgerMenu({ store }: { store: StoreData }) {
         <div className="flex flex-col">
           <div className="border-b bg-card p-4">
             {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} width={160} height={40} className="h-10 w-auto max-w-[160px] object-contain" loading="eager" />
+              <img src={store.logo_url} alt={store.name} width={200} height={56} className="h-14 w-auto max-w-[200px] object-contain" loading="eager" />
             ) : (
               <StoreTextLogo storeName={store.name} size="text-lg" />
             )}
