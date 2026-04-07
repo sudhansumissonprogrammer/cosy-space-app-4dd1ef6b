@@ -463,5 +463,6 @@ export default function DashboardLayout() {
         isWhatsAppOnly={isWhatsAppOnly}
       />
     </div>
+    </AdminViewProvider>
   );
 }
