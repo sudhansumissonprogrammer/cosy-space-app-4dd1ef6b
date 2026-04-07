@@ -412,7 +412,7 @@ function PlanDialog({ plan, onSuccess }: { plan?: any; onSuccess: () => void }) 
       } else {
         const { error } = await supabase.from("plans").insert(payload);
         if (error) throw error;
-        toast.success("Plan created & auto-assigned to stores");
+        toast.success("Plan created");
       }
       onSuccess();
       setOpen(false);
