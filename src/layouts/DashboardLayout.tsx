@@ -192,11 +192,16 @@ export default function DashboardLayout() {
   // Prefetch all dashboard page chunks on mount (covers mobile layout)
   useEffect(() => { prefetchDashboardRoutes(); }, []);
 
-  const { data: store, isLoading: storeLoading } = useMyStore();
+  const { data: ownStore, isLoading: storeLoading } = useMyStore();
+  const { isAdminView, adminStore } = useAdminStoreView(ownStore, storeLoading);
+
+  // Use admin store data when viewing another user's store
+  const store = isAdminView && adminStore ? adminStore : ownStore;
 
   const storeId = store?.id;
   const storeSlug = store?.slug;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
+  const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
 
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
