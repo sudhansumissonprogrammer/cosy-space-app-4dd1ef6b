@@ -7,11 +7,13 @@ const ExitIntentPopup = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (sessionStorage.getItem("exit_shown")) return;
+    const cooldownUntil = sessionStorage.getItem("exit_cooldown");
+    if (cooldownUntil && Date.now() < Number(cooldownUntil)) return;
 
     const handleMouseLeave = (e: MouseEvent) => {
+      const cooldown = sessionStorage.getItem("exit_cooldown");
+      if (cooldown && Date.now() < Number(cooldown)) return;
       if (e.clientY <= 0) {
-        sessionStorage.setItem("exit_shown", "1");
         setShow(true);
       }
     };
