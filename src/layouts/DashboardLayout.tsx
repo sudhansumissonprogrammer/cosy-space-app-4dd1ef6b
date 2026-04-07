@@ -337,6 +337,7 @@ export default function DashboardLayout() {
 
   // Mobile layout
   return (
+    <AdminViewProvider value={adminViewValue}>
     <div
       className="min-h-screen flex flex-col bg-background"
       style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}
