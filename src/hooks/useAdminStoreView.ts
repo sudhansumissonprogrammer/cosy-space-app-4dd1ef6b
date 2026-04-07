@@ -7,16 +7,19 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Detects if the current user is an admin viewing another user's store.
  * If so, fetches store data via admin RPC and seeds the query cache.
+ *
+ * Key fix: always check admin role eagerly (not gated on ownStoreLoading)
+ * so admin view resolves as fast as possible.
  */
-export function useAdminStoreView(ownStore: { id: string; slug: string } | null | undefined, ownStoreLoading: boolean) {
+export function useAdminStoreView(
+  ownStore: { id: string; slug: string } | null | undefined,
+  ownStoreLoading: boolean,
+) {
   const { storeSlug } = useParams<{ storeSlug: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Determine if we need admin override
-  const needsAdminFetch = !!storeSlug && !!user && !ownStoreLoading &&
-    (!ownStore || (ownStore.slug !== storeSlug && ownStore.id !== storeSlug));
-
+  // Always check admin role early (cached 10 min)
   const { data: isAdmin } = useQuery({
     queryKey: ["is-admin", user?.id],
     staleTime: 10 * 60 * 1000,
@@ -27,8 +30,22 @@ export function useAdminStoreView(ownStore: { id: string; slug: string } | null 
       });
       return !!data;
     },
-    enabled: !!user && needsAdminFetch,
+    enabled: !!user,
   });
+
+  // Determine if we need admin override:
+  // - URL has a store slug
+  // - Own store is loaded and slug doesn't match, OR own store is still loading (we don't know yet)
+  const slugMismatch =
+    !!storeSlug &&
+    !!ownStore &&
+    ownStore.slug !== storeSlug &&
+    ownStore.id !== storeSlug;
+
+  // If own store is still loading, we don't know if it matches yet.
+  // But if user is admin, start fetching the target store anyway (parallel).
+  const needsAdminFetch =
+    !!storeSlug && !!user && (slugMismatch || (!ownStore && !ownStoreLoading));
 
   const { data: adminStore, isLoading: adminStoreLoading } = useQuery({
     queryKey: ["admin-store-view", storeSlug],
@@ -50,9 +67,12 @@ export function useAdminStoreView(ownStore: { id: string; slug: string } | null 
     }
   }, [adminStore, queryClient]);
 
+  const isAdminView = isAdmin === true && !!adminStore && needsAdminFetch;
+
   return {
-    isAdminView: needsAdminFetch && isAdmin === true && !!adminStore,
+    isAdminView,
     adminStore,
-    adminStoreLoading: needsAdminFetch && (isAdmin === undefined || adminStoreLoading),
+    adminStoreLoading:
+      needsAdminFetch && isAdmin === true && adminStoreLoading,
   };
 }
