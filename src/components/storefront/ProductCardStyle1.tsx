@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Package, ShoppingCart, Star, Heart, Check, Plus, Minus, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
-import { optimizeImageUrl, getImageSrcSet, splitImageUrls } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getProductRating, getDiscountPercent } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
@@ -63,7 +63,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             <Heart className={`h-4 w-4 drop-shadow-md transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"}`} aria-hidden="true" />
           </button>
           {(() => {
-            const images = splitImageUrls(product.image_url);
+            const images = resolveProductImages(product);
             if (images.length === 0) {
               return <div className="flex h-full w-full items-center justify-center bg-secondary/40"><Package className="h-10 w-10 text-muted-foreground/40" /></div>;
             }
