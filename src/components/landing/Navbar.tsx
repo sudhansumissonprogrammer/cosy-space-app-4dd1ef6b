@@ -20,10 +20,10 @@ const Navbar = () => {
           <a href="/#pricing" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Pricing</a>
           <a href="/#sellers" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">For Sellers</a>
           <a href="/#faq" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">FAQ</a>
+          <a href="/login" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Store Owner Login</a>
         </div>
 
         <div className="hidden md:flex items-center gap-4">
-          <a href="/login" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-blue transition-colors duration-200">Sign In</a>
           <a href="/signup" className="bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs px-4 py-2 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Start Free</a>
         </div>
 
@@ -41,8 +41,8 @@ const Navbar = () => {
           <a href="/#pricing" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Pricing</a>
           <a href="/#sellers" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>For Sellers</a>
           <a href="/#faq" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>FAQ</a>
+          <a href="/login" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Store Owner Login</a>
           <div className="pt-4 border-t-2 border-foreground space-y-3">
-            <a href="/login" className="block font-bold uppercase tracking-wider text-foreground">Sign In</a>
             <a href="/signup" className="block text-center bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider px-6 py-3 border-2 border-foreground shadow-bauhaus">Start Free</a>
           </div>
         </div>
