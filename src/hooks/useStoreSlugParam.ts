@@ -8,8 +8,8 @@ import { useAdminStoreView } from "@/hooks/useAdminStoreView";
  */
 export function useStoreSlugParam() {
   const { storeSlug } = useParams<{ storeSlug: string }>();
-  const { data: ownStore } = useMyStore();
-  const { isAdminView, adminStore } = useAdminStoreView(ownStore);
+  const { data: ownStore, isLoading: ownStoreLoading } = useMyStore();
+  const { isAdminView, adminStore } = useAdminStoreView(ownStore, ownStoreLoading);
 
   if (isAdminView && adminStore) {
     return {
@@ -20,7 +20,7 @@ export function useStoreSlugParam() {
     };
   }
 
-  // Normal flow — match by slug first, then fall back to UUID
+  // Normal flow
   const storeId = ownStore?.slug === storeSlug
     ? ownStore.id
     : ownStore?.id === storeSlug
