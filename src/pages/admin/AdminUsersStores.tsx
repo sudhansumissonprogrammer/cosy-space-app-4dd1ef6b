@@ -224,7 +224,7 @@ export default function AdminUsersStores() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.open(`/dashboard/stores/${row.store_slug}/products`, "_blank")}
+                            onClick={() => navigate(`/dashboard/stores/${row.store_slug}/products`)}
                             title="Open store dashboard"
                           >
                             <ExternalLink className="mr-1 h-3 w-3" /> Dashboard
