@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { Tables } from "@/integrations/supabase/types";
-import { optimizeImageUrl, getImageSrcSet, splitImageUrls } from "@/lib/imageOptimize";
+import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 
 /* ── Veg / Non-Veg indicator ── */
 function DietBadge({ category }: { category: string | null }) {
@@ -73,7 +73,7 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
       }}
     >
       {(() => {
-        const images = splitImageUrls(product.image_url);
+        const images = resolveProductImages(product);
         if (images.length === 0) return null;
         const hasSecond = images.length > 1;
         return (
