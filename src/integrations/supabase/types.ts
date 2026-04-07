@@ -2346,6 +2346,7 @@ export type Database = {
           platform_name: string
         }[]
       }
+      get_store_as_admin: { Args: { _slug: string }; Returns: Json }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
       get_store_public_email: { Args: { _store_id: string }; Returns: string }
       get_store_usage_stats: { Args: never; Returns: Json }

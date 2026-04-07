@@ -1,10 +1,12 @@
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
+import { useAdminStoreView } from "@/hooks/useAdminStoreView";
+import { AdminViewProvider } from "@/contexts/AdminViewContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -190,11 +192,16 @@ export default function DashboardLayout() {
   // Prefetch all dashboard page chunks on mount (covers mobile layout)
   useEffect(() => { prefetchDashboardRoutes(); }, []);
 
-  const { data: store, isLoading: storeLoading } = useMyStore();
+  const { data: ownStore, isLoading: storeLoading } = useMyStore();
+  const { isAdminView, adminStore } = useAdminStoreView(ownStore, storeLoading);
+
+  // Use admin store data when viewing another user's store
+  const store = isAdminView && adminStore ? adminStore : ownStore;
 
   const storeId = store?.id;
   const storeSlug = store?.slug;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
+  const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
 
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
@@ -256,53 +263,59 @@ export default function DashboardLayout() {
   // Desktop layout with sidebar
   if (!isMobile) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
-          <AppSidebar />
-          <div className="flex-1 flex flex-col min-w-0">
-            {/* PWA install prompts temporarily disabled */}
-            <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger />
-                <span className="text-sm font-semibold text-foreground">
-                  {store?.name || "Dashboard"}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                {store?.slug && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 gap-1.5 text-xs"
-                    onClick={handlePurgeCache}
-                    disabled={isPurging}
-                    title="Purge edge cache — instantly refresh your live store"
-                  >
-                    <RefreshCw className={cn("h-3.5 w-3.5", isPurging && "animate-spin")} />
-                    {isPurging ? "Purging…" : "Purge Cache"}
-                  </Button>
-                )}
-                {store?.slug && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => window.open(`/store/${store.slug}`, "_blank")}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                )}
-                {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
-              </div>
-            </header>
-            <main className="flex-1 overflow-auto p-6">
-              <Suspense fallback={<ContentSkeleton />}>
-                <Outlet />
-              </Suspense>
-            </main>
+      <AdminViewProvider value={adminViewValue}>
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
+            <AppSidebar />
+            <div className="flex-1 flex flex-col min-w-0">
+              {isAdminView && (
+                <div className="bg-amber-500 text-amber-950 text-center text-xs font-semibold py-1.5 px-4">
+                  ⚡ Admin View — Viewing "{store?.name}" dashboard (read-only)
+                </div>
+              )}
+              <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
+                <div className="flex items-center gap-2">
+                  <SidebarTrigger />
+                  <span className="text-sm font-semibold text-foreground">
+                    {store?.name || "Dashboard"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {store?.slug && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      onClick={handlePurgeCache}
+                      disabled={isPurging}
+                      title="Purge edge cache — instantly refresh your live store"
+                    >
+                      <RefreshCw className={cn("h-3.5 w-3.5", isPurging && "animate-spin")} />
+                      {isPurging ? "Purging…" : "Purge Cache"}
+                    </Button>
+                  )}
+                  {store?.slug && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => window.open(`/store/${store.slug}`, "_blank")}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
+                </div>
+              </header>
+              <main className="flex-1 overflow-auto p-6">
+                <Suspense fallback={<ContentSkeleton />}>
+                  <Outlet />
+                </Suspense>
+              </main>
+            </div>
           </div>
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      </AdminViewProvider>
     );
   }
 
@@ -324,12 +337,16 @@ export default function DashboardLayout() {
 
   // Mobile layout
   return (
+    <AdminViewProvider value={adminViewValue}>
     <div
       className="min-h-screen flex flex-col bg-background"
       style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}
     >
-      {/* PWA install prompts temporarily disabled */}
-      
+      {isAdminView && (
+        <div className="bg-amber-500 text-amber-950 text-center text-xs font-semibold py-1.5 px-4">
+          ⚡ Admin View — Viewing "{store?.name}"
+        </div>
+      )}
 
       {/* Shopify-style header */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-[#1a1a1a] px-3">
@@ -449,5 +466,6 @@ export default function DashboardLayout() {
         isWhatsAppOnly={isWhatsAppOnly}
       />
     </div>
+    </AdminViewProvider>
   );
 }
