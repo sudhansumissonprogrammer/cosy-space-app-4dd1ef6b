@@ -1,27 +1,27 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsAdminView } from "@/contexts/AdminViewContext";
 
 /**
  * Centralized hook for fetching store data by storeId.
- * Supports admin mode where owner_id check is skipped.
+ * In admin view mode, the data is pre-seeded by useAdminStoreView,
+ * so this hook returns cached data without owner_id filtering.
  */
-export function useStoreData(storeId?: string, isAdminView?: boolean) {
+export function useStoreData(storeId?: string) {
   const { user } = useAuth();
+  const isAdminView = useIsAdminView();
 
   return useQuery({
     queryKey: ["store", storeId],
     staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     queryFn: async () => {
+      // In admin view, data should already be in cache from useAdminStoreView.
+      // If not cached, we can't fetch without owner check, so return null.
       if (isAdminView) {
-        // Admin viewing — fetch without owner filter using slug lookup
-        // We already have storeId from admin RPC, so query by id
-        const { data, error } = await supabase.rpc("get_store_as_admin", {
-          _slug: storeId!, // We'll pass slug here
-        });
-        if (error) throw error;
-        return data as any;
+        // Fallback: shouldn't reach here if cache is seeded properly
+        return null;
       }
 
       const { data, error } = await supabase
