@@ -342,8 +342,11 @@ export default function DashboardLayout() {
       className="min-h-screen flex flex-col bg-background"
       style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}
     >
-      {/* PWA install prompts temporarily disabled */}
-      
+      {isAdminView && (
+        <div className="bg-amber-500 text-amber-950 text-center text-xs font-semibold py-1.5 px-4">
+          ⚡ Admin View — Viewing "{store?.name}"
+        </div>
+      )}
 
       {/* Shopify-style header */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-[#1a1a1a] px-3">
