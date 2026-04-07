@@ -351,11 +351,17 @@ export default function CreateStore() {
 
         // Seed 3 demo categories + 4 demo products
         try {
-          const DEMO_IMG = "https://dqepeywgftbpxeeqfuwt.supabase.co/storage/v1/object/public/product-images/demo/demo-product.jpg";
+          const STORAGE_BASE = "https://dqepeywgftbpxeeqfuwt.supabase.co/storage/v1/object/public/product-images/demo";
+          const DEMO_IMGS = [
+            `${STORAGE_BASE}/product-1.jpg`,
+            `${STORAGE_BASE}/product-2.jpg`,
+            `${STORAGE_BASE}/product-3.jpg`,
+            `${STORAGE_BASE}/product-4.jpg`,
+          ];
           const CAT_IMGS = [
-            "https://dqepeywgftbpxeeqfuwt.supabase.co/storage/v1/object/public/product-images/demo/demo-category-1.jpg",
-            "https://dqepeywgftbpxeeqfuwt.supabase.co/storage/v1/object/public/product-images/demo/demo-category-2.jpg",
-            "https://dqepeywgftbpxeeqfuwt.supabase.co/storage/v1/object/public/product-images/demo/demo-category-3.jpg",
+            `${STORAGE_BASE}/category-fashion.jpg`,
+            `${STORAGE_BASE}/category-electronics.jpg`,
+            `${STORAGE_BASE}/category-accessories.jpg`,
           ];
           const demoCategories = [
             { name: "Fashion", slug: "fashion", image_url: CAT_IMGS[0], display_order: 0 },
@@ -367,10 +373,10 @@ export default function CreateStore() {
           );
 
           const demoProducts = [
-            { name: "Demo Product 1", slug: "demo-product-1", price: 499, category: "Fashion", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMG, display_order: 0 },
-            { name: "Demo Product 2", slug: "demo-product-2", price: 799, category: "Electronics", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMG, display_order: 1 },
-            { name: "Demo Product 3", slug: "demo-product-3", price: 999, category: "Accessories", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMG, display_order: 2 },
-            { name: "Demo Product 4", slug: "demo-product-4", price: 1299, category: "Fashion", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMG, display_order: 3 },
+            { name: "Demo T-Shirt", slug: "demo-tshirt", price: 499, category: "Fashion", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMGS[0], display_order: 0 },
+            { name: "Demo Earbuds", slug: "demo-earbuds", price: 799, category: "Electronics", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMGS[1], display_order: 1 },
+            { name: "Demo Leather Bag", slug: "demo-leather-bag", price: 999, category: "Accessories", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMGS[2], display_order: 2 },
+            { name: "Demo Watch", slug: "demo-watch", price: 1299, category: "Accessories", description: "This is a demo product. Go to your admin dashboard and add your own products!", image_url: DEMO_IMGS[3], display_order: 3 },
           ];
           await (supabase as any).from("products").insert(
             demoProducts.map((p) => ({ ...p, store_id: newStore.id, currency, is_active: true }))
