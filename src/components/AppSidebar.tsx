@@ -7,9 +7,10 @@ import {
 } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
+import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 import { supabase } from "@/integrations/supabase/client";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
 import {
@@ -25,16 +26,25 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { storeSlug: routeStoreSlug } = useParams<{ storeSlug: string }>();
   const { signOut, user } = useAuth();
 
   // Prefetch all dashboard page chunks on mount
   useEffect(() => { prefetchDashboardRoutes(); }, []);
   const [pendingOrders, setPendingOrders] = useState(0);
 
-  const { data: store } = useMyStore();
+  const { data: ownStore, isLoading: ownStoreLoading } = useMyStore();
+  const { adminStore } = useAdminStoreView(ownStore, ownStoreLoading);
+
+  const routeNeedsAdminStore =
+    !!routeStoreSlug &&
+    (!ownStore ||
+      (ownStore.slug !== routeStoreSlug && ownStore.id !== routeStoreSlug));
+
+  const store = routeNeedsAdminStore ? adminStore : ownStore;
 
   const storeId = store?.id;
-  const storeSlug = store?.slug;
+  const storeSlug = store?.slug ?? (routeNeedsAdminStore ? routeStoreSlug : ownStore?.slug);
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const { isVisible, isComingSoon } = useMenuConfig();
 

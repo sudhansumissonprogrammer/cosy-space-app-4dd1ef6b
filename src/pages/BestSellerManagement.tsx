@@ -1,7 +1,9 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyStore } from "@/hooks/useMyStore";
+import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 import { ArrowUp, ArrowDown, GripVertical, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +22,16 @@ interface BestSellerProduct {
 }
 
 export default function BestSellerManagement() {
-  const { data: store } = useMyStore();
+  const { storeSlug: routeStoreSlug } = useParams<{ storeSlug: string }>();
+  const { data: ownStore, isLoading: ownStoreLoading } = useMyStore();
+  const { adminStore, adminStoreLoading } = useAdminStoreView(ownStore, ownStoreLoading);
+
+  const routeNeedsAdminStore =
+    !!routeStoreSlug &&
+    (!ownStore ||
+      (ownStore.slug !== routeStoreSlug && ownStore.id !== routeStoreSlug));
+
+  const store = routeNeedsAdminStore ? adminStore : ownStore;
   const storeId = store?.id;
   const queryClient = useQueryClient();
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -95,6 +106,7 @@ export default function BestSellerManagement() {
   };
 
   const currency = store?.currency || "INR";
+  const isPageLoading = ownStoreLoading || (routeNeedsAdminStore && adminStoreLoading) || isLoading;
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency }).format(v);
 
@@ -115,7 +127,7 @@ export default function BestSellerManagement() {
         )}
       </div>
 
-      {isLoading ? (
+      {isPageLoading ? (
         <div className="space-y-3">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-20 w-full rounded-xl" />
