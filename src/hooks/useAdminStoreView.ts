@@ -1,19 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Detects if the current user is an admin viewing another user's store.
- * Uses the URL storeSlug param and checks against the user's own store.
- * If admin + slug doesn't match own store, fetches via admin RPC.
+ * If so, fetches store data via admin RPC and seeds the query cache.
  */
-export function useAdminStoreView(ownStore: { id: string; slug: string } | null | undefined) {
+export function useAdminStoreView(ownStore: { id: string; slug: string } | null | undefined, ownStoreLoading: boolean) {
   const { storeSlug } = useParams<{ storeSlug: string }>();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Determine if we need admin override
-  const needsAdminFetch = !!storeSlug && !!user && !!ownStore !== undefined &&
+  const needsAdminFetch = !!storeSlug && !!user && !ownStoreLoading &&
     (!ownStore || (ownStore.slug !== storeSlug && ownStore.id !== storeSlug));
 
   const { data: isAdmin } = useQuery({
@@ -42,9 +43,16 @@ export function useAdminStoreView(ownStore: { id: string; slug: string } | null 
     enabled: needsAdminFetch && isAdmin === true,
   });
 
+  // Seed the ["store", storeId] cache so useStoreData gets a hit
+  useEffect(() => {
+    if (adminStore?.id) {
+      queryClient.setQueryData(["store", adminStore.id], adminStore);
+    }
+  }, [adminStore, queryClient]);
+
   return {
-    isAdminView: needsAdminFetch && isAdmin === true,
+    isAdminView: needsAdminFetch && isAdmin === true && !!adminStore,
     adminStore,
-    adminStoreLoading,
+    adminStoreLoading: needsAdminFetch && (isAdmin === undefined || adminStoreLoading),
   };
 }
