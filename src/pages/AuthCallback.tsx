@@ -6,22 +6,89 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Supabase will exchange the token from the URL automatically
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "PASSWORD_RECOVERY") {
-        if (event === "PASSWORD_RECOVERY") {
-          navigate("/reset-password", { replace: true });
-        } else {
-          navigate("/dashboard", { replace: true });
-        }
+    let isActive = true;
+    let hasNavigated = false;
+
+    const redirect = (path: string) => {
+      if (!isActive || hasNavigated) return;
+      hasNavigated = true;
+      navigate(path, { replace: true });
+    };
+
+    const url = new URL(window.location.href);
+    const queryParams = url.searchParams;
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const authType = hashParams.get("type") ?? queryParams.get("type");
+    const isPasswordRecovery = authType === "recovery";
+    const hasError = hashParams.has("error") || queryParams.has("error");
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        redirect("/reset-password");
+        return;
+      }
+
+      if (event === "SIGNED_IN") {
+        redirect(isPasswordRecovery ? "/reset-password" : "/dashboard");
       }
     });
 
-    // If there's an error in the URL hash, show login
-    const hash = window.location.hash;
-    if (hash.includes("error")) {
-      navigate("/login", { replace: true });
-    }
+    const completeAuth = async () => {
+      if (hasError) {
+        redirect("/login");
+        return;
+      }
+
+      const code = queryParams.get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          redirect("/login");
+          return;
+        }
+
+        redirect(isPasswordRecovery ? "/reset-password" : "/dashboard");
+        return;
+      }
+
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (error) {
+          redirect("/login");
+          return;
+        }
+
+        redirect(isPasswordRecovery ? "/reset-password" : "/dashboard");
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        redirect(isPasswordRecovery ? "/reset-password" : "/dashboard");
+        return;
+      }
+
+      redirect("/login");
+    };
+
+    void completeAuth();
+
+    return () => {
+      isActive = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   return (
