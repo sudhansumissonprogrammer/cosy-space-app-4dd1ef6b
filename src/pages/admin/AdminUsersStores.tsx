@@ -37,6 +37,7 @@ interface UserStoreRow {
 
 export default function AdminUsersStores() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const { data: rows, isLoading } = useQuery({
