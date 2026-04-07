@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export default function StoreTracking() {
-  const { storeId } = useStoreSlugParam();
+  const { storeId, storeSlug } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -104,7 +104,7 @@ export default function StoreTracking() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link to="/dashboard">
+          <Link to={`/dashboard/stores/${storeSlug}/products`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
