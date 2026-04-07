@@ -186,6 +186,7 @@ export default function DashboardLayout() {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const { storeSlug: routeStoreSlug } = useParams<{ storeSlug: string }>();
   const { signOut, user } = useAuth();
   const isMobile = useIsMobile();
 
@@ -195,11 +196,16 @@ export default function DashboardLayout() {
   const { data: ownStore, isLoading: storeLoading } = useMyStore();
   const { isAdminView, adminStore } = useAdminStoreView(ownStore, storeLoading);
 
-  // Use admin store data when viewing another user's store
-  const store = isAdminView && adminStore ? adminStore : ownStore;
+  const routeNeedsAdminStore =
+    !!routeStoreSlug &&
+    (!ownStore ||
+      (ownStore.slug !== routeStoreSlug && ownStore.id !== routeStoreSlug));
+
+  // Never fall back to the signed-in user's store when the URL points at another store.
+  const store = routeNeedsAdminStore ? adminStore : ownStore;
 
   const storeId = store?.id;
-  const storeSlug = store?.slug;
+  const storeSlug = store?.slug ?? (routeNeedsAdminStore ? routeStoreSlug : ownStore?.slug);
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
 
