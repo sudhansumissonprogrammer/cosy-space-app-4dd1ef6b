@@ -1,10 +1,12 @@
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
+import { useAdminStoreView } from "@/hooks/useAdminStoreView";
+import { AdminViewProvider } from "@/contexts/AdminViewContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
