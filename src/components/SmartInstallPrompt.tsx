@@ -34,8 +34,10 @@ export default function SmartInstallPrompt({
   const [showManualGuide, setShowManualGuide] = useState(false);
 
   useEffect(() => {
-    // Skip in iframes (Lovable preview)
-    try { if (window.self !== window.top) return; } catch { return; }
+    // Skip in Lovable preview iframes only
+    try {
+      if (window.self !== window.top && window.location.hostname.includes("lovable")) return;
+    } catch { /* cross-origin iframe, continue */ }
 
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
