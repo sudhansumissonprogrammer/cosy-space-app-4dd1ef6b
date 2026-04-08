@@ -73,6 +73,7 @@ export default function CategoryDetail() {
   const products = data?.pages.flatMap((p) => p.products) || [];
 
   const contentReadyRef = useRef(false);
+  const gridRef = useStaggerReveal<HTMLDivElement>();
 
   useEffect(() => {
     contentReadyRef.current = false;
