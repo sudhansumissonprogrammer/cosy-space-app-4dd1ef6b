@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import DesktopNavBar from "@/components/storefront/DesktopNavBar";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import ScrollProgressBar from "@/components/storefront/ScrollProgressBar";
 
 function BottomTabBar({ store }: { store: StoreData }) {
   const location = useLocation();
@@ -80,6 +81,7 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
     >
       {({ store }) => (
         <>
+          <ScrollProgressBar />
           <DesktopNavBar store={store} />
           <div className="md:hidden"><MobileAppHeader store={store} /></div>
           <main className="pb-20 md:pb-0">
