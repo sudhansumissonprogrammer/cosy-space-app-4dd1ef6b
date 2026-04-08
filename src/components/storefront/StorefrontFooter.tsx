@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { MapPin, Clock, MessageCircle, Instagram, Facebook } from "lucide-react";
+import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -137,15 +138,16 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           <p className="text-xs opacity-60">
             © {year} {store.name}. All rights reserved.
           </p>
-          <p className="text-xs opacity-50">
+          <p className="text-xs opacity-50 flex items-center justify-center gap-1">
             Powered by{" "}
             <a
               href="https://shopbanao.site"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:opacity-100 transition-opacity"
+              className="inline-flex items-center gap-1 underline hover:opacity-100 transition-opacity"
               style={{ color: "inherit" }}
             >
+              <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-auto inline-block" loading="lazy" />
               ShopBanao
             </a>
           </p>
