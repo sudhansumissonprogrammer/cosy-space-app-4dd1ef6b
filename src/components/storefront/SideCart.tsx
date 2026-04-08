@@ -110,14 +110,14 @@ export default function SideCart({ store }: SideCartProps) {
                         <div className="flex items-center rounded-lg border border-border">
                           <button
                             onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}
-                            className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:scale-90"
                           >
                             <Minus className="h-3 w-3" />
                           </button>
-                          <span className="w-7 text-center text-xs font-semibold">{item.quantity}</span>
+                          <span key={item.quantity} className="w-7 text-center text-xs font-semibold qty-bounce">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)}
-                            className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:scale-90"
                           >
                             <Plus className="h-3 w-3" />
                           </button>
