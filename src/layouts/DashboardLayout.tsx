@@ -63,21 +63,32 @@ function MobileMenu({
 
   const menuSections: MenuSection[] = storeSlug
     ? [
+        {
+          title: "Overview",
+          items: [
+            { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", exact: true },
+            { label: "Analytics", icon: BarChart3, path: "/dashboard/analytics", exact: true },
+          ],
+        },
+        {
+          title: "Catalog",
+          items: filterItems([
+            { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, menuKey: "products" },
+            { label: "Best Sellers", icon: Star, path: `/dashboard/stores/${storeSlug}/best-sellers`, menuKey: "best_sellers" },
+            { label: "Categories", icon: Grid3X3, path: `/dashboard/stores/${storeSlug}/categories`, menuKey: "categories" },
+            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeSlug}/media`, menuKey: "media_library" },
+            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeSlug}/products/bulk-upload`, menuKey: "bulk_upload" },
+          ]),
+        },
         ...(!isWhatsAppOnly
           ? [
               {
-                title: "Customers",
+                title: "Sales & Customers",
                 items: filterItems([
+                  { label: "Orders", icon: ShoppingBag, path: `/dashboard/stores/${storeSlug}/orders`, badge: pendingOrders, menuKey: "orders" },
                   { label: "Customers", icon: Users, path: `/dashboard/stores/${storeSlug}/customers`, menuKey: "customers" },
+                  { label: "Leads", icon: UserCheck, path: `/dashboard/stores/${storeSlug}/leads`, menuKey: "leads" },
                   { label: "Abandoned Carts", icon: ShoppingCart, path: `/dashboard/stores/${storeSlug}/abandoned-carts`, menuKey: "abandoned_carts" },
-                ]),
-              },
-              {
-                title: "Marketing",
-                items: filterItems([
-                  { label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeSlug}/whatsapp`, menuKey: "whatsapp_marketing" },
-                  { label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeSlug}/coupons`, menuKey: "coupons" },
-                  { label: "Analytics", icon: BarChart3, path: `/dashboard/stores/${storeSlug}/analytics`, menuKey: "analytics" },
                 ]),
               },
             ]
@@ -86,16 +97,21 @@ function MobileMenu({
           title: "Payments & Shipping",
           items: filterItems([
             { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeSlug}/payments`, menuKey: "payments" },
+            ...(!isWhatsAppOnly ? [{ label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeSlug}/coupons`, menuKey: "coupons" }] : []),
             { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping`, menuKey: "shipping" },
             { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeSlug}/tax`, menuKey: "tax_gst" },
           ]),
         },
         {
-          title: "Store",
+          title: "Marketing",
           items: filterItems([
-            { label: "Categories", icon: Package, path: `/dashboard/stores/${storeSlug}/categories`, menuKey: "categories" },
-            { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeSlug}/media`, menuKey: "media_library" },
-            { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeSlug}/products/bulk-upload`, menuKey: "bulk_upload" },
+            ...(!isWhatsAppOnly ? [{ label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeSlug}/whatsapp`, menuKey: "whatsapp_marketing" }] : []),
+            { label: "Tracking & Analytics", icon: BarChart3, path: `/dashboard/stores/${storeSlug}/tracking`, menuKey: "tracking_analytics" },
+          ]),
+        },
+        {
+          title: "Appearance & Settings",
+          items: filterItems([
             { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeSlug}/theme`, menuKey: "theme" },
             { label: "Pages", icon: FileText, path: `/dashboard/stores/${storeSlug}/pages`, menuKey: "pages" },
             { label: "Domain", icon: Globe, path: `/dashboard/stores/${storeSlug}/domain`, menuKey: "domain" },
