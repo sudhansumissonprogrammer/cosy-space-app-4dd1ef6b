@@ -85,6 +85,8 @@ const InstallApp = lazy(() => import("./pages/InstallApp"));
 
 // Auth + Admin + Dashboard — fully lazy, never loaded on storefront
 const LazyAuthRoutes = lazy(() => import("./routes/AuthRoutes"));
+// Landing page — standalone, no DashboardProviders needed
+const LazyIndex = lazy(() => import("./pages/Index"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -659,6 +661,17 @@ function AppRouter() {
     }
 
     return <ThemeAwareStorefront />;
+  }
+
+  // ── LANDING PAGE: Render directly without DashboardProviders ──
+  // This avoids loading AuthProvider (171KB Supabase) + Radix UI (150KB)
+  // just to show the marketing landing page.
+  if (location.pathname === "/") {
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <LazyIndex />
+      </Suspense>
+    );
   }
 
   // ── AUTH/DASHBOARD: Only reachable on root domain, preview, or localhost ──
