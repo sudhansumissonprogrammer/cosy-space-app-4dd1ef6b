@@ -15,6 +15,8 @@ interface Props {
   store: any;
   priority?: boolean;
   cardStyle?: string;
+  /** Card index for staggered animation */
+  index?: number;
 }
 
 /**
@@ -24,7 +26,7 @@ interface Props {
  * Variant count is read from VariantCountProvider context (batched query)
  * to eliminate N individual queries per page.
  */
-export default function UniversalProductCard({ product, slug, store, priority = false, cardStyle = "style-1" }: Props) {
+export default function UniversalProductCard({ product, slug, store, priority = false, cardStyle = "style-1", index = 0 }: Props) {
   const [variantOpen, setVariantOpen] = useState(false);
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
@@ -48,7 +50,12 @@ export default function UniversalProductCard({ product, slug, store, priority = 
   })();
 
   return (
-    <div onMouseEnter={prefetchProductDetail} onTouchStart={prefetchProductDetail}>
+    <div
+      className="stagger-card"
+      style={{ "--i": index } as React.CSSProperties}
+      onMouseEnter={prefetchProductDetail}
+      onTouchStart={prefetchProductDetail}
+    >
       {card}
       {hasVariants && (
         <VariantPickerDialog
