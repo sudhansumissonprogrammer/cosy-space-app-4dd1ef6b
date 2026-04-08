@@ -242,13 +242,13 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
             ) : (
               <section>
                 <SectionHeading title="🔥 Best Selling" />
-                <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                   {bestSellingProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
                     <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
                   ))}
                 </div>
                 {bestSellingProducts.length > ABOVE_FOLD_COUNT && (
-                    <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4 stagger-grid">
+                    <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4">
                       {bestSellingProducts.slice(ABOVE_FOLD_COUNT).map((product) => (
                         <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
                       ))}
@@ -269,7 +269,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
           </div>
 
           {showSkeleton ? (
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid" style={{ minHeight: 560 }}>
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 560 }}>
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
@@ -286,7 +286,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
             </div>
           ) : displayProducts.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid" style={{ minHeight: 560 }}>
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 560 }}>
                 {displayProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
                   <UniversalProductCard
                     key={product.id}
@@ -301,7 +301,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
 
               {displayProducts.length > ABOVE_FOLD_COUNT && (
                 <LazyRender minHeight={600} rootMargin="300px">
-                  <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4 stagger-grid">
+                  <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4">
                     {displayProducts.slice(ABOVE_FOLD_COUNT).map((product) => (
                       <UniversalProductCard
                         key={product.id}

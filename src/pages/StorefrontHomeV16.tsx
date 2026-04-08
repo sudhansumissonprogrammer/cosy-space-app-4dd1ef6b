@@ -147,14 +147,14 @@ function CategorySection({
       <SectionHeading title={category.name} />
 
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <ProductCardSkeleton key={i} />
           ))}
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {products.map((product: any) => (
               <UniversalProductCard
                 key={product.id}
@@ -317,13 +317,13 @@ export default function StorefrontHomeV16() {
               ) : (
                 <section>
                 <SectionHeading title="🔥 Best Selling" />
-                  <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
+                  <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                     {bestSellingProducts.slice(0, ABOVE_FOLD_COUNT).map((product: any, idx: number) => (
                       <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
                     ))}
                   </div>
                   {bestSellingProducts.length > ABOVE_FOLD_COUNT && (
-                    <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4 stagger-grid">
+                    <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4">
                       {bestSellingProducts.slice(ABOVE_FOLD_COUNT).map((product: any) => (
                         <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
                       ))}

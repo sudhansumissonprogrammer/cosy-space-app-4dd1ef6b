@@ -48,11 +48,7 @@ export default function UniversalProductCard({ product, slug, store, priority = 
   })();
 
   return (
-    <div
-      className="stagger-item"
-      onMouseEnter={prefetchProductDetail}
-      onTouchStart={prefetchProductDetail}
-    >
+    <div onMouseEnter={prefetchProductDetail} onTouchStart={prefetchProductDetail}>
       {card}
       {hasVariants && (
         <VariantPickerDialog

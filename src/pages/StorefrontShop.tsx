@@ -113,7 +113,7 @@ export default function StorefrontShop() {
 
       <div style={{ minHeight: 600, contain: "layout" }}>
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <ProductCardSkeleton key={i} />
             ))}
@@ -130,7 +130,7 @@ export default function StorefrontShop() {
           </div>
         ) : products.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {products.map((product, index) => (
                 <UniversalProductCard
                   key={product.id}

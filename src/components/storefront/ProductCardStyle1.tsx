@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Package, ShoppingCart, Star, Heart, Check, Plus, Minus, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
@@ -23,18 +23,6 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
   const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
-  const nav = useNavigate();
-  const productUrl = storefrontPath(slug, `product/${product.slug || product.id}`);
-
-  const handleCardClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const doc = document as any;
-    if (doc.startViewTransition) {
-      doc.startViewTransition(() => nav(productUrl));
-    } else {
-      nav(productUrl);
-    }
-  }, [nav, productUrl]);
 
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
   const categoryLabel = product.category || "TOP RATED";
@@ -56,14 +44,14 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
 
   return (
     <div
-      className="group flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-card transition-all duration-300 ease-out cursor-pointer"
-      style={{ boxShadow: cardShadow }}
+      className="group rounded-xl bg-card overflow-hidden border border-border/50 transition-all duration-300 ease-out cursor-pointer"
+      style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto" }}
       onMouseEnter={(e) => { prefetchProductDetail(); e.currentTarget.style.boxShadow = cardHoverShadow; e.currentTarget.style.transform = "translateY(-4px)"; }}
       onTouchStart={prefetchProductDetail}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; e.currentTarget.style.transform = "translateY(0)"; }}
     >
-      <a onClick={handleCardClick} href={productUrl} className="block p-1 pb-0">
-        <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "4/5", viewTransitionName: `product-${product.id}` }}>
+      <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
+        <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "4/5" }}>
           {discountPercent && (
             <div className="absolute left-2 top-2 z-10">
               <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground">
@@ -90,7 +78,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             );
           })()}
         </div>
-      </a>
+      </Link>
       <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
         <div className="flex items-center justify-end">
           <div className="flex items-center gap-0.5">
@@ -98,9 +86,9 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             <span className="text-[10px] font-bold text-foreground">{getProductRating(product.id)}</span>
           </div>
         </div>
-        <a onClick={handleCardClick} href={productUrl}>
+        <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)}>
           <h3 className="text-xs font-bold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">{product.name}</h3>
-        </a>
+        </Link>
         <div className="flex items-center gap-1 min-w-0">
           {product.sale_price ? (
             <>

@@ -239,67 +239,6 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ── Staggered Grid Reveal ── */
-/* Stagger-in: cards are always visible by default.
-   The animation only applies inside a .stagger-grid parent. */
-.stagger-item {
-  opacity: 1;
-}
-.stagger-grid > .stagger-item {
-  animation: stagger-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@keyframes stagger-in {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-/* Stagger delays for first 16 items */
-.stagger-grid > .stagger-item:nth-child(1) { animation-delay: 0ms; }
-.stagger-grid > .stagger-item:nth-child(2) { animation-delay: 60ms; }
-.stagger-grid > .stagger-item:nth-child(3) { animation-delay: 120ms; }
-.stagger-grid > .stagger-item:nth-child(4) { animation-delay: 180ms; }
-.stagger-grid > .stagger-item:nth-child(5) { animation-delay: 240ms; }
-.stagger-grid > .stagger-item:nth-child(6) { animation-delay: 300ms; }
-.stagger-grid > .stagger-item:nth-child(7) { animation-delay: 360ms; }
-.stagger-grid > .stagger-item:nth-child(8) { animation-delay: 420ms; }
-.stagger-grid > .stagger-item:nth-child(9) { animation-delay: 480ms; }
-.stagger-grid > .stagger-item:nth-child(10) { animation-delay: 540ms; }
-.stagger-grid > .stagger-item:nth-child(11) { animation-delay: 600ms; }
-.stagger-grid > .stagger-item:nth-child(12) { animation-delay: 660ms; }
-.stagger-grid > .stagger-item:nth-child(13) { animation-delay: 720ms; }
-.stagger-grid > .stagger-item:nth-child(14) { animation-delay: 780ms; }
-.stagger-grid > .stagger-item:nth-child(n+15) { animation-delay: 800ms; }
-
-@media (prefers-reduced-motion: reduce) {
-  .stagger-grid > .stagger-item { animation: none; opacity: 1; transform: none; }
-}
-
-/* ── View Transitions API (morphing page transitions) ── */
-::view-transition-old(root) {
-  animation: vt-fade-out 0.25s ease-out;
-}
-::view-transition-new(root) {
-  animation: vt-fade-in 0.3s ease-out;
-}
-@keyframes vt-fade-out {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(0.98); }
-}
-@keyframes vt-fade-in {
-  from { opacity: 0; transform: scale(1.02); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-/* Product card view-transition name for morphing effect */
-.product-card-vt {
-  view-transition-name: product-hero;
-}
-
 /* Storefront below-fold sections: defer rendering cost */
 .storefront-below-fold {
   content-visibility: auto;
