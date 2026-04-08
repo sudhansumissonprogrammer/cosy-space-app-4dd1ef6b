@@ -1,5 +1,5 @@
 import { MessageCircle } from "lucide-react";
-import logo from "@/assets/shopbanao-logo.png";
+import logo from "@/assets/shopbanao-logo.webp";
 
 const Footer = () => {
   return (

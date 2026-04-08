@@ -1,6 +1,6 @@
 import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp, ExternalLink } from "lucide-react";
-import overlaysMobile from "@/assets/showcase-overlays-mobile.png";
-import serdiyaMobile from "@/assets/showcase-serdiya-mobile.png";
+import overlaysMobile from "@/assets/showcase-overlays-mobile.webp";
+import serdiyaMobile from "@/assets/showcase-serdiya-mobile.webp";
 
 const liveStores = [
   { img: overlaysMobile, label: "Overlays", url: "https://overlays.shopbanao.in" },
@@ -18,7 +18,7 @@ const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: 
       <div className="bg-foreground rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] p-[3px] sm:p-[3px] shadow-2xl transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1">
         <div className="absolute top-[3px] left-1/2 -translate-x-1/2 w-10 sm:w-12 lg:w-14 h-2.5 sm:h-3 bg-foreground rounded-b-lg z-20" />
         <div className="rounded-[19px] sm:rounded-[23px] lg:rounded-[25px] overflow-hidden">
-          <img src={img} alt={`${label} live store`} className="w-full h-auto block" />
+          <img src={img} alt={`${label} live store`} className="w-full h-auto block" loading="lazy" decoding="async" />
         </div>
       </div>
       {/* Hover overlay */}
