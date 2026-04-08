@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Package, ShoppingCart, Star, Heart, Check, Plus, Minus, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
