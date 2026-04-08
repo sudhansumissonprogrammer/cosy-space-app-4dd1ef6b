@@ -34,8 +34,10 @@ export default function SmartInstallPrompt({
   const [showManualGuide, setShowManualGuide] = useState(false);
 
   useEffect(() => {
-    // Skip in iframes (Lovable preview)
-    try { if (window.self !== window.top) return; } catch { return; }
+    // Skip in Lovable preview iframes only
+    try {
+      if (window.self !== window.top && window.location.hostname.includes("lovable")) return;
+    } catch { /* cross-origin iframe, continue */ }
 
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
@@ -239,24 +241,14 @@ export default function SmartInstallPrompt({
             <Button variant="outline" className="flex-1" onClick={handleDismissPopup}>
               Not Now
             </Button>
-            {canNativeInstall ? (
-              <Button
-                className="flex-1 font-bold"
-                style={{ backgroundColor: primaryColor, color: textColor }}
-                onClick={handleInstall}
-              >
-                <Download className="mr-1.5 h-4 w-4" />
-                Install
-              </Button>
-            ) : (
-              <Button
-                className="flex-1 font-bold"
-                style={{ backgroundColor: primaryColor, color: textColor }}
-                onClick={handleDismissPopup}
-              >
-                Got it
-              </Button>
-            )}
+            <Button
+              className="flex-1 font-bold"
+              style={{ backgroundColor: primaryColor, color: textColor }}
+              onClick={canNativeInstall ? handleInstall : () => window.open("/install", "_blank")}
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              Install App
+            </Button>
           </div>
         </div>
       </div>
@@ -274,23 +266,13 @@ export default function SmartInstallPrompt({
         <p className="flex-1 text-xs font-medium truncate">
           Install {appName} app for the best experience
         </p>
-        {canNativeInstall ? (
-          <button
-            onClick={handleInstall}
-            className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
-            style={{ backgroundColor: `${textColor}`, color: primaryColor }}
-          >
-            INSTALL
-          </button>
-        ) : (
-          <button
-            onClick={() => { setShowStrip(false); setShowPopup(true); }}
-            className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
-            style={{ backgroundColor: `${textColor}`, color: primaryColor }}
-          >
-            HOW TO
-          </button>
-        )}
+        <button
+          onClick={canNativeInstall ? handleInstall : () => window.open("/install", "_blank")}
+          className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
+          style={{ backgroundColor: `${textColor}`, color: primaryColor }}
+        >
+          INSTALL
+        </button>
         <button
           onClick={handleDismissStrip}
           className="shrink-0 p-0.5 opacity-70 hover:opacity-100 transition-opacity"
