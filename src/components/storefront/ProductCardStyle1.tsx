@@ -62,8 +62,8 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
       onTouchStart={prefetchProductDetail}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; e.currentTarget.style.transform = "translateY(0)"; }}
     >
-      <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
-        <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "4/5" }}>
+      <a onClick={handleCardClick} href={productUrl} className="block p-1 pb-0">
+        <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "4/5", viewTransitionName: `product-${product.id}` }}>
           {discountPercent && (
             <div className="absolute left-2 top-2 z-10">
               <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground">
