@@ -38,13 +38,13 @@ export function HomeBestSellingSection({ products, slug, store, cardStyle, bestS
           <div className="flex gap-3 overflow-x-auto px-4 pb-2 md:hidden" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
             {bestSellers.map((product: any, idx: number) => (
               <div key={product.id} className="flex-shrink-0" style={{ width: "160px" }}>
-                <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
+                <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
               </div>
             ))}
           </div>
           <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4 px-4">
             {bestSellers.map((product: any, idx: number) => (
-              <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} />
+              <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
             ))}
           </div>
         </>
