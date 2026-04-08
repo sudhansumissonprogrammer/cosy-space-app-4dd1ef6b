@@ -101,11 +101,22 @@ export default {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        "page-fade-in": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "cart-bounce": {
+          "0%, 100%": { transform: "scale(1)" },
+          "30%": { transform: "scale(1.25)" },
+          "50%": { transform: "scale(0.9)" },
+          "70%": { transform: "scale(1.1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         shimmer: "shimmer 1.5s infinite",
+        "page-fade-in": "page-fade-in 0.3s ease-out both",
       },
     },
   },
