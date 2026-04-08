@@ -35,7 +35,7 @@ export function HomeBestSellingSection({ products, slug, store, cardStyle, bestS
         </div>
       ) : (
         <>
-          <div className="flex gap-3 overflow-x-auto px-4 pb-2 md:hidden" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+          <div className="flex gap-3 overflow-x-auto px-4 pb-2 md:hidden rubber-band-scroll" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
             {bestSellers.map((product: any, idx: number) => (
               <div key={product.id} className="flex-shrink-0" style={{ width: "160px" }}>
                 <UniversalProductCard product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
