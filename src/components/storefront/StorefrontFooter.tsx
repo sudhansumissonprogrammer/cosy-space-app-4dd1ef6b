@@ -147,7 +147,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
               className="inline-flex items-center gap-1 underline hover:opacity-100 transition-opacity"
               style={{ color: "inherit" }}
             >
-              <img src={shopbanaoLogo} alt="ShopBanao" className="h-4 w-auto inline-block" loading="lazy" />
+              <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-auto inline-block" loading="lazy" />
               ShopBanao
             </a>
           </p>

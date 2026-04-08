@@ -9,7 +9,7 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 bg-bauhaus-white border-b-4 border-foreground">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between h-14 md:h-20">
         <a href="/" className="flex items-center -space-x-1">
-          <img src={logo} alt="ShopBanao" className="h-8 md:h-10 w-auto" />
+          <img src={logo} alt="ShopBanao" className="h-14 md:h-16 w-auto" />
           <span className="text-2xl md:text-3xl text-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>
             ShopBanao
           </span>
