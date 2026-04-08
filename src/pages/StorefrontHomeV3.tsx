@@ -12,6 +12,7 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { getDiscountPercent } from "@/lib/productUtils";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { Skeleton } from "@/components/ui/skeleton";
+import SectionHeading from "@/components/storefront/SectionHeading";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
@@ -335,9 +336,7 @@ export default function StorefrontHomeV3() {
       <div className="px-3 pb-6 space-y-3" style={{ minHeight: 560, contain: "layout style" }}>
         {/* Sort header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>
-            All Products
-          </h2>
+          <SectionHeading title="All Products" />
           <div className="relative">
             <button
               onClick={() => setSortOpen(!sortOpen)}

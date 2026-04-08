@@ -6,6 +6,7 @@ import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useSt
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import SectionHeading from "@/components/storefront/SectionHeading";
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
@@ -266,13 +267,7 @@ export default function StorefrontHome() {
               <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
             ) : (
               <section>
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="h-px flex-1 bg-border" />
-                  <h2 className="text-lg font-bold text-foreground tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>
-                    🔥 Best Selling
-                  </h2>
-                  <div className="h-px flex-1 bg-border" />
-                </div>
+                <SectionHeading title="🔥 Best Selling" />
                 <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                   {bestSellingProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
                     <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
@@ -295,11 +290,8 @@ export default function StorefrontHome() {
         )}
 
         <section style={{ minHeight: 600, contain: "layout" }}>
-          <div className="mb-5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-5 w-1 rounded-full bg-foreground" />
-              <h2 className="text-lg font-bold text-foreground tracking-wide" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)" }}>🔥 Popular Products</h2>
-            </div>
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <SectionHeading title="🔥 Popular Products" className="flex-1" />
             <SortDropdown value={sortBy} onChange={setSortBy} />
           </div>
 

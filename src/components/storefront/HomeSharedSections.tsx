@@ -1,33 +1,17 @@
 import { useMemo, lazy, Suspense } from "react";
-import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
-import { storefrontPath } from "@/lib/subdomain";
+import SectionHeading from "@/components/storefront/SectionHeading";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 
 type StoreData = Tables<"stores">;
 
 /** Shared section header with optional "View All" link */
-export function HomeSectionHeader({ title, slug, linkTo, fontFallback = "'Alegreya SC'" }: { title: string; slug: string; linkTo?: string; fontFallback?: string }) {
+export function HomeSectionHeader({ title, slug, linkTo }: { title: string; slug: string; linkTo?: string; fontFallback?: string }) {
   return (
-    <div className="flex items-center justify-between px-4 mb-3">
-      <h2
-        className="text-lg font-bold"
-        style={{ fontFamily: `var(--storefront-heading-font, ${fontFallback}), serif`, color: "var(--storefront-text, #1a1a1a)" }}
-      >
-        {title}
-      </h2>
-      {linkTo && (
-        <Link
-          to={storefrontPath(slug, linkTo)}
-          className="text-xs font-semibold flex items-center gap-0.5 transition-opacity hover:opacity-70"
-          style={{ color: "var(--storefront-primary, #1a1a1a)" }}
-        >
-          View All <ChevronRight className="h-3.5 w-3.5" />
-        </Link>
-      )}
+    <div className="px-4">
+      <SectionHeading title={title} slug={slug} linkTo={linkTo} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Tag } from "lucide-react";
+import SectionHeading from "@/components/storefront/SectionHeading";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
@@ -167,11 +168,7 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
   return (
     <div className="backdrop-blur-md" style={{ minHeight: gridMinHeight, contain: "layout style", backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
       <div className="mx-auto max-w-6xl px-4 py-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, var(--storefront-primary, hsl(var(--primary))))" }} />
-          <h2 className="text-sm font-semibold uppercase tracking-[0.2em] whitespace-nowrap" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>Shop by Category</h2>
-          <div className="h-px flex-1" style={{ background: "linear-gradient(to left, transparent, var(--storefront-primary, hsl(var(--primary))))" }} />
-        </div>
+        <SectionHeading title="Shop by Category" />
         {isLoading ? (
           isCarousel ? (
             <div className="flex gap-4 overflow-hidden">
