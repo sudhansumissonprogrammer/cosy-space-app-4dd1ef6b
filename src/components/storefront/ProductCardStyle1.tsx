@@ -55,7 +55,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
         <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "4/5" }}>
           {discountPercent && (
             <div className="absolute left-2 top-2 z-10">
-              <span className="inline-flex items-center gap-0.5 rounded-full glass-badge px-1.5 py-0.5 text-[8px] font-bold">
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground">
                 -{discountPercent}%
               </span>
             </div>

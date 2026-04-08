@@ -49,11 +49,9 @@ export default function UniversalProductCard({ product, slug, store, priority = 
     }
   })();
 
-  const isBestSelling = product.is_best_selling;
-
   return (
     <div
-      className={`stagger-card ${isBestSelling ? "gradient-glow-border rounded-xl" : ""}`}
+      className="stagger-card"
       style={{ "--i": index } as React.CSSProperties}
       onMouseEnter={prefetchProductDetail}
       onTouchStart={prefetchProductDetail}
