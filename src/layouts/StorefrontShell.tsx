@@ -111,6 +111,9 @@ export default function StorefrontShell({
   const { store, isLoading, slug } = useStorefront(slugOverride);
   const viewTracked = useRef(false);
 
+  // Lenis smooth scroll — storefront only
+  useLenis();
+
   // Analytics hooks — safe to call even when store is null
   useFacebookPixel((store as any)?.facebook_pixel_id);
 
