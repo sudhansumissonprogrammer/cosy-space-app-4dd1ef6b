@@ -241,24 +241,14 @@ export default function SmartInstallPrompt({
             <Button variant="outline" className="flex-1" onClick={handleDismissPopup}>
               Not Now
             </Button>
-            {canNativeInstall ? (
-              <Button
-                className="flex-1 font-bold"
-                style={{ backgroundColor: primaryColor, color: textColor }}
-                onClick={handleInstall}
-              >
-                <Download className="mr-1.5 h-4 w-4" />
-                Install
-              </Button>
-            ) : (
-              <Button
-                className="flex-1 font-bold"
-                style={{ backgroundColor: primaryColor, color: textColor }}
-                onClick={handleDismissPopup}
-              >
-                Got it
-              </Button>
-            )}
+            <Button
+              className="flex-1 font-bold"
+              style={{ backgroundColor: primaryColor, color: textColor }}
+              onClick={canNativeInstall ? handleInstall : () => window.open("/install", "_blank")}
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              Install App
+            </Button>
           </div>
         </div>
       </div>
