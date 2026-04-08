@@ -98,9 +98,9 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             <span className="text-[10px] font-bold text-foreground">{getProductRating(product.id)}</span>
           </div>
         </div>
-        <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)}>
+        <a onClick={handleCardClick} href={productUrl}>
           <h3 className="text-xs font-bold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">{product.name}</h3>
-        </Link>
+        </a>
         <div className="flex items-center gap-1 min-w-0">
           {product.sale_price ? (
             <>
