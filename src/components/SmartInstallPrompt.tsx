@@ -16,6 +16,7 @@ interface SmartInstallPromptProps {
   primaryColor?: string;
   textColor?: string;
   delay?: number;
+  logoUrl?: string;
 }
 
 export default function SmartInstallPrompt({
