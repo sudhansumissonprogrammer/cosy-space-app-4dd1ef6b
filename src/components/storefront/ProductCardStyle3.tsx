@@ -63,7 +63,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
           );
         })()}
         {discount && (
-          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold rounded-md glass-badge">
+          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)", borderRadius: "6px" }}>
             -{discount}%
           </div>
         )}
