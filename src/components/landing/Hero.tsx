@@ -1,6 +1,6 @@
 import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp, ExternalLink } from "lucide-react";
-import overlaysMobile from "@/assets/showcase-overlays-mobile.png";
-import serdiyaMobile from "@/assets/showcase-serdiya-mobile.png";
+import overlaysMobile from "@/assets/showcase-overlays-mobile.webp";
+import serdiyaMobile from "@/assets/showcase-serdiya-mobile.webp";
 
 const liveStores = [
   { img: overlaysMobile, label: "Overlays", url: "https://overlays.shopbanao.in" },
