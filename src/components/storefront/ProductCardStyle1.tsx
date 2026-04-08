@@ -54,7 +54,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
         <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "4/5" }}>
           {discountPercent && (
             <div className="absolute left-2 top-2 z-10">
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground">
+              <span className="inline-flex items-center gap-0.5 rounded-full glass-badge px-1.5 py-0.5 text-[8px] font-bold">
                 -{discountPercent}%
               </span>
             </div>
@@ -102,9 +102,9 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
         </div>
         {cartQty > 0 && !isAdding && !justAdded ? (
           <div className="flex h-7 sm:h-8 w-full items-center rounded-lg overflow-hidden btn-gold">
-            <button onClick={handleDecrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-95" aria-label="Decrease quantity"><Minus className="h-3 w-3" strokeWidth={2.5} /></button>
-            <span className="flex-1 text-center text-[9px] font-extrabold whitespace-nowrap" aria-live="polite">{cartQty} in cart</span>
-            <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-95" aria-label="Increase quantity"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
+            <button onClick={handleDecrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Decrease quantity"><Minus className="h-3 w-3" strokeWidth={2.5} /></button>
+            <span key={cartQty} className="flex-1 text-center text-[9px] font-extrabold whitespace-nowrap qty-bounce" aria-live="polite">{cartQty} in cart</span>
+            <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Increase quantity"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
           </div>
         ) : (
           <button className={`flex h-7 w-full items-center justify-center gap-1.5 rounded-lg text-[9px] font-extrabold uppercase tracking-widest sm:h-8 sm:text-[10px] transition-all duration-300 active:scale-[0.98] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "btn-gold opacity-80 cursor-wait" : "btn-gold hover:brightness-110"}`} onClick={handleAdd} disabled={isAdding}>
