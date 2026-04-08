@@ -5,6 +5,7 @@ import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { Search, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import SectionHeading from "@/components/storefront/SectionHeading";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
@@ -307,12 +308,7 @@ export default function StorefrontHomeV2() {
       <div className="mx-auto max-w-6xl px-3 sm:px-4 pb-12 space-y-8">
         {/* Sort bar */}
         <div className="flex items-center justify-between">
-          <h2
-            className="text-xl font-bold tracking-tight sm:text-2xl"
-            style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
-          >
-            All Products
-          </h2>
+          <SectionHeading title="All Products" />
           <div className="relative">
             <button
               onClick={() => setSortOpen(!sortOpen)}
