@@ -181,9 +181,6 @@ export default function Login() {
 
 
 
-              <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary">
-                Forgot password?
-              </Link>
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
                 <Link to="/signup" className="font-medium text-primary hover:underline">
