@@ -255,29 +255,43 @@ export default function SmartInstallPrompt({
     );
   }
 
-  // Strip under header
+  // Smart app install strip — like Flipkart / Myntra style
   if (showStrip) {
     return (
-      <div
-        className="sticky top-14 z-[55] flex items-center gap-2 px-3 py-1.5 border-b border-border sm:top-12"
-        style={{ backgroundColor: primaryColor, color: textColor }}
-      >
-        <Download className="h-3.5 w-3.5 shrink-0 opacity-80" />
-        <p className="flex-1 text-xs font-medium truncate">
-          Install {appName} app for the best experience
-        </p>
+      <div className="sticky top-14 sm:top-12 z-[55] flex items-center gap-3 px-3 py-2 bg-gradient-to-r from-[#1a1a2e] to-[#16213e] border-b border-white/10 shadow-sm">
+        {/* App icon */}
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden bg-white/10">
+          {logoUrl ? (
+            <img src={logoUrl} alt={appName} className="h-9 w-9 object-contain" />
+          ) : (
+            <Smartphone className="h-5 w-5 text-white" />
+          )}
+        </div>
+
+        {/* Text */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold text-white leading-tight truncate">
+            {appName}
+          </p>
+          <p className="text-[10px] text-white/60 leading-tight">
+            Get the app for a better experience
+          </p>
+        </div>
+
+        {/* Install button */}
         <button
           onClick={canNativeInstall ? handleInstall : () => window.open("/install", "_blank")}
-          className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
-          style={{ backgroundColor: `${textColor}`, color: primaryColor }}
+          className="shrink-0 rounded-lg px-4 py-1.5 text-xs font-bold bg-white text-[#1a1a2e] active:scale-95 transition-transform"
         >
           INSTALL
         </button>
+
+        {/* Close */}
         <button
           onClick={handleDismissStrip}
-          className="shrink-0 p-0.5 opacity-70 hover:opacity-100 transition-opacity"
+          className="shrink-0 p-1 opacity-50 hover:opacity-100 transition-opacity"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-3.5 w-3.5 text-white" />
         </button>
       </div>
     );
