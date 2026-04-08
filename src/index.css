@@ -291,6 +291,84 @@
   transform: translateY(-100%);
 }
 
+/* ── Premium UX: Quantity stepper bounce ── */
+@keyframes qty-bounce {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.3); }
+  70% { transform: scale(0.9); }
+}
+.qty-bounce {
+  animation: qty-bounce 0.3s ease-out;
+}
+
+/* ── Premium UX: Scroll progress indicator ── */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2.5px;
+  z-index: 9999;
+  background: var(--storefront-primary, hsl(var(--primary)));
+  transform-origin: left;
+  will-change: transform;
+  transition: none;
+  pointer-events: none;
+}
+
+/* ── Premium UX: Glassmorphism sale tag ── */
+.glass-badge {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* ── Premium UX: Gradient glow on best-selling ── */
+@keyframes gradient-glow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.gradient-glow-border {
+  position: relative;
+}
+.gradient-glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #f97316, #ec4899, #8b5cf6, #3b82f6, #f97316);
+  background-size: 300% 300%;
+  animation: gradient-glow 4s ease infinite;
+  z-index: -1;
+  opacity: 0.7;
+}
+
+/* ── Premium UX: Ripple effect ── */
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-container .ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(0);
+  animation: ripple-expand 0.5s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes ripple-expand {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* ── Premium UX: Rubber-band overscroll ── */
+.rubber-band-scroll {
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Theme V3: push WhatsApp button above bottom nav + sticky cart bar on mobile */
 @media (max-width: 639px) {
   .theme-v3-wa-fix a[aria-label="Chat on WhatsApp"] {

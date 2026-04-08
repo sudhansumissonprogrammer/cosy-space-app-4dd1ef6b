@@ -13,6 +13,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
 import { useSmartHeader } from "@/hooks/useSmartHeader";
 import PageTransition from "@/components/storefront/PageTransition";
+import ScrollProgressBar from "@/components/storefront/ScrollProgressBar";
 
 const LazyShareStoreDialog = lazy(() => import("@/components/ShareStoreDialog"));
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
@@ -130,6 +131,7 @@ export default function CheckoutAwareLayout({
 
   return (
     <>
+      <ScrollProgressBar />
       {!isCheckout && marquee}
 
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}

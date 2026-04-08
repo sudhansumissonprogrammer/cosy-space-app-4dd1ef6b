@@ -62,7 +62,7 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
           );
         })()}
         {discount && (
-          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, #1a1a1a)", color: "var(--storefront-btn-text, #fff)", borderRadius: "6px" }}>
+          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold rounded-md glass-badge">
             -{discount}%
           </div>
         )}
