@@ -215,12 +215,6 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
-  "theme-17": [
-    "midnight-navy", "coral-sunset", "crimson-royale", "electric-violet", "lux-black-gold",
-    "app-blue-orange", "plum-cream", "crimson-sand", "ghost-persian", "elegant-black-white",
-    "teal-elegance", "teal-conversion", "ocean-teal", "emerald-luxe", "lilac-mist",
-    "saffron-bloom", "mint-fresh", "lux-cream-brown", "velvet-merlot", "app-purple-pink",
-  ],
 };
 
 /* ── Get sorted color combinations for a given theme ── */
@@ -323,12 +317,6 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_gradient: "linear-gradient(90deg, #000000, #333333, #000000)",
     marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
   },
-  "theme-17": {
-    primary_color: "#1B1B3A", accent_color: "#F56E0F", text_color: "#1a1a1a", background_color: "#FAFAF8",
-    heading_font: "Alegreya SC", body_font: "Inter", button_style: "pill",
-    marquee_gradient: "linear-gradient(90deg, #1B1B3A, #F56E0F, #1B1B3A)",
-    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-5", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
-  },
 };
 
 const THEMES = [
@@ -343,7 +331,7 @@ const THEMES = [
   { id: "theme-12", name: "Starter Classic", description: "Clean classic storefront with hero, carousel & product grid", available: true },
   { id: "theme-13", name: "Restaurant QR Menu", description: "WhatsApp-first QR ordering for restaurants & cafés — no checkout, just scan & order", available: true },
   { id: "theme-16", name: "Classic + Quick Buy", description: "Classic theme with phone-first Buy Now flow — collects number & auto-fills address", available: true },
-  { id: "theme-17", name: "Luxe Mobile", description: "Premium mobile-first with glassmorphism hero, pill categories & overlay product cards", available: true },
+  
 ];
 
 /* ── Helper: compute lighter tint ── */
@@ -2512,7 +2500,7 @@ export default function StoreThemeSettings() {
                   { value: "style-2", label: "Style 2", desc: "Badge & overlay" },
                   { value: "style-3", label: "Style 3", desc: "Bold modern" },
                   { value: "style-4", label: "Style 4", desc: "Menu list" },
-                  { value: "style-5", label: "Style 5", desc: "Luxe overlay" },
+                  
                 ].map((s) => (
                   <button
                     key={s.value}
