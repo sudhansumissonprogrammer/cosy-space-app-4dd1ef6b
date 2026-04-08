@@ -698,7 +698,7 @@ export default function CreateStore() {
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Choose Your Plan</h2>
-                  <p className="text-sm text-muted-foreground">Select the plan that fits your business needs</p>
+                  <p className="text-sm text-muted-foreground">Start with a 7-day free trial • No card required</p>
                 </div>
 
                 {plans && plans.length > 0 ? (
@@ -737,6 +737,7 @@ export default function CreateStore() {
                           <p className="mt-2 text-sm font-medium text-primary">
                             {plan.product_limit ? `${plan.product_limit} Products` : "Unlimited Products"}
                           </p>
+                          <p className="mt-1 text-xs font-medium text-green-600">7-day free trial included</p>
                         </button>
                       );
                     })}
@@ -751,8 +752,8 @@ export default function CreateStore() {
                   <div className="flex items-start gap-3">
                     <Sparkles className="mt-0.5 h-5 w-5 text-primary shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">You can upgrade anytime!</p>
-                      <p className="text-xs text-muted-foreground">Start with any plan and upgrade later as your business grows. No data loss.</p>
+                      <p className="text-sm font-medium text-foreground">7-day free trial on all plans!</p>
+                      <p className="text-xs text-muted-foreground">Try any plan free for 7 days. Upgrade or cancel anytime — no data loss.</p>
                     </div>
                   </div>
                 </div>
