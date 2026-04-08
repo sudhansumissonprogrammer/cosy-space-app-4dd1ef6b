@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, Download, Smartphone } from "lucide-react";
+import { X, Download, Smartphone, Share, PlusSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -29,22 +29,21 @@ export default function SmartInstallPrompt({
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [showStrip, setShowStrip] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as any).standalone === true;
 
-    // If currently standalone, mark as installed and don't show prompts
     if (isStandalone) {
       localStorage.setItem(WAS_INSTALLED_KEY, "true");
       return;
     }
 
-    // Detect uninstall: was installed before but now running in browser
+    // Detect uninstall
     const wasInstalled = localStorage.getItem(WAS_INSTALLED_KEY);
     if (wasInstalled === "true") {
-      // User uninstalled — clear all dismiss keys so prompts re-appear
       localStorage.removeItem(POPUP_DISMISSED_KEY);
       localStorage.removeItem(STRIP_DISMISSED_KEY);
       localStorage.removeItem(WAS_INSTALLED_KEY);
@@ -65,12 +64,29 @@ export default function SmartInstallPrompt({
       return;
     }
 
+    const popupDismissed = localStorage.getItem(POPUP_DISMISSED_KEY);
+    const wasRecentlyDismissed = popupDismissed && Date.now() - Number(popupDismissed) < 24 * 60 * 60 * 1000;
+
+    // Detect iOS
+    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(isiOS);
+
+    // For iOS: no beforeinstallprompt, show manual instructions after delay
+    if (isiOS) {
+      if (wasRecentlyDismissed) {
+        setShowStrip(true);
+      } else {
+        setTimeout(() => setShowPopup(true), delay);
+      }
+      return () => {
+        window.removeEventListener("appinstalled", onInstalled);
+      };
+    }
+
+    // For Chrome/Android: listen for beforeinstallprompt
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-
-      const popupDismissed = localStorage.getItem(POPUP_DISMISSED_KEY);
-      const wasRecentlyDismissed = popupDismissed && Date.now() - Number(popupDismissed) < 24 * 60 * 60 * 1000;
 
       if (wasRecentlyDismissed) {
         setShowStrip(true);
@@ -80,22 +96,40 @@ export default function SmartInstallPrompt({
     };
 
     window.addEventListener("beforeinstallprompt", handler);
+
+    // Fallback: if no beforeinstallprompt after delay+3s, show anyway on mobile
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile && !isiOS) {
+      fallbackTimer = setTimeout(() => {
+        if (!deferredPrompt) {
+          if (wasRecentlyDismissed) {
+            setShowStrip(true);
+          } else {
+            setShowPopup(true);
+          }
+        }
+      }, delay + 3000);
+    }
+
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
       window.removeEventListener("appinstalled", onInstalled);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
     };
   }, [delay]);
 
   const handleInstall = useCallback(async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setShowPopup(false);
-      setShowStrip(false);
-      localStorage.setItem(WAS_INSTALLED_KEY, "true");
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setShowPopup(false);
+        setShowStrip(false);
+        localStorage.setItem(WAS_INSTALLED_KEY, "true");
+      }
+      setDeferredPrompt(null);
     }
-    setDeferredPrompt(null);
   }, [deferredPrompt]);
 
   const handleDismissPopup = useCallback(() => {
@@ -108,6 +142,18 @@ export default function SmartInstallPrompt({
     setShowStrip(false);
     localStorage.setItem(STRIP_DISMISSED_KEY, String(Date.now()));
   }, []);
+
+  const benefits = appName.toLowerCase().includes("shopbanao")
+    ? [
+        { emoji: "⚡", text: "Manage orders on the go" },
+        { emoji: "🔔", text: "Instant order notifications" },
+        { emoji: "📱", text: "Full-screen app experience" },
+      ]
+    : [
+        { emoji: "⚡", text: "Lightning fast loading" },
+        { emoji: "🔔", text: "Instant order notifications" },
+        { emoji: "📱", text: "Full-screen native experience" },
+      ];
 
   // Full-screen popup overlay
   if (showPopup) {
@@ -137,18 +183,7 @@ export default function SmartInstallPrompt({
           </div>
 
           <div className="px-5 py-4 space-y-2.5">
-            {(appName.toLowerCase().includes("shopbanao")
-              ? [
-                  { emoji: "⚡", text: "Manage orders on the go" },
-                  { emoji: "🔔", text: "Instant order notifications" },
-                  { emoji: "📱", text: "Full-screen app experience" },
-                ]
-              : [
-                  { emoji: "⚡", text: "Lightning fast loading" },
-                  { emoji: "🔔", text: "Instant order notifications" },
-                  { emoji: "📱", text: "Full-screen native experience" },
-                ]
-            ).map((b) => (
+            {benefits.map((b) => (
               <div key={b.text} className="flex items-center gap-2.5">
                 <span className="text-base">{b.emoji}</span>
                 <span className="text-sm text-foreground">{b.text}</span>
@@ -156,18 +191,45 @@ export default function SmartInstallPrompt({
             ))}
           </div>
 
+          {/* iOS manual instructions */}
+          {isIOS && !deferredPrompt && (
+            <div className="px-5 pb-3 pt-1 border-t border-border">
+              <p className="text-xs font-semibold text-foreground mb-2">How to install:</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Share className="h-3.5 w-3.5 shrink-0" />
+                  <span>Tap the <strong className="text-foreground">Share</strong> button below</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <PlusSquare className="h-3.5 w-3.5 shrink-0" />
+                  <span>Tap <strong className="text-foreground">"Add to Home Screen"</strong></span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="px-5 pb-5 flex gap-2.5">
             <Button variant="outline" className="flex-1" onClick={handleDismissPopup}>
               Not Now
             </Button>
-            <Button
-              className="flex-1 font-bold"
-              style={{ backgroundColor: primaryColor, color: textColor }}
-              onClick={handleInstall}
-            >
-              <Download className="mr-1.5 h-4 w-4" />
-              Install
-            </Button>
+            {deferredPrompt ? (
+              <Button
+                className="flex-1 font-bold"
+                style={{ backgroundColor: primaryColor, color: textColor }}
+                onClick={handleInstall}
+              >
+                <Download className="mr-1.5 h-4 w-4" />
+                Install
+              </Button>
+            ) : isIOS ? (
+              <Button
+                className="flex-1 font-bold"
+                style={{ backgroundColor: primaryColor, color: textColor }}
+                onClick={handleDismissPopup}
+              >
+                Got it
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -185,13 +247,23 @@ export default function SmartInstallPrompt({
         <p className="flex-1 text-xs font-medium truncate">
           Install {appName} app for the best experience
         </p>
-        <button
-          onClick={handleInstall}
-          className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
-          style={{ backgroundColor: `${textColor}`, color: primaryColor }}
-        >
-          INSTALL
-        </button>
+        {deferredPrompt ? (
+          <button
+            onClick={handleInstall}
+            className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
+            style={{ backgroundColor: `${textColor}`, color: primaryColor }}
+          >
+            INSTALL
+          </button>
+        ) : isIOS ? (
+          <button
+            onClick={() => { setShowStrip(false); setShowPopup(true); }}
+            className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
+            style={{ backgroundColor: `${textColor}`, color: primaryColor }}
+          >
+            HOW TO
+          </button>
+        ) : null}
         <button
           onClick={handleDismissStrip}
           className="shrink-0 p-0.5 opacity-70 hover:opacity-100 transition-opacity"
