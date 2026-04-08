@@ -20,7 +20,7 @@ const navItems = [
 
 export default function MobileBottomNavModern({ store }: { store: StoreData }) {
   const location = useLocation();
-  const { cartCount, openCart } = useCart();
+  const { cartCount, openCart, cartBounce } = useCart();
   const { user } = useStorefrontAuth();
   const isCheckout = location.pathname.includes("/checkout");
 
