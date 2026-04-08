@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo, useState, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
+import { useLenis } from "@/hooks/useLenis";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider } from "@/contexts/StorefrontAuthContext";
@@ -109,6 +110,9 @@ export default function StorefrontShell({
 }: StorefrontShellProps) {
   const { store, isLoading, slug } = useStorefront(slugOverride);
   const viewTracked = useRef(false);
+
+  // Lenis smooth scroll — storefront only
+  useLenis();
 
   // Analytics hooks — safe to call even when store is null
   useFacebookPixel((store as any)?.facebook_pixel_id);

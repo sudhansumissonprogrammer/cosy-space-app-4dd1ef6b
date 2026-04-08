@@ -10,6 +10,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
+import { useStaggerReveal } from "@/hooks/useStaggerReveal";
 
 const PAGE_SIZE = 14;
 
@@ -72,6 +73,7 @@ export default function CategoryDetail() {
   const products = data?.pages.flatMap((p) => p.products) || [];
 
   const contentReadyRef = useRef(false);
+  const gridRef = useStaggerReveal<HTMLDivElement>();
 
   useEffect(() => {
     contentReadyRef.current = false;
@@ -197,7 +199,7 @@ export default function CategoryDetail() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              <div ref={gridRef} className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {products.map((product, idx) => (
                   <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
                 ))}
