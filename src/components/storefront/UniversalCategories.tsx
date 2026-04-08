@@ -166,8 +166,12 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
 
   return (
     <div className="backdrop-blur-md" style={{ minHeight: gridMinHeight, contain: "layout style", backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
-      <div className="mx-auto max-w-6xl px-4 py-4">
-        <h2 className="text-base font-bold tracking-wide mb-3" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>Shop by Category</h2>
+      <div className="mx-auto max-w-6xl px-4 py-5">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, var(--storefront-primary, hsl(var(--primary))))" }} />
+          <h2 className="text-sm font-semibold uppercase tracking-[0.2em] whitespace-nowrap" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>Shop by Category</h2>
+          <div className="h-px flex-1" style={{ background: "linear-gradient(to left, transparent, var(--storefront-primary, hsl(var(--primary))))" }} />
+        </div>
         {isLoading ? (
           isCarousel ? (
             <div className="flex gap-4 overflow-hidden">
