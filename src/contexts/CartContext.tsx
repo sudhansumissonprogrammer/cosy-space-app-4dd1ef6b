@@ -21,6 +21,7 @@ interface CartContextType {
   isCartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
+  cartBounce: boolean;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -65,10 +66,10 @@ function fireAddToCartAnalytics(
 }
 
 export function CartProvider({ slug, storeId, currency = "INR", children }: { slug: string; storeId?: string; currency?: string; children: ReactNode }) {
-  // Start empty — defer localStorage read to avoid blocking first paint
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartBounce, setCartBounce] = useState(false);
 
   // Deferred hydration from localStorage
   useEffect(() => {
@@ -115,7 +116,9 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
       return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
     setIsCartOpen(true);
-    // Fire analytics asynchronously — doesn't block cart UI
+    // Trigger cart bounce animation
+    setCartBounce(true);
+    setTimeout(() => setCartBounce(false), 500);
     fireAddToCartAnalytics(item, currency, storeId);
   }, [slug, storeId, currency]);
 
@@ -141,7 +144,7 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
   const cartCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, isCartOpen, openCart, closeCart }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, isCartOpen, openCart, closeCart, cartBounce }}>
       {children}
     </CartContext.Provider>
   );
@@ -158,6 +161,7 @@ const CART_FALLBACK: CartContextType = {
   isCartOpen: false,
   openCart: () => {},
   closeCart: () => {},
+  cartBounce: false,
 };
 
 export function useCart() {

@@ -52,7 +52,7 @@ function OptimizedImageInner({
   srcSetSizes = [400, 800],
   onError,
 }: OptimizedImageProps) {
-  const [loaded, setLoaded] = useState(priority); // priority images start visible
+  const [loaded, setLoaded] = useState(priority);
   const [errored, setErrored] = useState(false);
 
   if (!src || errored) {
@@ -60,26 +60,41 @@ function OptimizedImageInner({
   }
 
   const optimizedSrc = optimizeImageUrl(src, width, quality);
+  const blurSrc = optimizeImageUrl(src, 20, 30);
   const srcSet = getImageSrcSet(src, srcSetSizes, quality);
 
   return (
-    <img
-      src={optimizedSrc}
-      srcSet={srcSet || undefined}
-      sizes={srcSet ? sizes : undefined}
-      alt={alt}
-      className={`${className} ${!priority && !loaded ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
-      style={style}
-      loading={priority ? "eager" : "lazy"}
-      decoding={priority ? "sync" : "async"}
-      fetchPriority={priority ? "high" : "auto"}
-      onLoad={() => setLoaded(true)}
-      onError={() => {
-        setErrored(true);
-        onError?.();
-      }}
-      draggable={false}
-    />
+    <div className="relative overflow-hidden" style={aspectRatio ? { aspectRatio } : undefined}>
+      {/* Blur-up placeholder */}
+      {!priority && !loaded && (
+        <img
+          src={blurSrc}
+          alt=""
+          aria-hidden="true"
+          className={`absolute inset-0 h-full w-full object-cover ${className}`}
+          style={{ filter: "blur(12px)", transform: "scale(1.1)", ...style }}
+          loading="eager"
+          decoding="sync"
+        />
+      )}
+      <img
+        src={optimizedSrc}
+        srcSet={srcSet || undefined}
+        sizes={srcSet ? sizes : undefined}
+        alt={alt}
+        className={`${className} ${!priority && !loaded ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
+        style={style}
+        loading={priority ? "eager" : "lazy"}
+        decoding={priority ? "sync" : "async"}
+        fetchPriority={priority ? "high" : "auto"}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setErrored(true);
+          onError?.();
+        }}
+        draggable={false}
+      />
+    </div>
   );
 }
 

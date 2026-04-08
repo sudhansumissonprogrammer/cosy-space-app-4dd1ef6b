@@ -20,7 +20,7 @@ const navItems = [
 
 export default function MobileBottomNavModern({ store }: { store: StoreData }) {
   const location = useLocation();
-  const { cartCount, openCart } = useCart();
+  const { cartCount, openCart, cartBounce } = useCart();
   const { user } = useStorefrontAuth();
   const isCheckout = location.pathname.includes("/checkout");
 
@@ -108,7 +108,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
         {/* Elevated cart circle */}
         <button
           onClick={openCart}
-          className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full shadow-[0_4px_24px_rgba(0,0,0,0.12)] transition-transform duration-200 active:scale-90"
+          className={`relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full shadow-[0_4px_24px_rgba(0,0,0,0.12)] transition-transform duration-200 active:scale-90 ${cartBounce ? "cart-bounce" : ""}`}
           style={{
             backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
           }}

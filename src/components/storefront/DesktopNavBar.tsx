@@ -8,6 +8,7 @@ import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
+import { useSmartHeader } from "@/hooks/useSmartHeader";
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 
@@ -34,12 +35,13 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]) ?? [];
   const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
-  const { cartCount, openCart } = useCart();
+  const { cartCount, openCart, cartBounce } = useCart();
   const { wishlistCount } = useWishlist();
   const { user, loading: authLoading } = useStorefrontAuth();
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const catalogTimer = useRef<ReturnType<typeof setTimeout>>();
+  const headerVisible = useSmartHeader();
 
   const linkClass =
     "text-[13px] font-medium tracking-wide uppercase transition-opacity hover:opacity-70";
@@ -60,7 +62,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
   return (
     <>
       <nav
-        className={`hidden md:block relative z-30 ${className}`}
+        className={`hidden md:block relative z-30 smart-header ${headerVisible ? "" : "smart-header-hidden"} ${className}`}
         style={{
           backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
           color: "var(--storefront-text, hsl(var(--foreground)))",
@@ -195,10 +197,10 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
             {/* Cart */}
             <button
               onClick={openCart}
-              className="relative flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70"
+              className="relative flex h-9 w-9 items-center justify-center rounded-md transition-all hover:opacity-70 active:scale-[0.93]"
               aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
             >
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className={`h-5 w-5 ${cartBounce ? "cart-bounce" : ""}`} />
               {cartCount > 0 && (
                 <span
                   className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"

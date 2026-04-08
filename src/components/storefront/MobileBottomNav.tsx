@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, ShoppingBag, LayoutGrid, ClipboardList, Heart } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
+import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 interface MobileBottomNavProps {
@@ -62,7 +63,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
           <Link
             key={item.label}
             to={item.to}
-            className="flex flex-1 flex-col items-center gap-0.5 py-2 transition-colors"
+            className="flex flex-1 flex-col items-center gap-0.5 py-2 transition-all active:scale-[0.93]"
             style={{
               color: item.active
                 ? "var(--storefront-primary, hsl(var(--primary)))"
