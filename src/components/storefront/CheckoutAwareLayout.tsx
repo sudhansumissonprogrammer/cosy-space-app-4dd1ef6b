@@ -11,6 +11,8 @@ import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+import { useSmartHeader } from "@/hooks/useSmartHeader";
+import PageTransition from "@/components/storefront/PageTransition";
 
 const LazyShareStoreDialog = lazy(() => import("@/components/ShareStoreDialog"));
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
@@ -51,6 +53,7 @@ export default function CheckoutAwareLayout({
   const [searchOpen, setSearchOpen] = useState(false);
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const headerVisible = useSmartHeader();
 
   useEffect(() => {
     // Defer route prefetching by 3s to keep critical path fast
@@ -137,7 +140,7 @@ export default function CheckoutAwareLayout({
       )}
 
       {/* Mobile header + checkout header */}
-      <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 ${
+      <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !headerVisible ? 'smart-header-hidden' : ''} ${
         isCheckout ? 'bg-card/80 backdrop-blur-md' :
         headerStyle === 'transparent' ? '' :
         headerStyle === 'glassmorphic' ? '' :
@@ -209,7 +212,7 @@ export default function CheckoutAwareLayout({
         </Suspense>
       )}
 
-      <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+      <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><PageTransition><Outlet context={store} /></PageTransition></Suspense></main>
       {mobileNavEnabled && mobileNav}
       <Suspense fallback={null}><LazyStorefrontFooter store={store} /></Suspense>
 
