@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Observes a grid container and staggers the reveal of its children.
- * Each child gets a CSS class `stagger-visible` with an incremental delay.
- * Returns a ref to attach to the grid container.
+ * Observes a grid container and staggers the reveal of `.stagger-item` children.
+ * Re-observes when new children appear (infinite scroll safe).
  */
 export function useStaggerReveal<T extends HTMLElement = HTMLDivElement>() {
   const ref = useRef<T>(null);
@@ -11,36 +10,45 @@ export function useStaggerReveal<T extends HTMLElement = HTMLDivElement>() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // If reduced motion, just show everything immediately
-      el.querySelectorAll(".stagger-item").forEach((child) => {
-        (child as HTMLElement).classList.add("stagger-visible");
-      });
-      return;
-    }
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const children = entry.target.querySelectorAll(".stagger-item:not(.stagger-visible)");
-            children.forEach((child, i) => {
-              const htmlChild = child as HTMLElement;
-              htmlChild.style.transitionDelay = `${i * 60}ms`;
-              // Use rAF to batch style changes
-              requestAnimationFrame(() => {
-                htmlChild.classList.add("stagger-visible");
-              });
+        // Group newly visible items and stagger them
+        const visible = entries.filter((e) => e.isIntersecting);
+        visible.forEach((entry, i) => {
+          const htmlEl = entry.target as HTMLElement;
+          if (reducedMotion) {
+            htmlEl.classList.add("stagger-visible");
+          } else {
+            htmlEl.style.transitionDelay = `${i * 60}ms`;
+            requestAnimationFrame(() => {
+              htmlEl.classList.add("stagger-visible");
             });
-            observer.unobserve(entry.target);
           }
+          observer.unobserve(entry.target);
         });
       },
       { rootMargin: "50px", threshold: 0.1 }
     );
 
-    observer.observe(el);
-    return () => observer.disconnect();
+    // Observe all current stagger-item children
+    const observeChildren = () => {
+      el.querySelectorAll(".stagger-item:not(.stagger-visible)").forEach((child) => {
+        observer.observe(child);
+      });
+    };
+
+    observeChildren();
+
+    // Watch for new children (infinite scroll)
+    const mutationObs = new MutationObserver(() => observeChildren());
+    mutationObs.observe(el, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      mutationObs.disconnect();
+    };
   }, []);
 
   return ref;
