@@ -23,6 +23,18 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
   const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const nav = useNavigate();
+  const productUrl = storefrontPath(slug, `product/${product.slug || product.id}`);
+
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const doc = document as any;
+    if (doc.startViewTransition) {
+      doc.startViewTransition(() => nav(productUrl));
+    } else {
+      nav(productUrl);
+    }
+  }, [nav, productUrl]);
 
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
   const categoryLabel = product.category || "TOP RATED";
