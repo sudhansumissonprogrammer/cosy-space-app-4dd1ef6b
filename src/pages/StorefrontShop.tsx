@@ -9,7 +9,6 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
-import { useStaggerReveal } from "@/hooks/useStaggerReveal";
 
 const PAGE_SIZE = 14;
 
@@ -75,7 +74,6 @@ export default function StorefrontShop() {
 
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const gridRef = useStaggerReveal<HTMLDivElement>();
 
   const sentinelRef = useCallback((el: HTMLDivElement | null) => {
     sentinelElRef.current = el;
@@ -132,7 +130,7 @@ export default function StorefrontShop() {
           </div>
         ) : products.length > 0 ? (
           <>
-            <div ref={gridRef} className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {products.map((product, index) => (
                 <UniversalProductCard
                   key={product.id}
