@@ -91,7 +91,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
       <div className="py-4">
         <HomeSectionHeader title="Curated For You" slug={effectiveSlug} linkTo="shop" />
         {isProductsLoading ? (
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 px-2 sm:px-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 px-2 sm:px-4 stagger-grid">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-72 rounded-lg" />
             ))}
@@ -99,7 +99,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
         ) : (() => {
           const popularProducts = products.filter((p: any) => !p.is_best_selling).slice(0, 10);
           return popularProducts.length > 0 ? (
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4">
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 px-2 sm:px-4 stagger-grid">
               {popularProducts.map((product: any, idx: number) => (
                 <UniversalProductCard key={product.id} product={product} slug={effectiveSlug} store={store} priority={idx < 4} cardStyle={cardStyle} />
               ))}

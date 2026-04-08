@@ -323,7 +323,7 @@ export default function StorefrontHomeV16() {
                     ))}
                   </div>
                   {bestSellingProducts.length > ABOVE_FOLD_COUNT && (
-                    <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4">
+                    <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 mt-1.5 sm:mt-4 stagger-grid">
                       {bestSellingProducts.slice(ABOVE_FOLD_COUNT).map((product: any) => (
                         <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={false} cardStyle={cardStyle} />
                       ))}
