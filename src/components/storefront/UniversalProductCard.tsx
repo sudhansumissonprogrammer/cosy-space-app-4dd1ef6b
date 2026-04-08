@@ -4,7 +4,7 @@ import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardStyle2 from "./ProductCardStyle2";
 import ProductCardStyle3 from "./ProductCardStyle3";
 import ProductCardStyle4 from "./ProductCardStyle4";
-import ProductCardStyle5 from "./ProductCardStyle5";
+
 import VariantPickerDialog from "./VariantPickerDialog";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { useVariantCount } from "@/hooks/useVariantCounts";
@@ -36,8 +36,6 @@ export default function UniversalProductCard({ product, slug, store, priority = 
   const card = (() => {
     const variantGate = hasVariants ? onVariantRequired : undefined;
     switch (cardStyle) {
-      case "style-5":
-        return <ProductCardStyle5 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
       case "style-2":
         return <ProductCardStyle2 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
       case "style-3":
