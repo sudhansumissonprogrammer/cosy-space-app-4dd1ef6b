@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { MapPin, Clock, MessageCircle, Instagram, Facebook } from "lucide-react";
-import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
+import shopbanaoLogo from "@/assets/shopbanao-logo.png";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
