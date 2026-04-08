@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { X, Download, Smartphone, Share, PlusSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,11 +27,16 @@ export default function SmartInstallPrompt({
   logoUrl,
 }: SmartInstallPromptProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [showStrip, setShowStrip] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [showManualGuide, setShowManualGuide] = useState(false);
 
   useEffect(() => {
+    // Skip in iframes (Lovable preview)
+    try { if (window.self !== window.top) return; } catch { return; }
+
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as any).standalone === true;
@@ -41,7 +46,6 @@ export default function SmartInstallPrompt({
       return;
     }
 
-    // Detect uninstall
     const wasInstalled = localStorage.getItem(WAS_INSTALLED_KEY);
     if (wasInstalled === "true") {
       localStorage.removeItem(POPUP_DISMISSED_KEY);
@@ -53,11 +57,11 @@ export default function SmartInstallPrompt({
       setShowPopup(false);
       setShowStrip(false);
       setDeferredPrompt(null);
+      promptRef.current = null;
       localStorage.setItem(WAS_INSTALLED_KEY, "true");
     };
     window.addEventListener("appinstalled", onInstalled);
 
-    // Check if strip was dismissed within 3 days
     const stripDismissed = localStorage.getItem(STRIP_DISMISSED_KEY);
     if (stripDismissed && Date.now() - Number(stripDismissed) < 3 * 24 * 60 * 60 * 1000) {
       window.removeEventListener("appinstalled", onInstalled);
@@ -67,26 +71,27 @@ export default function SmartInstallPrompt({
     const popupDismissed = localStorage.getItem(POPUP_DISMISSED_KEY);
     const wasRecentlyDismissed = popupDismissed && Date.now() - Number(popupDismissed) < 24 * 60 * 60 * 1000;
 
-    // Detect iOS
     const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isiOS);
 
-    // For iOS: no beforeinstallprompt, show manual instructions after delay
+    // iOS: show manual instructions
     if (isiOS) {
       if (wasRecentlyDismissed) {
         setShowStrip(true);
       } else {
         setTimeout(() => setShowPopup(true), delay);
       }
-      return () => {
-        window.removeEventListener("appinstalled", onInstalled);
-      };
+      return () => window.removeEventListener("appinstalled", onInstalled);
     }
 
-    // For Chrome/Android: listen for beforeinstallprompt
+    // Chrome/Android: listen for beforeinstallprompt
+    let gotPrompt = false;
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      gotPrompt = true;
+      const evt = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(evt);
+      promptRef.current = evt;
 
       if (wasRecentlyDismissed) {
         setShowStrip(true);
@@ -97,19 +102,20 @@ export default function SmartInstallPrompt({
 
     window.addEventListener("beforeinstallprompt", handler);
 
-    // Fallback: if no beforeinstallprompt after delay+3s, show anyway on mobile
+    // Fallback for Android: show manual guide if beforeinstallprompt doesn't fire
+    const isMobileAndroid = /Android/i.test(navigator.userAgent);
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile && !isiOS) {
+    if (isMobileAndroid) {
       fallbackTimer = setTimeout(() => {
-        if (!deferredPrompt) {
+        if (!gotPrompt) {
+          setShowManualGuide(true);
           if (wasRecentlyDismissed) {
             setShowStrip(true);
           } else {
             setShowPopup(true);
           }
         }
-      }, delay + 3000);
+      }, delay + 2000);
     }
 
     return () => {
@@ -120,17 +126,19 @@ export default function SmartInstallPrompt({
   }, [delay]);
 
   const handleInstall = useCallback(async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+    const p = promptRef.current;
+    if (p) {
+      p.prompt();
+      const { outcome } = await p.userChoice;
       if (outcome === "accepted") {
         setShowPopup(false);
         setShowStrip(false);
         localStorage.setItem(WAS_INSTALLED_KEY, "true");
       }
       setDeferredPrompt(null);
+      promptRef.current = null;
     }
-  }, [deferredPrompt]);
+  }, []);
 
   const handleDismissPopup = useCallback(() => {
     setShowPopup(false);
@@ -154,6 +162,8 @@ export default function SmartInstallPrompt({
         { emoji: "🔔", text: "Instant order notifications" },
         { emoji: "📱", text: "Full-screen native experience" },
       ];
+
+  const canNativeInstall = !!deferredPrompt;
 
   // Full-screen popup overlay
   if (showPopup) {
@@ -192,7 +202,7 @@ export default function SmartInstallPrompt({
           </div>
 
           {/* iOS manual instructions */}
-          {isIOS && !deferredPrompt && (
+          {isIOS && !canNativeInstall && (
             <div className="px-5 pb-3 pt-1 border-t border-border">
               <p className="text-xs font-semibold text-foreground mb-2">How to install:</p>
               <div className="space-y-1.5">
@@ -208,11 +218,28 @@ export default function SmartInstallPrompt({
             </div>
           )}
 
+          {/* Android manual guide (fallback when beforeinstallprompt didn't fire) */}
+          {showManualGuide && !canNativeInstall && !isIOS && (
+            <div className="px-5 pb-3 pt-1 border-t border-border">
+              <p className="text-xs font-semibold text-foreground mb-2">How to install:</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="text-foreground font-bold text-sm">⋮</span>
+                  <span>Tap the <strong className="text-foreground">3-dot menu</strong> in Chrome</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Download className="h-3.5 w-3.5 shrink-0" />
+                  <span>Tap <strong className="text-foreground">"Install app"</strong> or <strong className="text-foreground">"Add to Home screen"</strong></span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="px-5 pb-5 flex gap-2.5">
             <Button variant="outline" className="flex-1" onClick={handleDismissPopup}>
               Not Now
             </Button>
-            {deferredPrompt ? (
+            {canNativeInstall ? (
               <Button
                 className="flex-1 font-bold"
                 style={{ backgroundColor: primaryColor, color: textColor }}
@@ -221,7 +248,7 @@ export default function SmartInstallPrompt({
                 <Download className="mr-1.5 h-4 w-4" />
                 Install
               </Button>
-            ) : isIOS ? (
+            ) : (
               <Button
                 className="flex-1 font-bold"
                 style={{ backgroundColor: primaryColor, color: textColor }}
@@ -229,7 +256,7 @@ export default function SmartInstallPrompt({
               >
                 Got it
               </Button>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
@@ -240,14 +267,14 @@ export default function SmartInstallPrompt({
   if (showStrip) {
     return (
       <div
-        className="sticky top-12 z-[55] flex items-center gap-2 px-3 py-1.5 border-b border-border"
+        className="sticky top-14 z-[55] flex items-center gap-2 px-3 py-1.5 border-b border-border sm:top-12"
         style={{ backgroundColor: primaryColor, color: textColor }}
       >
         <Download className="h-3.5 w-3.5 shrink-0 opacity-80" />
         <p className="flex-1 text-xs font-medium truncate">
           Install {appName} app for the best experience
         </p>
-        {deferredPrompt ? (
+        {canNativeInstall ? (
           <button
             onClick={handleInstall}
             className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
@@ -255,7 +282,7 @@ export default function SmartInstallPrompt({
           >
             INSTALL
           </button>
-        ) : isIOS ? (
+        ) : (
           <button
             onClick={() => { setShowStrip(false); setShowPopup(true); }}
             className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
@@ -263,7 +290,7 @@ export default function SmartInstallPrompt({
           >
             HOW TO
           </button>
-        ) : null}
+        )}
         <button
           onClick={handleDismissStrip}
           className="shrink-0 p-0.5 opacity-70 hover:opacity-100 transition-opacity"
