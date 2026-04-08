@@ -133,10 +133,21 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 border-t pt-6 text-center" style={{ borderColor: "currentcolor", borderTopWidth: "1px", opacity: 1 }}>
-          <div style={{ borderColor: "inherit" }} />
+        <div className="mt-8 border-t pt-6 pb-20 sm:pb-6 text-center space-y-2" style={{ borderColor: "currentcolor", borderTopWidth: "1px", opacity: 1 }}>
           <p className="text-xs opacity-60">
             © {year} {store.name}. All rights reserved.
+          </p>
+          <p className="text-xs opacity-50">
+            Powered by{" "}
+            <a
+              href="https://shopbanao.site"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:opacity-100 transition-opacity"
+              style={{ color: "inherit" }}
+            >
+              ShopBanao
+            </a>
           </p>
         </div>
       </div>
