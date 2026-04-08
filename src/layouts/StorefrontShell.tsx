@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo, useState, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
+import { useLenis } from "@/hooks/useLenis";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider } from "@/contexts/StorefrontAuthContext";
