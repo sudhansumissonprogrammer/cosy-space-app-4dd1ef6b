@@ -16,6 +16,7 @@ interface SmartInstallPromptProps {
   primaryColor?: string;
   textColor?: string;
   delay?: number;
+  logoUrl?: string;
 }
 
 export default function SmartInstallPrompt({
@@ -23,6 +24,7 @@ export default function SmartInstallPrompt({
   primaryColor = "hsl(var(--primary))",
   textColor = "hsl(var(--primary-foreground))",
   delay = 20000,
+  logoUrl,
 }: SmartInstallPromptProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -117,10 +119,14 @@ export default function SmartInstallPrompt({
             style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` }}
           >
             <div
-              className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: `${textColor}20` }}
+              className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl overflow-hidden"
+              style={{ backgroundColor: logoUrl ? 'transparent' : `${textColor}20` }}
             >
-              <Smartphone className="h-7 w-7" style={{ color: textColor }} />
+              {logoUrl ? (
+                <img src={logoUrl} alt={appName} className="h-14 w-14 object-contain" />
+              ) : (
+                <Smartphone className="h-7 w-7" style={{ color: textColor }} />
+              )}
             </div>
             <h3 className="text-xl font-bold" style={{ color: textColor }}>
               Get {appName} App
