@@ -10,7 +10,6 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
-import { useStaggerReveal } from "@/hooks/useStaggerReveal";
 
 const PAGE_SIZE = 14;
 
