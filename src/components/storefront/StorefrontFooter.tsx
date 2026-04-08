@@ -138,17 +138,17 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           <p className="text-xs opacity-60">
             © {year} {store.name}. All rights reserved.
           </p>
-          <p className="text-xs opacity-50 flex items-center justify-center gap-1">
+          <p className="text-xs opacity-60 flex items-center justify-center gap-1">
             Powered by{" "}
             <a
               href="https://shopbanao.site"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 underline hover:opacity-100 transition-opacity"
+              className="inline-flex items-center gap-0.5 hover:opacity-100 transition-opacity"
               style={{ color: "inherit" }}
             >
-              <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-auto inline-block" loading="lazy" />
-              ShopBanao
+              <img src={shopbanaoLogo} alt="ShopBanao" className="h-4 w-auto inline-block" loading="lazy" />
+              <span className="font-semibold">ShopBanao</span>
             </a>
           </p>
         </div>
