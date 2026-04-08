@@ -266,23 +266,13 @@ export default function SmartInstallPrompt({
         <p className="flex-1 text-xs font-medium truncate">
           Install {appName} app for the best experience
         </p>
-        {canNativeInstall ? (
-          <button
-            onClick={handleInstall}
-            className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
-            style={{ backgroundColor: `${textColor}`, color: primaryColor }}
-          >
-            INSTALL
-          </button>
-        ) : (
-          <button
-            onClick={() => { setShowStrip(false); setShowPopup(true); }}
-            className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
-            style={{ backgroundColor: `${textColor}`, color: primaryColor }}
-          >
-            HOW TO
-          </button>
-        )}
+        <button
+          onClick={canNativeInstall ? handleInstall : () => window.open("/install", "_blank")}
+          className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-opacity hover:opacity-90"
+          style={{ backgroundColor: `${textColor}`, color: primaryColor }}
+        >
+          INSTALL
+        </button>
         <button
           onClick={handleDismissStrip}
           className="shrink-0 p-0.5 opacity-70 hover:opacity-100 transition-opacity"
