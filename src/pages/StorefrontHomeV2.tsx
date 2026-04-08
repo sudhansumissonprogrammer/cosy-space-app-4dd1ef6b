@@ -346,7 +346,7 @@ export default function StorefrontHomeV2() {
 
         {/* Masonry Grid */}
         {isProductsLoading ? (
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-xl border bg-card">
                 <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
