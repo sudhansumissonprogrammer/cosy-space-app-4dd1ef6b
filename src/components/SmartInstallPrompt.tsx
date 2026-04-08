@@ -24,6 +24,7 @@ export default function SmartInstallPrompt({
   primaryColor = "hsl(var(--primary))",
   textColor = "hsl(var(--primary-foreground))",
   delay = 20000,
+  logoUrl,
 }: SmartInstallPromptProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPopup, setShowPopup] = useState(false);
