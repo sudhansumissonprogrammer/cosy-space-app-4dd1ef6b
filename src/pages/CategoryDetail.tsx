@@ -166,7 +166,7 @@ export default function CategoryDetail() {
 
       <div style={{ minHeight: 600, contain: "layout" }}>
         {categoryLoading || productsLoading ? (
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
                 <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
@@ -197,7 +197,7 @@ export default function CategoryDetail() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
                 {products.map((product, idx) => (
                   <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
                 ))}

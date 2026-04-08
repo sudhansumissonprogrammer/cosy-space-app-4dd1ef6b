@@ -372,14 +372,14 @@ export default function StorefrontHomeV3() {
 
         {/* Grid */}
         {isProductsLoading ? (
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 520 }}>
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid" style={{ minHeight: 520 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="rounded-2xl" style={{ aspectRatio: "4/5" }} />
             ))}
           </div>
         ) : allSorted.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
               {allSorted.slice(0, 10).map((product, idx) => (
                 <UniversalProductCard
                   key={product.id}
@@ -393,7 +393,7 @@ export default function StorefrontHomeV3() {
             </div>
             {allSorted.length > 10 && (
               <LazyRender rootMargin="400px" minHeight={400}>
-                <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 stagger-grid">
                   {allSorted.slice(10).map((product) => (
                     <UniversalProductCard
                       key={product.id}
