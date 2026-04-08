@@ -290,10 +290,9 @@ export default function StorefrontHome() {
         )}
 
         <section style={{ minHeight: 600, contain: "layout" }}>
-            <div className="flex items-center justify-between gap-3">
-              <SectionHeading title="🔥 Popular Products" className="flex-1" />
-              <SortDropdown value={sortBy} onChange={setSortBy} />
-            </div>
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <SectionHeading title="🔥 Popular Products" className="flex-1" />
+            <SortDropdown value={sortBy} onChange={setSortBy} />
           </div>
 
           {showSkeleton ? (
