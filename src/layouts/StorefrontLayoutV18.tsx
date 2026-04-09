@@ -20,10 +20,17 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const onScroll = () => {
+      const s = window.scrollY > 50;
+      setScrolled(s);
+      document.documentElement.classList.toggle('v18-scrolled', s);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      document.documentElement.classList.remove('v18-scrolled');
+    };
   }, []);
 
   const mobileNavComponent = mobileNavEnabled ? (
@@ -38,12 +45,13 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   return (
     <>
       <style>{`
-        .v18-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease; }
+        .v18-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease; position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; }
         .v18-header-transparent { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; color: #fff !important; border-color: transparent !important; }
         .v18-header-transparent button, .v18-header-transparent a, .v18-header-transparent svg { color: #fff !important; stroke: #fff !important; }
-        .v18-header-transparent .smart-header { background: transparent !important; }
-        .v18-header-solid { background-color: #0a0a0a !important; box-shadow: 0 1px 4px rgba(255,255,255,0.05) !important; color: #fff !important; border-color: rgba(255,255,255,0.08) !important; }
+        .v18-header-solid { background-color: #0a0a0a !important; box-shadow: 0 1px 4px rgba(255,255,255,0.05) !important; color: #fff !important; border-color: rgba(255,255,255,0.08) !important; backdrop-filter: blur(10px) !important; }
         .v18-header-solid button, .v18-header-solid a, .v18-header-solid svg { color: #fff !important; stroke: #fff !important; }
+        .storefront-font .smart-header { position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; background-color: ${scrolled ? '#0a0a0a' : 'transparent'} !important; transition: background-color 0.3s ease; border-bottom: none !important; }
+        .storefront-font .smart-header button, .storefront-font .smart-header a, .storefront-font .smart-header svg { color: #fff !important; stroke: #fff !important; }
       `}</style>
       <CheckoutAwareLayout
         store={store}
