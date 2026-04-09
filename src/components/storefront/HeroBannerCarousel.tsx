@@ -184,6 +184,10 @@ function CarouselInner({
     const el = containerRef.current;
     if (!el) return;
 
+    // Desktop only — mobile clips with translateY
+    const mq = window.matchMedia("(min-width: 768px)");
+    if (!mq.matches) return;
+
     const onScroll = () => {
       if (ticking.current) return;
       ticking.current = true;
