@@ -2,18 +2,18 @@
  * Theme 17 Home — Streetwear-inspired layout:
  * 1. Full-screen Hero Banner with CTA
  * 2. "All Collection" product grid (2-col mobile, 4-col desktop)
- * 3. Scrolling trust ticker (Premium Fabric · Exclusive Picks · Limited Quantity)
+ * 3. Scrolling trust ticker
  * 4. Customer Reviews carousel
- * 5. Trust badges row (Free Shipping, Exclusive Designs, Premium Quality)
+ * 5. Trust badges row
  */
-import { useState, useMemo, lazy, Suspense, useRef, useEffect, useCallback } from "react";
+import { lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { supabase } from "@/integrations/supabase/client";
-import { Star, Truck, Gem, ShieldCheck, ArrowRight, Quote } from "lucide-react";
+import { Star, Truck, Gem, ShieldCheck, ArrowRight } from "lucide-react";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -25,7 +25,6 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 
-const StorefrontSearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
@@ -34,20 +33,20 @@ const ABOVE_FOLD_COUNT = 6;
 /* ─── Scrolling trust ticker ─── */
 function TrustTicker() {
   const items = [
-    { icon: "✦", text: "Premium Fabric" },
-    { icon: "✦", text: "Exclusive Seasonal Picks" },
-    { icon: "✦", text: "Limited Quantity" },
-    { icon: "✦", text: "Premium Fabric" },
-    { icon: "✦", text: "Exclusive Seasonal Picks" },
-    { icon: "✦", text: "Limited Quantity" },
+    "✦ Premium Fabric",
+    "✦ Exclusive Seasonal Picks",
+    "✦ Limited Quantity",
+    "✦ Premium Fabric",
+    "✦ Exclusive Seasonal Picks",
+    "✦ Limited Quantity",
   ];
 
   return (
     <div className="overflow-hidden py-5" style={{ backgroundColor: "var(--storefront-primary, #1B3A2D)" }}>
-      <div className="flex animate-marquee-v17 whitespace-nowrap">
-        {[...items, ...items].map((item, i) => (
+      <div className="flex whitespace-nowrap animate-[marquee-v17_20s_linear_infinite]">
+        {[...items, ...items].map((text, i) => (
           <span key={i} className="mx-8 text-lg font-medium tracking-wide" style={{ color: "var(--storefront-btn-text, #fff)" }}>
-            {item.icon} {item.text}
+            {text}
           </span>
         ))}
       </div>
@@ -68,12 +67,15 @@ function ReviewCard({ name, text, rating, product, verified }: {
       </div>
       <p className="text-sm leading-relaxed text-muted-foreground line-clamp-4">{text}</p>
       <div className="flex items-center gap-2 pt-1">
-        <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: "var(--storefront-primary, #1B3A2D)", color: "var(--storefront-btn-text, #fff)" }}>
+        <div
+          className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold"
+          style={{ backgroundColor: "var(--storefront-primary, #1B3A2D)", color: "var(--storefront-btn-text, #fff)" }}
+        >
           {name.charAt(0)}
         </div>
         <div>
           <p className="text-sm font-semibold">{name}</p>
-          {verified && <p className="text-xs text-green-600">✓ Verified Buyer</p>}
+          {verified && <p className="text-xs text-emerald-600">✓ Verified Buyer</p>}
         </div>
       </div>
       {product && <p className="text-xs text-muted-foreground border-t pt-2">Reviewed: {product}</p>}
@@ -162,24 +164,10 @@ export default function StorefrontHomeV17() {
   const cardStyle = themeConfig?.product_card_style || "style-1";
 
   // Products
-  const { data: products = [], isLoading: productsLoading } = useStorefrontProducts(store?.id);
-  const { bestSellers, isLoading: bsLoading } = useBestSellingProducts(store?.id);
+  const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);
+  const bsQuery = useBestSellingProducts(store?.id);
+  const bestSellers = bsQuery.products;
   const showBestSellers = store?.best_selling_carousel && bestSellers.length > 0;
-
-  // Categories
-  const { data: categories = [] } = useQuery({
-    queryKey: ["storefront-categories", store?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("store_id", store!.id)
-        .order("display_order", { ascending: true });
-      return data || [];
-    },
-    enabled: !!store?.id,
-    staleTime: 5 * 60_000,
-  });
 
   // JSON-LD
   useStoreJsonLd(store, products);
@@ -190,31 +178,47 @@ export default function StorefrontHomeV17() {
   const belowFold = products.slice(ABOVE_FOLD_COUNT);
   const allProductIds = products.map((p: any) => p.id);
 
+  const hasBanner = !!(store as any).banner_url;
+  const hasMobileHero = !!(store as any).mobile_hero_url || !!(store as any).mobile_hero_images;
+
   return (
     <VariantCountProvider productIds={allProductIds}>
       {/* ─── Hero Banner ─── */}
       <section className="relative">
-        {/* Desktop hero */}
-        <div className="hidden md:block">
-          <HeroBannerCarousel store={store} />
-        </div>
-        {/* Mobile hero */}
-        <div className="md:hidden">
-          <StorefrontMobileHero store={store} />
-        </div>
+        {hasBanner && (
+          <div className="hidden md:block">
+            <HeroBannerCarousel
+              images={[(store as any).banner_url]}
+              storeName={store.name}
+              imageClassName="w-full h-auto object-cover"
+              maxHeight="600px"
+            />
+          </div>
+        )}
+        {hasMobileHero && (
+          <div className="md:hidden">
+            <StorefrontMobileHero
+              mobileHeroUrl={(store as any).mobile_hero_url}
+              mobileHeroImages={(store as any).mobile_hero_images}
+              storeName={store.name}
+            />
+          </div>
+        )}
         {/* CTA overlay */}
-        <div className="absolute inset-0 flex items-end justify-center pb-12 md:pb-16 pointer-events-none">
-          <Link
-            to={storefrontPath("/shop", store)}
-            className="pointer-events-auto px-8 py-3 text-sm font-semibold tracking-wider uppercase rounded"
-            style={{
-              backgroundColor: "var(--storefront-primary, #1B3A2D)",
-              color: "var(--storefront-btn-text, #fff)",
-            }}
-          >
-            Shop Collection
-          </Link>
-        </div>
+        {(hasBanner || hasMobileHero) && (
+          <div className="absolute inset-0 flex items-end justify-center pb-12 md:pb-16 pointer-events-none">
+            <Link
+              to={storefrontPath(slug, "/shop")}
+              className="pointer-events-auto px-8 py-3 text-sm font-semibold tracking-wider uppercase rounded shadow-lg transition-transform hover:scale-105"
+              style={{
+                backgroundColor: "var(--storefront-primary, #1B3A2D)",
+                color: "var(--storefront-btn-text, #fff)",
+              }}
+            >
+              Shop Collection
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* ─── All Collection ─── */}
@@ -253,7 +257,7 @@ export default function StorefrontHomeV17() {
           {products.length > 0 && (
             <div className="text-center mt-8">
               <Link
-                to={storefrontPath("/shop", store)}
+                to={storefrontPath(slug, "/shop")}
                 className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded border-2 transition-colors hover:opacity-90"
                 style={{
                   borderColor: "var(--storefront-primary, #1B3A2D)",
@@ -300,7 +304,7 @@ export default function StorefrontHomeV17() {
       {store.instagram_url && (
         <LazyRender rootMargin="200px">
           <Suspense fallback={null}>
-            <StorefrontInstagramSection url={store.instagram_url} />
+            <StorefrontInstagramSection store={store} />
           </Suspense>
         </LazyRender>
       )}
