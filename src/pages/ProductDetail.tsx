@@ -544,15 +544,23 @@ export default function ProductDetail() {
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-3.5 w-3.5 ${i < Math.floor(stats.rating) ? "fill-amber-400 text-amber-400" : i < stats.rating ? "fill-amber-400/50 text-amber-400" : "text-muted-foreground/20"}`}
+                  className={`h-3.5 w-3.5 ${i < Math.floor(stats.rating) ? "fill-amber-400 text-amber-400" : i < stats.rating ? "fill-amber-400/50 text-amber-400" : isV18 ? "text-white/20" : "text-muted-foreground/20"}`}
                 />
               ))}
-              <span className="ml-1 text-sm font-bold text-foreground">{stats.rating}</span>
+              {isV18 ? (
+                <span className="ml-1 text-sm" style={{ color: "#ffffff", ...v18Font }}>{stats.reviewCount} reviews</span>
+              ) : (
+                <span className="ml-1 text-sm font-bold text-foreground">{stats.rating}</span>
+              )}
             </div>
-            <span className="text-muted-foreground/30">|</span>
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Flame className="h-3 w-3 text-orange-400" /> {stats.soldRecently}+ sold recently
-            </span>
+            {!isV18 && (
+              <>
+                <span className="text-muted-foreground/30">|</span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Flame className="h-3 w-3 text-orange-400" /> {stats.soldRecently}+ sold recently
+                </span>
+              </>
+            )}
           </div>
 
           {/* Price — simple, no border/background */}
