@@ -123,30 +123,54 @@ export default function StorefrontHomeV18() {
       {/* ─── Hero Banner ─── */}
       <section className="relative v18-hero-pull">
         {hasBanner && (
-          <div className="hidden md:block">
+          <div className="hidden md:block relative">
             <HeroBannerCarousel
               images={[(store as any).banner_url]}
               storeName={store.name}
               imageClassName="w-full h-auto object-cover"
               maxHeight="100vh"
             />
+            <div className="absolute inset-0 flex items-end justify-center pb-16">
+              <Link
+                to={storefrontPath(slug, "/categories")}
+                className="inline-flex items-center gap-2 px-10 py-3.5 text-sm font-bold tracking-[0.2em] uppercase border-2 border-white/80 bg-black/30 backdrop-blur-sm transition-all hover:bg-white hover:text-black"
+                style={{ color: "#fff" }}
+              >
+                Shop Collection <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         )}
         {hasMobileHero && (
-          <div className="md:hidden">
+          <div className="md:hidden relative">
             <StorefrontMobileHero
               mobileHeroUrl={(store as any).mobile_hero_url}
               mobileHeroImages={(store as any).mobile_hero_images}
               storeName={store.name}
             />
+            <div className="absolute inset-0 flex items-end justify-center pb-10">
+              <Link
+                to={storefrontPath(slug, "/categories")}
+                className="inline-flex items-center gap-2 px-8 py-3 text-xs font-bold tracking-[0.2em] uppercase border-2 border-white/80 bg-black/30 backdrop-blur-sm transition-all hover:bg-white hover:text-black"
+                style={{ color: "#fff" }}
+              >
+                Shop Collection <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
           </div>
         )}
-        {/* If no banners at all, show a dark placeholder */}
         {!hasBanner && !hasMobileHero && (
-          <div className="w-full aspect-[16/9] md:aspect-[21/9] flex items-center justify-center" style={{ backgroundColor: "#111" }}>
+          <div className="w-full aspect-[16/9] md:aspect-[21/9] flex flex-col items-center justify-center gap-6" style={{ backgroundColor: "#111" }}>
             <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase" style={{ color: "#f5f5f5" }}>
               {store.name}
             </h1>
+            <Link
+              to={storefrontPath(slug, "/categories")}
+              className="inline-flex items-center gap-2 px-8 py-3 text-sm font-bold tracking-[0.2em] uppercase border-2 border-white/80 transition-all hover:bg-white hover:text-black"
+              style={{ color: "#f5f5f5" }}
+            >
+              Shop Collection <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         )}
       </section>
