@@ -371,3 +371,17 @@
   --radius: 0px;
   font-family: 'Outfit', sans-serif;
 }
+
+/* Theme 18 — full-bleed product cards */
+.v18-product-card .stagger-card {
+  --i: 0;
+}
+.v18-product-card [class*="rounded"] {
+  border-radius: 0 !important;
+}
+.v18-product-card [class*="border"] {
+  border: none !important;
+}
+.v18-product-card [class*="shadow"] {
+  box-shadow: none !important;
+}
