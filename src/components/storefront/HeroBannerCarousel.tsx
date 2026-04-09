@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 
-/** Hook: translates element on scroll for parallax depth effect */
-function useParallax(speed = 0.3) {
-  const ref = useRef<HTMLDivElement>(null);
+/** Parallax image wrapper — image translates on scroll for depth */
+function ParallaxImage(props: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const ticking = useRef(false);
 
   useEffect(() => {
-    const el = ref.current;
+    const el = wrapperRef.current;
     if (!el) return;
 
     const onScroll = () => {
@@ -15,10 +15,10 @@ function useParallax(speed = 0.3) {
       ticking.current = true;
       requestAnimationFrame(() => {
         const rect = el.getBoundingClientRect();
-        // Only animate when in viewport
         if (rect.bottom > 0 && rect.top < window.innerHeight) {
-          const offset = rect.top * speed;
-          el.style.transform = `translateY(${offset}px) scale(1.1)`;
+          const offset = rect.top * 0.25;
+          const img = el.querySelector("img");
+          if (img) img.style.transform = `translateY(${offset}px) scale(1.15)`;
         }
         ticking.current = false;
       });
@@ -27,9 +27,13 @@ function useParallax(speed = 0.3) {
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, [speed]);
+  }, []);
 
-  return ref;
+  return (
+    <div ref={wrapperRef} className="absolute inset-0 overflow-hidden">
+      <img {...props} className={`${props.className || ""} will-change-transform`} style={{ ...props.style, objectFit: "cover", width: "100%", height: "115%", objectPosition: "center" }} />
+    </div>
+  );
 }
 
 interface HeroBannerCarouselProps {
