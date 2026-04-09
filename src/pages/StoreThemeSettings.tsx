@@ -2597,6 +2597,8 @@ export default function StoreThemeSettings() {
                   </button>
                 ))}
               </div>
+            </div>
+
           <Separator />
 
           {/* Full Storefront Preview */}
