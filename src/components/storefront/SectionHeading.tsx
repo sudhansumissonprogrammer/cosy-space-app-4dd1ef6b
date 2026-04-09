@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import sectionDivider from "@/assets/section-divider.webp";
 import { storefrontPath } from "@/lib/subdomain";
 
 interface SectionHeadingProps {
@@ -11,7 +10,7 @@ interface SectionHeadingProps {
 }
 
 /**
- * Premium section heading with ornamental divider.
+ * Premium section heading with elegant line divider.
  * Used across all storefront themes for consistent luxury feel.
  */
 export default function SectionHeading({ title, slug, linkTo, className = "" }: SectionHeadingProps) {
@@ -40,15 +39,15 @@ export default function SectionHeading({ title, slug, linkTo, className = "" }: 
           )}
         </div>
       </div>
-      <img
-        src={sectionDivider}
-        alt=""
-        className="h-4 sm:h-5 w-auto max-w-[180px] sm:max-w-[220px] mt-1 opacity-60"
-        style={{ filter: "var(--storefront-divider-filter, none)" }}
-        loading="lazy"
-        decoding="async"
-        aria-hidden="true"
-      />
+      {/* Elegant line divider with diamond accent */}
+      <div className="flex items-center gap-2 mt-1.5 w-full max-w-[160px] sm:max-w-[200px]" aria-hidden="true">
+        <div className="flex-1 h-[1px]" style={{ background: `linear-gradient(to right, transparent, var(--storefront-primary, hsl(var(--primary))))` }} />
+        <div
+          className="w-1.5 h-1.5 rotate-45 shrink-0"
+          style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }}
+        />
+        <div className="flex-1 h-[1px]" style={{ background: `linear-gradient(to left, transparent, var(--storefront-primary, hsl(var(--primary))))` }} />
+      </div>
     </div>
   );
 }
