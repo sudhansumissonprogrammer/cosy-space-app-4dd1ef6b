@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { BadgeCheck } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
@@ -6,6 +6,38 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 
 interface StorefrontHeroProps {
   store: StoreData;
+}
+
+/** Parallax wrapper for hero banner */
+function useHeroParallax() {
+  const ref = useRef<HTMLImageElement>(null);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    const img = ref.current;
+    if (!img) return;
+    const parent = img.parentElement;
+    if (!parent) return;
+
+    const onScroll = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        const rect = parent.getBoundingClientRect();
+        if (rect.bottom > 0 && rect.top < window.innerHeight) {
+          const offset = rect.top * 0.3;
+          img.style.transform = `translateY(${offset}px) scale(1.15)`;
+        }
+        ticking.current = false;
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return ref;
 }
 
 export default function StorefrontHero({ store }: StorefrontHeroProps) {
@@ -16,16 +48,19 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
     }
   }, [store.banner_url]);
 
+  const imgRef = useHeroParallax();
+
   return (
     <section className="relative">
       {store.banner_url ? (
-        <div className="h-56 w-full sm:h-72 lg:h-80">
+        <div className="h-56 w-full sm:h-72 lg:h-80 overflow-hidden">
           <img
+            ref={imgRef}
             src={optimizeImageUrl(store.banner_url, 1200, 75)}
             srcSet={getImageSrcSet(store.banner_url, [400, 800, 1200]) || undefined}
             sizes={HERO_IMAGE_SIZES}
             alt={`${store.name} banner`}
-            className="h-full w-full object-cover"
+            className="h-[115%] w-full object-cover will-change-transform"
             loading="eager"
             fetchPriority="high"
             decoding="sync"
