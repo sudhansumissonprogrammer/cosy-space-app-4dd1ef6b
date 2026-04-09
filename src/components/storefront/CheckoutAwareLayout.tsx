@@ -11,7 +11,7 @@ import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
-import { Search } from "lucide-react";
+
 import { useSmartHeader } from "@/hooks/useSmartHeader";
 import PageTransition from "@/components/storefront/PageTransition";
 import ScrollProgressBar from "@/components/storefront/ScrollProgressBar";
