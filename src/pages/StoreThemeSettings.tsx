@@ -2471,6 +2471,10 @@ export default function StoreThemeSettings() {
                   {[
                     { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
                     { value: "modern", label: "Modern", desc: "Floating pill with cart" },
+                    ...(currentTheme === "theme-18" ? [
+                      { value: "v15", label: "Minimal", desc: "Clean minimal icons" },
+                      { value: "v17", label: "Streetwear", desc: "Bold streetwear style" },
+                    ] : []),
                   ].map((s) => (
                     <button
                       key={s.value}
