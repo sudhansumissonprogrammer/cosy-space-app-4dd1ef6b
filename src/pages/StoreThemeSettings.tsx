@@ -2430,10 +2430,11 @@ export default function StoreThemeSettings() {
                 <p className="text-xs text-muted-foreground mb-3">
                   Choose the navigation bar style for mobile devices. Always visible on mobile.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {[
                     { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
                     { value: "modern", label: "Modern", desc: "Floating pill with cart" },
+                    { value: "starter", label: "Starter", desc: "Clean icons with labels" },
                   ].map((s) => (
                     <button
                       key={s.value}
@@ -2459,7 +2460,7 @@ export default function StoreThemeSettings() {
                             <Heart className="h-3 w-3 text-muted-foreground" />
                             <User className="h-3 w-3 text-muted-foreground" />
                           </>
-                        ) : (
+                        ) : s.value === "modern" ? (
                           <>
                             <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5">
                               <Home className="h-2.5 w-2.5 text-primary" />
@@ -2469,6 +2470,25 @@ export default function StoreThemeSettings() {
                             <Heart className="h-3 w-3 text-muted-foreground" />
                             <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
                               <ShoppingCart className="h-2.5 w-2.5 text-primary-foreground" />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <Home className="h-2.5 w-2.5 text-foreground" />
+                              <span className="text-[5px] font-medium">Home</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <Store className="h-2.5 w-2.5 text-muted-foreground" />
+                              <span className="text-[5px]">Shop</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <Heart className="h-2.5 w-2.5 text-muted-foreground" />
+                              <span className="text-[5px]">Wishlist</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <ShoppingCart className="h-2.5 w-2.5 text-muted-foreground" />
+                              <span className="text-[5px]">Cart</span>
                             </div>
                           </>
                         )}
