@@ -223,101 +223,134 @@ function RevealGrid({ categories, storeSlug }: { categories: Category[]; storeSl
 /** Style 8: Spotlight Carousel — one large center + peek sides */
 function SpotlightCarousel({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   const [active, setActive] = useState(0);
+  const [prev, setPrev] = useState<number | null>(null);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
-  const [animKey, setAnimKey] = useState(0);
   const len = categories.length;
+  const transitionRef = useRef(false);
 
-  const goNext = useCallback(() => {
-    setDirection('next');
-    setAnimKey(k => k + 1);
-    setActive((a) => (a + 1) % len);
-  }, [len]);
+  const go = useCallback((to: number, dir: 'next' | 'prev') => {
+    if (transitionRef.current || to === active) return;
+    transitionRef.current = true;
+    setDirection(dir);
+    setPrev(active);
+    setActive(to);
+    setTimeout(() => { setPrev(null); transitionRef.current = false; }, 600);
+  }, [active]);
 
-  const goPrev = useCallback(() => {
-    setDirection('prev');
-    setAnimKey(k => k + 1);
-    setActive((a) => (a - 1 + len) % len);
-  }, [len]);
+  const goNext = useCallback(() => go((active + 1) % len, 'next'), [go, active, len]);
+  const goPrev = useCallback(() => go((active - 1 + len) % len, 'prev'), [go, active, len]);
 
   const getIdx = (offset: number) => (active + offset + len) % len;
 
   // Auto-play
   useEffect(() => {
     if (len <= 1) return;
-    const timer = setInterval(goNext, 4000);
+    const timer = setInterval(goNext, 4500);
     return () => clearInterval(timer);
   }, [goNext, len]);
 
-  // Touch/swipe support
+  // Touch/swipe
   const touchStartX = useRef(0);
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   }, []);
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) {
-      diff > 0 ? goNext() : goPrev();
-    }
+    if (Math.abs(diff) > 40) diff > 0 ? goNext() : goPrev();
   }, [goNext, goPrev]);
 
   if (len === 0) return null;
+
+  const isTransitioning = prev !== null;
 
   return (
     <div className="relative" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <div className="flex items-center justify-center gap-2 sm:gap-3 overflow-hidden py-2" style={{ minHeight: 220 }}>
         {/* Left peek */}
         {len > 2 && (
-          <Link
-            to={storefrontPath(storeSlug, `category/${categories[getIdx(-1)].slug}`)}
-            className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden transition-all duration-500 cursor-pointer"
+          <div
+            className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden cursor-pointer"
             style={{
               aspectRatio: "3/4",
               opacity: 0.45,
-              transform: "scale(0.85) translateX(12px)",
-              filter: "blur(1px)",
+              transform: `scale(0.85) translateX(12px)`,
+              filter: "blur(1.5px)",
+              transition: "all 0.55s cubic-bezier(0.25, 1, 0.5, 1)",
             }}
-            onClick={(e) => { e.preventDefault(); goPrev(); }}
+            onClick={goPrev}
           >
             <CategoryImage cat={categories[getIdx(-1)]} size={300} className="h-full w-full object-cover" />
-          </Link>
-        )}
-        {/* Center spotlight */}
-        <Link
-          key={animKey}
-          to={storefrontPath(storeSlug, `category/${categories[active].slug}`)}
-          className="flex-shrink-0 w-[58%] sm:w-[50%] relative rounded-2xl overflow-hidden shadow-2xl"
-          style={{
-            aspectRatio: "3/4",
-            animation: `spotlightSlideIn${direction === 'next' ? 'Right' : 'Left'} 0.45s cubic-bezier(0.16,1,0.3,1) both`,
-          }}
-        >
-          <CategoryImage cat={categories[active]} size={600} className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-          <div
-            className="absolute bottom-0 left-0 right-0 p-4 text-center"
-            style={{ animation: "spotlightTextRise 0.5s ease-out 0.15s both" }}
-          >
-            <span className="text-base sm:text-lg font-bold text-white drop-shadow-lg tracking-wide">{categories[active].name}</span>
-            <div className="mt-1.5 mx-auto h-0.5 rounded-full transition-all duration-500" style={{ width: 32, backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", opacity: 0.8 }} />
           </div>
-        </Link>
+        )}
+
+        {/* Center spotlight with crossfade */}
+        <div className="flex-shrink-0 w-[58%] sm:w-[50%] relative rounded-2xl overflow-hidden shadow-2xl" style={{ aspectRatio: "3/4" }}>
+          {/* Outgoing (prev) card */}
+          {isTransitioning && prev !== null && (
+            <div
+              className="absolute inset-0 z-10"
+              style={{
+                animation: `spotlightFadeOut 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
+              }}
+            >
+              <CategoryImage cat={categories[prev]} size={600} className="h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 text-center">
+                <span className="text-base sm:text-lg font-bold text-white drop-shadow-lg tracking-wide">{categories[prev].name}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Incoming (active) card */}
+          <Link
+            to={storefrontPath(storeSlug, `category/${categories[active].slug}`)}
+            className="block h-full w-full"
+            style={{
+              animation: isTransitioning
+                ? `spotlightFadeIn 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards`
+                : undefined,
+            }}
+          >
+            <CategoryImage cat={categories[active]} size={600} className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+            <div
+              className="absolute bottom-0 left-0 right-0 p-4 text-center"
+              style={{
+                animation: isTransitioning ? "spotlightTextRise 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0.1s both" : undefined,
+              }}
+            >
+              <span className="text-base sm:text-lg font-bold text-white drop-shadow-lg tracking-wide">{categories[active].name}</span>
+              <div
+                className="mt-1.5 mx-auto h-0.5 rounded-full"
+                style={{
+                  width: 32,
+                  backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
+                  opacity: 0.8,
+                  animation: isTransitioning ? "spotlightLineGrow 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0.2s both" : undefined,
+                }}
+              />
+            </div>
+          </Link>
+        </div>
+
         {/* Right peek */}
         {len > 1 && (
-          <Link
-            to={storefrontPath(storeSlug, `category/${categories[getIdx(1)].slug}`)}
-            className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden transition-all duration-500 cursor-pointer"
+          <div
+            className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden cursor-pointer"
             style={{
               aspectRatio: "3/4",
               opacity: 0.45,
-              transform: "scale(0.85) translateX(-12px)",
-              filter: "blur(1px)",
+              transform: `scale(0.85) translateX(-12px)`,
+              filter: "blur(1.5px)",
+              transition: "all 0.55s cubic-bezier(0.25, 1, 0.5, 1)",
             }}
-            onClick={(e) => { e.preventDefault(); goNext(); }}
+            onClick={goNext}
           >
             <CategoryImage cat={categories[getIdx(1)]} size={300} className="h-full w-full object-cover" />
-          </Link>
+          </div>
         )}
       </div>
+
       {len > 1 && (
         <div className="flex items-center justify-center gap-4 mt-3">
           <button onClick={goPrev} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-accent active:scale-90 transition-all duration-200" aria-label="Previous">
@@ -327,17 +360,14 @@ function SpotlightCarousel({ categories, storeSlug }: { categories: Category[]; 
             {categories.map((_, i) => (
               <div
                 key={i}
-                className="rounded-full transition-all duration-400 cursor-pointer"
-                onClick={() => {
-                  setDirection(i > active ? 'next' : 'prev');
-                  setAnimKey(k => k + 1);
-                  setActive(i);
-                }}
+                className="rounded-full cursor-pointer"
+                onClick={() => go(i, i > active ? 'next' : 'prev')}
                 style={{
                   width: i === active ? 20 : 6,
                   height: 6,
                   backgroundColor: i === active ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--border)",
                   transform: i === active ? "scaleY(1)" : "scaleY(0.8)",
+                  transition: "all 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
                 }}
               />
             ))}
@@ -347,18 +377,23 @@ function SpotlightCarousel({ categories, storeSlug }: { categories: Category[]; 
           </button>
         </div>
       )}
+
       <style>{`
-        @keyframes spotlightSlideInRight {
-          from { opacity: 0; transform: scale(0.88) translateX(30px); }
-          to { opacity: 1; transform: scale(1.02) translateX(0); }
+        @keyframes spotlightFadeIn {
+          from { opacity: 0; transform: scale(0.92); }
+          to { opacity: 1; transform: scale(1); }
         }
-        @keyframes spotlightSlideInLeft {
-          from { opacity: 0; transform: scale(0.88) translateX(-30px); }
-          to { opacity: 1; transform: scale(1.02) translateX(0); }
+        @keyframes spotlightFadeOut {
+          from { opacity: 1; transform: scale(1); }
+          to { opacity: 0; transform: scale(1.04); }
         }
         @keyframes spotlightTextRise {
-          from { opacity: 0; transform: translateY(12px); }
+          from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spotlightLineGrow {
+          from { width: 0; opacity: 0; }
+          to { width: 32px; opacity: 0.8; }
         }
       `}</style>
     </div>
