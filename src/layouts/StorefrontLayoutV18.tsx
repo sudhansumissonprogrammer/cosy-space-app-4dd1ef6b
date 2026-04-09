@@ -54,6 +54,9 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         .storefront-font .smart-header button, .storefront-font .smart-header a, .storefront-font .smart-header svg { color: #fff !important; stroke: #fff !important; }
         .storefront-font main { padding-top: 3.5rem; }
         .v18-hero-pull { margin-top: -3.5rem; }
+        .storefront-font nav[class*="bottom-nav"], .storefront-font div[class*="bottom-nav"], .storefront-font .fixed.bottom-0 { background-color: #0a0a0a !important; border-color: rgba(255,255,255,0.1) !important; }
+        .storefront-font nav[class*="bottom-nav"] svg, .storefront-font div[class*="bottom-nav"] svg, .storefront-font .fixed.bottom-0 svg { color: #ffffff !important; stroke: #ffffff !important; }
+        .storefront-font nav[class*="bottom-nav"] span, .storefront-font div[class*="bottom-nav"] span, .storefront-font .fixed.bottom-0 span { color: #ffffff !important; }
       `}</style>
       <CheckoutAwareLayout
         store={store}
