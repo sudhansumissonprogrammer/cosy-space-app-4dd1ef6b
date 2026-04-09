@@ -64,7 +64,10 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
             mobileNav={
               mobileNavEnabled ? (
                 <Suspense fallback={null}>
-                  {mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> : <LazyMobileBottomNav store={store} />}
+                  {mobileNavStyle === "v17" ? <LazyMobileBottomNavV17 store={store} /> :
+                   mobileNavStyle === "v15" ? <LazyMobileBottomNavV15 store={store} /> :
+                   mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> :
+                   <LazyMobileBottomNav store={store} />}
                 </Suspense>
               ) : undefined
             }
