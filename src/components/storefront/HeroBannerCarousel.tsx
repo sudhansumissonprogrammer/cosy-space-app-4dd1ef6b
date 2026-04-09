@@ -1,6 +1,41 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 
+/** Parallax image wrapper — image translates on scroll for depth */
+function ParallaxImage(props: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        if (rect.bottom > 0 && rect.top < window.innerHeight) {
+          const offset = rect.top * 0.25;
+          const img = el.querySelector("img");
+          if (img) img.style.transform = `translateY(${offset}px) scale(1.15)`;
+        }
+        ticking.current = false;
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="absolute inset-0 overflow-hidden">
+      <img {...props} className={`${props.className || ""} will-change-transform`} style={{ ...props.style, objectFit: "cover", width: "100%", height: "115%", objectPosition: "center" }} />
+    </div>
+  );
+}
+
 interface HeroBannerCarouselProps {
   images: string[];
   storeName: string;
@@ -40,8 +75,8 @@ export default function HeroBannerCarousel({
   if (images.length === 1) {
     const srcSet = getImageSrcSet(images[0], [400, 600, 800, 1200]);
     return (
-      <div className={`relative ${className}`} style={{ aspectRatio: "16/7", contain: "layout" }}>
-        <img
+      <div className={`relative overflow-hidden ${className}`} style={{ aspectRatio: "16/7", contain: "layout" }}>
+        <ParallaxImage
           src={optimizeImageUrl(images[0], optimizeWidth)}
           srcSet={srcSet || undefined}
           sizes={HERO_IMAGE_SIZES}
