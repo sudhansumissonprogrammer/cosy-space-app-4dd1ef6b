@@ -1,6 +1,37 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 
+/** Hook: translates element on scroll for parallax depth effect */
+function useParallax(speed = 0.3) {
+  const ref = useRef<HTMLDivElement>(null);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        // Only animate when in viewport
+        if (rect.bottom > 0 && rect.top < window.innerHeight) {
+          const offset = rect.top * speed;
+          el.style.transform = `translateY(${offset}px) scale(1.1)`;
+        }
+        ticking.current = false;
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [speed]);
+
+  return ref;
+}
+
 interface HeroBannerCarouselProps {
   images: string[];
   storeName: string;
