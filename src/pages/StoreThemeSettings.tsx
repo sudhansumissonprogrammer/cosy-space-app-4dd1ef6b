@@ -1910,6 +1910,8 @@ export default function StoreThemeSettings() {
   const iframeDesktopRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    // Don't overwrite unsaved local changes with stale DB data
+    if (dirty) return;
     if (themeConfig) {
       setConfig({
         primary_color: themeConfig.primary_color,
