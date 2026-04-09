@@ -10,13 +10,6 @@ import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
 const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
-const LazyMobileBottomNavIconic = lazy(() => import("@/components/storefront/MobileBottomNavIconic"));
-
-function getMobileNav(style: string, store: any) {
-  if (style === "iconic") return <LazyMobileBottomNavIconic store={store} />;
-  if (style === "modern") return <LazyMobileBottomNavModern store={store} />;
-  return <LazyMobileBottomNav store={store} />;
-}
 
 export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: string } = {}) {
   return (
@@ -43,7 +36,7 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
             mobileNav={
               mobileNavEnabled ? (
                 <Suspense fallback={null}>
-                  {getMobileNav(mobileNavStyle, store)}
+                  {mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> : <LazyMobileBottomNav store={store} />}
                 </Suspense>
               ) : undefined
             }

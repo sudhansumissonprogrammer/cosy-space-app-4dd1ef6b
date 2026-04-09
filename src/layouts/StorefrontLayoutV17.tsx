@@ -10,21 +10,9 @@ import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 
 const LazyMobileBottomNavV17 = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
-const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
-const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
-const LazyMobileBottomNavIconic = lazy(() => import("@/components/storefront/MobileBottomNavIconic"));
-
-function getMobileNav(style: string, store: any) {
-  if (style === "iconic") return <LazyMobileBottomNavIconic store={store} />;
-  if (style === "classic") return <LazyMobileBottomNav store={store} />;
-  if (style === "modern") return <LazyMobileBottomNavModern store={store} />;
-  // default for theme-17 is its own V17 nav
-  return <LazyMobileBottomNavV17 store={store} />;
-}
 
 function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   const mobileNavEnabled = themeConfig?.mobile_nav_enabled ?? true;
-  const mobileNavStyle = (themeConfig as any)?.mobile_nav_style || "v17";
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -84,7 +72,7 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
           mobileNav={
             mobileNavEnabled ? (
               <Suspense fallback={null}>
-                {getMobileNav(mobileNavStyle, store)}
+                <LazyMobileBottomNavV17 store={store} />
               </Suspense>
             ) : undefined
           }

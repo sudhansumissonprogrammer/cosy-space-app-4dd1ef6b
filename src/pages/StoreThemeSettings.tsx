@@ -1909,12 +1909,7 @@ export default function StoreThemeSettings() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeDesktopRef = useRef<HTMLIFrameElement>(null);
 
-  const dirtyRef = useRef(false);
-  useEffect(() => { dirtyRef.current = dirty; }, [dirty]);
-
   useEffect(() => {
-    // Don't overwrite unsaved local changes with stale DB data
-    if (dirtyRef.current) return;
     if (themeConfig) {
       setConfig({
         primary_color: themeConfig.primary_color,
@@ -1934,9 +1929,10 @@ export default function StoreThemeSettings() {
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
       });
-    } else if (!themeConfig) {
+    } else {
       setConfig(defaults);
     }
+    setDirty(false);
   }, [themeConfig, currentTheme]);
 
   // Send config to iframe for live preview
@@ -1974,15 +1970,17 @@ export default function StoreThemeSettings() {
 
       // Preserve user's customizations for layout/style settings that are
       // independent of the theme template (category_style, mobile_nav_style, etc.)
-      const preservedSettings: Partial<ThemeConfig> = {
-        category_style: config.category_style,
-        mobile_nav_style: config.mobile_nav_style,
-        mobile_nav_enabled: config.mobile_nav_enabled,
-        header_logo_alignment: config.header_logo_alignment,
-        header_style: config.header_style,
-        marquee_text: config.marquee_text,
-        marquee_enabled: config.marquee_enabled,
-      };
+      const preservedSettings: Partial<ThemeConfig> = themeConfig
+        ? {
+            category_style: themeConfig.category_style ?? config.category_style,
+            mobile_nav_style: (themeConfig as any).mobile_nav_style ?? config.mobile_nav_style,
+            mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? config.mobile_nav_enabled,
+            header_logo_alignment: themeConfig.header_logo_alignment ?? config.header_logo_alignment,
+            header_style: themeConfig.header_style ?? config.header_style,
+            marquee_text: themeConfig.marquee_text ?? config.marquee_text,
+            marquee_enabled: themeConfig.marquee_enabled ?? config.marquee_enabled,
+          }
+        : {};
 
       const newConfig: ThemeConfig = topCombo
         ? {
@@ -1998,37 +1996,26 @@ export default function StoreThemeSettings() {
 
       // Upsert the theme config so colors are persisted
       const configPayload = { store_id: storeId!, ...newConfig };
-      let savedThemeConfig;
       if (themeConfig?.id) {
-        const { data, error: configError } = await supabase
+        await supabase
           .from("store_theme_config")
           .update(newConfig)
-          .eq("id", themeConfig.id)
-          .select("*")
-          .single();
-        if (configError) throw configError;
-        savedThemeConfig = data;
+          .eq("id", themeConfig.id);
       } else {
-        const { data, error: configError } = await supabase
+        await supabase
           .from("store_theme_config")
-          .insert(configPayload)
-          .select("*")
-          .single();
-        if (configError) throw configError;
-        savedThemeConfig = data;
+          .insert(configPayload);
       }
 
-      return { themeId, newConfig, savedThemeConfig };
+      return { themeId, newConfig };
     },
-    onSuccess: ({ themeId, newConfig, savedThemeConfig }) => {
+    onSuccess: ({ themeId, newConfig }) => {
       // Immediately update local override so the tick moves instantly
       setThemeOverride(themeId);
 
       queryClient.setQueryData(["store-detail", storeId], (old: any) =>
         old ? { ...old, theme: themeId } : old
       );
-      queryClient.setQueryData(["store-theme-config", storeId], savedThemeConfig);
-      queryClient.setQueryData(["storefront-theme-config", storeId], savedThemeConfig);
       queryClient.invalidateQueries({ queryKey: ["store-detail", storeId] });
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
@@ -2080,30 +2067,22 @@ export default function StoreThemeSettings() {
     mutationFn: async () => {
       const payload = { store_id: storeId!, ...config };
       if (themeConfig?.id) {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("store_theme_config")
           .update(config)
-          .eq("id", themeConfig.id)
-          .select("*")
-          .single();
+          .eq("id", themeConfig.id);
         if (error) throw error;
-        return data;
       } else {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("store_theme_config")
-          .insert(payload)
-          .select("*")
-          .single();
+          .insert(payload);
         if (error) throw error;
-        return data;
       }
     },
-    onSuccess: (savedThemeConfig) => {
-      setDirty(false);
-      queryClient.setQueryData(["store-theme-config", storeId], savedThemeConfig);
-      queryClient.setQueryData(["storefront-theme-config", storeId], savedThemeConfig);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+      setDirty(false);
 
       // Purge edge cache so storefront visitors see new theme immediately
       if (store?.slug) {
@@ -2442,72 +2421,64 @@ export default function StoreThemeSettings() {
             )}
           </div>
 
-          {/* Mobile Bottom Navigation Style — Available for all themes */}
-          <>
-            <Separator />
-            <div>
-              <h4 className="text-sm font-semibold mb-1">Mobile Bottom Navigation</h4>
-              <p className="text-xs text-muted-foreground mb-3">
-                Choose the navigation bar style for mobile devices. Always visible on mobile.
-              </p>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
-                  { value: "modern", label: "Modern", desc: "Floating pill with cart" },
-                  { value: "iconic", label: "Iconic", desc: "Custom icons with underline" },
-                ].map((s) => (
-                  <button
-                    key={s.value}
-                    onClick={() => updateField("mobile_nav_style", s.value)}
-                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
-                      (config.mobile_nav_style || "classic") === s.value
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-primary/30"
-                    }`}
-                  >
-                    {(config.mobile_nav_style || "classic") === s.value && (
-                      <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <Check className="h-3 w-3" />
-                      </div>
-                    )}
-                    {/* Mini preview */}
-                    <div className="w-full h-8 rounded-lg border border-border bg-muted/30 flex items-center justify-around px-2">
-                      {s.value === "classic" ? (
-                        <>
-                          <Home className="h-3 w-3 text-muted-foreground" />
-                          <Store className="h-3 w-3 text-muted-foreground" />
-                          <LayoutGrid className="h-3 w-3 text-muted-foreground" />
-                          <Heart className="h-3 w-3 text-muted-foreground" />
-                          <User className="h-3 w-3 text-muted-foreground" />
-                        </>
-                      ) : s.value === "modern" ? (
-                        <>
-                          <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5">
-                            <Home className="h-2.5 w-2.5 text-primary" />
-                            <span className="text-[7px] font-bold text-primary">Home</span>
-                          </div>
-                          <Store className="h-3 w-3 text-muted-foreground" />
-                          <Heart className="h-3 w-3 text-muted-foreground" />
-                          <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                            <ShoppingCart className="h-2.5 w-2.5 text-primary-foreground" />
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <Home className="h-3 w-3 text-primary" />
-                          <User className="h-3 w-3 text-muted-foreground" />
-                          <Store className="h-3 w-3 text-muted-foreground" />
-                          <Heart className="h-3 w-3 text-muted-foreground" />
-                          <ShoppingCart className="h-3 w-3 text-muted-foreground" />
-                        </>
+          {/* Mobile Bottom Navigation Style (Theme 1 & 14) */}
+          {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-16") && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Mobile Bottom Navigation</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Choose the navigation bar style for mobile devices. Always visible on mobile.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
+                    { value: "modern", label: "Modern", desc: "Floating pill with cart" },
+                  ].map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => updateField("mobile_nav_style", s.value)}
+                      className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                        (config.mobile_nav_style || "classic") === s.value
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                    >
+                      {(config.mobile_nav_style || "classic") === s.value && (
+                        <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="h-3 w-3" />
+                        </div>
                       )}
-                    </div>
-                    <span className="text-[10px] font-semibold">{s.label}</span>
-                    <span className="text-[9px] text-muted-foreground">{s.desc}</span>
-                  </button>
-                ))}
+                      {/* Mini preview */}
+                      <div className="w-full h-8 rounded-lg border border-border bg-muted/30 flex items-center justify-around px-2">
+                        {s.value === "classic" ? (
+                          <>
+                            <Home className="h-3 w-3 text-muted-foreground" />
+                            <Store className="h-3 w-3 text-muted-foreground" />
+                            <LayoutGrid className="h-3 w-3 text-muted-foreground" />
+                            <Heart className="h-3 w-3 text-muted-foreground" />
+                            <User className="h-3 w-3 text-muted-foreground" />
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5">
+                              <Home className="h-2.5 w-2.5 text-primary" />
+                              <span className="text-[7px] font-bold text-primary">Home</span>
+                            </div>
+                            <Store className="h-3 w-3 text-muted-foreground" />
+                            <Heart className="h-3 w-3 text-muted-foreground" />
+                            <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                              <ShoppingCart className="h-2.5 w-2.5 text-primary-foreground" />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-semibold">{s.label}</span>
+                      <span className="text-[9px] text-muted-foreground">{s.desc}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
               <div>
                 <h4 className="text-sm font-semibold mb-2">Header Style</h4>
@@ -2546,7 +2517,7 @@ export default function StoreThemeSettings() {
                 </div>
               </div>
             </>
-          
+          )}
 
           <Separator />
 
