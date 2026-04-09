@@ -151,6 +151,15 @@ const COLOR_COMBINATIONS = [
     background: "#FFF3E6",
     marquee: "linear-gradient(90deg, #381932, #5C2D52, #381932)",
   },
+  {
+    id: "systumm-green",
+    name: "Systumm Green",
+    primary: "#2B4C3F",
+    accent: "#1B5E4B",
+    text: "#1a1a1a",
+    background: "#FAFAF6",
+    marquee: "linear-gradient(90deg, #2B4C3F, #1B5E4B, #2B4C3F)",
+  },
 ];
 
 /* ── Per-theme recommended color combinations (curated for best visual result) ── */
@@ -216,7 +225,7 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
   "theme-17": [
-    "elegant-black-white", "lux-black-gold", "emerald-luxe", "midnight-navy", "velvet-merlot",
+    "systumm-green", "elegant-black-white", "lux-black-gold", "emerald-luxe", "midnight-navy", "velvet-merlot",
     "crimson-royale", "ghost-persian", "teal-elegance", "plum-cream", "ocean-teal",
   ],
   "theme-18": [
