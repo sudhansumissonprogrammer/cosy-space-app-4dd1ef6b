@@ -31,7 +31,7 @@ export default function StorefrontLayoutV17({ slugOverride }: { slugOverride?: s
                 --v17-body-font: 'Instrument Sans', sans-serif;
                 --v17-primary: #2B4C3F;
                 --v17-bg: #FAFAF6;
-                --v17-text: #0F2A22;
+                --v17-text: #000000;
                 --v17-text-muted: #666;
                 --v17-star: #1B5E4B;
                 --v17-border: #e8e8e3;
