@@ -1965,6 +1965,9 @@ function RelatedProducts({
   addToCart: (item: any) => void;
   currency: string;
 }) {
+  const themeConfig = useStorefrontThemeConfig(storeId);
+  const cardStyle = (store as any)?.theme === "theme-18" ? "style-5" : (themeConfig?.product_card_style || "style-1");
+
   const { data: related } = useQuery({
     queryKey: ["related-products", storeId, currentProductId],
     queryFn: async () => {
@@ -1990,8 +1993,6 @@ function RelatedProducts({
 
   if (!related || related.length === 0) return null;
 
-  const themeConfig = useStorefrontThemeConfig(storeId);
-  const cardStyle = (store as any)?.theme === "theme-18" ? "style-5" : (themeConfig?.product_card_style || "style-1");
   const productIds = related.map((p) => p.id);
 
   return (
