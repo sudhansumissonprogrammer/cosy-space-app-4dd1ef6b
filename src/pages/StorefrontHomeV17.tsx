@@ -248,14 +248,12 @@ export default function StorefrontHomeV17() {
           </div>
         )}
         {hasMobileHero && (
-          <div className="md:hidden">
-            <div style={{ minHeight: "85vh" }}>
-              <StorefrontMobileHero
-                mobileHeroUrl={(store as any).mobile_hero_url}
-                mobileHeroImages={(store as any).mobile_hero_images}
-                storeName={store.name}
-              />
-            </div>
+          <div className="md:hidden" style={{ minHeight: "100vh" }}>
+            <StorefrontMobileHero
+              mobileHeroUrl={(store as any).mobile_hero_url}
+              mobileHeroImages={(store as any).mobile_hero_images}
+              storeName={store.name}
+            />
           </div>
         )}
       </section>
