@@ -4,6 +4,7 @@
  * full-screen hero carousel, edge-to-edge product grids, minimal product cards.
  */
 import { Suspense, lazy } from "react";
+import V17CartBadge from "@/components/storefront/V17CartBadge";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
@@ -41,6 +42,8 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
               ) : undefined
             }
             headerStyle={themeConfig?.header_style || "normal"}
+            useSearchInHeader
+            customCartIcon={<V17CartBadge />}
           />
         );
       }}
