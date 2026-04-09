@@ -5,6 +5,7 @@
  * Footer: deep dark green (#0F2A22).
  */
 import { Suspense, lazy, useState, useEffect } from "react";
+import V17CartBadge from "@/components/storefront/V17CartBadge";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
@@ -78,6 +79,8 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
           }
           headerStyle="transparent"
           headerClassName={`v17-header-scroll ${scrolled ? 'v17-header-solid' : 'v17-header-transparent'}`}
+          useSearchInHeader
+          customCartIcon={<V17CartBadge />}
         />
       </div>
     </>

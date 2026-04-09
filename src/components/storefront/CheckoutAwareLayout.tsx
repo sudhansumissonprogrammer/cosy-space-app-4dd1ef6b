@@ -11,6 +11,7 @@ import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+
 import { useSmartHeader } from "@/hooks/useSmartHeader";
 import PageTransition from "@/components/storefront/PageTransition";
 import ScrollProgressBar from "@/components/storefront/ScrollProgressBar";
@@ -38,6 +39,10 @@ interface CheckoutAwareLayoutProps {
   headerStyle?: string;
   /** Custom header className override (e.g. for transparent-to-solid scroll) */
   headerClassName?: string;
+  /** Replace account icon with search icon in mobile header */
+  useSearchInHeader?: boolean;
+  /** Custom cart icon JSX to replace default CartBadge */
+  customCartIcon?: ReactNode;
 }
 
 export default function CheckoutAwareLayout({
@@ -48,6 +53,8 @@ export default function CheckoutAwareLayout({
   mobileNav,
   headerStyle = "normal",
   headerClassName,
+  useSearchInHeader = false,
+  customCartIcon,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -125,9 +132,15 @@ export default function CheckoutAwareLayout({
 
   const ActionButtons = !isCheckout ? (
     <div className="flex items-center gap-0 sm:gap-1" style={{ minHeight: 40, contain: "layout" }}>
-      <AccountBadge slug={store.slug} />
+      {useSearchInHeader ? (
+        <button onClick={() => setSearchOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products">
+          <Search className="h-5 w-5" />
+        </button>
+      ) : (
+        <AccountBadge slug={store.slug} />
+      )}
       {!hideWishlistAndShare && <WishlistBadge slug={store.slug} />}
-      <CartBadge />
+      {customCartIcon || <CartBadge />}
       {!hideWishlistAndShare && <Suspense fallback={null}><LazyShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly /></Suspense>}
     </div>
   ) : null;
