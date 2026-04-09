@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSubdomainSlug } from "@/lib/subdomain";
 import type { Tables } from "@/integrations/supabase/types";
@@ -37,7 +37,6 @@ async function rpcGetStorefrontShell(slug: string) {
  */
 export function useStorefront(slugOverride?: string) {
   const { slug: paramSlug } = useParams<{ slug: string }>();
-  const location = useLocation();
   const slug = slugOverride || paramSlug || getSubdomainSlug() || undefined;
   const queryClient = useQueryClient();
   const seeded = useRef(false);
@@ -89,7 +88,8 @@ export function useStorefront(slugOverride?: string) {
   });
 
   // Seed individual cache keys so child pages get instant cache hits.
-  // Re-seeds on every data change so theme/config updates propagate.
+  // Only re-seed when the underlying storefront data changes — route changes
+  // must not overwrite unsaved theme preview selections inside the iframe.
   useEffect(() => {
     if (!data) return;
 
@@ -136,22 +136,14 @@ export function useStorefront(slugOverride?: string) {
       queryClient.setQueryData(["storefront-total-products", store.id], (data as any).total_products);
     }
 
-    // Clear injected data after first seed — prevents stale data on SPA navigation
+    // Clear injected data after first seed so future fetches use fresh cache/query data
     if (!seeded.current) {
       seeded.current = true;
       if ((window as any).__STOREFRONT_DATA__) {
         delete (window as any).__STOREFRONT_DATA__;
       }
-
-      // ── DIRECT-LINK PREFETCH ──
-      // When landing directly on any storefront page, prefetch the data that
-      // page will need so it renders instantly instead of showing a spinner.
-      const path = location.pathname;
-
-      // Direct-link prefetch is handled by prefetchTargetPageData in App.tsx
-      // to avoid duplicate queries. Only about/contact prefetch remains here.
     }
-  }, [data, queryClient, location.pathname]);
+  }, [data, queryClient]);
 
   const store = (data as any)?.store as StoreData | undefined;
 
