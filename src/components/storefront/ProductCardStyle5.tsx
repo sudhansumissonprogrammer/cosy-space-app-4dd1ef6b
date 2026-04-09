@@ -39,7 +39,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
       style={{ backgroundColor: "#0a0a0a" }}
     >
       {/* Image — square, no border-radius, full-bleed */}
-      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "1/1" }}>
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/4" }}>
         <img
           src={optimized}
           srcSet={srcSet}
