@@ -37,9 +37,12 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
           --v17-border: #e8e8e3;
           --v17-footer-bg: #0F2A22;
         }
-        .v17-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease; }
-        .v17-header-transparent { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-        .v17-header-solid { background-color: #fff !important; box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important; backdrop-filter: blur(12px) !important; }
+        .v17-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease; }
+        .v17-header-transparent { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; color: #fff !important; }
+        .v17-header-transparent button, .v17-header-transparent a, .v17-header-transparent svg { color: #fff !important; }
+        .v17-header-transparent .smart-header { background: transparent !important; }
+        .v17-header-solid { background-color: #fff !important; box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important; color: #000 !important; }
+        .v17-header-solid button, .v17-header-solid a, .v17-header-solid svg { color: #000 !important; }
       `}</style>
       <div style={{
         fontFamily: "var(--v17-body-font)",
