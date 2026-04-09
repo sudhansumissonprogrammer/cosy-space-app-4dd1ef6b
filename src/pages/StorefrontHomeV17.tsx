@@ -235,8 +235,8 @@ export default function StorefrontHomeV17() {
 
   return (
     <VariantCountProvider productIds={allProductIds}>
-      {/* ─── Hero Banner ─── */}
-      <section className="relative">
+      {/* ─── Hero Banner — full-bleed behind transparent header ─── */}
+      <section className="relative" style={{ marginTop: "-56px" }}>
         {hasBanner && (
           <div className="hidden md:block">
             <HeroBannerCarousel
@@ -249,11 +249,13 @@ export default function StorefrontHomeV17() {
         )}
         {hasMobileHero && (
           <div className="md:hidden">
-            <StorefrontMobileHero
-              mobileHeroUrl={(store as any).mobile_hero_url}
-              mobileHeroImages={(store as any).mobile_hero_images}
-              storeName={store.name}
-            />
+            <div style={{ minHeight: "85vh" }}>
+              <StorefrontMobileHero
+                mobileHeroUrl={(store as any).mobile_hero_url}
+                mobileHeroImages={(store as any).mobile_hero_images}
+                storeName={store.name}
+              />
+            </div>
           </div>
         )}
       </section>
