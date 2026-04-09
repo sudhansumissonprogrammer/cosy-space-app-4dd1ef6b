@@ -25,6 +25,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import ProductCardV17 from "@/components/storefront/ProductCardV17";
 import VariantPickerDialog from "@/components/storefront/VariantPickerDialog";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import ReviewsSection from "@/components/storefront/v17/ReviewsSection";
 import TrustTicker from "@/components/storefront/v17/TrustTicker";
@@ -280,7 +281,11 @@ export default function StorefrontHomeV17() {
       </section>
 
       {/* ─── Categories ─── */}
-      <V17Categories categories={storeCategories || []} slug={slug} />
+      <UniversalCategories
+        categories={storeCategories || []}
+        storeSlug={slug}
+        categoryStyle={_themeConfig?.category_style || "style-1"}
+      />
 
       {/* ─── Best Sellers (carousel or grid) — appears before All Collection ─── */}
       {hasBestSellers && (
