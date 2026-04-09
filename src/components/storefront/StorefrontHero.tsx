@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { BadgeCheck } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
@@ -8,62 +8,24 @@ interface StorefrontHeroProps {
   store: StoreData;
 }
 
-/** Gentle parallax — translate only, no scale, no clipping */
-function useHeroParallax(speed = 0.12) {
-  const ref = useRef<HTMLImageElement>(null);
-  const ticking = useRef(false);
-
-  useEffect(() => {
-    const img = ref.current;
-    if (!img) return;
-
-    // Desktop only — mobile has fixed-height container that clips
-    const mq = window.matchMedia("(min-width: 768px)");
-    if (!mq.matches) return;
-
-    const onScroll = () => {
-      if (ticking.current) return;
-      ticking.current = true;
-      requestAnimationFrame(() => {
-        const parent = img.parentElement;
-        if (!parent) { ticking.current = false; return; }
-        const rect = parent.getBoundingClientRect();
-        if (rect.bottom > 0 && rect.top < window.innerHeight) {
-          const offset = rect.top * speed;
-          img.style.transform = `translate3d(0, ${offset}px, 0)`;
-        }
-        ticking.current = false;
-      });
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [speed]);
-
-  return ref;
-}
-
 export default function StorefrontHero({ store }: StorefrontHeroProps) {
+  // Preload the banner for LCP
   useEffect(() => {
     if (store.banner_url) {
       return preloadHeroImage(store.banner_url, 1200);
     }
   }, [store.banner_url]);
 
-  const imgRef = useHeroParallax();
-
   return (
     <section className="relative">
       {store.banner_url ? (
-        <div className="h-56 w-full sm:h-72 lg:h-80 overflow-hidden">
+        <div className="h-56 w-full sm:h-72 lg:h-80">
           <img
-            ref={imgRef}
             src={optimizeImageUrl(store.banner_url, 1200, 75)}
             srcSet={getImageSrcSet(store.banner_url, [400, 800, 1200]) || undefined}
             sizes={HERO_IMAGE_SIZES}
             alt={`${store.name} banner`}
-            className="h-full w-full object-cover will-change-transform"
+            className="h-full w-full object-cover"
             loading="eager"
             fetchPriority="high"
             decoding="sync"
