@@ -43,6 +43,10 @@ interface CheckoutAwareLayoutProps {
   useSearchInHeader?: boolean;
   /** Custom cart icon JSX to replace default CartBadge */
   customCartIcon?: ReactNode;
+  /** Override header background color (e.g. "#0a0a0a" for dark themes) */
+  headerBgOverride?: string;
+  /** Override header icon color (e.g. "#ffffff" for dark themes) */
+  headerIconColor?: string;
 }
 
 export default function CheckoutAwareLayout({
