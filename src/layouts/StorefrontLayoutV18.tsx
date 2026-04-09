@@ -46,11 +46,13 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
     <>
       <style>{`
         .v18-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease; position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; }
-        .v18-header-transparent, .v18-header-solid { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; color: #fff !important; border-color: transparent !important; box-shadow: none !important; }
+        .v18-header-transparent { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; color: #fff !important; border-color: transparent !important; box-shadow: none !important; }
+        .v18-header-solid { background-color: rgba(10,10,10,0.92) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; color: #fff !important; border-color: transparent !important; box-shadow: 0 1px 8px rgba(0,0,0,0.4) !important; }
         .v18-header-transparent button, .v18-header-transparent a, .v18-header-transparent svg,
         .v18-header-solid button, .v18-header-solid a, .v18-header-solid svg { color: #fff !important; stroke: #fff !important; }
         .storefront-font .smart-header { position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; background-color: transparent !important; backdrop-filter: none !important; border-bottom: none !important; box-shadow: none !important; }
         .storefront-font .smart-header button, .storefront-font .smart-header a, .storefront-font .smart-header svg { color: #fff !important; stroke: #fff !important; }
+        .storefront-font main > div:first-child:not(.v18-hero-home) { padding-top: 3.5rem; }
       `}</style>
       <CheckoutAwareLayout
         store={store}
