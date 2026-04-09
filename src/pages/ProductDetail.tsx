@@ -615,7 +615,8 @@ export default function ProductDetail() {
             })()
           )}
 
-          {/* Live viewers */}
+          {/* Live viewers — hidden in V18 */}
+          {!isV18 && (
           <div className="mt-3 flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
@@ -625,6 +626,7 @@ export default function ProductDetail() {
               <strong className="text-foreground">{liveViewers} people</strong> viewing this right now
             </span>
           </div>
+          )}
 
           {/* Stock Status */}
           {isOutOfStock ? (
