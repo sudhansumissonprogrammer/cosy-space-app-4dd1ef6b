@@ -65,24 +65,16 @@ export default function HeroBannerCarousel({
   if (images.length === 0) return null;
 
   if (images.length === 1) {
-    const srcSet = getImageSrcSet(images[0], [400, 600, 800, 1200]);
     return (
-      <div className={`relative overflow-hidden ${className}`} style={{ aspectRatio: "16/7", contain: "layout" }}>
-        <ParallaxImage
-          src={optimizeImageUrl(images[0], optimizeWidth)}
-          srcSet={srcSet || undefined}
-          sizes={HERO_IMAGE_SIZES}
-          alt={`${storeName} hero banner`}
-          className={imageClassName}
-          style={maxHeight ? { maxHeight } : undefined}
-          loading="eager"
-          fetchPriority="high"
-          decoding="sync"
-          width={1200}
-          height={600}
-        />
-        {overlay}
-      </div>
+      <SingleParallaxHero
+        image={images[0]}
+        storeName={storeName}
+        optimizeWidth={optimizeWidth}
+        className={className}
+        imageClassName={imageClassName}
+        maxHeight={maxHeight}
+        overlay={overlay}
+      />
     );
   }
 
