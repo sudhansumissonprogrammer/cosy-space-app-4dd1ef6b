@@ -340,12 +340,15 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
 
     setLoading(true);
     try {
-      let imageUrl = existingProduct?.image_url || null;
+      let imageUrl: string | null;
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
-      } else if (imagePreview && imagePreview !== existingProduct?.image_url) {
-        // URL-based image (no file to upload)
+      } else if (imagePreview) {
+        // Keep current preview (existing URL or new URL-based image)
         imageUrl = imagePreview;
+      } else {
+        // User explicitly removed the image
+        imageUrl = null;
       }
 
       const productData = {
