@@ -169,12 +169,14 @@ export default function CheckoutAwareLayout({
       {/* Mobile header + checkout header */}
       <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !headerVisible ? 'smart-header-hidden' : ''} ${
         headerClassName ? headerClassName :
+        headerBgOverride ? '' :
         isCheckout ? 'bg-card/80 backdrop-blur-md' :
         headerStyle === 'transparent' ? '' :
         headerStyle === 'glassmorphic' ? '' :
         'bg-card/80 backdrop-blur-md'
       }`}
         style={
+          headerBgOverride && !isCheckout ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined } :
           headerClassName ? {} :
           !isCheckout && headerStyle === 'glassmorphic' ? {
             background: 'rgba(255,255,255,0.12)',
