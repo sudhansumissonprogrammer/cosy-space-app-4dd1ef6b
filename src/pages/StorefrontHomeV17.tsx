@@ -1,18 +1,20 @@
 /**
  * Theme 17 Home — systumm.shop-exact layout:
  * 1. Full-screen Hero Banner
- * 2. "All Collection" product grid (2-col mobile, 4-col desktop) with V17 card
- * 3. Scrolling trust ticker
- * 4. Customer Reviews carousel
- * 5. Trust badges row
+ * 2. Categories horizontal scroll
+ * 3. Best Sellers (carousel if enabled, grid otherwise) — appears first
+ * 4. "All Collection" product grid (2-col mobile, 4-col desktop) with V17 card
+ * 5. Scrolling trust ticker
+ * 6. Customer Reviews carousel
+ * 7. Trust badges row
  */
 import { lazy, Suspense, useState } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { ArrowRight } from "lucide-react";
-import SectionHeading from "@/components/storefront/SectionHeading";
 import { VariantCountProvider, useVariantCount } from "@/hooks/useVariantCounts";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
@@ -27,6 +29,7 @@ import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import ReviewsSection from "@/components/storefront/v17/ReviewsSection";
 import TrustTicker from "@/components/storefront/v17/TrustTicker";
 import TrustBadges from "@/components/storefront/v17/TrustBadges";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
@@ -64,18 +67,147 @@ function V17CardWrapper({ product, slug, store, priority, index }: { product: an
   );
 }
 
+/* ─── V17 Categories Section ─── */
+function V17Categories({ categories, slug }: { categories: any[]; slug: string }) {
+  if (!categories || categories.length === 0) return null;
+
+  return (
+    <section style={{ padding: "30px 15px 10px" }}>
+      <div className="max-w-6xl mx-auto">
+        <h2
+          className="text-center"
+          style={{
+            fontFamily: "var(--v17-heading-font)",
+            fontSize: "clamp(20px, 3.5vw, 28px)",
+            fontWeight: 500,
+            letterSpacing: "0.02em",
+            color: "var(--v17-text, #000)",
+            marginBottom: "20px",
+            textTransform: "capitalize",
+          }}
+        >
+          Shop by Category
+        </h2>
+        <div
+          className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+        >
+          {categories.map((cat) => (
+            <Link
+              key={cat.id}
+              to={storefrontPath(slug, `category/${cat.slug}`)}
+              className="flex flex-col items-center gap-2 flex-shrink-0 transition-transform hover:scale-105"
+              style={{ minWidth: "80px" }}
+            >
+              <div
+                className="overflow-hidden"
+                style={{
+                  width: "72px",
+                  height: "72px",
+                  borderRadius: "50%",
+                  border: "2px solid var(--v17-border, #e8e8e3)",
+                  backgroundColor: "#f5f5f0",
+                }}
+              >
+                {cat.image_url ? (
+                  <img
+                    src={optimizeImageUrl(cat.image_url, 150, 80)}
+                    alt={cat.name}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div
+                    className="flex h-full w-full items-center justify-center"
+                    style={{ backgroundColor: "var(--v17-primary, #2B4C3F)", color: "#fff", fontSize: "22px", fontWeight: 600 }}
+                  >
+                    {cat.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <span
+                style={{
+                  fontFamily: "var(--v17-body-font)",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "var(--v17-text, #000)",
+                  textTransform: "capitalize",
+                  textAlign: "center",
+                  maxWidth: "80px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {cat.name}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Best Sellers Grid (non-carousel) ─── */
+function V17BestSellersGrid({ bestSellers, slug, store }: { bestSellers: any[]; slug: string; store: StoreData }) {
+  if (bestSellers.length === 0) return null;
+
+  return (
+    <section style={{ padding: "30px 15px 10px" }}>
+      <div className="max-w-6xl mx-auto">
+        <h2
+          className="text-center"
+          style={{
+            fontFamily: "var(--v17-heading-font)",
+            fontSize: "clamp(24px, 4vw, 36px)",
+            fontWeight: 400,
+            letterSpacing: "0.02em",
+            color: "var(--v17-text, #000)",
+            marginBottom: "8px",
+          }}
+        >
+          Best Sellers
+        </h2>
+        <p
+          className="text-center"
+          style={{
+            fontFamily: "var(--v17-body-font)",
+            fontSize: "14px",
+            fontWeight: 400,
+            color: "var(--v17-text-muted, #666)",
+            marginBottom: "30px",
+          }}
+        >
+          Our most loved styles. Grab yours before they&apos;re gone.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: "15px", columnGap: "15px", rowGap: "30px" }}>
+          {bestSellers.map((p: any, i: number) => (
+            <V17CardWrapper key={p.id} product={p} slug={slug} store={store} priority={i < 2} index={i} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Main Home Component ─── */
 export default function StorefrontHomeV17() {
   const params = useParams<{ slug: string }>();
   const store = useOutletContext<StoreData>();
   const slug = params.slug || (store as any)?.slug || "";
+  const queryClient = useQueryClient();
 
   const _themeConfig = useStorefrontThemeConfig(store?.id);
 
   const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);
   const bsQuery = useBestSellingProducts(store?.id);
   const bestSellers = bsQuery.products;
-  const showBestSellers = store?.best_selling_carousel && bestSellers.length > 0;
+  const useCarousel = store?.best_selling_carousel === true;
+  const hasBestSellers = bestSellers.length > 0;
+
+  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]);
 
   useStoreJsonLd({
     storeName: store?.name || "",
@@ -96,7 +228,7 @@ export default function StorefrontHomeV17() {
 
   const aboveFold = products.slice(0, ABOVE_FOLD_COUNT);
   const belowFold = products.slice(ABOVE_FOLD_COUNT);
-  const allProductIds = products.map((p: any) => p.id);
+  const allProductIds = [...products.map((p: any) => p.id), ...bestSellers.map((p: any) => p.id)];
 
   const hasBanner = !!(store as any).banner_url;
   const hasMobileHero = !!(store as any).mobile_hero_url || !!(store as any).mobile_hero_images;
@@ -126,17 +258,50 @@ export default function StorefrontHomeV17() {
         )}
       </section>
 
+      {/* ─── Categories ─── */}
+      <V17Categories categories={storeCategories || []} slug={slug} />
+
+      {/* ─── Best Sellers (carousel or grid) — appears before All Collection ─── */}
+      {hasBestSellers && (
+        useCarousel ? (
+          <LazyRender rootMargin="200px">
+            <section style={{ padding: "30px 15px" }}>
+              <div className="max-w-6xl mx-auto">
+                <h2
+                  className="text-center"
+                  style={{
+                    fontFamily: "var(--v17-heading-font)",
+                    fontSize: "clamp(24px, 4vw, 36px)",
+                    fontWeight: 400,
+                    letterSpacing: "0.02em",
+                    color: "var(--v17-text, #000)",
+                    marginBottom: "24px",
+                  }}
+                >
+                  Best Sellers
+                </h2>
+                <Suspense fallback={null}>
+                  <BestSellingCarousel products={bestSellers} slug={slug} store={store} cardStyle="style-1" />
+                </Suspense>
+              </div>
+            </section>
+          </LazyRender>
+        ) : (
+          <V17BestSellersGrid bestSellers={bestSellers} slug={slug} store={store} />
+        )
+      )}
+
       {/* ─── All Collection ─── */}
       <section style={{ padding: "40px 15px 20px" }}>
         <div className="max-w-6xl mx-auto">
           <h2
             className="text-center"
             style={{
-              fontFamily: "var(--v17-heading-font, 'Cormorant Garamond', serif)",
+              fontFamily: "var(--v17-heading-font)",
               fontSize: "clamp(24px, 4vw, 36px)",
               fontWeight: 400,
               letterSpacing: "0.02em",
-              color: "var(--v17-text, #1a1a1a)",
+              color: "var(--v17-text, #000)",
               marginBottom: "8px",
             }}
           >
@@ -145,7 +310,7 @@ export default function StorefrontHomeV17() {
           <p
             className="text-center"
             style={{
-              fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",
+              fontFamily: "var(--v17-body-font)",
               fontSize: "14px",
               fontWeight: 400,
               color: "var(--v17-text-muted, #666)",
@@ -189,7 +354,7 @@ export default function StorefrontHomeV17() {
                   padding: "10px 24px",
                   fontSize: "14px",
                   fontWeight: 500,
-                  fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",
+                  fontFamily: "var(--v17-body-font)",
                   borderRadius: "4px",
                   border: "2px solid var(--v17-primary, #2B4C3F)",
                   color: "var(--v17-primary, #2B4C3F)",
@@ -202,20 +367,6 @@ export default function StorefrontHomeV17() {
           )}
         </div>
       </section>
-
-      {/* ─── Best Sellers ─── */}
-      {showBestSellers && (
-        <LazyRender rootMargin="200px">
-          <section style={{ padding: "30px 15px" }}>
-            <div className="max-w-6xl mx-auto">
-              <SectionHeading title="Best Sellers" />
-              <Suspense fallback={null}>
-                <BestSellingCarousel products={bestSellers} slug={slug} store={store} cardStyle="style-1" />
-              </Suspense>
-            </div>
-          </section>
-        </LazyRender>
-      )}
 
       {/* ─── Trust Ticker ─── */}
       <LazyRender rootMargin="100px">
