@@ -256,7 +256,7 @@ export default function StorefrontHomeV17() {
               mobileHeroImages={(store as any).mobile_hero_images}
               storeName={store.name}
             />
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20">
               <Link
                 to={storefrontPath(slug, "shop")}
                 className="inline-flex items-center justify-center px-8 py-3 rounded-full text-white font-medium text-sm tracking-wide shadow-lg transition-transform active:scale-95"
@@ -269,7 +269,7 @@ export default function StorefrontHomeV17() {
         )}
         {/* Desktop hero also gets the button */}
         {hasBanner && (
-          <div className="hidden md:block absolute bottom-10 left-1/2 -translate-x-1/2 z-20">
+          <div className="hidden md:block absolute bottom-16 left-1/2 -translate-x-1/2 z-20">
             <Link
               to={storefrontPath(slug, "shop")}
               className="inline-flex items-center justify-center px-10 py-3.5 rounded-full text-white font-medium text-base tracking-wide shadow-lg hover:opacity-90 transition-all"
