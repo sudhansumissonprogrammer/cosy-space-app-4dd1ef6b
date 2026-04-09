@@ -50,10 +50,10 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         .v18-header-transparent button, .v18-header-transparent a, .v18-header-transparent svg { color: #fff !important; stroke: #fff !important; }
         .v18-header-solid { background-color: #0a0a0a !important; box-shadow: 0 1px 4px rgba(255,255,255,0.05) !important; color: #fff !important; border-color: rgba(255,255,255,0.08) !important; backdrop-filter: blur(10px) !important; }
         .v18-header-solid button, .v18-header-solid a, .v18-header-solid svg { color: #fff !important; stroke: #fff !important; }
-        /* Desktop nav also fixed overlay */
-        .storefront-font .desktop-nav-bar { position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; background-color: transparent !important; transition: background-color 0.3s ease; }
-        .storefront-font .desktop-nav-bar.v18-scrolled { background-color: #0a0a0a !important; box-shadow: 0 1px 4px rgba(255,255,255,0.05) !important; }
-        .storefront-font .desktop-nav-bar button, .storefront-font .desktop-nav-bar a, .storefront-font .desktop-nav-bar svg { color: #fff !important; stroke: #fff !important; }
+        /* Desktop nav: fixed overlay on hero */
+        .storefront-font nav.smart-header.hidden.md\\:block { position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; background-color: transparent !important; transition: background-color 0.3s ease, box-shadow 0.3s ease; border-bottom: none !important; }
+        .v18-scrolled .storefront-font nav.smart-header.hidden.md\\:block,
+        html.v18-scrolled nav.smart-header { background-color: #0a0a0a !important; box-shadow: 0 1px 4px rgba(255,255,255,0.05) !important; }
       `}</style>
       <CheckoutAwareLayout
         store={store}
