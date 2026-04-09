@@ -10,7 +10,7 @@
  */
 import { lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
@@ -18,6 +18,7 @@ import { ArrowRight } from "lucide-react";
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import UniversalCategories from "@/components/storefront/UniversalCategories";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import LazyRender from "@/components/storefront/LazyRender";
@@ -76,9 +77,14 @@ export default function StorefrontHomeV18() {
   const params = useParams<{ slug: string }>();
   const store = useOutletContext<StoreData>();
   const slug = params.slug || (store as any)?.slug || "";
+  const queryClient = useQueryClient();
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
+  const categoryStyle = themeConfig?.category_style || "style-1";
+
+  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]);
+  const categoriesLoading = storeCategories === undefined;
 
   // Products
   const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);
@@ -144,6 +150,14 @@ export default function StorefrontHomeV18() {
           </div>
         )}
       </section>
+
+      {/* ─── Categories ─── */}
+      <UniversalCategories
+        categories={storeCategories}
+        storeSlug={slug}
+        isLoading={categoriesLoading}
+        categoryStyle={categoryStyle}
+      />
 
       {/* ─── Show-Runners (Featured Products) ─── */}
       <section style={{ backgroundColor: "#0a0a0a" }}>

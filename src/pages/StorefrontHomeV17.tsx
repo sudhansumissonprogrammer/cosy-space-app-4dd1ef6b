@@ -209,6 +209,7 @@ export default function StorefrontHomeV17() {
   const hasBestSellers = bestSellers.length > 0;
 
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]);
+  const categoriesLoading = storeCategories === undefined;
 
   useStoreJsonLd({
     storeName: store?.name || "",
@@ -282,8 +283,9 @@ export default function StorefrontHomeV17() {
 
       {/* ─── Categories ─── */}
       <UniversalCategories
-        categories={storeCategories || []}
+        categories={storeCategories}
         storeSlug={slug}
+        isLoading={categoriesLoading}
         categoryStyle={_themeConfig?.category_style || "style-1"}
       />
 
