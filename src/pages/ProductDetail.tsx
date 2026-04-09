@@ -644,9 +644,9 @@ export default function ProductDetail() {
 
           {/* Variant Selector */}
           {(variants || []).length > 0 && (
-            <div className="mt-5 space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Select: <span className="text-foreground normal-case tracking-normal">{selectedVariant?.name || "None"}</span>
+            <div className="mt-5 space-y-2" style={isV18 ? { borderTop: "1px solid #333", paddingTop: 16 } : {}}>
+              <Label className={isV18 ? "text-xs font-bold uppercase tracking-wider" : "text-xs font-bold uppercase tracking-wider text-muted-foreground"} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>
+                {isV18 ? `SIZE: ${selectedVariant?.name || ""}` : <>Select: <span className="text-foreground normal-case tracking-normal">{selectedVariant?.name || "None"}</span></>}
               </Label>
               <div className="flex flex-wrap gap-2">
                 {(variants || []).map((v) => (
@@ -654,13 +654,22 @@ export default function ProductDetail() {
                     key={v.id}
                     type="button"
                     onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
-                    className={`relative rounded-xl border-2 px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-                      selectedVariant?.id === v.id
-                        ? "border-primary bg-primary/10 text-primary shadow-sm"
-                        : "border-border text-foreground hover:border-primary/40 hover:bg-accent/50"
-                    } active:scale-95`}
+                    className={`transition-all duration-200 active:scale-95 ${
+                      isV18
+                        ? `flex h-10 w-10 items-center justify-center border text-sm ${
+                            selectedVariant?.id === v.id
+                              ? "border-white bg-white text-black"
+                              : "border-white/40 text-white hover:border-white"
+                          }`
+                        : `relative rounded-xl border-2 px-4 py-2 text-sm font-semibold ${
+                            selectedVariant?.id === v.id
+                              ? "border-primary bg-primary/10 text-primary shadow-sm"
+                              : "border-border text-foreground hover:border-primary/40 hover:bg-accent/50"
+                          }`
+                    }`}
+                    style={isV18 ? v18Font : {}}
                   >
-                    {selectedVariant?.id === v.id && (
+                    {!isV18 && selectedVariant?.id === v.id && (
                       <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
                         <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />
                       </span>
@@ -675,20 +684,20 @@ export default function ProductDetail() {
           {/* Quantity Selector */}
           {!isOutOfStock && (
             <div className="mt-5 flex items-center gap-3">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Qty</Label>
-              <div className="flex items-center rounded-xl border border-border overflow-hidden">
+              {!isV18 && <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Qty</Label>}
+              <div className={`flex items-center overflow-hidden ${isV18 ? 'border border-white/40' : 'rounded-xl border border-border'}`}>
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors active:scale-90"
+                  className={`flex items-center justify-center transition-colors active:scale-90 ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                 >
-                  <Minus className="h-3.5 w-3.5" />
+                  <Minus className={isV18 ? "h-4 w-4" : "h-3.5 w-3.5"} />
                 </button>
-                <span className="w-10 text-center text-sm font-bold text-foreground">{quantity}</span>
+                <span className={`text-center text-sm font-bold ${isV18 ? 'w-12' : 'w-10'}`} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>{quantity}</span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors active:scale-90"
+                  className={`flex items-center justify-center transition-colors active:scale-90 ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className={isV18 ? "h-4 w-4" : "h-3.5 w-3.5"} />
                 </button>
               </div>
             </div>
