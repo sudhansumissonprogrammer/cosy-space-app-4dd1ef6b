@@ -178,12 +178,14 @@ export default function StorefrontHomeV18() {
       {/* ─── Best Sellers ─── */}
       {showBestSellers && (
         <LazyRender rootMargin="200px">
-          <section className="py-6 px-4" style={{ backgroundColor: "#0a0a0a" }}>
-            <div className="max-w-6xl mx-auto">
-              <SectionHeading title="Best Sellers" />
-              <Suspense fallback={null}>
-                <BestSellingCarousel products={bestSellers} slug={slug} store={store} cardStyle={cardStyle} />
-              </Suspense>
+          <section style={{ backgroundColor: "#0a0a0a" }}>
+            <DarkSectionTitle title="Best Sellers" />
+            <div className="grid grid-cols-2 md:grid-cols-4">
+              {bestSellers.map((p: any, i: number) => (
+                <div key={p.id} className="v18-product-card">
+                  <UniversalProductCard product={p} slug={slug} store={store} priority={i < 2} cardStyle={cardStyle} index={i} />
+                </div>
+              ))}
             </div>
           </section>
         </LazyRender>
