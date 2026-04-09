@@ -53,6 +53,8 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         fontFamily: `'${bodyFont}', var(--v17-body-font)`,
         backgroundColor: "var(--v17-bg)",
         color: "var(--v17-text)",
+        "--storefront-heading-font": `'${headingFont}', sans-serif`,
+        "--storefront-body-font": `'${bodyFont}', sans-serif`,
         "--storefront-primary": "#0F2A22",
         "--storefront-footer-text": "#ffffff",
         "--storefront-marquee-gradient": "linear-gradient(90deg, #0F2A22, #0F2A22, #0F2A22)",
