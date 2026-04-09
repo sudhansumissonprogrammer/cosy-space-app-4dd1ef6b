@@ -80,7 +80,7 @@ export default function StorefrontHomeV18() {
   const queryClient = useQueryClient();
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
-  const cardStyle = themeConfig?.product_card_style || "style-1";
+  const cardStyle = "style-5"; // Theme 18: always Sagacity-style minimal card
   const categoryStyle = themeConfig?.category_style || "style-1";
 
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]);
