@@ -1597,23 +1597,8 @@ function AccordionItem({
     </div>
   );
 }
-  return (
-    <div>
-      <button
-        onClick={onToggle}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-bold text-foreground hover:bg-accent/30 transition-colors"
-      >
-        <span className="flex items-center gap-2">{icon}{title}</span>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-      </button>
-      {isOpen && (
-        <div className="px-4 pb-3 animate-in slide-in-from-top-1 duration-200">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
+
+
 
 /* ── Share Buttons ── */
 function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName: string; storeSlug: string; productSlugOrId: string }) {
