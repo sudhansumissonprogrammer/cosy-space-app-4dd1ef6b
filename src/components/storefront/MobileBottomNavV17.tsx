@@ -132,8 +132,8 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
               <span
                 style={{
                   fontSize: "10px",
-                  fontWeight: active ? 600 : 400,
-                  color: active ? "var(--v17-text, #1a1a1a)" : "var(--v17-text-muted, #666)",
+                  fontWeight: 500,
+                  color: "#000",
                   letterSpacing: "0.02em",
                 }}
               >
