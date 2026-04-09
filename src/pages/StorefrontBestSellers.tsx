@@ -26,7 +26,7 @@ export default function StorefrontBestSellers() {
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
   const themeConfig = useStorefrontThemeConfig(store.id);
-  const cardStyle = themeConfig?.product_card_style || "style-1";
+  const cardStyle = store.theme === "theme-18" ? "style-5" : (themeConfig?.product_card_style || "style-1");
 
   // Show all products for themes that use Shop as full catalog
   const showAll = ["theme-10", "theme-12"].includes(store.theme);
