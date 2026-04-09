@@ -156,9 +156,8 @@ function TrustBadges() {
 /* ─── Main Home Component ─── */
 export default function StorefrontHomeV17() {
   const params = useParams<{ slug: string }>();
-  const ctx = useOutletContext<{ store: StoreData; slug: string }>();
-  const store = ctx?.store;
-  const slug = ctx?.slug || params.slug || "";
+  const store = useOutletContext<StoreData>();
+  const slug = params.slug || (store as any)?.slug || "";
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
