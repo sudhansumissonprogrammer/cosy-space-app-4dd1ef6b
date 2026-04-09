@@ -36,6 +36,8 @@ interface CheckoutAwareLayoutProps {
   /** Component to render as mobile bottom nav */
   mobileNav?: ReactNode;
   headerStyle?: string;
+  /** Custom header className override (e.g. for transparent-to-solid scroll) */
+  headerClassName?: string;
 }
 
 export default function CheckoutAwareLayout({
@@ -45,6 +47,7 @@ export default function CheckoutAwareLayout({
   mobileNavEnabled = false,
   mobileNav,
   headerStyle = "normal",
+  headerClassName,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
