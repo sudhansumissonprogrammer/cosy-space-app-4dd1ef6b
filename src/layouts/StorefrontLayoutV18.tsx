@@ -19,7 +19,32 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
       defaultPrimary="#ffffff"
       defaultButtonRadius="0"
       wrapperClassName="storefront-font min-h-screen font-sans"
-      wrapperStyle={{ backgroundColor: "#0a0a0a", color: "#f5f5f5" }}
+      wrapperStyle={{
+        backgroundColor: "#0a0a0a",
+        color: "#f5f5f5",
+        // Override shadcn CSS variables so ALL Tailwind semantic classes
+        // (text-foreground, bg-card, text-muted-foreground, border-border etc.)
+        // resolve to dark-theme values across every page in Theme 18.
+        "--background": "0 0% 4%",
+        "--foreground": "0 0% 96%",
+        "--card": "0 0% 7%",
+        "--card-foreground": "0 0% 96%",
+        "--popover": "0 0% 7%",
+        "--popover-foreground": "0 0% 96%",
+        "--primary": "0 0% 100%",
+        "--primary-foreground": "0 0% 4%",
+        "--secondary": "0 0% 12%",
+        "--secondary-foreground": "0 0% 90%",
+        "--muted": "0 0% 15%",
+        "--muted-foreground": "0 0% 60%",
+        "--accent": "0 0% 15%",
+        "--accent-foreground": "0 0% 96%",
+        "--destructive": "0 72% 51%",
+        "--destructive-foreground": "0 0% 100%",
+        "--border": "0 0% 18%",
+        "--input": "0 0% 18%",
+        "--ring": "0 0% 60%",
+      } as React.CSSProperties}
     >
       {({ store, themeConfig }) => {
         const mobileNavStyle = (themeConfig as any)?.mobile_nav_style || "modern";
