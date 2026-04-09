@@ -162,7 +162,7 @@ export default function CheckoutAwareLayout({
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
         <Suspense fallback={null}>
-          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} />
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} style={headerBgOverride ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined, borderBottom: `1px solid ${headerIconColor || '#fff'}12` } : undefined} />
         </Suspense>
       )}
 
