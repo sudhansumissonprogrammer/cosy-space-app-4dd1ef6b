@@ -1935,7 +1935,7 @@ export default function StoreThemeSettings() {
       setConfig(defaults);
     }
     setDirty(false);
-  }, [themeConfig, currentTheme]);
+  }, [themeConfig, currentTheme, dirty]);
 
   // Send config to iframe for live preview
   const sendToIframe = useCallback((cfg: ThemeConfig) => {
@@ -1972,17 +1972,15 @@ export default function StoreThemeSettings() {
 
       // Preserve user's customizations for layout/style settings that are
       // independent of the theme template (category_style, mobile_nav_style, etc.)
-      const preservedSettings: Partial<ThemeConfig> = themeConfig
-        ? {
-            category_style: themeConfig.category_style ?? config.category_style,
-            mobile_nav_style: (themeConfig as any).mobile_nav_style ?? config.mobile_nav_style,
-            mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? config.mobile_nav_enabled,
-            header_logo_alignment: themeConfig.header_logo_alignment ?? config.header_logo_alignment,
-            header_style: themeConfig.header_style ?? config.header_style,
-            marquee_text: themeConfig.marquee_text ?? config.marquee_text,
-            marquee_enabled: themeConfig.marquee_enabled ?? config.marquee_enabled,
-          }
-        : {};
+      const preservedSettings: Partial<ThemeConfig> = {
+        category_style: config.category_style,
+        mobile_nav_style: config.mobile_nav_style,
+        mobile_nav_enabled: config.mobile_nav_enabled,
+        header_logo_alignment: config.header_logo_alignment,
+        header_style: config.header_style,
+        marquee_text: config.marquee_text,
+        marquee_enabled: config.marquee_enabled,
+      };
 
       const newConfig: ThemeConfig = topCombo
         ? {
@@ -1998,26 +1996,37 @@ export default function StoreThemeSettings() {
 
       // Upsert the theme config so colors are persisted
       const configPayload = { store_id: storeId!, ...newConfig };
+      let savedThemeConfig;
       if (themeConfig?.id) {
-        await supabase
+        const { data, error: configError } = await supabase
           .from("store_theme_config")
           .update(newConfig)
-          .eq("id", themeConfig.id);
+          .eq("id", themeConfig.id)
+          .select("*")
+          .single();
+        if (configError) throw configError;
+        savedThemeConfig = data;
       } else {
-        await supabase
+        const { data, error: configError } = await supabase
           .from("store_theme_config")
-          .insert(configPayload);
+          .insert(configPayload)
+          .select("*")
+          .single();
+        if (configError) throw configError;
+        savedThemeConfig = data;
       }
 
-      return { themeId, newConfig };
+      return { themeId, newConfig, savedThemeConfig };
     },
-    onSuccess: ({ themeId, newConfig }) => {
+    onSuccess: ({ themeId, newConfig, savedThemeConfig }) => {
       // Immediately update local override so the tick moves instantly
       setThemeOverride(themeId);
 
       queryClient.setQueryData(["store-detail", storeId], (old: any) =>
         old ? { ...old, theme: themeId } : old
       );
+      queryClient.setQueryData(["store-theme-config", storeId], savedThemeConfig);
+      queryClient.setQueryData(["storefront-theme-config", storeId], savedThemeConfig);
       queryClient.invalidateQueries({ queryKey: ["store-detail", storeId] });
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
@@ -2069,19 +2078,32 @@ export default function StoreThemeSettings() {
     mutationFn: async () => {
       const payload = { store_id: storeId!, ...config };
       if (themeConfig?.id) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("store_theme_config")
           .update(config)
-          .eq("id", themeConfig.id);
+          .eq("id", themeConfig.id)
+          .select("*")
+          .single();
         if (error) throw error;
+        return data;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("store_theme_config")
           .insert(payload);
+          
         if (error) throw error;
+        const { data: insertedData, error: insertedError } = await supabase
+          .from("store_theme_config")
+          .insert(payload)
+          .select("*")
+          .single();
+        if (insertedError) throw insertedError;
+        return insertedData;
       }
     },
-    onSuccess: () => {
+    onSuccess: (savedThemeConfig) => {
+      queryClient.setQueryData(["store-theme-config", storeId], savedThemeConfig);
+      queryClient.setQueryData(["storefront-theme-config", storeId], savedThemeConfig);
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
       setDirty(false);
