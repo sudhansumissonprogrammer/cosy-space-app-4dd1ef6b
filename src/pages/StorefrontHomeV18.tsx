@@ -151,6 +151,14 @@ export default function StorefrontHomeV18() {
         )}
       </section>
 
+      {/* ─── Categories ─── */}
+      <UniversalCategories
+        categories={storeCategories}
+        storeSlug={slug}
+        isLoading={categoriesLoading}
+        categoryStyle={categoryStyle}
+      />
+
       {/* ─── Show-Runners (Featured Products) ─── */}
       <section style={{ backgroundColor: "#0a0a0a" }}>
         <DarkSectionTitle title="Show-Runners" />
