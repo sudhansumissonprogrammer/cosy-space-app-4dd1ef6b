@@ -280,7 +280,11 @@ export default function StorefrontHomeV17() {
       </section>
 
       {/* ─── Categories ─── */}
-      <V17Categories categories={storeCategories || []} slug={slug} />
+      <UniversalCategories
+        categories={storeCategories || []}
+        storeSlug={slug}
+        categoryStyle={_themeConfig?.category_style || "style-1"}
+      />
 
       {/* ─── Best Sellers (carousel or grid) — appears before All Collection ─── */}
       {hasBestSellers && (
