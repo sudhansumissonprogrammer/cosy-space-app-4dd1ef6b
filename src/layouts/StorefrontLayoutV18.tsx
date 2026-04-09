@@ -51,6 +51,15 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         .v18-header-solid button, .v18-header-solid a, .v18-header-solid svg { color: #fff !important; stroke: #fff !important; }
         .storefront-font .smart-header { position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; background-color: transparent !important; backdrop-filter: none !important; border-bottom: none !important; box-shadow: none !important; }
         .storefront-font .smart-header button, .storefront-font .smart-header a, .storefront-font .smart-header svg { color: #fff !important; stroke: #fff !important; }
+
+        /* Mobile bottom nav — dark bg, pure white icons/text for Theme 18 */
+        .storefront-font nav[class*="fixed bottom-0"] { background-color: #111 !important; border-top-color: #222 !important; }
+        .storefront-font nav[class*="fixed bottom-0"] svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
+        .storefront-font nav[class*="fixed bottom-0"] span { color: #fff !important; }
+        .storefront-font nav[class*="fixed bottom-0"] a, .storefront-font nav[class*="fixed bottom-0"] button { color: #fff !important; }
+        .storefront-font nav[class*="fixed bottom-0"] div[class*="rounded-[28px]"] { background-color: #1a1a1a !important; border-color: #333 !important; }
+        .storefront-font nav[class*="fixed bottom-0"] button[class*="rounded-full"][class*="w-[52px]"] { background-color: #fff !important; }
+        .storefront-font nav[class*="fixed bottom-0"] button[class*="rounded-full"][class*="w-[52px]"] svg { color: #0a0a0a !important; stroke: #0a0a0a !important; }
       `}</style>
       <CheckoutAwareLayout
         store={store}
