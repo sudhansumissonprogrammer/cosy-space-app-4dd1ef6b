@@ -369,9 +369,11 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       let savedProductId = productId;
 
       if (isEditing && productId) {
+        // Don't send store_id on update
+        const { store_id, ...updateData } = productData;
         const { error } = await supabase
           .from("products")
-          .update(productData)
+          .update(updateData)
           .eq("id", productId);
         if (error) throw error;
       } else {
