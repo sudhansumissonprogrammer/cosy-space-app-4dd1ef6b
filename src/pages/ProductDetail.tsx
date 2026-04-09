@@ -500,8 +500,13 @@ export default function ProductDetail() {
   const shippingProgress = FREE_SHIPPING_THRESHOLD ? Math.min(100, (cartTotal / FREE_SHIPPING_THRESHOLD) * 100) : 100;
   const shippingRemaining = FREE_SHIPPING_THRESHOLD ? Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal) : 0;
 
+  const isV18 = (store as any).theme === "theme-18";
+  const v18Text = isV18 ? { color: "#ffffff" } : {};
+  const v18Muted = isV18 ? { color: "#999999" } : {};
+  const v18Font: React.CSSProperties = isV18 ? { fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" } : {};
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-3 sm:py-8">
+    <div className="mx-auto max-w-6xl px-4 py-3 sm:py-8" style={isV18 ? { backgroundColor: "#0a0a0a", color: "#ffffff" } : {}}>
       {/* Breadcrumb — hidden */}
 
       <div className="grid gap-2 sm:gap-6 lg:grid-cols-2 lg:gap-10">
@@ -529,7 +534,7 @@ export default function ProductDetail() {
         <div className="flex flex-col gap-0">
 
           {/* Product Title — right under image */}
-          <h1 className="text-xl font-semibold text-foreground leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), 'Alegreya SC', serif" }}>
+          <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: isV18 ? "'Helvetica Neue', Helvetica, Arial, sans-serif" : "var(--storefront-heading-font, 'Alegreya SC'), 'Alegreya SC', serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
 
@@ -539,35 +544,48 @@ export default function ProductDetail() {
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-3.5 w-3.5 ${i < Math.floor(stats.rating) ? "fill-amber-400 text-amber-400" : i < stats.rating ? "fill-amber-400/50 text-amber-400" : "text-muted-foreground/20"}`}
+                  className={`h-3.5 w-3.5 ${i < Math.floor(stats.rating) ? "fill-amber-400 text-amber-400" : i < stats.rating ? "fill-amber-400/50 text-amber-400" : isV18 ? "text-white/20" : "text-muted-foreground/20"}`}
                 />
               ))}
-              <span className="ml-1 text-sm font-bold text-foreground">{stats.rating}</span>
+              {isV18 ? (
+                <span className="ml-1 text-sm" style={{ color: "#ffffff", ...v18Font }}>{stats.reviewCount} reviews</span>
+              ) : (
+                <span className="ml-1 text-sm font-bold text-foreground">{stats.rating}</span>
+              )}
             </div>
-            <span className="text-muted-foreground/30">|</span>
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Flame className="h-3 w-3 text-orange-400" /> {stats.soldRecently}+ sold recently
-            </span>
+            {!isV18 && (
+              <>
+                <span className="text-muted-foreground/30">|</span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Flame className="h-3 w-3 text-orange-400" /> {stats.soldRecently}+ sold recently
+                </span>
+              </>
+            )}
           </div>
 
           {/* Price — simple, no border/background */}
           <div className="mt-4">
             <div className="flex items-baseline gap-2.5 flex-wrap">
-              <span className="text-2xl font-extrabold text-foreground sm:text-3xl">
-                {currency} {Number(variantPrice).toFixed(2)}
+              <span className={`text-2xl font-extrabold sm:text-3xl ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
+                {isV18 ? `Rs. ${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${currency} ${Number(variantPrice).toFixed(2)}`}
               </span>
               {hasDiscount && (
                 <>
-                  <span className="text-sm text-muted-foreground line-through">
-                    {currency} {Number(product.price).toFixed(2)}
+                  <span className={`text-sm line-through ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#666666", ...v18Font } : {}}>
+                    {isV18 ? `Rs. ${Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${currency} ${Number(product.price).toFixed(2)}`}
                   </span>
-                  <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 px-2 py-0.5">
-                    {discountPct}% OFF
-                  </Badge>
+                  {!isV18 && (
+                    <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 px-2 py-0.5">
+                      {discountPct}% OFF
+                    </Badge>
+                  )}
                 </>
               )}
             </div>
-            {hasDiscount && (
+            {isV18 && (
+              <p className="mt-2 text-sm italic" style={{ color: "#999999", ...v18Font }}>Inclusive of all taxes</p>
+            )}
+            {!isV18 && hasDiscount && (
               <p className="mt-1 text-xs font-semibold text-emerald-600">
                 You save {currency} {(product.price - product.sale_price!).toFixed(2)} on this order
               </p>
@@ -597,7 +615,8 @@ export default function ProductDetail() {
             })()
           )}
 
-          {/* Live viewers */}
+          {/* Live viewers — hidden in V18 */}
+          {!isV18 && (
           <div className="mt-3 flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
@@ -607,6 +626,7 @@ export default function ProductDetail() {
               <strong className="text-foreground">{liveViewers} people</strong> viewing this right now
             </span>
           </div>
+          )}
 
           {/* Stock Status */}
           {isOutOfStock ? (
@@ -624,9 +644,9 @@ export default function ProductDetail() {
 
           {/* Variant Selector */}
           {(variants || []).length > 0 && (
-            <div className="mt-5 space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Select: <span className="text-foreground normal-case tracking-normal">{selectedVariant?.name || "None"}</span>
+            <div className="mt-5 space-y-2" style={isV18 ? { borderTop: "1px solid #333", paddingTop: 16 } : {}}>
+              <Label className={isV18 ? "text-xs font-bold uppercase tracking-wider" : "text-xs font-bold uppercase tracking-wider text-muted-foreground"} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>
+                {isV18 ? `SIZE: ${selectedVariant?.name || ""}` : <>Select: <span className="text-foreground normal-case tracking-normal">{selectedVariant?.name || "None"}</span></>}
               </Label>
               <div className="flex flex-wrap gap-2">
                 {(variants || []).map((v) => (
@@ -634,13 +654,22 @@ export default function ProductDetail() {
                     key={v.id}
                     type="button"
                     onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
-                    className={`relative rounded-xl border-2 px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-                      selectedVariant?.id === v.id
-                        ? "border-primary bg-primary/10 text-primary shadow-sm"
-                        : "border-border text-foreground hover:border-primary/40 hover:bg-accent/50"
-                    } active:scale-95`}
+                    className={`transition-all duration-200 active:scale-95 ${
+                      isV18
+                        ? `flex h-10 w-10 items-center justify-center border text-sm ${
+                            selectedVariant?.id === v.id
+                              ? "border-white bg-white text-black"
+                              : "border-white/40 text-white hover:border-white"
+                          }`
+                        : `relative rounded-xl border-2 px-4 py-2 text-sm font-semibold ${
+                            selectedVariant?.id === v.id
+                              ? "border-primary bg-primary/10 text-primary shadow-sm"
+                              : "border-border text-foreground hover:border-primary/40 hover:bg-accent/50"
+                          }`
+                    }`}
+                    style={isV18 ? v18Font : {}}
                   >
-                    {selectedVariant?.id === v.id && (
+                    {!isV18 && selectedVariant?.id === v.id && (
                       <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
                         <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />
                       </span>
@@ -655,60 +684,85 @@ export default function ProductDetail() {
           {/* Quantity Selector */}
           {!isOutOfStock && (
             <div className="mt-5 flex items-center gap-3">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Qty</Label>
-              <div className="flex items-center rounded-xl border border-border overflow-hidden">
+              {!isV18 && <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Qty</Label>}
+              <div className={`flex items-center overflow-hidden ${isV18 ? 'border border-white/40' : 'rounded-xl border border-border'}`}>
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors active:scale-90"
+                  className={`flex items-center justify-center transition-colors active:scale-90 ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                 >
-                  <Minus className="h-3.5 w-3.5" />
+                  <Minus className={isV18 ? "h-4 w-4" : "h-3.5 w-3.5"} />
                 </button>
-                <span className="w-10 text-center text-sm font-bold text-foreground">{quantity}</span>
+                <span className={`text-center text-sm font-bold ${isV18 ? 'w-12' : 'w-10'}`} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>{quantity}</span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors active:scale-90"
+                  className={`flex items-center justify-center transition-colors active:scale-90 ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className={isV18 ? "h-4 w-4" : "h-3.5 w-3.5"} />
                 </button>
               </div>
             </div>
           )}
 
 
-          {/* CTA Buttons — clean, well-spaced */}
+          {/* CTA Buttons */}
           {!isOutOfStock && (
             <div className="mt-5 flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  className={`relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
-                    justAdded ? "bg-emerald-600 text-white" : "btn-gold hover:brightness-110"
-                  }`}
-                  onClick={handleAddToCart}
-                >
-                  {justAdded ? (
-                    <span className="flex items-center gap-2 animate-fade-in">
-                      <Check className="h-4 w-4" strokeWidth={3} />
-                      Added!
-                    </span>
-                  ) : (
-                    <span className={`flex items-center gap-2 ${cartBounce ? "animate-bounce-once" : ""}`}>
-                      <ShoppingCart className="h-4 w-4" />
-                      Add to Cart
-                    </span>
-                  )}
-                </button>
-
-                {showBuyNow && (
+              {isV18 ? (
+                /* V18 Sagacity-style: full-width stacked buttons */
+                <>
                   <button
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
-                    style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
-                    onClick={handleBuyNow}
+                    className={`flex h-12 w-full items-center justify-center text-sm font-bold uppercase tracking-widest transition-all active:scale-[0.97] ${
+                      justAdded ? "bg-emerald-600 text-white" : "bg-white text-black hover:bg-white/90"
+                    }`}
+                    style={v18Font}
+                    onClick={handleAddToCart}
                   >
-                    <ShoppingBag className="h-4 w-4" />
-                    Buy Now
+                    {justAdded ? "ADDED!" : "ADD TO CART"}
                   </button>
-                )}
-              </div>
+                  {showBuyNow && (
+                    <button
+                      className="flex h-12 w-full items-center justify-center border text-sm font-bold uppercase tracking-widest transition-all active:scale-[0.97] hover:bg-white hover:text-black"
+                      style={{ borderColor: "#ffffff", color: "#ffffff", ...v18Font }}
+                      onClick={handleBuyNow}
+                    >
+                      BUY IT NOW
+                    </button>
+                  )}
+                </>
+              ) : (
+                /* Default style */
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    className={`relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
+                      justAdded ? "bg-emerald-600 text-white" : "btn-gold hover:brightness-110"
+                    }`}
+                    onClick={handleAddToCart}
+                  >
+                    {justAdded ? (
+                      <span className="flex items-center gap-2 animate-fade-in">
+                        <Check className="h-4 w-4" strokeWidth={3} />
+                        Added!
+                      </span>
+                    ) : (
+                      <span className={`flex items-center gap-2 ${cartBounce ? "animate-bounce-once" : ""}`}>
+                        <ShoppingCart className="h-4 w-4" />
+                        Add to Cart
+                      </span>
+                    )}
+                  </button>
+
+                  {showBuyNow && (
+                    <button
+                      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
+                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
+                      onClick={handleBuyNow}
+                    >
+                      <ShoppingBag className="h-4 w-4" />
+                      Buy Now
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* WhatsApp Order */}
               {showWhatsApp && store.whatsapp_number && (
@@ -732,161 +786,127 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* ── Checkout Trust Block — Safe checkout + Delivery + Offer ── */}
-          {!isOutOfStock && (
+          {/* Checkout Trust Block — hidden in V18 */}
+          {!isV18 && !isOutOfStock && (
             <div className="mt-5 rounded-2xl border border-border overflow-hidden">
-              {/* Safe Checkout Header */}
               <div className="flex items-center justify-center gap-2 py-2.5 border-b border-border bg-muted/30">
                 <ShieldCheck className="h-4 w-4 text-foreground" />
                 <span className="text-[11px] font-bold text-foreground uppercase tracking-widest">Guaranteed Safe Checkout</span>
               </div>
-              <div className="px-4 py-3">
-                <RealPaymentLogos />
-              </div>
-
-              {/* Delivery & Offer Info */}
+              <div className="px-4 py-3"><RealPaymentLogos /></div>
               <div className="border-t border-border px-4 py-3 space-y-2.5">
-                {/* Estimated Delivery */}
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                    <Truck className="h-4 w-4 text-primary" />
-                  </div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0"><Truck className="h-4 w-4 text-primary" /></div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-foreground">
-                      Estimated Delivery by {deliveryDate}
-                    </span>
+                    <span className="text-xs font-semibold text-foreground">Estimated Delivery by {deliveryDate}</span>
                     <span className="text-[10px] text-muted-foreground">Order within 2 hours for fastest delivery</span>
                   </div>
                 </div>
-
-                {/* Offer countdown */}
                 {hasDiscount && (
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 shrink-0">
-                      <Timer className="h-4 w-4 text-amber-600" />
-                    </div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 shrink-0"><Timer className="h-4 w-4 text-amber-600" /></div>
                     <div className="flex flex-col">
                       <CountdownTimerInline productId={product.id} />
                       <span className="text-[10px] text-muted-foreground">Limited time offer — don't miss out</span>
                     </div>
                   </div>
                 )}
-
-                {/* Inclusive of taxes */}
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0"><CreditCard className="h-4 w-4 text-muted-foreground" /></div>
                   <span className="text-xs text-muted-foreground">Inclusive of all taxes</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Wishlist */}
-          <div className="mt-4">
-            <button
-              onClick={handleWishlist}
-              className={`flex items-center gap-2 text-sm transition-all duration-200 ${
-                wishlisted ? "text-destructive font-semibold" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Heart className={`h-4 w-4 transition-transform duration-200 ${wishlisted ? "fill-destructive text-destructive scale-110" : ""}`} />
-              {wishlisted ? "Saved" : "Add to Wishlist"}
-            </button>
-          </div>
+          {/* Wishlist — hidden in V18 */}
+          {!isV18 && (
+            <div className="mt-4">
+              <button onClick={handleWishlist} className={`flex items-center gap-2 text-sm transition-all duration-200 ${wishlisted ? "text-destructive font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
+                <Heart className={`h-4 w-4 transition-transform duration-200 ${wishlisted ? "fill-destructive text-destructive scale-110" : ""}`} />
+                {wishlisted ? "Saved" : "Add to Wishlist"}
+              </button>
+            </div>
+          )}
 
-          {/* Trust Badges — large icons like Shopify */}
-          <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
-              {/* Free Shipping truck icon */}
-              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="4" y="18" width="34" height="24" rx="2" />
-                <path d="M38 26h10l8 10v6h-18V26z" />
-                <circle cx="16" cy="44" r="4" />
-                <circle cx="48" cy="44" r="4" />
-                <path d="M20 44h20" />
-                <path d="M4 44h8" />
-                <path d="M52 44h8" />
-                <text x="14" y="35" fontSize="9" fontWeight="bold" fill="currentColor" stroke="none">FREE</text>
-              </svg>
-              <span className="text-xs font-semibold text-foreground">Free Shipping</span>
+          {/* Trust Badges — hidden in V18 */}
+          {!isV18 && (
+            <div className="mt-6 grid grid-cols-3 gap-3 text-center">
+              <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+                <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="18" width="34" height="24" rx="2" /><path d="M38 26h10l8 10v6h-18V26z" /><circle cx="16" cy="44" r="4" /><circle cx="48" cy="44" r="4" /><path d="M20 44h20" /><path d="M4 44h8" /><path d="M52 44h8" /><text x="14" y="35" fontSize="9" fontWeight="bold" fill="currentColor" stroke="none">FREE</text></svg>
+                <span className="text-xs font-semibold text-foreground">Free Shipping</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+                <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M32 6l6 3 7-1 4 6 6 3 1 7 3 6-3 6-1 7-6 4-3 6-7 1-6 3-6-3-7 1-4-6-6-3-1-7-3-6 3-6 1-7 6-4 3-6 7-1z" /><path d="M22 33l7 7 13-14" strokeWidth="3" /></svg>
+                <span className="text-xs font-semibold text-foreground">7 Days Return Policy</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+                <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="32" cy="28" r="10" /><path d="M22 28c0-5.5 4.5-10 10-10s10 4.5 10 10" /><path d="M18 28v6a4 4 0 004 4h0" /><path d="M46 28v6a4 4 0 01-4 4h0" /><rect x="14" y="26" width="6" height="12" rx="3" /><rect x="44" y="26" width="6" height="12" rx="3" /><path d="M42 38v4a6 6 0 01-6 6h-4" /><path d="M24 52h8" /><text x="23" y="60" fontSize="7" fontWeight="bold" fill="currentColor" stroke="none">SUPPORT</text></svg>
+                <span className="text-xs font-semibold text-foreground">Devoted Help Desk</span>
+              </div>
             </div>
-            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
-              {/* 7 Days Return badge/checkmark */}
-              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M32 6l6 3 7-1 4 6 6 3 1 7 3 6-3 6-1 7-6 4-3 6-7 1-6 3-6-3-7 1-4-6-6-3-1-7-3-6 3-6 1-7 6-4 3-6 7-1z" />
-                <path d="M22 33l7 7 13-14" strokeWidth="3" />
-              </svg>
-              <span className="text-xs font-semibold text-foreground">7 Days Return Policy</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
-              {/* Support/helpdesk icon */}
-              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="32" cy="28" r="10" />
-                <path d="M22 28c0-5.5 4.5-10 10-10s10 4.5 10 10" />
-                <path d="M18 28v6a4 4 0 004 4h0" />
-                <path d="M46 28v6a4 4 0 01-4 4h0" />
-                <rect x="14" y="26" width="6" height="12" rx="3" />
-                <rect x="44" y="26" width="6" height="12" rx="3" />
-                <path d="M42 38v4a6 6 0 01-6 6h-4" />
-                <path d="M24 52h8" />
-                <text x="23" y="60" fontSize="7" fontWeight="bold" fill="currentColor" stroke="none">SUPPORT</text>
-              </svg>
-              <span className="text-xs font-semibold text-foreground">Devoted Help Desk</span>
-            </div>
-          </div>
+          )}
 
-          {/* Frequently Bought Together */}
-          <FrequentlyBoughtTogether
-            storeId={store.id}
-            storeSlug={store.slug}
-            currentProductId={product.id}
-            currentCategory={product.category}
-            currency={currency}
-            addToCart={addToCart}
-            productImage={product.image_url}
-          />
+          {/* Frequently Bought Together — hidden in V18 */}
+          {!isV18 && (
+            <FrequentlyBoughtTogether storeId={store.id} storeSlug={store.slug} currentProductId={product.id} currentCategory={product.category} currency={currency} addToCart={addToCart} productImage={product.image_url} />
+          )}
+
+          {/* V18: SKU & Categories */}
+          {isV18 && (
+            <div className="mt-5 space-y-1 text-sm" style={{ color: "#999", ...v18Font, borderTop: "1px solid #333", paddingTop: 16 }}>
+              {product.sku && <p><span style={{ color: "#fff", fontWeight: 700 }}>SKU:</span> {product.sku}</p>}
+              {product.category && <p><span style={{ color: "#fff", fontWeight: 700 }}>Categories:</span> {product.category}</p>}
+            </div>
+          )}
 
           {/* Accordion Sections */}
-          <div className="mt-6 divide-y divide-border border border-border rounded-xl overflow-hidden">
+          <div className={`mt-6 divide-y overflow-hidden ${isV18 ? 'divide-[#333] border-y border-[#333]' : 'divide-border border border-border rounded-xl'}`}>
             {product.description && (
               <AccordionItem
-                title="Product Description"
-                icon={<Package className="h-3.5 w-3.5 text-primary" />}
+                title={isV18 ? "Description" : "Product Description"}
+                icon={isV18 ? undefined : <Package className="h-3.5 w-3.5 text-primary" />}
                 isOpen={openAccordion === "description"}
                 onToggle={() => toggleAccordion("description")}
+                isV18={isV18}
               >
-                <p className="leading-relaxed text-sm text-muted-foreground whitespace-pre-line">
+                <p className={`leading-relaxed text-sm whitespace-pre-line ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#999", ...v18Font } : {}}>
                   {product.description}
                 </p>
               </AccordionItem>
             )}
             <AccordionItem
-              title="Shipping Information"
-              icon={<Truck className="h-3.5 w-3.5 text-primary" />}
-              isOpen={openAccordion === "shipping"}
-              onToggle={() => toggleAccordion("shipping")}
+              title={isV18 ? "Reviews" : "Shipping Information"}
+              icon={isV18 ? undefined : <Truck className="h-3.5 w-3.5 text-primary" />}
+              isOpen={openAccordion === (isV18 ? "reviews" : "shipping")}
+              onToggle={() => toggleAccordion(isV18 ? "reviews" : "shipping")}
+              isV18={isV18}
             >
-              <ul className="space-y-1.5 text-sm text-muted-foreground">
-                <li>• Standard delivery: 3-7 business days</li>
-                <li>• Express delivery available at checkout</li>
-                <li>• Free shipping on all orders</li>
-                <li>• Order tracking provided via SMS/email</li>
-              </ul>
+              {isV18 ? (
+                <p className="text-sm" style={{ color: "#999", ...v18Font }}>Customer reviews will appear here.</p>
+              ) : (
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li>• Standard delivery: 3-7 business days</li>
+                  <li>• Express delivery available at checkout</li>
+                  <li>• Free shipping on all orders</li>
+                  <li>• Order tracking provided via SMS/email</li>
+                </ul>
+              )}
             </AccordionItem>
-            <AccordionItem
-              title="Returns & Exchange"
-              icon={<RotateCcw className="h-3.5 w-3.5 text-primary" />}
-              isOpen={openAccordion === "returns"}
-              onToggle={() => toggleAccordion("returns")}
-            >
-              <ul className="space-y-1.5 text-sm text-muted-foreground">
-                <li>• 7-day easy return policy</li>
-                <li>• Product must be unused and in original packaging</li>
-                <li>• Refund processed within 5-7 business days</li>
-              </ul>
-            </AccordionItem>
+            {!isV18 && (
+              <AccordionItem
+                title="Returns & Exchange"
+                icon={<RotateCcw className="h-3.5 w-3.5 text-primary" />}
+                isOpen={openAccordion === "returns"}
+                onToggle={() => toggleAccordion("returns")}
+              >
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li>• 7-day easy return policy</li>
+                  <li>• Product must be unused and in original packaging</li>
+                  <li>• Refund processed within 5-7 business days</li>
+                </ul>
+              </AccordionItem>
+            )}
           </div>
 
         </div>
@@ -1546,21 +1566,28 @@ function AccordionItem({
   isOpen,
   onToggle,
   children,
+  isV18,
 }: {
   title: string;
   icon?: React.ReactNode;
   isOpen: boolean;
   onToggle: () => void;
   children: React.ReactNode;
+  isV18?: boolean;
 }) {
   return (
     <div>
       <button
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-bold text-foreground hover:bg-accent/30 transition-colors"
+        className={`flex w-full items-center justify-between px-4 py-3 text-sm font-bold transition-colors ${isV18 ? 'hover:bg-white/5' : 'text-foreground hover:bg-accent/30'}`}
+        style={isV18 ? { color: "#ffffff", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" } : {}}
       >
         <span className="flex items-center gap-2">{icon}{title}</span>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        {isV18 ? (
+          <Plus className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-45" : ""}`} style={{ color: "#ffffff" }} />
+        ) : (
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        )}
       </button>
       {isOpen && (
         <div className="px-4 pb-3 animate-in slide-in-from-top-1 duration-200">
@@ -1570,6 +1597,8 @@ function AccordionItem({
     </div>
   );
 }
+
+
 
 /* ── Share Buttons ── */
 function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName: string; storeSlug: string; productSlugOrId: string }) {
