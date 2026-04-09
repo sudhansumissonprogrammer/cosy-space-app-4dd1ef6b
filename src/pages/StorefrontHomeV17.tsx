@@ -1,19 +1,19 @@
 /**
- * Theme 17 Home — systumm.shop-inspired layout:
+ * Theme 17 Home — systumm.shop-exact layout:
  * 1. Full-screen Hero Banner
  * 2. "All Collection" product grid (2-col mobile, 4-col desktop) with V17 card
  * 3. Scrolling trust ticker
  * 4. Customer Reviews carousel
  * 5. Trust badges row
  */
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { ArrowRight } from "lucide-react";
 import SectionHeading from "@/components/storefront/SectionHeading";
-import { VariantCountProvider } from "@/hooks/useVariantCounts";
+import { VariantCountProvider, useVariantCount } from "@/hooks/useVariantCounts";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
@@ -23,7 +23,6 @@ import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import ProductCardV17 from "@/components/storefront/ProductCardV17";
 import VariantPickerDialog from "@/components/storefront/VariantPickerDialog";
-import { useVariantCount } from "@/hooks/useVariantCounts";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import ReviewsSection from "@/components/storefront/v17/ReviewsSection";
 import TrustTicker from "@/components/storefront/v17/TrustTicker";
@@ -32,13 +31,13 @@ import TrustBadges from "@/components/storefront/v17/TrustBadges";
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
-const ABOVE_FOLD_COUNT = 6;
+const ABOVE_FOLD_COUNT = 8;
 
 /* ─── V17 Product Card wrapper with variant support ─── */
 function V17CardWrapper({ product, slug, store, priority, index }: { product: any; slug: string; store: any; priority?: boolean; index: number }) {
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
-  const [variantOpen, setVariantOpen] = React.useState(false);
+  const [variantOpen, setVariantOpen] = useState(false);
 
   return (
     <div
@@ -64,8 +63,6 @@ function V17CardWrapper({ product, slug, store, priority, index }: { product: an
     </div>
   );
 }
-
-import React from "react";
 
 /* ─── Main Home Component ─── */
 export default function StorefrontHomeV17() {
@@ -114,7 +111,7 @@ export default function StorefrontHomeV17() {
               images={[(store as any).banner_url]}
               storeName={store.name}
               imageClassName="w-full h-auto object-cover"
-              maxHeight="600px"
+              maxHeight="700px"
             />
           </div>
         )}
@@ -130,29 +127,50 @@ export default function StorefrontHomeV17() {
       </section>
 
       {/* ─── All Collection ─── */}
-      <section className="py-10 px-4">
+      <section style={{ padding: "40px 15px 20px" }}>
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-1">All Collection</h2>
-          <p className="text-center text-sm text-gray-500 mb-8">
-            Unmatched design and superior comfort
+          <h2
+            className="text-center"
+            style={{
+              fontFamily: "var(--v17-heading-font, 'Cormorant Garamond', serif)",
+              fontSize: "clamp(24px, 4vw, 36px)",
+              fontWeight: 400,
+              letterSpacing: "0.02em",
+              color: "var(--v17-text, #1a1a1a)",
+              marginBottom: "8px",
+            }}
+          >
+            All Collection
+          </h2>
+          <p
+            className="text-center"
+            style={{
+              fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",
+              fontSize: "14px",
+              fontWeight: 400,
+              color: "var(--v17-text-muted, #666)",
+              marginBottom: "30px",
+            }}
+          >
+            Unmatched design and superior comfort. <strong>Limited drop. No restocks.</strong>
           </p>
 
           {productsLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: "15px", columnGap: "15px", rowGap: "30px" }}>
               {Array.from({ length: ABOVE_FOLD_COUNT }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+              <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: "15px", columnGap: "15px", rowGap: "30px" }}>
                 {aboveFold.map((p: any, i: number) => (
                   <V17CardWrapper key={p.id} product={p} slug={slug} store={store} priority={i < 2} index={i} />
                 ))}
               </div>
               {belowFold.length > 0 && (
                 <LazyRender rootMargin="200px">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: "15px", columnGap: "15px", rowGap: "30px", marginTop: "30px" }}>
                     {belowFold.map((p: any, i: number) => (
                       <V17CardWrapper key={p.id} product={p} slug={slug} store={store} index={i + ABOVE_FOLD_COUNT} />
                     ))}
@@ -163,13 +181,19 @@ export default function StorefrontHomeV17() {
           )}
 
           {products.length > 0 && (
-            <div className="text-center mt-8">
+            <div className="text-center" style={{ marginTop: "35px" }}>
               <Link
                 to={storefrontPath(slug, "/shop")}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded border-2 transition-colors hover:opacity-90"
+                className="inline-flex items-center gap-2 transition-colors hover:opacity-80"
                 style={{
-                  borderColor: "var(--storefront-primary, #1B3A2D)",
-                  color: "var(--storefront-primary, #1B3A2D)",
+                  padding: "10px 24px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",
+                  borderRadius: "4px",
+                  border: "2px solid var(--v17-primary, #2B4C3F)",
+                  color: "var(--v17-primary, #2B4C3F)",
+                  backgroundColor: "transparent",
                 }}
               >
                 View All Products <ArrowRight className="h-4 w-4" />
@@ -182,7 +206,7 @@ export default function StorefrontHomeV17() {
       {/* ─── Best Sellers ─── */}
       {showBestSellers && (
         <LazyRender rootMargin="200px">
-          <section className="py-8 px-4">
+          <section style={{ padding: "30px 15px" }}>
             <div className="max-w-6xl mx-auto">
               <SectionHeading title="Best Sellers" />
               <Suspense fallback={null}>
