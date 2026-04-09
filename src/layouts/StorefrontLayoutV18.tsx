@@ -15,7 +15,9 @@ const LazyMobileBottomNavV15 = lazy(() => import("@/components/storefront/Mobile
 const LazyMobileBottomNavV17 = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
 
 function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
-  const mobileNavStyle = (themeConfig as any)?.mobile_nav_style || "modern";
+  const rawNavStyle = (themeConfig as any)?.mobile_nav_style || "modern";
+  // Normalize legacy/unknown values to valid options
+  const mobileNavStyle = ["classic", "modern", "v15", "v17"].includes(rawNavStyle) ? rawNavStyle : "modern";
   const mobileNavEnabled = themeConfig?.mobile_nav_enabled ?? true;
   const [scrolled, setScrolled] = useState(false);
 
