@@ -56,7 +56,7 @@ export default function ProductCardV17({ product, slug, store, priority = false,
     : null;
 
   return (
-    <div className="group overflow-hidden cursor-pointer" style={{ fontFamily: "var(--v17-body-font, 'Jost', sans-serif)" }}>
+    <div className="group overflow-hidden cursor-pointer" style={{ fontFamily: "var(--v17-body-font, 'Instrument Sans', sans-serif)" }}>
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block">
         {/* Image container — 3:4 ratio, rounded 8px like systumm */}
         <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "3/4", backgroundColor: "#f5f5f0" }}>
@@ -136,7 +136,7 @@ export default function ProductCardV17({ product, slug, store, priority = false,
               lineHeight: 1.3,
               color: "#1a1a1a",
               textTransform: "capitalize",
-              fontFamily: "var(--v17-heading-font, 'Cormorant Garamond', serif)",
+              fontFamily: "var(--v17-heading-font, 'Instrument Sans', sans-serif)",
             }}
           >
             {product.name}
