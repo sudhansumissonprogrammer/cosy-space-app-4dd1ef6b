@@ -22,7 +22,9 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
-import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
+import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import { VariantCountProvider } from "@/hooks/useVariantCounts";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
@@ -1988,15 +1990,21 @@ function RelatedProducts({
 
   if (!related || related.length === 0) return null;
 
+  const themeConfig = useStorefrontThemeConfig(storeId);
+  const cardStyle = (store as any)?.theme === "theme-18" ? "style-5" : (themeConfig?.product_card_style || "style-1");
+  const productIds = related.map((p) => p.id);
+
   return (
-    <section className="mt-10 pt-8 border-t border-border">
-      <h2 className="text-lg font-bold text-foreground mb-4">Complete the Look ✨</h2>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {related.map((product) => (
-          <StorefrontProductCard key={product.id} product={product} slug={storeSlug} store={store} />
-        ))}
-      </div>
-    </section>
+    <VariantCountProvider productIds={productIds}>
+      <section className="mt-10 pt-8 border-t border-border">
+        <h2 className="text-lg font-bold text-foreground mb-4">Complete the Look ✨</h2>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {related.map((product, i) => (
+            <UniversalProductCard key={product.id} product={product} slug={storeSlug} store={store} cardStyle={cardStyle} index={i} />
+          ))}
+        </div>
+      </section>
+    </VariantCountProvider>
   );
 }
 
