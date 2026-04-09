@@ -152,11 +152,11 @@ export default function ProductCardV17({ product, slug, store, priority = false,
 
           {/* Price: 15px, weight 500 */}
           <div className="flex items-center justify-center gap-1.5" style={{ marginTop: "6px" }}>
-            <span style={{ fontSize: "15px", fontWeight: 500, color: "#1a1a1a" }}>
+            <span style={{ fontSize: "15px", fontWeight: 500, color: "#1a1a1a", fontFamily: "var(--v17-heading-font, 'Instrument Sans', sans-serif)" }}>
               {currency} {price}
             </span>
             {originalPrice && (
-              <span style={{ fontSize: "13px", fontWeight: 400, color: "#999", textDecoration: "line-through" }}>
+              <span style={{ fontSize: "13px", fontWeight: 400, color: "#999", textDecoration: "line-through", fontFamily: "var(--v17-heading-font, 'Instrument Sans', sans-serif)" }}>
                 {currency} {originalPrice}
               </span>
             )}
