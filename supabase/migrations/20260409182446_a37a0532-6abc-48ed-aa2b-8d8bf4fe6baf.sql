@@ -1,0 +1,1 @@
+UPDATE store_theme_config SET mobile_nav_style = 'modern' WHERE mobile_nav_style NOT IN ('classic', 'modern', 'v15', 'v17');
