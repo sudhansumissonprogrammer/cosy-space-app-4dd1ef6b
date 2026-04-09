@@ -10,6 +10,7 @@ import StorefrontShell from "@/layouts/StorefrontShell";
 
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
 const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
+const LazyMobileBottomNavStarter = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
 
 export default function StorefrontLayoutV14({ slugOverride }: { slugOverride?: string } = {}) {
   return (
@@ -29,7 +30,7 @@ export default function StorefrontLayoutV14({ slugOverride }: { slugOverride?: s
             mobileNav={
               mobileNavEnabled ? (
                 <Suspense fallback={null}>
-                  {mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> : <LazyMobileBottomNav store={store} />}
+                  {mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> : mobileNavStyle === "starter" ? <LazyMobileBottomNavStarter store={store} /> : <LazyMobileBottomNav store={store} />}
                 </Suspense>
               ) : undefined
             }
