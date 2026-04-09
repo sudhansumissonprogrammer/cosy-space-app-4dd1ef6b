@@ -43,7 +43,7 @@ function TrustTicker() {
 
   return (
     <div className="overflow-hidden py-5" style={{ backgroundColor: "var(--storefront-primary, #1B3A2D)" }}>
-      <div className="flex whitespace-nowrap animate-[marquee-v17_20s_linear_infinite]">
+      <div className="flex whitespace-nowrap animate-[marquee_20s_linear_infinite]">
         {[...items, ...items].map((text, i) => (
           <span key={i} className="mx-8 text-lg font-medium tracking-wide" style={{ color: "var(--storefront-btn-text, #fff)" }}>
             {text}
