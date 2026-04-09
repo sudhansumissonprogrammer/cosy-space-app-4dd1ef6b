@@ -11,6 +11,8 @@ import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
 const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
+const LazyMobileBottomNavV15 = lazy(() => import("@/components/storefront/MobileBottomNavV15"));
+const LazyMobileBottomNavV17 = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
 
 export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: string } = {}) {
   return (
