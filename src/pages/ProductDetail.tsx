@@ -571,7 +571,7 @@ export default function ProductDetail() {
               </span>
               {hasDiscount && (
                 <>
-                  <span className="text-sm line-through" style={isV18 ? { color: "#666666", ...v18Font } : {}} className={`text-sm line-through ${isV18 ? '' : 'text-muted-foreground'}`}>
+                  <span className={`text-sm line-through ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#666666", ...v18Font } : {}}>
                     {isV18 ? `Rs. ${Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${currency} ${Number(product.price).toFixed(2)}`}
                   </span>
                   {!isV18 && (
