@@ -73,7 +73,7 @@ export default function StorefrontHomeV17() {
   const store = useOutletContext<StoreData>();
   const slug = params.slug || (store as any)?.slug || "";
 
-  const themeConfig = useStorefrontThemeConfig(store?.id);
+  const _themeConfig = useStorefrontThemeConfig(store?.id);
 
   const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);
   const bsQuery = useBestSellingProducts(store?.id);
