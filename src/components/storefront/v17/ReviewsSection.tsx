@@ -1,31 +1,50 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Star } from "lucide-react";
+
+const STAR_COLOR = "#1B5E4B";
+const STAR_EMPTY = "#d4d4d4";
+
+function ReviewStar({ filled }: { filled: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? STAR_COLOR : STAR_EMPTY}>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+}
 
 function ReviewCard({ name, text, rating, product, verified }: {
   name: string; text: string; rating: number; product: string; verified?: boolean;
 }) {
   return (
-    <div className="min-w-[300px] max-w-[340px] flex-shrink-0 rounded-xl border bg-white p-5 space-y-3 snap-start">
-      <div className="flex items-center gap-1">
+    <div
+      className="min-w-[300px] max-w-[340px] flex-shrink-0 snap-start"
+      style={{
+        borderRadius: "12px",
+        border: "1px solid var(--v17-border, #e8e8e3)",
+        backgroundColor: "#fff",
+        padding: "20px",
+        fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",
+      }}
+    >
+      <div className="flex items-center gap-0.5 mb-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} className={`h-4 w-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
+          <ReviewStar key={i} filled={i < rating} />
         ))}
       </div>
-      <p className="text-sm leading-relaxed text-gray-500 line-clamp-4">{text}</p>
+      <p style={{ fontSize: "14px", lineHeight: 1.6, color: "var(--v17-text-muted, #666)", marginBottom: "12px" }} className="line-clamp-4">{text}</p>
       <div className="flex items-center gap-2 pt-1">
         <div
-          className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold"
-          style={{ backgroundColor: "var(--storefront-primary, #1B3A2D)", color: "#fff" }}
+          className="flex items-center justify-center rounded-full"
+          style={{ width: "32px", height: "32px", backgroundColor: "var(--v17-primary, #2B4C3F)", color: "#fff", fontSize: "12px", fontWeight: 700 }}
         >
           {name.charAt(0)}
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-800">{name}</p>
-          {verified && <p className="text-xs text-emerald-600">✓ Verified Buyer</p>}
+          <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--v17-text, #1a1a1a)" }}>{name}</p>
+          {verified && <p style={{ fontSize: "12px", color: "#1B5E4B" }}>✓ Verified Buyer</p>}
         </div>
       </div>
-      {product && <p className="text-xs text-gray-400 border-t pt-2">Reviewed: {product}</p>}
+      {product && <p style={{ fontSize: "12px", color: "var(--v17-text-muted, #999)", borderTop: "1px solid var(--v17-border, #e8e8e3)", paddingTop: "8px", marginTop: "12px" }}>Reviewed: {product}</p>}
     </div>
   );
 }
@@ -54,10 +73,29 @@ export default function ReviewsSection({ storeId }: { storeId: string }) {
   const displayReviews = reviews && reviews.length > 0 ? reviews : defaultReviews;
 
   return (
-    <section className="py-12 px-4">
+    <section style={{ padding: "48px 15px" }}>
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-2">Customer Say!</h2>
-        <p className="text-center text-sm text-gray-500 mb-8">
+        <h2
+          className="text-center"
+          style={{
+            fontFamily: "var(--v17-heading-font, 'Cormorant Garamond', serif)",
+            fontSize: "clamp(24px, 4vw, 36px)",
+            fontWeight: 400,
+            color: "var(--v17-text, #1a1a1a)",
+            marginBottom: "8px",
+          }}
+        >
+          Customer Say!
+        </h2>
+        <p
+          className="text-center"
+          style={{
+            fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",
+            fontSize: "14px",
+            color: "var(--v17-text-muted, #666)",
+            marginBottom: "30px",
+          }}
+        >
           Customers love our products and we always strive to please them all.
         </p>
         <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">

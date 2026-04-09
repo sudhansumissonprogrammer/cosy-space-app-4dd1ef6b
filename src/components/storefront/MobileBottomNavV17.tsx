@@ -1,6 +1,6 @@
 /**
- * MobileBottomNavV17 — systumm.shop-inspired bottom nav with custom SVG icons.
- * 5-tab: Home, Account, Shop, Wishlist, Cart
+ * MobileBottomNavV17 — systumm.shop-exact bottom nav with custom SVG icons.
+ * White bg, clean icons, heading-style labels.
  */
 import { Link, useLocation } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
@@ -9,50 +9,43 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
-/* Custom SVG icons matching systumm.shop */
-function HomeIcon({ active }: { active: boolean }) {
+/* Custom SVG icons matching systumm.shop exactly */
+function HomeIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M19.6325 7.11089L13.1591 3.08871C12.8049 2.86736 12.3957 2.75 11.9781 2.75C11.5604 2.75 11.1512 2.86736 10.797 3.08871L4.32368 7.13318C3.95561 7.36509 3.66347 7.69966 3.4833 8.09564C3.30313 8.49161 3.24281 8.93168 3.30978 9.36153L4.98105 19.3891C5.06886 19.9144 5.34188 20.3908 5.75065 20.7321C6.15942 21.0734 6.67691 21.2571 7.2094 21.2498H16.7913C17.3238 21.2571 17.8413 21.0734 18.2501 20.7321C18.6588 20.3908 18.9319 19.9144 19.0197 19.3891L20.6909 9.36153C20.7582 8.92366 20.6934 8.47568 20.5049 8.07479C20.3164 7.67391 20.0126 7.33833 19.6325 7.11089Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill={active ? "currentColor" : "none"} />
-      <path d="M8.63554 16.4588H15.3206" stroke={active ? "var(--storefront-bg, #fff)" : "currentColor"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="20" height="20" fill="none">
+      <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M10 15.001v-2.5M8.392 2.353 2.617 6.977c-.65.517-1.066 1.609-.924 2.425L2.8 16.035c.2 1.183 1.333 2.141 2.533 2.141h9.332c1.192 0 2.333-.966 2.533-2.141l1.108-6.633c.134-.816-.283-1.908-.924-2.425l-5.775-4.616c-.891-.716-2.333-.716-3.216-.008Z" />
     </svg>
   );
 }
 
-function ShopIcon({ active }: { active: boolean }) {
+function AccountIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M21.25 9.94445C21.2482 10.5806 21.0497 11.2006 20.6817 11.7195C20.3137 12.2384 19.7942 12.6307 19.1944 12.8428C18.8662 12.9673 18.5177 13.03 18.1667 13.0278C17.5305 13.026 16.9105 12.8275 16.3916 12.4595C15.8727 12.0915 15.4804 11.572 15.2683 10.9722C15.1438 10.644 15.0811 10.2955 15.0833 9.94445C15.0856 10.2955 15.0228 10.644 14.8983 10.9722C14.6863 11.572 14.2939 12.0915 13.775 12.4595C13.2561 12.8275 12.6361 13.026 12 13.0278C11.3639 13.026 10.7439 12.8275 10.225 12.4595C9.70607 12.0915 9.31371 11.572 9.10167 10.9722C8.97716 10.644 8.91443 10.2955 8.91667 9.94445C8.9189 10.2955 8.85618 10.644 8.73167 10.9722C8.51962 11.572 8.12726 12.0915 7.60837 12.4595C7.08948 12.8275 6.46947 13.026 5.83333 13.0278C5.48226 13.03 5.13381 12.9673 4.80556 12.8428C4.2058 12.6307 3.6863 12.2384 3.3183 11.7195C2.95029 11.2006 2.75179 10.5806 2.75 9.94445L3.2125 8.32057L4.3225 5.15501C4.4633 4.75224 4.72595 4.40326 5.07402 4.15648C5.42209 3.9097 5.83833 3.77735 6.265 3.77779H17.735C18.1617 3.77735 18.5779 3.9097 18.926 4.15648C19.274 4.40326 19.5367 4.75224 19.6775 5.15501L20.7875 8.32057L21.25 9.94445Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill={active ? "currentColor" : "none"} />
-      <path d="M19.1944 12.8428V18.1667C19.1944 18.7118 18.9778 19.2347 18.5923 19.6202C18.2068 20.0057 17.684 20.2222 17.1388 20.2222H6.86105C6.31588 20.2222 5.79304 20.0057 5.40755 19.6202C5.02206 19.2347 4.80549 18.7118 4.80549 18.1667V12.8428" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8.91666 17.1389H15.0833" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="20" height="20" fill="none">
+      <g fill="currentColor"><path d="M18.887 17.699a10.285 10.285 0 0 0-3.768-3.704 10.353 10.353 0 0 0-10.24 0 10.285 10.285 0 0 0-3.768 3.704.87.87 0 0 0 .075.962c.073.09.164.165.268.217a.881.881 0 0 0 .44.114.829.829 0 0 0 .754-.42 8.515 8.515 0 0 1 3.12-3.068 8.572 8.572 0 0 1 8.48 0 8.514 8.514 0 0 1 3.12 3.068.878.878 0 0 0 1.195.315.808.808 0 0 0 .404-.516.869.869 0 0 0-.08-.672ZM10 11.803c1.416 0 2.775-.56 3.784-1.56 1.01-1.001 1.59-2.362 1.617-3.79a5.476 5.476 0 0 0-1.582-3.854 5.375 5.375 0 0 0-3.818-1.596 5.375 5.375 0 0 0-3.819 1.596 5.476 5.476 0 0 0-1.581 3.854 5.474 5.474 0 0 0 1.616 3.79A5.374 5.374 0 0 0 10 11.802Zm-3.6-5.35c0-.964.38-1.888 1.055-2.57a3.583 3.583 0 0 1 2.546-1.063c.955 0 1.87.382 2.545 1.064a3.65 3.65 0 0 1 1.055 2.569 3.65 3.65 0 0 1-1.055 2.569 3.583 3.583 0 0 1-2.545 1.064c-.955 0-1.87-.383-2.546-1.064a3.65 3.65 0 0 1-1.054-2.57Z" /></g>
     </svg>
   );
 }
 
-function AccountIcon({ active }: { active: boolean }) {
+function ShopIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M19.6177 21.25C19.6177 17.6479 15.6021 14.7206 12 14.7206C8.39794 14.7206 4.38235 17.6479 4.38235 21.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 11.4559C14.404 11.4559 16.3529 9.50701 16.3529 7.10294C16.3529 4.69888 14.404 2.75 12 2.75C9.59594 2.75 7.64706 4.69888 7.64706 7.10294C7.64706 9.50701 9.59594 11.4559 12 11.4559Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill={active ? "currentColor" : "none"} />
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none">
+      <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"><path d="M2.508 9.352v3.742c0 3.741 1.5 5.241 5.242 5.241h4.492c3.741 0 5.241-1.5 5.241-5.241V9.352" /><path d="M10 10.002c1.525 0 2.65-1.242 2.5-2.767l-.55-5.566H8.058L7.5 7.235c-.15 1.525.975 2.767 2.5 2.767Z" /><path d="M15.258 10.002c1.684 0 2.917-1.367 2.75-3.042l-.233-2.291c-.3-2.167-1.133-3-3.317-3h-2.541L12.5 7.51c.142 1.375 1.383 2.492 2.758 2.492ZM4.7 10.002c1.375 0 2.617-1.117 2.75-2.492l.183-1.841.4-4H5.492c-2.184 0-3.017.833-3.317 3L1.95 6.96c-.167 1.675 1.067 3.042 2.75 3.042ZM10 14.169c-1.392 0-2.083.691-2.083 2.083v2.083h4.166v-2.083c0-1.392-.691-2.083-2.083-2.083Z" /></g>
     </svg>
   );
 }
 
-function CartIcon({ active }: { active: boolean }) {
+function WishlistIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M7.53657 21.25H7.54758" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M17.9381 21.25H17.9491" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4.62838 6.52571H9.60334C12.3104 6.52571 15.0175 6.52571 17.7246 6.52571C18.2498 6.50271 18.7743 6.58341 19.2682 6.76318C19.5116 6.85995 19.73 7.01065 19.9069 7.20397C20.0837 7.39727 20.2145 7.62817 20.2893 7.87927C20.3493 8.45024 20.2761 9.02733 20.0756 9.56528C19.9449 10.1351 19.8263 10.7526 19.7075 11.275C19.4462 12.4624 19.1851 13.6497 18.9714 14.8371C18.9205 15.4101 18.7016 15.9553 18.3421 16.4043C18.1157 16.6114 17.8494 16.7699 17.5594 16.8699C17.2693 16.9699 16.962 17.0095 16.6561 16.986C15.6349 16.986 14.602 16.986 13.569 16.986H9.80509C9.25234 17.0394 8.69568 17.0394 8.14288 16.986C7.8537 16.9546 7.5781 16.8469 7.34439 16.6736C7.11069 16.5004 6.9273 16.2681 6.81307 16.0006C6.61691 15.3381 6.46226 14.6639 6.35001 13.9822C6.25503 13.4478 6.13629 12.9136 6.01756 12.3793C5.60199 10.3964 5.12706 8.43731 4.62838 6.52571ZM4.62838 6.52571C4.31967 5.26714 3.9991 4.00857 3.69039 2.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M19.5531 11.9993H5.93447" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="22" height="20" fill="none">
+      <path fill="currentColor" d="M19.389 2.646C18.35 1.589 16.977 1 15.549 1s-2.801.589-3.84 1.646L11 3.375l-.71-.73C9.256 1.583 7.878.993 6.448 1 5.019.993 3.644 1.583 2.61 2.646a5.496 5.496 0 0 0-1.19 1.82A5.847 5.847 0 0 0 1 6.647c0 .75.143 1.493.42 2.182a5.497 5.497 0 0 0 1.191 1.82l7.828 8.11c.077.072.163.132.256.178a.77.77 0 0 0 .61 0c.093-.046.18-.106.256-.178l7.828-8.11a5.497 5.497 0 0 0 1.19-1.82c.278-.689.421-1.431.421-2.182 0-.75-.143-1.493-.42-2.18a5.497 5.497 0 0 0-1.191-1.821Zm0 3.984a4.149 4.149 0 0 1-.285 1.531c-.19.485-.469.923-.82 1.287L11 17.008l-7.275-7.56a3.883 3.883 0 0 1-.836-1.283 4.129 4.129 0 0 1 0-3.071c.194-.485.479-.922.836-1.283.732-.755 1.709-1.173 2.722-1.165 1.018-.009 2 .409 2.738 1.165l1.254 1.307c.077.072.163.132.256.178a.77.77 0 0 0 .61 0c.093-.046.18-.106.256-.178l1.262-1.307c.732-.755 1.709-1.173 2.722-1.165 1.018-.009 2 .409 2.738 1.165.355.363.637.8.83 1.285.193.484.293 1.006.292 1.534h-.016Z" />
     </svg>
   );
 }
 
-function WishlistIcon({ active }: { active: boolean }) {
+function CartIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    <svg width="20" height="20" fill="none">
+      <path fill="currentColor" d="m16.102 4.278-1.2-1.649H6.098L4.898 4.278h11.204Zm2.23.307v.019h.018c.038.077.069.153.094.23a.56.56 0 0 1 .056.25v11.462c0 .333-.069.652-.206.959-.125.294-.294.55-.506.767-.212.23-.468.409-.768.536a2.233 2.233 0 0 1-.918.192H4.898c-.324 0-.637-.07-.937-.21a2.402 2.402 0 0 1-.749-.518 2.312 2.312 0 0 1-.525-.767 2.518 2.518 0 0 1-.187-.959V5.083a1.112 1.112 0 0 1 .075-.345l.038-.077a.3.3 0 0 0 .056-.076l2.398-3.26a.706.706 0 0 1 .28-.23A.71.71 0 0 1 5.705 1h9.592a.71.71 0 0 1 .356.096.706.706 0 0 1 .281.23l2.398 3.259ZM4.111 5.907v10.64c0 .102.018.204.056.306a.747.747 0 0 0 .43.44c.1.04.2.058.3.058h11.204a.74.74 0 0 0 .3-.057.748.748 0 0 0 .43-.44.887.887 0 0 0 .057-.308V5.907H4.11Zm8.786 2.454a.79.79 0 0 1 .225-.575.784.784 0 0 1 .58-.25c.213 0 .394.084.544.25a.758.758 0 0 1 .244.575c0 .562-.106 1.093-.319 1.591-.2.498-.48.933-.843 1.304-.362.37-.787.664-1.274.881a3.977 3.977 0 0 1-1.555.307c-.55 0-1.068-.102-1.555-.307A4.096 4.096 0 0 1 6.81 9.952c-.2-.498-.3-1.029-.3-1.591a.79.79 0 0 1 .225-.575.764.764 0 0 1 .562-.25c.225 0 .413.084.562.25a.758.758 0 0 1 .244.575c0 .345.062.665.187.958.125.294.3.55.525.767a2.259 2.259 0 0 0 1.686.729 2.258 2.258 0 0 0 1.686-.728c.225-.218.4-.474.525-.768.125-.293.187-.613.187-.958Z" />
     </svg>
   );
 }
@@ -98,29 +91,52 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 sm:hidden bg-white border-t border-gray-200"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="fixed bottom-0 inset-x-0 z-40 sm:hidden"
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        backgroundColor: "#fff",
+        borderTop: "1px solid #e8e8e3",
+        fontFamily: "var(--v17-heading-font, 'Cormorant Garamond', serif)",
+      }}
     >
-      <div className="flex items-center justify-around h-14">
+      <div className="flex items-center justify-around" style={{ height: "56px", padding: "0 15px" }}>
         {navItems.map((item) => {
           const active = getActive(item.path);
           const badge = getBadge(item.key);
           const isCart = item.key === "cart";
 
           const content = (
-            <div className="flex flex-col items-center justify-center gap-0.5 relative">
+            <div className="flex flex-col items-center justify-center gap-0.5 relative" style={{ lineHeight: 1 }}>
               <div className="relative">
-                <item.Icon active={active} />
+                <item.Icon />
                 {badge > 0 && (
                   <span
-                    className={`absolute -top-1.5 -right-2 min-w-[16px] h-4 flex items-center justify-center rounded-full text-[9px] font-bold text-white px-1 ${isCart && cartBounce ? "animate-bounce" : ""}`}
-                    style={{ backgroundColor: "#1B3A2D" }}
+                    className={`absolute flex items-center justify-center rounded-full ${isCart && cartBounce ? "animate-bounce" : ""}`}
+                    style={{
+                      top: "-4px",
+                      right: "-8px",
+                      minWidth: "16px",
+                      height: "16px",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      color: "#fff",
+                      backgroundColor: "var(--v17-primary, #2B4C3F)",
+                      padding: "0 3px",
+                      fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",
+                    }}
                   >
                     {badge}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] leading-none ${active ? "font-semibold" : "font-normal text-gray-500"}`}>
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: active ? 600 : 400,
+                  color: active ? "var(--v17-text, #1a1a1a)" : "var(--v17-text-muted, #666)",
+                  letterSpacing: "0.02em",
+                }}
+              >
                 {item.label}
               </span>
             </div>
@@ -128,14 +144,14 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
 
           if (isCart) {
             return (
-              <button key={item.key} onClick={openCart} className="flex-1 flex items-center justify-center h-full text-gray-800">
+              <button key={item.key} onClick={openCart} className="flex-1 flex items-center justify-center h-full" style={{ color: "var(--v17-text, #1a1a1a)" }}>
                 {content}
               </button>
             );
           }
 
           return (
-            <Link key={item.key} to={getTo(item.path)} className={`flex-1 flex items-center justify-center h-full ${active ? "text-gray-900" : "text-gray-500"}`}>
+            <Link key={item.key} to={getTo(item.path)} className="flex-1 flex items-center justify-center h-full" style={{ color: active ? "var(--v17-text, #1a1a1a)" : "var(--v17-text, #1a1a1a)" }}>
               {content}
             </Link>
           );
