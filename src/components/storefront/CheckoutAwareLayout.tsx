@@ -11,6 +11,7 @@ import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+import { Search } from "lucide-react";
 import { useSmartHeader } from "@/hooks/useSmartHeader";
 import PageTransition from "@/components/storefront/PageTransition";
 import ScrollProgressBar from "@/components/storefront/ScrollProgressBar";
@@ -38,6 +39,10 @@ interface CheckoutAwareLayoutProps {
   headerStyle?: string;
   /** Custom header className override (e.g. for transparent-to-solid scroll) */
   headerClassName?: string;
+  /** Replace account icon with search icon in mobile header */
+  useSearchInHeader?: boolean;
+  /** Custom cart icon JSX to replace default CartBadge */
+  customCartIcon?: ReactNode;
 }
 
 export default function CheckoutAwareLayout({
@@ -48,6 +53,8 @@ export default function CheckoutAwareLayout({
   mobileNav,
   headerStyle = "normal",
   headerClassName,
+  useSearchInHeader = false,
+  customCartIcon,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
