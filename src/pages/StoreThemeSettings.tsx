@@ -1942,6 +1942,43 @@ export default function StoreThemeSettings() {
     iframeDesktopRef.current?.contentWindow?.postMessage(msg, "*");
   }, []);
 
+  const setupPreviewIframe = useCallback((iframe: HTMLIFrameElement | null) => {
+    iframeLoadedRef.current = true;
+    sendToIframe(config);
+
+    try {
+      const doc = iframe?.contentDocument as (Document & { __themePreviewNavBound?: boolean }) | null;
+      if (!doc || doc.__themePreviewNavBound) return;
+
+      doc.__themePreviewNavBound = true;
+      doc.addEventListener("click", (e: MouseEvent) => {
+        const anchor = (e.target as HTMLElement | null)?.closest?.("a");
+        if (!anchor) return;
+
+        const href = anchor.getAttribute("href");
+        if (
+          !href ||
+          href.startsWith("#") ||
+          href.startsWith("javascript:") ||
+          href.startsWith("mailto:") ||
+          href.startsWith("tel:")
+        ) {
+          return;
+        }
+
+        const nextUrl = new URL(anchor.href, iframe?.contentWindow?.location.href || window.location.href);
+        const isInternalStoreRoute = !!store?.slug &&
+          nextUrl.origin === window.location.origin &&
+          nextUrl.pathname.startsWith(`/store/${store.slug}`);
+
+        if (isInternalStoreRoute) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+    } catch {}
+  }, [config, sendToIframe, store?.slug]);
+
   const updateField = (key: keyof ThemeConfig, value: string | boolean) => {
     const newConfig = { ...config, [key]: value };
     setConfig(newConfig);
@@ -2646,17 +2683,7 @@ export default function StoreThemeSettings() {
                           src={`/store/${store.slug}`}
                           title="Store Preview"
                           onLoad={() => {
-                            iframeLoadedRef.current = true;
-                            sendToIframe(config);
-                            try {
-                              const doc = iframeRef.current?.contentDocument;
-                              if (doc) {
-                                doc.addEventListener("click", (e: MouseEvent) => {
-                                  const anchor = (e.target as HTMLElement).closest?.("a");
-                                  if (anchor) { e.preventDefault(); e.stopPropagation(); }
-                                }, true);
-                              }
-                            } catch {}
+                            setupPreviewIframe(iframeRef.current);
                           }}
                           style={{
                             width: "375px",
@@ -2689,17 +2716,7 @@ export default function StoreThemeSettings() {
                         src={`/store/${store.slug}`}
                         title="Store Preview Desktop"
                         onLoad={() => {
-                          iframeLoadedRef.current = true;
-                          sendToIframe(config);
-                          try {
-                            const doc = iframeDesktopRef.current?.contentDocument;
-                            if (doc) {
-                              doc.addEventListener("click", (e: MouseEvent) => {
-                                const anchor = (e.target as HTMLElement).closest?.("a");
-                                if (anchor) { e.preventDefault(); e.stopPropagation(); }
-                              }, true);
-                            }
-                          } catch {}
+                          setupPreviewIframe(iframeDesktopRef.current);
                         }}
                         style={{
                           width: "1440px",
