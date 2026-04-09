@@ -45,6 +45,8 @@ export default function UniversalProductCard({ product, slug, store, priority = 
         return <ProductCardStyle3 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
       case "style-4":
         return <ProductCardStyle4 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
+      case "style-5":
+        return <ProductCardStyle5 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
       default:
         return <ProductCardStyle1 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
     }
