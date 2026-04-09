@@ -170,7 +170,20 @@ export default function StorefrontHomeV17() {
   const showBestSellers = store?.best_selling_carousel && bestSellers.length > 0;
 
   // JSON-LD
-  useStoreJsonLd(store, products);
+  useStoreJsonLd({
+    storeName: store?.name || "",
+    storeSlug: slug,
+    description: store?.description || undefined,
+    logo: store?.logo_url || undefined,
+    location: store?.location || undefined,
+    whatsappNumber: store?.whatsapp_number || undefined,
+    customDomain: (store as any)?.custom_domain || undefined,
+    instagramUrl: store?.instagram_url || undefined,
+    facebookUrl: store?.facebook_url || undefined,
+    city: store?.city || undefined,
+    state: store?.state || undefined,
+    businessHours: store?.business_hours || undefined,
+  });
 
   if (!store) return null;
 
