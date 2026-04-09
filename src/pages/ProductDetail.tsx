@@ -704,40 +704,65 @@ export default function ProductDetail() {
           )}
 
 
-          {/* CTA Buttons — clean, well-spaced */}
+          {/* CTA Buttons */}
           {!isOutOfStock && (
             <div className="mt-5 flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  className={`relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
-                    justAdded ? "bg-emerald-600 text-white" : "btn-gold hover:brightness-110"
-                  }`}
-                  onClick={handleAddToCart}
-                >
-                  {justAdded ? (
-                    <span className="flex items-center gap-2 animate-fade-in">
-                      <Check className="h-4 w-4" strokeWidth={3} />
-                      Added!
-                    </span>
-                  ) : (
-                    <span className={`flex items-center gap-2 ${cartBounce ? "animate-bounce-once" : ""}`}>
-                      <ShoppingCart className="h-4 w-4" />
-                      Add to Cart
-                    </span>
-                  )}
-                </button>
-
-                {showBuyNow && (
+              {isV18 ? (
+                /* V18 Sagacity-style: full-width stacked buttons */
+                <>
                   <button
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
-                    style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
-                    onClick={handleBuyNow}
+                    className={`flex h-12 w-full items-center justify-center text-sm font-bold uppercase tracking-widest transition-all active:scale-[0.97] ${
+                      justAdded ? "bg-emerald-600 text-white" : "bg-white text-black hover:bg-white/90"
+                    }`}
+                    style={v18Font}
+                    onClick={handleAddToCart}
                   >
-                    <ShoppingBag className="h-4 w-4" />
-                    Buy Now
+                    {justAdded ? "ADDED!" : "ADD TO CART"}
                   </button>
-                )}
-              </div>
+                  {showBuyNow && (
+                    <button
+                      className="flex h-12 w-full items-center justify-center border text-sm font-bold uppercase tracking-widest transition-all active:scale-[0.97] hover:bg-white hover:text-black"
+                      style={{ borderColor: "#ffffff", color: "#ffffff", ...v18Font }}
+                      onClick={handleBuyNow}
+                    >
+                      BUY IT NOW
+                    </button>
+                  )}
+                </>
+              ) : (
+                /* Default style */
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    className={`relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
+                      justAdded ? "bg-emerald-600 text-white" : "btn-gold hover:brightness-110"
+                    }`}
+                    onClick={handleAddToCart}
+                  >
+                    {justAdded ? (
+                      <span className="flex items-center gap-2 animate-fade-in">
+                        <Check className="h-4 w-4" strokeWidth={3} />
+                        Added!
+                      </span>
+                    ) : (
+                      <span className={`flex items-center gap-2 ${cartBounce ? "animate-bounce-once" : ""}`}>
+                        <ShoppingCart className="h-4 w-4" />
+                        Add to Cart
+                      </span>
+                    )}
+                  </button>
+
+                  {showBuyNow && (
+                    <button
+                      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
+                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
+                      onClick={handleBuyNow}
+                    >
+                      <ShoppingBag className="h-4 w-4" />
+                      Buy Now
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* WhatsApp Order */}
               {showWhatsApp && store.whatsapp_number && (
