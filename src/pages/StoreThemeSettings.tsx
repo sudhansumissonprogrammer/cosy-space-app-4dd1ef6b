@@ -2648,6 +2648,15 @@ export default function StoreThemeSettings() {
                           onLoad={() => {
                             iframeLoadedRef.current = true;
                             sendToIframe(config);
+                            try {
+                              const doc = iframeRef.current?.contentDocument;
+                              if (doc) {
+                                doc.addEventListener("click", (e: MouseEvent) => {
+                                  const anchor = (e.target as HTMLElement).closest?.("a");
+                                  if (anchor) { e.preventDefault(); e.stopPropagation(); }
+                                }, true);
+                              }
+                            } catch {}
                           }}
                           style={{
                             width: "375px",
