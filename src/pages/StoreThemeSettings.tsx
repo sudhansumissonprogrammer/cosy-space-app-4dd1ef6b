@@ -1909,9 +1909,12 @@ export default function StoreThemeSettings() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeDesktopRef = useRef<HTMLIFrameElement>(null);
 
+  const dirtyRef = useRef(false);
+  useEffect(() => { dirtyRef.current = dirty; }, [dirty]);
+
   useEffect(() => {
     // Don't overwrite unsaved local changes with stale DB data
-    if (dirty) return;
+    if (dirtyRef.current) return;
     if (themeConfig) {
       setConfig({
         primary_color: themeConfig.primary_color,
@@ -1931,11 +1934,10 @@ export default function StoreThemeSettings() {
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
       });
-    } else {
+    } else if (!themeConfig) {
       setConfig(defaults);
     }
-    setDirty(false);
-  }, [themeConfig, currentTheme, dirty]);
+  }, [themeConfig, currentTheme]);
 
   // Send config to iframe for live preview
   const sendToIframe = useCallback((cfg: ThemeConfig) => {
