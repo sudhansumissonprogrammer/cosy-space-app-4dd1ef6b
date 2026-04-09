@@ -23,7 +23,7 @@ import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
-import SectionHeading from "@/components/storefront/SectionHeading";
+import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
