@@ -1,16 +1,14 @@
 /**
  * Theme 18 Home — Dark Streetwear layout:
  * 1. Full-screen Hero Banner carousel
- * 2. "Show-Runners" — featured product grid (edge-to-edge, 4-col desktop / 2-col mobile)
- * 3. "New Arrival" — product grid
- * 4. Newsletter + dark footer (handled by StorefrontFooter)
- *
- * All sections use a deep black (#0a0a0a) background with white text.
- * Product cards are borderless with full-bleed images for an editorial feel.
+ * 2. Categories
+ * 3. Best Sellers (if enabled)
+ * 4. New Arrivals — all products grid
+ * 5. Newsletter + dark footer (handled by StorefrontFooter)
  */
 import { lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
@@ -29,8 +27,6 @@ import SectionHeading from "@/components/storefront/SectionHeading";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
-
-const SHOW_RUNNER_COUNT = 4;
 
 /* ─── Section Title — minimal white-on-black ─── */
 function DarkSectionTitle({ title }: { title: string }) {
@@ -80,19 +76,17 @@ export default function StorefrontHomeV18() {
   const queryClient = useQueryClient();
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
-  const cardStyle = "style-5"; // Theme 18: always Sagacity-style minimal card
+  const cardStyle = "style-5";
   const categoryStyle = themeConfig?.category_style || "style-1";
 
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]);
   const categoriesLoading = storeCategories === undefined;
 
-  // Products
   const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);
   const bsQuery = useBestSellingProducts(store?.id);
   const bestSellers = bsQuery.products;
   const showBestSellers = store?.best_selling_carousel && bestSellers.length > 0;
 
-  // JSON-LD
   useStoreJsonLd({
     storeName: store?.name || "",
     storeSlug: slug,
@@ -110,11 +104,7 @@ export default function StorefrontHomeV18() {
 
   if (!store) return null;
 
-  // Split products: first 4 as "Show-Runners", rest as "New Arrival"
-  const showRunners = products.slice(0, SHOW_RUNNER_COUNT);
-  const newArrivals = products.slice(SHOW_RUNNER_COUNT);
   const allProductIds = products.map((p: any) => p.id);
-
   const hasBanner = !!(store as any).banner_url;
   const hasMobileHero = !!(store as any).mobile_hero_url || !!(store as any).mobile_hero_images;
 
@@ -185,26 +175,6 @@ export default function StorefrontHomeV18() {
         />
       </div>
 
-      {/* ─── Show-Runners (Featured Products) ─── */}
-      <section style={{ backgroundColor: "#0a0a0a" }}>
-        <DarkSectionTitle title="Show-Runners" />
-        {productsLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4">
-            {Array.from({ length: SHOW_RUNNER_COUNT }).map((_, i) => (
-              <ProductCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : showRunners.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4">
-            {showRunners.map((p: any, i: number) => (
-              <div key={p.id} className="v18-product-card">
-                <UniversalProductCard product={p} slug={slug} store={store} priority={i < 2} cardStyle={cardStyle} index={i} />
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </section>
-
       {/* ─── Best Sellers ─── */}
       {showBestSellers && (
         <LazyRender rootMargin="200px">
@@ -219,20 +189,26 @@ export default function StorefrontHomeV18() {
         </LazyRender>
       )}
 
-      {/* ─── New Arrival ─── */}
-      {newArrivals.length > 0 && (
-        <LazyRender rootMargin="200px">
-          <section style={{ backgroundColor: "#0a0a0a" }}>
-            <DarkSectionTitle title="New Arrival" />
+      {/* ─── New Arrivals ─── */}
+      {products.length > 0 && (
+        <section style={{ backgroundColor: "#0a0a0a" }}>
+          <DarkSectionTitle title="New Arrivals" />
+          {productsLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-4">
-              {newArrivals.map((p: any, i: number) => (
+              {Array.from({ length: 4 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4">
+              {products.map((p: any, i: number) => (
                 <div key={p.id} className="v18-product-card">
-                  <UniversalProductCard product={p} slug={slug} store={store} cardStyle={cardStyle} index={i + SHOW_RUNNER_COUNT} />
+                  <UniversalProductCard product={p} slug={slug} store={store} priority={i < 2} cardStyle={cardStyle} index={i} />
                 </div>
               ))}
             </div>
-          </section>
-        </LazyRender>
+          )}
+        </section>
       )}
 
       {/* ─── View All ─── */}
