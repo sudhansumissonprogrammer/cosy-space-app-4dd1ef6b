@@ -71,8 +71,8 @@ export default function HeroBannerCarousel({
   if (images.length === 1) {
     const srcSet = getImageSrcSet(images[0], [400, 600, 800, 1200]);
     return (
-      <div className={`relative ${className}`} style={{ aspectRatio: "16/7", contain: "layout" }}>
-        <img
+      <div className={`relative overflow-hidden ${className}`} style={{ aspectRatio: "16/7", contain: "layout" }}>
+        <ParallaxImage
           src={optimizeImageUrl(images[0], optimizeWidth)}
           srcSet={srcSet || undefined}
           sizes={HERO_IMAGE_SIZES}
