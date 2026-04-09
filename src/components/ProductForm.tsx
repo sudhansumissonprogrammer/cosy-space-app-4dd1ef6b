@@ -495,10 +495,20 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       }
 
       toast.success(isEditing ? "Product updated!" : "Product created!");
+
+      // Invalidate all relevant queries so lists/details refresh instantly
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+        queryClient.invalidateQueries({ queryKey: ["product", productId] }),
+        queryClient.invalidateQueries({ queryKey: ["product-images", productId] }),
+        queryClient.invalidateQueries({ queryKey: ["product-variants-edit", productId] }),
+        queryClient.invalidateQueries({ queryKey: ["product-limit"] }),
+        queryClient.invalidateQueries({ queryKey: ["storefront-products"] }),
+        queryClient.invalidateQueries({ queryKey: ["best-selling-products"] }),
+      ]);
       
       // Pre-warm edge caches so storefront reflects changes instantly
       import("@/lib/prewarmStore").then(({ prewarmStore }) => {
-        // Use store slug from URL params
         if (storeSlug) prewarmStore(storeSlug);
       }).catch(() => {});
 
