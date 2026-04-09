@@ -346,7 +346,7 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     heading_font: "Space Grotesk", body_font: "Inter", button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #ffffff, #999999, #ffffff)",
     marquee_text: DEFAULT_MARQUEE_TEXT,
-    marquee_enabled: false, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "normal",
+    marquee_enabled: false, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "transparent",
   },
 };
 
@@ -2458,8 +2458,8 @@ export default function StoreThemeSettings() {
             )}
           </div>
 
-          {/* Mobile Bottom Navigation Style (Theme 1 & 14) */}
-          {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-16") && (
+          {/* Mobile Bottom Navigation Style */}
+          {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-16" || currentTheme === "theme-18") && (
             <>
               <Separator />
               <div>
@@ -2471,6 +2471,10 @@ export default function StoreThemeSettings() {
                   {[
                     { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
                     { value: "modern", label: "Modern", desc: "Floating pill with cart" },
+                    ...(currentTheme === "theme-18" ? [
+                      { value: "v15", label: "Minimal", desc: "Clean minimal icons" },
+                      { value: "v17", label: "Streetwear", desc: "Bold streetwear style" },
+                    ] : []),
                   ].map((s) => (
                     <button
                       key={s.value}
