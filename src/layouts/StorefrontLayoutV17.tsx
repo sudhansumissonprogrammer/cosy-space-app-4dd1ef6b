@@ -39,10 +39,10 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         }
         .v17-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease; }
         .v17-header-transparent { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; color: #fff !important; }
-        .v17-header-transparent button, .v17-header-transparent a, .v17-header-transparent svg { color: #fff !important; }
+        .v17-header-transparent button, .v17-header-transparent a, .v17-header-transparent svg { color: #fff !important; stroke: #fff !important; }
         .v17-header-transparent .smart-header { background: transparent !important; }
         .v17-header-solid { background-color: #fff !important; box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important; color: #000 !important; }
-        .v17-header-solid button, .v17-header-solid a, .v17-header-solid svg { color: #000 !important; }
+        .v17-header-solid button, .v17-header-solid a, .v17-header-solid svg { color: #000 !important; stroke: #000 !important; }
       `}</style>
       <div style={{
         fontFamily: "var(--v17-body-font)",
@@ -50,6 +50,8 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         color: "var(--v17-text)",
         "--storefront-primary": "#0F2A22",
         "--storefront-footer-text": "#ffffff",
+        "--storefront-marquee-gradient": "linear-gradient(90deg, #0F2A22, #0F2A22, #0F2A22)",
+        "--storefront-marquee-text-color": "#ffffff",
       } as React.CSSProperties}>
         <CheckoutAwareLayout
           store={store}
