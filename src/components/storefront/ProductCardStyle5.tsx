@@ -34,7 +34,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
 
   return (
     <Link
-      to={storefrontPath(slug, `/product/${product.slug || product.id}`)}
+      to={storefrontPath(slug, `product/${product.slug || product.id}`)}
       className="block cursor-pointer group"
       style={{ backgroundColor: "#0a0a0a" }}
     >
