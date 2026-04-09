@@ -105,9 +105,11 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
           const badge = getBadge(item.key);
           const isCart = item.key === "cart";
 
+          const itemColor = active ? "var(--v17-primary, #2B4C3F)" : "var(--v17-text, #1a1a1a)";
+
           const content = (
             <div className="flex flex-col items-center justify-center gap-0.5 relative" style={{ lineHeight: 1 }}>
-              <div className="relative">
+              <div className="relative" style={{ color: itemColor }}>
                 <item.Icon />
                 {badge > 0 && (
                   <span
@@ -132,26 +134,37 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
               <span
                 style={{
                   fontSize: "10px",
-                  fontWeight: 500,
-                  color: "#000",
+                  fontWeight: active ? 700 : 500,
+                  color: itemColor,
                   letterSpacing: "0.02em",
                 }}
               >
                 {item.label}
               </span>
+              {active && (
+                <div style={{
+                  position: "absolute",
+                  bottom: "-8px",
+                  left: "25%",
+                  right: "25%",
+                  height: "2.5px",
+                  borderRadius: "2px",
+                  backgroundColor: "var(--v17-primary, #2B4C3F)",
+                }} />
+              )}
             </div>
           );
 
           if (isCart) {
             return (
-              <button key={item.key} onClick={openCart} className="flex-1 flex items-center justify-center h-full" style={{ color: "var(--v17-text, #1a1a1a)" }}>
+              <button key={item.key} onClick={openCart} className="flex-1 flex items-center justify-center h-full">
                 {content}
               </button>
             );
           }
 
           return (
-            <Link key={item.key} to={getTo(item.path)} className="flex-1 flex items-center justify-center h-full" style={{ color: active ? "var(--v17-text, #1a1a1a)" : "var(--v17-text, #1a1a1a)" }}>
+            <Link key={item.key} to={getTo(item.path)} className="flex-1 flex items-center justify-center h-full">
               {content}
             </Link>
           );
