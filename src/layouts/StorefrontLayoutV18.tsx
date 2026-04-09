@@ -20,10 +20,17 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const onScroll = () => {
+      const s = window.scrollY > 50;
+      setScrolled(s);
+      document.documentElement.classList.toggle('v18-scrolled', s);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      document.documentElement.classList.remove('v18-scrolled');
+    };
   }, []);
 
   const mobileNavComponent = mobileNavEnabled ? (
