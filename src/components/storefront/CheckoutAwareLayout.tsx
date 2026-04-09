@@ -59,6 +59,8 @@ export default function CheckoutAwareLayout({
   headerClassName,
   useSearchInHeader = false,
   customCartIcon,
+  headerBgOverride,
+  headerIconColor,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
