@@ -2089,16 +2089,11 @@ export default function StoreThemeSettings() {
       } else {
         const { data, error } = await supabase
           .from("store_theme_config")
-          .insert(payload);
-          
-        if (error) throw error;
-        const { data: insertedData, error: insertedError } = await supabase
-          .from("store_theme_config")
           .insert(payload)
           .select("*")
           .single();
-        if (insertedError) throw insertedError;
-        return insertedData;
+        if (error) throw error;
+        return data;
       }
     },
     onSuccess: (savedThemeConfig) => {
