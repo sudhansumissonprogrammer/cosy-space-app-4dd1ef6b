@@ -339,7 +339,7 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     heading_font: "Space Grotesk", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #1B3A2D, #2d5a45, #1B3A2D)",
     marquee_text: "Limited Drop — No Restocks  ·  Premium Fabric  ·  Exclusive Picks",
-    marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "normal",
+    marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "starter", header_style: "normal",
   },
   "theme-18": {
     primary_color: "#ffffff", accent_color: "#ffffff", text_color: "#f5f5f5", background_color: "#0a0a0a",
