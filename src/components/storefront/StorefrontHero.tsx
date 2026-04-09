@@ -17,6 +17,10 @@ function useHeroParallax(speed = 0.12) {
     const img = ref.current;
     if (!img) return;
 
+    // Desktop only — mobile has fixed-height container that clips
+    const mq = window.matchMedia("(min-width: 768px)");
+    if (!mq.matches) return;
+
     const onScroll = () => {
       if (ticking.current) return;
       ticking.current = true;

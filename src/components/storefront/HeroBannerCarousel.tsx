@@ -13,6 +13,11 @@ function useParallax(speed = 0.12) {
     const img = imgRef.current;
     if (!img) return;
 
+    // Only apply parallax on desktop — mobile uses natural aspect ratio
+    // and translateY would clip the image
+    const mq = window.matchMedia("(min-width: 768px)");
+    if (!mq.matches) return;
+
     const onScroll = () => {
       if (ticking.current) return;
       ticking.current = true;
@@ -21,7 +26,6 @@ function useParallax(speed = 0.12) {
         if (!parent) { ticking.current = false; return; }
         const rect = parent.getBoundingClientRect();
         if (rect.bottom > 0 && rect.top < window.innerHeight) {
-          // offset ranges roughly -20px to +20px
           const offset = rect.top * speed;
           img.style.transform = `translate3d(0, ${offset}px, 0)`;
         }
@@ -179,6 +183,10 @@ function CarouselInner({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+
+    // Desktop only — mobile clips with translateY
+    const mq = window.matchMedia("(min-width: 768px)");
+    if (!mq.matches) return;
 
     const onScroll = () => {
       if (ticking.current) return;
