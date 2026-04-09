@@ -4,6 +4,7 @@ import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardStyle2 from "./ProductCardStyle2";
 import ProductCardStyle3 from "./ProductCardStyle3";
 import ProductCardStyle4 from "./ProductCardStyle4";
+import ProductCardStyle5 from "./ProductCardStyle5";
 
 import VariantPickerDialog from "./VariantPickerDialog";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
@@ -44,6 +45,8 @@ export default function UniversalProductCard({ product, slug, store, priority = 
         return <ProductCardStyle3 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
       case "style-4":
         return <ProductCardStyle4 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
+      case "style-5":
+        return <ProductCardStyle5 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
       default:
         return <ProductCardStyle1 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
     }
