@@ -121,7 +121,7 @@ export default function StorefrontHomeV18() {
   return (
     <VariantCountProvider productIds={allProductIds}>
       {/* ─── Hero Banner ─── */}
-      <section className="relative">
+      <section className="relative pt-14">
         {hasBanner && (
           <div className="hidden md:block">
             <HeroBannerCarousel
@@ -152,12 +152,14 @@ export default function StorefrontHomeV18() {
       </section>
 
       {/* ─── Categories ─── */}
-      <UniversalCategories
-        categories={storeCategories}
-        storeSlug={slug}
-        isLoading={categoriesLoading}
-        categoryStyle={categoryStyle}
-      />
+      <div style={{ backgroundColor: "#0a0a0a", color: "#f5f5f5" }}>
+        <UniversalCategories
+          categories={storeCategories}
+          storeSlug={slug}
+          isLoading={categoriesLoading}
+          categoryStyle={categoryStyle}
+        />
+      </div>
 
       {/* ─── Show-Runners (Featured Products) ─── */}
       <section style={{ backgroundColor: "#0a0a0a" }}>
