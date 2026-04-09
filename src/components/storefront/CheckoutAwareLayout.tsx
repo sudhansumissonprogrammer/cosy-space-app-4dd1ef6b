@@ -136,11 +136,14 @@ export default function CheckoutAwareLayout({
 
   const hideWishlistAndShare = isCentered || isWithSearch;
 
+  const iconStyle = headerIconColor ? { color: headerIconColor } : undefined;
+  const iconSize = headerIconColor ? "h-6 w-6" : "h-5 w-5";
+
   const ActionButtons = !isCheckout ? (
-    <div className="flex items-center gap-0 sm:gap-1" style={{ minHeight: 40, contain: "layout" }}>
+    <div className="flex items-center gap-1 sm:gap-2" style={{ minHeight: 40, contain: "layout", ...(iconStyle || {}) }}>
       {useSearchInHeader ? (
-        <button onClick={() => setSearchOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products">
-          <Search className="h-5 w-5" />
+        <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products" style={iconStyle}>
+          <Search className={iconSize} />
         </button>
       ) : (
         <AccountBadge slug={store.slug} />
