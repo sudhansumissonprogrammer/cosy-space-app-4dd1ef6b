@@ -346,7 +346,7 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     heading_font: "Space Grotesk", body_font: "Inter", button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #ffffff, #999999, #ffffff)",
     marquee_text: DEFAULT_MARQUEE_TEXT,
-    marquee_enabled: false, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "normal",
+    marquee_enabled: false, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "transparent",
   },
 };
 
