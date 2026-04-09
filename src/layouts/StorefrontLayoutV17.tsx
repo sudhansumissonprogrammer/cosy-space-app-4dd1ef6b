@@ -42,7 +42,9 @@ export default function StorefrontLayoutV17({ slugOverride }: { slugOverride?: s
               fontFamily: "var(--v17-body-font)",
               backgroundColor: "var(--v17-bg)",
               color: "var(--v17-text)",
-            }}>
+              "--storefront-primary": "#0F2A22",
+              "--storefront-footer-text": "#ffffff",
+            } as React.CSSProperties}>
               <CheckoutAwareLayout
                 store={store}
                 marquee={
