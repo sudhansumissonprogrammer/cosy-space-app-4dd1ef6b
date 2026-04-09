@@ -123,7 +123,7 @@ export default function StorefrontHomeV18() {
             <div className="absolute inset-0 flex items-end justify-center pb-16">
               <Link
                 to={storefrontPath(slug, "/categories")}
-                className="inline-flex items-center gap-2 px-10 py-3.5 text-sm font-bold tracking-[0.2em] uppercase border-2 border-white/80 bg-black/30 backdrop-blur-sm transition-all hover:bg-white hover:text-black"
+                className="inline-flex items-center gap-2 px-10 py-3.5 text-sm font-bold tracking-[0.2em] uppercase border-2 border-white/80 bg-black/30 backdrop-blur-sm transition-all hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
                 style={{ color: "#fff" }}
               >
                 Shop Collection <ArrowRight className="h-4 w-4" />
@@ -141,7 +141,7 @@ export default function StorefrontHomeV18() {
             <div className="absolute inset-0 flex items-end justify-center pb-10">
               <Link
                 to={storefrontPath(slug, "/categories")}
-                className="inline-flex items-center gap-2 px-8 py-3 text-xs font-bold tracking-[0.2em] uppercase border-2 border-white/80 bg-black/30 backdrop-blur-sm transition-all hover:bg-white hover:text-black"
+                className="inline-flex items-center gap-2 px-8 py-3 text-xs font-bold tracking-[0.2em] uppercase border-2 border-white/80 bg-black/30 backdrop-blur-sm transition-all hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
                 style={{ color: "#fff" }}
               >
                 Shop Collection <ArrowRight className="h-3.5 w-3.5" />
@@ -156,7 +156,7 @@ export default function StorefrontHomeV18() {
             </h1>
             <Link
               to={storefrontPath(slug, "/categories")}
-              className="inline-flex items-center gap-2 px-8 py-3 text-sm font-bold tracking-[0.2em] uppercase border-2 border-white/80 transition-all hover:bg-white hover:text-black"
+              className="inline-flex items-center gap-2 px-8 py-3 text-sm font-bold tracking-[0.2em] uppercase border-2 border-white/80 transition-all hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
               style={{ color: "#f5f5f5" }}
             >
               Shop Collection <ArrowRight className="h-4 w-4" />
@@ -216,7 +216,7 @@ export default function StorefrontHomeV18() {
         <div className="text-center py-10" style={{ backgroundColor: "#0a0a0a" }}>
           <Link
             to={storefrontPath(slug, "/shop")}
-            className="inline-flex items-center gap-2 px-8 py-3 text-sm font-semibold tracking-wider uppercase border transition-colors hover:bg-white hover:text-black"
+            className="inline-flex items-center gap-2 px-8 py-3 text-sm font-semibold tracking-wider uppercase border transition-colors hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
             style={{ borderColor: "#fff", color: "#f5f5f5" }}
           >
             Shop All <ArrowRight className="h-4 w-4" />

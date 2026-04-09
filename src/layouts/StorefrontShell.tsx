@@ -48,6 +48,8 @@ interface StorefrontShellProps {
   showWishlist?: boolean;
   /** Set false for themes that render their own cart (e.g. V13 WhatsApp order) */
   showSideCart?: boolean;
+  /** Set false to hide floating WhatsApp icon (e.g. Theme 18) */
+  showWhatsApp?: boolean;
   /** Show ExitIntentPopup — only theme-1 uses this */
   showExitIntent?: boolean;
   /** Default primary color if no theme config */
@@ -98,6 +100,7 @@ export default function StorefrontShell({
   slugOverride,
   showWishlist = true,
   showSideCart = true,
+  showWhatsApp = true,
   showExitIntent = false,
   defaultPrimary = "#004643",
   defaultButtonRadius = "0.5rem",
@@ -231,9 +234,11 @@ export default function StorefrontShell({
           <SideCart store={store} />
         </Suspense>
       )}
-      <Suspense fallback={null}>
-        <FloatingWhatsApp store={store} />
-      </Suspense>
+      {showWhatsApp && (
+        <Suspense fallback={null}>
+          <FloatingWhatsApp store={store} />
+        </Suspense>
+      )}
       {showExitIntent && <DeferredExitIntent storeId={store.id} storeName={store.name} />}
     </div>
   );

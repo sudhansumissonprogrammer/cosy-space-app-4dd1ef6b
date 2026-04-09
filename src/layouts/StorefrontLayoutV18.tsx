@@ -85,6 +85,7 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
   return (
     <StorefrontShell
       slugOverride={slugOverride}
+      showWhatsApp={false}
       defaultPrimary="#ffffff"
       defaultButtonRadius="0"
       wrapperClassName="storefront-font min-h-screen font-sans"
