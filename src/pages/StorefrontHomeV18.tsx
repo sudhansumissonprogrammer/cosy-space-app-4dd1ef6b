@@ -25,7 +25,6 @@ import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import SectionHeading from "@/components/storefront/SectionHeading";
 
-const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
 /* ─── Section Title — minimal white-on-black ─── */
