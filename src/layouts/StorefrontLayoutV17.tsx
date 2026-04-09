@@ -1,8 +1,8 @@
 /**
  * Theme 17 — Streetwear / systumm.shop exact clone
- * Dark green header (#2B4C3F), Cormorant Garamond headings, Jost body,
+ * Dark green header (#2B4C3F), Instrument Sans body,
  * warm off-white bg (#FAFAF6), rounded cards, green stars.
- * NO theme color customization — hardcoded systumm aesthetic.
+ * Footer: deep dark green (#0F2A22).
  */
 import { Suspense, lazy } from "react";
 import StorefrontShell from "@/layouts/StorefrontShell";
@@ -25,16 +25,17 @@ export default function StorefrontLayoutV17({ slugOverride }: { slugOverride?: s
           <>
             {/* Inject systumm.shop fonts + CSS variables */}
             <style>{`
-              @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500;600;700&display=swap');
+              @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
               :root {
-                --v17-heading-font: 'Cormorant Garamond', serif;
-                --v17-body-font: 'Jost', sans-serif;
+                --v17-heading-font: 'Instrument Sans', sans-serif;
+                --v17-body-font: 'Instrument Sans', sans-serif;
                 --v17-primary: #2B4C3F;
                 --v17-bg: #FAFAF6;
-                --v17-text: #1a1a1a;
+                --v17-text: #0F2A22;
                 --v17-text-muted: #666;
                 --v17-star: #1B5E4B;
                 --v17-border: #e8e8e3;
+                --v17-footer-bg: #0F2A22;
               }
             `}</style>
             <div style={{
