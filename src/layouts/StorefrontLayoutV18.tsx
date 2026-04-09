@@ -44,6 +44,8 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
             headerStyle={themeConfig?.header_style || "normal"}
             useSearchInHeader
             customCartIcon={<V17CartBadge />}
+            headerBgOverride="#0a0a0a"
+            headerIconColor="#ffffff"
           />
         );
       }}

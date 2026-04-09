@@ -43,6 +43,10 @@ interface CheckoutAwareLayoutProps {
   useSearchInHeader?: boolean;
   /** Custom cart icon JSX to replace default CartBadge */
   customCartIcon?: ReactNode;
+  /** Override header background color (e.g. "#0a0a0a" for dark themes) */
+  headerBgOverride?: string;
+  /** Override header icon color (e.g. "#ffffff" for dark themes) */
+  headerIconColor?: string;
 }
 
 export default function CheckoutAwareLayout({
@@ -55,6 +59,8 @@ export default function CheckoutAwareLayout({
   headerClassName,
   useSearchInHeader = false,
   customCartIcon,
+  headerBgOverride,
+  headerIconColor,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -130,11 +136,14 @@ export default function CheckoutAwareLayout({
 
   const hideWishlistAndShare = isCentered || isWithSearch;
 
+  const iconStyle = headerIconColor ? { color: headerIconColor } : undefined;
+  const iconSize = headerIconColor ? "h-6 w-6" : "h-5 w-5";
+
   const ActionButtons = !isCheckout ? (
-    <div className="flex items-center gap-0 sm:gap-1" style={{ minHeight: 40, contain: "layout" }}>
+    <div className="flex items-center gap-1 sm:gap-2" style={{ minHeight: 40, contain: "layout", ...(iconStyle || {}) }}>
       {useSearchInHeader ? (
-        <button onClick={() => setSearchOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products">
-          <Search className="h-5 w-5" />
+        <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products" style={iconStyle}>
+          <Search className={iconSize} />
         </button>
       ) : (
         <AccountBadge slug={store.slug} />
@@ -153,19 +162,21 @@ export default function CheckoutAwareLayout({
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
         <Suspense fallback={null}>
-          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} />
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} style={headerBgOverride ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined, borderBottom: `1px solid ${headerIconColor || '#fff'}12` } : undefined} />
         </Suspense>
       )}
 
       {/* Mobile header + checkout header */}
       <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !headerVisible ? 'smart-header-hidden' : ''} ${
         headerClassName ? headerClassName :
+        headerBgOverride ? '' :
         isCheckout ? 'bg-card/80 backdrop-blur-md' :
         headerStyle === 'transparent' ? '' :
         headerStyle === 'glassmorphic' ? '' :
         'bg-card/80 backdrop-blur-md'
       }`}
         style={
+          headerBgOverride && !isCheckout ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined } :
           headerClassName ? {} :
           !isCheckout && headerStyle === 'glassmorphic' ? {
             background: 'rgba(255,255,255,0.12)',
