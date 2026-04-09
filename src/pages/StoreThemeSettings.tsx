@@ -2525,7 +2525,7 @@ export default function StoreThemeSettings() {
                 </div>
               </div>
             </>
-          )}
+          
 
           <Separator />
 
