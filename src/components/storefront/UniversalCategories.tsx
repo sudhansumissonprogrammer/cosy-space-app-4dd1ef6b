@@ -486,11 +486,8 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
             {categoryStyle === "style-4" && <SquareGrid categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-5" && <PillCarousel categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-6" && <RevealGrid categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-7" && <MasonryGrid categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-8" && <SpotlightCarousel categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-9" && <FloatingBubbleGrid categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-10" && <MagazineStrip categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-11" && <TabPreview categories={categories!} storeSlug={storeSlug} />}
           </>
         )}
       </div>

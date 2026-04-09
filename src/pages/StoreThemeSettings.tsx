@@ -2572,11 +2572,8 @@ export default function StoreThemeSettings() {
                   { value: "style-4", label: "Square Grid", icon: "□□\n□□" },
                   { value: "style-5", label: "Pill Tags", icon: "⬭ ⬭ ⬭" },
                   { value: "style-6", label: "Reveal Grid", icon: "▣▣\n↕" },
-                  { value: "style-7", label: "Masonry", icon: "█▄\n▄█" },
                   { value: "style-8", label: "Spotlight", icon: "◁ ◉ ▷" },
-                  { value: "style-9", label: "Bubbles", icon: "◯◯\n ◯" },
                   { value: "style-10", label: "Magazine", icon: "▬▬\n▬▬" },
-                  { value: "style-11", label: "Tab Preview", icon: "▁▁▁\n█▓" },
                 ].map((s) => (
                   <button
                     key={s.value}
