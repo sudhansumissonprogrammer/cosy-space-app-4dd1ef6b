@@ -566,21 +566,26 @@ export default function ProductDetail() {
           {/* Price — simple, no border/background */}
           <div className="mt-4">
             <div className="flex items-baseline gap-2.5 flex-wrap">
-              <span className="text-2xl font-extrabold text-foreground sm:text-3xl">
-                {currency} {Number(variantPrice).toFixed(2)}
+              <span className={`text-2xl font-extrabold sm:text-3xl ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
+                {isV18 ? `Rs. ${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${currency} ${Number(variantPrice).toFixed(2)}`}
               </span>
               {hasDiscount && (
                 <>
-                  <span className="text-sm text-muted-foreground line-through">
-                    {currency} {Number(product.price).toFixed(2)}
+                  <span className="text-sm line-through" style={isV18 ? { color: "#666666", ...v18Font } : {}} className={`text-sm line-through ${isV18 ? '' : 'text-muted-foreground'}`}>
+                    {isV18 ? `Rs. ${Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${currency} ${Number(product.price).toFixed(2)}`}
                   </span>
-                  <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 px-2 py-0.5">
-                    {discountPct}% OFF
-                  </Badge>
+                  {!isV18 && (
+                    <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 px-2 py-0.5">
+                      {discountPct}% OFF
+                    </Badge>
+                  )}
                 </>
               )}
             </div>
-            {hasDiscount && (
+            {isV18 && (
+              <p className="mt-2 text-sm italic" style={{ color: "#999999", ...v18Font }}>Inclusive of all taxes</p>
+            )}
+            {!isV18 && hasDiscount && (
               <p className="mt-1 text-xs font-semibold text-emerald-600">
                 You save {currency} {(product.price - product.sale_price!).toFixed(2)} on this order
               </p>
