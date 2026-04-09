@@ -22,13 +22,18 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const headingFont = themeConfig?.heading_font || "Instrument Sans";
+  const bodyFont = themeConfig?.body_font || "Instrument Sans";
+  const fontsToLoad = Array.from(new Set([headingFont, bodyFont])).filter(Boolean);
+  const googleFontsUrl = `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`).join('&')}&display=swap`;
+
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+        @import url('${googleFontsUrl}');
         :root {
-          --v17-heading-font: 'Instrument Sans', sans-serif;
-          --v17-body-font: 'Instrument Sans', sans-serif;
+          --v17-heading-font: '${headingFont}', sans-serif;
+          --v17-body-font: '${bodyFont}', sans-serif;
           --v17-primary: #2B4C3F;
           --v17-bg: #FAFAF6;
           --v17-text: #000000;
@@ -45,7 +50,7 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         .v17-header-solid button, .v17-header-solid a, .v17-header-solid svg { color: #000 !important; stroke: #000 !important; }
       `}</style>
       <div style={{
-        fontFamily: "var(--v17-body-font)",
+        fontFamily: `'${bodyFont}', var(--v17-body-font)`,
         backgroundColor: "var(--v17-bg)",
         color: "var(--v17-text)",
         "--storefront-primary": "#0F2A22",
