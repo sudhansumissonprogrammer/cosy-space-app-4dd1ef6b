@@ -675,6 +675,14 @@ function AppRouter() {
     );
   }
 
+  if (location.pathname === "/demo/systumm") {
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <LazySystummDemo />
+      </Suspense>
+    );
+  }
+
   // ── AUTH/DASHBOARD: Only reachable on root domain, preview, or localhost ──
   // DashboardProviders includes AuthProvider + Radix Toaster + TooltipProvider
   return (
