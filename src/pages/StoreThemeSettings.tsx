@@ -339,7 +339,7 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     heading_font: "Space Grotesk", body_font: "Inter", button_style: "rounded",
     marquee_gradient: "linear-gradient(90deg, #1B3A2D, #2d5a45, #1B3A2D)",
     marquee_text: "Limited Drop — No Restocks  ·  Premium Fabric  ·  Exclusive Picks",
-    marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "normal",
+    marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "starter", header_style: "normal",
   },
   "theme-18": {
     primary_color: "#ffffff", accent_color: "#ffffff", text_color: "#f5f5f5", background_color: "#0a0a0a",
@@ -2430,10 +2430,11 @@ export default function StoreThemeSettings() {
                 <p className="text-xs text-muted-foreground mb-3">
                   Choose the navigation bar style for mobile devices. Always visible on mobile.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {[
                     { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
                     { value: "modern", label: "Modern", desc: "Floating pill with cart" },
+                    { value: "starter", label: "Starter", desc: "Clean icons with labels" },
                   ].map((s) => (
                     <button
                       key={s.value}
@@ -2459,7 +2460,7 @@ export default function StoreThemeSettings() {
                             <Heart className="h-3 w-3 text-muted-foreground" />
                             <User className="h-3 w-3 text-muted-foreground" />
                           </>
-                        ) : (
+                        ) : s.value === "modern" ? (
                           <>
                             <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5">
                               <Home className="h-2.5 w-2.5 text-primary" />
@@ -2469,6 +2470,25 @@ export default function StoreThemeSettings() {
                             <Heart className="h-3 w-3 text-muted-foreground" />
                             <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
                               <ShoppingCart className="h-2.5 w-2.5 text-primary-foreground" />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <Home className="h-2.5 w-2.5 text-foreground" />
+                              <span className="text-[5px] font-medium">Home</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <Store className="h-2.5 w-2.5 text-muted-foreground" />
+                              <span className="text-[5px]">Shop</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <Heart className="h-2.5 w-2.5 text-muted-foreground" />
+                              <span className="text-[5px]">Wishlist</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <ShoppingCart className="h-2.5 w-2.5 text-muted-foreground" />
+                              <span className="text-[5px]">Cart</span>
                             </div>
                           </>
                         )}
