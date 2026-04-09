@@ -3,7 +3,7 @@
  * Inspired by thesagacity.in: full-black background, centered logo header,
  * full-screen hero carousel, edge-to-edge product grids, minimal product cards.
  */
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 import V17CartBadge from "@/components/storefront/V17CartBadge";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
@@ -13,6 +13,58 @@ const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBot
 const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
 const LazyMobileBottomNavV15 = lazy(() => import("@/components/storefront/MobileBottomNavV15"));
 const LazyMobileBottomNavV17 = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
+
+function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
+  const mobileNavStyle = (themeConfig as any)?.mobile_nav_style || "modern";
+  const mobileNavEnabled = themeConfig?.mobile_nav_enabled ?? true;
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 50);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const mobileNavComponent = mobileNavEnabled ? (
+    <Suspense fallback={null}>
+      {mobileNavStyle === "v17" ? <LazyMobileBottomNavV17 store={store} /> :
+       mobileNavStyle === "v15" ? <LazyMobileBottomNavV15 store={store} /> :
+       mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> :
+       <LazyMobileBottomNav store={store} />}
+    </Suspense>
+  ) : undefined;
+
+  return (
+    <>
+      <style>{`
+        .v18-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease; }
+        .v18-header-transparent { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; color: #fff !important; border-color: transparent !important; }
+        .v18-header-transparent button, .v18-header-transparent a, .v18-header-transparent svg { color: #fff !important; stroke: #fff !important; }
+        .v18-header-transparent .smart-header { background: transparent !important; }
+        .v18-header-solid { background-color: #0a0a0a !important; box-shadow: 0 1px 4px rgba(255,255,255,0.05) !important; color: #fff !important; border-color: rgba(255,255,255,0.08) !important; }
+        .v18-header-solid button, .v18-header-solid a, .v18-header-solid svg { color: #fff !important; stroke: #fff !important; }
+      `}</style>
+      <CheckoutAwareLayout
+        store={store}
+        marquee={
+          (themeConfig?.marquee_enabled ?? false) ? (
+            <StorefrontMarquee text={themeConfig?.marquee_text} />
+          ) : undefined
+        }
+        headerLogoAlignment={themeConfig?.header_logo_alignment || "center"}
+        mobileNavEnabled={mobileNavEnabled}
+        mobileNav={mobileNavComponent}
+        headerStyle="transparent"
+        headerClassName={`v18-header-scroll ${scrolled ? 'v18-header-solid' : 'v18-header-transparent'}`}
+        useSearchInHeader
+        customCartIcon={<V17CartBadge />}
+        headerBgOverride="transparent"
+        headerIconColor="#ffffff"
+      />
+    </>
+  );
+}
 
 export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: string } = {}) {
   return (
@@ -24,9 +76,6 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
       wrapperStyle={{
         backgroundColor: "#0a0a0a",
         color: "#f5f5f5",
-        // Override shadcn CSS variables so ALL Tailwind semantic classes
-        // (text-foreground, bg-card, text-muted-foreground, border-border etc.)
-        // resolve to dark-theme values across every page in Theme 18.
         "--background": "0 0% 4%",
         "--foreground": "0 0% 96%",
         "--card": "0 0% 7%",
@@ -48,37 +97,7 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
         "--ring": "0 0% 60%",
       } as React.CSSProperties}
     >
-      {({ store, themeConfig }) => {
-        const mobileNavStyle = (themeConfig as any)?.mobile_nav_style || "modern";
-        const mobileNavEnabled = themeConfig?.mobile_nav_enabled ?? true;
-        return (
-          <CheckoutAwareLayout
-            store={store}
-            marquee={
-              (themeConfig?.marquee_enabled ?? false) ? (
-                <StorefrontMarquee text={themeConfig?.marquee_text} />
-              ) : undefined
-            }
-            headerLogoAlignment={themeConfig?.header_logo_alignment || "center"}
-            mobileNavEnabled={mobileNavEnabled}
-            mobileNav={
-              mobileNavEnabled ? (
-                <Suspense fallback={null}>
-                  {mobileNavStyle === "v17" ? <LazyMobileBottomNavV17 store={store} /> :
-                   mobileNavStyle === "v15" ? <LazyMobileBottomNavV15 store={store} /> :
-                   mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> :
-                   <LazyMobileBottomNav store={store} />}
-                </Suspense>
-              ) : undefined
-            }
-            headerStyle={themeConfig?.header_style || "normal"}
-            useSearchInHeader
-            customCartIcon={<V17CartBadge />}
-            headerBgOverride="#0a0a0a"
-            headerIconColor="#ffffff"
-          />
-        );
-      }}
+      {({ store, themeConfig }) => <V18Inner store={store} themeConfig={themeConfig} />}
     </StorefrontShell>
   );
 }
