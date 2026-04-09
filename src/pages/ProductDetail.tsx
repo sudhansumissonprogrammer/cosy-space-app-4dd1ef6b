@@ -1566,13 +1566,37 @@ function AccordionItem({
   isOpen,
   onToggle,
   children,
+  isV18,
 }: {
   title: string;
   icon?: React.ReactNode;
   isOpen: boolean;
   onToggle: () => void;
   children: React.ReactNode;
+  isV18?: boolean;
 }) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className={`flex w-full items-center justify-between px-4 py-3 text-sm font-bold transition-colors ${isV18 ? 'hover:bg-white/5' : 'text-foreground hover:bg-accent/30'}`}
+        style={isV18 ? { color: "#ffffff", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" } : {}}
+      >
+        <span className="flex items-center gap-2">{icon}{title}</span>
+        {isV18 ? (
+          <Plus className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-45" : ""}`} style={{ color: "#ffffff" }} />
+        ) : (
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        )}
+      </button>
+      {isOpen && (
+        <div className="px-4 pb-3 animate-in slide-in-from-top-1 duration-200">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
   return (
     <div>
       <button
