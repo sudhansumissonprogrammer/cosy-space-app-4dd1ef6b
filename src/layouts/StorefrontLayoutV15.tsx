@@ -8,9 +8,6 @@ import ClassicStorefrontSkeleton from "@/components/storefront/ClassicStorefront
 import StorefrontShell from "@/layouts/StorefrontShell";
 
 const LazyMobileBottomNavV15 = lazy(() => import("@/components/storefront/MobileBottomNavV15"));
-const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
-const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
-const LazyMobileBottomNavStarter = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
 
 export default function StorefrontLayoutV15({ slugOverride }: { slugOverride?: string } = {}) {
   return (
@@ -21,7 +18,6 @@ export default function StorefrontLayoutV15({ slugOverride }: { slugOverride?: s
     >
       {({ store, themeConfig }) => {
         const mobileNavEnabled = themeConfig?.mobile_nav_enabled ?? true;
-        const mobileNavStyle = (themeConfig as any)?.mobile_nav_style || "classic";
         return (
           <CheckoutAwareLayout
             store={store}
@@ -30,7 +26,7 @@ export default function StorefrontLayoutV15({ slugOverride }: { slugOverride?: s
             mobileNav={
               mobileNavEnabled ? (
                 <Suspense fallback={null}>
-                  {mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> : mobileNavStyle === "starter" ? <LazyMobileBottomNavStarter store={store} /> : <LazyMobileBottomNavV15 store={store} />}
+                  <LazyMobileBottomNavV15 store={store} />
                 </Suspense>
               ) : undefined
             }

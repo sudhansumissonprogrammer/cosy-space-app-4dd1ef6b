@@ -9,13 +9,10 @@ import StorefrontShell from "@/layouts/StorefrontShell";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 
-const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
-const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
-const LazyMobileBottomNavStarter = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
+const LazyMobileBottomNavV17 = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
 
 function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   const mobileNavEnabled = themeConfig?.mobile_nav_enabled ?? true;
-  const mobileNavStyle = (themeConfig as any)?.mobile_nav_style || "starter";
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -29,12 +26,6 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   const bodyFont = themeConfig?.body_font || "Instrument Sans";
   const fontsToLoad = Array.from(new Set([headingFont, bodyFont])).filter(Boolean);
   const googleFontsUrl = `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`).join('&')}&display=swap`;
-
-  const mobileNav = mobileNavEnabled ? (
-    <Suspense fallback={null}>
-      {mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> : mobileNavStyle === "classic" ? <LazyMobileBottomNav store={store} /> : <LazyMobileBottomNavStarter store={store} />}
-    </Suspense>
-  ) : undefined;
 
   return (
     <>
@@ -78,7 +69,13 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
           }
           headerLogoAlignment={themeConfig?.header_logo_alignment || "left"}
           mobileNavEnabled={mobileNavEnabled}
-          mobileNav={mobileNav}
+          mobileNav={
+            mobileNavEnabled ? (
+              <Suspense fallback={null}>
+                <LazyMobileBottomNavV17 store={store} />
+              </Suspense>
+            ) : undefined
+          }
           headerStyle="transparent"
           headerClassName={`v17-header-scroll ${scrolled ? 'v17-header-solid' : 'v17-header-transparent'}`}
         />
