@@ -87,6 +87,7 @@ const InstallApp = lazy(() => import("./pages/InstallApp"));
 const LazyAuthRoutes = lazy(() => import("./routes/AuthRoutes"));
 // Landing page — standalone, no DashboardProviders needed
 const LazyIndex = lazy(() => import("./pages/Index"));
+const LazySystummDemo = lazy(() => import("./pages/SystummDemo"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -670,6 +671,14 @@ function AppRouter() {
     return (
       <Suspense fallback={<LoadingSpinner />}>
         <LazyIndex />
+      </Suspense>
+    );
+  }
+
+  if (location.pathname === "/demo/systumm") {
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <LazySystummDemo />
       </Suspense>
     );
   }
