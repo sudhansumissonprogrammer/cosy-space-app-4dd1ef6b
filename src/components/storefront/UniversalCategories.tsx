@@ -223,66 +223,144 @@ function RevealGrid({ categories, storeSlug }: { categories: Category[]; storeSl
 /** Style 8: Spotlight Carousel — one large center + peek sides */
 function SpotlightCarousel({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   const [active, setActive] = useState(0);
+  const [direction, setDirection] = useState<'next' | 'prev'>('next');
+  const [animKey, setAnimKey] = useState(0);
   const len = categories.length;
 
-  const goNext = useCallback(() => setActive((a) => (a + 1) % len), [len]);
-  const goPrev = useCallback(() => setActive((a) => (a - 1 + len) % len), [len]);
+  const goNext = useCallback(() => {
+    setDirection('next');
+    setAnimKey(k => k + 1);
+    setActive((a) => (a + 1) % len);
+  }, [len]);
+
+  const goPrev = useCallback(() => {
+    setDirection('prev');
+    setAnimKey(k => k + 1);
+    setActive((a) => (a - 1 + len) % len);
+  }, [len]);
 
   const getIdx = (offset: number) => (active + offset + len) % len;
+
+  // Auto-play
+  useEffect(() => {
+    if (len <= 1) return;
+    const timer = setInterval(goNext, 4000);
+    return () => clearInterval(timer);
+  }, [goNext, len]);
+
+  // Touch/swipe support
+  const touchStartX = useRef(0);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) {
+      diff > 0 ? goNext() : goPrev();
+    }
+  }, [goNext, goPrev]);
 
   if (len === 0) return null;
 
   return (
-    <div className="relative">
-      <div className="flex items-center justify-center gap-2 sm:gap-3 overflow-hidden py-2" style={{ minHeight: 200 }}>
+    <div className="relative" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div className="flex items-center justify-center gap-2 sm:gap-3 overflow-hidden py-2" style={{ minHeight: 220 }}>
         {/* Left peek */}
         {len > 2 && (
           <Link
             to={storefrontPath(storeSlug, `category/${categories[getIdx(-1)].slug}`)}
-            className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden opacity-50 scale-90 transition-all duration-400"
-            style={{ aspectRatio: "3/4" }}
+            className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden transition-all duration-500 cursor-pointer"
+            style={{
+              aspectRatio: "3/4",
+              opacity: 0.45,
+              transform: "scale(0.85) translateX(12px)",
+              filter: "blur(1px)",
+            }}
+            onClick={(e) => { e.preventDefault(); goPrev(); }}
           >
             <CategoryImage cat={categories[getIdx(-1)]} size={300} className="h-full w-full object-cover" />
           </Link>
         )}
         {/* Center spotlight */}
         <Link
+          key={animKey}
           to={storefrontPath(storeSlug, `category/${categories[active].slug}`)}
-          className="flex-shrink-0 w-[58%] sm:w-[50%] relative rounded-2xl overflow-hidden shadow-2xl transition-all duration-400"
-          style={{ aspectRatio: "3/4", transform: "scale(1.02)" }}
+          className="flex-shrink-0 w-[58%] sm:w-[50%] relative rounded-2xl overflow-hidden shadow-2xl"
+          style={{
+            aspectRatio: "3/4",
+            animation: `spotlightSlideIn${direction === 'next' ? 'Right' : 'Left'} 0.45s cubic-bezier(0.16,1,0.3,1) both`,
+          }}
         >
-          <CategoryImage cat={categories[active]} size={600} className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4 text-center">
-            <span className="text-base sm:text-lg font-bold text-white drop-shadow-lg">{categories[active].name}</span>
+          <CategoryImage cat={categories[active]} size={600} className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+          <div
+            className="absolute bottom-0 left-0 right-0 p-4 text-center"
+            style={{ animation: "spotlightTextRise 0.5s ease-out 0.15s both" }}
+          >
+            <span className="text-base sm:text-lg font-bold text-white drop-shadow-lg tracking-wide">{categories[active].name}</span>
+            <div className="mt-1.5 mx-auto h-0.5 rounded-full transition-all duration-500" style={{ width: 32, backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", opacity: 0.8 }} />
           </div>
         </Link>
         {/* Right peek */}
         {len > 1 && (
           <Link
             to={storefrontPath(storeSlug, `category/${categories[getIdx(1)].slug}`)}
-            className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden opacity-50 scale-90 transition-all duration-400"
-            style={{ aspectRatio: "3/4" }}
+            className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden transition-all duration-500 cursor-pointer"
+            style={{
+              aspectRatio: "3/4",
+              opacity: 0.45,
+              transform: "scale(0.85) translateX(-12px)",
+              filter: "blur(1px)",
+            }}
+            onClick={(e) => { e.preventDefault(); goNext(); }}
           >
             <CategoryImage cat={categories[getIdx(1)]} size={300} className="h-full w-full object-cover" />
           </Link>
         )}
       </div>
       {len > 1 && (
-        <div className="flex items-center justify-center gap-4 mt-2">
-          <button onClick={goPrev} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-accent active:scale-95 transition-all" aria-label="Previous">
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <button onClick={goPrev} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-accent active:scale-90 transition-all duration-200" aria-label="Previous">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 items-center">
             {categories.map((_, i) => (
-              <div key={i} className="h-1.5 rounded-full transition-all duration-300 cursor-pointer" onClick={() => setActive(i)} style={{ width: i === active ? 18 : 6, backgroundColor: i === active ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--border)" }} />
+              <div
+                key={i}
+                className="rounded-full transition-all duration-400 cursor-pointer"
+                onClick={() => {
+                  setDirection(i > active ? 'next' : 'prev');
+                  setAnimKey(k => k + 1);
+                  setActive(i);
+                }}
+                style={{
+                  width: i === active ? 20 : 6,
+                  height: 6,
+                  backgroundColor: i === active ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--border)",
+                  transform: i === active ? "scaleY(1)" : "scaleY(0.8)",
+                }}
+              />
             ))}
           </div>
-          <button onClick={goNext} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-accent active:scale-95 transition-all" aria-label="Next">
+          <button onClick={goNext} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-accent active:scale-90 transition-all duration-200" aria-label="Next">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       )}
+      <style>{`
+        @keyframes spotlightSlideInRight {
+          from { opacity: 0; transform: scale(0.88) translateX(30px); }
+          to { opacity: 1; transform: scale(1.02) translateX(0); }
+        }
+        @keyframes spotlightSlideInLeft {
+          from { opacity: 0; transform: scale(0.88) translateX(-30px); }
+          to { opacity: 1; transform: scale(1.02) translateX(0); }
+        }
+        @keyframes spotlightTextRise {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
