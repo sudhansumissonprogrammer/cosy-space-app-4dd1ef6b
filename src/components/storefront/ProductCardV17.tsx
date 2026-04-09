@@ -73,7 +73,7 @@ export default function ProductCardV17({ product, slug, store, priority = false,
                 width: "14px",
                 height: "14px",
                 fill: wishlisted ? "#e53e3e" : "none",
-                color: wishlisted ? "#e53e3e" : "#333",
+                color: wishlisted ? "#e53e3e" : "#000",
                 strokeWidth: 1.5,
               }}
             />

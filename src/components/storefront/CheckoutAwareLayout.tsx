@@ -152,15 +152,18 @@ export default function CheckoutAwareLayout({
         headerStyle === 'glassmorphic' ? '' :
         'bg-card/80 backdrop-blur-md'
       }`}
-        style={!isCheckout && headerStyle === 'glassmorphic' ? {
-          background: 'rgba(255,255,255,0.12)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderRadius: '0 0 1rem 1rem',
-          border: '1px solid rgba(255,255,255,0.18)',
-          margin: '0 8px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-        } : undefined}
+        style={
+          headerClassName ? {} :
+          !isCheckout && headerStyle === 'glassmorphic' ? {
+            background: 'rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            borderRadius: '0 0 1rem 1rem',
+            border: '1px solid rgba(255,255,255,0.18)',
+            margin: '0 8px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+          } : undefined
+        }
       >
         <div className={`mx-auto flex ${isCheckout ? 'h-11' : 'h-14'} max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4`}>
           {isCheckout ? (
