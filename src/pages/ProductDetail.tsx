@@ -957,8 +957,8 @@ export default function ProductDetail() {
         </div>
       )}
 
-      {/* Sticky Mobile CTA — cleaner */}
-      {!isOutOfStock && (
+      {/* Sticky Mobile CTA — cleaner (hidden for Theme 18) */}
+      {!isOutOfStock && (store as any)?.theme !== "theme-18" && (
         <div className="fixed left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ bottom: "var(--storefront-bottom-nav-height, 0px)", paddingBottom: "env(safe-area-inset-bottom)" }}>
           {shippingRemaining > 0 ? (
             <div className="px-3 pt-2 pb-1">
@@ -1021,7 +1021,7 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
-      {!isOutOfStock && <div className="sm:hidden" style={{ height: "calc(7rem + var(--storefront-bottom-nav-height, 0px))" }} />}
+      {!isOutOfStock && (store as any)?.theme !== "theme-18" && <div className="sm:hidden" style={{ height: "calc(7rem + var(--storefront-bottom-nav-height, 0px))" }} />}
 
       {/* Express Checkout Sticky Bar for returning users */}
       {!isOutOfStock && showBuyNow && (() => {
