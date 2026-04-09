@@ -220,42 +220,6 @@ function RevealGrid({ categories, storeSlug }: { categories: Category[]; storeSl
   );
 }
 
-/** Style 7: Pinterest Masonry — alternating tall/short cards with staggered entry */
-function MasonryGrid({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
-  return (
-    <div className="columns-2 sm:columns-3 gap-2.5 space-y-2.5">
-      {categories.map((cat, idx) => {
-        const isTall = idx % 3 === 0;
-        return (
-          <Link
-            key={cat.id}
-            to={storefrontPath(storeSlug, `category/${cat.slug}`)}
-            className="group relative block break-inside-avoid overflow-hidden rounded-2xl"
-            style={{
-              aspectRatio: isTall ? "3/4" : "4/3",
-              animation: `masonryFadeIn 0.5s ease-out ${idx * 0.08}s both`,
-            }}
-          >
-            <CategoryImage cat={cat} size={500} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-3">
-              <div className="backdrop-blur-md bg-white/15 rounded-lg px-3 py-1.5 inline-block">
-                <span className="text-xs sm:text-sm font-bold text-white drop-shadow-md">{cat.name}</span>
-              </div>
-            </div>
-          </Link>
-        );
-      })}
-      <style>{`
-        @keyframes masonryFadeIn {
-          from { opacity: 0; transform: translateY(24px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
 /** Style 8: Spotlight Carousel — one large center + peek sides */
 function SpotlightCarousel({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   const [active, setActive] = useState(0);
@@ -323,43 +287,6 @@ function SpotlightCarousel({ categories, storeSlug }: { categories: Category[]; 
   );
 }
 
-/** Style 9: Floating Bubble Grid — honeycomb-like with floating animation */
-function FloatingBubbleGrid({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
-  return (
-    <div className="flex flex-wrap justify-center gap-3 sm:gap-4 py-2">
-      {categories.map((cat, idx) => {
-        const offset = idx % 2 === 0 ? "translateY(-6px)" : "translateY(6px)";
-        return (
-          <Link
-            key={cat.id}
-            to={storefrontPath(storeSlug, `category/${cat.slug}`)}
-            className="flex flex-col items-center gap-1.5 group"
-            style={{ transform: offset }}
-          >
-            <div
-              className="rounded-full overflow-hidden border-2 border-border shadow-lg transition-all duration-300 group-hover:shadow-xl group-hover:scale-110"
-              style={{
-                width: "clamp(72px, 18vw, 100px)",
-                height: "clamp(72px, 18vw, 100px)",
-                animation: `bubbleFloat 3s ease-in-out ${idx * 0.4}s infinite alternate`,
-              }}
-            >
-              <CategoryImage cat={cat} size={200} className="h-full w-full object-cover" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-semibold text-foreground text-center max-w-[80px] truncate">{cat.name}</span>
-          </Link>
-        );
-      })}
-      <style>{`
-        @keyframes bubbleFloat {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(-8px); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
 /** Style 10: Magazine Strip — landscape cards stacked vertically */
 function MagazineStrip({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
@@ -387,64 +314,6 @@ function MagazineStrip({ categories, storeSlug }: { categories: Category[]; stor
         @keyframes magazineSlideIn {
           from { opacity: 0; transform: translateX(-20px); }
           to { opacity: 1; transform: translateX(0); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-/** Style 11: Tab + Preview — tabs on top, large preview below */
-function TabPreview({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
-  const [selected, setSelected] = useState(0);
-  const [fadeKey, setFadeKey] = useState(0);
-
-  const handleSelect = useCallback((idx: number) => {
-    setSelected(idx);
-    setFadeKey((k) => k + 1);
-  }, []);
-
-  const cat = categories[selected];
-  if (!cat) return null;
-
-  return (
-    <div>
-      {/* Tabs */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
-        {categories.map((c, i) => (
-          <button
-            key={c.id}
-            onClick={() => handleSelect(i)}
-            className="flex-shrink-0 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all whitespace-nowrap"
-            style={{
-              backgroundColor: i === selected ? "var(--storefront-primary, hsl(var(--primary)))" : "transparent",
-              color: i === selected ? "#fff" : "var(--foreground)",
-              border: i === selected ? "none" : "1px solid var(--border)",
-            }}
-          >
-            {c.name}
-          </button>
-        ))}
-      </div>
-      {/* Preview */}
-      <Link
-        key={fadeKey}
-        to={storefrontPath(storeSlug, `category/${cat.slug}`)}
-        className="block relative mt-2 rounded-2xl overflow-hidden group"
-        style={{ aspectRatio: "16/9", animation: "tabPreviewFade 0.35s ease-out" }}
-      >
-        <CategoryImage cat={cat} size={800} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 flex items-end justify-between">
-          <span className="text-lg sm:text-xl font-bold text-white drop-shadow-lg">{cat.name}</span>
-          <span className="px-4 py-2 rounded-full text-xs sm:text-sm font-bold text-white transition-all" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }}>
-            Shop Now
-          </span>
-        </div>
-      </Link>
-      <style>{`
-        @keyframes tabPreviewFade {
-          from { opacity: 0; transform: scale(0.98); }
-          to { opacity: 1; transform: scale(1); }
         }
       `}</style>
     </div>
@@ -486,11 +355,8 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
             {categoryStyle === "style-4" && <SquareGrid categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-5" && <PillCarousel categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-6" && <RevealGrid categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-7" && <MasonryGrid categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-8" && <SpotlightCarousel categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-9" && <FloatingBubbleGrid categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-10" && <MagazineStrip categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-11" && <TabPreview categories={categories!} storeSlug={storeSlug} />}
           </>
         )}
       </div>
