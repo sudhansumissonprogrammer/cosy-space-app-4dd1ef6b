@@ -43,7 +43,7 @@ function TrustTicker() {
 
   return (
     <div className="overflow-hidden py-5" style={{ backgroundColor: "var(--storefront-primary, #1B3A2D)" }}>
-      <div className="flex whitespace-nowrap animate-[marquee-v17_20s_linear_infinite]">
+      <div className="flex whitespace-nowrap animate-[marquee_20s_linear_infinite]">
         {[...items, ...items].map((text, i) => (
           <span key={i} className="mx-8 text-lg font-medium tracking-wide" style={{ color: "var(--storefront-btn-text, #fff)" }}>
             {text}
@@ -170,7 +170,20 @@ export default function StorefrontHomeV17() {
   const showBestSellers = store?.best_selling_carousel && bestSellers.length > 0;
 
   // JSON-LD
-  useStoreJsonLd(store, products);
+  useStoreJsonLd({
+    storeName: store?.name || "",
+    storeSlug: slug,
+    description: store?.description || undefined,
+    logo: store?.logo_url || undefined,
+    location: store?.location || undefined,
+    whatsappNumber: store?.whatsapp_number || undefined,
+    customDomain: (store as any)?.custom_domain || undefined,
+    instagramUrl: store?.instagram_url || undefined,
+    facebookUrl: store?.facebook_url || undefined,
+    city: store?.city || undefined,
+    state: store?.state || undefined,
+    businessHours: store?.business_hours || undefined,
+  });
 
   if (!store) return null;
 
