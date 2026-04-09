@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, ShoppingBag, LayoutGrid, ClipboardList, Heart } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 interface MobileBottomNavProps {
@@ -10,6 +11,7 @@ interface MobileBottomNavProps {
 
 export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   const location = useLocation();
+  const { wishlistCount } = useWishlist();
   const isCheckout = location.pathname.includes("/checkout");
 
   if (isCheckout) return null;
@@ -59,21 +61,31 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 border-t bg-card/95 backdrop-blur-md sm:hidden safe-bottom">
       <div className="flex items-stretch justify-around">
-        {navItems.map((item) => (
-          <Link
-            key={item.label}
-            to={item.to}
-            className="flex flex-1 flex-col items-center gap-0.5 py-2 transition-all active:scale-[0.93]"
-            style={{
-              color: item.active
-                ? "var(--storefront-primary, hsl(var(--primary)))"
-                : "hsl(var(--muted-foreground))",
-            }}
-          >
-            <item.icon className="h-5 w-5" strokeWidth={item.active ? 2.5 : 1.8} />
-            <span className="text-[10px] font-medium leading-none">{item.label}</span>
-          </Link>
-        ))}
+        {navItems.map((item) => {
+          const count = item.label === "Wishlist" ? wishlistCount : 0;
+          return (
+            <Link
+              key={item.label}
+              to={item.to}
+              className="relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-all active:scale-[0.93]"
+              style={{
+                color: item.active
+                  ? "var(--storefront-primary, hsl(var(--primary)))"
+                  : "hsl(var(--muted-foreground))",
+              }}
+            >
+              <div className="relative">
+                <item.icon className="h-5 w-5" strokeWidth={item.active ? 2.5 : 1.8} />
+                {count > 0 && (
+                  <span className="absolute -right-2 -top-1.5 flex items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground min-w-[15px] h-[15px] px-0.5">
+                    {count > 9 ? "9+" : count}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium leading-none">{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

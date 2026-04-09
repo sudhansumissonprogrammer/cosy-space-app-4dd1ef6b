@@ -7,6 +7,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Store, LayoutGrid, Heart, User, ShoppingCart } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -21,6 +22,7 @@ const navItems = [
 export default function MobileBottomNavModern({ store }: { store: StoreData }) {
   const location = useLocation();
   const { cartCount, openCart, cartBounce } = useCart();
+  const { wishlistCount } = useWishlist();
   const { user } = useStorefrontAuth();
   const isCheckout = location.pathname.includes("/checkout");
 
@@ -57,6 +59,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
         >
           {navItems.map((item) => {
             const active = getActive(item.path);
+            const count = item.key === "wishlist" ? wishlistCount : 0;
             return (
               <Link
                 key={item.key}
@@ -65,7 +68,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                 aria-label={item.label}
               >
                 <div
-                  className={`flex items-center gap-1.5 rounded-full transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                  className={`relative flex items-center gap-1.5 rounded-full transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                     active ? "px-3 py-2" : "p-2"
                   }`}
                   style={
@@ -87,6 +90,11 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                         : "var(--storefront-text, hsl(var(--foreground)))90",
                     }}
                   />
+                  {count > 0 && !active && (
+                    <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground min-w-[15px] h-[15px] px-0.5">
+                      {count > 9 ? "9+" : count}
+                    </span>
+                  )}
                   <span
                     className={`text-[11px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                       active ? "max-w-[70px] opacity-100" : "max-w-0 opacity-0"
