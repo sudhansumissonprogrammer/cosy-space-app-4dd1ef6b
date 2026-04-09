@@ -500,8 +500,13 @@ export default function ProductDetail() {
   const shippingProgress = FREE_SHIPPING_THRESHOLD ? Math.min(100, (cartTotal / FREE_SHIPPING_THRESHOLD) * 100) : 100;
   const shippingRemaining = FREE_SHIPPING_THRESHOLD ? Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal) : 0;
 
+  const isV18 = (store as any).theme === "theme-18";
+  const v18Text = isV18 ? { color: "#ffffff" } : {};
+  const v18Muted = isV18 ? { color: "#999999" } : {};
+  const v18Font: React.CSSProperties = isV18 ? { fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" } : {};
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-3 sm:py-8">
+    <div className="mx-auto max-w-6xl px-4 py-3 sm:py-8" style={isV18 ? { backgroundColor: "#0a0a0a", color: "#ffffff" } : {}}>
       {/* Breadcrumb — hidden */}
 
       <div className="grid gap-2 sm:gap-6 lg:grid-cols-2 lg:gap-10">
