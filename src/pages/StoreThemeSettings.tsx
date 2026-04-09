@@ -215,6 +215,14 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
+  "theme-17": [
+    "elegant-black-white", "lux-black-gold", "emerald-luxe", "midnight-navy", "velvet-merlot",
+    "crimson-royale", "ghost-persian", "teal-elegance", "plum-cream", "ocean-teal",
+  ],
+  "theme-18": [
+    "elegant-black-white", "lux-black-gold", "midnight-navy", "velvet-merlot", "crimson-royale",
+    "ghost-persian", "emerald-luxe", "plum-cream", "ocean-teal", "teal-elegance",
+  ],
 };
 
 /* ── Get sorted color combinations for a given theme ── */
@@ -317,6 +325,20 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_gradient: "linear-gradient(90deg, #000000, #333333, #000000)",
     marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
   },
+  "theme-17": {
+    primary_color: "#1B3A2D", accent_color: "#1B3A2D", text_color: "#1a1a1a", background_color: "#ffffff",
+    heading_font: "Space Grotesk", body_font: "Inter", button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #1B3A2D, #2d5a45, #1B3A2D)",
+    marquee_text: "Limited Drop — No Restocks  ·  Premium Fabric  ·  Exclusive Picks",
+    marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "normal",
+  },
+  "theme-18": {
+    primary_color: "#ffffff", accent_color: "#ffffff", text_color: "#f5f5f5", background_color: "#0a0a0a",
+    heading_font: "Space Grotesk", body_font: "Inter", button_style: "square",
+    marquee_gradient: "linear-gradient(90deg, #ffffff, #999999, #ffffff)",
+    marquee_text: DEFAULT_MARQUEE_TEXT,
+    marquee_enabled: false, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "normal",
+  },
 };
 
 const THEMES = [
@@ -331,7 +353,8 @@ const THEMES = [
   { id: "theme-12", name: "Starter Classic", description: "Clean classic storefront with hero, carousel & product grid", available: true },
   { id: "theme-13", name: "Restaurant QR Menu", description: "WhatsApp-first QR ordering for restaurants & cafés — no checkout, just scan & order", available: true },
   { id: "theme-16", name: "Classic + Quick Buy", description: "Classic theme with phone-first Buy Now flow — collects number & auto-fills address", available: true },
-  
+  { id: "theme-17", name: "Streetwear", description: "Dark green streetwear aesthetic with centered logo & trust ticker", available: true },
+  { id: "theme-18", name: "Dark Streetwear", description: "All-black editorial layout with edge-to-edge product grids", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
