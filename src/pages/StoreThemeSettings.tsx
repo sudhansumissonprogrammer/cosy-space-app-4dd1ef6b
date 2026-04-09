@@ -2099,11 +2099,11 @@ export default function StoreThemeSettings() {
       }
     },
     onSuccess: (savedThemeConfig) => {
+      setDirty(false);
       queryClient.setQueryData(["store-theme-config", storeId], savedThemeConfig);
       queryClient.setQueryData(["storefront-theme-config", storeId], savedThemeConfig);
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
-      setDirty(false);
 
       // Purge edge cache so storefront visitors see new theme immediately
       if (store?.slug) {
