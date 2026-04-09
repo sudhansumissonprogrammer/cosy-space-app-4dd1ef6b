@@ -121,7 +121,7 @@ export default function StorefrontHomeV18() {
   return (
     <VariantCountProvider productIds={allProductIds}>
       {/* ─── Hero Banner ─── */}
-      <section className="relative">
+      <section className="relative v18-hero-pull">
         {hasBanner && (
           <div className="hidden md:block">
             <HeroBannerCarousel
