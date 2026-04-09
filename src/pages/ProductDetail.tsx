@@ -786,161 +786,127 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* ── Checkout Trust Block — Safe checkout + Delivery + Offer ── */}
-          {!isOutOfStock && (
+          {/* Checkout Trust Block — hidden in V18 */}
+          {!isV18 && !isOutOfStock && (
             <div className="mt-5 rounded-2xl border border-border overflow-hidden">
-              {/* Safe Checkout Header */}
               <div className="flex items-center justify-center gap-2 py-2.5 border-b border-border bg-muted/30">
                 <ShieldCheck className="h-4 w-4 text-foreground" />
                 <span className="text-[11px] font-bold text-foreground uppercase tracking-widest">Guaranteed Safe Checkout</span>
               </div>
-              <div className="px-4 py-3">
-                <RealPaymentLogos />
-              </div>
-
-              {/* Delivery & Offer Info */}
+              <div className="px-4 py-3"><RealPaymentLogos /></div>
               <div className="border-t border-border px-4 py-3 space-y-2.5">
-                {/* Estimated Delivery */}
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                    <Truck className="h-4 w-4 text-primary" />
-                  </div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0"><Truck className="h-4 w-4 text-primary" /></div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-foreground">
-                      Estimated Delivery by {deliveryDate}
-                    </span>
+                    <span className="text-xs font-semibold text-foreground">Estimated Delivery by {deliveryDate}</span>
                     <span className="text-[10px] text-muted-foreground">Order within 2 hours for fastest delivery</span>
                   </div>
                 </div>
-
-                {/* Offer countdown */}
                 {hasDiscount && (
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 shrink-0">
-                      <Timer className="h-4 w-4 text-amber-600" />
-                    </div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 shrink-0"><Timer className="h-4 w-4 text-amber-600" /></div>
                     <div className="flex flex-col">
                       <CountdownTimerInline productId={product.id} />
                       <span className="text-[10px] text-muted-foreground">Limited time offer — don't miss out</span>
                     </div>
                   </div>
                 )}
-
-                {/* Inclusive of taxes */}
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0"><CreditCard className="h-4 w-4 text-muted-foreground" /></div>
                   <span className="text-xs text-muted-foreground">Inclusive of all taxes</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Wishlist */}
-          <div className="mt-4">
-            <button
-              onClick={handleWishlist}
-              className={`flex items-center gap-2 text-sm transition-all duration-200 ${
-                wishlisted ? "text-destructive font-semibold" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Heart className={`h-4 w-4 transition-transform duration-200 ${wishlisted ? "fill-destructive text-destructive scale-110" : ""}`} />
-              {wishlisted ? "Saved" : "Add to Wishlist"}
-            </button>
-          </div>
+          {/* Wishlist — hidden in V18 */}
+          {!isV18 && (
+            <div className="mt-4">
+              <button onClick={handleWishlist} className={`flex items-center gap-2 text-sm transition-all duration-200 ${wishlisted ? "text-destructive font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
+                <Heart className={`h-4 w-4 transition-transform duration-200 ${wishlisted ? "fill-destructive text-destructive scale-110" : ""}`} />
+                {wishlisted ? "Saved" : "Add to Wishlist"}
+              </button>
+            </div>
+          )}
 
-          {/* Trust Badges — large icons like Shopify */}
-          <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
-              {/* Free Shipping truck icon */}
-              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="4" y="18" width="34" height="24" rx="2" />
-                <path d="M38 26h10l8 10v6h-18V26z" />
-                <circle cx="16" cy="44" r="4" />
-                <circle cx="48" cy="44" r="4" />
-                <path d="M20 44h20" />
-                <path d="M4 44h8" />
-                <path d="M52 44h8" />
-                <text x="14" y="35" fontSize="9" fontWeight="bold" fill="currentColor" stroke="none">FREE</text>
-              </svg>
-              <span className="text-xs font-semibold text-foreground">Free Shipping</span>
+          {/* Trust Badges — hidden in V18 */}
+          {!isV18 && (
+            <div className="mt-6 grid grid-cols-3 gap-3 text-center">
+              <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+                <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="18" width="34" height="24" rx="2" /><path d="M38 26h10l8 10v6h-18V26z" /><circle cx="16" cy="44" r="4" /><circle cx="48" cy="44" r="4" /><path d="M20 44h20" /><path d="M4 44h8" /><path d="M52 44h8" /><text x="14" y="35" fontSize="9" fontWeight="bold" fill="currentColor" stroke="none">FREE</text></svg>
+                <span className="text-xs font-semibold text-foreground">Free Shipping</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+                <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M32 6l6 3 7-1 4 6 6 3 1 7 3 6-3 6-1 7-6 4-3 6-7 1-6 3-6-3-7 1-4-6-6-3-1-7-3-6 3-6 1-7 6-4 3-6 7-1z" /><path d="M22 33l7 7 13-14" strokeWidth="3" /></svg>
+                <span className="text-xs font-semibold text-foreground">7 Days Return Policy</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
+                <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="32" cy="28" r="10" /><path d="M22 28c0-5.5 4.5-10 10-10s10 4.5 10 10" /><path d="M18 28v6a4 4 0 004 4h0" /><path d="M46 28v6a4 4 0 01-4 4h0" /><rect x="14" y="26" width="6" height="12" rx="3" /><rect x="44" y="26" width="6" height="12" rx="3" /><path d="M42 38v4a6 6 0 01-6 6h-4" /><path d="M24 52h8" /><text x="23" y="60" fontSize="7" fontWeight="bold" fill="currentColor" stroke="none">SUPPORT</text></svg>
+                <span className="text-xs font-semibold text-foreground">Devoted Help Desk</span>
+              </div>
             </div>
-            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
-              {/* 7 Days Return badge/checkmark */}
-              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M32 6l6 3 7-1 4 6 6 3 1 7 3 6-3 6-1 7-6 4-3 6-7 1-6 3-6-3-7 1-4-6-6-3-1-7-3-6 3-6 1-7 6-4 3-6 7-1z" />
-                <path d="M22 33l7 7 13-14" strokeWidth="3" />
-              </svg>
-              <span className="text-xs font-semibold text-foreground">7 Days Return Policy</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border">
-              {/* Support/helpdesk icon */}
-              <svg viewBox="0 0 64 64" className="h-12 w-12 text-foreground" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="32" cy="28" r="10" />
-                <path d="M22 28c0-5.5 4.5-10 10-10s10 4.5 10 10" />
-                <path d="M18 28v6a4 4 0 004 4h0" />
-                <path d="M46 28v6a4 4 0 01-4 4h0" />
-                <rect x="14" y="26" width="6" height="12" rx="3" />
-                <rect x="44" y="26" width="6" height="12" rx="3" />
-                <path d="M42 38v4a6 6 0 01-6 6h-4" />
-                <path d="M24 52h8" />
-                <text x="23" y="60" fontSize="7" fontWeight="bold" fill="currentColor" stroke="none">SUPPORT</text>
-              </svg>
-              <span className="text-xs font-semibold text-foreground">Devoted Help Desk</span>
-            </div>
-          </div>
+          )}
 
-          {/* Frequently Bought Together */}
-          <FrequentlyBoughtTogether
-            storeId={store.id}
-            storeSlug={store.slug}
-            currentProductId={product.id}
-            currentCategory={product.category}
-            currency={currency}
-            addToCart={addToCart}
-            productImage={product.image_url}
-          />
+          {/* Frequently Bought Together — hidden in V18 */}
+          {!isV18 && (
+            <FrequentlyBoughtTogether storeId={store.id} storeSlug={store.slug} currentProductId={product.id} currentCategory={product.category} currency={currency} addToCart={addToCart} productImage={product.image_url} />
+          )}
+
+          {/* V18: SKU & Categories */}
+          {isV18 && (
+            <div className="mt-5 space-y-1 text-sm" style={{ color: "#999", ...v18Font, borderTop: "1px solid #333", paddingTop: 16 }}>
+              {product.sku && <p><span style={{ color: "#fff", fontWeight: 700 }}>SKU:</span> {product.sku}</p>}
+              {product.category && <p><span style={{ color: "#fff", fontWeight: 700 }}>Categories:</span> {product.category}</p>}
+            </div>
+          )}
 
           {/* Accordion Sections */}
-          <div className="mt-6 divide-y divide-border border border-border rounded-xl overflow-hidden">
+          <div className={`mt-6 divide-y overflow-hidden ${isV18 ? 'divide-[#333] border-y border-[#333]' : 'divide-border border border-border rounded-xl'}`}>
             {product.description && (
               <AccordionItem
-                title="Product Description"
-                icon={<Package className="h-3.5 w-3.5 text-primary" />}
+                title={isV18 ? "Description" : "Product Description"}
+                icon={isV18 ? undefined : <Package className="h-3.5 w-3.5 text-primary" />}
                 isOpen={openAccordion === "description"}
                 onToggle={() => toggleAccordion("description")}
+                isV18={isV18}
               >
-                <p className="leading-relaxed text-sm text-muted-foreground whitespace-pre-line">
+                <p className={`leading-relaxed text-sm whitespace-pre-line ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#999", ...v18Font } : {}}>
                   {product.description}
                 </p>
               </AccordionItem>
             )}
             <AccordionItem
-              title="Shipping Information"
-              icon={<Truck className="h-3.5 w-3.5 text-primary" />}
-              isOpen={openAccordion === "shipping"}
-              onToggle={() => toggleAccordion("shipping")}
+              title={isV18 ? "Reviews" : "Shipping Information"}
+              icon={isV18 ? undefined : <Truck className="h-3.5 w-3.5 text-primary" />}
+              isOpen={openAccordion === (isV18 ? "reviews" : "shipping")}
+              onToggle={() => toggleAccordion(isV18 ? "reviews" : "shipping")}
+              isV18={isV18}
             >
-              <ul className="space-y-1.5 text-sm text-muted-foreground">
-                <li>• Standard delivery: 3-7 business days</li>
-                <li>• Express delivery available at checkout</li>
-                <li>• Free shipping on all orders</li>
-                <li>• Order tracking provided via SMS/email</li>
-              </ul>
+              {isV18 ? (
+                <p className="text-sm" style={{ color: "#999", ...v18Font }}>Customer reviews will appear here.</p>
+              ) : (
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li>• Standard delivery: 3-7 business days</li>
+                  <li>• Express delivery available at checkout</li>
+                  <li>• Free shipping on all orders</li>
+                  <li>• Order tracking provided via SMS/email</li>
+                </ul>
+              )}
             </AccordionItem>
-            <AccordionItem
-              title="Returns & Exchange"
-              icon={<RotateCcw className="h-3.5 w-3.5 text-primary" />}
-              isOpen={openAccordion === "returns"}
-              onToggle={() => toggleAccordion("returns")}
-            >
-              <ul className="space-y-1.5 text-sm text-muted-foreground">
-                <li>• 7-day easy return policy</li>
-                <li>• Product must be unused and in original packaging</li>
-                <li>• Refund processed within 5-7 business days</li>
-              </ul>
-            </AccordionItem>
+            {!isV18 && (
+              <AccordionItem
+                title="Returns & Exchange"
+                icon={<RotateCcw className="h-3.5 w-3.5 text-primary" />}
+                isOpen={openAccordion === "returns"}
+                onToggle={() => toggleAccordion("returns")}
+              >
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li>• 7-day easy return policy</li>
+                  <li>• Product must be unused and in original packaging</li>
+                  <li>• Refund processed within 5-7 business days</li>
+                </ul>
+              </AccordionItem>
+            )}
           </div>
 
         </div>
