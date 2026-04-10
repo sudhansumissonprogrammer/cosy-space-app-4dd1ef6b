@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
  * Seeds ["store", storeId] cache so child pages using useStoreData() get a cache hit.
  */
 
-const MY_STORE_COLUMNS = "id, name, slug, logo_url, currency, order_mode, whatsapp_number, theme, features, is_suspended" as const;
+const MY_STORE_COLUMNS = "id, name, slug, logo_url, currency, order_mode, whatsapp_number, theme, features, is_suspended, custom_domain" as const;
 
 export function useMyStore() {
   const { user } = useAuth();
