@@ -29,7 +29,7 @@ export default function StorefrontShop() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const themeConfig = useStorefrontThemeConfig(store.id);
-  const cardStyle = store.theme === "theme-18" ? "style-5" : (themeConfig?.product_card_style || "style-1");
+  const cardStyle = themeConfig?.product_card_style || "style-1";
 
 
   const {

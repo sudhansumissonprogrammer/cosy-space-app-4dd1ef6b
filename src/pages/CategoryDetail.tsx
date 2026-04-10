@@ -19,7 +19,7 @@ export default function CategoryDetail() {
   const navigate = useNavigate();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const storeTheme = (store as any)?.theme || "starter";
-  const cardStyle = storeTheme === "theme-18" ? "style-5" : (themeConfig?.product_card_style || (storeTheme === "theme-13" ? "style-4" : "style-1"));
+  const cardStyle = themeConfig?.product_card_style || (storeTheme === "theme-13" ? "style-4" : "style-1");
   const isMenuStyle = cardStyle === "style-4";
 
   const { data: category, isLoading: categoryLoading } = useQuery({
