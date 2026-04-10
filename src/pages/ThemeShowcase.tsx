@@ -6,6 +6,12 @@ import overlaysTablet from "@/assets/theme-previews/overlays-tablet.png";
 import overlaysMobile from "@/assets/theme-previews/overlays-mobile.png";
 import stylebazaarTablet from "@/assets/theme-previews/stylebazaar-tablet.png";
 import stylebazaarMobile from "@/assets/theme-previews/stylebazaar-mobile.png";
+import serdiyaTablet from "@/assets/theme-previews/serdiya-tablet.webp";
+import serdiyaMobile from "@/assets/theme-previews/serdiya-mobile.webp";
+import arrokTablet from "@/assets/theme-previews/arrok-tablet.webp";
+import arrokMobile from "@/assets/theme-previews/arrok-mobile.webp";
+import medivaTablet from "@/assets/theme-previews/mediva-tablet.webp";
+import medivaMobile from "@/assets/theme-previews/mediva-mobile.webp";
 
 const Footer = lazy(() => import("@/components/landing/Footer"));
 
@@ -28,6 +34,36 @@ const THEMES = [
     tabletImg: stylebazaarTablet,
     mobileImg: stylebazaarMobile,
     liveUrl: "https://stylebazaar.shopbanao.in",
+    price: "Free",
+  },
+  {
+    name: "Serdiya Jewellers",
+    badge: "Live Store",
+    badgeColor: "bg-purple-600 text-white",
+    category: "Jewellery",
+    tabletImg: serdiyaTablet,
+    mobileImg: serdiyaMobile,
+    liveUrl: "https://serdiyajewellers.shop",
+    price: "Free",
+  },
+  {
+    name: "Arrok",
+    badge: "Live Store",
+    badgeColor: "bg-teal-600 text-white",
+    category: "Ethnic Fashion",
+    tabletImg: arrokTablet,
+    mobileImg: arrokMobile,
+    liveUrl: "https://arrok.shopbanao.in",
+    price: "Free",
+  },
+  {
+    name: "Mediva",
+    badge: "Live Store",
+    badgeColor: "bg-blue-600 text-white",
+    category: "Health & Wellness",
+    tabletImg: medivaTablet,
+    mobileImg: medivaMobile,
+    liveUrl: "https://mediva.shopbanao.in",
     price: "Free",
   },
 ];
