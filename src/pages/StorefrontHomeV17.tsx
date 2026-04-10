@@ -282,12 +282,14 @@ export default function StorefrontHomeV17() {
       </section>
 
       {/* ─── Categories ─── */}
+      <div style={{ paddingTop: "16px" }}>
       <UniversalCategories
         categories={storeCategories}
         storeSlug={slug}
         isLoading={categoriesLoading}
         categoryStyle={_themeConfig?.category_style || "style-1"}
       />
+      </div>
 
       {/* ─── Best Sellers (carousel or grid) — appears before All Collection ─── */}
       {hasBestSellers && (
