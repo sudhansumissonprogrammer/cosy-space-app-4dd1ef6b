@@ -282,6 +282,7 @@ export default function StorefrontHomeV17() {
       </section>
 
       {/* ─── Categories ─── */}
+      <div style={{ paddingTop: "16px" }}>
       <UniversalCategories
         categories={storeCategories}
         storeSlug={slug}
