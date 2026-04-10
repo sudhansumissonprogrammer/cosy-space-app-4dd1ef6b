@@ -230,14 +230,43 @@ export default function Dashboard() {
               <Eye className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">Your Store</p>
-              <p className="text-sm font-semibold text-foreground truncate tracking-tight">{store.slug}.shopbanao.in</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">Your Store</p>
+                {isStoreLive !== undefined && (
+                  <span className={cn(
+                    "inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full",
+                    isStoreLive
+                      ? "text-emerald-700 bg-emerald-100"
+                      : "text-red-700 bg-red-100"
+                  )}>
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      isStoreLive ? "bg-emerald-500 animate-pulse" : "bg-red-500"
+                    )} />
+                    {isStoreLive ? "Live" : "Offline"}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-semibold text-foreground truncate tracking-tight">
+                {customDomain || `${store.slug}.shopbanao.in`}
+              </p>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 shrink-0 font-semibold" asChild>
-              <a href={`https://${store.slug}.shopbanao.in`} target="_blank" rel="noopener noreferrer">
-                <Eye className="h-3 w-3" /> View
-              </a>
-            </Button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={handleCopy}
+                title="Copy link"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 font-semibold" asChild>
+                <a href={storeUrl!} target="_blank" rel="noopener noreferrer">
+                  <Eye className="h-3 w-3" /> View
+                </a>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
