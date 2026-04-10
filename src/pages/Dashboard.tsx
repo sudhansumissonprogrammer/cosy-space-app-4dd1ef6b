@@ -177,7 +177,7 @@ export default function Dashboard() {
 
       {/* Greeting + guide */}
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-foreground">Overview</h1>
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Overview</h1>
         {storeId && (
           <Button
             variant="outline"
@@ -221,16 +221,16 @@ export default function Dashboard() {
       ) : (
         <>
           {/* Stat cards — 2x2 grid on mobile */}
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-3">
             {statCards.map((card) => (
-              <Card key={card.label} className="border shadow-none">
-                <CardContent className="flex items-center gap-3 p-3">
-                  <div className={`shrink-0 ${card.color}`}>
+              <Card key={card.label} className="border shadow-none hover:shadow-md transition-shadow duration-200 group">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/50 ${card.color} group-hover:scale-105 transition-transform`}>
                     <card.icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">{card.label}</p>
-                    <p className="text-base font-bold text-foreground truncate">{card.value}</p>
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{card.label}</p>
+                    <p className="text-lg font-bold text-foreground truncate tracking-tight">{card.value}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -256,7 +256,7 @@ export default function Dashboard() {
           {!isWhatsAppOnly && (
             <Card className="border shadow-none">
               <CardContent className="p-3 pt-4">
-                <p className="mb-3 text-sm font-medium text-foreground">Revenue</p>
+                <p className="mb-3 text-sm font-bold tracking-tight text-foreground">Revenue</p>
                 {ordersByMonth.length > 0 ? (
                   <ResponsiveContainer width="100%" height={180}>
                     <LineChart data={ordersByMonth}>
@@ -281,7 +281,7 @@ export default function Dashboard() {
           {!isWhatsAppOnly && (
             <Card className="border shadow-none">
               <CardContent className="p-3 pt-4">
-                <p className="mb-3 text-sm font-medium text-foreground">Orders</p>
+                <p className="mb-3 text-sm font-bold tracking-tight text-foreground">Orders</p>
                 {ordersByMonth.length > 0 ? (
                   <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={ordersByMonth}>
