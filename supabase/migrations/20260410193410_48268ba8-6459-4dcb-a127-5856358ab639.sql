@@ -1,0 +1,1 @@
+ALTER TABLE store_theme_config ALTER COLUMN mobile_nav_enabled SET DEFAULT true;
