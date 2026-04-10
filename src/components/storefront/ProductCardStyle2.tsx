@@ -28,7 +28,7 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
     <Link
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
       className="group overflow-hidden transition-all active:scale-[0.98]"
-      style={{ borderRadius: "12px", backgroundColor: "var(--storefront-bg, #fff)" }}
+      style={{ borderRadius: "12px", backgroundColor: "hsl(var(--card, 0 0% 100%))" }}
     >
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4", borderRadius: "12px" }}>
         {(() => {
