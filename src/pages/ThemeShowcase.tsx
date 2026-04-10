@@ -15,6 +15,11 @@ import medivaMobile from "@/assets/theme-previews/mediva-mobile.webp";
 import auroraTablet from "@/assets/theme-previews/aurora-tablet.webp";
 import auroraMobile from "@/assets/theme-previews/aurora-mobile.webp";
 
+import sanskritiPreview from "@/assets/theme-previews/sanskriti-preview.png";
+import thunderRushPreview from "@/assets/theme-previews/thunder-rush-preview.png";
+import vividauraPreview from "@/assets/theme-previews/vividaura-preview.png";
+import goldenAuraPreview from "@/assets/theme-previews/golden-aura-preview.png";
+
 const Footer = lazy(() => import("@/components/landing/Footer"));
 
 const THEMES = [
