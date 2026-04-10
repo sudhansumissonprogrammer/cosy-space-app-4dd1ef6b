@@ -2467,7 +2467,7 @@ export default function StoreThemeSettings() {
           </div>
 
           {/* Mobile Bottom Navigation Style */}
-          {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-16" || currentTheme === "theme-18") && (
+          {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-15" || currentTheme === "theme-16" || currentTheme === "theme-18") && (
             <>
               <Separator />
               <div>
@@ -2481,6 +2481,8 @@ export default function StoreThemeSettings() {
                     { value: "modern", label: "Modern", desc: "Floating pill with cart" },
                     ...(currentTheme === "theme-18" ? [
                       { value: "v15", label: "Minimal", desc: "Clean minimal icons" },
+                    ] : []),
+                    ...(["theme-1", "theme-14", "theme-15", "theme-18"].includes(currentTheme) ? [
                       { value: "v17", label: "Streetwear", desc: "Bold streetwear style" },
                     ] : []),
                   ].map((s) => (
