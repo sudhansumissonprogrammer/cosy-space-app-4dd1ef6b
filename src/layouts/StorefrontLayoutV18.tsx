@@ -92,6 +92,9 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
       wrapperStyle={{
         backgroundColor: "#0a0a0a",
         color: "#f5f5f5",
+        "--storefront-text": "#f5f5f5",
+        "--storefront-bg": "#0a0a0a",
+        "--storefront-btn-text": "#0a0a0a",
         "--background": "0 0% 4%",
         "--foreground": "0 0% 96%",
         "--card": "0 0% 7%",
