@@ -66,10 +66,9 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
 
   return (
     <div
-      className="flex gap-3 rounded-2xl p-3 transition-all"
+      className="flex gap-3 rounded-2xl p-3 transition-all bg-card/50"
       style={{
-        backgroundColor: "hsl(var(--card, 0 0% 100%))",
-        border: "1px solid hsl(var(--border, 0 0% 90%))",
+        border: "1px solid hsl(var(--border, 0 0% 90%) / 0.3)",
       }}
     >
       {(() => {
