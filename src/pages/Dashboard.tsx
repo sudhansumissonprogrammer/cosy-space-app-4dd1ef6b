@@ -193,16 +193,16 @@ export default function Dashboard() {
 
       {/* Store URL */}
       {store?.slug && (
-        <Card className="border shadow-none">
-          <CardContent className="flex items-center gap-3 p-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <Eye className="h-4 w-4 text-primary" />
+        <Card className="border shadow-none bg-gradient-to-r from-accent/30 to-accent/10">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Eye className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">Your Store</p>
-              <p className="text-sm font-medium text-foreground truncate">{store.slug}.shopbanao.in</p>
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">Your Store</p>
+              <p className="text-sm font-semibold text-foreground truncate tracking-tight">{store.slug}.shopbanao.in</p>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 shrink-0" asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 shrink-0 font-semibold" asChild>
               <a href={`https://${store.slug}.shopbanao.in`} target="_blank" rel="noopener noreferrer">
                 <Eye className="h-3 w-3" /> View
               </a>
