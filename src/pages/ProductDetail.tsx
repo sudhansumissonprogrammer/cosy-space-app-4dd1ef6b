@@ -1966,7 +1966,7 @@ function RelatedProducts({
   currency: string;
 }) {
   const themeConfig = useStorefrontThemeConfig(storeId);
-  const cardStyle = (store as any)?.theme === "theme-18" ? "style-5" : (themeConfig?.product_card_style || "style-1");
+  const cardStyle = themeConfig?.product_card_style || "style-1";
 
   const { data: related } = useQuery({
     queryKey: ["related-products", storeId, currentProductId],

@@ -346,7 +346,7 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     heading_font: "Space Grotesk", body_font: "Inter", button_style: "square",
     marquee_gradient: "linear-gradient(90deg, #ffffff, #999999, #ffffff)",
     marquee_text: DEFAULT_MARQUEE_TEXT,
-    marquee_enabled: false, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "transparent",
+    marquee_enabled: false, product_card_style: "style-5", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "transparent",
   },
 };
 
@@ -2567,12 +2567,13 @@ export default function StoreThemeSettings() {
             <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
             <div className="space-y-1.5">
               <Label className="text-xs">Product Card Style</Label>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-5 gap-3">
                 {[
                   { value: "style-1", label: "Style 1", desc: "Clean minimal" },
                   { value: "style-2", label: "Style 2", desc: "Badge & overlay" },
                   { value: "style-3", label: "Style 3", desc: "Bold modern" },
                   { value: "style-4", label: "Style 4", desc: "Menu list" },
+                  { value: "style-5", label: "Style 5", desc: "Dark streetwear" },
                   
                 ].map((s) => (
                   <button
