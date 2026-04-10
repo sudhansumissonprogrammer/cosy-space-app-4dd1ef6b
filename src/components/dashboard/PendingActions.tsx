@@ -37,9 +37,9 @@ export default function PendingActions({ storeId, storeSlug }: PendingActionsPro
   if (!hasAny) return null;
 
   return (
-    <Card className="border shadow-none">
-      <CardContent className="p-3">
-        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Needs Attention</p>
+    <Card className="border shadow-none hover:shadow-md transition-shadow duration-200">
+      <CardContent className="p-4">
+        <p className="mb-3 text-[11px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Needs Attention</p>
         <div className="space-y-2">
           {items.filter((i) => i.count > 0).map((item) => (
             <button
