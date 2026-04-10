@@ -68,6 +68,16 @@ const THEMES = [
     liveUrl: "https://mediva.shopbanao.in",
     price: "Free",
   },
+  {
+    name: "Aurora",
+    badge: "Live Store",
+    badgeColor: "bg-indigo-600 text-white",
+    category: "Electronics & Gadgets",
+    tabletImg: auroraTablet,
+    mobileImg: auroraMobile,
+    liveUrl: "https://aurora.shopbanao.in",
+    price: "Free",
+  },
 ];
 
 export default function ThemeShowcase() {
