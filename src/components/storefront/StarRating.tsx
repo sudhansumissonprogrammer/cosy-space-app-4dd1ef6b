@@ -18,7 +18,7 @@ function StarRatingInner({ rating, size = "h-3 w-3", showValue = false, textColo
         </svg>
       ))}
       {showValue && (
-        <span className="text-[10px] opacity-50" style={{ color: textColor || "var(--storefront-text, #1a1a1a)" }}>
+        <span className="text-[10px] opacity-50" style={{ color: textColor || "var(--storefront-text, hsl(var(--foreground)))" }}>
           {rating}
         </span>
       )}
