@@ -2158,80 +2158,190 @@ export default function StoreThemeSettings() {
       {/* Section 1: Theme Selector */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Choose a Theme</CardTitle>
+          <CardTitle className="text-lg font-extrabold tracking-tight">Pick the Website Template That You Love</CardTitle>
           <CardDescription>Select a layout theme for your storefront</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-            {THEMES.map((theme) => {
-              const isApplied = currentTheme === theme.id;
+        <CardContent className="space-y-8">
+          {/* Featured Theme Showcase — Desktop + Mobile frame previews */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {
+                themeId: "theme-17",
+                name: "Streetwear",
+                badge: "Premium",
+                badgeColor: "bg-amber-500 text-white",
+                desktopImg: new URL("@/assets/theme-previews/overlays-desktop.png", import.meta.url).href,
+                mobileImg: new URL("@/assets/theme-previews/overlays-mobile.png", import.meta.url).href,
+              },
+              {
+                themeId: "theme-18",
+                name: "Dark Streetwear",
+                badge: "Most Liked",
+                badgeColor: "bg-emerald-600 text-white",
+                desktopImg: new URL("@/assets/theme-previews/stylebazaar-desktop.png", import.meta.url).href,
+                mobileImg: new URL("@/assets/theme-previews/stylebazaar-mobile.png", import.meta.url).href,
+              },
+            ].map((featured) => {
+              const isApplied = currentTheme === featured.themeId;
               return (
                 <div
-                  key={theme.id}
-                  className={`relative overflow-hidden rounded-xl border-2 transition-all ${
-                    isApplied
-                      ? "border-foreground shadow-md"
-                      : theme.available
-                      ? "border-border hover:border-foreground/40"
-                      : "border-border opacity-60"
+                  key={featured.themeId}
+                  className={`relative rounded-2xl border-2 transition-all overflow-hidden cursor-pointer group ${
+                    isApplied ? "border-foreground shadow-lg" : "border-border hover:border-foreground/50 hover:shadow-md"
                   }`}
+                  onClick={() => !isApplied && applyThemeMutation.mutate(featured.themeId)}
                 >
-                  {/* Theme preview strip */}
-                  <div
-                    className="h-24 w-full"
-                    style={{
-                      background: theme.id === "theme-1"
-                        ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #000000 100%)"
-                        : theme.id === "theme-2"
-                        ? "linear-gradient(135deg, #ffffff 0%, #2563eb 50%, #1e293b 100%)"
-                        : theme.id === "theme-3"
-                        ? "linear-gradient(135deg, #F97316 0%, #3B82F6 50%, #1e293b 100%)"
-                        : theme.id === "theme-4"
-                        ? "linear-gradient(135deg, #F8F5F0 0%, #C8A96A 50%, #1C1C1C 100%)"
-                        : theme.id === "theme-6"
-                        ? "linear-gradient(135deg, #F8FAFC 0%, #2563EB 50%, #1e293b 100%)"
-                        : theme.id === "theme-7"
-                        ? "linear-gradient(135deg, #ffffff 0%, #1a1a1a 50%, #000000 100%)"
-                        : theme.id === "theme-8"
-                        ? "linear-gradient(135deg, #F8FAFC 0%, #6C5CE7 50%, #FD79A8 100%)"
-                        : theme.id === "theme-10"
-                        ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
-                        : theme.id === "theme-11"
-                        ? "linear-gradient(135deg, #F5F5F5 0%, #1a1a1a 50%, #EF4444 100%)"
-                        : theme.id === "theme-12"
-                        ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
-                        : theme.id === "theme-14"
-                        ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)"
-                        : theme.id === "theme-15"
-                        ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)"
-                        : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
-                    }}
-                  />
-                  <div className="p-2.5 flex flex-col items-center text-center gap-1.5">
-                    <h3 className="text-sm font-semibold leading-tight">{theme.name}</h3>
+                  {/* Badge */}
+                  <div className={`absolute top-3 left-3 z-10 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${featured.badgeColor} shadow-md`}>
+                    {featured.badge}
+                  </div>
+
+                  {/* Desktop + Mobile Frame Area */}
+                  <div className="relative bg-muted/30 p-4 sm:p-6 pb-2 flex items-end justify-center gap-3 min-h-[260px] sm:min-h-[320px]">
+                    {/* Desktop Frame */}
+                    <div className="relative flex-1 max-w-[75%]">
+                      {/* Browser chrome bar */}
+                      <div className="bg-gray-200 dark:bg-gray-700 rounded-t-lg px-3 py-1.5 flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-red-400" />
+                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                        <div className="w-2 h-2 rounded-full bg-green-400" />
+                        <div className="ml-2 flex-1 bg-white dark:bg-gray-600 rounded h-3.5 max-w-[60%]" />
+                      </div>
+                      {/* Desktop screenshot */}
+                      <div className="overflow-hidden rounded-b-lg border border-t-0 border-gray-200 dark:border-gray-600">
+                        <img
+                          src={featured.desktopImg}
+                          alt={`${featured.name} desktop preview`}
+                          className="w-full h-auto object-cover object-top"
+                          loading="lazy"
+                          style={{ maxHeight: "240px" }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Mobile Frame */}
+                    <div className="relative w-[22%] min-w-[70px] max-w-[100px] flex-shrink-0 self-start mt-4">
+                      {/* Phone notch */}
+                      <div className="bg-gray-800 dark:bg-gray-900 rounded-t-xl pt-1.5 px-1.5">
+                        <div className="mx-auto w-8 h-1 bg-gray-600 rounded-full mb-1" />
+                      </div>
+                      {/* Mobile screenshot */}
+                      <div className="overflow-hidden border-x-2 border-b-2 border-gray-800 dark:border-gray-900 rounded-b-xl bg-white">
+                        <img
+                          src={featured.mobileImg}
+                          alt={`${featured.name} mobile preview`}
+                          className="w-full h-auto object-cover object-top"
+                          loading="lazy"
+                          style={{ maxHeight: "200px" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Theme Name & Apply */}
+                  <div className="p-3 flex items-center justify-between bg-background">
+                    <h3 className="text-sm font-bold">{featured.name}</h3>
                     {isApplied ? (
                       <Badge variant="secondary" className="gap-1 text-xs">
                         <Check className="h-3 w-3" /> Applied
                       </Badge>
-                    ) : theme.available ? (
+                    ) : (
                       <Button
                         size="sm"
                         variant="outline"
                         className="h-7 text-xs px-4"
-                        onClick={() => applyThemeMutation.mutate(theme.id)}
+                        onClick={(e) => { e.stopPropagation(); applyThemeMutation.mutate(featured.themeId); }}
                         disabled={applyThemeMutation.isPending}
                       >
                         Apply
                       </Button>
-                    ) : (
-                      <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
-                        <Lock className="h-3 w-3" /> Soon
-                      </Badge>
                     )}
                   </div>
                 </div>
               );
             })}
+          </div>
+
+          <Separator />
+
+          {/* All Themes Grid */}
+          <div>
+            <h4 className="text-sm font-semibold mb-3">All Themes</h4>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+              {THEMES.map((theme) => {
+                const isApplied = currentTheme === theme.id;
+                return (
+                  <div
+                    key={theme.id}
+                    className={`relative overflow-hidden rounded-xl border-2 transition-all ${
+                      isApplied
+                        ? "border-foreground shadow-md"
+                        : theme.available
+                        ? "border-border hover:border-foreground/40"
+                        : "border-border opacity-60"
+                    }`}
+                  >
+                    {/* Theme preview strip */}
+                    <div
+                      className="h-24 w-full"
+                      style={{
+                        background: theme.id === "theme-1"
+                          ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #000000 100%)"
+                          : theme.id === "theme-2"
+                          ? "linear-gradient(135deg, #ffffff 0%, #2563eb 50%, #1e293b 100%)"
+                          : theme.id === "theme-3"
+                          ? "linear-gradient(135deg, #F97316 0%, #3B82F6 50%, #1e293b 100%)"
+                          : theme.id === "theme-4"
+                          ? "linear-gradient(135deg, #F8F5F0 0%, #C8A96A 50%, #1C1C1C 100%)"
+                          : theme.id === "theme-6"
+                          ? "linear-gradient(135deg, #F8FAFC 0%, #2563EB 50%, #1e293b 100%)"
+                          : theme.id === "theme-7"
+                          ? "linear-gradient(135deg, #ffffff 0%, #1a1a1a 50%, #000000 100%)"
+                          : theme.id === "theme-8"
+                          ? "linear-gradient(135deg, #F8FAFC 0%, #6C5CE7 50%, #FD79A8 100%)"
+                          : theme.id === "theme-10"
+                          ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
+                          : theme.id === "theme-11"
+                          ? "linear-gradient(135deg, #F5F5F5 0%, #1a1a1a 50%, #EF4444 100%)"
+                          : theme.id === "theme-12"
+                          ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
+                          : theme.id === "theme-14"
+                          ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)"
+                          : theme.id === "theme-15"
+                          ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)"
+                          : theme.id === "theme-17"
+                          ? "linear-gradient(135deg, #1B3A2D 0%, #2d5a45 50%, #0a0a0a 100%)"
+                          : theme.id === "theme-18"
+                          ? "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #333333 100%)"
+                          : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
+                      }}
+                    />
+                    <div className="p-2.5 flex flex-col items-center text-center gap-1.5">
+                      <h3 className="text-sm font-semibold leading-tight">{theme.name}</h3>
+                      {isApplied ? (
+                        <Badge variant="secondary" className="gap-1 text-xs">
+                          <Check className="h-3 w-3" /> Applied
+                        </Badge>
+                      ) : theme.available ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs px-4"
+                          onClick={() => applyThemeMutation.mutate(theme.id)}
+                          disabled={applyThemeMutation.isPending}
+                        >
+                          Apply
+                        </Button>
+                      ) : (
+                        <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
+                          <Lock className="h-3 w-3" /> Soon
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>
