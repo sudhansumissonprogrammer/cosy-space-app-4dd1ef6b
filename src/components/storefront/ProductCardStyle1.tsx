@@ -102,13 +102,13 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
           )}
         </div>
         {cartQty > 0 && !isAdding && !justAdded ? (
-          <div className="flex h-7 sm:h-8 w-full items-center rounded-lg overflow-hidden btn-gold">
+          <div className="flex h-7 sm:h-8 w-full items-center rounded-md overflow-hidden btn-gold">
             <button onClick={handleDecrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Decrease quantity"><Minus className="h-3 w-3" strokeWidth={2.5} /></button>
             <span key={cartQty} className="flex-1 text-center text-[9px] font-extrabold whitespace-nowrap qty-bounce" aria-live="polite">{cartQty} in cart</span>
             <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Increase quantity"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
           </div>
         ) : (
-          <button className={`ripple-container flex h-7 w-full items-center justify-center gap-1.5 rounded-lg text-[9px] font-extrabold uppercase tracking-widest sm:h-8 sm:text-[10px] transition-all duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "btn-gold opacity-80 cursor-wait" : "btn-gold hover:brightness-110"}`} onClick={(e) => { createRipple(e); handleAdd(e); }} disabled={isAdding}>
+          <button className={`ripple-container flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[9px] font-extrabold uppercase tracking-widest sm:h-8 sm:text-[10px] transition-all duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "btn-gold opacity-80 cursor-wait" : "btn-gold hover:brightness-110"}`} onClick={(e) => { createRipple(e); handleAdd(e); }} disabled={isAdding}>
             {isAdding ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /><span className="whitespace-nowrap">Adding...</span></>) : justAdded ? (<><Check className="h-3.5 w-3.5" strokeWidth={3} /><span className="whitespace-nowrap">Added ✓</span></>) : (<><ShoppingCart className="h-3.5 w-3.5" /><span className="whitespace-nowrap">ADD TO CART</span></>)}
           </button>
         )}
