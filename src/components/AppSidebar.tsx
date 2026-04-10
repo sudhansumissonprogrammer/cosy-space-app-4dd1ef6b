@@ -198,16 +198,16 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         {/* Store branding header */}
-        <div className="flex h-14 items-center gap-2 px-4">
+        <div className="flex h-16 items-center gap-3 px-4 border-b border-sidebar-border">
           {store?.logo_url ? (
-            <img src={store.logo_url} alt="" className="h-8 w-8 shrink-0 rounded-lg border object-cover" />
+            <img src={store.logo_url} alt="" className="h-9 w-9 shrink-0 rounded-xl border object-cover shadow-sm" />
           ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary shadow-sm">
               <Store className="h-4 w-4 text-primary-foreground" />
             </div>
           )}
           {!collapsed && (
-            <span className="truncate text-sm font-semibold text-foreground">
+            <span className="truncate text-[14px] font-bold tracking-tight text-foreground">
               {store?.name || "Store Admin"}
             </span>
           )}
