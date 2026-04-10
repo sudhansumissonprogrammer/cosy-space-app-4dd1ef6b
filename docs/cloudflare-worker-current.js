@@ -1,5 +1,17 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.0.0 — FULL COLD LOAD OPTIMIZATION
+ * SHOPBANAO PRODUCTION ROUTER v6.1.0 — SEO + PERFORMANCE IMPROVEMENTS
+ *
+ * Changes from v6.0.0:
+ *  FIX #16 — Canonical tag injection: <link rel="canonical"> added to all
+ *            storefront HTML to eliminate duplicate content across subdomain
+ *            and custom domain hosts.
+ *  FIX #17 — CSP loosened: Added commonly needed domains (Google Fonts,
+ *            analytics, Razorpay, Tawk.to, Crisp, etc.) to prevent silent
+ *            breakage when merchants add third-party tools.
+ *  FIX #18 — Skeleton fallback timeout reduced from 5000ms to 3500ms for
+ *            faster perceived performance on slow connections.
+ *  FIX #19 — stale-while-revalidate reduced from 86400s to 7200s on warmed
+ *            HTML to ensure merchant changes reflect within ~2 hours.
  *
  * Changes from v5.0.0 (All 15 fixes applied):
  *
