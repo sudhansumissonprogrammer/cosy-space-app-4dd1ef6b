@@ -9,6 +9,12 @@ import fashionSearch from "@/assets/showcase-fashion-search.webp";
 import overlaysHome from "@/assets/showcase-overlays-home.webp";
 import overlaysProduct from "@/assets/showcase-overlays-product.webp";
 import overlaysWishlist from "@/assets/showcase-overlays-wishlist.webp";
+import arrokHome from "@/assets/showcase-arrok-home.webp";
+import arrokShop from "@/assets/showcase-arrok-shop.webp";
+import arrokCategories from "@/assets/showcase-arrok-categories.webp";
+import medivaHome from "@/assets/showcase-mediva-home.webp";
+import medivaShop from "@/assets/showcase-mediva-shop.webp";
+import medivaCategories from "@/assets/showcase-mediva-categories.webp";
 
 const stores = [
   {
@@ -20,6 +26,26 @@ const stores = [
       { label: "Shop Page", img: jewelryShop },
       { label: "Product Page", img: jewelryProduct },
       { label: "Cart Page", img: jewelryCart },
+    ],
+  },
+  {
+    name: "Arrok",
+    type: "Clothing Store",
+    color: "bg-bauhaus-yellow",
+    screens: [
+      { label: "Home Page", img: arrokHome },
+      { label: "Shop All", img: arrokShop },
+      { label: "Categories", img: arrokCategories },
+    ],
+  },
+  {
+    name: "Mediva",
+    type: "Health & Supplements",
+    color: "bg-bauhaus-blue",
+    screens: [
+      { label: "Home Page", img: medivaHome },
+      { label: "Shop All", img: medivaShop },
+      { label: "Categories", img: medivaCategories },
     ],
   },
   {
@@ -36,7 +62,7 @@ const stores = [
   {
     name: "Overlays",
     type: "Streetwear Store",
-    color: "bg-bauhaus-blue",
+    color: "bg-bauhaus-red",
     screens: [
       { label: "Home Page", img: overlaysHome },
       { label: "Product Page", img: overlaysProduct },
