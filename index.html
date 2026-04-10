@@ -61,6 +61,10 @@
         }
         if(!slug)return;
 
+        // Dynamically add preconnect hints only for storefront pages
+        var pc1=document.createElement('link');pc1.rel='preconnect';pc1.href='https://dqepeywgftbpxeeqfuwt.supabase.co';document.head.appendChild(pc1);
+        var pc2=document.createElement('link');pc2.rel='preconnect';pc2.href='https://dqepeywgftbpxeeqfuwt.supabase.co/storage';pc2.crossOrigin='';document.head.appendChild(pc2);
+
         var supaUrl='https://dqepeywgftbpxeeqfuwt.supabase.co';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk';
 
