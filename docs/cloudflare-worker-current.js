@@ -33,7 +33,7 @@
  *  FIX #9  — _resolveStoreInfo() is the single authoritative lookup.
  *             _resolveStoreId() now delegates to it instead of duplicating.
  *  FIX #10 — Cache-Control on warmed/prewarmed HTML raised to
- *             max-age=3600, stale-while-revalidate=86400.
+ *             max-age=3600, stale-while-revalidate=7200.
  *  FIX #11 — buildSkeleton() now uses the actual store bgColor (fixes white
  *             flash on dark-themed stores).
  *  FIX #12 — In-memory storefront data cache (_memStorefrontCache).
@@ -1534,7 +1534,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const fullHeaders = new Headers();
     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
     // FIX #10: Raised from 1200 → 3600
-    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=7200");
     fullHeaders.set("X-Store-Slug", slug);
     fullHeaders.set("X-Data-Source", prefetchResult.source);
     fullHeaders.set("X-Shell-Source", shellResult.source);
@@ -1940,7 +1940,7 @@ async function handleBot(request, slug, url, isCustom) {
       return new Response(html, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+          "Cache-Control": "public, max-age=300, stale-while-revalidate=7200",
           ...SECURITY_HEADERS,
         },
       });
@@ -1965,7 +1965,7 @@ async function handleBot(request, slug, url, isCustom) {
         return new Response(buildOgHtml(og, finalUrl), {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+            "Cache-Control": "public, max-age=300, stale-while-revalidate=7200",
             ...SECURITY_HEADERS,
           },
         });
@@ -2235,7 +2235,7 @@ async function handlePrewarm(request, url, ctx, env) {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=7200",
           "X-Store-Slug": slug,
           "X-Data-Source": "prewarm",
           "X-Shell-Source": shellResult.source,
@@ -2519,7 +2519,7 @@ export default {
                     const fullHeaders = new Headers();
                     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                     // FIX #10
-                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=7200");
                     fullHeaders.set("X-Store-Slug", revalSlug);
                     fullHeaders.set("X-Data-Source", prefetchResult.source);
                     fullHeaders.set("X-Shell-Source", shellResult.source);
@@ -2929,7 +2929,7 @@ export default {
                         status: 200,
                         headers: {
                           "Content-Type": "text/html; charset=utf-8",
-                          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+                          "Cache-Control": "public, max-age=3600, stale-while-revalidate=7200",
                           "X-Store-Slug": s.slug,
                           "X-Data-Source": "cron-prewarm",
                           ...SECURITY_HEADERS,
