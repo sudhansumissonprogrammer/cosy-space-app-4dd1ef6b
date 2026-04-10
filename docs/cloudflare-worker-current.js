@@ -1419,7 +1419,20 @@ async function serveStreamedHtml(
       if (storefrontResult?.data?.store) {
         const s = storefrontResult.data.store;
         const faviconUrl = escapeHtml(s.logo_url || "");
+
+        // FIX #16: Inject canonical tag via JS in streaming path
+        const canonicalBase = s.custom_domain
+          ? `https://${s.custom_domain}`
+          : `https://${slug}.${ROOT_DOMAIN}`;
+
         let metaScript = `<script>(function(){document.title=${JSON.stringify(s.meta_title || `${s.name} — Shop Online`)};`;
+
+        // Add canonical link
+        metaScript += `var cn=document.querySelector("link[rel='canonical']");if(!cn){cn=document.createElement('link');cn.rel='canonical';document.head.appendChild(cn);}cn.href=${JSON.stringify(canonicalBase + "/")};`;
+
+        // Add og:url
+        metaScript += `var ou=document.querySelector("meta[property='og:url']");if(!ou){ou=document.createElement('meta');ou.setAttribute('property','og:url');document.head.appendChild(ou);}ou.content=${JSON.stringify(canonicalBase + "/")};`;
+
         if (faviconUrl) {
           metaScript += `var li=document.querySelector("link[rel~='icon']");if(!li){li=document.createElement('link');li.rel='icon';document.head.appendChild(li);}li.href=${JSON.stringify(faviconUrl)};`;
         }
