@@ -75,6 +75,7 @@ export default function StorefrontHomeV18() {
 
   const themeConfig = useStorefrontThemeConfig(store?.id);
   const cardStyle = themeConfig?.product_card_style || "style-5";
+  const categoryStyle = themeConfig?.category_style || "style-1";
   const isMenuStyle = cardStyle === "style-4";
   const gridClass = isMenuStyle ? "grid grid-cols-1 md:grid-cols-2 gap-3 px-3" : "grid grid-cols-2 md:grid-cols-4";
 
