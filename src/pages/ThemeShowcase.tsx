@@ -68,14 +68,14 @@ export default function ThemeShowcase() {
               </div>
 
               {/* Preview Area — desktop + mobile frames */}
-              <div className="relative bg-muted/10 px-6 pt-8 pb-6" style={{ minHeight: "560px" }}>
+              <div className="relative bg-muted/10 px-6 pt-8 pb-6">
                 {/* Desktop Frame (main large preview) */}
                 <div className="relative w-[85%]">
                   <div className="rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600 shadow-lg">
                     <img
                       src={theme.desktopImg}
                       alt={`${theme.name} desktop preview`}
-                      className="w-full h-auto object-cover object-top"
+                      className="w-full h-auto"
                       loading="lazy"
                     />
                   </div>
@@ -90,7 +90,7 @@ export default function ThemeShowcase() {
                         <img
                           src={theme.mobileImg}
                           alt={`${theme.name} mobile preview`}
-                          className="w-full h-auto object-cover object-top"
+                          className="w-full h-auto"
                           loading="lazy"
                         />
                       </div>
