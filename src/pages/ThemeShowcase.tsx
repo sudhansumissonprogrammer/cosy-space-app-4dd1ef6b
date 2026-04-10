@@ -12,6 +12,8 @@ import arrokTablet from "@/assets/theme-previews/arrok-tablet.webp";
 import arrokMobile from "@/assets/theme-previews/arrok-mobile.webp";
 import medivaTablet from "@/assets/theme-previews/mediva-tablet.webp";
 import medivaMobile from "@/assets/theme-previews/mediva-mobile.webp";
+import auroraTablet from "@/assets/theme-previews/aurora-tablet.webp";
+import auroraMobile from "@/assets/theme-previews/aurora-mobile.webp";
 
 const Footer = lazy(() => import("@/components/landing/Footer"));
 
@@ -64,6 +66,16 @@ const THEMES = [
     tabletImg: medivaTablet,
     mobileImg: medivaMobile,
     liveUrl: "https://mediva.shopbanao.in",
+    price: "Free",
+  },
+  {
+    name: "Aurora",
+    badge: "Live Store",
+    badgeColor: "bg-indigo-600 text-white",
+    category: "Electronics & Gadgets",
+    tabletImg: auroraTablet,
+    mobileImg: auroraMobile,
+    liveUrl: "https://aurora.shopbanao.in",
     price: "Free",
   },
 ];
