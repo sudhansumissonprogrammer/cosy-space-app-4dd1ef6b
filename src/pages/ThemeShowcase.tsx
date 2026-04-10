@@ -47,47 +47,51 @@ export default function ThemeShowcase() {
           </p>
         </div>
 
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
           {THEMES.map((theme) => (
             <div
               key={theme.name}
               className="relative rounded-2xl border border-border overflow-hidden bg-background hover:shadow-xl transition-all"
             >
-              {/* Badge */}
-              <div className={`absolute top-3 left-3 z-10 px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider ${theme.badgeColor} shadow-md`}
-                   style={{ writingMode: "horizontal-tb" }}>
+              {/* Badge — diagonal ribbon style */}
+              <div className={`absolute top-0 left-0 z-10 ${theme.badgeColor} shadow-md`}
+                   style={{
+                     padding: "4px 32px",
+                     fontSize: "10px",
+                     fontWeight: 800,
+                     letterSpacing: "0.08em",
+                     textTransform: "uppercase",
+                     transform: "rotate(-45deg) translate(-28%, -40%)",
+                     transformOrigin: "center center",
+                   }}>
                 {theme.badge}
               </div>
 
               {/* Preview Area — tablet + mobile frames */}
-              <div className="relative bg-muted/20 p-5 pb-4 min-h-[420px] flex items-end justify-center">
+              <div className="relative bg-muted/10 px-5 pt-6 pb-5 min-h-[520px] flex items-end justify-center">
                 {/* Tablet Frame (main large preview) */}
-                <div className="relative w-[82%]">
-                  {/* Tablet bezel */}
+                <div className="relative w-[88%]">
                   <div className="rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800">
                     <img
                       src={theme.tabletImg}
                       alt={`${theme.name} tablet preview`}
                       className="w-full h-auto object-cover object-top"
                       loading="lazy"
-                      style={{ maxHeight: "380px" }}
                     />
                   </div>
                 </div>
 
                 {/* Mobile Frame (overlapping on right) */}
-                <div className="absolute bottom-4 right-4 w-[30%] max-w-[120px]">
-                  <div className="bg-gray-900 rounded-[16px] p-[3px] shadow-xl">
-                    {/* Notch */}
+                <div className="absolute bottom-4 right-3 w-[34%] max-w-[160px]">
+                  <div className="bg-gray-900 rounded-[18px] p-[3px] shadow-2xl">
                     <div className="relative">
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-[6px] bg-gray-900 rounded-b-lg z-10" />
-                      <div className="rounded-[13px] overflow-hidden bg-white">
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-14 h-[7px] bg-gray-900 rounded-b-lg z-10" />
+                      <div className="rounded-[15px] overflow-hidden bg-white">
                         <img
                           src={theme.mobileImg}
                           alt={`${theme.name} mobile preview`}
                           className="w-full h-auto object-cover object-top"
                           loading="lazy"
-                          style={{ maxHeight: "220px" }}
                         />
                       </div>
                     </div>
