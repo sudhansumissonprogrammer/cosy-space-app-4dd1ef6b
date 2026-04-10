@@ -75,7 +75,7 @@ export default function ThemeShowcase() {
                     <img
                       src={theme.desktopImg}
                       alt={`${theme.name} desktop preview`}
-                      className="w-full h-auto object-cover object-top"
+                      className="w-full h-auto"
                       loading="lazy"
                     />
                   </div>
