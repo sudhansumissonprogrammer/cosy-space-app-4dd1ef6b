@@ -1,19 +1,33 @@
 import { ExternalLink, ArrowRight } from "lucide-react";
 import overlaysMobile from "@/assets/showcase-overlays-mobile.webp";
 import serdiyaMobile from "@/assets/showcase-serdiya-mobile.webp";
+import arrokMobile from "@/assets/showcase-arrok-mobile.webp";
+import medivaMobile from "@/assets/showcase-mediva-mobile.webp";
 
 const stores = [
-  {
-    name: "Overlays",
-    category: "Streetwear & Fashion",
-    url: "https://overlays.shopbanao.in",
-    img: overlaysMobile,
-  },
   {
     name: "Serdiya Jewellers",
     category: "Jewellery Store",
     url: "https://serdiyajewellers.shop",
     img: serdiyaMobile,
+  },
+  {
+    name: "Arrok",
+    category: "Clothing Store",
+    url: "https://arrok.shopbanao.in",
+    img: arrokMobile,
+  },
+  {
+    name: "Mediva",
+    category: "Health & Supplements",
+    url: "https://mediva.shopbanao.in",
+    img: medivaMobile,
+  },
+  {
+    name: "Overlays",
+    category: "Streetwear & Fashion",
+    url: "https://overlays.shopbanao.in",
+    img: overlaysMobile,
   },
 ];
 
@@ -24,7 +38,7 @@ const PhoneFrame = ({ store }: { store: (typeof stores)[0] }) => (
     rel="noopener noreferrer"
     className="group flex flex-col items-center"
   >
-    <div className="relative w-[220px] sm:w-[250px] lg:w-[280px]">
+    <div className="relative w-[180px] sm:w-[210px] lg:w-[240px]">
       {/* Phone shell */}
       <div className="bg-foreground rounded-[28px] sm:rounded-[32px] p-[5px] sm:p-[6px] shadow-2xl transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-2">
         {/* Notch */}
@@ -60,7 +74,7 @@ const PhoneFrame = ({ store }: { store: (typeof stores)[0] }) => (
 const LiveStorePreview = () => {
   return (
     <section className="py-14 sm:py-20 border-b-4 border-foreground bg-bauhaus-yellow/20">
-      <div className="max-w-5xl mx-auto px-5 sm:px-8">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8">
         <div className="text-center mb-10 sm:mb-14">
           <div className="inline-flex items-center gap-2 border-2 border-foreground px-3 py-1.5 mb-4 shadow-bauhaus-sm bg-bauhaus-white w-fit mx-auto">
             <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">
@@ -75,7 +89,7 @@ const LiveStorePreview = () => {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-10 sm:gap-14 lg:gap-20">
+        <div className="flex flex-wrap items-start justify-center gap-8 sm:gap-10 lg:gap-14">
           {stores.map((store) => (
             <PhoneFrame key={store.name} store={store} />
           ))}
