@@ -59,9 +59,40 @@ export default function Dashboard() {
   const { data: store, isLoading: storeLoading, isError: storeError, refetch: refetchStore } = useMyStore();
 
   const storeId = store?.id;
+  const storeSlug = store?.slug;
+  const customDomain = store?.custom_domain;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const currency = store?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
+
+  // Live store status check
+  const storeUrl = customDomain
+    ? `https://${customDomain}`
+    : storeSlug ? `https://${storeSlug}.shopbanao.in` : null;
+
+  const { data: isStoreLive } = useQuery({
+    queryKey: ["store-live-status", storeUrl],
+    queryFn: async () => {
+      if (!storeUrl) return false;
+      try {
+        const res = await fetch(storeUrl, { method: "HEAD", mode: "no-cors", cache: "no-store" });
+        return true; // no-cors always returns opaque response, if no error = reachable
+      } catch {
+        return false;
+      }
+    },
+    enabled: !!storeUrl,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(() => {
+    if (!storeUrl) return;
+    navigator.clipboard.writeText(storeUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [storeUrl]);
 
   const [showOnboarding, setShowOnboarding] = useState(false);
   useEffect(() => {
