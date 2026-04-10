@@ -156,6 +156,8 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-weight: 450;
+    letter-spacing: -0.011em;
   }
 }
 
