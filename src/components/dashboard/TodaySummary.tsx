@@ -48,15 +48,17 @@ export default function TodaySummary({ storeId, currencySymbol }: TodaySummaryPr
   ];
 
   return (
-    <Card className="border shadow-none">
-      <CardContent className="p-3">
-        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Today</p>
-        <div className="grid grid-cols-3 gap-2">
+    <Card className="border shadow-none hover:shadow-md transition-shadow duration-200">
+      <CardContent className="p-4">
+        <p className="mb-3 text-[11px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Today</p>
+        <div className="grid grid-cols-3 gap-3">
           {items.map((item) => (
             <div key={item.label} className="text-center">
-              <item.icon className={`h-4 w-4 mx-auto mb-1 ${item.color}`} />
-              <p className="text-sm font-bold text-foreground">{item.value}</p>
-              <p className="text-[10px] text-muted-foreground leading-tight">{item.label}</p>
+              <div className={`flex h-9 w-9 mx-auto mb-1.5 items-center justify-center rounded-xl bg-accent/50 ${item.color}`}>
+                <item.icon className="h-4 w-4" />
+              </div>
+              <p className="text-base font-bold text-foreground tracking-tight">{item.value}</p>
+              <p className="text-[10px] font-medium text-muted-foreground leading-tight">{item.label}</p>
             </div>
           ))}
         </div>

@@ -138,7 +138,7 @@ export function AppSidebar() {
     if (items.length === 0) return null;
     return (
       <SidebarGroup key={label}>
-        <SidebarGroupLabel>{label}</SidebarGroupLabel>
+        <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">{label}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {items.map((item) => {
@@ -148,7 +148,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild={!comingSoon}
                     isActive={!comingSoon && isActive(item.url)}
-                    className={comingSoon ? "opacity-50 cursor-not-allowed" : ""}
+                    className={comingSoon ? "opacity-50 cursor-not-allowed" : !comingSoon && isActive(item.url) ? "font-semibold" : "font-medium"}
                   >
                     {comingSoon ? (
                       <div className="flex items-center w-full hover:bg-transparent">
@@ -168,10 +168,10 @@ export function AppSidebar() {
                         end
                         instant
                         className="hover:bg-accent/50"
-                        activeClassName="bg-accent text-accent-foreground font-medium"
+                        activeClassName="bg-accent text-accent-foreground font-semibold"
                       >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
+                        <item.icon className="mr-2.5 h-4 w-4" />
+                        {!collapsed && <span className="text-[13px]">{item.title}</span>}
                       </NavLink>
                     )}
                   </SidebarMenuButton>
@@ -198,16 +198,16 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         {/* Store branding header */}
-        <div className="flex h-14 items-center gap-2 px-4">
+        <div className="flex h-16 items-center gap-3 px-4 border-b border-sidebar-border">
           {store?.logo_url ? (
-            <img src={store.logo_url} alt="" className="h-8 w-8 shrink-0 rounded-lg border object-cover" />
+            <img src={store.logo_url} alt="" className="h-9 w-9 shrink-0 rounded-xl border object-cover shadow-sm" />
           ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary shadow-sm">
               <Store className="h-4 w-4 text-primary-foreground" />
             </div>
           )}
           {!collapsed && (
-            <span className="truncate text-sm font-semibold text-foreground">
+            <span className="truncate text-[14px] font-bold tracking-tight text-foreground">
               {store?.name || "Store Admin"}
             </span>
           )}
@@ -215,7 +215,7 @@ export function AppSidebar() {
 
         {/* Dashboard */}
         <SidebarGroup>
-          <SidebarGroupLabel>Overview</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">Overview</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -225,10 +225,10 @@ export function AppSidebar() {
                     end
                     instant
                     className="hover:bg-accent/50"
-                    activeClassName="bg-accent text-accent-foreground font-medium"
+                    activeClassName="bg-accent text-accent-foreground font-semibold"
                   >
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    {!collapsed && <span>Dashboard</span>}
+                    <LayoutDashboard className="mr-2.5 h-4 w-4" />
+                    {!collapsed && <span className="text-[13px]">Dashboard</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -239,10 +239,10 @@ export function AppSidebar() {
                     end
                     instant
                     className="hover:bg-accent/50"
-                    activeClassName="bg-accent text-accent-foreground font-medium"
+                    activeClassName="bg-accent text-accent-foreground font-semibold"
                   >
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    {!collapsed && <span>Analytics</span>}
+                    <BarChart3 className="mr-2.5 h-4 w-4" />
+                    {!collapsed && <span className="text-[13px]">Analytics</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>

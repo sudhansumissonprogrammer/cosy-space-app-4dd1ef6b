@@ -104,11 +104,11 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
   if (allDone) return null;
 
   return (
-    <Card className="border shadow-none">
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Store Setup</p>
-          <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">
+    <Card className="border shadow-none hover:shadow-md transition-shadow duration-200">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Store Setup</p>
+          <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">
             {doneCount}/{checks.length} done
           </span>
         </div>

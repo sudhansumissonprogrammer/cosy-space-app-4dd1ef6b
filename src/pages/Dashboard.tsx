@@ -177,7 +177,7 @@ export default function Dashboard() {
 
       {/* Greeting + guide */}
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-foreground">Overview</h1>
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Overview</h1>
         {storeId && (
           <Button
             variant="outline"
@@ -193,16 +193,16 @@ export default function Dashboard() {
 
       {/* Store URL */}
       {store?.slug && (
-        <Card className="border shadow-none">
-          <CardContent className="flex items-center gap-3 p-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <Eye className="h-4 w-4 text-primary" />
+        <Card className="border shadow-none bg-gradient-to-r from-accent/30 to-accent/10">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Eye className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">Your Store</p>
-              <p className="text-sm font-medium text-foreground truncate">{store.slug}.shopbanao.in</p>
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">Your Store</p>
+              <p className="text-sm font-semibold text-foreground truncate tracking-tight">{store.slug}.shopbanao.in</p>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 shrink-0" asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 shrink-0 font-semibold" asChild>
               <a href={`https://${store.slug}.shopbanao.in`} target="_blank" rel="noopener noreferrer">
                 <Eye className="h-3 w-3" /> View
               </a>
@@ -221,16 +221,16 @@ export default function Dashboard() {
       ) : (
         <>
           {/* Stat cards — 2x2 grid on mobile */}
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-3">
             {statCards.map((card) => (
-              <Card key={card.label} className="border shadow-none">
-                <CardContent className="flex items-center gap-3 p-3">
-                  <div className={`shrink-0 ${card.color}`}>
+              <Card key={card.label} className="border shadow-none hover:shadow-md transition-shadow duration-200 group">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/50 ${card.color} group-hover:scale-105 transition-transform`}>
                     <card.icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">{card.label}</p>
-                    <p className="text-base font-bold text-foreground truncate">{card.value}</p>
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{card.label}</p>
+                    <p className="text-lg font-bold text-foreground truncate tracking-tight">{card.value}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -256,7 +256,7 @@ export default function Dashboard() {
           {!isWhatsAppOnly && (
             <Card className="border shadow-none">
               <CardContent className="p-3 pt-4">
-                <p className="mb-3 text-sm font-medium text-foreground">Revenue</p>
+                <p className="mb-3 text-sm font-bold tracking-tight text-foreground">Revenue</p>
                 {ordersByMonth.length > 0 ? (
                   <ResponsiveContainer width="100%" height={180}>
                     <LineChart data={ordersByMonth}>
@@ -281,7 +281,7 @@ export default function Dashboard() {
           {!isWhatsAppOnly && (
             <Card className="border shadow-none">
               <CardContent className="p-3 pt-4">
-                <p className="mb-3 text-sm font-medium text-foreground">Orders</p>
+                <p className="mb-3 text-sm font-bold tracking-tight text-foreground">Orders</p>
                 {ordersByMonth.length > 0 ? (
                   <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={ordersByMonth}>
