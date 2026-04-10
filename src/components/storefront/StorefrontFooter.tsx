@@ -141,7 +141,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           <p className="text-xs opacity-50 flex items-center justify-center gap-1">
             Powered by{" "}
             <a
-              href="https://shopbanao.site"
+              href="https://shopbanao.in"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline hover:opacity-100 transition-opacity"
