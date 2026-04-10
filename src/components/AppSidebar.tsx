@@ -148,7 +148,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild={!comingSoon}
                     isActive={!comingSoon && isActive(item.url)}
-                    className={comingSoon ? "opacity-50 cursor-not-allowed" : ""}
+                    className={comingSoon ? "opacity-50 cursor-not-allowed" : !comingSoon && isActive(item.url) ? "font-semibold" : "font-medium"}
                   >
                     {comingSoon ? (
                       <div className="flex items-center w-full hover:bg-transparent">
@@ -168,10 +168,10 @@ export function AppSidebar() {
                         end
                         instant
                         className="hover:bg-accent/50"
-                        activeClassName="bg-accent text-accent-foreground font-medium"
+                        activeClassName="bg-accent text-accent-foreground font-semibold"
                       >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
+                        <item.icon className="mr-2.5 h-4 w-4" />
+                        {!collapsed && <span className="text-[13px]">{item.title}</span>}
                       </NavLink>
                     )}
                   </SidebarMenuButton>
@@ -215,7 +215,7 @@ export function AppSidebar() {
 
         {/* Dashboard */}
         <SidebarGroup>
-          <SidebarGroupLabel>Overview</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">Overview</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -225,10 +225,10 @@ export function AppSidebar() {
                     end
                     instant
                     className="hover:bg-accent/50"
-                    activeClassName="bg-accent text-accent-foreground font-medium"
+                    activeClassName="bg-accent text-accent-foreground font-semibold"
                   >
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    {!collapsed && <span>Dashboard</span>}
+                    <LayoutDashboard className="mr-2.5 h-4 w-4" />
+                    {!collapsed && <span className="text-[13px]">Dashboard</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -239,10 +239,10 @@ export function AppSidebar() {
                     end
                     instant
                     className="hover:bg-accent/50"
-                    activeClassName="bg-accent text-accent-foreground font-medium"
+                    activeClassName="bg-accent text-accent-foreground font-semibold"
                   >
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    {!collapsed && <span>Analytics</span>}
+                    <BarChart3 className="mr-2.5 h-4 w-4" />
+                    {!collapsed && <span className="text-[13px]">Analytics</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
