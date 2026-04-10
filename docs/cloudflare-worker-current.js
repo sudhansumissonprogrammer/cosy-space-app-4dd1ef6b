@@ -44,7 +44,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.0.0";
+const WORKER_VERSION = "6.1.0";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -179,6 +179,7 @@ function cleanRateLimitMap() {
    SECURITY HEADERS
    ============================================================ */
 
+// FIX #17: Loosened CSP — added commonly needed third-party domains
 const SECURITY_HEADERS = {
   "X-Frame-Options": "SAMEORIGIN",
   "X-Content-Type-Options": "nosniff",
@@ -187,7 +188,15 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com https://*.shopify.com https://*.myshopify.com https: ; connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://lrcpkt0a.api.lc; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self'; form-action 'self';",
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://embed.tawk.to https://client.crisp.chat https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://client.crisp.chat; " +
+    "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
+    "img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com https://*.shopify.com https://*.myshopify.com https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com https://cx.atdmt.com https:; " +
+    "connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://lrcpkt0a.api.lc https://www.google-analytics.com https://www.googletagmanager.com https://embed.tawk.to https://client.crisp.chat; " +
+    "frame-src https://api.razorpay.com https://checkout.razorpay.com https://embed.tawk.to; " +
+    "worker-src 'self' blob:; " +
+    "object-src 'none'; base-uri 'self'; form-action 'self';",
 };
 
 /* ============================================================
@@ -247,7 +256,8 @@ function _capMapSize(map, max) {
    FIX #11: buildSkeleton now actually uses bgColor param
    ============================================================ */
 
-function getSkeletonCleanupScript(fallbackMs = 5000) {
+// FIX #18: Reduced from 5000ms to 3500ms for faster perceived performance
+function getSkeletonCleanupScript(fallbackMs = 3500) {
   return `<script>(function(){
     var removed=false;
     function kill(){
