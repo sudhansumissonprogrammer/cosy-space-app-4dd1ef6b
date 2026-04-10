@@ -2714,7 +2714,7 @@ export default function StoreThemeSettings() {
                         <span className="text-[9px] text-muted-foreground">{store.slug}.shopbanao.in</span>
                       </div>
                     </div>
-                    <div style={{ width: "100%", height: "680px", overflow: "hidden" }}>
+                    <div style={{ width: "100%", height: `${Math.round(900 * Math.min(1, 896 / 1440))}px`, overflow: "hidden" }}>
                       <iframe
                         key={`desktop-${iframeKey}`}
                         ref={iframeDesktopRef}
