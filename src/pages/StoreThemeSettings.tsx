@@ -2567,7 +2567,7 @@ export default function StoreThemeSettings() {
             <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
             <div className="space-y-1.5">
               <Label className="text-xs">Product Card Style</Label>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-5 gap-3">
                 {[
                   { value: "style-1", label: "Style 1", desc: "Clean minimal" },
                   { value: "style-2", label: "Style 2", desc: "Badge & overlay" },
