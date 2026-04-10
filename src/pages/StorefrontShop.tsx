@@ -30,6 +30,8 @@ export default function StorefrontShop() {
   const { slug } = useParams<{ slug: string }>();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
+  const isMenuStyle = cardStyle === "style-4";
+  const gridClass = isMenuStyle ? "flex flex-col gap-2.5" : "grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4";
 
 
   const {
@@ -113,7 +115,7 @@ export default function StorefrontShop() {
 
       <div style={{ minHeight: 600, contain: "layout" }}>
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className={gridClass}>
             {Array.from({ length: 8 }).map((_, i) => (
               <ProductCardSkeleton key={i} />
             ))}
@@ -130,7 +132,7 @@ export default function StorefrontShop() {
           </div>
         ) : products.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className={gridClass}>
               {products.map((product, index) => (
                 <UniversalProductCard
                   key={product.id}

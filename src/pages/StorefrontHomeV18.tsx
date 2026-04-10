@@ -76,6 +76,8 @@ export default function StorefrontHomeV18() {
   const themeConfig = useStorefrontThemeConfig(store?.id);
   const cardStyle = themeConfig?.product_card_style || "style-5";
   const categoryStyle = themeConfig?.category_style || "style-1";
+  const isMenuStyle = cardStyle === "style-4";
+  const gridClass = isMenuStyle ? "grid grid-cols-1 md:grid-cols-2 gap-3 px-3" : "grid grid-cols-2 md:grid-cols-4";
 
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]);
   const categoriesLoading = storeCategories === undefined;
@@ -178,7 +180,7 @@ export default function StorefrontHomeV18() {
         <LazyRender rootMargin="200px">
           <section style={{ backgroundColor: "#0a0a0a" }}>
             <DarkSectionTitle title="Best Sellers" />
-            <div className="grid grid-cols-2 md:grid-cols-4">
+            <div className={gridClass}>
               {bestSellers.map((p: any, i: number) => (
                 <div key={p.id} className="v18-product-card">
                   <UniversalProductCard product={p} slug={slug} store={store} priority={i < 2} cardStyle={cardStyle} index={i} />
@@ -194,13 +196,13 @@ export default function StorefrontHomeV18() {
         <section style={{ backgroundColor: "#0a0a0a" }}>
           <DarkSectionTitle title="New Arrivals" />
           {productsLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4">
+            <div className={gridClass}>
               {Array.from({ length: 4 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4">
+            <div className={gridClass}>
               {products.map((p: any, i: number) => (
                 <div key={p.id} className="v18-product-card">
                   <UniversalProductCard product={p} slug={slug} store={store} priority={i < 2} cardStyle={cardStyle} index={i} />
