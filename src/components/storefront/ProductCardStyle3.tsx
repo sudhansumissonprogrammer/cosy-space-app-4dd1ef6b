@@ -29,7 +29,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
     <Link
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
       className="group overflow-hidden bg-card transition-all active:scale-[0.98]"
-      style={{ borderRadius: "12px", border: "1px solid hsl(var(--border, 0 0% 94%))" }}
+      style={{ borderRadius: "12px", border: "1px solid hsl(var(--border, 0 0% 90%))" }}
     >
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
         {(() => {
@@ -63,7 +63,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
           );
         })()}
         {discount && (
-          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)", borderRadius: "6px" }}>
+          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "6px" }}>
             -{discount}%
           </div>
         )}
@@ -73,21 +73,21 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
       </div>
 
       <div className="px-3 pt-2.5 pb-3 space-y-1.5">
-        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: "var(--storefront-text, #1a1a1a)", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>
+        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>
           {product.name}
         </p>
-        <StarRating rating={rating} showValue textColor="var(--storefront-text, #1a1a1a)" />
+        <StarRating rating={rating} showValue textColor="var(--storefront-text, hsl(var(--foreground)))" />
         <div className="flex items-center gap-1.5">
-          <span className="text-[15px] font-bold" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
+          <span className="text-[15px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
             {formatPrice(effectivePrice, store.currency)}
           </span>
           {discount && (
-            <span className="text-[11px] line-through opacity-40" style={{ color: "var(--storefront-text, #1a1a1a)" }}>
+            <span className="text-[11px] line-through opacity-40" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
               {formatPrice(product.price, store.currency)}
             </span>
           )}
         </div>
-        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); createRipple(e); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="ripple-container w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-semibold uppercase tracking-wider transition-all active:scale-95 mt-1" style={{ backgroundColor: "var(--storefront-primary, #FF3F6C)", color: "var(--storefront-btn-text, #fff)", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
+        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); createRipple(e); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="ripple-container w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-semibold uppercase tracking-wider transition-all active:scale-95 mt-1" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
           <ShoppingCart className="h-3.5 w-3.5" aria-hidden="true" />
           Add to Cart
         </button>
