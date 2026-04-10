@@ -1,5 +1,17 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.0.0 — FULL COLD LOAD OPTIMIZATION
+ * SHOPBANAO PRODUCTION ROUTER v6.1.0 — SEO + PERFORMANCE IMPROVEMENTS
+ *
+ * Changes from v6.0.0:
+ *  FIX #16 — Canonical tag injection: <link rel="canonical"> added to all
+ *            storefront HTML to eliminate duplicate content across subdomain
+ *            and custom domain hosts.
+ *  FIX #17 — CSP loosened: Added commonly needed domains (Google Fonts,
+ *            analytics, Razorpay, Tawk.to, Crisp, etc.) to prevent silent
+ *            breakage when merchants add third-party tools.
+ *  FIX #18 — Skeleton fallback timeout reduced from 5000ms to 3500ms for
+ *            faster perceived performance on slow connections.
+ *  FIX #19 — stale-while-revalidate reduced from 86400s to 7200s on warmed
+ *            HTML to ensure merchant changes reflect within ~2 hours.
  *
  * Changes from v5.0.0 (All 15 fixes applied):
  *
@@ -21,7 +33,7 @@
  *  FIX #9  — _resolveStoreInfo() is the single authoritative lookup.
  *             _resolveStoreId() now delegates to it instead of duplicating.
  *  FIX #10 — Cache-Control on warmed/prewarmed HTML raised to
- *             max-age=3600, stale-while-revalidate=86400.
+ *             max-age=3600, stale-while-revalidate=7200.
  *  FIX #11 — buildSkeleton() now uses the actual store bgColor (fixes white
  *             flash on dark-themed stores).
  *  FIX #12 — In-memory storefront data cache (_memStorefrontCache).
@@ -32,7 +44,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.0.0";
+const WORKER_VERSION = "6.1.0";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -167,6 +179,7 @@ function cleanRateLimitMap() {
    SECURITY HEADERS
    ============================================================ */
 
+// FIX #17: Loosened CSP — added commonly needed third-party domains
 const SECURITY_HEADERS = {
   "X-Frame-Options": "SAMEORIGIN",
   "X-Content-Type-Options": "nosniff",
@@ -175,7 +188,15 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com https://*.shopify.com https://*.myshopify.com https: ; connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://lrcpkt0a.api.lc; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self'; form-action 'self';",
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://embed.tawk.to https://client.crisp.chat https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://client.crisp.chat; " +
+    "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
+    "img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com https://*.shopify.com https://*.myshopify.com https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com https://cx.atdmt.com https:; " +
+    "connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://lrcpkt0a.api.lc https://www.google-analytics.com https://www.googletagmanager.com https://embed.tawk.to https://client.crisp.chat; " +
+    "frame-src https://api.razorpay.com https://checkout.razorpay.com https://embed.tawk.to; " +
+    "worker-src 'self' blob:; " +
+    "object-src 'none'; base-uri 'self'; form-action 'self';",
 };
 
 /* ============================================================
@@ -235,7 +256,8 @@ function _capMapSize(map, max) {
    FIX #11: buildSkeleton now actually uses bgColor param
    ============================================================ */
 
-function getSkeletonCleanupScript(fallbackMs = 5000) {
+// FIX #18: Reduced from 5000ms to 3500ms for faster perceived performance
+function getSkeletonCleanupScript(fallbackMs = 3500) {
   return `<script>(function(){
     var removed=false;
     function kill(){
@@ -1277,10 +1299,18 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
       s.meta_description || s.description || `Shop the best products at ${s.name}. Fast delivery & easy returns.`,
     );
     const ogImage = escapeHtml(s.og_image_url || s.banner_url || s.logo_url || "");
+
+    // FIX #16: Canonical tag — prefer custom domain, fallback to subdomain
+    const canonicalBase = s.custom_domain
+      ? `https://${s.custom_domain}`
+      : `https://${slug}.${ROOT_DOMAIN}`;
+    ogMeta += `<link rel="canonical" href="${escapeHtml(canonicalBase)}/" />\n`;
+
     ogMeta += `<title>${ogTitle}</title>`;
     ogMeta += `<meta name="description" content="${ogDesc}">`;
     ogMeta += `<meta property="og:title" content="${ogTitle}">`;
     ogMeta += `<meta property="og:description" content="${ogDesc}">`;
+    ogMeta += `<meta property="og:url" content="${escapeHtml(canonicalBase)}/">`;
     ogMeta += `<meta name="twitter:title" content="${ogTitle}">`;
     ogMeta += `<meta name="twitter:description" content="${ogDesc}">`;
     if (ogImage) {
@@ -1389,7 +1419,20 @@ async function serveStreamedHtml(
       if (storefrontResult?.data?.store) {
         const s = storefrontResult.data.store;
         const faviconUrl = escapeHtml(s.logo_url || "");
+
+        // FIX #16: Inject canonical tag via JS in streaming path
+        const canonicalBase = s.custom_domain
+          ? `https://${s.custom_domain}`
+          : `https://${slug}.${ROOT_DOMAIN}`;
+
         let metaScript = `<script>(function(){document.title=${JSON.stringify(s.meta_title || `${s.name} — Shop Online`)};`;
+
+        // Add canonical link
+        metaScript += `var cn=document.querySelector("link[rel='canonical']");if(!cn){cn=document.createElement('link');cn.rel='canonical';document.head.appendChild(cn);}cn.href=${JSON.stringify(canonicalBase + "/")};`;
+
+        // Add og:url
+        metaScript += `var ou=document.querySelector("meta[property='og:url']");if(!ou){ou=document.createElement('meta');ou.setAttribute('property','og:url');document.head.appendChild(ou);}ou.content=${JSON.stringify(canonicalBase + "/")};`;
+
         if (faviconUrl) {
           metaScript += `var li=document.querySelector("link[rel~='icon']");if(!li){li=document.createElement('link');li.rel='icon';document.head.appendChild(li);}li.href=${JSON.stringify(faviconUrl)};`;
         }
@@ -1504,7 +1547,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const fullHeaders = new Headers();
     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
     // FIX #10: Raised from 1200 → 3600
-    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=7200");
     fullHeaders.set("X-Store-Slug", slug);
     fullHeaders.set("X-Data-Source", prefetchResult.source);
     fullHeaders.set("X-Shell-Source", shellResult.source);
@@ -1910,7 +1953,7 @@ async function handleBot(request, slug, url, isCustom) {
       return new Response(html, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+          "Cache-Control": "public, max-age=300, stale-while-revalidate=7200",
           ...SECURITY_HEADERS,
         },
       });
@@ -1935,7 +1978,7 @@ async function handleBot(request, slug, url, isCustom) {
         return new Response(buildOgHtml(og, finalUrl), {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+            "Cache-Control": "public, max-age=300, stale-while-revalidate=7200",
             ...SECURITY_HEADERS,
           },
         });
@@ -2205,7 +2248,7 @@ async function handlePrewarm(request, url, ctx, env) {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=7200",
           "X-Store-Slug": slug,
           "X-Data-Source": "prewarm",
           "X-Shell-Source": shellResult.source,
@@ -2489,7 +2532,7 @@ export default {
                     const fullHeaders = new Headers();
                     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                     // FIX #10
-                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=7200");
                     fullHeaders.set("X-Store-Slug", revalSlug);
                     fullHeaders.set("X-Data-Source", prefetchResult.source);
                     fullHeaders.set("X-Shell-Source", shellResult.source);
@@ -2899,7 +2942,7 @@ export default {
                         status: 200,
                         headers: {
                           "Content-Type": "text/html; charset=utf-8",
-                          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+                          "Cache-Control": "public, max-age=3600, stale-while-revalidate=7200",
                           "X-Store-Slug": s.slug,
                           "X-Data-Source": "cron-prewarm",
                           ...SECURITY_HEADERS,
