@@ -2,7 +2,7 @@ import { Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const rows = [
-  { feature: "Monthly cost", shopbanao: "₹499–₹2,499", shopify: "₹1,500–₹20,000", dukaan: "₹499–₹2,999", whatsapp: "Free but chaotic", shopbanaoType: "neutral", shopifyType: "bad", dukaanType: "neutral", whatsappType: "bad" },
+  { feature: "Monthly cost", shopbanao: "₹499–₹1,499", shopify: "₹1,500–₹20,000", dukaan: "₹499–₹2,999", whatsapp: "Free but chaotic", shopbanaoType: "neutral", shopifyType: "bad", dukaanType: "neutral", whatsappType: "bad" },
   { feature: "Commission on every sale", shopbanao: "0% always", shopify: "0.5–2% extra", dukaan: "1–3% per order", whatsapp: "Manual UPI mess", shopbanaoType: "good", shopifyType: "bad", dukaanType: "bad", whatsappType: "bad" },
   { feature: "UPI / GPay / PhonePe", shopbanao: "Built in", shopify: "Complex setup", dukaan: "Yes", whatsapp: "Manual transfer", shopbanaoType: "check", shopifyType: "x", dukaanType: "check", whatsappType: "x" },
   { feature: "Custom domain", shopbanao: "Growth & Pro", shopify: "All plans", dukaan: "Paid add-on", whatsapp: "Not possible", shopbanaoType: "check", shopifyType: "check", dukaanType: "bad", whatsappType: "x" },
