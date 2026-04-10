@@ -1299,10 +1299,18 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
       s.meta_description || s.description || `Shop the best products at ${s.name}. Fast delivery & easy returns.`,
     );
     const ogImage = escapeHtml(s.og_image_url || s.banner_url || s.logo_url || "");
+
+    // FIX #16: Canonical tag — prefer custom domain, fallback to subdomain
+    const canonicalBase = s.custom_domain
+      ? `https://${s.custom_domain}`
+      : `https://${slug}.${ROOT_DOMAIN}`;
+    ogMeta += `<link rel="canonical" href="${escapeHtml(canonicalBase)}/" />\n`;
+
     ogMeta += `<title>${ogTitle}</title>`;
     ogMeta += `<meta name="description" content="${ogDesc}">`;
     ogMeta += `<meta property="og:title" content="${ogTitle}">`;
     ogMeta += `<meta property="og:description" content="${ogDesc}">`;
+    ogMeta += `<meta property="og:url" content="${escapeHtml(canonicalBase)}/">`;
     ogMeta += `<meta name="twitter:title" content="${ogTitle}">`;
     ogMeta += `<meta name="twitter:description" content="${ogDesc}">`;
     if (ogImage) {
