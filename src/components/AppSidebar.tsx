@@ -138,7 +138,7 @@ export function AppSidebar() {
     if (items.length === 0) return null;
     return (
       <SidebarGroup key={label}>
-        <SidebarGroupLabel>{label}</SidebarGroupLabel>
+        <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 mb-1">{label}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {items.map((item) => {
