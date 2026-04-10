@@ -85,12 +85,17 @@ const THEMES = [
   },
 ];
 
+const COMING_SOON = [
+  { name: "Sanskriti", category: "Ethnic & Saree", img: sanskritiPreview },
+  { name: "PeakBlitz", category: "Food & Beverages", img: thunderRushPreview },
+  { name: "FlexiHerb", category: "Hair & Beauty", img: vividauraPreview },
+  { name: "BraviaLove", category: "Luxury Perfumes", img: goldenAuraPreview },
+];
+
 export default function ThemeShowcase() {
   return (
     <div className="min-h-screen bg-background font-outfit">
       <Navbar />
-
-      <section className="pt-28 pb-16 px-4">
         <div className="max-w-6xl mx-auto text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
             Beautiful Store Themes
