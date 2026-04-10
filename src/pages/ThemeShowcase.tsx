@@ -90,7 +90,7 @@ export default function ThemeShowcase() {
                         <img
                           src={theme.mobileImg}
                           alt={`${theme.name} mobile preview`}
-                          className="w-full h-auto object-cover object-top"
+                          className="w-full h-auto"
                           loading="lazy"
                         />
                       </div>
