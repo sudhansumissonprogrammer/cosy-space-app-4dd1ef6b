@@ -68,8 +68,8 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
     <div
       className="flex gap-3 rounded-2xl p-3 transition-all"
       style={{
-        backgroundColor: "var(--storefront-text, #1a1a1a)06",
-        border: "1px solid var(--storefront-text, #1a1a1a)08",
+        backgroundColor: "hsl(var(--card, 0 0% 100%))",
+        border: "1px solid hsl(var(--border, 0 0% 90%))",
       }}
     >
       {(() => {
@@ -109,7 +109,7 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
             <h3
               className="text-sm font-semibold leading-tight line-clamp-2"
               style={{
-                color: "var(--storefront-text, #1a1a1a)",
+                color: "var(--storefront-text, hsl(var(--foreground)))",
                 fontFamily: "var(--storefront-heading-font, inherit)",
               }}
             >
@@ -119,7 +119,7 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
           {product.description && (
             <p
               className="mt-0.5 text-xs leading-snug line-clamp-2 opacity-50"
-              style={{ color: "var(--storefront-text, #1a1a1a)" }}
+              style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
             >
               {product.description}
             </p>
@@ -130,12 +130,12 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
           <div className="flex items-baseline gap-1.5">
             <span
               className="text-sm font-bold"
-              style={{ color: "var(--storefront-text, #1a1a1a)" }}
+              style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
             >
               {currency}{price.toLocaleString()}
             </span>
             {hasDiscount && (
-              <span className="text-xs line-through opacity-40">
+              <span className="text-xs line-through opacity-40" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                 {currency}{originalPrice.toLocaleString()}
               </span>
             )}
