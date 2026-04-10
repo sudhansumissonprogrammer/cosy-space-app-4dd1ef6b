@@ -658,7 +658,11 @@ function AppRouter() {
     const hostname = window.location.hostname;
     const isProduction = hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`;
 
-    if (isProduction) {
+    // Skip subdomain redirect when loaded inside the dashboard preview iframe
+    const searchParams = new URLSearchParams(window.location.search);
+    const isPreviewEmbed = searchParams.has("preview");
+
+    if (isProduction && !isPreviewEmbed) {
       const rest = location.pathname.replace(/^\/store\//, "");
       const slug = rest.split("/")[0];
       const remainingPath = rest.slice(slug.length);

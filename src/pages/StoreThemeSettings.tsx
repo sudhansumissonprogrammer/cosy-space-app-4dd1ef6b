@@ -2685,7 +2685,7 @@ export default function StoreThemeSettings() {
                         <iframe
                           key={`mobile-${iframeKey}`}
                           ref={iframeRef}
-                          src={`/store/${store.slug}`}
+                          src={`/store/${store.slug}?preview=1`}
                           title="Store Preview"
                           onLoad={() => {
                             setupPreviewIframe(iframeRef.current);
@@ -2718,7 +2718,7 @@ export default function StoreThemeSettings() {
                       <iframe
                         key={`desktop-${iframeKey}`}
                         ref={iframeDesktopRef}
-                        src={`/store/${store.slug}`}
+                        src={`/store/${store.slug}?preview=1`}
                         title="Store Preview Desktop"
                         onLoad={() => {
                           setupPreviewIframe(iframeDesktopRef.current);
