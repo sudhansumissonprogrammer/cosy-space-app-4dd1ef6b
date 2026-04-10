@@ -289,6 +289,7 @@ export default function StorefrontHomeV17() {
         isLoading={categoriesLoading}
         categoryStyle={_themeConfig?.category_style || "style-1"}
       />
+      </div>
 
       {/* ─── Best Sellers (carousel or grid) — appears before All Collection ─── */}
       {hasBestSellers && (
