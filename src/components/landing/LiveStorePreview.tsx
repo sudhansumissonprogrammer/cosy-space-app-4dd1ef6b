@@ -36,6 +36,7 @@ const PhoneFrame = ({ store }: { store: (typeof stores)[0] }) => (
     href={store.url}
     target="_blank"
     rel="noopener noreferrer"
+    onClick={(e) => { e.preventDefault(); window.open(store.url, "_blank", "noopener,noreferrer"); }}
     className="group flex flex-col items-center"
   >
     <div className="relative w-[180px] sm:w-[210px] lg:w-[240px]">
