@@ -14,6 +14,8 @@ import medivaTablet from "@/assets/theme-previews/mediva-tablet.webp";
 import medivaMobile from "@/assets/theme-previews/mediva-mobile.webp";
 import auroraTablet from "@/assets/theme-previews/aurora-tablet.webp";
 import auroraMobile from "@/assets/theme-previews/aurora-mobile.webp";
+import homedecorTablet from "@/assets/theme-previews/homedecor-tablet.png";
+import homedecorMobile from "@/assets/theme-previews/homedecor-mobile.png";
 
 import sanskritiPreview from "@/assets/theme-previews/sanskriti-preview.png";
 import thunderRushPreview from "@/assets/theme-previews/thunder-rush-preview.png";
