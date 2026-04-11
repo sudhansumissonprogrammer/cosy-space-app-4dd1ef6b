@@ -659,9 +659,33 @@ function AppRouter() {
     const hostname = window.location.hostname;
     const isProduction = hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`;
 
-    // Skip subdomain redirect when loaded inside the dashboard preview iframe
+    // Skip subdomain redirect when loaded inside the dashboard preview iframe.
+    // Persist preview mode across in-iframe navigation so mobile menu / nav links
+    // don't lose the preview flag and get redirected to the live subdomain.
     const searchParams = new URLSearchParams(window.location.search);
-    const isPreviewEmbed = searchParams.has("preview");
+    let isEmbeddedFrame = false;
+    try {
+      isEmbeddedFrame = window.self !== window.top;
+    } catch {
+      isEmbeddedFrame = true;
+    }
+
+    if (searchParams.has("preview")) {
+      try {
+        sessionStorage.setItem("__store_preview_embed__", "1");
+      } catch {}
+    } else if (!isEmbeddedFrame) {
+      try {
+        sessionStorage.removeItem("__store_preview_embed__");
+      } catch {}
+    }
+
+    let hasPreviewSession = false;
+    try {
+      hasPreviewSession = sessionStorage.getItem("__store_preview_embed__") === "1";
+    } catch {}
+
+    const isPreviewEmbed = searchParams.has("preview") || (isEmbeddedFrame && hasPreviewSession);
 
     if (isProduction && !isPreviewEmbed) {
       const rest = location.pathname.replace(/^\/store\//, "");
