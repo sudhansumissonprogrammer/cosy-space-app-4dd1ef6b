@@ -85,6 +85,16 @@ const THEMES = [
     liveUrl: "https://aurora.shopbanao.in",
     price: "Free",
   },
+  {
+    name: "Home Decor",
+    badge: "Live Store",
+    badgeColor: "bg-emerald-700 text-white",
+    category: "Home & Interior",
+    tabletImg: homedecorTablet,
+    mobileImg: homedecorMobile,
+    liveUrl: "https://home-decor.shopbanao.in",
+    price: "Free",
+  },
 ];
 
 const COMING_SOON = [
