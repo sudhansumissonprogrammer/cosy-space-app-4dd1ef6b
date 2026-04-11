@@ -12,6 +12,7 @@ const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: 
     href={url}
     target="_blank"
     rel="noopener noreferrer"
+    onClick={(e) => { e.preventDefault(); window.open(url, "_blank", "noopener,noreferrer"); }}
     className={`group flex flex-col items-center ${className}`}
   >
     <div className="relative w-full">
