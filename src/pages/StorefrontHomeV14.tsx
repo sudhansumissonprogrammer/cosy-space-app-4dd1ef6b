@@ -227,11 +227,6 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
       {marqueeEnabled !== false && <StorefrontMarquee text={marqueeText} />}
 
       {/* Categories */}
-      {storeCategories && storeCategories.length > 0 && (
-        <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4">
-          <SectionHeading title="Shop by Category" />
-        </div>
-      )}
       <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
 
       <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
