@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   LayoutDashboard, Settings, LogOut, Users, ShoppingBag,
   CreditCard, BarChart3, MessageSquare, Shield, Activity, AlertTriangle, Menu,
@@ -19,6 +20,9 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut, user } = useAuth();
+
+  // Clear admin-viewed store when admin returns to admin panel
+  useEffect(() => { clearAdminViewSlug(); }, []);
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
