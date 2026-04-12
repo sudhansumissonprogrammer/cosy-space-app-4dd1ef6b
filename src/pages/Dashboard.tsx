@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useMyStore } from "@/hooks/useMyStore";
+import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Package, ShoppingBag, Eye, TrendingUp, HelpCircle, Plus, Copy, Check } from "lucide-react";
@@ -56,10 +56,10 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { navigate } = useNavigateTransition();
 
-  const { data: store, isLoading: storeLoading, isError: storeError, refetch: refetchStore } = useMyStore();
+  const { store, storeId, storeSlug, isLoading: storeLoading } = useDashboardStore();
+  const storeError = false;
+  const refetchStore = () => {};
 
-  const storeId = store?.id;
-  const storeSlug = store?.slug;
   const customDomain = store?.custom_domain;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const currency = store?.currency || "USD";

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,28 +56,14 @@ const CHART_COLORS = [
 ];
 
 export default function StoreAnalytics() {
-  const { user } = useAuth();
+  const { store } = useDashboardStore();
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [customFrom, setCustomFrom] = useState<Date | undefined>(subDays(new Date(), 14));
   const [customTo, setCustomTo] = useState<Date | undefined>(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const { data: stores } = useQuery({
-    queryKey: ["stores", user?.id],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("id, name, currency")
-        .eq("owner_id", user!.id);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const storeIds = stores?.map((s) => s.id) || [];
-  const currency = stores?.[0]?.currency || "USD";
+  const storeIds = store?.id ? [store.id] : [];
+  const currency = store?.currency || "USD";
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
   // Orders

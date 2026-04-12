@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 import { AdminViewProvider } from "@/contexts/AdminViewContext";
+import { DashboardStoreProvider } from "@/contexts/DashboardStoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -224,6 +225,12 @@ export default function DashboardLayout() {
   const storeSlug = store?.slug ?? (routeNeedsAdminStore ? routeStoreSlug : ownStore?.slug);
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
+  const dashboardStoreValue = useMemo(() => ({
+    store,
+    storeId,
+    storeSlug,
+    isLoading: storeLoading,
+  }), [store, storeId, storeSlug, storeLoading]);
 
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
@@ -286,6 +293,7 @@ export default function DashboardLayout() {
   if (!isMobile) {
     return (
       <AdminViewProvider value={adminViewValue}>
+        <DashboardStoreProvider value={dashboardStoreValue}>
         <SidebarProvider>
           <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
           <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={15000} logoUrl="/images/shopbanao-logo.png" />
@@ -339,6 +347,7 @@ export default function DashboardLayout() {
             </div>
           </div>
         </SidebarProvider>
+        </DashboardStoreProvider>
       </AdminViewProvider>
     );
   }
@@ -362,6 +371,7 @@ export default function DashboardLayout() {
   // Mobile layout
   return (
     <AdminViewProvider value={adminViewValue}>
+    <DashboardStoreProvider value={dashboardStoreValue}>
     <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
     <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={10000} logoUrl="/images/shopbanao-logo.png" />
     <div
@@ -492,6 +502,7 @@ export default function DashboardLayout() {
         isWhatsAppOnly={isWhatsAppOnly}
       />
     </div>
+    </DashboardStoreProvider>
     </AdminViewProvider>
   );
 }
