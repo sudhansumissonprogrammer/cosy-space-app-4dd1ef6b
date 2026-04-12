@@ -213,16 +213,11 @@ export default function DashboardLayout() {
   const { data: ownStore, isLoading: storeLoading } = useMyStore();
   const { isAdminView, adminStore } = useAdminStoreView(ownStore, storeLoading);
 
-  const routeNeedsAdminStore =
-    !!routeStoreSlug &&
-    (!ownStore ||
-      (ownStore.slug !== routeStoreSlug && ownStore.id !== routeStoreSlug));
-
-  // Never fall back to the signed-in user's store when the URL points at another store.
-  const store = routeNeedsAdminStore ? adminStore : ownStore;
+  // Use admin store when admin-view is active (covers routes with AND without :storeSlug)
+  const store = isAdminView ? adminStore : ownStore;
 
   const storeId = store?.id;
-  const storeSlug = store?.slug ?? (routeNeedsAdminStore ? routeStoreSlug : ownStore?.slug);
+  const storeSlug = store?.slug ?? (isAdminView ? routeStoreSlug : ownStore?.slug);
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
   const dashboardStoreValue = useMemo(() => ({
