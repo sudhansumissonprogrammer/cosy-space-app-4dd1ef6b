@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 import { AdminViewProvider } from "@/contexts/AdminViewContext";
+import { DashboardStoreProvider } from "@/contexts/DashboardStoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
