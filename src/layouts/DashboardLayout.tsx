@@ -294,6 +294,7 @@ export default function DashboardLayout() {
     return (
       <AdminViewProvider value={adminViewValue}>
         <DashboardStoreProvider value={dashboardStoreValue}>
+        <SidebarProvider>
           <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
           <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={15000} logoUrl="/images/shopbanao-logo.png" />
           <div className="min-h-screen flex w-full">
