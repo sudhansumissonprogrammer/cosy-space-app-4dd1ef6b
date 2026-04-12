@@ -60,8 +60,6 @@ export default function Dashboard() {
   const storeError = false;
   const refetchStore = () => {};
 
-  const storeId = store?.id;
-  const storeSlug = store?.slug;
   const customDomain = store?.custom_domain;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const currency = store?.currency || "USD";
