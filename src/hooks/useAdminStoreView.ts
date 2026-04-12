@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { setAdminViewSlug, getAdminViewSlug, clearAdminViewSlug } from "@/lib/adminStoreSession";
 
 /**
  * Detects if the current user is an admin viewing another user's store.
@@ -61,11 +62,22 @@ export function useAdminStoreView(
   });
 
   // Seed the ["store", storeId] cache so useStoreData gets a hit
+  // Also persist the admin-viewed slug for routes without :storeSlug
   useEffect(() => {
     if (adminStore?.id) {
       queryClient.setQueryData(["store", adminStore.id], adminStore);
     }
-  }, [adminStore, queryClient]);
+    if (adminStore?.slug && needsAdminFetch && isAdmin === true) {
+      setAdminViewSlug(adminStore.slug);
+    }
+  }, [adminStore, queryClient, needsAdminFetch, isAdmin]);
+
+  // Clear admin view slug when user is not admin or viewing own store
+  useEffect(() => {
+    if (isAdmin === false) {
+      clearAdminViewSlug();
+    }
+  }, [isAdmin]);
 
   const isAdminView = isAdmin === true && !!adminStore && needsAdminFetch;
 
