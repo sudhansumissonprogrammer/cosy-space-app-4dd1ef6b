@@ -217,7 +217,7 @@ export default function DashboardLayout() {
   const store = isAdminView ? adminStore : ownStore;
 
   const storeId = store?.id;
-  const storeSlug = store?.slug ?? (routeNeedsAdminStore ? routeStoreSlug : ownStore?.slug);
+  const storeSlug = store?.slug ?? (isAdminView ? routeStoreSlug : ownStore?.slug);
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
   const dashboardStoreValue = useMemo(() => ({
