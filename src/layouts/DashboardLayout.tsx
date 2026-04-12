@@ -293,7 +293,7 @@ export default function DashboardLayout() {
   if (!isMobile) {
     return (
       <AdminViewProvider value={adminViewValue}>
-        <SidebarProvider>
+        <DashboardStoreProvider value={dashboardStoreValue}>
           <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
           <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={15000} logoUrl="/images/shopbanao-logo.png" />
           <div className="min-h-screen flex w-full">
@@ -346,6 +346,7 @@ export default function DashboardLayout() {
             </div>
           </div>
         </SidebarProvider>
+        </DashboardStoreProvider>
       </AdminViewProvider>
     );
   }
