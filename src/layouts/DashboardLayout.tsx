@@ -371,6 +371,7 @@ export default function DashboardLayout() {
   // Mobile layout
   return (
     <AdminViewProvider value={adminViewValue}>
+    <DashboardStoreProvider value={dashboardStoreValue}>
     <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
     <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={10000} logoUrl="/images/shopbanao-logo.png" />
     <div
@@ -501,6 +502,7 @@ export default function DashboardLayout() {
         isWhatsAppOnly={isWhatsAppOnly}
       />
     </div>
+    </DashboardStoreProvider>
     </AdminViewProvider>
   );
 }
