@@ -16,7 +16,9 @@ export function useAdminStoreView(
   ownStore: { id: string; slug: string } | null | undefined,
   ownStoreLoading: boolean,
 ) {
-  const { storeSlug } = useParams<{ storeSlug: string }>();
+  const { storeSlug: routeStoreSlug } = useParams<{ storeSlug: string }>();
+  // Fall back to session-stored slug when route doesn't have :storeSlug
+  const storeSlug = routeStoreSlug || getAdminViewSlug() || undefined;
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
