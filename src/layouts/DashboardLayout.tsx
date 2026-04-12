@@ -225,6 +225,12 @@ export default function DashboardLayout() {
   const storeSlug = store?.slug ?? (routeNeedsAdminStore ? routeStoreSlug : ownStore?.slug);
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const adminViewValue = useMemo(() => ({ isAdminView }), [isAdminView]);
+  const dashboardStoreValue = useMemo(() => ({
+    store,
+    storeId,
+    storeSlug,
+    isLoading: storeLoading,
+  }), [store, storeId, storeSlug, storeLoading]);
 
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
