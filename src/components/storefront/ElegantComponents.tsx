@@ -41,7 +41,7 @@ export function ElegantHeader({ store, colors }: { store: StoreData; colors: The
     <>
       <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3" style={{ backgroundColor: `var(--storefront-bg, ${colors.defaultBg})`, borderBottom: `1px solid var(--storefront-text, ${colors.defaultText})0a` }}>
         <button onClick={() => setMenuOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Open menu">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={`var(--storefront-text, ${colors.defaultText})`} strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><line x1="3" y1="7" x2="21" y2="7" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="17" x2="21" y2="17" /></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={`var(--storefront-text, ${colors.defaultText})`} strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><line x1="3" y1="7" x2="21" y2="7" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="17" x2="21" y2="17" /></svg>
         </button>
 
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
