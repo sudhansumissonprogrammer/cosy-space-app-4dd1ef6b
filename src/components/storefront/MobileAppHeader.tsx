@@ -30,7 +30,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
               <button className="flex h-12 w-12 items-center justify-center rounded-xl transition-colors" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label="Open menu">
-                <Menu className="h-8 w-8" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
+                <Menu className="h-6 w-6" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="storefront-font w-[280px] p-0">
@@ -59,7 +59,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
           <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors" aria-label="Open cart">
             <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
             {cartCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px] px-1">
+              <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full text-[9px] font-bold min-w-[18px] h-[18px] px-1" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
                 {cartCount > 9 ? "9+" : cartCount}
               </span>
             )}

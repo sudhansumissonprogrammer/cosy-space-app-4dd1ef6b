@@ -269,7 +269,7 @@ function CarouselInner({
       {overlay}
 
       {/* Dots */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-2">
         {images.map((_, i) => (
           <button
             key={i}
@@ -277,8 +277,8 @@ function CarouselInner({
               goTo(i);
               resetTimer();
             }}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              i === current ? "w-5 bg-white" : "w-2 bg-white/50"
+            className={`h-2.5 rounded-full transition-all duration-300 ${
+              i === current ? "w-6 bg-white" : "w-2.5 bg-white/50"
             }`}
             aria-label={`Go to slide ${i + 1}`}
           />

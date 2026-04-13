@@ -77,7 +77,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
               <div className="relative">
                 <item.icon className="h-5 w-5" strokeWidth={item.active ? 2.5 : 1.8} />
                 {count > 0 && (
-                  <span className="absolute -right-2 -top-1.5 flex items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground min-w-[15px] h-[15px] px-0.5">
+                  <span className="absolute -right-2 -top-1.5 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px] px-0.5">
                     {count > 9 ? "9+" : count}
                   </span>
                 )}

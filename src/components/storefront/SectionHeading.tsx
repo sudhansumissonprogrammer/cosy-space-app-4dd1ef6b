@@ -31,10 +31,10 @@ export default function SectionHeading({ title, slug, linkTo, className = "" }: 
           {slug && linkTo && (
             <Link
               to={storefrontPath(slug, linkTo)}
-              className="text-xs font-semibold flex items-center gap-0.5 transition-opacity hover:opacity-70"
+              className="text-sm font-semibold flex items-center gap-0.5 transition-opacity hover:opacity-70"
               style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
             >
-              View All <ChevronRight className="h-3.5 w-3.5" />
+              View All <ChevronRight className="h-4 w-4" />
             </Link>
           )}
         </div>

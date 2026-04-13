@@ -52,14 +52,8 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
                     </div>
                   )}
                 </div>
-                <span className="text-[11px] font-semibold tracking-wide text-foreground text-center leading-tight" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
-                  {cat.name.split(' ').map((word, i) => (
-                    <span key={i}>
-                      {i > 0 && ' '}
-                      <span className="text-[13px] font-semibold">{word.charAt(0)}</span>
-                      <span className="text-[10px] font-semibold">{word.slice(1)}</span>
-                    </span>
-                  ))}
+                <span className="text-[11px] font-semibold tracking-wide text-foreground text-center leading-tight truncate max-w-[80px]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
+                  {cat.name}
                 </span>
               </Link>
             ))
