@@ -36,7 +36,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
     <Link
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
       className="block cursor-pointer group"
-      style={{ backgroundColor: "#0a0a0a" }}
+      style={{ backgroundColor: "var(--storefront-bg, #0a0a0a)" }}
     >
       {/* Image — square, no border-radius, full-bleed */}
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/4" }}>
@@ -57,7 +57,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
         <h3
           className="text-sm leading-snug mb-1"
           style={{
-            color: "#ffffff",
+            color: "var(--storefront-text, #ffffff)",
             fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif",
             fontWeight: 500,
             lineHeight: 1.4,
@@ -69,7 +69,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
           <span
             className="text-sm"
             style={{
-              color: "#ffffff",
+              color: "var(--storefront-text, #ffffff)",
               fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
               fontWeight: 400,
             }}

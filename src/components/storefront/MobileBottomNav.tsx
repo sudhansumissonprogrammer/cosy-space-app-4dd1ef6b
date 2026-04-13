@@ -59,7 +59,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   ];
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t bg-card/95 backdrop-blur-md sm:hidden safe-bottom">
+    <nav className="fixed bottom-0 inset-x-0 z-40 border-t backdrop-blur-md sm:hidden safe-bottom" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
       <div className="flex items-stretch justify-around">
         {navItems.map((item) => {
           const count = item.label === "Wishlist" ? wishlistCount : 0;
@@ -71,7 +71,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
               style={{
                 color: item.active
                   ? "var(--storefront-primary, hsl(var(--primary)))"
-                  : "hsl(var(--muted-foreground))",
+                  : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)",
               }}
             >
               <div className="relative">

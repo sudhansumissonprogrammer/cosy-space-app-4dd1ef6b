@@ -47,12 +47,12 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
                   {cat.image_url ? (
                     <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-accent">
-                      <Tag className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" />
+                    <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--accent)))" }}>
+                      <Tag className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: "var(--storefront-text, hsl(var(--muted-foreground)))", opacity: 0.5 }} />
                     </div>
                   )}
                 </div>
-                <span className="text-[11px] font-semibold tracking-wide text-foreground text-center leading-tight truncate max-w-[80px]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
+                <span className="text-[11px] font-semibold tracking-wide text-center leading-tight truncate max-w-[80px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
                   {cat.name}
                 </span>
               </Link>
