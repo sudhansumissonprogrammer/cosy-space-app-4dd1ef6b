@@ -27,7 +27,7 @@ export default function SortDropdown({ value, onChange }: SortDropdownProps) {
         aria-label="Sort products"
       >
         <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
-        <span className="hidden sm:inline">
+        <span>
           {OPTIONS.find((o) => o.value === value)?.label || "Popular"}
         </span>
       </button>
