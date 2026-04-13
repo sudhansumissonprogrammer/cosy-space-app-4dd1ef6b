@@ -47,18 +47,18 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   return (
     <>
       <style>{`
-        .v18-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease; position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; }
-        .v18-header-transparent { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; color: #fff !important; border-color: transparent !important; box-shadow: none !important; }
-        .v18-header-solid { background-color: rgba(10,10,10,0.92) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; color: #fff !important; border-color: transparent !important; box-shadow: 0 1px 8px rgba(0,0,0,0.4) !important; }
+        .v18-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease; position: fixed; top: 0; left: 0; right: 0; z-index: 40; }
+        .v18-header-transparent { background-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; color: #fff; border-color: transparent; box-shadow: none; }
+        .v18-header-solid { background-color: rgba(10,10,10,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #fff; border-color: transparent; box-shadow: 0 1px 8px rgba(0,0,0,0.4); }
         .v18-header-transparent button, .v18-header-transparent a, .v18-header-transparent svg,
-        .v18-header-solid button, .v18-header-solid a, .v18-header-solid svg { color: #fff !important; stroke: #fff !important; }
-        .storefront-font .smart-header { position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; }
-        .storefront-font .smart-header button, .storefront-font .smart-header a, .storefront-font .smart-header svg { color: #fff !important; stroke: #fff !important; }
+        .v18-header-solid button, .v18-header-solid a, .v18-header-solid svg { color: #fff; stroke: #fff; }
+        .storefront-font .smart-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; }
+        .storefront-font .smart-header button, .storefront-font .smart-header a, .storefront-font .smart-header svg { color: #fff; stroke: #fff; }
         .storefront-font main { padding-top: 3.5rem; }
         .v18-hero-pull { margin-top: -3.5rem; }
-        .storefront-font nav[class*="bottom-nav"], .storefront-font div[class*="bottom-nav"], .storefront-font .fixed.bottom-0 { background-color: #0a0a0a !important; border-color: rgba(255,255,255,0.1) !important; }
-        .storefront-font nav[class*="bottom-nav"] svg, .storefront-font div[class*="bottom-nav"] svg, .storefront-font .fixed.bottom-0 svg { color: #ffffff !important; stroke: #ffffff !important; }
-        .storefront-font nav[class*="bottom-nav"] span, .storefront-font div[class*="bottom-nav"] span, .storefront-font .fixed.bottom-0 span { color: #ffffff !important; }
+        .storefront-font nav[class*="bottom-nav"], .storefront-font div[class*="bottom-nav"], .storefront-font .fixed.bottom-0 { background-color: #0a0a0a; border-color: rgba(255,255,255,0.1); }
+        .storefront-font nav[class*="bottom-nav"] svg, .storefront-font div[class*="bottom-nav"] svg, .storefront-font .fixed.bottom-0 svg { color: #ffffff; stroke: #ffffff; }
+        .storefront-font nav[class*="bottom-nav"] span, .storefront-font div[class*="bottom-nav"] span, .storefront-font .fixed.bottom-0 span { color: #ffffff; }
       `}</style>
       <CheckoutAwareLayout
         store={store}
