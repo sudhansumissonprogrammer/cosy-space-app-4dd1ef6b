@@ -14,7 +14,7 @@ function RestaurantHeader({ store, tableNumber }: { store: StoreData; tableNumbe
       <div className="flex items-center gap-3 px-4 py-3">
         <Link to={storefrontPath(store.slug)} className="flex items-center gap-3">
           {store.logo_url ? (
-            <img src={store.logo_url} alt={store.name} className="h-10 w-10 rounded-xl object-cover" />
+            <img src={store.logo_url} alt={store.name} className="h-10 w-10 rounded-xl object-contain" />
           ) : (
             <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: "#25D366" }}>
               <Store className="h-5 w-5 text-white" />
