@@ -67,7 +67,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
             <Link
               key={item.label}
               to={item.to}
-              className="relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-all active:scale-[0.93]"
+              className="relative flex flex-1 flex-col items-center gap-0.5 py-2.5 transition-all active:scale-[0.93]"
               style={{
                 color: item.active
                   ? "var(--storefront-primary, hsl(var(--primary)))"
@@ -82,7 +82,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-medium leading-none">{item.label}</span>
+              <span className="text-[11px] font-medium leading-none">{item.label}</span>
             </Link>
           );
         })}

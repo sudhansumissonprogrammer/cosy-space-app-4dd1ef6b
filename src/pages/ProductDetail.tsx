@@ -509,7 +509,14 @@ export default function ProductDetail() {
 
   return (
     <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 py-3 sm:py-8" style={isV18 ? { backgroundColor: "#0a0a0a", color: "#ffffff" } : {}}>
-      {/* Breadcrumb — hidden */}
+      {/* Breadcrumb */}
+      <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb" style={isV18 ? { display: "none" } : {}}>
+        <Link to={storefrontPath(store.slug)} className="hover:text-foreground transition-colors">Home</Link>
+        <span>/</span>
+        <Link to={storefrontPath(store.slug, "shop")} className="hover:text-foreground transition-colors">Shop</Link>
+        <span>/</span>
+        <span className="text-foreground font-medium line-clamp-1">{product.name}</span>
+      </nav>
 
       <div className="grid gap-2 sm:gap-6 lg:grid-cols-2 lg:gap-10">
         {/* Image Gallery */}

@@ -91,10 +91,10 @@ export default function SideCart({ store }: SideCartProps) {
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="h-20 w-20 shrink-0 rounded-lg border object-cover"
+                        className="h-24 w-24 shrink-0 rounded-lg border object-cover"
                       />
                     ) : (
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-accent">
+                      <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-accent">
                         <Package className="h-6 w-6 text-muted-foreground" />
                       </div>
                     )}
@@ -110,16 +110,16 @@ export default function SideCart({ store }: SideCartProps) {
                         <div className="flex items-center rounded-lg border border-border">
                           <button
                             onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}
-                            className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:scale-90"
+                            className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:scale-90"
                           >
-                            <Minus className="h-3 w-3" />
+                            <Minus className="h-3.5 w-3.5" />
                           </button>
-                          <span key={item.quantity} className="w-7 text-center text-xs font-semibold qty-bounce">{item.quantity}</span>
+                          <span key={item.quantity} className="w-8 text-center text-sm font-semibold qty-bounce">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)}
-                            className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:scale-90"
+                            className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:scale-90"
                           >
-                            <Plus className="h-3 w-3" />
+                            <Plus className="h-3.5 w-3.5" />
                           </button>
                         </div>
                         <button

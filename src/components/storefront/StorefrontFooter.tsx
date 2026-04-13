@@ -45,7 +45,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           {/* Column 2: Quick Links */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider">Quick Links</h3>
-            <nav className="flex flex-col gap-2">
+            <nav className="flex flex-col gap-2.5">
               {[
                 { to: storefrontPath(store.slug), label: "Home" },
                 { to: storefrontPath(store.slug, "about"), label: "About Us" },
@@ -58,7 +58,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                 <Link
                   key={link.label}
                   to={link.to}
-                  className="text-sm opacity-75 transition-opacity hover:opacity-100"
+                  className="text-[13px] sm:text-sm opacity-75 transition-opacity hover:opacity-100"
                   style={{ color: "inherit" }}
                 >
                   {link.label}

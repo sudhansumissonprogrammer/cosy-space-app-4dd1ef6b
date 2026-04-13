@@ -88,7 +88,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
           </div>
         </div>
         <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)}>
-          <h3 className="text-xs font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">{product.name}</h3>
+          <h3 className="text-[13px] font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">{product.name}</h3>
         </Link>
         <div className="flex items-center gap-1 min-w-0">
           {product.sale_price ? (
