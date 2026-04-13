@@ -924,7 +924,7 @@ export default function CheckoutPage() {
   const itemCount = checkoutItems.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium" style={{ fontFamily: "var(--storefront-body-font, 'Montserrat'), sans-serif" }}>
 
       {/* 1. Order Summary — Collapsible */}
       <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} defaultOpen className="mb-4 rounded-xl border border-border bg-card">

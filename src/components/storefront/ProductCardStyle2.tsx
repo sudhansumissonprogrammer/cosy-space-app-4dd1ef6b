@@ -67,8 +67,8 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
           </div>
         )}
         <div className="absolute bottom-2.5 right-2.5 flex flex-col gap-1.5">
-          <button onClick={handleToggleWishlist} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "#fee2e2" : "rgba(255,255,255,0.92)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
-            <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "#666" }} aria-hidden="true" />
+          <button onClick={handleToggleWishlist} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "color-mix(in srgb, #ef4444 15%, var(--storefront-bg, #fff))" : "color-mix(in srgb, var(--storefront-bg, #fff) 92%, transparent)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+            <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 40%, transparent)" }} aria-hidden="true" />
           </button>
           <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={`Add ${product.name} to cart`}>
             <ShoppingCart className="h-4 w-4" style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }} aria-hidden="true" />

@@ -28,7 +28,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
   return (
     <Link
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
-      className="group overflow-hidden bg-card transition-all active:scale-[0.98]"
+      className="group overflow-hidden transition-all active:scale-[0.98]"
       style={{ borderRadius: "12px", border: "1px solid hsl(var(--border, 0 0% 90%))" }}
     >
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
@@ -67,8 +67,8 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
             -{discount}%
           </div>
         )}
-        <button onClick={handleToggleWishlist} className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "#fee2e2" : "rgba(255,255,255,0.92)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
-          <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "#666" }} aria-hidden="true" />
+        <button onClick={handleToggleWishlist} className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "color-mix(in srgb, #ef4444 15%, var(--storefront-bg, #fff))" : "color-mix(in srgb, var(--storefront-bg, #fff) 92%, transparent)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+          <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 40%, transparent)" }} aria-hidden="true" />
         </button>
       </div>
 

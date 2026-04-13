@@ -48,19 +48,21 @@ export default function StorefrontSearchBar({
 
   return (
     <div ref={wrapperRef} className="relative flex-1 z-[60]">
-      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }} />
       <Input
         placeholder="Search products..."
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         onFocus={() => setFocused(true)}
-        className="pl-9 pr-10 rounded-full border-0 bg-accent/60 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0"
+        className="pl-9 pr-10 rounded-full border-0 focus-visible:ring-1 focus-visible:ring-offset-0"
+        style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)", color: "var(--storefront-text, hsl(var(--foreground)))" }}
         maxLength={100}
       />
       {searchQuery && (
         <button
           onClick={() => onSearchChange("")}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+          style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}
           aria-label="Clear search"
         >
           <X className="h-4 w-4" />
@@ -68,7 +70,9 @@ export default function StorefrontSearchBar({
       )}
 
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+        <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl shadow-lg"
+          style={{ backgroundColor: "var(--storefront-bg, hsl(var(--popover)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 15%, transparent)", color: "var(--storefront-text, hsl(var(--foreground)))" }}
+        >
           {suggestions.length > 0 ? (
             <ul className="max-h-[320px] overflow-y-auto py-1">
               {suggestions.map((p) => (
@@ -79,7 +83,10 @@ export default function StorefrontSearchBar({
                       setFocused(false);
                       onSearchChange("");
                     }}
-                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent/60 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 transition-colors"
+                    style={{ backgroundColor: "transparent" }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 6%, transparent)"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                   >
                     {p.image_url ? (
                       <img
@@ -88,18 +95,18 @@ export default function StorefrontSearchBar({
                         className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/40 flex-shrink-0">
-                        <Package className="h-4 w-4 text-muted-foreground/50" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg flex-shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)" }}>
+                        <Package className="h-4 w-4" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 30%, transparent)" }} />
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground truncate">
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                         {p.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
                         {p.sale_price && p.sale_price < p.price ? (
                           <>
-                            <span className="font-semibold text-foreground">
+                            <span className="font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                               ₹{Number(p.sale_price).toFixed(0)}
                             </span>
                             <span className="ml-1 line-through">
@@ -107,7 +114,7 @@ export default function StorefrontSearchBar({
                             </span>
                           </>
                         ) : (
-                          <span className="font-semibold text-foreground">
+                          <span className="font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                             ₹{Number(p.price).toFixed(0)}
                           </span>
                         )}
@@ -118,7 +125,7 @@ export default function StorefrontSearchBar({
               ))}
             </ul>
           ) : (
-            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+            <div className="px-4 py-6 text-center text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
               No products found
             </div>
           )}

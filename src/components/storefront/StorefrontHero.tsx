@@ -32,11 +32,11 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
             width={1200}
             height={400}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, var(--storefront-bg, hsl(var(--background))) 0%, color-mix(in srgb, var(--storefront-bg, hsl(var(--background))) 40%, transparent) 50%, transparent 100%)" }} />
         </div>
       ) : (
-        <div className="h-56 w-full bg-gradient-to-br from-primary/20 via-accent to-primary/10 sm:h-72 lg:h-80 xl:h-[360px]">
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+        <div className="h-56 w-full sm:h-72 lg:h-80 xl:h-[360px]" style={{ background: "linear-gradient(to bottom right, color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 20%, transparent), color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 10%, var(--storefront-bg, hsl(var(--background)))))" }}>
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, color-mix(in srgb, var(--storefront-bg, hsl(var(--background))) 80%, transparent), transparent)" }} />
         </div>
       )}
       <div className="absolute inset-0 flex items-end">
@@ -46,25 +46,26 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
               <img
                 src={optimizeImageUrl(store.logo_url, 96, 80)}
                 alt={store.name}
-                className="h-20 w-20 rounded-2xl border-4 border-background object-cover shadow-lg sm:h-24 sm:w-24"
+                className="h-20 w-20 rounded-2xl object-cover shadow-lg sm:h-24 sm:w-24"
+                style={{ border: "4px solid var(--storefront-bg, hsl(var(--background)))" }}
                 loading="eager"
                 width={96}
                 height={96}
               />
             ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-background bg-card shadow-lg sm:h-24 sm:w-24">
+              <div className="flex h-20 w-20 items-center justify-center rounded-2xl shadow-lg sm:h-24 sm:w-24" style={{ border: "4px solid var(--storefront-bg, hsl(var(--background)))", backgroundColor: "var(--storefront-bg, hsl(var(--card)))" }}>
                 <StoreTextLogo storeName={store.name} size="text-sm" className="text-center leading-tight px-1 break-words whitespace-normal" />
               </div>
             )}
             <div className="mb-1 min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-foreground sm:text-3xl lg:text-4xl">{store.name}</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{store.name}</h1>
                 {store.is_verified && (
-                  <BadgeCheck className="h-5 w-5 text-primary" />
+                  <BadgeCheck className="h-5 w-5" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }} />
                 )}
               </div>
               {store.description && (
-                <p className="mt-1 max-w-xl text-sm lg:text-base text-muted-foreground line-clamp-2">
+                <p className="mt-1 max-w-xl text-sm lg:text-base line-clamp-2" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
                   {store.description}
                 </p>
               )}
