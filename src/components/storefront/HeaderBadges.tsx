@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { ShoppingCart, Heart, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
