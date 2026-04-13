@@ -6,6 +6,7 @@ import { optimizeImageUrl, getImageSrcSet, resolveProductImages, PRODUCT_CARD_SI
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
+import ProductCardHoverBar from "./ProductCardHoverBar";
 
 interface Props {
   product: Tables<"products">;
@@ -13,13 +14,10 @@ interface Props {
   store: Tables<"stores">;
   priority?: boolean;
   onVariantRequired?: () => void;
+  onQuickView?: (e: React.MouseEvent) => void;
 }
 
-/**
- * Style 2 — Milano-inspired: floating wishlist + cart icons on the image,
- * star ratings below, no explicit Add to Cart button row.
- */
-export default function ProductCardStyle2({ product, slug, store, priority = false, onVariantRequired }: Props) {
+export default function ProductCardStyle2({ product, slug, store, priority = false, onVariantRequired, onQuickView }: Props) {
   const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const discount = getDiscountPercent(product.price, product.sale_price);
   const rating = getProductRating(product.id);
@@ -66,7 +64,8 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
             -{discount}%
           </div>
         )}
-        <div className="absolute bottom-2.5 right-2.5 flex flex-col gap-1.5">
+        {/* Mobile: floating icons */}
+        <div className="absolute bottom-2.5 right-2.5 flex flex-col gap-1.5 lg:hidden">
           <button onClick={handleToggleWishlist} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "color-mix(in srgb, #ef4444 15%, var(--storefront-bg, #fff))" : "color-mix(in srgb, var(--storefront-bg, #fff) 92%, transparent)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
             <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 40%, transparent)" }} aria-hidden="true" />
           </button>
@@ -74,6 +73,14 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
             <ShoppingCart className="h-4 w-4" style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }} aria-hidden="true" />
           </button>
         </div>
+        {/* Desktop: hover action bar */}
+        {onQuickView && (
+          <ProductCardHoverBar
+            wishlisted={wishlisted}
+            onQuickView={onQuickView}
+            onToggleWishlist={handleToggleWishlist}
+          />
+        )}
       </div>
       <div className="px-2.5 pt-2.5 pb-3 space-y-1">
         <p className="text-[13px] font-semibold leading-tight truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>

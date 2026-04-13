@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 
 interface SectionHeadingProps {
@@ -11,11 +11,11 @@ interface SectionHeadingProps {
 
 /**
  * Premium section heading with elegant line divider.
- * Used across all storefront themes for consistent luxury feel.
+ * Desktop shows a clean "View All →" aligned right like Ochaka.
  */
 export default function SectionHeading({ title, slug, linkTo, className = "" }: SectionHeadingProps) {
   return (
-    <div className={`flex flex-col items-center mb-4 ${className}`}>
+    <div className={`flex flex-col items-center mb-4 lg:mb-6 ${className}`}>
       <div className="flex items-center justify-between w-full">
         <div className="flex-1" />
         <h2
@@ -31,10 +31,12 @@ export default function SectionHeading({ title, slug, linkTo, className = "" }: 
           {slug && linkTo && (
             <Link
               to={storefrontPath(slug, linkTo)}
-              className="text-sm font-semibold flex items-center gap-0.5 transition-opacity hover:opacity-70"
+              className="text-sm font-semibold flex items-center gap-1 transition-all hover:gap-2 group"
               style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
             >
-              View All <ChevronRight className="h-4 w-4" />
+              <span className="hidden sm:inline">View All</span>
+              <span className="sm:hidden">All</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           )}
         </div>

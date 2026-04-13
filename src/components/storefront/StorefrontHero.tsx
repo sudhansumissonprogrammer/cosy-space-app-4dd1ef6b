@@ -19,7 +19,7 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
   return (
     <section className="relative">
       {store.banner_url ? (
-        <div className="h-56 w-full sm:h-72 lg:h-80 xl:h-[360px]">
+        <div className="h-56 w-full sm:h-72 lg:h-80 xl:h-[360px] 2xl:h-[90vh] 2xl:max-h-[720px]">
           <img
             src={optimizeImageUrl(store.banner_url, 1200, 75)}
             srcSet={getImageSrcSet(store.banner_url, [400, 800, 1200]) || undefined}
@@ -35,7 +35,7 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, var(--storefront-bg, hsl(var(--background))) 0%, color-mix(in srgb, var(--storefront-bg, hsl(var(--background))) 40%, transparent) 50%, transparent 100%)" }} />
         </div>
       ) : (
-        <div className="h-56 w-full sm:h-72 lg:h-80 xl:h-[360px]" style={{ background: "linear-gradient(to bottom right, color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 20%, transparent), color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 10%, var(--storefront-bg, hsl(var(--background)))))" }}>
+        <div className="h-56 w-full sm:h-72 lg:h-80 xl:h-[360px] 2xl:h-[90vh] 2xl:max-h-[720px]" style={{ background: "linear-gradient(to bottom right, color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 20%, transparent), color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 10%, var(--storefront-bg, hsl(var(--background)))))" }}>
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, color-mix(in srgb, var(--storefront-bg, hsl(var(--background))) 80%, transparent), transparent)" }} />
         </div>
       )}

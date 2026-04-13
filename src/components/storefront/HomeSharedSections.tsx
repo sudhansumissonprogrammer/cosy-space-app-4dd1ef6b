@@ -10,7 +10,7 @@ type StoreData = Tables<"stores">;
 /** Shared section header with optional "View All" link */
 export function HomeSectionHeader({ title, slug, linkTo }: { title: string; slug: string; linkTo?: string; fontFallback?: string }) {
   return (
-    <div className="px-4">
+    <div className="px-4 lg:px-6">
       <SectionHeading title={title} slug={slug} linkTo={linkTo} />
     </div>
   );
@@ -28,7 +28,7 @@ export function HomeBestSellingSection({ products, slug, store, cardStyle, bestS
     <div className="py-4">
       <HomeSectionHeader title="Best Selling" slug={slug} linkTo="shop" />
       {useCarousel ? (
-        <div className="px-4">
+        <div className="px-4 lg:px-6">
           <Suspense fallback={null}>
             <BestSellingCarousel products={bestSellers} slug={slug} store={store} cardStyle={cardStyle} />
           </Suspense>
@@ -42,7 +42,7 @@ export function HomeBestSellingSection({ products, slug, store, cardStyle, bestS
               </div>
             ))}
           </div>
-          <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-5 px-4">
+          <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 lg:gap-6 px-4 lg:px-6">
             {bestSellers.map((product: any, idx: number) => (
               <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
             ))}
@@ -76,7 +76,7 @@ export function ResponsiveHeroBanner({ store, HeroBannerCarousel }: { store: Sto
       )}
       {desktopImages.length > 0 && (
         <div className="hidden md:block">
-          <HeroBannerCarousel images={desktopImages} storeName={store.name} interval={2000} imageClassName="w-full h-auto object-cover" maxHeight="520px" />
+          <HeroBannerCarousel images={desktopImages} storeName={store.name} interval={2000} imageClassName="w-full h-auto object-cover" maxHeight="90vh" />
         </div>
       )}
     </>

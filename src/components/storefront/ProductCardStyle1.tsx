@@ -8,6 +8,7 @@ import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/im
 import { getProductRating, getDiscountPercent } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
+import ProductCardHoverBar from "./ProductCardHoverBar";
 
 interface Props {
   product: Tables<"products">;
@@ -15,18 +16,18 @@ interface Props {
   store: Tables<"stores">;
   priority?: boolean;
   onVariantRequired?: () => void;
+  onQuickView?: (e: React.MouseEvent) => void;
 }
 
 const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
-export default function ProductCardStyle1({ product, slug, store, priority = false, onVariantRequired }: Props) {
+export default function ProductCardStyle1({ product, slug, store, priority = false, onVariantRequired, onQuickView }: Props) {
   const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
-  const categoryLabel = product.category || "TOP RATED";
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -60,7 +61,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
               </span>
             </div>
           )}
-          <button onClick={handleToggleWishlist} className="absolute right-2.5 top-2.5 z-10 p-1.5 lg:p-2 transition-all duration-200 hover:scale-110 active:scale-95" aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+          <button onClick={handleToggleWishlist} className="absolute right-2.5 top-2.5 z-10 p-1.5 lg:p-2 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden" aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
             <Heart className={`h-4 w-4 lg:h-5 lg:w-5 drop-shadow-md transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"}`} aria-hidden="true" />
           </button>
           {(() => {
@@ -78,6 +79,14 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
               </>
             );
           })()}
+          {/* Desktop hover action bar */}
+          {onQuickView && (
+            <ProductCardHoverBar
+              wishlisted={wishlisted}
+              onQuickView={onQuickView}
+              onToggleWishlist={handleToggleWishlist}
+            />
+          )}
         </div>
       </Link>
       <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
