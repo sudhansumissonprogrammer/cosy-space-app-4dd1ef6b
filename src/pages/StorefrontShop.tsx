@@ -31,7 +31,7 @@ export default function StorefrontShop() {
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const isMenuStyle = cardStyle === "style-4";
-  const gridClass = isMenuStyle ? "flex flex-col gap-2.5" : "grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4";
+  const gridClass = isMenuStyle ? "flex flex-col gap-2.5" : "grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 
 
   const {
@@ -102,7 +102,7 @@ export default function StorefrontShop() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="mx-auto max-w-6xl px-2 sm:px-4 py-6">
+    <div className="mx-auto max-w-6xl lg:max-w-7xl px-2 sm:px-4 py-6">
       <div className="mb-5 flex items-center gap-3">
         <Link
           to={storefrontPath(slug!, "")}

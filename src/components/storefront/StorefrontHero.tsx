@@ -19,7 +19,7 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
   return (
     <section className="relative">
       {store.banner_url ? (
-        <div className="h-56 w-full sm:h-72 lg:h-80">
+        <div className="h-56 w-full sm:h-72 lg:h-80 xl:h-[360px]">
           <img
             src={optimizeImageUrl(store.banner_url, 1200, 75)}
             srcSet={getImageSrcSet(store.banner_url, [400, 800, 1200]) || undefined}
@@ -35,7 +35,7 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
         </div>
       ) : (
-        <div className="h-56 w-full bg-gradient-to-br from-primary/20 via-accent to-primary/10 sm:h-72 lg:h-80">
+        <div className="h-56 w-full bg-gradient-to-br from-primary/20 via-accent to-primary/10 sm:h-72 lg:h-80 xl:h-[360px]">
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
         </div>
       )}

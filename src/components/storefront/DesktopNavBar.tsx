@@ -70,7 +70,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
           ...style,
         }}
       >
-        <div className="mx-auto flex h-14 max-w-7xl items-center px-6 relative">
+        <div className="mx-auto flex h-14 lg:h-16 max-w-7xl items-center px-6 lg:px-8 relative">
           {/* ---- Left: Navigation Links ---- */}
           <div className="flex items-center gap-6">
             <Link to={storefrontPath(store.slug)} className={linkClass}>

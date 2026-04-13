@@ -65,39 +65,65 @@ function CategoryImage({ cat, size = 300, className = "h-full w-full object-cove
 /** Style 1: Small circles in horizontal carousel */
 function CircleCarousel({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
-      {categories.map((cat) => (
-        <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-1 flex-shrink-0 transition-all">
-          <div className="h-[72px] w-[72px] rounded-full border-2 overflow-hidden transition-all sm:h-[88px] sm:w-[88px] border-border bg-secondary/30" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
-            <CategoryImage cat={cat} size={300} className="h-full w-full object-cover scale-110" />
-          </div>
-          <span className="text-[10px] font-semibold tracking-wide text-foreground text-center leading-tight max-w-[72px] truncate sm:max-w-[88px] sm:text-[11px]">{cat.name}</span>
-        </Link>
-      ))}
-    </div>
+    <>
+      {/* Mobile: horizontal scroll */}
+      <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide md:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
+        {categories.map((cat) => (
+          <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-1 flex-shrink-0 transition-all">
+            <div className="h-[72px] w-[72px] rounded-full border-2 overflow-hidden transition-all sm:h-[88px] sm:w-[88px] border-border bg-secondary/30" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
+              <CategoryImage cat={cat} size={300} className="h-full w-full object-cover scale-110" />
+            </div>
+            <span className="text-[10px] font-semibold tracking-wide text-foreground text-center leading-tight max-w-[72px] truncate sm:max-w-[88px] sm:text-[11px]">{cat.name}</span>
+          </Link>
+        ))}
+      </div>
+      {/* Desktop: centered grid with larger circles */}
+      <div className="hidden md:flex flex-wrap justify-center gap-6 lg:gap-8">
+        {categories.map((cat) => (
+          <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-2 transition-all">
+            <div className="h-[120px] w-[120px] lg:h-[140px] lg:w-[140px] rounded-full border-2 overflow-hidden transition-all border-border bg-secondary/30 hover:shadow-lg" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
+              <CategoryImage cat={cat} size={300} className="h-full w-full object-cover scale-110" />
+            </div>
+            <span className="text-xs lg:text-sm font-semibold tracking-wide text-foreground text-center leading-tight max-w-[140px] truncate">{cat.name}</span>
+          </Link>
+        ))}
+      </div>
+    </>
   );
 }
 
 /** Style 2: Square small cards in horizontal carousel */
 function SquareCarousel({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
-      {categories.map((cat) => (
-        <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex-shrink-0 group">
-          <div className="h-20 w-20 sm:h-[88px] sm:w-[88px] rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
-            <CategoryImage cat={cat} size={300} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-          </div>
-          <p className="mt-1.5 text-[10px] font-semibold text-foreground text-center truncate max-w-20 sm:max-w-[88px]">{cat.name}</p>
-        </Link>
-      ))}
-    </div>
+    <>
+      <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide md:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
+        {categories.map((cat) => (
+          <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex-shrink-0 group">
+            <div className="h-20 w-20 sm:h-[88px] sm:w-[88px] rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
+              <CategoryImage cat={cat} size={300} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            </div>
+            <p className="mt-1.5 text-[10px] font-semibold text-foreground text-center truncate max-w-20 sm:max-w-[88px]">{cat.name}</p>
+          </Link>
+        ))}
+      </div>
+      <div className="hidden md:flex flex-wrap justify-center gap-5 lg:gap-7">
+        {categories.map((cat) => (
+          <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group">
+            <div className="h-[120px] w-[120px] lg:h-[140px] lg:w-[140px] rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
+              <CategoryImage cat={cat} size={400} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            </div>
+            <p className="mt-2 text-xs lg:text-sm font-semibold text-foreground text-center truncate max-w-[140px]">{cat.name}</p>
+          </Link>
+        ))}
+      </div>
+    </>
   );
 }
 
 /** Style 3: Modern square grid with overlay label */
 function SquareGridModern({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5 lg:gap-4">
       {categories.map((cat) => (
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group relative">
           <div className="w-full rounded-xl overflow-hidden transition-all group-hover:shadow-lg" style={{ aspectRatio: "1/1" }}>
@@ -114,7 +140,7 @@ function SquareGridModern({ categories, storeSlug }: { categories: Category[]; s
 /** Style 4: Square cards in grid layout */
 function SquareGrid({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 lg:gap-4">
       {categories.map((cat) => (
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group">
           <div className="w-full rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-md" style={{ aspectRatio: "1/1" }}>
@@ -130,23 +156,42 @@ function SquareGrid({ categories, storeSlug }: { categories: Category[]; storeSl
 /** Style 5: Pill / chip style */
 function PillCarousel({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
-      {categories.map((cat) => (
-        <Link
-          key={cat.id}
-          to={storefrontPath(storeSlug, `category/${cat.slug}`)}
-          className="flex-shrink-0 flex items-center gap-2 rounded-full border border-border px-1 pr-4 py-1 transition-all hover:shadow-md hover:border-transparent group"
-          style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
-          onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"}
-          onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}
-        >
-          <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
-            <CategoryImage cat={cat} size={64} className="h-full w-full object-cover" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">{cat.name}</span>
-        </Link>
-      ))}
-    </div>
+    <>
+      <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide md:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
+        {categories.map((cat) => (
+          <Link
+            key={cat.id}
+            to={storefrontPath(storeSlug, `category/${cat.slug}`)}
+            className="flex-shrink-0 flex items-center gap-2 rounded-full border border-border px-1 pr-4 py-1 transition-all hover:shadow-md hover:border-transparent group"
+            style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}
+          >
+            <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
+              <CategoryImage cat={cat} size={64} className="h-full w-full object-cover" />
+            </div>
+            <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">{cat.name}</span>
+          </Link>
+        ))}
+      </div>
+      <div className="hidden md:flex flex-wrap justify-center gap-3">
+        {categories.map((cat) => (
+          <Link
+            key={cat.id}
+            to={storefrontPath(storeSlug, `category/${cat.slug}`)}
+            className="flex items-center gap-2.5 rounded-full border border-border px-2 pr-5 py-1.5 transition-all hover:shadow-md hover:border-transparent group"
+            style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}
+          >
+            <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0">
+              <CategoryImage cat={cat} size={80} className="h-full w-full object-cover" />
+            </div>
+            <span className="text-sm font-semibold text-foreground whitespace-nowrap">{cat.name}</span>
+          </Link>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -174,7 +219,7 @@ function RevealGrid({ categories, storeSlug }: { categories: Category[]; storeSl
 
   return (
     <div>
-      <div key={animKey} className="grid grid-cols-2 gap-3">
+      <div key={animKey} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
         {visible.map((cat, idx) => (
           <Link
             key={cat.id}
@@ -284,7 +329,7 @@ function SpotlightCarousel({ categories, storeSlug }: { categories: Category[]; 
         )}
 
         {/* Center spotlight with crossfade */}
-        <div className="flex-shrink-0 w-[58%] sm:w-[50%] relative rounded-2xl overflow-hidden shadow-2xl" style={{ aspectRatio: "3/4" }}>
+        <div className="flex-shrink-0 w-[58%] sm:w-[50%] md:w-[40%] lg:max-w-[400px] relative rounded-2xl overflow-hidden shadow-2xl" style={{ aspectRatio: "3/4" }}>
           {/* Outgoing (prev) card */}
           {isTransitioning && prev !== null && (
             <div
@@ -403,14 +448,14 @@ function SpotlightCarousel({ categories, storeSlug }: { categories: Category[]; 
 /** Style 10: Magazine Strip — landscape cards stacked vertically */
 function MagazineStrip({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 md:grid md:grid-cols-2 lg:gap-4">
       {categories.map((cat, idx) => (
         <Link
           key={cat.id}
           to={storefrontPath(storeSlug, `category/${cat.slug}`)}
           className="group flex overflow-hidden rounded-2xl border border-border transition-all hover:shadow-lg"
           style={{
-            height: "clamp(100px, 20vw, 140px)",
+            height: "clamp(100px, 20vw, 160px)",
             animation: `magazineSlideIn 0.4s ease-out ${idx * 0.08}s both`,
           }}
         >
@@ -446,7 +491,7 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
 
   return (
     <div className="backdrop-blur-md" style={{ minHeight: gridMinHeight, contain: "layout style", backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
-      <div className="mx-auto max-w-6xl px-4 py-5">
+      <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 py-5 lg:py-8">
         <SectionHeading title="Shop by Category" />
         {isLoading ? (
           isCarousel ? (
