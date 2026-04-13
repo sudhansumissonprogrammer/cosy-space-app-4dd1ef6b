@@ -74,7 +74,7 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [expressMode, setExpressMode] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
-  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(true);
   const [partialPaymentMode, setPartialPaymentMode] = useState<"full" | "partial">("partial");
   const [orderAdvancePaid, setOrderAdvancePaid] = useState(0);
   const [orderBalanceDue, setOrderBalanceDue] = useState(0);
