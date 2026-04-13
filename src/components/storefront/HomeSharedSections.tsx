@@ -42,7 +42,7 @@ export function HomeBestSellingSection({ products, slug, store, cardStyle, bestS
               </div>
             ))}
           </div>
-          <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4 px-4">
+          <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-5 px-4">
             {bestSellers.map((product: any, idx: number) => (
               <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
             ))}

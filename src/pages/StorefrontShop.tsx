@@ -31,7 +31,7 @@ export default function StorefrontShop() {
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const isMenuStyle = cardStyle === "style-4";
-  const gridClass = isMenuStyle ? "flex flex-col gap-2.5" : "grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4";
+  const gridClass = isMenuStyle ? "flex flex-col gap-2.5" : "grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 
 
   const {

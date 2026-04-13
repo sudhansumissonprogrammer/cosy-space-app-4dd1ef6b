@@ -19,7 +19,7 @@ export default function SectionHeading({ title, slug, linkTo, className = "" }: 
       <div className="flex items-center justify-between w-full">
         <div className="flex-1" />
         <h2
-          className="text-base sm:text-lg font-bold tracking-wide whitespace-nowrap text-center"
+          className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold tracking-wide whitespace-nowrap text-center"
           style={{
             fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)",
             color: "var(--storefront-text, hsl(var(--foreground)))",
