@@ -82,7 +82,7 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
         <div className="flex md:hidden items-center justify-center gap-4 mt-3">
           <button
             onClick={() => api?.scrollPrev()}
-            className="h-8 w-8 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-accent transition-colors"
+            className="h-8 w-8 rounded-full flex items-center justify-center transition-colors" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 15%, transparent)", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}
             aria-label="Previous"
           >
             ‹
@@ -92,18 +92,17 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
               <button
                 key={i}
                 onClick={() => api?.scrollTo(i)}
-                className={`h-2 w-2 rounded-full transition-opacity duration-300 ${
-                  i === current
-                    ? "bg-foreground opacity-100"
-                    : "bg-muted-foreground/30 opacity-100 hover:bg-muted-foreground/50"
-                }`}
+                className="h-2 w-2 rounded-full transition-opacity duration-300"
+                style={{
+                  backgroundColor: i === current ? "var(--storefront-text, hsl(var(--foreground)))" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 20%, transparent)",
+                }}
                 aria-label={`Go to slide ${i + 1}`}
               />
             ))}
           </div>
           <button
             onClick={() => api?.scrollNext()}
-            className="h-8 w-8 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-accent transition-colors"
+            className="h-8 w-8 rounded-full flex items-center justify-center transition-colors" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 15%, transparent)", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", color: "var(--storefront-text, hsl(var(--foreground)))" }}
             aria-label="Next"
           >
             ›
@@ -116,11 +115,10 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
             <button
               key={i}
               onClick={() => api?.scrollTo(i)}
-              className={`h-2 w-2 rounded-full transition-opacity duration-300 ${
-                i === current
-                  ? "bg-foreground opacity-100"
-                  : "bg-muted-foreground/30 opacity-100 hover:bg-muted-foreground/50"
-              }`}
+              className="h-2 w-2 rounded-full transition-opacity duration-300"
+              style={{
+                backgroundColor: i === current ? "var(--storefront-text, hsl(var(--foreground)))" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 20%, transparent)",
+              }}
               aria-label={`Go to slide ${i + 1}`}
             />
           ))}

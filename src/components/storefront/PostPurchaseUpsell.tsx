@@ -103,8 +103,8 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
           <ShoppingBag className="h-7 w-7 text-primary" />
         </div>
-        <h2 className="text-xl font-bold text-foreground">Wait! Special offer just for you 🎁</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h2 className="text-xl font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>Wait! Special offer just for you 🎁</h2>
+        <p className="mt-1 text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
           Add these to order {orderNumber || `#${orderId.slice(0, 8)}`} with one tap
         </p>
       </div>
@@ -118,7 +118,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
           return (
             <div
               key={product.id}
-              className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-all hover:border-primary/30"
+              className="flex items-center gap-3 rounded-xl p-3 transition-all" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)", backgroundColor: "var(--storefront-bg, hsl(var(--card)))" }}
             >
               <img
                 src={optimizeImageUrl(cleanImageUrl(product.image_url) || "/placeholder.svg", 200)}
@@ -129,12 +129,12 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
                 height={64}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground line-clamp-1">{product.name}</p>
+                <p className="text-sm font-semibold line-clamp-1" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{product.name}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-sm font-bold text-foreground">{currency} {Number(price).toFixed(0)}</span>
+                  <span className="text-sm font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{currency} {Number(price).toFixed(0)}</span>
                   {hasDiscount && (
                     <>
-                      <span className="text-xs text-muted-foreground line-through">{currency} {Number(product.price).toFixed(0)}</span>
+                      <span className="text-xs line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{currency} {Number(product.price).toFixed(0)}</span>
                       <Badge variant="secondary" className="text-[9px] px-1 py-0">
                         {getDiscountPercent(product.price, product.sale_price!)}% OFF
                       </Badge>
@@ -167,7 +167,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
 
       <Button
         variant="ghost"
-        className="w-full text-sm text-muted-foreground hover:text-foreground"
+        className="w-full text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}
         onClick={onSkip}
       >
         No thanks, show my confirmation →

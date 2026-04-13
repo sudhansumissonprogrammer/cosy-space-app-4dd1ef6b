@@ -9,7 +9,7 @@ export function CartBadge() {
   const { cartCount, openCart } = useCart();
   return (
     <button onClick={openCart} className="relative" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
-      <div className="flex h-9 w-9 items-center justify-center rounded-md text-foreground hover:bg-accent transition-colors">
+      <div className="flex h-9 w-9 items-center justify-center rounded-md transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
         <ShoppingCart className="h-5 w-5" aria-hidden="true" />
       </div>
       {cartCount > 0 && (
@@ -25,7 +25,7 @@ export function WishlistBadge({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
     <Link to={storefrontPath(slug, "wishlist")} className="relative" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}>
-      <div className="flex h-9 w-9 items-center justify-center rounded-md text-foreground hover:bg-accent transition-colors">
+      <div className="flex h-9 w-9 items-center justify-center rounded-md transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
         <Heart className="h-5 w-5" aria-hidden="true" />
       </div>
       {wishlistCount > 0 && (
@@ -40,7 +40,7 @@ export function AccountBadge({ slug }: { slug: string }) {
   if (loading) return null;
   return (
     <Link to={storefrontPath(slug, user ? "account" : "login")} aria-label={user ? "My account" : "Login"}>
-      <div className="flex h-9 w-9 items-center justify-center rounded-md text-foreground hover:bg-accent transition-colors">
+      <div className="flex h-9 w-9 items-center justify-center rounded-md transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
         <User className="h-5 w-5" aria-hidden="true" />
       </div>
     </Link>

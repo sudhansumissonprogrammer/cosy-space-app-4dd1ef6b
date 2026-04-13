@@ -105,7 +105,7 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
       <DialogContent className="max-w-[340px] rounded-2xl p-0 overflow-hidden border-0 shadow-2xl">
         <button
           onClick={() => setShow(false)}
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-accent/80 text-muted-foreground hover:text-foreground transition-all"
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-all" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)", color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}
         >
           <X className="h-4 w-4" strokeWidth={2.5} />
         </button>
@@ -114,8 +114,8 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
             <Gift className="h-7 w-7 text-primary" />
           </div>
-          <h3 className="text-lg font-bold text-foreground">Wait! Don't leave yet 🎉</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h3 className="text-lg font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>Wait! Don't leave yet 🎉</h3>
+          <p className="mt-1 text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
             Here's a special discount from {storeName}
           </p>
         </div>
@@ -126,7 +126,7 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
               {discountText}
             </Badge>
             <div className="flex items-center justify-center gap-2 mt-3">
-              <code className="text-lg font-mono font-bold text-foreground tracking-wider">
+              <code className="text-lg font-mono font-bold tracking-wider" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                 {coupon.code}
               </code>
               <Button
@@ -139,7 +139,7 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
               </Button>
             </div>
             {coupon.min_order_amount > 0 && (
-              <p className="mt-2 text-[10px] text-muted-foreground">
+              <p className="mt-2 text-[10px]" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
                 Min. order: {coupon.min_order_amount}
               </p>
             )}

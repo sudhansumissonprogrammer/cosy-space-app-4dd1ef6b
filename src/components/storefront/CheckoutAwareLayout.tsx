@@ -170,14 +170,15 @@ export default function CheckoutAwareLayout({
       <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !headerVisible ? 'smart-header-hidden' : ''} ${
         headerClassName ? headerClassName :
         headerBgOverride ? '' :
-        isCheckout ? 'bg-card/80 backdrop-blur-md' :
+        isCheckout ? '' :
         headerStyle === 'transparent' ? '' :
         headerStyle === 'glassmorphic' ? '' :
-        'bg-card/80 backdrop-blur-md'
+        ''
       }`}
         style={
           headerBgOverride && !isCheckout ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined } :
           headerClassName ? {} :
+          isCheckout ? { backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 85%, transparent)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" } :
           !isCheckout && headerStyle === 'glassmorphic' ? {
             background: 'rgba(255,255,255,0.12)',
             backdropFilter: 'blur(20px) saturate(180%)',
@@ -186,17 +187,19 @@ export default function CheckoutAwareLayout({
             border: '1px solid rgba(255,255,255,0.18)',
             margin: '0 8px',
             boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-          } : undefined
+          } :
+          headerStyle !== 'transparent' ? { backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 85%, transparent)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" } :
+          undefined
         }
       >
         <div className={`mx-auto flex ${isCheckout ? 'h-11' : 'h-14'} max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4`}>
           {isCheckout ? (
             <>
               <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick} aria-label="Go back">
-                <ArrowLeft className="h-5 w-5 text-foreground" strokeWidth={2.5} aria-hidden="true" />
+                <ArrowLeft className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
               </Button>
               {LogoElement}
-              <span className="text-sm font-semibold text-foreground" style={{ fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{store.theme === "theme-16" ? "Checkout / चेकआउट" : "Checkout"}</span>
+              <span className="text-sm font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{store.theme === "theme-16" ? "Checkout / चेकआउट" : "Checkout"}</span>
               <div className="flex-1" />
             </>
           ) : isCentered ? (
@@ -213,7 +216,7 @@ export default function CheckoutAwareLayout({
               {LogoElement}
               <button
                 onClick={() => setSearchOpen(true)}
-                className="flex-1 mx-2 flex items-center gap-2 rounded-full border border-border bg-accent/50 px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
+                className="flex-1 mx-2 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)", backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 5%, transparent)", color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}
                 aria-label="Search products"
               >
                 <Search className="h-3.5 w-3.5" />

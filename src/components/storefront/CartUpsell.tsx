@@ -76,7 +76,7 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
 
   return (
     <div className="mt-4 pt-4 border-t border-border">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+      <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 55%, transparent)" }}>
         You may also like
       </h3>
       <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
@@ -88,10 +88,10 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
           return (
             <div
               key={product.id}
-              className="flex-shrink-0 w-[130px] rounded-xl border border-border bg-card overflow-hidden"
+              className="flex-shrink-0 w-[130px] rounded-xl overflow-hidden" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, inherit) 10%, transparent)", backgroundColor: "var(--storefront-bg, hsl(var(--card)))" }}
             >
               {/* Image */}
-              <div className="relative aspect-square w-full bg-accent">
+              <div className="relative aspect-square w-full" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, inherit) 5%, var(--storefront-bg, #fff))" }}>
                 {product.image_url ? (
                   <img
                     src={optimizeImageUrl(cleanImageUrl(product.image_url), 200)}
@@ -103,7 +103,7 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
-                    <ShoppingCart className="h-6 w-6 text-muted-foreground/30" />
+                    <ShoppingCart className="h-6 w-6" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 20%, transparent)" }} />
                   </div>
                 )}
                 {hasDiscount && (
@@ -115,7 +115,7 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
 
               {/* Info */}
               <div className="p-2 space-y-1">
-                <p className="text-[10px] font-semibold text-foreground line-clamp-2 leading-tight">
+                <p className="text-[10px] font-semibold line-clamp-2 leading-tight" style={{ color: "var(--storefront-text, inherit)" }}>
                   {product.name}
                 </p>
                 <div className="flex items-center gap-1">
@@ -125,18 +125,18 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-bold text-foreground">
+                  <span className="text-xs font-bold" style={{ color: "var(--storefront-text, inherit)" }}>
                     {currency} {displayPrice.toFixed(0)}
                   </span>
                   {hasDiscount && (
-                    <span className="text-[9px] text-muted-foreground line-through">
+                    <span className="text-[9px] line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 50%, transparent)" }}>
                       {currency} {Number(product.price).toFixed(0)}
                     </span>
                   )}
                 </div>
                 <button
                   onClick={() => handleAdd(product)}
-                  className="flex h-6 w-full items-center justify-center gap-1 rounded-md btn-gold text-[9px] font-bold uppercase tracking-wide transition-all active:scale-95"
+                  className="flex h-6 w-full items-center justify-center gap-1 rounded-md text-[9px] font-bold uppercase tracking-wide transition-all active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                 >
                   <Plus className="h-3 w-3" strokeWidth={2.5} />
                   Add
