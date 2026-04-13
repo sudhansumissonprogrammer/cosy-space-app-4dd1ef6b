@@ -1582,7 +1582,7 @@ function AccordionItem({
       <button
         onClick={onToggle}
         className={`flex w-full items-center justify-between px-4 py-3 text-sm font-bold transition-colors ${isV18 ? 'hover:bg-white/5' : 'text-foreground hover:bg-accent/30'}`}
-        style={isV18 ? { color: "#ffffff", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" } : {}}
+        style={isV18 ? { color: "#ffffff", fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" } : {}}
       >
         <span className="flex items-center gap-2">{icon}{title}</span>
         {isV18 ? (
