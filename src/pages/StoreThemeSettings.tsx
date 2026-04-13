@@ -15,6 +15,7 @@ import { toast } from "sonner";
 const FONT_OPTIONS = [
   "Alegreya SC",
   "Inter",
+  "Montserrat Alternates",
   "Playfair Display",
   "Lora",
   "Poppins",
