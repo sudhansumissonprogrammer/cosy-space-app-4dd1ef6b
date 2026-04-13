@@ -75,7 +75,7 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-display: swap;
-    --font-storefront: 'Alegreya SC', serif;
+    
 
     /* Storefront theme defaults (overridden by inline CSS vars) */
     --storefront-primary: #004643;
