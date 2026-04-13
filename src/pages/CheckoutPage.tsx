@@ -74,7 +74,7 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [expressMode, setExpressMode] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
-  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(true);
   const [partialPaymentMode, setPartialPaymentMode] = useState<"full" | "partial">("partial");
   const [orderAdvancePaid, setOrderAdvancePaid] = useState(0);
   const [orderBalanceDue, setOrderBalanceDue] = useState(0);
@@ -924,10 +924,10 @@ export default function CheckoutPage() {
   const itemCount = checkoutItems.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 text-[13px] [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium" style={{ fontFamily: "'Montserrat', sans-serif" }}>
 
       {/* 1. Order Summary — Collapsible */}
-      <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} className="mb-4 rounded-xl border border-border bg-card">
+      <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} defaultOpen className="mb-4 rounded-xl border border-border bg-card">
         <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-muted-foreground" />
@@ -1221,13 +1221,16 @@ export default function CheckoutPage() {
           </div>
         )}
         <button
-          className="flex h-12 w-full items-center justify-center gap-2 text-sm font-bold btn-gold disabled:opacity-50"
+          className="flex h-12 w-full items-center justify-center gap-2 text-sm font-bold btn-gold disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
           onClick={handlePlaceOrder}
           disabled={placing || paymentFailed}
         >
-          {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isPartialOrder ? `${t("Pay Advance", "एडवांस दें")} ${currency} ${chargeAmount.toFixed(2)}` : paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`}
+          {placing ? (
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t("Placing order...", "ऑर्डर हो रहा है...")}</>
+          ) : (
+            isPartialOrder ? `${t("Pay Advance", "एडवांस दें")} ${currency} ${chargeAmount.toFixed(2)}` : paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`
+          )}
         </button>
       </div>
 

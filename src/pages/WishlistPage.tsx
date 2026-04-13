@@ -44,8 +44,9 @@ export default function WishlistPage() {
 
       {items.length === 0 ? (
         <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-2xl border border-border bg-card">
-          <Heart className="h-12 w-12 text-muted-foreground/30" />
-          <p className="text-muted-foreground">Your wishlist is empty</p>
+          <Heart className="h-20 w-20 text-muted-foreground/20" />
+          <p className="text-lg font-semibold text-foreground">Your wishlist is empty</p>
+          <p className="text-sm text-muted-foreground">Save items you love to find them easily later</p>
           <Button asChild variant="outline">
             <Link to={storefrontPath(slug!, "")}>Continue Shopping</Link>
           </Button>
@@ -62,7 +63,7 @@ export default function WishlistPage() {
                 {/* Image */}
                 <Link
                   to={storefrontPath(slug!, `product/${item.slug || item.productId}`)}
-                  className="h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-secondary/40"
+                  className="h-32 w-32 flex-shrink-0 overflow-hidden rounded-xl bg-secondary/40"
                 >
                   {item.image ? (
                     <img src={item.image} alt={item.name} className="h-full w-full object-cover" />

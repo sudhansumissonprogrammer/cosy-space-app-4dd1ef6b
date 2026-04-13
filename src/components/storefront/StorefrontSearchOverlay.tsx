@@ -208,7 +208,7 @@ export default function StorefrontSearchOverlay({
           <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-colors shrink-0"
+              className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-medium transition-colors shrink-0"
               style={{
                 backgroundColor: activeFilterCount > 0 || showFilters
                   ? "var(--storefront-text, hsl(var(--foreground)))"
@@ -233,7 +233,7 @@ export default function StorefrontSearchOverlay({
               <button
                 key={opt.value}
                 onClick={() => setSortBy(opt.value)}
-                className="rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0"
+                className="rounded-full px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0"
                 style={{
                   backgroundColor: sortBy === opt.value
                     ? "var(--storefront-text, hsl(var(--foreground)))"
@@ -328,11 +328,11 @@ export default function StorefrontSearchOverlay({
                             <img
                               src={optimizeImageUrl(p.image_url, 96)}
                               alt={p.name}
-                              className="h-11 w-11 rounded-lg object-cover flex-shrink-0"
+                              className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
                               loading="lazy"
                             />
                           ) : (
-                            <div className="flex h-11 w-11 items-center justify-center rounded-lg flex-shrink-0"
+                            <div className="flex h-14 w-14 items-center justify-center rounded-lg flex-shrink-0"
                               style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08" }}
                             >
                               <Package className="h-5 w-5 opacity-30" />
