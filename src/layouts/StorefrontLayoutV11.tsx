@@ -32,7 +32,7 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-      <div className="mx-3 mb-2 flex items-center gap-2">
+      <div className="mx-2 mb-2 flex items-center gap-1.5">
         <div className="flex flex-1 items-center justify-around rounded-[28px] px-1.5 py-2" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)" }}>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -45,7 +45,7 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
             );
           })}
         </div>
-        <button onClick={openCart} className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)" }}>
+        <button onClick={openCart} className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", boxShadow: "0 2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)" }}>
           <ShoppingCart className="h-[22px] w-[22px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} strokeWidth={1.8} />
           {cartCount > 0 && <span className="absolute -right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: "#EF4444", color: "#fff" }}>{cartCount > 9 ? "9+" : cartCount}</span>}
         </button>

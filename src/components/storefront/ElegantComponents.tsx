@@ -77,7 +77,7 @@ export function ElegantHeader({ store, colors }: { store: StoreData; colors: The
           <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Search products"><Search className="h-5 w-5" style={{ color: `var(--storefront-text, ${colors.defaultText})` }} aria-hidden="true" /></button>
           <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
             <ShoppingCart className="h-5 w-5" style={{ color: `var(--storefront-text, ${colors.defaultText})` }} aria-hidden="true" />
-            {cartCount > 0 && <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: `var(--storefront-primary, ${colors.defaultPrimary})`, color: "#fff" }}>{cartCount > 9 ? "9+" : cartCount}</span>}
+            {cartCount > 0 && <span className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: `var(--storefront-primary, ${colors.defaultPrimary})`, color: "#fff" }}>{cartCount > 9 ? "9+" : cartCount}</span>}
           </button>
         </div>
       </header>
@@ -115,9 +115,9 @@ export function ElegantTabBar({ store, colors, useTextForActive = false }: { sto
             <div className="flex flex-col items-center justify-center gap-0.5 py-1 px-2" style={{ minWidth: "52px" }}>
               <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
                 <TabIcon className="h-[22px] w-[22px] transition-colors" style={{ color: isActive ? activeColor : `var(--storefront-text, ${colors.defaultText})60` }} />
-                {tab.badge != null && tab.badge > 0 && <span className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold" style={{ backgroundColor: `var(--storefront-primary, ${colors.defaultPrimary})`, color: "#fff" }}>{tab.badge > 9 ? "9+" : tab.badge}</span>}
+                {tab.badge != null && tab.badge > 0 && <span className="absolute -right-2 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: `var(--storefront-primary, ${colors.defaultPrimary})`, color: "#fff" }}>{tab.badge > 9 ? "9+" : tab.badge}</span>}
               </div>
-              <span className="text-[10px] font-medium" style={{ color: isActive ? activeColor : `var(--storefront-text, ${colors.defaultText})60` }}>{tab.label}</span>
+              <span className="text-[11px] font-medium" style={{ color: isActive ? activeColor : `var(--storefront-text, ${colors.defaultText})60` }}>{tab.label}</span>
             </div>
           );
           if (tab.isCart) return <button key={tab.label} onClick={openCart} className="transition-all active:scale-90">{content}</button>;

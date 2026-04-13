@@ -94,8 +94,8 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
       className="fixed bottom-0 inset-x-0 z-40 sm:hidden"
       style={{
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        backgroundColor: "#fff",
-        borderTop: "1px solid #e8e8e3",
+        backgroundColor: "var(--storefront-bg, #fff)",
+        borderTop: "1px solid var(--storefront-text, #e8e8e3)15",
         fontFamily: "var(--v17-heading-font, 'Cormorant Garamond', serif)",
       }}
     >

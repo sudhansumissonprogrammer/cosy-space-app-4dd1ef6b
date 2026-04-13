@@ -20,8 +20,8 @@ function CartBadgeV2() {
   const { cartCount, openCart } = useCart();
   return (
     <button onClick={openCart} className="relative" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
-      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
-        <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+      <div className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
+        <ShoppingCart className="h-5 w-5" aria-hidden="true" />
       </div>
       {cartCount > 0 && (
         <span
@@ -39,8 +39,8 @@ function WishlistBadgeV2({ slug }: { slug: string }) {
   const { wishlistCount } = useWishlist();
   return (
     <Link to={storefrontPath(slug, "wishlist")} className="relative" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}>
-      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
-        <Heart className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+      <div className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
+        <Heart className="h-5 w-5" aria-hidden="true" />
       </div>
       {wishlistCount > 0 && (
         <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
@@ -56,8 +56,8 @@ function AccountBadgeV2({ slug }: { slug: string }) {
   if (loading) return null;
   return (
     <Link to={storefrontPath(slug, user ? "account" : "login")} aria-label={user ? "My account" : "Login"}>
-      <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
-        <User className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+      <div className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-accent">
+        <User className="h-5 w-5" aria-hidden="true" />
       </div>
     </Link>
   );
@@ -104,7 +104,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
                   { to: storefrontPath(store.slug, "wishlist"), label: "Wishlist" },
                   { to: storefrontPath(store.slug, "account"), label: "My Account" },
                 ].map((link) => (
-                  <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                  <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent">
                     {link.label}
                   </Link>
                 ))}

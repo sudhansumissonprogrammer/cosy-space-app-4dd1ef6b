@@ -39,7 +39,7 @@ function BottomTabBar({ store }: { store: StoreData }) {
               <div className="flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
                 <TabIcon className="h-5 w-5 transition-colors" style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))60" }} />
               </div>
-              <span className="text-[10px] font-medium" style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))50" }}>{tab.label}</span>
+              <span className="text-[11px] font-medium" style={{ color: isActive ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--storefront-text, hsl(var(--foreground)))50" }}>{tab.label}</span>
               {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 rounded-full" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }} />}
             </Link>
           );
