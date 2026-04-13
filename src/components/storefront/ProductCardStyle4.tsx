@@ -67,8 +67,8 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
   return (
     <div
       className="flex gap-3 rounded-2xl p-3 transition-all"
-      style={{ backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 50%, transparent)" }}
       style={{
+        backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 50%, transparent)",
         border: "1px solid hsl(var(--border, 0 0% 90%) / 0.3)",
       }}
     >
