@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-const STAR_COLOR = "#1B5E4B";
-const STAR_EMPTY = "#d4d4d4";
+const STAR_COLOR = "var(--v17-primary, #1B5E4B)";
+const STAR_EMPTY = "color-mix(in srgb, var(--v17-text, #1a1a1a) 20%, transparent)";
 
 function ReviewStar({ filled }: { filled: boolean }) {
   return (
@@ -21,7 +21,7 @@ function ReviewCard({ name, text, rating, product, verified }: {
       style={{
         borderRadius: "12px",
         border: "1px solid var(--v17-border, #e8e8e3)",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--v17-bg, var(--storefront-bg, #fff))",
         padding: "20px",
         fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",
       }}
@@ -35,13 +35,13 @@ function ReviewCard({ name, text, rating, product, verified }: {
       <div className="flex items-center gap-2 pt-1">
         <div
           className="flex items-center justify-center rounded-full"
-          style={{ width: "32px", height: "32px", backgroundColor: "var(--v17-primary, #2B4C3F)", color: "#fff", fontSize: "12px", fontWeight: 700 }}
+          style={{ width: "32px", height: "32px", backgroundColor: "var(--v17-primary, #2B4C3F)", color: "var(--v17-bg, var(--storefront-bg, #fff))", fontSize: "12px", fontWeight: 700 }}
         >
           {name.charAt(0)}
         </div>
         <div>
           <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--v17-text, #1a1a1a)" }}>{name}</p>
-          {verified && <p style={{ fontSize: "12px", color: "#1B5E4B" }}>✓ Verified Buyer</p>}
+          {verified && <p style={{ fontSize: "12px", color: "var(--v17-primary, #1B5E4B)" }}>✓ Verified Buyer</p>}
         </div>
       </div>
       {product && <p style={{ fontSize: "12px", color: "var(--v17-text-muted, #999)", borderTop: "1px solid var(--v17-border, #e8e8e3)", paddingTop: "8px", marginTop: "12px" }}>Reviewed: {product}</p>}

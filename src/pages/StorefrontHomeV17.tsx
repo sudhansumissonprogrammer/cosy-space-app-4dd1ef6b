@@ -107,7 +107,7 @@ function V17Categories({ categories, slug }: { categories: any[]; slug: string }
                   height: "72px",
                   borderRadius: "50%",
                   border: "2px solid var(--v17-border, #e8e8e3)",
-                  backgroundColor: "#f5f5f0",
+                  backgroundColor: "var(--v17-bg, var(--storefront-bg, #f5f5f0))",
                 }}
               >
                 {cat.image_url ? (
@@ -260,7 +260,7 @@ export default function StorefrontHomeV17() {
               <Link
                 to={storefrontPath(slug, "shop")}
                 className="inline-flex items-center justify-center px-8 py-3 rounded-full text-white font-medium text-sm tracking-wide shadow-lg transition-transform active:scale-95"
-                style={{ backgroundColor: "#0F2A22", minWidth: "180px" }}
+                style={{ backgroundColor: "var(--v17-primary, #0F2A22)", color: "var(--v17-bg, var(--storefront-bg, #fff))", minWidth: "180px" }}
               >
                 Shop Collection
               </Link>
@@ -273,7 +273,7 @@ export default function StorefrontHomeV17() {
             <Link
               to={storefrontPath(slug, "shop")}
               className="inline-flex items-center justify-center px-10 py-3.5 rounded-full text-white font-medium text-base tracking-wide shadow-lg hover:opacity-90 transition-all"
-              style={{ backgroundColor: "#0F2A22", minWidth: "200px" }}
+              style={{ backgroundColor: "var(--v17-primary, #0F2A22)", color: "var(--v17-bg, var(--storefront-bg, #fff))", minWidth: "200px" }}
             >
               Shop Collection
             </Link>

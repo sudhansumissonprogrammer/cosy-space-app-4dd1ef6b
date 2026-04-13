@@ -137,9 +137,9 @@ function MenuItemCard({
               onClick={handleAdd}
               className="rounded-xl px-4 py-1.5 text-xs font-bold transition-all active:scale-95"
               style={{
-                backgroundColor: "#25D36615",
-                color: "#25D366",
-                border: "1.5px solid #25D36640",
+                backgroundColor: "color-mix(in srgb, var(--storefront-primary, #25D366) 8%, transparent)",
+                color: "var(--storefront-primary, #25D366)",
+                border: "1.5px solid color-mix(in srgb, var(--storefront-primary, #25D366) 25%, transparent)",
               }}
             >
               ADD
@@ -147,7 +147,7 @@ function MenuItemCard({
           ) : (
             <div
               className="flex items-center gap-0 rounded-xl overflow-hidden"
-              style={{ backgroundColor: "#25D366", color: "#ffffff" }}
+              style={{ backgroundColor: "var(--storefront-primary, #25D366)", color: "var(--storefront-btn-text, #ffffff)" }}
             >
               <button onClick={handleDecrease} className="flex h-8 w-8 items-center justify-center transition-all active:scale-90">
                 <Minus className="h-3.5 w-3.5" />
@@ -276,12 +276,12 @@ function MenuSearchBar({
           onClick={() => setShowFilters(!showFilters)}
           className="relative flex h-7 w-7 items-center justify-center rounded-lg transition-all"
           style={{
-            backgroundColor: showFilters || activeFilterCount > 0 ? "#25D36620" : "transparent",
+            backgroundColor: showFilters || activeFilterCount > 0 ? "color-mix(in srgb, var(--storefront-primary, #25D366) 12%, transparent)" : "transparent",
           }}
         >
-          <SlidersHorizontal className="h-4 w-4" style={{ color: activeFilterCount > 0 ? "#25D366" : "var(--storefront-text, #1a1a1a)80" }} />
+          <SlidersHorizontal className="h-4 w-4" style={{ color: activeFilterCount > 0 ? "var(--storefront-primary, #25D366)" : "color-mix(in srgb, var(--storefront-text, #1a1a1a) 50%, transparent)" }} />
           {activeFilterCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: "#25D366" }}>
+            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold" style={{ backgroundColor: "var(--storefront-primary, #25D366)", color: "var(--storefront-btn-text, #fff)" }}>
               {activeFilterCount}
             </span>
           )}

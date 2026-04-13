@@ -65,7 +65,7 @@ export default function VariantPickerDialog({ open, onClose, product }: Props) {
           <DialogTitle className="text-base">Select Variant</DialogTitle>
         </DialogHeader>
         {isLoading ? (
-          <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }} /></div>
         ) : (
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">

@@ -242,7 +242,7 @@ function RevealGrid({ categories, storeSlug }: { categories: Category[]; storeSl
       </div>
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 mt-3">
-          <button onClick={goPrev} className="h-9 w-9 rounded-full border border-border flex items-center justify-center transition-all hover:bg-accent active:scale-95" aria-label="Previous">
+          <button onClick={goPrev} className="h-9 w-9 rounded-full flex items-center justify-center transition-all active:scale-95" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 15%, transparent)" }} aria-label="Previous">
             <ChevronLeft className="h-4 w-4" />
           </button>
           <div className="flex gap-1.5">
@@ -250,7 +250,7 @@ function RevealGrid({ categories, storeSlug }: { categories: Category[]; storeSl
               <div key={i} className="h-1.5 rounded-full transition-all duration-300" style={{ width: i === page ? 20 : 6, backgroundColor: i === page ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--border)" }} />
             ))}
           </div>
-          <button onClick={goNext} className="h-9 w-9 rounded-full border border-border flex items-center justify-center transition-all hover:bg-accent active:scale-95" aria-label="Next">
+          <button onClick={goNext} className="h-9 w-9 rounded-full flex items-center justify-center transition-all active:scale-95" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 15%, transparent)" }} aria-label="Next">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
