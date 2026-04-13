@@ -87,14 +87,14 @@ export default function CartPage() {
                   <Truck className="h-4 w-4" />
                   Add {currency} {shippingRemaining.toFixed(0)} more for FREE delivery!
                 </span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">{Math.round(shippingProgress)}%</span>
+                <span className="text-[10px] sm:text-xs font-medium" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{Math.round(shippingProgress)}%</span>
               </div>
-              <div className="h-2.5 w-full rounded-full bg-accent overflow-hidden">
+              <div className="h-2.5 w-full rounded-full overflow-hidden" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)" }}>
                 <div
                   className="h-full rounded-full transition-all duration-700 ease-out"
                   style={{
                     width: `${shippingProgress}%`,
-                    background: "linear-gradient(90deg, #10b981, #34d399)",
+                    background: "linear-gradient(90deg, var(--storefront-primary, #10b981), color-mix(in srgb, var(--storefront-primary, #10b981) 70%, #34d399))",
                   }}
                 />
               </div>

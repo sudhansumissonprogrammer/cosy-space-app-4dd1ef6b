@@ -11,9 +11,9 @@ import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/im
 import { getProductRating } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 
-/* systumm.shop exact colors */
-const STAR_COLOR = "#1B5E4B";
-const STAR_EMPTY = "#d4d4d4";
+/* V17 star colors — use CSS vars with fallbacks */
+const STAR_COLOR = "var(--v17-primary, #1B5E4B)";
+const STAR_EMPTY = "color-mix(in srgb, var(--v17-text, #1a1a1a) 20%, transparent)";
 
 /* systumm.shop star SVG — filled solid star matching Judge.me */
 function SystummStar({ filled }: { filled: boolean }) {
@@ -73,7 +73,7 @@ export default function ProductCardV17({ product, slug, store, priority = false,
                 width: "14px",
                 height: "14px",
                 fill: wishlisted ? "#e53e3e" : "none",
-                color: wishlisted ? "#e53e3e" : "#000",
+                color: wishlisted ? "#e53e3e" : "var(--v17-text, #1a1a1a)",
                 strokeWidth: 1.5,
               }}
             />

@@ -19,7 +19,7 @@ export default function TrustTicker() {
               fontSize: "15px",
               fontWeight: 400,
               letterSpacing: "0.05em",
-              color: "#fff",
+              color: "var(--v17-bg, var(--storefront-bg, #fff))",
               fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",
             }}
           >
