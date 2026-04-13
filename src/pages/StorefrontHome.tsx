@@ -260,7 +260,7 @@ export default function StorefrontHome() {
         </>
       )}
 
-      <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-5">
+      <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-8">
       {bestSellingProducts.length > 0 && (
           <Suspense fallback={null}>
             {(store as any).best_selling_carousel ? (
