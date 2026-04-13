@@ -137,10 +137,10 @@ export default function StorefrontContact() {
   return (
     <div className="min-h-[70vh]">
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-accent/30 to-background px-4 py-16 text-center">
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-accent/30 to-background px-4 py-16 lg:py-24 text-center">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.15),transparent_50%)]" />
-        <div className="relative mx-auto max-w-2xl">
+        <div className="relative mx-auto max-w-2xl lg:max-w-3xl">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 backdrop-blur-sm">
             <MessageCircle className="h-8 w-8 text-primary" />
           </div>

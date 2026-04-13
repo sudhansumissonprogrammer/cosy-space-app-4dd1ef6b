@@ -508,7 +508,7 @@ export default function ProductDetail() {
   const v18Font: React.CSSProperties = isV18 ? { fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" } : {};
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-3 sm:py-8" style={isV18 ? { backgroundColor: "#0a0a0a", color: "#ffffff" } : {}}>
+    <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 py-3 sm:py-8" style={isV18 ? { backgroundColor: "#0a0a0a", color: "#ffffff" } : {}}>
       {/* Breadcrumb — hidden */}
 
       <div className="grid gap-2 sm:gap-6 lg:grid-cols-2 lg:gap-10">
@@ -533,7 +533,7 @@ export default function ProductDetail() {
         />
 
         {/* Product Info */}
-        <div className="flex flex-col gap-0">
+        <div className="flex flex-col gap-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:scrollbar-hide">
 
           {/* Product Title — right under image */}
           <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>

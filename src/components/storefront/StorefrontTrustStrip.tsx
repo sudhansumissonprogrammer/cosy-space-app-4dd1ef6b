@@ -37,7 +37,7 @@ export default function StorefrontTrustStrip({ storeId, currency = "INR" }: Stor
 
   return (
     <section className="w-full" style={{ backgroundColor: "#111111", color: "#ffffff" }}>
-      <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
+      <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 md:py-10">
         {/* Mobile: vertical list */}
         <div className="flex flex-col gap-6 md:hidden">
           <TrustItem icon={<TruckIcon />} title="Free Shipping" description={shippingText} />
@@ -60,8 +60,8 @@ export default function StorefrontTrustStrip({ storeId, currency = "INR" }: Stor
 
 function TrustItem({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+    <div className="flex items-center gap-4 lg:gap-5">
+      <div className="flex h-14 w-14 lg:h-16 lg:w-16 shrink-0 items-center justify-center">
         {icon}
       </div>
       <div className="flex flex-col">
@@ -80,7 +80,7 @@ function TrustItem({ icon, title, description }: { icon: React.ReactNode; title:
 
 function TruckIcon() {
   return (
-    <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+     <svg className="w-12 h-12 lg:w-16 lg:h-16" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="4" y="18" width="34" height="22" rx="2" stroke="white" strokeWidth="2.5" fill="none" />
       <path d="M38 28H50L56 36V40H38V28Z" stroke="white" strokeWidth="2.5" fill="none" strokeLinejoin="round" />
       <circle cx="18" cy="44" r="5" stroke="white" strokeWidth="2.5" fill="none" />
@@ -94,7 +94,7 @@ function TruckIcon() {
 
 function ReturnIcon() {
   return (
-    <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+     <svg className="w-12 h-12 lg:w-16 lg:h-16" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="14" y="20" width="36" height="28" rx="2" stroke="white" strokeWidth="2.5" fill="none" />
       <line x1="14" y1="30" x2="50" y2="30" stroke="white" strokeWidth="2.5" />
       <line x1="32" y1="20" x2="32" y2="30" stroke="white" strokeWidth="2.5" />
@@ -108,7 +108,7 @@ function ReturnIcon() {
 
 function SupportIcon() {
   return (
-    <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+     <svg className="w-12 h-12 lg:w-16 lg:h-16" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 16C12 13.79 13.79 12 16 12H48C50.21 12 52 13.79 52 16V36C52 38.21 50.21 40 48 40H24L16 48V40H16C13.79 40 12 38.21 12 36V16Z" stroke="white" strokeWidth="2.5" fill="none" strokeLinejoin="round" />
       <circle cx="24" cy="26" r="2.5" fill="white" />
       <circle cx="32" cy="26" r="2.5" fill="white" />
@@ -119,7 +119,7 @@ function SupportIcon() {
 
 function PaymentIcon() {
   return (
-    <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg className="w-12 h-12 lg:w-16 lg:h-16" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="8" y="16" width="40" height="28" rx="3" stroke="white" strokeWidth="2.5" fill="none" />
       <line x1="8" y1="26" x2="48" y2="26" stroke="white" strokeWidth="2.5" />
       <rect x="14" y="32" width="12" height="4" rx="1" fill="white" opacity="0.5" />

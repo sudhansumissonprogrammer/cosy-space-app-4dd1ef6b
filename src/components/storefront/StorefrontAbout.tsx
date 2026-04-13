@@ -10,7 +10,7 @@ export default function StorefrontAbout({ store, productCount }: StorefrontAbout
   return (
     <section className="mt-16 border-t pt-10">
       <h2 className="mb-4 text-xl font-bold text-foreground">About {store.name}</h2>
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           {store.description ? (
             <p className="leading-relaxed text-muted-foreground">{store.description}</p>

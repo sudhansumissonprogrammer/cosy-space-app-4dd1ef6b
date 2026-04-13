@@ -1,5 +1,5 @@
 import { useState, useRef, lazy, Suspense } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Search, User, Heart, ShoppingCart, ChevronDown } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
@@ -42,9 +42,25 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
   const [searchOpen, setSearchOpen] = useState(false);
   const catalogTimer = useRef<ReturnType<typeof setTimeout>>();
   const headerVisible = useSmartHeader();
+  const location = useLocation();
 
-  const linkClass =
-    "text-[13px] font-medium tracking-wide uppercase transition-opacity hover:opacity-70";
+  const isActive = (path: string) => {
+    const resolved = storefrontPath(store.slug, path);
+    return location.pathname === resolved || location.pathname === resolved + "/";
+  };
+
+  const linkClass = (path: string = "") =>
+    `text-[13px] lg:text-sm font-medium tracking-wide uppercase transition-all hover:opacity-70 relative pb-1 ${
+      isActive(path) ? "opacity-100" : "opacity-80"
+    }`;
+
+  const activeDot = (path: string) =>
+    isActive(path) ? (
+      <span
+        className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full"
+        style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }}
+      />
+    ) : null;
 
   const handleCatalogEnter = () => {
     clearTimeout(catalogTimer.current);
@@ -72,12 +88,14 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
       >
         <div className="mx-auto flex h-14 lg:h-16 max-w-7xl items-center px-6 lg:px-8 relative">
           {/* ---- Left: Navigation Links ---- */}
-          <div className="flex items-center gap-6">
-            <Link to={storefrontPath(store.slug)} className={linkClass}>
+          <div className="flex items-center gap-6 lg:gap-7">
+            <Link to={storefrontPath(store.slug)} className={linkClass("")}>
               Home
+              {activeDot("")}
             </Link>
-            <Link to={storefrontPath(store.slug, "shop")} className={linkClass}>
+            <Link to={storefrontPath(store.slug, "shop")} className={linkClass("shop")}>
               All Products
+              {activeDot("shop")}
             </Link>
 
             {/* Catalog dropdown — only when categories exist */}
@@ -87,7 +105,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                 onMouseEnter={handleCatalogEnter}
                 onMouseLeave={handleCatalogLeave}
               >
-                <button className={`${linkClass} flex items-center gap-1`}>
+                <button className={`${linkClass("shop")} flex items-center gap-1`}>
                   Catalog
                   <ChevronDown
                     className="h-3.5 w-3.5 transition-transform"
@@ -118,19 +136,22 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
               </div>
             )}
 
-            <Link to={storefrontPath(store.slug, "contact")} className={linkClass}>
+            <Link to={storefrontPath(store.slug, "contact")} className={linkClass("contact")}>
               Contact
+              {activeDot("contact")}
             </Link>
-            <Link to={storefrontPath(store.slug, "about")} className={linkClass}>
+            <Link to={storefrontPath(store.slug, "about")} className={linkClass("about")}>
               About Us
+              {activeDot("about")}
             </Link>
             {customPages.map((cp: any) => (
               <Link
                 key={cp.id}
                 to={storefrontPath(store.slug, `page/${cp.slug}`)}
-                className={linkClass}
+                className={linkClass(`page/${cp.slug}`)}
               >
                 {cp.title}
+                {activeDot(`page/${cp.slug}`)}
               </Link>
             ))}
           </div>
