@@ -89,7 +89,7 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
         </div>
 
         {/* Image Grid — full width, edge to edge */}
-        <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-7 gap-[2px] md:gap-1">
+        <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-7 gap-[2px] md:gap-1" style={{ maxHeight: "320px", overflow: "hidden" }}>
           {images.map((img: any) => (
             <Link
               key={img.id}

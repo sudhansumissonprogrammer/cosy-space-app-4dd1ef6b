@@ -93,11 +93,19 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
       {/* Why Choose Us */}
       <section className="space-y-4">
         <h2 className="text-2xl font-bold text-foreground">Why Choose {storeName}?</h2>
-        <div className="space-y-3 text-base leading-relaxed text-muted-foreground">
-          <p>✨ <strong className="text-foreground">Authentic & Handpicked Products:</strong> Every item is sourced and selected with precision and care.</p>
-          <p>💎 <strong className="text-foreground">Quality You Can Trust:</strong> We prioritise durability, beauty, and attention to detail.</p>
-          <p>🚚 <strong className="text-foreground">Reliable Delivery:</strong> Fast and safe shipping so your order reaches you on time.</p>
-          <p>💬 <strong className="text-foreground">Customer Support:</strong> Our friendly team is always ready to assist you.</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { emoji: "✨", title: "Authentic & Handpicked Products", desc: "Every item is sourced and selected with precision and care." },
+            { emoji: "💎", title: "Quality You Can Trust", desc: "We prioritise durability, beauty, and attention to detail." },
+            { emoji: "🚚", title: "Reliable Delivery", desc: "Fast and safe shipping so your order reaches you on time." },
+            { emoji: "💬", title: "Customer Support", desc: "Our friendly team is always ready to assist you." },
+          ].map((item) => (
+            <div key={item.title} className="rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
+              <div className="text-2xl mb-2">{item.emoji}</div>
+              <h3 className="text-sm font-bold text-foreground mb-1">{item.title}</h3>
+              <p className="text-xs leading-relaxed text-muted-foreground">{item.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -207,7 +215,7 @@ export default function StorefrontAboutUs() {
   return (
     <div className="min-h-[70vh]">
       {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-accent/30 to-background px-4 py-16 text-center">
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-accent/30 to-background px-4 py-16 lg:py-24 text-center">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.15),transparent_50%)]" />
         <div className="relative mx-auto max-w-2xl">
@@ -233,7 +241,7 @@ export default function StorefrontAboutUs() {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-4xl px-4 py-12">
+      <div className="mx-auto max-w-3xl lg:max-w-4xl px-4 py-12 lg:py-16">
         {/* About Us Image on top */}
         {aboutUsImage && (
           <div className="mb-10 overflow-hidden rounded-2xl border border-border">

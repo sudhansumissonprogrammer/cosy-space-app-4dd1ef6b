@@ -53,12 +53,12 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center" style={{ color: "var(--storefront-text, inherit)" }}>
-        <ShoppingCart className="mx-auto mb-4 h-16 w-16 opacity-30" />
-        <h1 className="text-2xl font-bold">Your cart is empty</h1>
-        <p className="mt-2 opacity-60">Add some products to get started.</p>
-        <Link to={storefrontPath(store.slug)} className="mt-6 inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>
-          Continue Shopping
+      <div className="mx-auto max-w-2xl px-4 py-20 lg:py-32 text-center" style={{ color: "var(--storefront-text, inherit)" }}>
+        <ShoppingCart className="mx-auto mb-5 h-20 w-20 lg:h-24 lg:w-24 opacity-20" />
+        <h1 className="text-2xl lg:text-3xl font-bold">Your cart is empty</h1>
+        <p className="mt-2 text-base lg:text-lg opacity-60">Add some products to get started.</p>
+        <Link to={storefrontPath(store.slug)} className="mt-8 inline-flex items-center justify-center h-11 lg:h-12 px-8 rounded-md text-sm lg:text-base font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>
+          CONTINUE SHOPPING
         </Link>
       </div>
     );

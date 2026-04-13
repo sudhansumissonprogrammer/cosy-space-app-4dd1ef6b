@@ -40,7 +40,7 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
         </div>
       )}
       <div className="absolute inset-0 flex items-end">
-        <div className="mx-auto w-full max-w-6xl px-4 pb-6">
+        <div className="mx-auto w-full max-w-6xl lg:max-w-7xl px-4 pb-6 lg:pb-10">
           <div className="flex items-end gap-4">
             {store.logo_url ? (
               <img
@@ -58,13 +58,13 @@ export default function StorefrontHero({ store }: StorefrontHeroProps) {
             )}
             <div className="mb-1 min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{store.name}</h1>
+                <h1 className="text-2xl font-bold text-foreground sm:text-3xl lg:text-4xl">{store.name}</h1>
                 {store.is_verified && (
                   <BadgeCheck className="h-5 w-5 text-primary" />
                 )}
               </div>
               {store.description && (
-                <p className="mt-1 max-w-xl text-sm text-muted-foreground line-clamp-2">
+                <p className="mt-1 max-w-xl text-sm lg:text-base text-muted-foreground line-clamp-2">
                   {store.description}
                 </p>
               )}
