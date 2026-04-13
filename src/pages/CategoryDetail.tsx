@@ -1,4 +1,4 @@
-import { useOutletContext, useParams, useNavigate } from "react-router-dom";
+import { useOutletContext, useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
