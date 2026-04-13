@@ -8,7 +8,7 @@ import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/im
 import { getProductRating, getDiscountPercent } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
-import ProductCardHoverBar from "./ProductCardHoverBar";
+
 
 interface Props {
   product: Tables<"products">;
@@ -16,13 +16,13 @@ interface Props {
   store: Tables<"stores">;
   priority?: boolean;
   onVariantRequired?: () => void;
-  onQuickView?: (e: React.MouseEvent) => void;
+  
 }
 
 const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
-export default function ProductCardStyle1({ product, slug, store, priority = false, onVariantRequired, onQuickView }: Props) {
+export default function ProductCardStyle1({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -81,16 +81,6 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
           })()}
         </div>
       </Link>
-      {/* Desktop hover action bar — OUTSIDE the Link to prevent navigation interference */}
-      {onQuickView && (
-        <div className="absolute left-1 right-1 z-20" style={{ top: "calc(4/5 * (100% - 4px) - 4px)" }}>
-          <ProductCardHoverBar
-            wishlisted={wishlisted}
-            onQuickView={onQuickView}
-            onToggleWishlist={handleToggleWishlist}
-          />
-        </div>
-      )}
       <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
         <div className="flex items-center justify-end">
           <div className="flex items-center gap-0.5">
@@ -119,7 +109,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Increase quantity"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
           </div>
         ) : (
-          <button className={`ripple-container flex h-8 w-full items-center justify-center gap-1.5 rounded-md text-[10px] font-extrabold uppercase tracking-widest sm:h-9 sm:text-[11px] transition-all duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "opacity-80 cursor-wait" : "hover:brightness-110"}`} style={!justAdded ? { backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.375rem)" } : undefined} onClick={(e) => { createRipple(e); handleAdd(e); }} disabled={isAdding}>
+          <button className={`ripple-container flex h-8 w-full items-center justify-center gap-1.5 rounded-md text-[10px] font-semibold uppercase tracking-widest sm:h-9 sm:text-[11px] transition-all duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "opacity-80 cursor-wait" : "hover:brightness-110"}`} style={!justAdded ? { backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.375rem)" } : undefined} onClick={(e) => { createRipple(e); handleAdd(e); }} disabled={isAdding}>
             {isAdding ? (<><Loader2 className="h-3.5 w-3.5 lg:h-4 lg:w-4 animate-spin" /><span className="whitespace-nowrap">Adding...</span></>) : justAdded ? (<><Check className="h-3.5 w-3.5 lg:h-4 lg:w-4" strokeWidth={3} /><span className="whitespace-nowrap">Added ✓</span></>) : (<><ShoppingCart className="h-3.5 w-3.5 lg:h-4 lg:w-4" /><span className="whitespace-nowrap">ADD TO CART</span></>)}
           </button>
         )}

@@ -31,7 +31,7 @@ interface Props {
   store: Tables<"stores">;
   priority?: boolean;
   onVariantRequired?: () => void;
-  onQuickView?: (e: React.MouseEvent) => void;
+  
 }
 
 export default function ProductCardStyle4({ product, slug, store, onVariantRequired }: Props) {
