@@ -102,7 +102,7 @@ export default function StorefrontShop() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="mx-auto max-w-6xl px-2 sm:px-4 py-6">
+    <div className="mx-auto max-w-6xl lg:max-w-7xl px-2 sm:px-4 py-6">
       <div className="mb-5 flex items-center gap-3">
         <Link
           to={storefrontPath(slug!, "")}
