@@ -104,7 +104,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
         {cartQty > 0 && !isAdding && !justAdded ? (
           <div className="flex h-7 sm:h-8 w-full items-center rounded-md overflow-hidden btn-gold">
             <button onClick={handleDecrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Decrease quantity"><Minus className="h-3 w-3" strokeWidth={2.5} /></button>
-            <span key={cartQty} className="flex-1 text-center text-[9px] font-extrabold whitespace-nowrap qty-bounce" aria-live="polite">{cartQty} in cart</span>
+            <span key={cartQty} className="flex-1 text-center text-[11px] font-extrabold whitespace-nowrap qty-bounce" aria-live="polite">{cartQty} in cart</span>
             <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Increase quantity"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
           </div>
         ) : (

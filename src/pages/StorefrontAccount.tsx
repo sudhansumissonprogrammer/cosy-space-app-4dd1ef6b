@@ -310,8 +310,9 @@ function WishlistTab({ customerId, store }: { customerId: string; store: StoreDa
   if (!wishlistItems?.length) {
     return (
       <div className="py-12 text-center text-muted-foreground">
-        <Heart className="mx-auto mb-3 h-10 w-10" />
-        <p>Your wishlist is empty</p>
+        <Heart className="mx-auto mb-3 h-16 w-16 opacity-20" />
+        <p className="text-base font-medium text-foreground">Your wishlist is empty</p>
+        <p className="text-sm mt-1">Save products you love to find them later</p>
       </div>
     );
   }
@@ -382,9 +383,9 @@ export default function StorefrontAccount() {
       </div>
 
       <Tabs defaultValue="orders">
-        <TabsList className="w-full">
-          <TabsTrigger value="orders" className="flex-1"><Package className="mr-2 h-4 w-4" />Orders</TabsTrigger>
-          <TabsTrigger value="addresses" className="flex-1"><MapPin className="mr-2 h-4 w-4" />Addresses</TabsTrigger>
+        <TabsList className="w-full overflow-x-auto">
+          <TabsTrigger value="orders" className="flex-1 min-w-[120px] py-2.5"><Package className="mr-2 h-4 w-4" />Orders</TabsTrigger>
+          <TabsTrigger value="addresses" className="flex-1 min-w-[120px] py-2.5"><MapPin className="mr-2 h-4 w-4" />Addresses</TabsTrigger>
         </TabsList>
         <div className="mt-4">
           <TabsContent value="orders"><OrdersTab customerId={customer.id} store={store} /></TabsContent>

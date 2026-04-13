@@ -70,10 +70,10 @@ export default function SideCart({ store }: SideCartProps) {
 
         {/* Items */}
         {items.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4">
-            <ShoppingCart className="h-16 w-16 text-muted-foreground/30" />
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
+            <ShoppingCart className="h-20 w-20 text-muted-foreground/20" />
             <p className="text-lg font-semibold text-foreground">Your cart is empty</p>
-            <p className="text-sm text-muted-foreground">Add products to get started</p>
+            <p className="text-sm text-muted-foreground">Browse products and add your favorites</p>
             <Button variant="outline" onClick={closeCart} className="mt-2">
               Continue Shopping
             </Button>
