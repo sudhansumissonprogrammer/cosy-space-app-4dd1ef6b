@@ -113,8 +113,8 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                   />
                 </button>
                 {catalogOpen && (
-                  <div
-                    className="absolute left-0 top-full mt-1 min-w-[180px] rounded-lg border py-1.5 shadow-lg"
+                   <div
+                    className="absolute left-0 top-full mt-1 min-w-[180px] max-h-[70vh] overflow-y-auto rounded-lg border py-1.5 shadow-lg"
                     style={{
                       backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
                       borderColor: "var(--storefront-text, hsl(var(--foreground)))15",

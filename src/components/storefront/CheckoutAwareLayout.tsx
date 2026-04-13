@@ -245,7 +245,7 @@ export default function CheckoutAwareLayout({
         </Suspense>
       )}
 
-      <main className={mobileNavEnabled ? "pb-14 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><PageTransition><Outlet context={store} /></PageTransition></Suspense></main>
+      <main className={mobileNavEnabled ? "pb-24 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><PageTransition><Outlet context={store} /></PageTransition></Suspense></main>
       {mobileNavEnabled && mobileNav}
       <Suspense fallback={null}><LazyStorefrontFooter store={store} /></Suspense>
 

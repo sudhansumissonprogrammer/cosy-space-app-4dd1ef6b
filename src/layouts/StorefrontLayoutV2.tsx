@@ -82,7 +82,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <button className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-colors hover:bg-accent">
-              <Menu className="h-7 w-7 sm:h-8 sm:w-8" />
+              <Menu className="h-6 w-6 sm:h-7 sm:w-7" />
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="storefront-font w-[280px] p-0">
@@ -149,7 +149,7 @@ export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: st
         <>
           <DesktopNavBar store={store} />
           <div className="md:hidden"><TransparentNav store={store} scrolled={false} /></div>
-          <main className="pb-16 md:pb-0"><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+          <main className="pb-20 md:pb-0"><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
           <StorefrontFooter store={store} />
           <div className="md:hidden">
             <MobileBottomNav store={store} />
