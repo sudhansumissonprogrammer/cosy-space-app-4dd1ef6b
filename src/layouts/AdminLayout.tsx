@@ -115,7 +115,7 @@ export default function AdminLayout() {
   if (!isMobile) {
     return (
       <SidebarProvider>
-        <div className="min-h-screen flex w-full" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
+        <div className="min-h-screen flex w-full font-dashboard">
           <AdminSidebar />
           <div className="flex-1 flex flex-col min-w-0">
             <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
@@ -145,7 +145,7 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" style={{ fontFamily: "'Changa', sans-serif", fontWeight: 400 }}>
+    <div className="min-h-screen flex flex-col bg-background font-dashboard">
       {/* Mobile header */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-[#1a1a1a] px-3">
         <div className="flex items-center gap-2.5 min-w-0">
