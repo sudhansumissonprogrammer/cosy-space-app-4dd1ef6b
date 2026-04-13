@@ -123,7 +123,7 @@ function SquareCarousel({ categories, storeSlug }: { categories: Category[]; sto
 /** Style 3: Modern square grid with overlay label */
 function SquareGridModern({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5 lg:gap-4">
       {categories.map((cat) => (
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group relative">
           <div className="w-full rounded-xl overflow-hidden transition-all group-hover:shadow-lg" style={{ aspectRatio: "1/1" }}>
@@ -140,7 +140,7 @@ function SquareGridModern({ categories, storeSlug }: { categories: Category[]; s
 /** Style 4: Square cards in grid layout */
 function SquareGrid({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 lg:gap-4">
       {categories.map((cat) => (
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group">
           <div className="w-full rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-md" style={{ aspectRatio: "1/1" }}>
