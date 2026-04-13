@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Eye, TrendingUp, HelpCircle, Plus, Copy, Check } from "lucide-react";
+import { Package, ShoppingBag, Eye, TrendingUp, HelpCircle, Plus, Copy, Check, Share2 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line,
@@ -13,12 +13,14 @@ import {
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import QuickActions from "@/components/dashboard/QuickActions";
-import TodaySummary from "@/components/dashboard/TodaySummary";
+import HeroRevenue from "@/components/dashboard/HeroRevenue";
 import PendingActions from "@/components/dashboard/PendingActions";
 import RecentOrders from "@/components/dashboard/RecentOrders";
 import TopProducts from "@/components/dashboard/TopProducts";
 import StoreChecklist from "@/components/dashboard/StoreChecklist";
 import QueryErrorState from "@/components/QueryErrorState";
+import ShareStoreDialog from "@/components/ShareStoreDialog";
+import { useCountUp } from "@/hooks/useCountUp";
 
 function ShimmerBlock({ className }: { className?: string }) {
   return (
@@ -31,18 +33,12 @@ function ShimmerBlock({ className }: { className?: string }) {
 function DashboardSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2.5">
+      <ShimmerBlock className="h-24 w-full rounded-2xl" />
+      <div className="flex gap-2.5 overflow-hidden">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-lg border p-3 flex items-center gap-3">
-            <ShimmerBlock className="h-5 w-5 rounded-md" />
-            <div className="flex-1 space-y-1.5">
-              <ShimmerBlock className="h-3 w-12" />
-              <ShimmerBlock className="h-5 w-16" />
-            </div>
-          </div>
+          <ShimmerBlock key={i} className="h-16 w-32 shrink-0 rounded-lg" />
         ))}
       </div>
-      <ShimmerBlock className="h-20 w-full" />
       <ShimmerBlock className="h-[180px] w-full" />
     </div>
   );
@@ -50,6 +46,13 @@ function DashboardSkeleton() {
 
 function cn(...classes: (string | undefined | false)[]) {
   return classes.filter(Boolean).join(" ");
+}
+
+function AnimatedStatValue({ value }: { value: number | string }) {
+  const numericValue = typeof value === "string" ? parseFloat(value.replace(/[^0-9.]/g, "")) || 0 : value;
+  const prefix = typeof value === "string" ? value.replace(/[0-9.,]/g, "") : "";
+  const animated = useCountUp(numericValue);
+  return <>{prefix}{animated.toLocaleString()}</>;
 }
 
 export default function Dashboard() {
@@ -75,8 +78,8 @@ export default function Dashboard() {
     queryFn: async () => {
       if (!storeUrl) return false;
       try {
-        const res = await fetch(storeUrl, { method: "HEAD", mode: "no-cors", cache: "no-store" });
-        return true; // no-cors always returns opaque response, if no error = reachable
+        await fetch(storeUrl, { method: "HEAD", mode: "no-cors", cache: "no-store" });
+        return true;
       } catch {
         return false;
       }
@@ -156,19 +159,12 @@ export default function Dashboard() {
 
   const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
 
-  // Show skeleton while store query is loading
-  if (storeLoading) {
-    return <DashboardSkeleton />;
-  }
+  if (storeLoading) return <DashboardSkeleton />;
 
-  // Error loading store
   if (storeError) {
-    return (
-      <QueryErrorState message="Failed to load your store" onRetry={() => refetchStore()} />
-    );
+    return <QueryErrorState message="Failed to load your store" onRetry={() => refetchStore()} />;
   }
 
-  // No store yet — show create CTA
   if (!storeId) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
@@ -190,7 +186,6 @@ export default function Dashboard() {
     { label: "Products", value: stats?.total_products ?? 0, icon: Package, color: "text-blue-600" },
     ...(!isWhatsAppOnly ? [
       { label: "Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
-      { label: "Revenue", value: `${currencySymbol}${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "text-amber-600" },
     ] : []),
     { label: "Views", value: stats?.total_views ?? 0, icon: Eye, color: "text-purple-600" },
   ];
@@ -209,66 +204,54 @@ export default function Dashboard() {
       {/* Greeting + guide */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight text-foreground">Overview</h1>
-        {storeId && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowOnboarding(true)}
-            className="gap-1 text-xs h-8"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            Guide
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {store?.slug && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs h-8 font-semibold"
+              asChild
+            >
+              <a href={storeUrl!} target="_blank" rel="noopener noreferrer">
+                <Eye className="h-3 w-3" /> View Store
+              </a>
+            </Button>
+          )}
+          {storeId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowOnboarding(true)}
+              className="gap-1 text-xs h-8"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              Guide
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Store URL */}
+      {/* 🔥 Hero Revenue — THE biggest number at the top */}
+      {storeId && !isWhatsAppOnly && (
+        <HeroRevenue storeId={storeId} currencySymbol={currencySymbol} />
+      )}
+
+      {/* Store URL — compact strip */}
       {store?.slug && (
-        <Card className="border shadow-none bg-gradient-to-r from-accent/30 to-accent/10">
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-              <Eye className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">Your Store</p>
-                {isStoreLive !== undefined && (
-                  <span className={cn(
-                    "inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full",
-                    isStoreLive
-                      ? "text-emerald-700 bg-emerald-100"
-                      : "text-red-700 bg-red-100"
-                  )}>
-                    <span className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      isStoreLive ? "bg-emerald-500 animate-pulse" : "bg-red-500"
-                    )} />
-                    {isStoreLive ? "Live" : "Offline"}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm font-semibold text-foreground truncate tracking-tight">
-                {customDomain || `${store.slug}.shopbanao.in`}
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={handleCopy}
-                title="Copy link"
-              >
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 font-semibold" asChild>
-                <a href={storeUrl!} target="_blank" rel="noopener noreferrer">
-                  <Eye className="h-3 w-3" /> View
-                </a>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-2 rounded-xl border bg-accent/20 px-3 py-2">
+          {isStoreLive !== undefined && (
+            <span className={cn(
+              "h-2 w-2 rounded-full shrink-0",
+              isStoreLive ? "bg-emerald-500 animate-pulse" : "bg-red-500"
+            )} />
+          )}
+          <p className="text-xs font-medium text-foreground truncate flex-1">
+            {customDomain || `${store.slug}.shopbanao.in`}
+          </p>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={handleCopy} title="Copy link">
+            {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+          </Button>
+        </div>
       )}
 
       {/* Quick Actions */}
@@ -280,25 +263,24 @@ export default function Dashboard() {
         <DashboardSkeleton />
       ) : (
         <>
-          {/* Stat cards — 2x2 grid on mobile */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Stat cards — horizontal scrollable on mobile, grid on desktop */}
+          <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide md:grid md:grid-cols-3 md:overflow-visible">
             {statCards.map((card) => (
-              <Card key={card.label} className="border shadow-none hover:shadow-md transition-shadow duration-200 group">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/50 ${card.color} group-hover:scale-105 transition-transform`}>
-                    <card.icon className="h-5 w-5" />
+              <Card key={card.label} className="border shadow-none hover:shadow-md transition-shadow duration-200 shrink-0 min-w-[120px] md:min-w-0">
+                <CardContent className="flex items-center gap-2.5 p-3">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/50 ${card.color}`}>
+                    <card.icon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{card.label}</p>
-                    <p className="text-lg font-bold text-foreground truncate tracking-tight">{card.value}</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{card.label}</p>
+                    <p className="text-base font-bold text-foreground truncate tracking-tight tabular-nums">
+                      <AnimatedStatValue value={card.value} />
+                    </p>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-
-          {/* Today's Summary */}
-          {storeId && !isWhatsAppOnly && <TodaySummary storeId={storeId} currencySymbol={currencySymbol} />}
 
           {/* Pending Actions */}
           {storeId && !isWhatsAppOnly && <PendingActions storeId={storeId} storeSlug={store?.slug || ""} />}
@@ -307,7 +289,15 @@ export default function Dashboard() {
           {storeId && <StoreChecklist storeId={storeId} storeSlug={store?.slug || ""} />}
 
           {/* Recent Orders */}
-          {storeId && !isWhatsAppOnly && <RecentOrders storeId={storeId} storeSlug={store?.slug || ""} currencySymbol={currencySymbol} />}
+          {storeId && !isWhatsAppOnly && (
+            <RecentOrders
+              storeId={storeId}
+              storeSlug={store?.slug || ""}
+              currencySymbol={currencySymbol}
+              whatsappNumber={store?.whatsapp_number || ""}
+              storeName={store?.name || ""}
+            />
+          )}
 
           {/* Top Products */}
           {storeId && !isWhatsAppOnly && <TopProducts storeId={storeId} currencySymbol={currencySymbol} />}
@@ -331,7 +321,21 @@ export default function Dashboard() {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
+                  <div className="flex flex-col items-center gap-2 py-8">
+                    <p className="text-xs text-muted-foreground">No revenue data yet</p>
+                    {store?.slug && store?.name && (
+                      <ShareStoreDialog
+                        storeSlug={store.slug}
+                        storeName={store.name}
+                        trigger={
+                          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+                            <Share2 className="h-3 w-3" />
+                            Share your store to get started
+                          </Button>
+                        }
+                      />
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -353,7 +357,18 @@ export default function Dashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="py-6 text-center text-xs text-muted-foreground">No data yet</p>
+                  <div className="flex flex-col items-center gap-2 py-8">
+                    <p className="text-xs text-muted-foreground">No orders yet</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs h-8"
+                      onClick={() => navigate(`/dashboard/stores/${storeSlug}/products/create`)}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add your first product
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
