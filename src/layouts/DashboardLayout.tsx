@@ -127,7 +127,7 @@ function MobileMenu({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a1a]">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a1a] font-dashboard">
       {/* Scrollable menu items */}
       <div className="flex-1 overflow-auto px-4 pt-6 pb-4">
         <div className="space-y-4">
