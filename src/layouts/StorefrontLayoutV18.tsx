@@ -54,7 +54,8 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         .v18-header-solid button, .v18-header-solid a, .v18-header-solid svg { color: #fff; stroke: #fff; }
         .storefront-font .smart-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; }
         .storefront-font .smart-header button, .storefront-font .smart-header a, .storefront-font .smart-header svg { color: #fff; stroke: #fff; }
-        .storefront-font main { padding-top: 3.5rem; }
+        .storefront-font main { padding-top: 0; }
+        .storefront-font .smart-header + main { padding-top: 3.5rem; }
         .v18-hero-pull { margin-top: -3.5rem; }
         .storefront-font nav[class*="bottom-nav"], .storefront-font div[class*="bottom-nav"], .storefront-font .fixed.bottom-0 { background-color: #0a0a0a; border-color: rgba(255,255,255,0.1); }
         .storefront-font nav[class*="bottom-nav"] svg, .storefront-font div[class*="bottom-nav"] svg, .storefront-font .fixed.bottom-0 svg { color: #ffffff; stroke: #ffffff; }

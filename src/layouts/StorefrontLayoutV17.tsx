@@ -44,11 +44,13 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
           --v17-footer-bg: #0F2A22;
         }
         .v17-header-scroll { transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease; }
-        .v17-header-transparent { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; color: #fff !important; }
-        .v17-header-transparent button, .v17-header-transparent a, .v17-header-transparent svg { color: #fff !important; stroke: #fff !important; }
-        .v17-header-transparent .smart-header { background: transparent !important; }
-        .v17-header-solid { background-color: #fff !important; box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important; color: #000 !important; }
-        .v17-header-solid button, .v17-header-solid a, .v17-header-solid svg { color: #000 !important; stroke: #000 !important; }
+        .v17-header-transparent { background-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; color: #fff; }
+        .v17-header-transparent > div > button, .v17-header-transparent > div > a, .v17-header-transparent > div > div button, .v17-header-transparent > div > div a { color: #fff; }
+        .v17-header-transparent > div > button svg, .v17-header-transparent > div > a svg, .v17-header-transparent > div > div button svg, .v17-header-transparent > div > div a svg { color: #fff; stroke: #fff; }
+        .v17-header-transparent .smart-header { background: transparent; }
+        .v17-header-solid { background-color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.08); color: #000; }
+        .v17-header-solid > div > button, .v17-header-solid > div > a, .v17-header-solid > div > div button, .v17-header-solid > div > div a { color: #000; }
+        .v17-header-solid > div > button svg, .v17-header-solid > div > a svg, .v17-header-solid > div > div button svg, .v17-header-solid > div > div a svg { color: #000; stroke: #000; }
       `}</style>
       <div style={{
         fontFamily: `'${bodyFont}', var(--v17-body-font)`,

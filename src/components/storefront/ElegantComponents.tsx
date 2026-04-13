@@ -132,7 +132,7 @@ export function ElegantTabBar({ store, colors, useTextForActive = false }: { sto
 export function ElegantFooter({ store, colors }: { store: StoreData; colors: ThemeColors }) {
   const year = new Date().getFullYear();
   return (
-    <footer className="mt-8" style={{ backgroundColor: `var(--storefront-accent, ${colors.defaultAccent})`, color: `var(--storefront-bg, ${colors.defaultBg})` }}>
+    <footer className="mt-8 pb-20 md:pb-0" style={{ backgroundColor: `var(--storefront-accent, ${colors.defaultAccent})`, color: `var(--storefront-bg, ${colors.defaultBg})` }}>
       <div className="px-5 py-10 space-y-8 max-w-6xl mx-auto">
         <div className="text-center space-y-3">
           {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-10 w-auto mx-auto object-contain brightness-0 invert" /> : <StoreTextLogo storeName={store.name} size="text-2xl" />}

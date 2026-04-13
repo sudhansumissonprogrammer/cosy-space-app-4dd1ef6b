@@ -22,7 +22,7 @@ function RestaurantHeader({ store, tableNumber }: { store: StoreData; tableNumbe
           )}
           <div className="flex flex-col">
             <span className="text-base font-bold leading-tight" style={{ color: "var(--storefront-text, #1a1a1a)", fontFamily: "var(--storefront-heading-font, inherit)" }}>{store.name}</span>
-            {store.description && <span className="text-xs leading-tight opacity-60" style={{ color: "var(--storefront-text, #1a1a1a)" }}>{store.description.slice(0, 50)}</span>}
+            {store.description && <span className="text-xs leading-tight opacity-60 truncate max-w-[180px] block" style={{ color: "var(--storefront-text, #1a1a1a)" }}>{store.description.slice(0, 50)}{store.description.length > 50 ? "…" : ""}</span>}
           </div>
         </Link>
         <div className="ml-auto flex items-center gap-2">

@@ -13,7 +13,7 @@ export default function V17CartBadge() {
       </svg>
       {cartCount > 0 && (
         <span
-          className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
+          className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
           style={{
             backgroundColor: "var(--storefront-primary, hsl(var(--foreground)))",
             color: "var(--storefront-btn-text, hsl(var(--background)))",
