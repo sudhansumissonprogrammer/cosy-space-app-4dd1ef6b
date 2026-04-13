@@ -54,7 +54,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
           className="flex items-center justify-around rounded-[28px] px-1.5 py-1.5 flex-1 shadow-[0_4px_24px_rgba(0,0,0,0.12)]"
           style={{
             backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
-            border: "1px solid var(--storefront-text, hsl(var(--foreground)))10",
+            border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)",
           }}
         >
           {navItems.map((item) => {
@@ -87,7 +87,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                     style={{
                       color: active
                         ? "var(--storefront-btn-text, hsl(var(--primary-foreground)))"
-                        : "var(--storefront-text, hsl(var(--foreground)))90",
+                        : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)",
                     }}
                   />
                   {count > 0 && !active && (

@@ -41,7 +41,7 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
     >
       <div className="flex items-end justify-center gap-2.5 px-3 pb-2.5">
         {/* Main nav pill */}
-        <div className="flex items-center justify-around rounded-full bg-card border border-border/40 shadow-[0_2px_20px_rgba(0,0,0,0.10)] px-2 py-1.5 flex-1">
+        <div className="flex items-center justify-around rounded-full shadow-[0_2px_20px_rgba(0,0,0,0.10)] px-2 py-1.5 flex-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
           {navItems.map((item) => {
             const active = getActive(item.path);
             return (
@@ -54,24 +54,27 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                 <div
                   className={`flex items-center gap-1.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                     active
-                      ? "bg-foreground pl-2.5 pr-3.5 py-1.5"
+                      ? "pl-2.5 pr-3.5 py-1.5"
                       : "p-2"
                   }`}
+                  style={active ? { backgroundColor: "var(--storefront-text, hsl(var(--foreground)))" } : undefined}
                 >
                   <item.icon
-                    className={`shrink-0 transition-all duration-400 ${
-                      active
-                        ? "h-[18px] w-[18px] text-background"
-                        : "h-5 w-5 text-foreground/70"
-                    }`}
+                    className="shrink-0 transition-all duration-400"
+                    style={{
+                      width: active ? 18 : 20,
+                      height: active ? 18 : 20,
+                      color: active ? "var(--storefront-bg, hsl(var(--background)))" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 70%, transparent)",
+                    }}
                     strokeWidth={active ? 2.2 : 1.6}
                   />
                   <span
                     className={`text-[11px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                       active
-                        ? "max-w-[56px] opacity-100 text-background"
+                        ? "max-w-[56px] opacity-100"
                         : "max-w-0 opacity-0"
                     }`}
+                    style={{ color: active ? "var(--storefront-bg, hsl(var(--background)))" : undefined }}
                   >
                     {item.label}
                   </span>
@@ -84,10 +87,11 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
         {/* Cart — separate elevated circle */}
         <button
           onClick={openCart}
-          className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-card border border-border/40 shadow-[0_2px_20px_rgba(0,0,0,0.10)] transition-transform duration-200 active:scale-95"
+          className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[0_2px_20px_rgba(0,0,0,0.10)] transition-transform duration-200 active:scale-95"
+          style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}
           aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
         >
-          <ShoppingCart className="h-5 w-5 text-foreground/80" strokeWidth={1.6} />
+          <ShoppingCart className="h-5 w-5" strokeWidth={1.6} style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 80%, transparent)" }} />
           {cartCount > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px]">
               {cartCount > 9 ? "9+" : cartCount}

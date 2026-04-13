@@ -56,8 +56,8 @@ function CategoryImage({ cat, size = 300, className = "h-full w-full object-cove
     return <img src={optimizeImageUrl(cat.image_url, size, 85)} alt={cat.name} className={className} loading="lazy" width={size} height={size} />;
   }
   return (
-    <div className="flex h-full w-full items-center justify-center bg-accent">
-      <Tag className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" />
+    <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--accent)))" }}>
+      <Tag className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: "var(--storefront-text, hsl(var(--muted-foreground)))", opacity: 0.5 }} />
     </div>
   );
 }
@@ -73,7 +73,7 @@ function CircleCarousel({ categories, storeSlug }: { categories: Category[]; sto
             <div className="h-[72px] w-[72px] rounded-full border-2 overflow-hidden transition-all sm:h-[88px] sm:w-[88px] border-border bg-secondary/30" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
               <CategoryImage cat={cat} size={300} className="h-full w-full object-cover scale-110" />
             </div>
-            <span className="text-[10px] font-semibold tracking-wide text-foreground text-center leading-tight max-w-[72px] truncate sm:max-w-[88px] sm:text-[11px]">{cat.name}</span>
+            <span className="text-[10px] font-semibold tracking-wide text-center leading-tight max-w-[72px] truncate sm:max-w-[88px] sm:text-[11px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</span>
           </Link>
         ))}
       </div>
@@ -84,7 +84,7 @@ function CircleCarousel({ categories, storeSlug }: { categories: Category[]; sto
             <div className="h-[120px] w-[120px] lg:h-[140px] lg:w-[140px] rounded-full border-2 overflow-hidden transition-all border-border bg-secondary/30 hover:shadow-lg" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
               <CategoryImage cat={cat} size={300} className="h-full w-full object-cover scale-110" />
             </div>
-            <span className="text-xs lg:text-sm font-semibold tracking-wide text-foreground text-center leading-tight max-w-[140px] truncate">{cat.name}</span>
+            <span className="text-xs lg:text-sm font-semibold tracking-wide text-center leading-tight max-w-[140px] truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</span>
           </Link>
         ))}
       </div>
@@ -102,7 +102,7 @@ function SquareCarousel({ categories, storeSlug }: { categories: Category[]; sto
             <div className="h-20 w-20 sm:h-[88px] sm:w-[88px] rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
               <CategoryImage cat={cat} size={300} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
             </div>
-            <p className="mt-1.5 text-[10px] font-semibold text-foreground text-center truncate max-w-20 sm:max-w-[88px]">{cat.name}</p>
+            <p className="mt-1.5 text-[10px] font-semibold text-center truncate max-w-20 sm:max-w-[88px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</p>
           </Link>
         ))}
       </div>
@@ -112,7 +112,7 @@ function SquareCarousel({ categories, storeSlug }: { categories: Category[]; sto
             <div className="h-[120px] w-[120px] lg:h-[140px] lg:w-[140px] rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
               <CategoryImage cat={cat} size={400} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
             </div>
-            <p className="mt-2 text-xs lg:text-sm font-semibold text-foreground text-center truncate max-w-[140px]">{cat.name}</p>
+            <p className="mt-2 text-xs lg:text-sm font-semibold text-center truncate max-w-[140px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</p>
           </Link>
         ))}
       </div>
@@ -146,7 +146,7 @@ function SquareGrid({ categories, storeSlug }: { categories: Category[]; storeSl
           <div className="w-full rounded-xl overflow-hidden border border-border transition-all group-hover:shadow-md" style={{ aspectRatio: "1/1" }}>
             <CategoryImage cat={cat} size={400} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
           </div>
-          <p className="mt-1.5 text-xs font-semibold text-foreground text-center truncate">{cat.name}</p>
+          <p className="mt-1.5 text-xs font-semibold text-center truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</p>
         </Link>
       ))}
     </div>
@@ -170,7 +170,7 @@ function PillCarousel({ categories, storeSlug }: { categories: Category[]; store
             <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
               <CategoryImage cat={cat} size={64} className="h-full w-full object-cover" />
             </div>
-            <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">{cat.name}</span>
+            <span className="text-[11px] font-semibold whitespace-nowrap" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</span>
           </Link>
         ))}
       </div>
@@ -187,7 +187,7 @@ function PillCarousel({ categories, storeSlug }: { categories: Category[]; store
             <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0">
               <CategoryImage cat={cat} size={80} className="h-full w-full object-cover" />
             </div>
-            <span className="text-sm font-semibold text-foreground whitespace-nowrap">{cat.name}</span>
+            <span className="text-sm font-semibold whitespace-nowrap" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</span>
           </Link>
         ))}
       </div>
@@ -463,7 +463,7 @@ function MagazineStrip({ categories, storeSlug }: { categories: Category[]; stor
             <CategoryImage cat={cat} size={600} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
           </div>
           <div className="flex-1 flex flex-col justify-center px-4 sm:px-6" style={{ background: "linear-gradient(135deg, var(--storefront-bg, hsl(var(--background))), var(--storefront-bg, hsl(var(--background))))" }}>
-            <span className="text-sm sm:text-base font-bold text-foreground leading-tight">{cat.name}</span>
+            <span className="text-sm sm:text-base font-bold leading-tight" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</span>
             <span className="mt-1.5 text-[10px] sm:text-xs font-medium opacity-60" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>Explore →</span>
           </div>
         </Link>

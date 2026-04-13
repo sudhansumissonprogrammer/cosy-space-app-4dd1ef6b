@@ -146,9 +146,9 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
               onClick={handleAdd}
               className="rounded-xl px-4 py-1.5 text-xs font-bold transition-all active:scale-95"
               style={{
-                backgroundColor: "#25D36615",
-                color: "#25D366",
-                border: "1.5px solid #25D36640",
+              backgroundColor: "color-mix(in srgb, var(--storefront-primary, #25D366) 8%, transparent)",
+                color: "var(--storefront-primary, #25D366)",
+                border: "1.5px solid color-mix(in srgb, var(--storefront-primary, #25D366) 25%, transparent)",
               }}
               aria-label={`Add ${product.name} to cart`}
             >
@@ -158,8 +158,8 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
             <div
               className="flex items-center gap-0 rounded-xl overflow-hidden"
               style={{
-                backgroundColor: "#25D366",
-                color: "#ffffff",
+                backgroundColor: "var(--storefront-primary, #25D366)",
+                color: "var(--storefront-btn-text, #ffffff)",
               }}
             >
               <button
