@@ -242,6 +242,9 @@ export default function StorefrontShell({
         </Suspense>
       )}
       {showExitIntent && <DeferredExitIntent storeId={store.id} storeName={store.name} />}
+      <Suspense fallback={null}>
+        <BackToTop />
+      </Suspense>
     </div>
   );
 
