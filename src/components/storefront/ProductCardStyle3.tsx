@@ -24,80 +24,86 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
   const rating = getProductRating(product.id);
 
   return (
-    <Link
-      to={storefrontPath(slug, `product/${product.slug || product.id}`)}
-      className="group overflow-hidden transition-all active:scale-[0.98]"
-      style={{ borderRadius: "12px", border: "1px solid hsl(var(--border, 0 0% 90%))" }}
-    >
-      <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
-        {(() => {
-          const images = resolveProductImages(product);
-          if (images.length === 0) {
+    <div className="group relative overflow-hidden transition-all active:scale-[0.98]" style={{ borderRadius: "12px", border: "1px solid hsl(var(--border, 0 0% 90%))" }}>
+      <Link
+        to={storefrontPath(slug, `product/${product.slug || product.id}`)}
+        className="block"
+      >
+        <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
+          {(() => {
+            const images = resolveProductImages(product);
+            if (images.length === 0) {
+              return (
+                <div className="h-full w-full flex items-center justify-center bg-secondary/40">
+                  <Tag className="h-10 w-10" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 30%, transparent)" }} />
+                </div>
+              );
+            }
+            const hasSecond = images.length > 1;
             return (
-              <div className="h-full w-full flex items-center justify-center bg-secondary/40">
-                <Tag className="h-10 w-10" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 30%, transparent)" }} />
-              </div>
+              <>
+                <img
+                  src={optimizeImageUrl(images[0], 400, 80)}
+                  srcSet={getImageSrcSet(images[0], [400, 800], 80)}
+                  sizes={PRODUCT_CARD_SIZES}
+                  alt={product.name}
+                  width={400}
+                  height={533}
+                  className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${hasSecond ? "group-hover:opacity-0" : ""}`}
+                  loading={priority ? "eager" : "lazy"}
+                  fetchPriority={priority ? "high" : "auto"}
+                  decoding={priority ? "sync" : "async"}
+                />
+                {hasSecond && (
+                  <img src={optimizeImageUrl(images[1], 400)} srcSet={getImageSrcSet(images[1], [300, 400, 600])} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" decoding="async" />
+                )}
+              </>
             );
-          }
-          const hasSecond = images.length > 1;
-          return (
-            <>
-              <img
-                src={optimizeImageUrl(images[0], 400, 80)}
-                srcSet={getImageSrcSet(images[0], [400, 800], 80)}
-                sizes={PRODUCT_CARD_SIZES}
-                alt={product.name}
-                width={400}
-                height={533}
-                className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${hasSecond ? "group-hover:opacity-0" : ""}`}
-                loading={priority ? "eager" : "lazy"}
-                fetchPriority={priority ? "high" : "auto"}
-                decoding={priority ? "sync" : "async"}
-              />
-              {hasSecond && (
-                <img src={optimizeImageUrl(images[1], 400)} srcSet={getImageSrcSet(images[1], [300, 400, 600])} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" decoding="async" />
-              )}
-            </>
-          );
-        })()}
-        {discount && (
-          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "6px" }}>
-            -{discount}%
+          })()}
+          {discount && (
+            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "6px" }}>
+              -{discount}%
+            </div>
+          )}
+          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleWishlist(e); }} className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90 lg:hidden" style={{ backgroundColor: wishlisted ? "color-mix(in srgb, #ef4444 15%, var(--storefront-bg, #fff))" : "color-mix(in srgb, var(--storefront-bg, #fff) 92%, transparent)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+            <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 40%, transparent)" }} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="px-3 pt-2.5 pb-3 space-y-1.5">
+          <p className="text-[13px] font-medium leading-tight truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
+            {product.name}
+          </p>
+          <StarRating rating={rating} showValue textColor="var(--storefront-text, hsl(var(--foreground)))" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[15px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+              {formatPrice(effectivePrice, store.currency)}
+            </span>
+            {discount && (
+              <span className="text-[11px] line-through opacity-40" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+                {formatPrice(product.price, store.currency)}
+              </span>
+            )}
           </div>
-        )}
-        <button onClick={handleToggleWishlist} className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90 lg:hidden" style={{ backgroundColor: wishlisted ? "color-mix(in srgb, #ef4444 15%, var(--storefront-bg, #fff))" : "color-mix(in srgb, var(--storefront-bg, #fff) 92%, transparent)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
-          <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 40%, transparent)" }} aria-hidden="true" />
+        </div>
+      </Link>
+      {/* Add to Cart button — outside Link */}
+      <div className="px-3 pb-3">
+        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); createRipple(e); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="ripple-container w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-semibold uppercase tracking-wider transition-all active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
+          <ShoppingCart className="h-3.5 w-3.5" aria-hidden="true" />
+          Add to Cart
         </button>
-        {/* Desktop: hover action bar */}
-        {onQuickView && (
+      </div>
+      {/* Desktop: hover action bar — OUTSIDE Link */}
+      {onQuickView && (
+        <div className="absolute left-0 right-0 z-20" style={{ top: "calc(75% - 40px)" }}>
           <ProductCardHoverBar
             wishlisted={wishlisted}
             onQuickView={onQuickView}
             onToggleWishlist={handleToggleWishlist}
           />
-        )}
-      </div>
-
-      <div className="px-3 pt-2.5 pb-3 space-y-1.5">
-        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
-          {product.name}
-        </p>
-        <StarRating rating={rating} showValue textColor="var(--storefront-text, hsl(var(--foreground)))" />
-        <div className="flex items-center gap-1.5">
-          <span className="text-[15px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-            {formatPrice(effectivePrice, store.currency)}
-          </span>
-          {discount && (
-            <span className="text-[11px] line-through opacity-40" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-              {formatPrice(product.price, store.currency)}
-            </span>
-          )}
         </div>
-        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); createRipple(e); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="ripple-container w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-semibold uppercase tracking-wider transition-all active:scale-95 mt-1" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
-          <ShoppingCart className="h-3.5 w-3.5" aria-hidden="true" />
-          Add to Cart
-        </button>
-      </div>
-    </Link>
+      )}
+    </div>
   );
 }

@@ -46,7 +46,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
 
   return (
     <div
-      className="group rounded-xl overflow-hidden transition-all duration-300 ease-out cursor-pointer"
+      className="group rounded-xl overflow-hidden transition-all duration-300 ease-out cursor-pointer relative"
       style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}
       onMouseEnter={(e) => { prefetchProductDetail(); e.currentTarget.style.boxShadow = cardHoverShadow; e.currentTarget.style.transform = "translateY(-4px)"; }}
       onTouchStart={prefetchProductDetail}
@@ -79,16 +79,18 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
               </>
             );
           })()}
-          {/* Desktop hover action bar */}
-          {onQuickView && (
-            <ProductCardHoverBar
-              wishlisted={wishlisted}
-              onQuickView={onQuickView}
-              onToggleWishlist={handleToggleWishlist}
-            />
-          )}
         </div>
       </Link>
+      {/* Desktop hover action bar — OUTSIDE the Link to prevent navigation interference */}
+      {onQuickView && (
+        <div className="absolute left-1 right-1 z-20" style={{ top: "calc(4/5 * (100% - 4px) - 4px)" }}>
+          <ProductCardHoverBar
+            wishlisted={wishlisted}
+            onQuickView={onQuickView}
+            onToggleWishlist={handleToggleWishlist}
+          />
+        </div>
+      )}
       <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
         <div className="flex items-center justify-end">
           <div className="flex items-center gap-0.5">

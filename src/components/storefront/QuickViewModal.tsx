@@ -1,9 +1,10 @@
 /**
  * QuickViewModal — Popup product preview without leaving the page.
- * Shows product image gallery, name, price, description, and Add to Cart.
+ * Uses ReactDOM.createPortal to escape parent overflow constraints.
  */
 import { useState } from "react";
-import { X, ChevronLeft, ChevronRight, ShoppingCart, Heart, Minus, Plus } from "lucide-react";
+import { createPortal } from "react-dom";
+import { X, ChevronLeft, ChevronRight, ShoppingCart, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, resolveProductImages } from "@/lib/imageOptimize";
@@ -30,7 +31,7 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
 
   const mainImg = images[imgIdx] || images[0] || "/placeholder.svg";
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
@@ -209,5 +210,5 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
