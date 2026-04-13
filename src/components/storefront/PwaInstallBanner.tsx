@@ -43,16 +43,16 @@ export default function PwaInstallBanner({ storeName }: { storeName: string }) {
   if (!show) return null;
 
   return (
-    <div className="sticky top-14 z-20 border-b border-border bg-card px-3 py-2">
+    <div className="sticky top-14 z-20 px-3 py-2" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", borderBottom: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
       <div className="mx-auto flex max-w-6xl items-center gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }}>
           <Download className="h-4 w-4" style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-foreground truncate">
+          <p className="text-xs font-semibold truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
             Install {storeName}
           </p>
-          <p className="text-[10px] text-muted-foreground leading-tight">
+          <p className="text-[10px] leading-tight" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
             Add to home screen for quick access
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function PwaInstallBanner({ storeName }: { storeName: string }) {
         </button>
         <button
           onClick={handleDismiss}
-          className="shrink-0 rounded-full p-1 text-muted-foreground hover:text-foreground transition-colors"
+          className="shrink-0 rounded-full p-1 transition-colors" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}
         >
           <X className="h-4 w-4" />
         </button>
