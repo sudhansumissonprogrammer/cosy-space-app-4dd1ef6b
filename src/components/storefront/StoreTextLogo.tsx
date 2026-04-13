@@ -1,6 +1,6 @@
 /**
- * Text-based logo fallback using Alegreya SC font.
- * Renders the store name as a stylish typographic logo
+ * Text-based logo fallback.
+ * Renders the store name as a typographic logo
  * when no logo image is uploaded.
  */
 interface StoreTextLogoProps {
@@ -23,7 +23,7 @@ export default function StoreTextLogo({
     <span
       className={`font-bold tracking-wide whitespace-nowrap ${size} ${className}`}
       style={{
-        fontFamily: "'Alegreya SC', var(--storefront-heading-font, serif)",
+        fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif",
         color: color || undefined,
         letterSpacing: "0.04em",
       }}

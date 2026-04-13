@@ -58,7 +58,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
           className="text-sm leading-snug mb-1"
           style={{
             color: "#ffffff",
-            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif",
             fontWeight: 400,
             letterSpacing: "0.01em",
             lineHeight: 1.4,
@@ -71,7 +71,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
             className="text-sm"
             style={{
               color: "#ffffff",
-              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+              fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
               fontWeight: 400,
             }}
           >
@@ -82,7 +82,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
               className="text-sm line-through"
               style={{
                 color: "#666666",
-                fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
                 fontWeight: 400,
               }}
             >

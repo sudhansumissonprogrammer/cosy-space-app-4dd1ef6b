@@ -73,7 +73,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
       </div>
 
       <div className="px-3 pt-2.5 pb-3 space-y-1.5">
-        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>
+        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
           {product.name}
         </p>
         <StarRating rating={rating} showValue textColor="var(--storefront-text, hsl(var(--foreground)))" />

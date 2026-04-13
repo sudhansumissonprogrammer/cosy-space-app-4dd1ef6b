@@ -133,25 +133,39 @@
     @apply border-border;
   }
 
-  /* Storefront display font — headings, labels, nav, badges, buttons (not inputs) */
+  /* Storefront typography — body uses body font, headings use heading font */
   .storefront-font,
-  .storefront-font h1, .storefront-font h2, .storefront-font h3, .storefront-font h4,
-  .storefront-font p, .storefront-font span, .storefront-font a, .storefront-font label,
-  .storefront-font button, .storefront-font th, .storefront-font td, .storefront-font li {
-    font-family: var(--font-storefront);
+  .storefront-font p,
+  .storefront-font span,
+  .storefront-font a,
+  .storefront-font label,
+  .storefront-font button,
+  .storefront-font th,
+  .storefront-font td,
+  .storefront-font li {
+    font-family: var(--storefront-body-font, 'Inter'), system-ui, sans-serif;
   }
 
-  /* Inputs and textareas always use normal font */
+  .storefront-font h1,
+  .storefront-font h2,
+  .storefront-font h3,
+  .storefront-font h4,
+  .storefront-font h5,
+  .storefront-font h6 {
+    font-family: var(--storefront-heading-font, 'Alegreya SC'), serif;
+  }
+
+  /* Inputs and textareas always use body font */
   .storefront-font input,
   .storefront-font textarea,
   .storefront-font select,
   input, textarea, select {
-    font-family: 'Inter', 'Segoe UI', sans-serif !important;
+    font-family: var(--storefront-body-font, 'Inter'), 'Segoe UI', sans-serif !important;
   }
 
-  /* Search placeholder uses storefront font */
+  /* Search placeholder uses body font */
   .storefront-font input[placeholder="Search products..."]::placeholder {
-    font-family: var(--font-storefront) !important;
+    font-family: var(--storefront-body-font, 'Inter'), sans-serif !important;
   }
 
   body {

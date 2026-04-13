@@ -505,7 +505,7 @@ export default function ProductDetail() {
   const isV18 = (store as any).theme === "theme-18";
   const v18Text = isV18 ? { color: "#ffffff" } : {};
   const v18Muted = isV18 ? { color: "#999999" } : {};
-  const v18Font: React.CSSProperties = isV18 ? { fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" } : {};
+  const v18Font: React.CSSProperties = isV18 ? { fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" } : {};
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-3 sm:py-8" style={isV18 ? { backgroundColor: "#0a0a0a", color: "#ffffff" } : {}}>
@@ -536,7 +536,7 @@ export default function ProductDetail() {
         <div className="flex flex-col gap-0">
 
           {/* Product Title — right under image */}
-          <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: isV18 ? "'Helvetica Neue', Helvetica, Arial, sans-serif" : "var(--storefront-heading-font, 'Alegreya SC'), 'Alegreya SC', serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
+          <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
             {product.name}
           </h1>
 
