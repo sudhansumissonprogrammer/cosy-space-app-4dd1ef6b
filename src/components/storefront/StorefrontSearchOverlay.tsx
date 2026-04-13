@@ -156,10 +156,10 @@ export default function StorefrontSearchOverlay({
         style={{ opacity: open ? 1 : 0 }}
       />
 
-      {/* Dropdown panel */}
+      {/* Dropdown panel — centered modal on desktop */}
       <div
         ref={panelRef}
-        className="fixed left-0 right-0 top-0 z-[100] animate-in slide-in-from-top-4 duration-250 ease-out"
+        className="fixed left-0 right-0 top-0 z-[100] animate-in slide-in-from-top-4 duration-250 ease-out md:left-1/2 md:top-[10vh] md:-translate-x-1/2 md:right-auto md:w-full md:max-w-2xl md:rounded-2xl"
         style={{
           maxHeight: "85vh",
           display: "flex",
@@ -167,7 +167,7 @@ export default function StorefrontSearchOverlay({
         }}
       >
         <div
-          className="flex flex-col rounded-b-2xl shadow-2xl overflow-hidden"
+          className="flex flex-col rounded-b-2xl md:rounded-2xl shadow-2xl overflow-hidden"
           style={{
             backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
             color: "var(--storefront-text, hsl(var(--foreground)))",
