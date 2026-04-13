@@ -1,4 +1,4 @@
-import { Instagram } from "lucide-react";
+import { Instagram, ShoppingBag } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
@@ -13,10 +13,8 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
 
-  // Only show if store has an Instagram URL
   if (!store.instagram_url) return null;
 
-  // Get up to 7 product images (prefer products with images)
   const images = (products || [])
     .filter((p: any) => p.image_url && p.is_active)
     .slice(0, 7)
@@ -29,7 +27,6 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
 
   if (images.length < 3) return null;
 
-  // Extract Instagram handle from URL
   const getHandle = (url: string) => {
     try {
       const match = url.match(/instagram\.com\/([^/?#]+)/);
@@ -43,7 +40,6 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
 
   return (
     <section className="relative overflow-hidden">
-      {/* Top decorative line */}
       <div
         className="h-[2px] w-full"
         style={{ background: "var(--storefront-marquee-gradient, linear-gradient(90deg, var(--storefront-primary, hsl(var(--primary))), var(--storefront-accent, hsl(var(--accent))), var(--storefront-primary, hsl(var(--primary)))))" }}
@@ -57,7 +53,7 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
         }}
       >
         {/* Header */}
-        <div className="mx-auto max-w-6xl px-4 text-center mb-8 md:mb-10">
+        <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 lg:px-6 text-center mb-8 md:mb-10">
           <a
             href={store.instagram_url}
             target="_blank"
@@ -88,33 +84,43 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
           </a>
         </div>
 
-        {/* Image Grid — full width, edge to edge */}
+        {/* Image Grid */}
         <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-7 gap-[2px] md:gap-1" style={{ maxHeight: "320px", overflow: "hidden" }}>
           {images.map((img: any) => (
             <Link
               key={img.id}
               to={storefrontPath(store.slug, `product/${img.slug || img.id}`)}
-              className="group relative aspect-square overflow-hidden bg-black/5"
+              className="group relative aspect-square overflow-hidden"
+              style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, #000) 5%, transparent)" }}
             >
               <img
                 src={img.url}
                 alt={img.name}
                 loading="lazy"
-                className="h-full w-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-75"
+                className="h-full w-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-[0.4]"
               />
-              {/* Hover overlay */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-black shadow-lg backdrop-blur-sm">
-                  <Instagram className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">View</span>
-                </div>
+              {/* Enhanced hover overlay with product info */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <ShoppingBag className="h-6 w-6 text-white mb-1.5" />
+                <span className="text-white text-xs font-semibold text-center px-2 line-clamp-2 leading-tight">
+                  {img.name}
+                </span>
+                <span
+                  className="mt-2 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full"
+                  style={{
+                    backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
+                    color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))",
+                  }}
+                >
+                  View Product
+                </span>
               </div>
             </Link>
           ))}
         </div>
 
-        {/* CTA Button */}
-        <div className="mx-auto max-w-6xl px-4 mt-8 text-center">
+        {/* CTA */}
+        <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 lg:px-6 mt-8 text-center">
           <a
             href={store.instagram_url}
             target="_blank"
