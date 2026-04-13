@@ -6,7 +6,7 @@ import { optimizeImageUrl, getImageSrcSet, resolveProductImages, PRODUCT_CARD_SI
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
-import ProductCardHoverBar from "./ProductCardHoverBar";
+
 
 interface Props {
   product: Tables<"products">;
@@ -14,10 +14,10 @@ interface Props {
   store: Tables<"stores">;
   priority?: boolean;
   onVariantRequired?: () => void;
-  onQuickView?: (e: React.MouseEvent) => void;
+  
 }
 
-export default function ProductCardStyle2({ product, slug, store, priority = false, onVariantRequired, onQuickView }: Props) {
+export default function ProductCardStyle2({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const discount = getDiscountPercent(product.price, product.sale_price);
   const rating = getProductRating(product.id);
@@ -91,16 +91,6 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
           </div>
         </div>
       </Link>
-      {/* Desktop: hover action bar — OUTSIDE Link */}
-      {onQuickView && (
-        <div className="absolute left-0 right-0 z-20" style={{ top: "calc(75% - 40px)" }}>
-          <ProductCardHoverBar
-            wishlisted={wishlisted}
-            onQuickView={onQuickView}
-            onToggleWishlist={handleToggleWishlist}
-          />
-        </div>
-      )}
     </div>
   );
 }

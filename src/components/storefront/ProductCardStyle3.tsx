@@ -7,7 +7,7 @@ import { optimizeImageUrl, getImageSrcSet, resolveProductImages, PRODUCT_CARD_SI
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
-import ProductCardHoverBar from "./ProductCardHoverBar";
+
 
 interface Props {
   product: Tables<"products">;
@@ -15,10 +15,10 @@ interface Props {
   store: Tables<"stores">;
   priority?: boolean;
   onVariantRequired?: () => void;
-  onQuickView?: (e: React.MouseEvent) => void;
+  
 }
 
-export default function ProductCardStyle3({ product, slug, store, priority = false, onVariantRequired, onQuickView }: Props) {
+export default function ProductCardStyle3({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const discount = getDiscountPercent(product.price, product.sale_price);
   const rating = getProductRating(product.id);
@@ -89,21 +89,11 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
       </Link>
       {/* Add to Cart button — outside Link */}
       <div className="px-3 pb-3">
-        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); createRipple(e); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="ripple-container w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-semibold uppercase tracking-wider transition-all active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
+        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); createRipple(e); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="ripple-container w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium uppercase tracking-wider transition-all active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
           <ShoppingCart className="h-3.5 w-3.5" aria-hidden="true" />
           Add to Cart
         </button>
       </div>
-      {/* Desktop: hover action bar — OUTSIDE Link */}
-      {onQuickView && (
-        <div className="absolute left-0 right-0 z-20" style={{ top: "calc(75% - 40px)" }}>
-          <ProductCardHoverBar
-            wishlisted={wishlisted}
-            onQuickView={onQuickView}
-            onToggleWishlist={handleToggleWishlist}
-          />
-        </div>
-      )}
     </div>
   );
 }
