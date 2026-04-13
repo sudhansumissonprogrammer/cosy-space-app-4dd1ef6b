@@ -107,7 +107,7 @@ export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
     link.onload = () => { link.media = "all"; };
     document.head.appendChild(link);
   }
-  const newHref = `https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin`;
+  const newHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
   if (link.href !== newHref) {
     link.media = "print";
     link.onload = () => { link.media = "all"; };
