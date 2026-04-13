@@ -34,7 +34,7 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
 
   if (!orders?.length) {
     return (
-      <div className="py-12 text-center text-muted-foreground">
+      <div className="py-12 text-center" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
         <Package className="mx-auto mb-3 h-10 w-10" />
         <p>No orders yet</p>
         <Button asChild variant="outline" className="mt-4">
@@ -64,7 +64,7 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
           <Card key={order.id}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
                   {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                 </span>
                 <Badge className={statusColor[order.status] || ""}>{order.status}</Badge>
@@ -86,16 +86,16 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
               {!isCancelled && (
                 <div className="flex justify-between mb-2">
                   {STATUSES.map((s, i) => (
-                    <span key={s} className={`text-[10px] capitalize ${i <= currentIdx ? "text-primary font-medium" : "text-muted-foreground"}`}>{s}</span>
+                    <span key={s} className={`text-[10px] capitalize ${i <= currentIdx ? "text-primary font-medium" : ""}`} style={i > currentIdx ? { color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" } : undefined}>{s}</span>
                   ))}
                 </div>
               )}
 
               {/* Tracking info */}
               {order.tracking_number && (
-                <div className="mb-2 flex items-center gap-2 rounded-lg bg-accent/50 p-2 text-xs">
-                  <Package className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-muted-foreground">Tracking:</span>
+                <div className="mb-2 flex items-center gap-2 rounded-lg p-2 text-xs" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 5%, transparent)" }}>
+                  <Package className="h-3 w-3" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }} />
+                  <span style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>Tracking:</span>
                   {order.tracking_url ? (
                     <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">{order.tracking_number}</a>
                   ) : (
@@ -121,12 +121,12 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
                 <div className="mt-2 rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/30 p-2.5 space-y-1">
                   <p className="text-xs font-semibold text-purple-700 dark:text-purple-400">💰 Partial Payment</p>
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Advance Paid</span>
+                    <span style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>Advance Paid</span>
                     <span className="font-semibold text-emerald-600">{store.currency} {Number(order.advance_paid).toFixed(0)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Balance on Delivery</span>
-                    <span className="font-semibold text-foreground">{store.currency} {Number(order.balance_due).toFixed(0)}</span>
+                    <span style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>Balance on Delivery</span>
+                    <span className="font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{store.currency} {Number(order.balance_due).toFixed(0)}</span>
                   </div>
                 </div>
               )}
@@ -211,8 +211,8 @@ function AddressesTab({ customerId }: { customerId: string }) {
                   {addr.is_default && <Badge variant="secondary" className="text-xs"><Star className="h-3 w-3 mr-1" />Default</Badge>}
                 </div>
                 <p className="text-sm">{addr.full_name}</p>
-                <p className="text-sm text-muted-foreground">{[addr.street_address, addr.city, addr.state, addr.pincode].filter(Boolean).join(", ")}</p>
-                {addr.phone && <p className="text-sm text-muted-foreground">{addr.phone}</p>}
+                <p className="text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{[addr.street_address, addr.city, addr.state, addr.pincode].filter(Boolean).join(", ")}</p>
+                {addr.phone && <p className="text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{addr.phone}</p>}
               </div>
               <div className="flex gap-1">
                 {!addr.is_default && (
@@ -309,9 +309,9 @@ function WishlistTab({ customerId, store }: { customerId: string; store: StoreDa
 
   if (!wishlistItems?.length) {
     return (
-      <div className="py-12 text-center text-muted-foreground">
+      <div className="py-12 text-center" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
         <Heart className="mx-auto mb-3 h-16 w-16 opacity-20" />
-        <p className="text-base font-medium text-foreground">Your wishlist is empty</p>
+        <p className="text-base font-medium" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>Your wishlist is empty</p>
         <p className="text-sm mt-1">Save products you love to find them later</p>
       </div>
     );
@@ -358,11 +358,11 @@ export default function StorefrontAccount() {
     if (user && !customer) ensureCustomer();
   }, [user, customer, ensureCustomer]);
 
-  if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }} /></div>;
   if (!user) return <Navigate to={storefrontPath(store.slug, "login")} replace />;
 
   if (!customer) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+    return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }} /></div>;
   }
 
   return (
@@ -374,7 +374,7 @@ export default function StorefrontAccount() {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg font-semibold truncate">{customer.name || user.email}</h1>
-            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+            <p className="text-sm truncate" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{user.email}</p>
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={signOut} className="mt-3 w-full sm:w-auto">

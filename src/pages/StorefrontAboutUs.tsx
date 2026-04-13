@@ -21,20 +21,20 @@ function RichTextRenderer({ text }: { text: string }) {
         const trimmed = line.trim();
         if (HEADING_PATTERNS.test(trimmed)) {
           return (
-            <h2 key={i} className="mt-8 text-2xl font-bold text-foreground">
+            <h2 key={i} className="mt-8 text-2xl font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
               {trimmed}
             </h2>
           );
         }
         if (EMOJI_BULLET.test(trimmed)) {
           return (
-            <p key={i} className="ml-2 text-base leading-relaxed text-muted-foreground">
+            <p key={i} className="ml-2 text-base leading-relaxed" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 65%, transparent)" }}>
               {trimmed}
             </p>
           );
         }
         return (
-          <p key={i} className="text-base leading-relaxed text-muted-foreground">
+          <p key={i} className="text-base leading-relaxed" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 65%, transparent)" }}>
             {trimmed}
           </p>
         );
@@ -60,14 +60,17 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
     staleTime: 300000,
   });
 
+  const textColor = "var(--storefront-text, hsl(var(--foreground)))";
+  const mutedColor = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 65%, transparent)";
+
   return (
     <div className="space-y-10">
       {/* Welcome */}
       <section className="space-y-4">
-        <h2 className="text-2xl font-bold text-foreground">ABOUT US</h2>
-        <div className="space-y-3 text-base leading-relaxed text-muted-foreground">
+        <h2 className="text-2xl font-bold" style={{ color: textColor }}>ABOUT US</h2>
+        <div className="space-y-3 text-base leading-relaxed" style={{ color: mutedColor }}>
           <p>
-            Welcome to <strong className="text-foreground">{storeName}</strong> — where quality meets passion.
+            Welcome to <strong style={{ color: textColor }}>{storeName}</strong> — where quality meets passion.
           </p>
           {store.description ? (
             <p>{store.description}</p>
@@ -77,22 +80,22 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
             </p>
           )}
           <p>
-            At <strong className="text-foreground">{storeName}</strong>, we believe every product tells a story. Every item we offer is carefully selected for its quality, craftsmanship, and unique design, so you can shop with confidence and delight.
+            At <strong style={{ color: textColor }}>{storeName}</strong>, we believe every product tells a story. Every item we offer is carefully selected for its quality, craftsmanship, and unique design, so you can shop with confidence and delight.
           </p>
         </div>
       </section>
 
       {/* Our Mission */}
       <section className="space-y-3">
-        <h2 className="text-2xl font-bold text-foreground">Our Mission</h2>
-        <p className="text-base leading-relaxed text-muted-foreground">
+        <h2 className="text-2xl font-bold" style={{ color: textColor }}>Our Mission</h2>
+        <p className="text-base leading-relaxed" style={{ color: mutedColor }}>
           To make premium-quality products accessible and affordable for everyone, blending traditional charm with contemporary style. We aim to bring the best to your doorstep with trusted service, authentic products, and an unmatched shopping experience.
         </p>
       </section>
 
       {/* Why Choose Us */}
       <section className="space-y-4">
-        <h2 className="text-2xl font-bold text-foreground">Why Choose {storeName}?</h2>
+        <h2 className="text-2xl font-bold" style={{ color: textColor }}>Why Choose {storeName}?</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { emoji: "✨", title: "Authentic & Handpicked Products", desc: "Every item is sourced and selected with precision and care." },
@@ -100,10 +103,10 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
             { emoji: "🚚", title: "Reliable Delivery", desc: "Fast and safe shipping so your order reaches you on time." },
             { emoji: "💬", title: "Customer Support", desc: "Our friendly team is always ready to assist you." },
           ].map((item) => (
-            <div key={item.title} className="rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
+            <div key={item.title} className="rounded-xl p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}>
               <div className="text-2xl mb-2">{item.emoji}</div>
-              <h3 className="text-sm font-bold text-foreground mb-1">{item.title}</h3>
-              <p className="text-xs leading-relaxed text-muted-foreground">{item.desc}</p>
+              <h3 className="text-sm font-bold mb-1" style={{ color: textColor }}>{item.title}</h3>
+              <p className="text-xs leading-relaxed" style={{ color: mutedColor }}>{item.desc}</p>
             </div>
           ))}
         </div>
@@ -111,29 +114,29 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
 
       {/* Our Promise */}
       <section className="space-y-3">
-        <h2 className="text-2xl font-bold text-foreground">Our Promise</h2>
-        <p className="text-base leading-relaxed text-muted-foreground">
-          We promise to deliver products that reflect our dedication to quality, creativity, and trust. Your satisfaction is at the heart of everything we do — because at <strong className="text-foreground">{storeName}</strong>, you're not just a customer; you're part of our story.
+        <h2 className="text-2xl font-bold" style={{ color: textColor }}>Our Promise</h2>
+        <p className="text-base leading-relaxed" style={{ color: mutedColor }}>
+          We promise to deliver products that reflect our dedication to quality, creativity, and trust. Your satisfaction is at the heart of everything we do — because at <strong style={{ color: textColor }}>{storeName}</strong>, you're not just a customer; you're part of our story.
         </p>
       </section>
 
       {/* Contact Us */}
       {(ownerEmail || whatsapp || address) && (
         <section className="space-y-4">
-          <h2 className="text-2xl font-bold text-foreground">Contact Us</h2>
-          <div className="space-y-2 text-base text-muted-foreground">
+          <h2 className="text-2xl font-bold" style={{ color: textColor }}>Contact Us</h2>
+          <div className="space-y-2 text-base" style={{ color: mutedColor }}>
             {ownerEmail && (
-              <p>📧 <strong className="text-foreground">Email:</strong>{" "}
-                <a href={`mailto:${ownerEmail}`} className="text-primary hover:underline">{ownerEmail}</a>
+              <p>📧 <strong style={{ color: textColor }}>Email:</strong>{" "}
+                <a href={`mailto:${ownerEmail}`} className="hover:underline" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>{ownerEmail}</a>
               </p>
             )}
             {whatsapp && (
-              <p>📞 <strong className="text-foreground">Phone:</strong>{" "}
-                <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{whatsapp}</a>
+              <p>📞 <strong style={{ color: textColor }}>Phone:</strong>{" "}
+                <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>{whatsapp}</a>
               </p>
             )}
             {address && (
-              <p>🏠 <strong className="text-foreground">Address:</strong> {address}</p>
+              <p>🏠 <strong style={{ color: textColor }}>Address:</strong> {address}</p>
             )}
           </div>
         </section>
@@ -142,7 +145,7 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
       {/* Social Links */}
       {(whatsapp || instagram || facebook) && (
         <section className="space-y-4">
-          <p className="text-base text-muted-foreground">
+          <p className="text-base" style={{ color: mutedColor }}>
             Follow us on social media and stay updated with our latest collections, offers, and trends.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -151,7 +154,8 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
                 href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-all hover:border-green-500/30 hover:shadow-md"
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
+                style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)", color: textColor }}
               >
                 <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp
               </a>
@@ -161,7 +165,8 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
                 href={instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-all hover:border-pink-500/30 hover:shadow-md"
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
+                style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)", color: textColor }}
               >
                 <Instagram className="h-4 w-4 text-pink-600" /> Instagram
               </a>
@@ -171,7 +176,8 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
                 href={facebook}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-all hover:border-blue-500/30 hover:shadow-md"
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
+                style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)", color: textColor }}
               >
                 <Facebook className="h-4 w-4 text-blue-600" /> Facebook
               </a>
@@ -215,9 +221,7 @@ export default function StorefrontAboutUs() {
   return (
     <div className="min-h-[70vh]">
       {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-accent/30 to-background px-4 py-16 lg:py-24 text-center">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.15),transparent_50%)]" />
+      <div className="relative overflow-hidden px-4 py-16 lg:py-24 text-center" style={{ background: "linear-gradient(to bottom right, color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 10%, transparent), color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 5%, var(--storefront-bg, hsl(var(--background)))))" }}>
         <div className="relative mx-auto max-w-2xl">
           {store.logo_url ? (
             <img
@@ -231,10 +235,10 @@ export default function StorefrontAboutUs() {
               <StoreTextLogo storeName={store.name} size="text-3xl" />
             </div>
           )}
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
             About {store.name}
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mt-4 text-lg" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
             Get to know us and what makes us special ✨
           </p>
         </div>
@@ -244,7 +248,7 @@ export default function StorefrontAboutUs() {
       <div className="mx-auto max-w-3xl lg:max-w-4xl px-4 py-12 lg:py-16">
         {/* About Us Image on top */}
         {aboutUsImage && (
-          <div className="mb-10 overflow-hidden rounded-2xl border border-border">
+          <div className="mb-10 overflow-hidden rounded-2xl" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}>
             <img
               src={optimizeImageUrl(aboutUsImage, 900)}
               alt={`About ${store.name}`}
