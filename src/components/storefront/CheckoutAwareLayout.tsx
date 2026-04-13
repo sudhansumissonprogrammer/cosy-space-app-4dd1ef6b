@@ -196,7 +196,7 @@ export default function CheckoutAwareLayout({
                 <ArrowLeft className="h-5 w-5 text-foreground" strokeWidth={2.5} aria-hidden="true" />
               </Button>
               {LogoElement}
-              <span className="text-sm font-semibold text-foreground" style={{ fontFamily: "'Montserrat', sans-serif" }}>{store.theme === "theme-16" ? "Checkout / चेकआउट" : "Checkout"}</span>
+              <span className="text-sm font-semibold text-foreground" style={{ fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" }}>{store.theme === "theme-16" ? "Checkout / चेकआउट" : "Checkout"}</span>
               <div className="flex-1" />
             </>
           ) : isCentered ? (
