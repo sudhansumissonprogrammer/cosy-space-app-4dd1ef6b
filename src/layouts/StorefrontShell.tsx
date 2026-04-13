@@ -167,6 +167,7 @@ export default function StorefrontShell({
 
   const mergedStyle: React.CSSProperties = {
     ...themeStyle,
+    fontFamily: "var(--storefront-body-font, 'Inter'), system-ui, sans-serif",
     backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
     color: "var(--storefront-text, hsl(var(--foreground)))",
     ...wrapperStyle,
