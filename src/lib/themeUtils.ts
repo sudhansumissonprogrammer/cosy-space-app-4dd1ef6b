@@ -93,9 +93,9 @@ export function buildThemeStyle(
 /** Load Google Fonts dynamically for theme config — non-blocking */
 export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
   if (!themeConfig) return;
-  const fonts = [themeConfig.heading_font, themeConfig.body_font].filter(Boolean);
+  const fonts = [...new Set([themeConfig.heading_font, themeConfig.body_font].filter(Boolean))];
   if (fonts.length === 0) return;
-  const families = fonts.map((f: string) => f.replace(/ /g, "+")).join("&family=");
+  const families = fonts.map((f: string) => `family=${f.replace(/ /g, "+")}:wght@100..900`).join("&");
   const linkId = "storefront-google-fonts";
   let link = document.getElementById(linkId) as HTMLLinkElement;
   if (!link) {
@@ -107,7 +107,7 @@ export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
     link.onload = () => { link.media = "all"; };
     document.head.appendChild(link);
   }
-  const newHref = `https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin`;
+  const newHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
   if (link.href !== newHref) {
     link.media = "print";
     link.onload = () => { link.media = "all"; };
