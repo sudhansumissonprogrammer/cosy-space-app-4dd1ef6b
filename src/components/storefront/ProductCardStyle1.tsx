@@ -93,7 +93,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
         <div className="flex items-center gap-1 min-w-0">
           {product.sale_price ? (
             <>
-              <span className="text-sm font-extrabold text-foreground whitespace-nowrap">{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
+              <span className="text-sm font-bold text-foreground whitespace-nowrap">{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
               <span className="text-[10px] text-muted-foreground line-through whitespace-nowrap">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
               {discountPercent && <span className="rounded-full bg-success px-1 py-0.5 text-[8px] font-bold text-success-foreground whitespace-nowrap shrink-0">{discountPercent}% off</span>}
             </>

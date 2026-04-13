@@ -59,8 +59,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
           style={{
             color: "#ffffff",
             fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif",
-            fontWeight: 400,
-            letterSpacing: "0.01em",
+            fontWeight: 500,
             lineHeight: 1.4,
           }}
         >
