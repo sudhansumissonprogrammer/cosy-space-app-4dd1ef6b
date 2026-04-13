@@ -166,7 +166,7 @@ export default function SideCart({ store }: SideCartProps) {
                           className="h-full rounded-full transition-all duration-500 ease-out"
                           style={{
                             width: `${shippingProgress}%`,
-                            background: "linear-gradient(90deg, #10b981, #34d399)",
+                            background: "linear-gradient(90deg, var(--storefront-primary, #10b981), color-mix(in srgb, var(--storefront-primary, #10b981) 70%, #34d399))",
                           }}
                         />
                       </div>

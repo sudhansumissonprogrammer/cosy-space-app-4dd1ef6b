@@ -121,7 +121,7 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
                       height: "16px",
                       fontSize: "10px",
                       fontWeight: 700,
-                      color: "#fff",
+                      color: "var(--storefront-bg, var(--v17-bg, #fff))",
                       backgroundColor: "var(--v17-primary, #2B4C3F)",
                       padding: "0 3px",
                       fontFamily: "var(--v17-body-font, 'Jost', sans-serif)",

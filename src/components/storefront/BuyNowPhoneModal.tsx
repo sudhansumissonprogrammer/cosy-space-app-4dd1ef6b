@@ -129,14 +129,14 @@ export default function BuyNowPhoneModal({
           <DialogTitle className="text-center text-lg font-bold">
             Enter your mobile number
           </DialogTitle>
-          <DialogDescription className="text-center text-sm text-muted-foreground">
+          <DialogDescription className="text-center text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
             We'll use this to confirm your order
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
               +91
             </span>
             <Input
@@ -151,7 +151,7 @@ export default function BuyNowPhoneModal({
             />
           </div>
 
-          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center gap-4 text-xs" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
             <span className="flex items-center gap-1">
               <Lock className="h-3.5 w-3.5" />
               Secure checkout

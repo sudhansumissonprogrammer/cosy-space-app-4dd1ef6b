@@ -183,7 +183,8 @@ export default function StorefrontSearchOverlay({
                 placeholder="Search products..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="pl-9 pr-10 rounded-full border-0 bg-accent/60 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0"
+                className="pl-9 pr-10 rounded-full border-0 focus-visible:ring-1 focus-visible:ring-offset-0"
+                style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)", color: "var(--storefront-text, hsl(var(--foreground)))" }}
                 maxLength={100}
               />
               {query && (
@@ -197,7 +198,7 @@ export default function StorefrontSearchOverlay({
             </div>
             <button
               onClick={onClose}
-              className="shrink-0 rounded-full px-3 py-2 text-xs font-semibold hover:bg-accent transition-colors"
+              className="shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition-colors"
               style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
             >
               Cancel
@@ -222,7 +223,7 @@ export default function StorefrontSearchOverlay({
               Filters
               {activeFilterCount > 0 && (
                 <span className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold"
-                  style={{ backgroundColor: "#EF4444", color: "#fff" }}
+                  style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                 >
                   {activeFilterCount}
                 </span>
@@ -293,7 +294,7 @@ export default function StorefrontSearchOverlay({
                 <button
                   onClick={() => setPriceRange(null)}
                   className="text-[11px] font-medium opacity-60 hover:opacity-100"
-                  style={{ color: "#EF4444" }}
+                  style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
                 >
                   Clear all filters
                 </button>
