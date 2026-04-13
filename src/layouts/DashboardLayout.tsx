@@ -127,7 +127,7 @@ function MobileMenu({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a1a]">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a1a] font-dashboard">
       {/* Scrollable menu items */}
       <div className="flex-1 overflow-auto px-4 pt-6 pb-4">
         <div className="space-y-4">
@@ -292,7 +292,7 @@ export default function DashboardLayout() {
         <SidebarProvider>
           <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
           <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={15000} logoUrl="/images/shopbanao-logo.png" />
-          <div className="min-h-screen flex w-full">
+          <div className="min-h-screen flex w-full font-dashboard">
             <AppSidebar />
             <div className="flex-1 flex flex-col min-w-0">
               {isAdminView && (
@@ -370,7 +370,7 @@ export default function DashboardLayout() {
     <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
     <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={10000} logoUrl="/images/shopbanao-logo.png" />
     <div
-      className="min-h-screen flex flex-col bg-background"
+      className="min-h-screen flex flex-col bg-background font-dashboard"
       
     >
       {isAdminView && (
