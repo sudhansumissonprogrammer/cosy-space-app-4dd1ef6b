@@ -18,6 +18,7 @@ const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhat
 const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
 const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
 const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
+const BackToTop = lazy(() => import("@/components/storefront/BackToTop"));
 
 /** Defers ExitIntentPopup mounting by 5 seconds to keep initial load fast */
 function DeferredExitIntent({ storeId, storeName }: { storeId: string; storeName: string }) {
