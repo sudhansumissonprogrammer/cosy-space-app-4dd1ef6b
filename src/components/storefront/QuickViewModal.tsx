@@ -210,5 +210,5 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
