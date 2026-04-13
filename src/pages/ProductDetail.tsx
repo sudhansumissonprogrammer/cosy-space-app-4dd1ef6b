@@ -735,7 +735,7 @@ export default function ProductDetail() {
                 /* Default style */
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    className={`relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
+                    className={`relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
                       justAdded ? "bg-emerald-600 text-white" : "btn-gold hover:brightness-110"
                     }`}
                     onClick={handleAddToCart}
@@ -755,7 +755,7 @@ export default function ProductDetail() {
 
                   {showBuyNow && (
                     <button
-                      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
+                      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                       onClick={handleBuyNow}
                     >
