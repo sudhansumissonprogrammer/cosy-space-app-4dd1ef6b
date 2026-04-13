@@ -16,10 +16,10 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
   // Only show if store has an Instagram URL
   if (!store.instagram_url) return null;
 
-  // Get up to 6 product images (prefer products with images)
+  // Get up to 7 product images (prefer products with images)
   const images = (products || [])
     .filter((p: any) => p.image_url && p.is_active)
-    .slice(0, 6)
+    .slice(0, 7)
     .map((p: any) => ({
       id: p.id,
       url: cleanImageUrl(p.image_url),
@@ -89,7 +89,7 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
         </div>
 
         {/* Image Grid — full width, edge to edge */}
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-[2px] md:gap-1">
+        <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-7 gap-[2px] md:gap-1">
           {images.map((img: any) => (
             <Link
               key={img.id}

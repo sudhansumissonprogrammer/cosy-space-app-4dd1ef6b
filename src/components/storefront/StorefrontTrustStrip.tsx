@@ -37,7 +37,7 @@ export default function StorefrontTrustStrip({ storeId, currency = "INR" }: Stor
 
   return (
     <section className="w-full" style={{ backgroundColor: "#111111", color: "#ffffff" }}>
-      <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 md:py-10">
+      <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 md:py-10 lg:py-14">
         {/* Mobile: vertical list */}
         <div className="flex flex-col gap-6 md:hidden">
           <TrustItem icon={<TruckIcon />} title="Free Shipping" description={shippingText} />

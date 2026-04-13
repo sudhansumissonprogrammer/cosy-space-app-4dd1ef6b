@@ -29,7 +29,7 @@ export default function WishlistPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 py-6">
       <div className="mb-5 flex items-center gap-2">
         <Heart className="h-5 w-5 text-destructive" />
         <h1 className="text-xl font-bold text-foreground">
@@ -51,7 +51,7 @@ export default function WishlistPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((item) => {
             const discountPercent = item.salePrice && item.salePrice < item.price
               ? Math.round(((item.price - item.salePrice) / item.price) * 100)

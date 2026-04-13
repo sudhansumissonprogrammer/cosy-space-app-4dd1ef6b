@@ -153,7 +153,7 @@ export default function CategoryDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-2 sm:px-4 py-6">
+    <div className="mx-auto max-w-6xl lg:max-w-7xl px-2 sm:px-4 py-6">
       <div className="mb-5 flex items-center gap-3">
         <button
           onClick={() => navigate(storefrontPath(slug!, ""))}
@@ -166,7 +166,7 @@ export default function CategoryDetail() {
 
       <div style={{ minHeight: 600, contain: "layout" }}>
         {categoryLoading || productsLoading ? (
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
                 <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
@@ -197,7 +197,7 @@ export default function CategoryDetail() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5">
                 {products.map((product, idx) => (
                   <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
                 ))}
