@@ -93,12 +93,12 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
         <div className="flex items-center gap-1 min-w-0">
           {product.sale_price ? (
             <>
-              <span className="text-sm font-bold text-foreground whitespace-nowrap">{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
-              <span className="text-[10px] text-muted-foreground line-through whitespace-nowrap">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
+              <span className="text-sm sm:text-base font-extrabold text-foreground whitespace-nowrap">{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground line-through whitespace-nowrap">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
               {discountPercent && <span className="rounded-full bg-success px-1 py-0.5 text-[8px] font-bold text-success-foreground whitespace-nowrap shrink-0">{discountPercent}% off</span>}
             </>
           ) : (
-            <span className="text-sm font-extrabold text-foreground">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
+            <span className="text-sm sm:text-base font-extrabold text-foreground">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
           )}
         </div>
         {cartQty > 0 && !isAdding && !justAdded ? (
@@ -108,7 +108,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Increase quantity"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
           </div>
         ) : (
-          <button className={`ripple-container flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[9px] font-extrabold uppercase tracking-widest sm:h-8 sm:text-[10px] transition-all duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "btn-gold opacity-80 cursor-wait" : "btn-gold hover:brightness-110"}`} onClick={(e) => { createRipple(e); handleAdd(e); }} disabled={isAdding}>
+          <button className={`ripple-container flex h-8 w-full items-center justify-center gap-1.5 rounded-md text-[10px] font-extrabold uppercase tracking-widest sm:h-9 sm:text-[11px] transition-all duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "btn-gold opacity-80 cursor-wait" : "btn-gold hover:brightness-110"}`} onClick={(e) => { createRipple(e); handleAdd(e); }} disabled={isAdding}>
             {isAdding ? (<><Loader2 className="h-3.5 w-3.5 lg:h-4 lg:w-4 animate-spin" /><span className="whitespace-nowrap">Adding...</span></>) : justAdded ? (<><Check className="h-3.5 w-3.5 lg:h-4 lg:w-4" strokeWidth={3} /><span className="whitespace-nowrap">Added ✓</span></>) : (<><ShoppingCart className="h-3.5 w-3.5 lg:h-4 lg:w-4" /><span className="whitespace-nowrap">ADD TO CART</span></>)}
           </button>
         )}

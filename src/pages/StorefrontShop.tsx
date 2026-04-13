@@ -103,6 +103,13 @@ export default function StorefrontShop() {
 
   return (
     <div className="mx-auto max-w-6xl lg:max-w-7xl px-2 sm:px-4 py-6">
+      {/* Breadcrumbs */}
+      <nav className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
+        <Link to={storefrontPath(slug!, "")} className="hover:text-foreground transition-colors">Home</Link>
+        <span>/</span>
+        <span className="text-foreground font-medium">Shop All</span>
+      </nav>
+
       <div className="mb-5 flex items-center gap-3">
         <Link
           to={storefrontPath(slug!, "")}
@@ -110,7 +117,7 @@ export default function StorefrontShop() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="text-xl font-bold text-foreground">Shop All</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Shop All</h1>
       </div>
 
       <div style={{ minHeight: 600, contain: "layout" }}>
