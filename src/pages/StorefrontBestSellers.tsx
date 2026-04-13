@@ -10,7 +10,7 @@ import { storefrontPath } from "@/lib/subdomain";
 
 function ProductCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="overflow-hidden rounded-2xl" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}>
       <Skeleton className="w-full" style={{ aspectRatio: "4/5" }} />
       <div className="px-2.5 pb-2.5 pt-2 space-y-2">
         <Skeleton className="h-3.5 w-full" />
@@ -59,13 +59,14 @@ export default function StorefrontBestSellers() {
       <div className="mb-5 flex items-center gap-3">
         <Link
           to={storefrontPath(slug!, "")}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card hover:bg-accent transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-full transition-colors"
+          style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="text-xl font-bold text-foreground">{pageTitle}</h1>
+        <h1 className="text-xl font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{pageTitle}</h1>
         {products && (
-          <span className="text-sm text-muted-foreground">({products.length} products)</span>
+          <span className="text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>({products.length} products)</span>
         )}
       </div>
 
@@ -89,8 +90,8 @@ export default function StorefrontBestSellers() {
           ))}
         </div>
       ) : (
-        <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
-          <p className="text-muted-foreground">No products yet.</p>
+        <div className="flex min-h-[200px] items-center justify-center rounded-lg" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}>
+          <p style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>No products yet.</p>
         </div>
       )}
     </div>
