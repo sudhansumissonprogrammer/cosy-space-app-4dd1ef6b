@@ -71,9 +71,9 @@ export default function SideCart({ store }: SideCartProps) {
         {/* Items */}
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
-            <ShoppingCart className="h-20 w-20 text-muted-foreground/20" />
-            <p className="text-lg font-semibold text-foreground">Your cart is empty</p>
-            <p className="text-sm text-muted-foreground">Browse products and add your favorites</p>
+            <ShoppingCart className="h-20 w-20" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 15%, transparent)" }} />
+            <p className="text-lg font-semibold" style={{ color: "var(--storefront-text, inherit)" }}>Your cart is empty</p>
+            <p className="text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}>Browse products and add your favorites</p>
             <Button variant="outline" onClick={closeCart} className="mt-2">
               Continue Shopping
             </Button>
@@ -85,7 +85,7 @@ export default function SideCart({ store }: SideCartProps) {
                 {items.map((item) => (
                   <div
                     key={`${item.productId}-${item.variantId || ""}`}
-                    className="flex gap-3 rounded-xl border border-border bg-card p-3"
+                    className="flex gap-3 rounded-xl p-3" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, inherit) 10%, transparent)", backgroundColor: "color-mix(in srgb, var(--storefront-text, inherit) 3%, var(--storefront-bg, #fff))" }}
                   >
                     {item.image ? (
                       <img
@@ -94,30 +94,30 @@ export default function SideCart({ store }: SideCartProps) {
                         className="h-24 w-24 shrink-0 rounded-lg border object-cover"
                       />
                     ) : (
-                      <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-accent">
-                        <Package className="h-6 w-6 text-muted-foreground" />
+                      <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, inherit) 5%, var(--storefront-bg, #fff))" }}>
+                        <Package className="h-6 w-6" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 40%, transparent)" }} />
                       </div>
                     )}
                     <div className="flex flex-1 flex-col min-w-0">
-                      <p className="text-sm font-semibold text-foreground line-clamp-2">{item.name}</p>
+                      <p className="text-sm font-semibold line-clamp-2" style={{ color: "var(--storefront-text, inherit)" }}>{item.name}</p>
                       {item.variantName && (
-                        <p className="text-xs text-muted-foreground">{item.variantName}</p>
+                        <p className="text-xs" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}>{item.variantName}</p>
                       )}
-                      <p className="mt-0.5 text-sm font-bold text-foreground">
+                      <p className="mt-0.5 text-sm font-bold" style={{ color: "var(--storefront-text, inherit)" }}>
                         {currency} {(item.price * item.quantity).toFixed(2)}
                       </p>
                       <div className="mt-auto flex items-center gap-2 pt-1.5">
-                        <div className="flex items-center rounded-lg border border-border">
+                        <div className="flex items-center rounded-lg" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, inherit) 12%, transparent)" }}>
                           <button
                             onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}
-                            className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:scale-90"
+                            className="flex h-8 w-8 items-center justify-center transition-colors active:scale-90" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </button>
                           <span key={item.quantity} className="w-8 text-center text-sm font-semibold qty-bounce">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)}
-                            className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:scale-90"
+                            className="flex h-8 w-8 items-center justify-center transition-colors active:scale-90" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>
@@ -148,7 +148,7 @@ export default function SideCart({ store }: SideCartProps) {
             </div>
 
             {/* Footer / Checkout */}
-            <div className="border-t bg-card px-4 py-2.5 space-y-1.5">
+            <div className="border-t px-4 py-2.5 space-y-1.5" style={{ backgroundColor: "var(--storefront-bg, inherit)" }}>
               {/* Free Shipping Progress Bar */}
               {shippingProgress !== null && shippingRemaining !== null && (
                 <div className="mb-1">
@@ -159,9 +159,9 @@ export default function SideCart({ store }: SideCartProps) {
                           <Truck className="h-3 w-3" />
                           Add {currency} {shippingRemaining.toFixed(0)} more for FREE delivery!
                         </span>
-                        <span className="text-[9px] text-muted-foreground">{Math.round(shippingProgress)}%</span>
+                        <span className="text-[9px]" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 50%, transparent)" }}>{Math.round(shippingProgress)}%</span>
                       </div>
-                      <div className="h-1.5 w-full rounded-full bg-accent overflow-hidden">
+                      <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, inherit) 8%, transparent)" }}>
                         <div
                           className="h-full rounded-full transition-all duration-500 ease-out"
                           style={{
@@ -179,8 +179,8 @@ export default function SideCart({ store }: SideCartProps) {
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Subtotal</span>
-                <span className="text-sm font-bold text-foreground">
+                <span className="text-xs font-medium" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}>Subtotal</span>
+                <span className="text-sm font-bold" style={{ color: "var(--storefront-text, inherit)" }}>
                   {currency} {cartTotal.toFixed(2)}
                 </span>
               </div>
@@ -188,7 +188,7 @@ export default function SideCart({ store }: SideCartProps) {
                 {showCheckout && isTheme16 ? (
                   <button
                     onClick={() => { closeCart(); setShowPhoneModal(true); }}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-[0.98] btn-gold"
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                   >
                     <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
@@ -197,7 +197,7 @@ export default function SideCart({ store }: SideCartProps) {
                   <Link
                     to={storefrontPath(store.slug, "checkout")}
                     onClick={closeCart}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-[0.98] btn-gold"
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                   >
                     <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
@@ -216,7 +216,7 @@ export default function SideCart({ store }: SideCartProps) {
               </div>
               <button
                 onClick={closeCart}
-                className="w-full text-[11px] font-medium py-1 text-muted-foreground hover:text-foreground transition-colors"
+                className="w-full text-[11px] font-medium py-1 transition-colors" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}
               >
                 Continue Shopping
               </button>

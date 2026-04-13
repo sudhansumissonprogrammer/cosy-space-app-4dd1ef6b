@@ -45,8 +45,8 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
 
   return (
     <div
-      className="group rounded-xl bg-card overflow-hidden border border-border/50 transition-all duration-300 ease-out cursor-pointer"
-      style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto" }}
+      className="group rounded-xl overflow-hidden transition-all duration-300 ease-out cursor-pointer"
+      style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}
       onMouseEnter={(e) => { prefetchProductDetail(); e.currentTarget.style.boxShadow = cardHoverShadow; e.currentTarget.style.transform = "translateY(-4px)"; }}
       onTouchStart={prefetchProductDetail}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; e.currentTarget.style.transform = "translateY(0)"; }}
@@ -66,7 +66,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
           {(() => {
             const images = resolveProductImages(product);
             if (images.length === 0) {
-              return <div className="flex h-full w-full items-center justify-center bg-secondary/40"><Package className="h-10 w-10 text-muted-foreground/40" /></div>;
+              return <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 5%, var(--storefront-bg, hsl(var(--background))))" }}><Package className="h-10 w-10" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 20%, transparent)" }} /></div>;
             }
             const hasSecond = images.length > 1;
             return (
@@ -84,21 +84,21 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
         <div className="flex items-center justify-end">
           <div className="flex items-center gap-0.5">
             <Star className="h-3 w-3 fill-warning text-warning" />
-            <span className="text-[10px] font-bold text-foreground">{getProductRating(product.id)}</span>
+            <span className="text-[10px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{getProductRating(product.id)}</span>
           </div>
         </div>
         <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)}>
-          <h3 className="text-[13px] font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">{product.name}</h3>
+          <h3 className="text-[13px] font-semibold leading-tight line-clamp-2 transition-colors duration-200" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{product.name}</h3>
         </Link>
         <div className="flex items-center gap-1 min-w-0">
           {product.sale_price ? (
             <>
-              <span className="text-sm sm:text-base font-extrabold text-foreground whitespace-nowrap">{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground line-through whitespace-nowrap">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
+              <span className="text-sm sm:text-base font-extrabold whitespace-nowrap" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
+              <span className="text-[10px] sm:text-xs line-through whitespace-nowrap" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
               {discountPercent && <span className="rounded-full bg-success px-1 py-0.5 text-[8px] font-bold text-success-foreground whitespace-nowrap shrink-0">{discountPercent}% off</span>}
             </>
           ) : (
-            <span className="text-sm sm:text-base font-extrabold text-foreground">{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
+            <span className="text-sm sm:text-base font-extrabold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
           )}
         </div>
         {cartQty > 0 && !isAdding && !justAdded ? (
