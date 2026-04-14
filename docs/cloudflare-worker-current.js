@@ -1944,6 +1944,9 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     _memStorefrontCache.delete(purgeSlug);
     _storeInfoCache.delete(purgeSlug);
   }
+  for (const d of domainsToPurge) {
+    _memProductVersion.delete(d);
+  }
 
   const purgeOps = [];
   for (const d of domainsToPurge) {
