@@ -171,7 +171,7 @@ export default function ProductDetail() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [product?.id]);
+  }, [productSlug]);
 
   const deliveryDate = useMemo(() => getDeliveryDate(), []);
 
