@@ -971,25 +971,7 @@ export default function ProductDetail() {
           {/* Sticky Mobile CTA — cleaner (hidden for Theme 18) */}
           {!isOutOfStock && (store as any)?.theme !== "theme-18" && (
             <div className="fixed left-0 right-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-              {shippingRemaining > 0 ? (
-                <div className="px-3 pt-2 pb-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
-                      <Truck className="h-3 w-3" />
-                      Add ₹{shippingRemaining.toFixed(0)} more for FREE shipping!
-                    </span>
-                    <span className="text-[9px] text-muted-foreground">{Math.round(shippingProgress)}%</span>
-                  </div>
-                  <Progress value={shippingProgress} className="h-1.5 bg-accent" />
-                </div>
-              ) : (
-                <div className="px-3 pt-2 pb-1">
-                  <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                    <Check className="h-3 w-3" /> 🎉 You qualify for FREE shipping!
-                  </span>
-                </div>
-              )}
-              <div className="p-3 pt-1.5">
+              <div className="p-3">
                 <div className="flex items-center gap-3">
                   <div className="shrink-0 min-w-0">
                     <p className="text-sm font-extrabold text-foreground leading-tight">
