@@ -66,20 +66,19 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
     const src = uniqueSlides[0];
     const srcSet = getImageSrcSet(src, [400, 600, 800]);
     return (
-      <div className="block md:hidden w-full" style={{ contain: "layout style", aspectRatio: "4/5" }}>
+      <div className="block md:hidden w-full" style={{ contain: "layout style" }}>
         <img
           src={optimizeImageUrl(src, 800)}
           srcSet={srcSet || undefined}
           sizes="100vw"
           alt={`${storeName} hero banner`}
-          className="w-full h-full block object-cover"
-          style={{ aspectRatio: "4/5" }}
+          className="w-full h-auto block"
           loading="eager"
           fetchPriority="high"
           decoding="sync"
           draggable={false}
           width={800}
-          height={1000}
+          height={800}
         />
       </div>
     );
@@ -137,7 +136,7 @@ function MobileHeroCarousel({ images, storeName }: { images: string[]; storeName
   };
 
   return (
-    <div className="relative overflow-hidden touch-pan-y w-full" style={{ aspectRatio: "4/5" }}>
+    <div className="relative overflow-hidden touch-pan-y w-full">
       <div
         className="flex transition-transform duration-500 ease-out select-none"
         style={{ transform: `translateX(-${current * 100}%)` }}
@@ -154,14 +153,13 @@ function MobileHeroCarousel({ images, storeName }: { images: string[]; storeName
                 srcSet={srcSet || undefined}
                 sizes="100vw"
                 alt={`${storeName} hero ${i + 1}`}
-                className="w-full h-full object-cover block"
-                style={{ aspectRatio: "4/5" }}
+                className="w-full h-auto block"
                 loading={i === 0 ? "eager" : "lazy"}
                 fetchPriority={i === 0 ? "high" : "auto"}
                 decoding={i === 0 ? "sync" : "async"}
                 draggable={false}
                 width={800}
-                height={1000}
+                height={800}
               />
             </div>
           );
