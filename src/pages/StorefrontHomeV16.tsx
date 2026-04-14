@@ -80,7 +80,6 @@ function CategorySection({
       .select("id, name, slug, price, sale_price, image_url, currency, is_best_selling, stock_quantity, category, display_order, product_images:product_images(id, image_url, display_order)")
       .eq("store_id", storeId)
       .eq("is_active", true)
-      .eq("is_best_selling", false)
       .eq("category", category.name)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: false })
@@ -281,32 +280,18 @@ export default function StorefrontHomeV16() {
           </Suspense>
         )}
 
-        {/* Categories + Hero */}
-        {(categoryStyle === "style-3" || categoryStyle === "style-4") ? (
-          <>
-            {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
-              <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
-            ) : null}
-            {(store as any).banner_url && (
-              <div className="hidden md:block">
-                <HeroBannerCarousel images={[(store as any).banner_url]} storeName={store.name} imageClassName="w-full h-auto object-cover" maxHeight="520px" />
-              </div>
-            )}
-            <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
-          </>
-        ) : (
-          <>
-            <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
-            {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
-              <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
-            ) : null}
-            {(store as any).banner_url && (
-              <div className="hidden md:block">
-                <HeroBannerCarousel images={[(store as any).banner_url]} storeName={store.name} imageClassName="w-full h-auto object-cover" maxHeight="520px" />
-              </div>
-            )}
-          </>
+        {/* Hero Banner */}
+        {((store as any).mobile_hero_url || (store as any).mobile_hero_images) && (
+          <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
         )}
+        {(store as any).banner_url && (
+          <div className="hidden md:block">
+            <HeroBannerCarousel images={[(store as any).banner_url]} storeName={store.name} imageClassName="w-full h-auto object-cover" maxHeight="520px" />
+          </div>
+        )}
+
+        {/* Shop by Category */}
+        <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
 
         <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 pt-4 pb-8 space-y-8">
           {/* Best Sellers */}
