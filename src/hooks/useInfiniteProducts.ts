@@ -70,8 +70,10 @@ export function useInfiniteProducts(opts: {
   category?: string;
   sort?: string;
   queryKeyPrefix: string;
+  /** Extra enabled guard — e.g. wait for category name to resolve */
+  ready?: boolean;
 }) {
-  const { storeId, category, sort, queryKeyPrefix } = opts;
+  const { storeId, category, sort, queryKeyPrefix, ready = true } = opts;
 
   return useInfiniteQuery({
     queryKey: [queryKeyPrefix, storeId, category || "__all__", sort || "default", PAGE_SIZE],
