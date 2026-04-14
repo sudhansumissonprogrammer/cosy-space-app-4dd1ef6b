@@ -51,6 +51,7 @@ async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<
   if (category) q = q.eq("category", category);
 
   q = q
+    .order("display_order", { ascending: true })
     .order("created_at", { ascending: false })
     .order("id", { ascending: true })
     .range(from, to);
