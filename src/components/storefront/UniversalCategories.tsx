@@ -584,12 +584,13 @@ function MagazineStrip({ categories, storeSlug }: { categories: Category[]; stor
 export default function UniversalCategories({ categories, storeSlug, isLoading, categoryStyle = "style-1" }: Props) {
   if (!isLoading && (!categories || categories.length === 0)) return null;
 
-  const isCarousel = categoryStyle === "style-1" || categoryStyle === "style-2" || categoryStyle === "style-5";
+  const isCarousel = categoryStyle === "style-1" || categoryStyle === "style-2" || categoryStyle === "style-5" || categoryStyle === "style-11";
   const isCompact = isCarousel || categoryStyle === "style-9";
 
   const gridMinHeight = (categoryStyle === "style-3" || categoryStyle === "style-4") ? 280
-    : (categoryStyle === "style-6" || categoryStyle === "style-7" || categoryStyle === "style-10" || categoryStyle === "style-11") ? 220
+    : (categoryStyle === "style-6" || categoryStyle === "style-7" || categoryStyle === "style-10") ? 220
     : (categoryStyle === "style-8") ? 240
+    : (categoryStyle === "style-11") ? 220
     : 104;
 
   return (
