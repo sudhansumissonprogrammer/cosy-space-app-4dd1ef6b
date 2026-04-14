@@ -887,7 +887,7 @@ export default function CheckoutPage() {
     }
 
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+      <div className="mx-auto max-w-lg px-4 py-16 text-center" style={{ fontFamily: "'Montserrat Alternates', sans-serif" }}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-primary) 15%, transparent)" }}>
           <CheckCircle2 className="h-8 w-8" style={{ color: "var(--storefront-primary)" }} />
         </div>
