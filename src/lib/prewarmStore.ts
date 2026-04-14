@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 const PREWARM_COOLDOWN_MS = 10_000;
 const inflightPrewarms = new Map<string, Promise<void>>();
 const recentPrewarms = new Map<string, number>();
@@ -26,6 +24,7 @@ export async function prewarmStore(slug: string, domain?: string | null): Promis
       const body: Record<string, string> = { slug };
       if (domain) body.domain = domain;
 
+      const { supabase } = await import("@/integrations/supabase/client");
       await supabase.functions.invoke("prewarm-store", { body });
     } catch {
       // Silent — prewarm is best-effort
