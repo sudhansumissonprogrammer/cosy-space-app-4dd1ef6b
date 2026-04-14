@@ -1,0 +1,1 @@
+UPDATE store_theme_config SET category_style = 'style-11' WHERE store_id = (SELECT id FROM stores WHERE slug = 'serdiyajewellers');
