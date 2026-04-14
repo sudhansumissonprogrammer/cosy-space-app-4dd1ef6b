@@ -1523,7 +1523,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
 
 /* ============================================================
    BACKGROUND HTML WARM
-   FIX #10: Cache-Control raised to 3600/86400
+   FIX #10: Cache-Control raised to 3600/7200
    ============================================================ */
 
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname) {
@@ -1584,6 +1584,7 @@ const inflightDomainResolutions = new Map();
 // In-memory version cache: domain → { version, ts }
 const _memProductVersion = new Map();
 const MEM_PV_TTL = 60_000; // 60s — version is cached in-memory to avoid KV reads
+const MEM_PV_MAX = 5_000;
 
 async function _getProductVersion(domain, env) {
   const now = Date.now();
@@ -1597,6 +1598,7 @@ async function _getProductVersion(domain, env) {
       if (v) version = parseInt(v, 10) || 1;
     } catch {}
   }
+  _capMapSize(_memProductVersion, MEM_PV_MAX);
   _memProductVersion.set(domain, { version, ts: now });
   return version;
 }
@@ -1607,6 +1609,7 @@ async function _bumpProductVersion(domain, env) {
   if (env?.STORE_KV) {
     await env.STORE_KV.put(`pv:${domain}`, String(next), { expirationTtl: 86400 }).catch(() => {});
   }
+  _capMapSize(_memProductVersion, MEM_PV_MAX);
   _memProductVersion.set(domain, { version: next, ts: Date.now() });
   return next;
 }
@@ -1940,6 +1943,9 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     _memThemeCache.delete(purgeSlug);
     _memStorefrontCache.delete(purgeSlug);
     _storeInfoCache.delete(purgeSlug);
+  }
+  for (const d of domainsToPurge) {
+    _memProductVersion.delete(d);
   }
 
   const purgeOps = [];
@@ -2353,7 +2359,7 @@ async function handlePrewarm(request, url, ctx, env) {
       }
     }
 
-    // FIX #10: Raised to 3600/86400
+    // FIX #10: Raised to 3600/7200
     if (shellResult?.html && dataResult.data) {
       const injected = injectIntoHtml(shellResult.html, slug, dataResult.data, "prewarm");
       const htmlResponse = new Response(injected.html, {
@@ -3051,7 +3057,7 @@ export default {
                     // Warm HTML cache with NORMALIZED key
                     if (shellResult?.html && dataResult.data) {
                       const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm");
-                      // FIX #10: Raised to 3600/86400
+                      // FIX #10: Raised to 3600/7200
                       const htmlResponse = new Response(injected.html, {
                         status: 200,
                         headers: {
