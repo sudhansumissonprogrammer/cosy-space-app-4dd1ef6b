@@ -8,11 +8,9 @@ const DEFAULT_BODY_FONT = "Inter";
 const DEFAULT_TEXT_COLOR = "#1a1a1a";
 const DEFAULT_BACKGROUND_COLOR = "#ffffff";
 const FONT_READY_TIMEOUT_MS = 1800;
+// Only fonts that are actually bundled in the app should be treated as self-hosted.
 const SELF_HOSTED_FONTS = new Set([
-  DEFAULT_HEADING_FONT,
   DEFAULT_BODY_FONT,
-  "Outfit",
-  "Poppins",
   "Plus Jakarta Sans",
   "Montserrat Alternates",
 ]);
@@ -82,10 +80,22 @@ function waitForStylesheetLoad(link: HTMLLinkElement, timeoutMs = FONT_READY_TIM
 async function waitForFontFaces(fonts: string[], timeoutMs = FONT_READY_TIMEOUT_MS) {
   if (!fonts.length || typeof document === "undefined" || !("fonts" in document)) return;
 
-  await Promise.race([
-    Promise.all(fonts.map((font) => document.fonts.load(`1em \"${font}\"`))),
-    new Promise<void>((resolve) => window.setTimeout(resolve, timeoutMs)),
-  ]);
+  const waitForFont = async (font: string) => {
+    const regularSpec = `normal 400 1em "${font}"`;
+    const boldSpec = `normal 700 1em "${font}"`;
+
+    if (document.fonts.check(regularSpec) || document.fonts.check(boldSpec)) return;
+
+    await Promise.race([
+      Promise.allSettled([
+        document.fonts.load(regularSpec),
+        document.fonts.load(boldSpec),
+      ]).then(() => undefined),
+      new Promise<void>((resolve) => window.setTimeout(resolve, timeoutMs)),
+    ]);
+  };
+
+  await Promise.allSettled(fonts.map((font) => waitForFont(font)));
 }
 
 function ensureGoogleFontsPreconnect() {
@@ -234,12 +244,18 @@ export async function ensureThemeFontsLoaded(
 ) {
   const fonts = getThemeFontList(themeConfig);
   const stylesheetLink = loadGoogleFonts(themeConfig);
+  const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const getRemainingMs = () => {
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    return Math.max(0, timeoutMs - (now - startedAt));
+  };
 
-  await Promise.race([
-    Promise.all([
-      waitForFontFaces(fonts, timeoutMs),
-      ...(stylesheetLink ? [waitForStylesheetLoad(stylesheetLink, timeoutMs)] : []),
-    ]),
-    new Promise<void>((resolve) => window.setTimeout(resolve, timeoutMs)),
-  ]);
+  if (stylesheetLink) {
+    await waitForStylesheetLoad(stylesheetLink, getRemainingMs());
+  }
+
+  const remainingMs = getRemainingMs();
+  if (remainingMs > 0) {
+    await waitForFontFaces(fonts, remainingMs);
+  }
 }
