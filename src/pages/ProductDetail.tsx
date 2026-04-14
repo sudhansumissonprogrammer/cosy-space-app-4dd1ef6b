@@ -162,6 +162,8 @@ export default function ProductDetail() {
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
   // Show sticky bar when inline CTA scrolls out of view (works on all screens)
+  // Re-run whenever product loads (ref is null during loading skeleton)
+  const productLoaded = !!product;
   useEffect(() => {
     const el = inlineCtaRef.current;
     if (!el) return;
@@ -171,7 +173,7 @@ export default function ProductDetail() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [productSlug]);
+  }, [productSlug, productLoaded]);
 
   const deliveryDate = useMemo(() => getDeliveryDate(), []);
 
