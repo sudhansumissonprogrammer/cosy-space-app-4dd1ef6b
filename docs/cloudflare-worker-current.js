@@ -1378,11 +1378,16 @@ async function proxyToOriginCached(request) {
    HTML INJECTION HELPERS
    ============================================================ */
 
-function injectIntoHtml(html, slug, storefrontData, dataSource) {
+// FIX #28: Added optional inlineProducts param for edge-side product injection
+function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
+  }
+  // FIX #28: Inject first 8 products so "Popular" section renders without client fetch
+  if (inlineProducts) {
+    injection += `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`;
   }
   injection += `</script>\n`;
   injection += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />\n`;
