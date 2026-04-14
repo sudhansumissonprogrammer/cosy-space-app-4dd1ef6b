@@ -2212,6 +2212,8 @@ export type Database = {
       }
       stores_public: {
         Row: {
+          about_us_image_url: string | null
+          about_us_text: string | null
           banner_url: string | null
           best_selling_carousel: boolean | null
           business_hours: Json | null
@@ -2231,10 +2233,14 @@ export type Database = {
           logo_url: string | null
           meta_description: string | null
           meta_title: string | null
+          mobile_hero_images: Json | null
           mobile_hero_url: string | null
           name: string | null
           og_image_url: string | null
           order_mode: string | null
+          partial_payment_enabled: boolean | null
+          partial_payment_type: string | null
+          partial_payment_value: number | null
           return_policy: string | null
           shipping_policy: string | null
           slug: string | null
@@ -2244,6 +2250,8 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          about_us_image_url?: string | null
+          about_us_text?: string | null
           banner_url?: string | null
           best_selling_carousel?: boolean | null
           business_hours?: Json | null
@@ -2263,10 +2271,14 @@ export type Database = {
           logo_url?: string | null
           meta_description?: string | null
           meta_title?: string | null
+          mobile_hero_images?: Json | null
           mobile_hero_url?: string | null
           name?: string | null
           og_image_url?: string | null
           order_mode?: string | null
+          partial_payment_enabled?: boolean | null
+          partial_payment_type?: string | null
+          partial_payment_value?: number | null
           return_policy?: string | null
           shipping_policy?: string | null
           slug?: string | null
@@ -2276,6 +2288,8 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          about_us_image_url?: string | null
+          about_us_text?: string | null
           banner_url?: string | null
           best_selling_carousel?: boolean | null
           business_hours?: Json | null
@@ -2295,10 +2309,14 @@ export type Database = {
           logo_url?: string | null
           meta_description?: string | null
           meta_title?: string | null
+          mobile_hero_images?: Json | null
           mobile_hero_url?: string | null
           name?: string | null
           og_image_url?: string | null
           order_mode?: string | null
+          partial_payment_enabled?: boolean | null
+          partial_payment_type?: string | null
+          partial_payment_value?: number | null
           return_policy?: string | null
           shipping_policy?: string | null
           slug?: string | null
@@ -2348,6 +2366,7 @@ export type Database = {
       }
       get_store_as_admin: { Args: { _slug: string }; Returns: Json }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
+      get_store_public: { Args: { _slug: string }; Returns: Json }
       get_store_public_email: { Args: { _store_id: string }; Returns: string }
       get_store_usage_stats: { Args: never; Returns: Json }
       get_store_views: {
@@ -2371,6 +2390,7 @@ export type Database = {
       is_order_owner: { Args: { _order_id: string }; Returns: boolean }
       is_store_active: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      is_store_owner_by_folder: { Args: { _name: string }; Returns: boolean }
       is_storefront_customer: {
         Args: { _customer_id: string }
         Returns: boolean
