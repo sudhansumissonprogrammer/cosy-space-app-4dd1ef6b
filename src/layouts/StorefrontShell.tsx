@@ -9,7 +9,7 @@ import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { trackPageView } from "@/lib/trackPageView";
-import { buildThemeStyle, ensureThemeFontsLoaded, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
+import { buildThemeStyle, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 
 // Lazy-load non-critical overlays
