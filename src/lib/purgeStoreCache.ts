@@ -2,12 +2,11 @@
  * Purge all edge caches for a store.
  *
  * Uses the per-store purge endpoint (/api/purge-store) which invalidates
- * only that store's caches (products + storefront data + early HTML)
- * without touching the global SPA shell.
+ * only that store's caches (products + storefront data + early HTML).
  *
- * Also fires legacy purge endpoints for backwards compatibility.
- *
- * Fire-and-forget — never blocks UI. Returns true if at least one purge succeeded.
+ * v2: Removed legacy /api/purge-shell and /api/purge-products calls —
+ * /api/purge-store already handles everything via version bump.
+ * This reduces Worker requests from 6 → 2 (or 3 → 1 without custom domain).
  */
 export async function purgeStoreCache(
   slug: string,
@@ -18,13 +17,10 @@ export async function purgeStoreCache(
     domains.push(`https://${customDomain}`);
   }
 
-  const requests = domains.flatMap((base) => [
-    // Per-store purge (new v3.4 — purges store caches without touching global shell)
-    fetch(`${base}/api/purge-store?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
-    // Legacy purge endpoints (backwards compatibility)
-    fetch(`${base}/api/purge-shell?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
-    fetch(`${base}/api/purge-products`, { method: "POST" }).catch(() => null),
-  ]);
+  // Single purge-store call per domain — handles products + shell + storefront
+  const requests = domains.map((base) =>
+    fetch(`${base}/api/purge-store?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null)
+  );
 
   try {
     const results = await Promise.allSettled(requests);
