@@ -126,6 +126,18 @@
       </div>
     </div>
     <script>
+      /* Hide inline skeleton on non-storefront routes (landing, dashboard, login) */
+      (function(){
+        var p=location.pathname;var h=location.hostname;
+        var isSf=p.indexOf('/store/')===0;
+        if(!isSf && h.endsWith('.shopbanao.in') && h!=='shopbanao.in' && h!=='www.shopbanao.in'){
+          var sub=h.replace('.shopbanao.in','');if(sub&&sub.indexOf('.')===-1)isSf=true;
+        }
+        if(!isSf && window.__STORE_SLUG__)isSf=true;
+        if(!isSf){var sk=document.getElementById('inline-skel');if(sk)sk.style.display='none';}
+      })();
+    </script>
+    <script>
       /* Remove Worker skeleton — waits for storefront:content-ready (actual data)
          so there's ONE skeleton → real content with no intermediate flash. */
       (function(){
