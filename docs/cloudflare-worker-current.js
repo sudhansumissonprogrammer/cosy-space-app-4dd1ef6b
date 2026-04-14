@@ -2430,7 +2430,7 @@ async function handlePrewarm(request, url, ctx, env) {
    ============================================================ */
 
 function buildNotFoundHtml(safeSlug, rootDomain) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem}.c a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.c a:hover{background:#3651d4}.retry{color:#999;font-size:0.8rem;margin-top:12px}.spin{display:inline-block;width:14px;height:14px;border:2px solid #ccc;border-top-color:#4361ee;border-radius:50%;animation:sp .6s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.${rootDomain}</strong></p><a href="https://${rootDomain}">Create Your Store</a><p class="retry" id="rt"><span class="spin"></span> Checking again...</p></div><script>var n=0,mx=3;function ck(){if(n>=mx){var e=document.getElementById("rt");if(e)e.textContent="Store not available. Try again later.";return}n++;fetch(location.href,{method:"HEAD",cache:"no-store"}).then(function(r){if(r.ok&&r.headers.get("content-type")&&r.headers.get("content-type").indexOf("text/html")>-1&&r.headers.get("x-store-slug")){location.reload()}else{setTimeout(ck,3000)}}).catch(function(){setTimeout(ck,3000)})}setTimeout(ck,2000)</script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store Not Found</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fafafa;color:#333}.c{text-align:center;padding:2rem}.c h1{font-size:1.5rem;font-weight:600;margin-bottom:8px}.c p{color:#666;margin-bottom:20px;font-size:0.95rem;line-height:1.55}.a{display:inline-block;padding:10px 24px;background:#4361ee;color:#fff;border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;transition:background .2s}.a:hover{background:#3651d4}.s{color:#999;font-size:0.8rem}</style></head><body><div class="c"><h1>Store Not Found</h1><p>No store exists at <strong>${safeSlug}.${rootDomain}</strong></p><a class="a" href="https://${rootDomain}">Create Your Store</a><p class="s">If the store was just created, refresh manually later.</p></div></body></html>`;
 }
 
 /* ============================================================
@@ -2692,7 +2692,18 @@ export default {
         return handlePurgeShell(request, url, ctx, env, hostname);
       if (url.pathname === "/api/prewarm") {
         if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
-        if (request.method === "POST" || request.method === "GET") return handlePrewarm(request, url, ctx, env);
+        if (request.method === "POST") return handlePrewarm(request, url, ctx, env);
+        return addCorsHeaders(
+          new Response(JSON.stringify({ error: "Method not allowed" }), {
+            status: 405,
+            headers: {
+              "Content-Type": "application/json",
+              "Allow": "POST, OPTIONS",
+              "Cache-Control": "no-store",
+            },
+          }),
+          "prewarm-method"
+        );
       }
       if (request.method === "OPTIONS")
         return addCorsHeaders(new Response(null, { status: 204 }), "preflight");

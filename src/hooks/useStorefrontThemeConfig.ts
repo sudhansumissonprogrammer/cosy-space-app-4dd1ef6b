@@ -10,9 +10,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
  */
 export function useStorefrontThemeConfig(storeId?: string) {
   const queryClient = useQueryClient();
+  const queryKey = ["storefront-theme-config", storeId] as const;
+  const cachedThemeConfig = queryClient.getQueryData(queryKey) as any;
+  const injectedThemeConfig =
+    typeof window !== "undefined" &&
+    (window as any).__STOREFRONT_DATA__?.store?.id === storeId
+      ? (window as any).__STOREFRONT_DATA__?.theme_config
+      : undefined;
+  const initialThemeConfig = cachedThemeConfig ?? injectedThemeConfig;
 
   const { data: themeConfig } = useQuery({
-    queryKey: ["storefront-theme-config", storeId],
+    queryKey,
     queryFn: async () => {
       // Always fetch from DB — this ensures stale cache is properly refreshed.
       // The bulk RPC seeds this cache via setQueryData, so this queryFn only
@@ -27,12 +35,11 @@ export function useStorefrontThemeConfig(storeId?: string) {
       return data;
     },
     enabled: !!storeId,
-    staleTime: 60_000, // Allow refetch after 1 min to pick up changes
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    // If the cache was already seeded by the bulk RPC, use it as placeholder
-    // so there's no loading flash — but still allow background refetch
-    placeholderData: () =>
-      queryClient.getQueryData(["storefront-theme-config", storeId]) as any,
+    initialData: initialThemeConfig,
+    initialDataUpdatedAt: initialThemeConfig ? Date.now() : undefined,
+    placeholderData: () => cachedThemeConfig,
   });
 
   return themeConfig as Record<string, any> | null;
