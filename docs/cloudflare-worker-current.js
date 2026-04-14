@@ -3271,6 +3271,23 @@ export default {
                         await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
                       }
                       warmedHtml++;
+                    } else if (shellResult?.html) {
+                      // FIX #25: Cron skeleton fallback — if DB failed, cache a themed skeleton
+                      // so the store is never left completely cold
+                      const themeLite = _memThemeCache.get(s.slug)?.lite || null;
+                      const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
+                      const skeletonHtml = _buildInstantSkeletonPage(s.slug, bg, themeLite, `${s.slug}.${ROOT_DOMAIN}`);
+                      const skeletonResponse = new Response(skeletonHtml, {
+                        status: 200,
+                        headers: {
+                          "Content-Type": "text/html; charset=utf-8",
+                          "Cache-Control": "public, max-age=300",
+                          "X-Data-Source": "cron-skeleton-fallback",
+                          ...SECURITY_HEADERS,
+                        },
+                      });
+                      const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`);
+                      await cache.put(subEarlyKey, skeletonResponse.clone()).catch(() => {});
                     }
 
                     // Warm products
