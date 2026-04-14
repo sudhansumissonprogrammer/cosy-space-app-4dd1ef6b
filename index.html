@@ -47,8 +47,24 @@
     -->
     <script>
       (function(){
+        /* Eagerly inject Google Fonts <link> from Worker __THEME__ hint */
+        function injectGFont(hf,bf){
+          var self=['Inter','Plus Jakarta Sans','Montserrat Alternates'];
+          var families=[];
+          [hf,bf].forEach(function(f){if(f&&self.indexOf(f)===-1){var seen=families.indexOf(f);if(seen===-1)families.push(f);}});
+          if(!families.length)return;
+          var href='https://fonts.googleapis.com/css2?'+families.map(function(f){return'family='+f.replace(/ /g,'+') +':wght@400;600;700'}).join('&')+'&display=swap';
+          var link=document.createElement('link');link.rel='stylesheet';link.href=href;link.id='storefront-google-fonts';
+          link.setAttribute('fetchpriority','high');document.head.appendChild(link);
+        }
+        if(window.__THEME__){injectGFont(window.__THEME__.hf,window.__THEME__.bf);}
+
         // If Worker already injected __STOREFRONT_DATA__, just kick off /api/products fetch
         if(window.__STOREFRONT_DATA__){
+          if(!window.__THEME__&&window.__STOREFRONT_DATA__.theme){
+            var t=window.__STOREFRONT_DATA__.theme;
+            injectGFont(t.heading_font,t.body_font);
+          }
           window.__PRODUCTS_PREFETCH__=fetch(location.origin+'/api/products',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).catch(function(){return null});
           return;
         }
@@ -76,6 +92,8 @@
         }).then(function(r){return r.json()}).then(function(data){
           if(data&&data.store){
             window.__STOREFRONT_DATA__=data;
+            // Inject fonts as soon as theme data arrives
+            if(data.theme)injectGFont(data.theme.heading_font,data.theme.body_font);
             // Kick off products fetch separately via REST API
             var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+data.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=14&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
             window.__PRODUCTS_PREFETCH__=fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){return r.json()}).catch(function(){return null});
