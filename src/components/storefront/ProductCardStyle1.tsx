@@ -113,13 +113,14 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             className={`ripple-container flex h-8 w-full items-center justify-center gap-1.5 rounded-md text-[10px] uppercase tracking-widest sm:h-9 sm:text-[11px] transition-all duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "opacity-80 cursor-wait" : "hover:brightness-110"}`}
             style={
               justAdded
-                ? { fontFamily: "'Alegreya SC', serif", fontWeight: 500 }
+                ? { fontFamily: "'Alegreya SC', serif", fontWeight: 400, letterSpacing: "0.08em" }
                 : {
                     backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
                     color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))",
                     borderRadius: "var(--storefront-button-radius, 0.375rem)",
                     fontFamily: "'Alegreya SC', serif",
-                    fontWeight: 500,
+                    fontWeight: 400,
+                    letterSpacing: "0.08em",
                   }
             }
             onClick={(e) => { createRipple(e); handleAdd(e); }}
