@@ -89,7 +89,7 @@ export function useInfiniteProducts(opts: {
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.products.length === PAGE_SIZE ? lastPage.page + 1 : undefined,
-    enabled: !!storeId,
+    enabled: !!storeId && ready,
     staleTime: 5 * 60 * 1000,
   });
 }

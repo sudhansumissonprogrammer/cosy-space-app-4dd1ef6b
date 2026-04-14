@@ -48,6 +48,7 @@ export default function CategoryDetail() {
     storeId: store.id,
     category: category?.name,
     queryKeyPrefix: "cat-detail-v3",
+    ready: !!category?.name,
   });
 
   const products = data?.pages.flatMap((p) => p.products) || [];
