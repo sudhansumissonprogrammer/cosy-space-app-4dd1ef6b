@@ -27,10 +27,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 2. Then subscribe to future changes (sign-in, sign-out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        // Don't set loading here — getSession already handled initial load
+      (event, newSession) => {
+        // Don't log out on transient token refresh failures
+        if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+        } else if (event === "SIGNED_OUT") {
+          setSession(null);
+          setUser(null);
+        }
+        // Ignore INITIAL_SESSION (already handled by getSession) and
+        // USER_UPDATED events that don't affect the session
+        if (event === "USER_UPDATED" && newSession) {
+          setUser(newSession.user);
+        }
       }
     );
 
