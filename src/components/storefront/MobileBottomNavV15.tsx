@@ -22,8 +22,9 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
   const location = useLocation();
   const { cartCount, openCart } = useCart();
   const isCheckout = location.pathname.includes("/checkout");
+  const isProductDetail = location.pathname.includes("/product/");
 
-  if (isCheckout) return null;
+  if (isCheckout || isProductDetail) return null;
 
   const currentPath = location.pathname;
   const storePath = storefrontPath(store.slug);
