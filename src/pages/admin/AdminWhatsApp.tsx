@@ -52,7 +52,8 @@ function AdminChatTab() {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 15000,
+    refetchInterval: (query) => (typeof document !== "undefined" && document.visibilityState === "visible") ? 15000 : false,
+    refetchOnWindowFocus: true,
   });
 
   // Group by store+phone
