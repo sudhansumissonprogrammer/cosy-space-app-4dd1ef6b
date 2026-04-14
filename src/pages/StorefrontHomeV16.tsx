@@ -123,7 +123,26 @@ function BestSellersSection({ storeId, slug, store, cardStyle, isCarousel }: {
   );
 }
 
-/* ─── Per-category section with lazy load + infinite scroll ─── */
+const HOME_CAT_LIMIT = 11;
+
+/* ─── "View All" card that fills last grid slot ─── */
+function ViewAllCard({ categoryPath, categoryName }: { categoryPath: string; categoryName: string }) {
+  return (
+    <Link
+      to={categoryPath}
+      className="group flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card hover:bg-accent/40 transition-colors"
+      style={{ aspectRatio: "4/5" }}
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/10 group-hover:bg-foreground/20 transition-colors">
+        <ArrowRight className="h-5 w-5 text-foreground" />
+      </div>
+      <span className="text-sm font-semibold text-foreground">View All</span>
+      <span className="text-xs text-muted-foreground text-center px-2">{categoryName}</span>
+    </Link>
+  );
+}
+
+/* ─── Per-category section — shows 11 products + View All card ─── */
 function CategorySection({
   category, storeId, slug, store, cardStyle,
 }: {
@@ -141,12 +160,9 @@ function CategorySection({
     return () => obs.disconnect();
   }, []);
 
-  const {
-    data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading,
-  } = useInfiniteQuery({
-    queryKey: ["storefront-category-products-inf", storeId, category.name],
-    queryFn: async ({ pageParam = 0 }) => {
-      const offset = pageParam * BATCH_SIZE;
+  const { data: products, isLoading } = useQuery({
+    queryKey: ["storefront-category-home", storeId, category.name],
+    queryFn: async () => {
       const { data: d, error } = await supabase
         .from("products")
         .select(CATEGORY_PRODUCT_COLS)
@@ -155,27 +171,20 @@ function CategorySection({
         .eq("category", category.name)
         .order("display_order", { ascending: true })
         .order("created_at", { ascending: false })
-        .range(offset, offset + BATCH_SIZE - 1);
+        .limit(HOME_CAT_LIMIT + 1);
       if (error) throw error;
-      return { products: d || [], page: pageParam };
+      return d || [];
     },
-    initialPageParam: 0,
-    getNextPageParam: (last) => last.products.length === BATCH_SIZE ? last.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
     enabled: isVisible,
   });
 
-  const products = useMemo(() => data?.pages.flatMap((p) => p.products) ?? [], [data]);
-
-  const loadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
   if (!isVisible) return <section ref={sectionRef} style={{ minHeight: 220 }} />;
-
-  if (!isLoading && products.length === 0) return null;
+  if (!isLoading && (!products || products.length === 0)) return null;
 
   const categoryPath = storefrontPath(slug, `category/${category.slug}`);
+  const hasMore = (products?.length ?? 0) > HOME_CAT_LIMIT;
+  const displayProducts = hasMore ? products!.slice(0, HOME_CAT_LIMIT) : (products || []);
 
   return (
     <section ref={sectionRef}>
@@ -185,23 +194,12 @@ function CategorySection({
           {Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((product: any, idx: number) => (
-              <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 2} cardStyle={cardStyle} />
-            ))}
-          </div>
-          {hasNextPage && (
-            <ScrollSentinel onVisible={loadMore} loading={isFetchingNextPage} />
-          )}
-          {!hasNextPage && products.length > 0 && (
-            <div className="mt-4 flex justify-center sm:justify-end">
-              <Link to={categoryPath} className="inline-flex items-center gap-2 text-sm font-semibold text-foreground transition-opacity hover:opacity-70">
-                View All <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          )}
-        </>
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {displayProducts.map((product: any, idx: number) => (
+            <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 2} cardStyle={cardStyle} />
+          ))}
+          {hasMore && <ViewAllCard categoryPath={categoryPath} categoryName={category.name} />}
+        </div>
       )}
     </section>
   );
