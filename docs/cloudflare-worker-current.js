@@ -1,5 +1,16 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.2.0 — COLD START OPTIMIZATION
+ * SHOPBANAO PRODUCTION ROUTER v6.3.0 — PERFORMANCE OPTIMIZATION
+ *
+ * Changes from v6.2.0:
+ *  FIX #26 — Early Hints (103): Worker sends 103 Early Hints response with
+ *            preconnect/preload headers before the full HTML, letting the
+ *            browser start fetching CSS/JS while the worker builds the page.
+ *  FIX #27 — Pre-compressed instant skeleton: The cold-start skeleton HTML
+ *            is pre-built per theme and cached in memory for zero-compute
+ *            responses on true cold starts.
+ *  FIX #28 — Edge-side product injection: First 8 products injected into
+ *            the HTML as __PRODUCTS_INLINE__ so the "Popular" section
+ *            renders without a client-side fetch.
  *
  * Changes from v6.1.0:
  *  FIX #20 — TTL increases: Shell KV 3600→86400, Cache 600→3600, Mem 10→30min.
