@@ -270,6 +270,7 @@ export default function CheckoutPage() {
   const storePartialEnabled = (store as any).partial_payment_enabled ?? false;
   const storePartialType = (store as any).partial_payment_type || "percentage";
   const storePartialValue = (store as any).partial_payment_value ?? null;
+  const hasAnyPartialPayment = storePartialEnabled && !!storePartialValue;
 
   const availableMethods = paymentConfig?.payment_methods || ["cod"];
   const hasCod = availableMethods.includes("cod");
@@ -279,6 +280,7 @@ export default function CheckoutPage() {
     // When partial payment is enabled, always default to razorpay (COD is hidden)
     if (hasAnyPartialPayment && hasRazorpay) {
       setPaymentMethod("razorpay");
+      setPartialPaymentMode("partial");
     } else if (hasCod) {
       setPaymentMethod("cod");
     } else if (hasRazorpay) {
