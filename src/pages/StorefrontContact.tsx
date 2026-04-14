@@ -155,7 +155,7 @@ export default function StorefrontContact() {
 
       {/* Why Choose Us */}
       {features.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 py-12">
+        <section className="mx-auto max-w-7xl px-4 lg:px-6 py-12">
           <h2 className="mb-8 text-center text-2xl font-bold text-foreground">
             Why Choose {store.name}
           </h2>
@@ -183,7 +183,7 @@ export default function StorefrontContact() {
       )}
 
       {/* Contact Form + Info */}
-      <section className="mx-auto max-w-6xl px-4 pb-16">
+      <section className="mx-auto max-w-7xl px-4 lg:px-6 pb-16">
         <div className="grid gap-8 lg:grid-cols-5">
           {/* Form */}
           <div className="lg:col-span-3">
