@@ -44,7 +44,7 @@ export default function PwaInstallBanner({ storeName }: { storeName: string }) {
 
   return (
     <div className="sticky top-14 z-20 px-3 py-2" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", borderBottom: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
-      <div className="mx-auto flex max-w-6xl items-center gap-3">
+      <div className="mx-auto flex max-w-7xl items-center gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))" }}>
           <Download className="h-4 w-4" style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }} />
         </div>
