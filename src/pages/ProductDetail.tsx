@@ -1014,15 +1014,13 @@ export default function ProductDetail() {
                     </>
                   )}
                 </button>
-                {showBuyNow && (
-                  <Button
+                <Button
                     className="h-11 flex-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider"
                     onClick={handleBuyNow}
                   >
                     <ShoppingBag className="h-4 w-4 mr-1" />
                     Buy Now
                   </Button>
-                )}
               </div>
             </div>
           </div>
