@@ -2299,7 +2299,8 @@ async function handlePrewarm(request, url, ctx, env) {
         const products = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
         const prodBody = JSON.stringify(products || []);
         const cacheOps = [];
-        const subCacheKey = _buildProductsCacheKey(subDomain, {});
+        const subVersion = await _getProductVersion(subDomain, env);
+        const subCacheKey = _buildProductsCacheKey(subDomain, {}, subVersion);
         cacheOps.push(
           cache
             .put(
@@ -2315,7 +2316,7 @@ async function handlePrewarm(request, url, ctx, env) {
         );
         if (env?.STORE_KV)
           cacheOps.push(
-            env.STORE_KV.put(_buildProductsKvKey(subDomain, {}), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(
+            env.STORE_KV.put(_buildProductsKvKey(subDomain, {}, subVersion), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(
               () => {},
             ),
           );
@@ -2324,10 +2325,11 @@ async function handlePrewarm(request, url, ctx, env) {
             .replace(/^www\./, "")
             .toLowerCase()
             .trim();
+          const cdVersion = await _getProductVersion(cleanDomain, env);
           cacheOps.push(
             cache
               .put(
-                _buildProductsCacheKey(cleanDomain, {}),
+                _buildProductsCacheKey(cleanDomain, {}, cdVersion),
                 new Response(prodBody, {
                   headers: {
                     "Content-Type": "application/json",
@@ -2339,7 +2341,7 @@ async function handlePrewarm(request, url, ctx, env) {
           );
           if (env?.STORE_KV)
             cacheOps.push(
-              env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}), prodBody, {
+              env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}, cdVersion), prodBody, {
                 expirationTtl: PRODUCTS_KV_TTL,
               }).catch(() => {}),
             );
