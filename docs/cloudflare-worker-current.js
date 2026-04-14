@@ -2669,20 +2669,34 @@ export default {
       }
     }
 
-    // ─── API ROUTES ───
-    if (url.pathname === "/api/products" && request.method === "GET") return handleProductsApi(request, url, ctx, env);
-    if (url.pathname === "/api/purge-store" && request.method === "POST")
-      return handlePurgeStore(request, url, ctx, env, hostname);
-    if (url.pathname === "/api/purge-products" && request.method === "POST")
-      return handlePurgeProducts(request, url, ctx, env);
-    if (url.pathname === "/api/purge-shell" && request.method === "POST")
-      return handlePurgeShell(request, url, ctx, env, hostname);
-    if (url.pathname === "/api/prewarm") {
-      if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
-      if (request.method === "POST" || request.method === "GET") return handlePrewarm(request, url, ctx, env);
+    // ─── API ROUTES (rate-limited) ───
+    if (url.pathname.startsWith("/api/")) {
+      const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown";
+      if (isRateLimited(clientIP, true)) {
+        return new Response(JSON.stringify({ error: "Rate limited" }), {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": "60",
+            "Cache-Control": "no-store",
+          },
+        });
+      }
+
+      if (url.pathname === "/api/products" && request.method === "GET") return handleProductsApi(request, url, ctx, env);
+      if (url.pathname === "/api/purge-store" && request.method === "POST")
+        return handlePurgeStore(request, url, ctx, env, hostname);
+      if (url.pathname === "/api/purge-products" && request.method === "POST")
+        return handlePurgeProducts(request, url, ctx, env);
+      if (url.pathname === "/api/purge-shell" && request.method === "POST")
+        return handlePurgeShell(request, url, ctx, env, hostname);
+      if (url.pathname === "/api/prewarm") {
+        if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
+        if (request.method === "POST" || request.method === "GET") return handlePrewarm(request, url, ctx, env);
+      }
+      if (request.method === "OPTIONS")
+        return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
     }
-    if (request.method === "OPTIONS" && url.pathname.startsWith("/api/"))
-      return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
 
     // ─── SUPABASE PROXY ───
     if (url.pathname.startsWith("/rest/v1/") || url.pathname.startsWith("/functions/v1/")) {
