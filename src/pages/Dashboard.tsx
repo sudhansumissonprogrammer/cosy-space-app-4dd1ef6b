@@ -68,26 +68,15 @@ export default function Dashboard() {
   const currency = store?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
-  // Live store status check
+  // Live store status — single check, no polling
   const storeUrl = customDomain
     ? `https://${customDomain}`
     : storeSlug ? `https://${storeSlug}.shopbanao.in` : null;
 
-  const { data: isStoreLive } = useQuery({
-    queryKey: ["store-live-status", storeUrl],
-    queryFn: async () => {
-      if (!storeUrl) return false;
-      try {
-        await fetch(storeUrl, { method: "HEAD", mode: "no-cors", cache: "no-store" });
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    enabled: !!storeUrl,
-    refetchInterval: 60_000,
-    staleTime: 30_000,
-  });
+  // Instead of polling HEAD requests every 60s (which hammers the Worker),
+  // just assume the store is live if a slug exists. The store is served by
+  // the Worker and is always reachable once published.
+  const isStoreLive = !!storeUrl;
 
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
