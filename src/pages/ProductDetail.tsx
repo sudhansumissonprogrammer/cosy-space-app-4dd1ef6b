@@ -158,6 +158,20 @@ export default function ProductDetail() {
   const [cartBounce, setCartBounce] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
+  const [stickyBarVisible, setStickyBarVisible] = useState(false);
+  const inlineCtaRef = useRef<HTMLDivElement>(null);
+
+  // Show sticky bar when inline CTA scrolls out of view (works on all screens)
+  useEffect(() => {
+    const el = inlineCtaRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setStickyBarVisible(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [productSlug]);
 
   const deliveryDate = useMemo(() => getDeliveryDate(), []);
 
@@ -741,9 +755,9 @@ export default function ProductDetail() {
                 </>
               ) : (
                 /* Default style */
-                <div className="grid grid-cols-2 gap-3">
+                <div ref={inlineCtaRef} className="grid grid-cols-2 gap-3">
                   <button
-                    className={`relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider overflow-hidden transition-all duration-300 active:scale-[0.97] ${
+                    className={`btn-press relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider overflow-hidden transition-all duration-300 ${
                       justAdded ? "bg-emerald-600 text-white" : "btn-gold hover:brightness-110"
                     }`}
                     onClick={handleAddToCart}
@@ -763,7 +777,7 @@ export default function ProductDetail() {
 
                   {showBuyNow && (
                     <button
-                      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-[0.97] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
+                      className="btn-press flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                       onClick={handleBuyNow}
                     >
@@ -968,12 +982,37 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Sticky Mobile CTA — cleaner (hidden for Theme 18) */}
+          {/* Sticky CTA bar — visible on ALL screens when inline CTA scrolls out (hidden for Theme 18) */}
           {!isOutOfStock && (store as any)?.theme !== "theme-18" && (
-            <div className="fixed left-0 right-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-              <div className="p-3">
+            <div
+              className={`fixed left-0 right-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-md transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                stickyBarVisible ? "translate-y-0" : "translate-y-full"
+              }`}
+              style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            >
+              <div className="mx-auto max-w-6xl p-3">
                 <div className="flex items-center gap-3">
-                  <div className="shrink-0 min-w-0">
+                  {/* Product info — desktop only */}
+                  <div className="hidden sm:flex items-center gap-3 flex-1 min-w-0">
+                    {product.image_url && (
+                      <img
+                        src={optimizeImageUrl(product.image_url, 40)}
+                        alt=""
+                        className="h-10 w-10 rounded-lg object-cover"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{product.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-extrabold text-foreground">{currency} {(variantPrice * quantity).toFixed(2)}</span>
+                        {hasDiscount && (
+                          <span className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Mobile price */}
+                  <div className="shrink-0 min-w-0 sm:hidden">
                     <p className="text-sm font-extrabold text-foreground leading-tight">
                       {currency} {(variantPrice * quantity).toFixed(2)}
                     </p>
@@ -981,9 +1020,9 @@ export default function ProductDetail() {
                       <p className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</p>
                     )}
                   </div>
-                  <div className="flex flex-1 gap-2">
+                  <div className="flex flex-1 sm:flex-none gap-2">
                     <button
-                      className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] uppercase tracking-wider transition-all active:scale-[0.97] ${
+                      className={`btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs uppercase tracking-wider transition-all ${
                         justAdded ? "bg-emerald-600 text-white" : "btn-gold"
                       }`}
                       style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 500, letterSpacing: "0.06em" }}
@@ -1002,7 +1041,7 @@ export default function ProductDetail() {
                       )}
                     </button>
                     <button
-                      className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] uppercase tracking-wider transition-all active:scale-[0.97]"
+                      className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs uppercase tracking-wider transition-all"
                       style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 500, letterSpacing: "0.06em", backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                       onClick={handleBuyNow}
                     >
