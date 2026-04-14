@@ -74,7 +74,7 @@ export default function ReviewsSection({ storeId }: { storeId: string }) {
 
   return (
     <section style={{ padding: "48px 15px" }}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <h2
           className="text-center"
           style={{

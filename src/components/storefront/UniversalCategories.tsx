@@ -491,7 +491,7 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
 
   return (
     <div className="backdrop-blur-md" style={{ minHeight: gridMinHeight, contain: "layout style", backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
-      <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 py-5 lg:py-8">
+      <div className="mx-auto max-w-7xl px-4 py-5 lg:py-8">
         <SectionHeading title="Shop by Category" />
         {isLoading ? (
           isCarousel ? (
