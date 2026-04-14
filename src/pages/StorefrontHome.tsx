@@ -197,7 +197,7 @@ export default function StorefrontHome() {
       {/* Search bar trigger — hidden when header already has search */}
       {!hideSearchBar && (
         <div className="backdrop-blur-md px-4 pt-3 pb-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", minHeight: 52, contain: "layout style" }}>
-          <div className="mx-auto max-w-6xl flex items-center gap-2">
+          <div className="mx-auto max-w-7xl flex items-center gap-2">
             <button
               onClick={() => setSearchOpen(true)}
               className="flex flex-1 items-center gap-2.5 rounded-full bg-accent/60 px-4 py-2.5 text-sm text-foreground/60 transition-colors hover:bg-accent"
@@ -260,7 +260,7 @@ export default function StorefrontHome() {
         </>
       )}
 
-      <div className="mx-auto max-w-6xl px-2 sm:px-4 pt-4 pb-8 space-y-8">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 pt-4 pb-8 space-y-8">
       {bestSellingProducts.length > 0 && (
           <Suspense fallback={null}>
             {(store as any).best_selling_carousel ? (
