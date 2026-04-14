@@ -2805,7 +2805,50 @@ export default {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
       if (!slug || slug.includes(".") || slug === "www") return cachedFetch(request, "", ctx, false, env, requestStart);
 
-      await _getSlugIndex(env); // warm slug index, ignore result (soft hint)
+      // FIX #23: Fire-and-forget — was blocking critical path for no reason
+      _getSlugIndex(env).catch(() => {});
+
+      // FIX #21: Instant skeleton fast path — if shell isn't in memory,
+      // return a themed skeleton immediately while warming in background
+      if (!_memShell) {
+        const themeLite = _memThemeCache.get(slug)?.lite || null;
+        const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
+        const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
+
+        // Kick off full warm in background
+        ctx.waitUntil((async () => {
+          try {
+            const shellResult = await getSpaShell(request, ctx, env);
+            if (shellResult?.html) {
+              const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
+              if (prefetchResult.data) {
+                const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source);
+                const fullHeaders = new Headers();
+                fullHeaders.set("Content-Type", "text/html; charset=utf-8");
+                fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
+                fullHeaders.set("X-Store-Slug", slug);
+                fullHeaders.set("X-Data-Source", prefetchResult.source);
+                for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
+                const fullResponse = new Response(injected.html, { status: 200, headers: fullHeaders });
+                const earlyKey = getEarlyCacheKey(hostname);
+                await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
+              }
+            }
+          } catch {}
+        })());
+
+        return new Response(skeletonHtml, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            "X-Store-Slug": slug,
+            "X-Data-Source": "instant-skeleton",
+            "X-Worker-Version": WORKER_VERSION,
+            ...SECURITY_HEADERS,
+          },
+        });
+      }
 
       // FIX #2: Start storefront promise FIRST before any other awaits
       const elapsed0 = Date.now() - requestStart;
