@@ -13,8 +13,9 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   const location = useLocation();
   const { wishlistCount } = useWishlist();
   const isCheckout = location.pathname.includes("/checkout");
+  const isProductDetail = location.pathname.includes("/product/");
 
-  if (isCheckout) return null;
+  if (isCheckout || isProductDetail) return null;
 
   const currentPath = location.pathname;
 

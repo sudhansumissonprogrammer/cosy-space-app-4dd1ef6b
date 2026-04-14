@@ -966,7 +966,7 @@ export default function ProductDetail() {
 
       {/* Sticky Mobile CTA — cleaner (hidden for Theme 18) */}
       {!isOutOfStock && (store as any)?.theme !== "theme-18" && (
-        <div className="fixed left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ bottom: "var(--storefront-bottom-nav-height, 0px)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="fixed left-0 right-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           {shippingRemaining > 0 ? (
             <div className="px-3 pt-2 pb-1">
               <div className="flex items-center justify-between mb-1">
