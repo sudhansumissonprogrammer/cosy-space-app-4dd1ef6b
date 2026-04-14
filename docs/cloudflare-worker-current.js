@@ -1907,19 +1907,9 @@ async function _fallbackProducts(domain, filters, version, env) {
 
 async function handlePurgeProducts(request, url, ctx, env) {
   const domain = (request.headers.get("host") || url.hostname).replace(/^www\./, "").toLowerCase().trim();
-  const storeId = await _resolveStoreId(domain, env);
-
-  if (storeId) {
-    await _purgeProductCachesForDomain(domain, storeId, env);
-  } else {
-    const purgeOps = [];
-    _appendProductPurgeOps(purgeOps, domain, {}, env);
-    for (const sort of ["price_asc", "price_desc", "newest"]) {
-      _appendProductPurgeOps(purgeOps, domain, { sort }, env);
-    }
-    _clearInflightProductRequestsForDomain(domain);
-    await Promise.all(purgeOps);
-  }
+  // Version-based purge: just bump the version — all old keys become unreachable
+  await _bumpProductVersion(domain, env);
+  _clearInflightProductRequestsForDomain(domain);
 
   return addCorsHeaders(
     new Response(JSON.stringify({ purged: true, domain }), { headers: { "Content-Type": "application/json" } }),
