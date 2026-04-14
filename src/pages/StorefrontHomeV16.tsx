@@ -176,7 +176,7 @@ export default function StorefrontHomeV16() {
   const themeConfig = useStorefrontThemeConfig(store.id);
 
   const cardStyle = themeConfig?.product_card_style || "style-1";
-  const categoryStyle = themeConfig?.category_style || "style-1";
+  const categoryStyle = themeConfig?.category_style || "style-11";
   const headerLayout = themeConfig?.header_logo_alignment || "left";
   const hideSearchBar = headerLayout === "left-with-search";
 
