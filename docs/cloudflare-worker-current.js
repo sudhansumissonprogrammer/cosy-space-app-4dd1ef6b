@@ -417,6 +417,47 @@ setTimeout(function(){location.reload();},2500);
 </html>`;
 }
 
+/* ============================================================
+   FIX #26 — EARLY HINTS (103 response)
+   Sends preconnect/preload hints to the browser immediately,
+   before the full HTML is ready. Browser starts fetching assets
+   while worker is still building the response.
+   ============================================================ */
+
+function _buildEarlyHintsHeaders() {
+  const hints = [];
+  hints.push(`<${SUPABASE_URL}>; rel=preconnect; crossorigin`);
+  hints.push(`<https://fonts.googleapis.com>; rel=preconnect`);
+  hints.push(`<https://fonts.gstatic.com>; rel=preconnect; crossorigin`);
+  if (_memShell) {
+    const cssMatch = _memShell.match(/href="(\/assets\/[^"]+\.css)"/);
+    if (cssMatch) hints.push(`<${cssMatch[1]}>; rel=preload; as=style`);
+    const jsMatch = _memShell.match(/src="(\/assets\/[^"]+\.js)"/);
+    if (jsMatch) hints.push(`<${jsMatch[1]}>; rel=modulepreload`);
+  }
+  return hints.join(", ");
+}
+
+/* ============================================================
+   FIX #27 — PRE-COMPRESSED SKELETON CACHE
+   Stores pre-built skeleton HTML per slug in memory for instant
+   cold-start responses with zero compute overhead.
+   ============================================================ */
+
+const _memSkeletonCache = new Map();
+const MEM_SKELETON_CACHE_MAX = 500;
+const MEM_SKELETON_TTL = 600_000;
+
+function _getCachedSkeleton(slug, hostname) {
+  const entry = _memSkeletonCache.get(slug);
+  if (entry && Date.now() < entry.expiresAt) return entry.html;
+  const themeLite = _memThemeCache.get(slug)?.lite || null;
+  const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
+  const html = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
+  _capMapSize(_memSkeletonCache, MEM_SKELETON_CACHE_MAX);
+  _memSkeletonCache.set(slug, { html, expiresAt: Date.now() + MEM_SKELETON_TTL });
+  return html;
+}
 
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
