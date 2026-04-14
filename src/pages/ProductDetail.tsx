@@ -1028,7 +1028,7 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
-      {!isOutOfStock && (store as any)?.theme !== "theme-18" && <div className="sm:hidden" style={{ height: "calc(7rem + var(--storefront-bottom-nav-height, 0px))" }} />}
+      {!isOutOfStock && (store as any)?.theme !== "theme-18" && <div className="sm:hidden" style={{ height: "7rem" }} />}
 
       {/* Express Checkout Sticky Bar for returning users */}
       {!isOutOfStock && showBuyNow && (() => {
