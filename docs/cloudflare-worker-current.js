@@ -1676,10 +1676,14 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const warmKey = `warm-html:${slug}`;
     if (!shouldRevalidate(warmKey)) return;
 
-    const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
+    const [prefetchResult, inlineProducts] = await Promise.all([
+      prefetchStorefrontData(slug, ctx, env),
+      _getInlineProductsOrNull(hostname, slug, env, ctx),
+    ]);
     if (!prefetchResult.data) return;
 
-    const result = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source);
+    // FIX #28: Pass inline products to inject into HTML
+    const result = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, inlineProducts);
 
     const fullHeaders = new Headers();
     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
