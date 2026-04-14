@@ -1329,32 +1329,10 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   // FIX #11: Pass actual bgColor
   const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
-  // LCP preload: hero image (mobile_hero > banner > logo)
   let lcpPreload = "";
-  const s = storefrontData?.store;
-  if (s) {
-    // Determine hero image — mobile_hero_images first slide, then mobile_hero_url, then banner_url
-    let heroImg = "";
-    const mhi = s.mobile_hero_images;
-    if (Array.isArray(mhi) && mhi.length > 0 && typeof mhi[0] === "string") {
-      heroImg = mhi[0];
-    } else if (s.mobile_hero_url) {
-      heroImg = s.mobile_hero_url;
-    } else if (s.banner_url) {
-      heroImg = s.banner_url;
-    }
-    if (heroImg) {
-      // Preload hero as fetchpriority=high with srcset for responsive loading
-      const heroEsc = escapeHtml(heroImg);
-      lcpPreload += `<link rel="preload" as="image" href="${heroEsc}" fetchpriority="high" />\n`;
-    }
-    // Also preload logo (small, needed for header)
-    if (s.logo_url) {
-      lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(s.logo_url)}" />\n`;
-    }
+  if (storefrontData?.store?.logo_url) {
+    lcpPreload = `<link rel="preload" as="image" href="${escapeHtml(storefrontData.store.logo_url)}" />\n`;
   }
-  // Preload critical font
-  lcpPreload += `<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />\n`;
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
   let cssPreload = cssMatch ? `<link rel="preload" href="${cssMatch[1]}" as="style" />\n` : "";
