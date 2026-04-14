@@ -1001,30 +1001,32 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex flex-1 gap-2">
                     <button
-                      className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] ${
+                      className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] uppercase tracking-wider transition-all active:scale-[0.97] ${
                         justAdded ? "bg-emerald-600 text-white" : "btn-gold"
                       }`}
+                      style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 500, letterSpacing: "0.06em" }}
                       onClick={handleAddToCart}
                     >
                       {justAdded ? (
                         <span className="flex items-center gap-1 animate-fade-in">
-                          <Check className="h-4 w-4" strokeWidth={3} />
+                          <Check className="h-3.5 w-3.5" strokeWidth={3} />
                           Added!
                         </span>
                       ) : (
                         <>
-                          <ShoppingCart className="h-4 w-4" />
+                          <ShoppingCart className="h-3.5 w-3.5" />
                           Add to Cart
                         </>
                       )}
                     </button>
-                    <Button
-                      className="h-11 flex-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider"
+                    <button
+                      className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] uppercase tracking-wider transition-all active:scale-[0.97]"
+                      style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 500, letterSpacing: "0.06em", backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                       onClick={handleBuyNow}
                     >
-                      <ShoppingBag className="h-4 w-4 mr-1" />
+                      <ShoppingBag className="h-3.5 w-3.5" />
                       Buy Now
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
