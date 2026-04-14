@@ -11,7 +11,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
 
-const PAGE_SIZE = 14;
+const PAGE_SIZE = 12;
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
