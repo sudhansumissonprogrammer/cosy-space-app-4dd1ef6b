@@ -826,12 +826,13 @@ const PRODUCT_COLUMNS =
 
 async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
   try {
-    const productsCacheKey = _buildProductsCacheKey(hostname, {});
+    const version = await _getProductVersion(hostname, env);
+    const productsCacheKey = _buildProductsCacheKey(hostname, {}, version);
     const cached = await cache.match(productsCacheKey);
     if (cached) return await cached.text();
 
     if (env?.STORE_KV) {
-      const kvKey = _buildProductsKvKey(hostname, {});
+      const kvKey = _buildProductsKvKey(hostname, {}, version);
       const kvProducts = await env.STORE_KV.get(kvKey);
       if (kvProducts) {
         ctx.waitUntil(
@@ -1569,49 +1570,61 @@ function storeInEdgeCache(ctx, hostname, slug, response) {
 }
 
 /* ============================================================
-   PRODUCTS API
+   PRODUCTS API — VERSION-BASED CACHE INVALIDATION
+   ============================================================
+   Instead of deleting hundreds of cache keys on purge (O(categories × pages × sorts)),
+   we store a version number per domain in KV (`pv:{domain}`).
+   All cache/KV keys include the version: `products:v{ver}:{domain}:...`
+   Purge = bump version (1 KV write). Old keys expire naturally via TTL.
    ============================================================ */
 
 const inflightProductRequests = new Map();
 const inflightDomainResolutions = new Map();
 
-function _buildProductsCacheKey(domain, filters) {
-  const parts = [`https://cache/products:${domain}`];
+// In-memory version cache: domain → { version, ts }
+const _memProductVersion = new Map();
+const MEM_PV_TTL = 60_000; // 60s — version is cached in-memory to avoid KV reads
+
+async function _getProductVersion(domain, env) {
+  const now = Date.now();
+  const mem = _memProductVersion.get(domain);
+  if (mem && now - mem.ts < MEM_PV_TTL) return mem.version;
+
+  let version = 1;
+  if (env?.STORE_KV) {
+    try {
+      const v = await env.STORE_KV.get(`pv:${domain}`, { type: "text" });
+      if (v) version = parseInt(v, 10) || 1;
+    } catch {}
+  }
+  _memProductVersion.set(domain, { version, ts: now });
+  return version;
+}
+
+async function _bumpProductVersion(domain, env) {
+  const current = await _getProductVersion(domain, env);
+  const next = current + 1;
+  if (env?.STORE_KV) {
+    await env.STORE_KV.put(`pv:${domain}`, String(next), { expirationTtl: 86400 }).catch(() => {});
+  }
+  _memProductVersion.set(domain, { version: next, ts: Date.now() });
+  return next;
+}
+
+function _buildProductsCacheKey(domain, filters, version) {
+  const parts = [`https://cache/products:v${version}:${domain}`];
   if (filters.category) parts.push(`category=${filters.category}`);
   if (filters.page) parts.push(`page=${filters.page}`);
   if (filters.sort) parts.push(`sort=${filters.sort}`);
   return new Request(parts.join(":"));
 }
 
-function _buildProductsKvKey(domain, filters) {
-  let key = `products:${domain}`;
+function _buildProductsKvKey(domain, filters, version) {
+  let key = `products:v${version}:${domain}`;
   if (filters.category) key += `:cat=${filters.category}`;
   if (filters.page) key += `:p=${filters.page}`;
   if (filters.sort) key += `:s=${filters.sort}`;
   return key;
-}
-
-function _appendProductPurgeOps(purgeOps, domain, filters, env) {
-  purgeOps.push(cache.delete(_buildProductsCacheKey(domain, filters)).catch(() => {}));
-  if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(_buildProductsKvKey(domain, filters)).catch(() => {}));
-}
-
-async function _fetchStoreCategoryNames(storeId) {
-  try {
-    const params = new URLSearchParams({
-      select: "category",
-      store_id: `eq.${storeId}`,
-      is_active: "eq.true",
-      limit: "1000",
-    });
-    params.set("category", "not.is.null");
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/products?${params}`, {
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Accept: "application/json" },
-    });
-    if (!res.ok) return [];
-    const rows = await res.json();
-    return [...new Set((rows || []).map((r) => r?.category).filter(Boolean))];
-  } catch { return []; }
 }
 
 function _clearInflightProductRequestsForDomain(domain) {
@@ -1620,37 +1633,21 @@ function _clearInflightProductRequestsForDomain(domain) {
   }
 }
 
-async function _purgeProductCachesForDomain(domain, storeId, env) {
+/**
+ * Version-based purge: bump version number → all old keys become unreachable.
+ * Cost: 1 KV write per domain (vs hundreds of deletes before).
+ * Old keys expire naturally via their TTL (max 30 min for KV, 5 min for Cache API).
+ */
+async function _purgeProductCachesForDomain(domain, _storeId, env) {
   const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
-  const purgeOps = [];
-  const sortValues = ["", "price_asc", "price_desc", "newest"];
-  const MAX_PAGES = 20; // purge up to 20 pages (400 products) per filter combo
-
-  const categoryNames = await _fetchStoreCategoryNames(storeId);
-
-  const appendPagedFilters = (baseFilters) => {
-    for (const sort of sortValues) {
-      for (let p = 0; p < MAX_PAGES; p++) {
-        const filters = { ...baseFilters };
-        if (sort) filters.sort = sort;
-        if (p > 0) filters.page = String(p);
-        _appendProductPurgeOps(purgeOps, cleanDomain, filters, env);
-      }
-    }
-  };
-
-  appendPagedFilters({});
-  for (const cat of categoryNames) {
-    appendPagedFilters({ category: cat });
-  }
-
+  await _bumpProductVersion(cleanDomain, env);
   _clearInflightProductRequestsForDomain(cleanDomain);
-  await Promise.all(purgeOps);
 }
 
 async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   const domain = slug ? `${slug}.${ROOT_DOMAIN}` : "unknown";
-  const cacheKey = _buildProductsCacheKey(domain, {});
+  const version = await _getProductVersion(domain, env);
+  const cacheKey = _buildProductsCacheKey(domain, {}, version);
 
   try {
     const existing = await cache.match(cacheKey);
@@ -1660,6 +1657,7 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   try {
     const data = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
+    const kvKey = _buildProductsKvKey(domain, {}, version);
     const cacheOps = [
       cache
         .put(
@@ -1670,19 +1668,17 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
         )
         .catch(() => {}),
       env?.STORE_KV
-        ? env.STORE_KV.put(_buildProductsKvKey(domain, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
+        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
         : Promise.resolve(),
     ];
 
     if (customDomain) {
-      const cleanCustom = customDomain
-        .replace(/^www\./, "")
-        .toLowerCase()
-        .trim();
+      const cleanCustom = customDomain.replace(/^www\./, "").toLowerCase().trim();
+      const cvVersion = await _getProductVersion(cleanCustom, env);
       cacheOps.push(
         cache
           .put(
-            _buildProductsCacheKey(cleanCustom, {}),
+            _buildProductsCacheKey(cleanCustom, {}, cvVersion),
             new Response(body, {
               headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
             }),
@@ -1691,9 +1687,7 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
       );
       if (env?.STORE_KV) {
         cacheOps.push(
-          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(
-            () => {},
-          ),
+          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}, cvVersion), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}),
         );
       }
     }
@@ -1709,20 +1703,23 @@ async function handleProductsApi(request, url, ctx, env) {
     page: url.searchParams.get("page") || "",
     sort: url.searchParams.get("sort") || "",
   };
-  const cacheKey = _buildProductsCacheKey(domain, filters);
+
+  // Get current version for this domain (cached in-memory for 60s)
+  const version = await _getProductVersion(domain, env);
+  const cacheKey = _buildProductsCacheKey(domain, filters, version);
+  const kvKey = _buildProductsKvKey(domain, filters, version);
 
   try {
     const cached = await cache.match(cacheKey);
     if (cached) {
-      const revalKey = `products:${domain}:${filters.category}:${filters.page}:${filters.sort}`;
+      const revalKey = `products:v${version}:${domain}:${filters.category}:${filters.page}:${filters.sort}`;
       if (shouldRevalidate(revalKey)) {
-        ctx.waitUntil(_refreshProductsBackground(domain, filters, cacheKey, env));
+        ctx.waitUntil(_refreshProductsBackground(domain, filters, version, env));
       }
       return addCorsHeaders(cached, "cache-api");
     }
   } catch {}
 
-  const kvKey = _buildProductsKvKey(domain, filters);
   if (env?.STORE_KV) {
     try {
       const kvData = await env.STORE_KV.get(kvKey, { type: "text" });
@@ -1761,7 +1758,6 @@ async function handleProductsApi(request, url, ctx, env) {
     );
   }
 
-  // Coalesce key includes filters so page 0 and page 1 don't share results
   const coalesceKey = `${domain}:${filters.category}:${filters.page}:${filters.sort}`;
 
   if (inflightProductRequests.has(coalesceKey)) {
@@ -1769,7 +1765,7 @@ async function handleProductsApi(request, url, ctx, env) {
       const data = await inflightProductRequests.get(coalesceKey);
       return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced");
     } catch {
-      return _fallbackProducts(domain, cacheKey, kvKey, filters, env);
+      return _fallbackProducts(domain, filters, version, env);
     }
   }
 
@@ -1780,7 +1776,7 @@ async function handleProductsApi(request, url, ctx, env) {
     const data = await fetchPromise;
     return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin");
   } catch {
-    return _fallbackProducts(domain, cacheKey, kvKey, filters, env);
+    return _fallbackProducts(domain, filters, version, env);
   } finally {
     inflightProductRequests.delete(coalesceKey);
   }
@@ -1812,7 +1808,8 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
         params.set("order", "created_at.desc,id.asc");
         break;
       default:
-        params.set("order", "is_best_selling.desc,created_at.desc,id.asc");
+        // display_order first (manual merchant sorting), then best-selling, then newest
+        params.set("order", "display_order.asc,is_best_selling.desc,created_at.desc,id.asc");
     }
 
     const page = parseInt(filters.page, 10);
@@ -1850,13 +1847,14 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   return addCorsHeaders(response, source);
 }
 
-async function _refreshProductsBackground(domain, filters, cacheKey, env) {
+async function _refreshProductsBackground(domain, filters, version, env) {
   try {
     const storeId = await _resolveStoreId(domain, env);
     if (!storeId) return;
     const data = await _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
-    const kvKey = _buildProductsKvKey(domain, filters);
+    const cacheKey = _buildProductsCacheKey(domain, filters, version);
+    const kvKey = _buildProductsKvKey(domain, filters, version);
     await Promise.all([
       cache
         .put(
@@ -1873,7 +1871,10 @@ async function _refreshProductsBackground(domain, filters, cacheKey, env) {
   } catch {}
 }
 
-async function _fallbackProducts(domain, cacheKey, kvKey, filters, env) {
+async function _fallbackProducts(domain, filters, version, env) {
+  const cacheKey = _buildProductsCacheKey(domain, filters, version);
+  const kvKey = _buildProductsKvKey(domain, filters, version);
+
   // Try exact match first
   try {
     const stale = await cache.match(cacheKey);
@@ -1899,25 +1900,6 @@ async function _fallbackProducts(domain, cacheKey, kvKey, filters, env) {
     );
   }
 
-  // Only for page-0 default: try broader fallbacks
-  const defaultKvKey = _buildProductsKvKey(domain, {});
-  if (env?.STORE_KV) {
-    try {
-      const defaultStale = await env.STORE_KV.get(defaultKvKey, { type: "text" });
-      if (defaultStale)
-        return addCorsHeaders(
-          new Response(defaultStale, { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }),
-          "kv-default-stale",
-        );
-    } catch {}
-  }
-
-  const defaultCacheKey = _buildProductsCacheKey(domain, {});
-  try {
-    const defaultStale = await cache.match(defaultCacheKey);
-    if (defaultStale) return addCorsHeaders(defaultStale, "cache-default-stale");
-  } catch {}
-
   return addCorsHeaders(
     new Response("[]", { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }),
     "fallback-empty",
@@ -1926,19 +1908,9 @@ async function _fallbackProducts(domain, cacheKey, kvKey, filters, env) {
 
 async function handlePurgeProducts(request, url, ctx, env) {
   const domain = (request.headers.get("host") || url.hostname).replace(/^www\./, "").toLowerCase().trim();
-  const storeId = await _resolveStoreId(domain, env);
-
-  if (storeId) {
-    await _purgeProductCachesForDomain(domain, storeId, env);
-  } else {
-    const purgeOps = [];
-    _appendProductPurgeOps(purgeOps, domain, {}, env);
-    for (const sort of ["price_asc", "price_desc", "newest"]) {
-      _appendProductPurgeOps(purgeOps, domain, { sort }, env);
-    }
-    _clearInflightProductRequestsForDomain(domain);
-    await Promise.all(purgeOps);
-  }
+  // Version-based purge: just bump the version — all old keys become unreachable
+  await _bumpProductVersion(domain, env);
+  _clearInflightProductRequestsForDomain(domain);
 
   return addCorsHeaders(
     new Response(JSON.stringify({ purged: true, domain }), { headers: { "Content-Type": "application/json" } }),
@@ -2002,18 +1974,8 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     ? (await _resolveStoreInfo(purgeSlug, `${purgeSlug}.${ROOT_DOMAIN}`, env)).storeId
     : await _resolveStoreId(normalizedHost, env);
 
-  if (storeId) {
-    await Promise.all([...domainsToPurge].map((d) => _purgeProductCachesForDomain(d, storeId, env)));
-  } else {
-    const fallbackOps = [];
-    for (const d of domainsToPurge) {
-      _appendProductPurgeOps(fallbackOps, d, {}, env);
-      for (const sort of ["price_asc", "price_desc", "newest"]) {
-        _appendProductPurgeOps(fallbackOps, d, { sort }, env);
-      }
-    }
-    await Promise.all(fallbackOps);
-  }
+  // Version-based purge: bump version for all domain variants
+  await Promise.all([...domainsToPurge].map((d) => _purgeProductCachesForDomain(d, storeId, env)));
 
   return addCorsHeaders(
     new Response(
@@ -2337,7 +2299,8 @@ async function handlePrewarm(request, url, ctx, env) {
         const products = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
         const prodBody = JSON.stringify(products || []);
         const cacheOps = [];
-        const subCacheKey = _buildProductsCacheKey(subDomain, {});
+        const subVersion = await _getProductVersion(subDomain, env);
+        const subCacheKey = _buildProductsCacheKey(subDomain, {}, subVersion);
         cacheOps.push(
           cache
             .put(
@@ -2353,7 +2316,7 @@ async function handlePrewarm(request, url, ctx, env) {
         );
         if (env?.STORE_KV)
           cacheOps.push(
-            env.STORE_KV.put(_buildProductsKvKey(subDomain, {}), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(
+            env.STORE_KV.put(_buildProductsKvKey(subDomain, {}, subVersion), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(
               () => {},
             ),
           );
@@ -2362,10 +2325,11 @@ async function handlePrewarm(request, url, ctx, env) {
             .replace(/^www\./, "")
             .toLowerCase()
             .trim();
+          const cdVersion = await _getProductVersion(cleanDomain, env);
           cacheOps.push(
             cache
               .put(
-                _buildProductsCacheKey(cleanDomain, {}),
+                _buildProductsCacheKey(cleanDomain, {}, cdVersion),
                 new Response(prodBody, {
                   headers: {
                     "Content-Type": "application/json",
@@ -2377,7 +2341,7 @@ async function handlePrewarm(request, url, ctx, env) {
           );
           if (env?.STORE_KV)
             cacheOps.push(
-              env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}), prodBody, {
+              env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}, cdVersion), prodBody, {
                 expirationTtl: PRODUCTS_KV_TTL,
               }).catch(() => {}),
             );
