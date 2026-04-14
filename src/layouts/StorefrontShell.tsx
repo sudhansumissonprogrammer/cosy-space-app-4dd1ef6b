@@ -196,10 +196,12 @@ export default function StorefrontShell({
     };
   }, [themeVarsKey]);
 
-  // Keep the Worker skeleton visible until store data and the first font pass are ready.
-  // Keep the Worker-injected skeleton visible while React hydrates data.
-  // Rendering nothing (or a blank div) causes a white flash between skeleton → content.
+  // Keep skeleton visible while data loads.
+  // IMPORTANT: never render a blank div — it causes a white flash between skeleton → content.
+  // Instead, keep the same skeleton the user already sees so the transition is seamless.
   if (isLoading) {
+    // Remove the inline HTML skeleton from #root if it's still there
+    // (React has now mounted, so we take over rendering the skeleton)
     return skeleton ?? <DefaultSkeleton />;
   }
 
