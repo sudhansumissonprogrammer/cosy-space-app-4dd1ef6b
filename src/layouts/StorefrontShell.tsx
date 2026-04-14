@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useState, useLayoutEffect, Suspense, lazy, type ReactNode } from "react";
+import { useEffect, useRef, useMemo, useState, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
@@ -9,7 +9,7 @@ import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { trackPageView } from "@/lib/trackPageView";
-import { buildThemeStyle, ensureThemeFontsLoaded, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
+import { buildThemeStyle, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 
 // Lazy-load non-critical overlays
@@ -139,49 +139,11 @@ export default function StorefrontShell({
   // Theme config (reactive — updates when cache changes via live preview)
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
-  // Hold the first storefront paint until the selected theme fonts are ready.
-  const activeStoreIdRef = useRef<string | null>(null);
-  const loadedFontKeyRef = useRef<string | null>(null);
-  const [fontsReady, setFontsReady] = useState(false);
-  const { headingFont, bodyFont } = useMemo(
-    () => getResolvedThemeFonts(themeConfig),
-    [themeConfig?.heading_font, themeConfig?.body_font]
-  );
-  const requestedFontKey = `${headingFont}__${bodyFont}`;
-
-  useLayoutEffect(() => {
-    const storeId = store?.id ?? null;
-
-    if (activeStoreIdRef.current !== storeId) {
-      activeStoreIdRef.current = storeId;
-      loadedFontKeyRef.current = null;
-      setFontsReady(false);
-    }
-
-    if (!storeId) return;
-
-    let cancelled = false;
-
-    const syncFonts = async () => {
-      if (loadedFontKeyRef.current !== requestedFontKey) {
-        setFontsReady(false);
-        await ensureThemeFontsLoaded(themeConfig);
-        if (cancelled) return;
-        loadedFontKeyRef.current = requestedFontKey;
-        setFontsReady(true);
-        return;
-      }
-
-      loadGoogleFonts(themeConfig);
-      if (!cancelled) setFontsReady(true);
-    };
-
-    void syncFonts();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [store?.id, themeConfig, requestedFontKey]);
+  // Load Google Fonts eagerly but don't block paint — display=swap handles FOUT gracefully.
+  useEffect(() => {
+    if (!store?.id) return;
+    loadGoogleFonts(themeConfig);
+  }, [store?.id, themeConfig?.heading_font, themeConfig?.body_font]);
 
   // Listen for live theme preview messages
   const previewOverride = useThemePreview(store?.id);
@@ -235,7 +197,7 @@ export default function StorefrontShell({
   }, [themeVarsKey]);
 
   // Keep the Worker skeleton visible until store data and the first font pass are ready.
-  if (isLoading || !fontsReady) {
+  if (isLoading) {
     return <div className="min-h-screen" />;
   }
 
