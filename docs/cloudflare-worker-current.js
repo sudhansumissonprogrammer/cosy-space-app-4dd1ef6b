@@ -334,11 +334,16 @@ function buildThemeCssFromConfig(tc) {
     `--storefront-btn-text:${btnTextColor};` +
     `}body{background:${bgColor}}</style>\n`;
 
-  const fonts = [headingFont, bodyFont].filter(Boolean);
+  const fonts = [...new Set([headingFont, bodyFont].filter(Boolean))];
   if (fonts.length > 0) {
-    const families = fonts.map((f) => f.replace(/ /g, "+")).join("&family=");
-    css += `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" media="print" onload="this.media='all'" />\n`;
-    css += `<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${families}&display=swap&subset=latin" /></noscript>\n`;
+    const families = fonts
+      .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700`)
+      .join("&");
+    const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+    css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
+    css += `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n`;
+    css += `<link id="storefront-google-fonts" rel="stylesheet" href="${googleFontsHref}" data-loaded="false" />\n`;
+    css += `<noscript><link rel="stylesheet" href="${googleFontsHref}" /></noscript>\n`;
     css += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
   }
 

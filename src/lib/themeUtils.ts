@@ -7,7 +7,7 @@ const DEFAULT_HEADING_FONT = "Alegreya SC";
 const DEFAULT_BODY_FONT = "Inter";
 const DEFAULT_TEXT_COLOR = "#1a1a1a";
 const DEFAULT_BACKGROUND_COLOR = "#ffffff";
-const FONT_READY_TIMEOUT_MS = 1800;
+const FONT_READY_TIMEOUT_MS = 3000;
 // Only fonts that are actually bundled in the app should be treated as self-hosted.
 const SELF_HOSTED_FONTS = new Set([
   DEFAULT_BODY_FONT,
@@ -226,6 +226,7 @@ export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
     link.id = linkId;
     link.rel = "stylesheet";
     link.media = "all";
+    link.setAttribute("fetchpriority", "high");
     link.dataset.loaded = "false";
     document.head.appendChild(link);
   }
