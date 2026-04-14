@@ -445,6 +445,109 @@ function SpotlightCarousel({ categories, storeSlug }: { categories: Category[]; 
   );
 }
 
+/** Style 11: Two-Row Circle Carousel — circles in 2 rows, both scroll together */
+function TwoRowCircleCarousel({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(true);
+
+  const updateArrows = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 4);
+    setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateArrows();
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    return () => el.removeEventListener("scroll", updateArrows);
+  }, [updateArrows]);
+
+  const scroll = useCallback((dir: number) => {
+    scrollRef.current?.scrollBy({ left: dir * 260, behavior: "smooth" });
+  }, []);
+
+  // Split categories into two rows
+  const half = Math.ceil(categories.length / 2);
+  const row1 = categories.slice(0, half);
+  const row2 = categories.slice(half);
+
+  // Build columns: each column has [row1[i], row2[i]]
+  const columns: [Category, Category | undefined][] = [];
+  const maxCols = Math.max(row1.length, row2.length);
+  for (let i = 0; i < maxCols; i++) {
+    columns.push([row1[i] || row2[i]!, i < row2.length ? row2[i] : undefined]);
+  }
+
+  return (
+    <div className="relative group/carousel">
+      {/* Left arrow */}
+      {canLeft && (
+        <button
+          onClick={() => scroll(-1)}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+          style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: "1px solid var(--border)" }}
+          aria-label="Scroll left"
+        >
+          <ChevronLeft className="h-4 w-4" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+        </button>
+      )}
+      {/* Right arrow */}
+      {canRight && (
+        <button
+          onClick={() => scroll(1)}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+          style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: "1px solid var(--border)" }}
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="h-4 w-4" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+        </button>
+      )}
+
+      <div
+        ref={scrollRef}
+        className="overflow-x-auto scrollbar-hide"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+      >
+        <div className="flex gap-3 sm:gap-4 w-max">
+          {columns.map((col, colIdx) => (
+            <div key={colIdx} className="flex flex-col gap-3 sm:gap-4 flex-shrink-0">
+              {col.map((cat, rowIdx) =>
+                cat ? (
+                  <Link
+                    key={cat.id}
+                    to={storefrontPath(storeSlug, `category/${cat.slug}`)}
+                    className="flex flex-col items-center gap-1 transition-all"
+                  >
+                    <div
+                      className="h-[68px] w-[68px] sm:h-[80px] sm:w-[80px] md:h-[100px] md:w-[100px] rounded-full border-2 overflow-hidden transition-all border-border bg-secondary/30"
+                      onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"}
+                      onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}
+                    >
+                      <CategoryImage cat={cat} size={300} className="h-full w-full object-cover scale-110" />
+                    </div>
+                    <span
+                      className="text-[10px] sm:text-[11px] font-semibold tracking-wide text-center leading-tight max-w-[68px] sm:max-w-[80px] md:max-w-[100px] truncate"
+                      style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
+                    >
+                      {cat.name}
+                    </span>
+                  </Link>
+                ) : (
+                  <div key={`empty-${rowIdx}`} className="h-[68px] w-[68px] sm:h-[80px] sm:w-[80px] md:h-[100px] md:w-[100px]" />
+                )
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Style 10: Magazine Strip — landscape cards stacked vertically */
 function MagazineStrip({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
