@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useState, useLayoutEffect, Suspense, lazy, type ReactNode } from "react";
+import { useEffect, useRef, useMemo, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
