@@ -2,9 +2,9 @@
  * Theme 16 Home — Best Sellers + per-category product sections (13 each + View All card).
  * No "Popular Products" section.
  */
-import { useState, useMemo, useRef, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useMemo, useRef, useEffect, lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
@@ -28,9 +28,9 @@ const StorefrontInstagramSection = lazy(() => import("@/components/storefront/St
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 4;
-const CATEGORY_PAGE_SIZE = 12;
+const CATEGORY_PRODUCT_COUNT = 12;
 
-/* ─── Per-category section with infinite scroll ─── */
+/* ─── Per-category section with lazy 12-product fetch ─── */
 function CategorySection({
   category,
   storeId,
@@ -47,18 +47,13 @@ function CategorySection({
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const pageRef = useRef(0);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const scrollState = useRef({ hasMore: true, isFetchingMore: false });
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
   const hasFetched = useRef(false);
 
-  // Only become visible (and start fetching) when section enters viewport
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -68,73 +63,52 @@ function CategorySection({
       },
       { rootMargin: "400px" }
     );
+
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  const fetchPage = useCallback(async (page: number) => {
-    const from = page * CATEGORY_PAGE_SIZE;
-    const to = from + CATEGORY_PAGE_SIZE - 1;
-    const { data, error } = await supabase
-      .from("products")
-      .select("id, name, slug, price, sale_price, image_url, currency, is_best_selling, stock_quantity, category, display_order, product_images:product_images(id, image_url, display_order)")
-      .eq("store_id", storeId)
-      .eq("is_active", true)
-      .eq("category", category.name)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: false })
-      .range(from, to);
-    if (error) throw error;
-    return data || [];
-  }, [storeId, category.name]);
-
   useEffect(() => {
     if (!isVisible || hasFetched.current) return;
+
+    let cancelled = false;
     hasFetched.current = true;
     setIsLoading(true);
-    let cancelled = false;
-    fetchPage(0).then((data) => {
-      if (cancelled) return;
-      setProducts(data);
-      setHasMore(data.length === CATEGORY_PAGE_SIZE);
-      scrollState.current.hasMore = data.length === CATEGORY_PAGE_SIZE;
-      setIsLoading(false);
-    }).catch(() => { if (!cancelled) setIsLoading(false); });
-    return () => { cancelled = true; };
-  }, [fetchPage]);
 
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const s = scrollState.current;
-        if (entry.isIntersecting && s.hasMore && !s.isFetchingMore) {
-          s.isFetchingMore = true;
-          setIsFetchingMore(true);
-          const nextPage = pageRef.current + 1;
-          fetchPage(nextPage).then((data) => {
-            pageRef.current = nextPage;
-            setProducts((prev) => [...prev, ...data]);
-            const more = data.length === CATEGORY_PAGE_SIZE;
-            setHasMore(more);
-            scrollState.current = { hasMore: more, isFetchingMore: false };
-            setIsFetchingMore(false);
-          }).catch(() => {
-            scrollState.current.isFetchingMore = false;
-            setIsFetchingMore(false);
-          });
-        }
-      },
-      { rootMargin: "300px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [fetchPage]);
+    const loadProducts = async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, slug, price, sale_price, image_url, currency, is_best_selling, stock_quantity, category, display_order, product_images:product_images(id, image_url, display_order)")
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .eq("category", category.name)
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: false })
+        .limit(CATEGORY_PRODUCT_COUNT);
+
+      if (error) throw error;
+      return data || [];
+    };
+
+    loadProducts()
+      .then((data) => {
+        if (cancelled) return;
+        setProducts(data);
+      })
+      .catch(() => {
+        if (!cancelled) setProducts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isVisible, storeId, category.name]);
 
   if (!isVisible) {
-    // Render a lightweight placeholder so IntersectionObserver can track it
-    return <section ref={sectionRef} style={{ minHeight: 200 }} />;
+    return <section ref={sectionRef} style={{ minHeight: 220 }} />;
   }
 
   if (!isLoading && hasFetched.current && products.length === 0) return null;
@@ -154,37 +128,32 @@ function CategorySection({
       ) : (
         <>
           <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((product: any) => (
+            {products.map((product: any, index: number) => (
               <UniversalProductCard
                 key={product.id}
                 product={product}
                 slug={slug}
                 store={store}
-                priority={false}
+                priority={index < 2}
                 cardStyle={cardStyle}
               />
             ))}
-            {/* View All card */}
+          </div>
+          <div className="mt-4 flex justify-center sm:justify-end">
             <Link
               to={categoryPath}
-              className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-accent/30 transition-all hover:border-foreground/30 hover:bg-accent/50"
-              style={{ aspectRatio: "4/5" }}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-foreground transition-opacity hover:opacity-70"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/10 transition-colors group-hover:bg-foreground/20">
-                <ArrowRight className="h-5 w-5 text-foreground" />
-              </div>
-              <span className="mt-3 text-sm font-semibold text-foreground">View All</span>
-              <span className="text-xs text-muted-foreground">{category.name}</span>
+              View All
+              <ArrowRight className="h-4 w-4" />
             </Link>
-          </div>
-          <div ref={sentinelRef} className="flex justify-center py-4">
-            {isFetchingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
           </div>
         </>
       )}
     </section>
   );
 }
+
 export default function StorefrontHomeV16() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
