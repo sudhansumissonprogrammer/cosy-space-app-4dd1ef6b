@@ -1,5 +1,5 @@
 import { useOutletContext, useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -10,9 +10,7 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
-
-const PAGE_SIZE = 12;
-const QUERY_VERSION = "category-page-v2";
+import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
@@ -46,34 +44,17 @@ export default function CategoryDetail() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: [QUERY_VERSION, "category-products", store.id, category?.name, PAGE_SIZE],
-    queryFn: async ({ pageParam = 0 }) => {
-      const from = pageParam * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-      const { data, error } = await supabase
-        .from("products")
-        .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
-        .eq("store_id", store.id)
-        .eq("is_active", true)
-        .eq("category", category!.name)
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: true })
-        .range(from, to);
-      if (error) throw error;
-      return { products: data || [], page: pageParam };
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.products.length === PAGE_SIZE ? lastPage.page + 1 : undefined,
-    enabled: !!store.id && !!category?.name,
-    staleTime: 5 * 60 * 1000,
+  } = useInfiniteProducts({
+    storeId: store.id,
+    category: category?.name,
+    queryKeyPrefix: "cat-detail-v3",
+    ready: !!category?.name,
   });
 
   const products = data?.pages.flatMap((p) => p.products) || [];
 
+  // Signal content-ready for Worker skeleton removal
   const contentReadyRef = useRef(false);
-
   useEffect(() => {
     contentReadyRef.current = false;
   }, [categorySlug]);
@@ -156,7 +137,6 @@ export default function CategoryDetail() {
 
   return (
     <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-6">
-      {/* Breadcrumbs */}
       <nav className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
         <Link to={storefrontPath(slug!, "")} className="hover:text-foreground transition-colors">Home</Link>
         <span>/</span>
@@ -175,7 +155,7 @@ export default function CategoryDetail() {
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">{category?.name || "Category"}</h1>
       </div>
 
-      <div style={{ minHeight: 600, contain: "layout" }}>
+      <div style={{ minHeight: 600 }}>
         {categoryLoading || productsLoading ? (
           <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -215,7 +195,6 @@ export default function CategoryDetail() {
               </div>
             )}
 
-            {/* Infinite scroll sentinel */}
             <div ref={sentinelRef} className="flex justify-center py-8">
               {isFetchingNextPage && (
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
