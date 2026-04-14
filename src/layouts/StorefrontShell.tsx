@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, Suspense, lazy, type ReactNode } from "react";
+import { useEffect, useRef, useMemo, useState, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
@@ -197,7 +197,7 @@ export default function StorefrontShell({
   }, [themeVarsKey]);
 
   // Keep the Worker skeleton visible until store data and the first font pass are ready.
-  if (isLoading || !fontsReady) {
+  if (isLoading) {
     return <div className="min-h-screen" />;
   }
 
