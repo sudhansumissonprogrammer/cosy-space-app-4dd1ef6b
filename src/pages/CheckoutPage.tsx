@@ -342,7 +342,6 @@ export default function CheckoutPage() {
   const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
   // Partial payment calculation (store-level)
-  const hasAnyPartialPayment = storePartialEnabled && !!storePartialValue;
   const partialAdvanceTotal = (() => {
     if (!hasAnyPartialPayment) return total;
     let advance = 0;
