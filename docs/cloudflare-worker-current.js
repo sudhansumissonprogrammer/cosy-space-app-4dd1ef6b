@@ -2898,9 +2898,8 @@ export default {
       // FIX #21: Instant skeleton fast path — if shell isn't in memory,
       // return a themed skeleton immediately while warming in background
       if (!_memShell) {
-        const themeLite = _memThemeCache.get(slug)?.lite || null;
-        const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-        const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
+        // FIX #27: Use pre-cached skeleton for zero-compute response
+        const skeletonHtml = _getCachedSkeleton(slug, hostname);
 
         // Kick off full warm in background
         ctx.waitUntil((async () => {
