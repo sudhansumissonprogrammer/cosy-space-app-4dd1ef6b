@@ -1,5 +1,18 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.1.0 — SEO + PERFORMANCE IMPROVEMENTS
+ * SHOPBANAO PRODUCTION ROUTER v6.2.0 — COLD START OPTIMIZATION
+ *
+ * Changes from v6.1.0:
+ *  FIX #20 — TTL increases: Shell KV 3600→86400, Cache 600→3600, Mem 10→30min.
+ *            Storefront KV 3600→14400, Mem 2→10min, Cache 600→1200.
+ *            Shell only changes on deploy; storefront data changes rarely.
+ *  FIX #21 — Instant skeleton fast path: If _memShell is empty (true cold start),
+ *            return a minimal themed skeleton HTML immediately instead of blocking
+ *            on origin fetch. Warms shell in background via ctx.waitUntil.
+ *  FIX #22 — ORIGIN_TIMEOUT_MS reduced from 8000→3500 to fail fast.
+ *  FIX #23 — Removed blocking await _getSlugIndex(env) — fire-and-forget.
+ *  FIX #24 — stale-while-revalidate reduced from 7200→600 on warmed HTML.
+ *  FIX #25 — Cron skeleton fallback: if DB fails for a store, cache a themed
+ *            skeleton instead of leaving the store cold.
  *
  * Changes from v6.0.0:
  *  FIX #16 — Canonical tag injection: <link rel="canonical"> added to all
@@ -33,7 +46,7 @@
  *  FIX #9  — _resolveStoreInfo() is the single authoritative lookup.
  *             _resolveStoreId() now delegates to it instead of duplicating.
  *  FIX #10 — Cache-Control on warmed/prewarmed HTML raised to
- *             max-age=3600, stale-while-revalidate=7200.
+ *             max-age=3600, stale-while-revalidate=600.
  *  FIX #11 — buildSkeleton() now uses the actual store bgColor (fixes white
  *             flash on dark-themed stores).
  *  FIX #12 — In-memory storefront data cache (_memStorefrontCache).
@@ -44,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.1.0";
+const WORKER_VERSION = "6.2.0";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -75,11 +88,11 @@ function isSocialInAppBrowser(ua) {
    TIMEOUTS
    ============================================================ */
 
-const ORIGIN_TIMEOUT_MS = 8_000;
+// FIX #22: Reduced from 8000→3500 to fail fast and serve skeleton instead
+const ORIGIN_TIMEOUT_MS = 3_500;
 const EDGE_FN_TIMEOUT_MS = 10_000;
-// FIX #13: Raised from 800 → 1000ms. FIX #2 starts the clock earlier
-// (at request arrival, not after shell fetch), so 1000ms is now safe.
-const STOREFRONT_PREFETCH_TIMEOUT_MS = 1_000;
+// FIX #20: Raised from 1000→1500ms. Instant skeleton (FIX #21) starts early enough.
+const STOREFRONT_PREFETCH_TIMEOUT_MS = 1_500;
 const PRODUCTS_DB_TIMEOUT_MS = 3_000;
 
 const cache = caches.default;
@@ -90,7 +103,8 @@ const cache = caches.default;
 
 let _memShell = null;
 let _memShellTs = 0;
-const MEM_SHELL_TTL = 600_000; // 10 min
+// FIX #20: Raised from 600_000 (10min) → 1_800_000 (30min)
+const MEM_SHELL_TTL = 1_800_000; // 30 min
 
 /* ============================================================
    FIX #7 — IN-MEMORY PREBUILT HEAD (built once per isolate)
@@ -112,7 +126,8 @@ const MEM_THEME_TTL = 300_000; // 5 min
 
 const _memStorefrontCache = new Map();
 const MEM_STOREFRONT_CACHE_MAX = 1_000;
-const MEM_STOREFRONT_TTL = 120_000; // 2 min
+// FIX #20: Raised from 120_000 (2min) → 600_000 (10min)
+const MEM_STOREFRONT_TTL = 600_000; // 10 min
 
 /* ============================================================
    REVALIDATION COOLDOWN
@@ -355,8 +370,43 @@ function getSkeletonMuted(textColor) {
 }
 
 /* ============================================================
-   FIX #7 — PREBUILT HEAD (in-memory first, built once per isolate)
+   FIX #21 — INSTANT SKELETON PAGE (returned on true cold start)
    ============================================================ */
+
+function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname) {
+  const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
+  const skeletonMuted = themeLite ? getSkeletonMuted(themeLite.tc || themeLite.text_color || "#1a1a1a") : "#e8e8e8";
+  const skeleton = buildSkeleton(bgColor, skeletonMuted);
+  const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
+
+  // Build canonical URL
+  let canonicalUrl = `https://${safeSlug}.${ROOT_DOMAIN}/`;
+  if (hostname && !hostname.endsWith(`.${ROOT_DOMAIN}`)) {
+    canonicalUrl = `https://${hostname}/`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="canonical" href="${canonicalUrl}" />
+<script>window.__STORE_SLUG__="${safeSlug}";</script>
+${themeCss}
+<style>body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;background:${bgColor}}</style>
+</head>
+<body>
+${skeleton}
+<script>
+// Auto-refresh: this is a cold-start skeleton. Reload after a short delay
+// so the next request hits the now-warm cache.
+setTimeout(function(){location.reload();},2500);
+</script>
+</body>
+</html>`;
+}
+
+
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
 const PREBUILT_HEAD_KV_TTL = 3600;
@@ -488,8 +538,9 @@ function _buildLinkPreloadHeader(html) {
    ============================================================ */
 
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
-const SPA_SHELL_KV_TTL = 3600;
-const SPA_SHELL_CACHE_TTL = 600;
+// FIX #20: Shell only changes on deploy — raise TTLs aggressively
+const SPA_SHELL_KV_TTL = 86_400; // was 3600 → 24h
+const SPA_SHELL_CACHE_TTL = 3_600; // was 600 → 1h
 
 let inflightShellFetch = null;
 
@@ -595,8 +646,9 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
    FIX #4 — BATCH KV READ (shell + theme + storefront in ONE call)
    ============================================================ */
 
-const KV_STOREFRONT_TTL = 3600;
-const CACHE_STOREFRONT_TTL = 600;
+// FIX #20: Storefront data changes rarely — raise TTLs
+const KV_STOREFRONT_TTL = 14_400; // was 3600 → 4h
+const CACHE_STOREFRONT_TTL = 1_200; // was 600 → 20min
 
 async function _batchKvRead(slug, env) {
   if (!env?.STORE_KV) return { theme: null, storefront: null, storeInfo: null };
@@ -1575,7 +1627,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const fullHeaders = new Headers();
     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
     // FIX #10: Raised from 1200 → 3600
-    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=7200");
+    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
     fullHeaders.set("X-Store-Slug", slug);
     fullHeaders.set("X-Data-Source", prefetchResult.source);
     fullHeaders.set("X-Shell-Source", shellResult.source);
@@ -2096,7 +2148,7 @@ async function handleBot(request, slug, url, isCustom) {
       return new Response(html, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=300, stale-while-revalidate=7200",
+          "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
           ...SECURITY_HEADERS,
         },
       });
@@ -2121,7 +2173,7 @@ async function handleBot(request, slug, url, isCustom) {
         return new Response(buildOgHtml(og, finalUrl), {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=300, stale-while-revalidate=7200",
+            "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
             ...SECURITY_HEADERS,
           },
         });
@@ -2393,7 +2445,7 @@ async function handlePrewarm(request, url, ctx, env) {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=7200",
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=600",
           "X-Store-Slug": slug,
           "X-Data-Source": "prewarm",
           "X-Shell-Source": shellResult.source,
@@ -2677,7 +2729,7 @@ export default {
                     const fullHeaders = new Headers();
                     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                     // FIX #10
-                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=7200");
+                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
                     fullHeaders.set("X-Store-Slug", revalSlug);
                     fullHeaders.set("X-Data-Source", prefetchResult.source);
                     fullHeaders.set("X-Shell-Source", shellResult.source);
@@ -2788,7 +2840,50 @@ export default {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
       if (!slug || slug.includes(".") || slug === "www") return cachedFetch(request, "", ctx, false, env, requestStart);
 
-      await _getSlugIndex(env); // warm slug index, ignore result (soft hint)
+      // FIX #23: Fire-and-forget — was blocking critical path for no reason
+      _getSlugIndex(env).catch(() => {});
+
+      // FIX #21: Instant skeleton fast path — if shell isn't in memory,
+      // return a themed skeleton immediately while warming in background
+      if (!_memShell) {
+        const themeLite = _memThemeCache.get(slug)?.lite || null;
+        const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
+        const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
+
+        // Kick off full warm in background
+        ctx.waitUntil((async () => {
+          try {
+            const shellResult = await getSpaShell(request, ctx, env);
+            if (shellResult?.html) {
+              const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
+              if (prefetchResult.data) {
+                const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source);
+                const fullHeaders = new Headers();
+                fullHeaders.set("Content-Type", "text/html; charset=utf-8");
+                fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
+                fullHeaders.set("X-Store-Slug", slug);
+                fullHeaders.set("X-Data-Source", prefetchResult.source);
+                for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
+                const fullResponse = new Response(injected.html, { status: 200, headers: fullHeaders });
+                const earlyKey = getEarlyCacheKey(hostname);
+                await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
+              }
+            }
+          } catch {}
+        })());
+
+        return new Response(skeletonHtml, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            "X-Store-Slug": slug,
+            "X-Data-Source": "instant-skeleton",
+            "X-Worker-Version": WORKER_VERSION,
+            ...SECURITY_HEADERS,
+          },
+        });
+      }
 
       // FIX #2: Start storefront promise FIRST before any other awaits
       const elapsed0 = Date.now() - requestStart;
@@ -2890,6 +2985,50 @@ export default {
       .replace(/^www\./, "")
       .toLowerCase()
       .trim();
+
+    // FIX #21: Instant skeleton fast path for custom domains
+    // If shell isn't in memory, resolve domain first (fast KV lookup),
+    // then return skeleton immediately while warming everything in background
+    if (!_memShell) {
+      const resolvedSlugCD = await resolveDomain(cleanDomain, env);
+      if (resolvedSlugCD) {
+        const themeLite = _memThemeCache.get(resolvedSlugCD)?.lite || null;
+        const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
+        const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname);
+
+        ctx.waitUntil((async () => {
+          try {
+            const shellResult = await getSpaShell(request, ctx, env);
+            if (shellResult?.html) {
+              const prefetchResult = await prefetchStorefrontData(resolvedSlugCD, ctx, env);
+              if (prefetchResult.data) {
+                const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source);
+                const fullHeaders = new Headers();
+                fullHeaders.set("Content-Type", "text/html; charset=utf-8");
+                fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
+                fullHeaders.set("X-Store-Slug", resolvedSlugCD);
+                fullHeaders.set("X-Data-Source", prefetchResult.source);
+                for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
+                const fullResponse = new Response(injected.html, { status: 200, headers: fullHeaders });
+                await cache.put(getEarlyCacheKey(hostname), fullResponse.clone()).catch(() => {});
+              }
+            }
+          } catch {}
+        })());
+
+        return new Response(skeletonHtml, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            "X-Store-Slug": resolvedSlugCD,
+            "X-Data-Source": "instant-skeleton",
+            "X-Worker-Version": WORKER_VERSION,
+            ...SECURITY_HEADERS,
+          },
+        });
+      }
+    }
 
     // FIX #2: Start storefront promise as soon as we know the domain pattern,
     // but we don't know slug yet — kick off domain resolution + shell in parallel first
@@ -3114,7 +3253,7 @@ export default {
                         status: 200,
                         headers: {
                           "Content-Type": "text/html; charset=utf-8",
-                          "Cache-Control": "public, max-age=3600, stale-while-revalidate=7200",
+                          "Cache-Control": "public, max-age=3600, stale-while-revalidate=600",
                           "X-Store-Slug": s.slug,
                           "X-Data-Source": "cron-prewarm",
                           ...SECURITY_HEADERS,
@@ -3132,6 +3271,23 @@ export default {
                         await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
                       }
                       warmedHtml++;
+                    } else if (shellResult?.html) {
+                      // FIX #25: Cron skeleton fallback — if DB failed, cache a themed skeleton
+                      // so the store is never left completely cold
+                      const themeLite = _memThemeCache.get(s.slug)?.lite || null;
+                      const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
+                      const skeletonHtml = _buildInstantSkeletonPage(s.slug, bg, themeLite, `${s.slug}.${ROOT_DOMAIN}`);
+                      const skeletonResponse = new Response(skeletonHtml, {
+                        status: 200,
+                        headers: {
+                          "Content-Type": "text/html; charset=utf-8",
+                          "Cache-Control": "public, max-age=300",
+                          "X-Data-Source": "cron-skeleton-fallback",
+                          ...SECURITY_HEADERS,
+                        },
+                      });
+                      const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`);
+                      await cache.put(subEarlyKey, skeletonResponse.clone()).catch(() => {});
                     }
 
                     // Warm products
