@@ -942,7 +942,7 @@ export default function ProductDetail() {
           className={`fixed left-3 right-3 z-[51] sm:left-4 sm:right-auto sm:bottom-4 sm:max-w-xs transition-all duration-500 ${
             socialProof.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
           }`}
-          style={{ bottom: `calc(var(--storefront-bottom-nav-height, 0px) + ${isOutOfStock ? "8px" : "7.5rem"})` }}
+          style={{ bottom: `${isOutOfStock ? "8px" : "7.5rem"}` }}
         >
           <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-lg">
             {product?.image_url && (
@@ -1036,7 +1036,7 @@ export default function ProductDetail() {
           const saved = JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}");
           if (saved.fullName && saved.phone && saved.streetAddress && saved.pincode) {
             return (
-              <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-card/95 backdrop-blur-lg border-t border-border px-4 py-3 safe-area-bottom" style={{ marginBottom: "var(--storefront-bottom-nav-height, 0px)" }}>
+              <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-card/95 backdrop-blur-lg border-t border-border px-4 py-3 safe-area-bottom">
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] text-muted-foreground truncate">
