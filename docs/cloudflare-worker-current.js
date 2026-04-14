@@ -1569,49 +1569,61 @@ function storeInEdgeCache(ctx, hostname, slug, response) {
 }
 
 /* ============================================================
-   PRODUCTS API
+   PRODUCTS API — VERSION-BASED CACHE INVALIDATION
+   ============================================================
+   Instead of deleting hundreds of cache keys on purge (O(categories × pages × sorts)),
+   we store a version number per domain in KV (`pv:{domain}`).
+   All cache/KV keys include the version: `products:v{ver}:{domain}:...`
+   Purge = bump version (1 KV write). Old keys expire naturally via TTL.
    ============================================================ */
 
 const inflightProductRequests = new Map();
 const inflightDomainResolutions = new Map();
 
-function _buildProductsCacheKey(domain, filters) {
-  const parts = [`https://cache/products:${domain}`];
+// In-memory version cache: domain → { version, ts }
+const _memProductVersion = new Map();
+const MEM_PV_TTL = 60_000; // 60s — version is cached in-memory to avoid KV reads
+
+async function _getProductVersion(domain, env) {
+  const now = Date.now();
+  const mem = _memProductVersion.get(domain);
+  if (mem && now - mem.ts < MEM_PV_TTL) return mem.version;
+
+  let version = 1;
+  if (env?.STORE_KV) {
+    try {
+      const v = await env.STORE_KV.get(`pv:${domain}`, { type: "text" });
+      if (v) version = parseInt(v, 10) || 1;
+    } catch {}
+  }
+  _memProductVersion.set(domain, { version, ts: now });
+  return version;
+}
+
+async function _bumpProductVersion(domain, env) {
+  const current = await _getProductVersion(domain, env);
+  const next = current + 1;
+  if (env?.STORE_KV) {
+    await env.STORE_KV.put(`pv:${domain}`, String(next), { expirationTtl: 86400 }).catch(() => {});
+  }
+  _memProductVersion.set(domain, { version: next, ts: Date.now() });
+  return next;
+}
+
+function _buildProductsCacheKey(domain, filters, version) {
+  const parts = [`https://cache/products:v${version}:${domain}`];
   if (filters.category) parts.push(`category=${filters.category}`);
   if (filters.page) parts.push(`page=${filters.page}`);
   if (filters.sort) parts.push(`sort=${filters.sort}`);
   return new Request(parts.join(":"));
 }
 
-function _buildProductsKvKey(domain, filters) {
-  let key = `products:${domain}`;
+function _buildProductsKvKey(domain, filters, version) {
+  let key = `products:v${version}:${domain}`;
   if (filters.category) key += `:cat=${filters.category}`;
   if (filters.page) key += `:p=${filters.page}`;
   if (filters.sort) key += `:s=${filters.sort}`;
   return key;
-}
-
-function _appendProductPurgeOps(purgeOps, domain, filters, env) {
-  purgeOps.push(cache.delete(_buildProductsCacheKey(domain, filters)).catch(() => {}));
-  if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(_buildProductsKvKey(domain, filters)).catch(() => {}));
-}
-
-async function _fetchStoreCategoryNames(storeId) {
-  try {
-    const params = new URLSearchParams({
-      select: "category",
-      store_id: `eq.${storeId}`,
-      is_active: "eq.true",
-      limit: "1000",
-    });
-    params.set("category", "not.is.null");
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/products?${params}`, {
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Accept: "application/json" },
-    });
-    if (!res.ok) return [];
-    const rows = await res.json();
-    return [...new Set((rows || []).map((r) => r?.category).filter(Boolean))];
-  } catch { return []; }
 }
 
 function _clearInflightProductRequestsForDomain(domain) {
@@ -1620,32 +1632,15 @@ function _clearInflightProductRequestsForDomain(domain) {
   }
 }
 
-async function _purgeProductCachesForDomain(domain, storeId, env) {
+/**
+ * Version-based purge: bump version number → all old keys become unreachable.
+ * Cost: 1 KV write per domain (vs hundreds of deletes before).
+ * Old keys expire naturally via their TTL (max 30 min for KV, 5 min for Cache API).
+ */
+async function _purgeProductCachesForDomain(domain, _storeId, env) {
   const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
-  const purgeOps = [];
-  const sortValues = ["", "price_asc", "price_desc", "newest"];
-  const MAX_PAGES = 20; // purge up to 20 pages (400 products) per filter combo
-
-  const categoryNames = await _fetchStoreCategoryNames(storeId);
-
-  const appendPagedFilters = (baseFilters) => {
-    for (const sort of sortValues) {
-      for (let p = 0; p < MAX_PAGES; p++) {
-        const filters = { ...baseFilters };
-        if (sort) filters.sort = sort;
-        if (p > 0) filters.page = String(p);
-        _appendProductPurgeOps(purgeOps, cleanDomain, filters, env);
-      }
-    }
-  };
-
-  appendPagedFilters({});
-  for (const cat of categoryNames) {
-    appendPagedFilters({ category: cat });
-  }
-
+  await _bumpProductVersion(cleanDomain, env);
   _clearInflightProductRequestsForDomain(cleanDomain);
-  await Promise.all(purgeOps);
 }
 
 async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
