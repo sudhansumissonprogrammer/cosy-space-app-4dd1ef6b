@@ -1704,9 +1704,12 @@ async function handleProductsApi(request, url, ctx, env) {
     );
   }
 
-  if (inflightProductRequests.has(domain)) {
+  // Coalesce key includes filters so page 0 and page 1 don't share results
+  const coalesceKey = `${domain}:${filters.category}:${filters.page}:${filters.sort}`;
+
+  if (inflightProductRequests.has(coalesceKey)) {
     try {
-      const data = await inflightProductRequests.get(domain);
+      const data = await inflightProductRequests.get(coalesceKey);
       return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced");
     } catch {
       return _fallbackProducts(domain, cacheKey, kvKey, env);
@@ -1714,7 +1717,7 @@ async function handleProductsApi(request, url, ctx, env) {
   }
 
   const fetchPromise = _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS);
-  inflightProductRequests.set(domain, fetchPromise);
+  inflightProductRequests.set(coalesceKey, fetchPromise);
 
   try {
     const data = await fetchPromise;
@@ -1722,7 +1725,7 @@ async function handleProductsApi(request, url, ctx, env) {
   } catch {
     return _fallbackProducts(domain, cacheKey, kvKey, env);
   } finally {
-    inflightProductRequests.delete(domain);
+    inflightProductRequests.delete(coalesceKey);
   }
 }
 
