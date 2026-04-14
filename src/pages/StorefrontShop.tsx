@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
 
 const PAGE_SIZE = 12;
+const QUERY_VERSION = "shop-page-v2";
 
 function ProductCardSkeleton() {
   return (
@@ -43,7 +44,7 @@ export default function StorefrontShop() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["storefront-shop-all", store.id],
+    queryKey: [QUERY_VERSION, "storefront-shop-all", store.id, PAGE_SIZE],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;

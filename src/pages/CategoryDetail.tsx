@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
 
 const PAGE_SIZE = 12;
+const QUERY_VERSION = "category-page-v2";
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
@@ -46,7 +47,7 @@ export default function CategoryDetail() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["category-products", store.id, category?.name],
+    queryKey: [QUERY_VERSION, "category-products", store.id, category?.name, PAGE_SIZE],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
