@@ -26,7 +26,7 @@ export default function StorefrontCategories() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="mx-auto max-w-7xl px-4 lg:px-6 py-6">
       <h1 className="text-xl font-bold text-foreground mb-5">All Categories</h1>
 
       {isLoading ? (

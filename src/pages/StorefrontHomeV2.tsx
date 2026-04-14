@@ -184,7 +184,7 @@ function HeroSlides({ slides, store }: { slides: { image: string; title: string;
 function CategoryPills({ categories, slug }: { categories: any[] | undefined; slug: string }) {
   if (!categories || categories.length === 0) return null;
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="mx-auto max-w-7xl px-4 lg:px-6 py-6">
       <div className="flex flex-wrap gap-2">
         {categories.map((cat: any) => (
           <Link
@@ -264,7 +264,7 @@ export default function StorefrontHomeV2() {
 
       {/* Search bar */}
       <div className="border-b px-4 py-3" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))" }}>
-        <div className="mx-auto max-w-6xl flex items-center gap-2">
+        <div className="mx-auto max-w-7xl flex items-center gap-2">
           <button
             onClick={() => setSearchOpen(true)}
             className="flex flex-1 items-center gap-2.5 rounded-full border px-4 py-2.5 text-sm transition-colors"
@@ -305,7 +305,7 @@ export default function StorefrontHomeV2() {
       />
 
       {/* Products */}
-      <div className="mx-auto max-w-6xl px-3 sm:px-4 pb-12 space-y-8">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 pb-12 space-y-8">
         {/* Sort bar */}
         <div className="flex items-center justify-between">
           <SectionHeading title="All Products" />
