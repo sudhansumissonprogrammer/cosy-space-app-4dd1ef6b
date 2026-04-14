@@ -1,9 +1,34 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import PaymentTrustStrip from "@/components/landing/PaymentTrustStrip";
 import StatsBar from "@/components/landing/StatsBar";
 import LandingJsonLd from "@/components/landing/LandingJsonLd";
+
+/** Prefetch auth chunks during idle time so /login and /signup load instantly */
+let idlePrefetched = false;
+function prefetchAuthOnIdle() {
+  if (idlePrefetched) return;
+  idlePrefetched = true;
+  const start = () => {
+    // DashboardProviders bundle (AuthContext + Radix)
+    Promise.all([
+      import("@/components/ui/toaster"),
+      import("@/components/ui/tooltip"),
+      import("@/contexts/AuthContext"),
+      import("@/components/ui/sonner"),
+    ]).catch(() => {});
+    // Auth pages
+    import("@/pages/Login").catch(() => {});
+    import("@/pages/Signup").catch(() => {});
+    import("@/routes/AuthRoutes").catch(() => {});
+  };
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(start, { timeout: 3000 });
+  } else {
+    setTimeout(start, 2000);
+  }
+}
 
 // Below-fold: lazy load to keep initial bundle small & fast
 const ProblemAwareness = lazy(() => import("@/components/landing/ProblemAwareness"));
