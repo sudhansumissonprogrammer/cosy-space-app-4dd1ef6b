@@ -2627,6 +2627,7 @@ export default function StoreThemeSettings() {
                   { value: "style-6", label: "Reveal Grid", icon: "▣▣\n↕" },
                   { value: "style-8", label: "Spotlight", icon: "◁ ◉ ▷" },
                   { value: "style-10", label: "Magazine", icon: "▬▬\n▬▬" },
+                  { value: "style-11", label: "2-Row Circles", icon: "●●●\n●●●" },
                 ].map((s) => (
                   <button
                     key={s.value}
