@@ -1973,18 +1973,8 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     ? (await _resolveStoreInfo(purgeSlug, `${purgeSlug}.${ROOT_DOMAIN}`, env)).storeId
     : await _resolveStoreId(normalizedHost, env);
 
-  if (storeId) {
-    await Promise.all([...domainsToPurge].map((d) => _purgeProductCachesForDomain(d, storeId, env)));
-  } else {
-    const fallbackOps = [];
-    for (const d of domainsToPurge) {
-      _appendProductPurgeOps(fallbackOps, d, {}, env);
-      for (const sort of ["price_asc", "price_desc", "newest"]) {
-        _appendProductPurgeOps(fallbackOps, d, { sort }, env);
-      }
-    }
-    await Promise.all(fallbackOps);
-  }
+  // Version-based purge: bump version for all domain variants
+  await Promise.all([...domainsToPurge].map((d) => _purgeProductCachesForDomain(d, storeId, env)));
 
   return addCorsHeaders(
     new Response(
