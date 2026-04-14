@@ -2,6 +2,40 @@
  * Shared theme utility functions — extracted from layout files to avoid duplication.
  */
 
+const GOOGLE_FONT_WEIGHTS = "400;500;600;700";
+
+function normalizeGoogleFontName(font: string): string {
+  return font.trim().replace(/^['"]|['"]$/g, "").replace(/\s+/g, " ");
+}
+
+function buildGoogleFontsHref(fonts: string[]): string | null {
+  const families = fonts
+    .map(normalizeGoogleFontName)
+    .filter(Boolean)
+    .map((font) => `family=${font.replace(/ /g, "+")}:wght@${GOOGLE_FONT_WEIGHTS}`)
+    .join("&");
+
+  return families ? `https://fonts.googleapis.com/css2?${families}&display=swap` : null;
+}
+
+function ensureGoogleFontsPreconnect() {
+  const preconnects = [
+    { id: "storefront-google-fonts-preconnect", href: "https://fonts.googleapis.com" },
+    { id: "storefront-gstatic-preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+  ];
+
+  preconnects.forEach(({ id, href, crossOrigin }) => {
+    if (document.getElementById(id)) return;
+
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "preconnect";
+    link.href = href;
+    if (crossOrigin) link.crossOrigin = crossOrigin;
+    document.head.appendChild(link);
+  });
+}
+
 /** Convert hex color to HSL components string (e.g. "210 50% 40%") */
 export function hexToHsl(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -93,9 +127,14 @@ export function buildThemeStyle(
 /** Load Google Fonts dynamically for theme config */
 export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
   if (!themeConfig) return;
-  const fonts = [...new Set([themeConfig.heading_font, themeConfig.body_font].filter(Boolean))];
-  if (fonts.length === 0) return;
-  const families = fonts.map((f: string) => `family=${f.replace(/ /g, "+")}:wght@100..900`).join("&");
+  const fonts = [...new Set([themeConfig.heading_font, themeConfig.body_font].filter(Boolean))]
+    .map((font) => normalizeGoogleFontName(String(font)))
+    .filter(Boolean);
+  const newHref = buildGoogleFontsHref(fonts);
+  if (!newHref) return;
+
+  ensureGoogleFontsPreconnect();
+
   const linkId = "storefront-google-fonts";
   let link = document.getElementById(linkId) as HTMLLinkElement;
   if (!link) {
@@ -105,7 +144,6 @@ export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
     link.media = "all";
     document.head.appendChild(link);
   }
-  const newHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
   if (link.href !== newHref) {
     link.media = "all";
     link.href = newHref;
