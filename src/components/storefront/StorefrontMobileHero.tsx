@@ -154,11 +154,14 @@ function MobileHeroCarousel({ images, storeName }: { images: string[]; storeName
                 srcSet={srcSet || undefined}
                 sizes="100vw"
                 alt={`${storeName} hero ${i + 1}`}
-                className="w-full h-auto block"
+                className="w-full h-full object-cover block"
+                style={{ aspectRatio: "4/5" }}
                 loading={i === 0 ? "eager" : "lazy"}
                 fetchPriority={i === 0 ? "high" : "auto"}
                 decoding={i === 0 ? "sync" : "async"}
                 draggable={false}
+                width={800}
+                height={1000}
               />
             </div>
           );
