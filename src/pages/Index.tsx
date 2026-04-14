@@ -46,6 +46,8 @@ const LandingWhatsApp = lazy(() => import("@/components/landing/LandingWhatsApp"
 const ExitIntentPopup = lazy(() => import("@/components/landing/ExitIntentPopup"));
 
 const Index = () => {
+  useEffect(() => { prefetchAuthOnIdle(); }, []);
+
   return (
     <div className="min-h-screen bg-background font-outfit">
       <LandingJsonLd />
