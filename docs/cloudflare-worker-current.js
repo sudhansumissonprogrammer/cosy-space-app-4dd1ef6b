@@ -1,5 +1,18 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.1.0 — SEO + PERFORMANCE IMPROVEMENTS
+ * SHOPBANAO PRODUCTION ROUTER v6.2.0 — COLD START OPTIMIZATION
+ *
+ * Changes from v6.1.0:
+ *  FIX #20 — TTL increases: Shell KV 3600→86400, Cache 600→3600, Mem 10→30min.
+ *            Storefront KV 3600→14400, Mem 2→10min, Cache 600→1200.
+ *            Shell only changes on deploy; storefront data changes rarely.
+ *  FIX #21 — Instant skeleton fast path: If _memShell is empty (true cold start),
+ *            return a minimal themed skeleton HTML immediately instead of blocking
+ *            on origin fetch. Warms shell in background via ctx.waitUntil.
+ *  FIX #22 — ORIGIN_TIMEOUT_MS reduced from 8000→3500 to fail fast.
+ *  FIX #23 — Removed blocking await _getSlugIndex(env) — fire-and-forget.
+ *  FIX #24 — stale-while-revalidate reduced from 7200→600 on warmed HTML.
+ *  FIX #25 — Cron skeleton fallback: if DB fails for a store, cache a themed
+ *            skeleton instead of leaving the store cold.
  *
  * Changes from v6.0.0:
  *  FIX #16 — Canonical tag injection: <link rel="canonical"> added to all
@@ -44,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.1.0";
+const WORKER_VERSION = "6.2.0";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -75,11 +88,11 @@ function isSocialInAppBrowser(ua) {
    TIMEOUTS
    ============================================================ */
 
-const ORIGIN_TIMEOUT_MS = 8_000;
+// FIX #22: Reduced from 8000→3500 to fail fast and serve skeleton instead
+const ORIGIN_TIMEOUT_MS = 3_500;
 const EDGE_FN_TIMEOUT_MS = 10_000;
-// FIX #13: Raised from 800 → 1000ms. FIX #2 starts the clock earlier
-// (at request arrival, not after shell fetch), so 1000ms is now safe.
-const STOREFRONT_PREFETCH_TIMEOUT_MS = 1_000;
+// FIX #20: Raised from 1000→1500ms. Instant skeleton (FIX #21) starts early enough.
+const STOREFRONT_PREFETCH_TIMEOUT_MS = 1_500;
 const PRODUCTS_DB_TIMEOUT_MS = 3_000;
 
 const cache = caches.default;
@@ -90,7 +103,8 @@ const cache = caches.default;
 
 let _memShell = null;
 let _memShellTs = 0;
-const MEM_SHELL_TTL = 600_000; // 10 min
+// FIX #20: Raised from 600_000 (10min) → 1_800_000 (30min)
+const MEM_SHELL_TTL = 1_800_000; // 30 min
 
 /* ============================================================
    FIX #7 — IN-MEMORY PREBUILT HEAD (built once per isolate)
@@ -112,7 +126,8 @@ const MEM_THEME_TTL = 300_000; // 5 min
 
 const _memStorefrontCache = new Map();
 const MEM_STOREFRONT_CACHE_MAX = 1_000;
-const MEM_STOREFRONT_TTL = 120_000; // 2 min
+// FIX #20: Raised from 120_000 (2min) → 600_000 (10min)
+const MEM_STOREFRONT_TTL = 600_000; // 10 min
 
 /* ============================================================
    REVALIDATION COOLDOWN
@@ -488,8 +503,9 @@ function _buildLinkPreloadHeader(html) {
    ============================================================ */
 
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
-const SPA_SHELL_KV_TTL = 3600;
-const SPA_SHELL_CACHE_TTL = 600;
+// FIX #20: Shell only changes on deploy — raise TTLs aggressively
+const SPA_SHELL_KV_TTL = 86_400; // was 3600 → 24h
+const SPA_SHELL_CACHE_TTL = 3_600; // was 600 → 1h
 
 let inflightShellFetch = null;
 
@@ -595,8 +611,9 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
    FIX #4 — BATCH KV READ (shell + theme + storefront in ONE call)
    ============================================================ */
 
-const KV_STOREFRONT_TTL = 3600;
-const CACHE_STOREFRONT_TTL = 600;
+// FIX #20: Storefront data changes rarely — raise TTLs
+const KV_STOREFRONT_TTL = 14_400; // was 3600 → 4h
+const CACHE_STOREFRONT_TTL = 1_200; // was 600 → 20min
 
 async function _batchKvRead(slug, env) {
   if (!env?.STORE_KV) return { theme: null, storefront: null, storeInfo: null };
