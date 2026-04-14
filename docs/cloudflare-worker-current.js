@@ -370,8 +370,43 @@ function getSkeletonMuted(textColor) {
 }
 
 /* ============================================================
-   FIX #7 — PREBUILT HEAD (in-memory first, built once per isolate)
+   FIX #21 — INSTANT SKELETON PAGE (returned on true cold start)
    ============================================================ */
+
+function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname) {
+  const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
+  const skeletonMuted = themeLite ? getSkeletonMuted(themeLite.tc || themeLite.text_color || "#1a1a1a") : "#e8e8e8";
+  const skeleton = buildSkeleton(bgColor, skeletonMuted);
+  const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
+
+  // Build canonical URL
+  let canonicalUrl = `https://${safeSlug}.${ROOT_DOMAIN}/`;
+  if (hostname && !hostname.endsWith(`.${ROOT_DOMAIN}`)) {
+    canonicalUrl = `https://${hostname}/`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="canonical" href="${canonicalUrl}" />
+<script>window.__STORE_SLUG__="${safeSlug}";</script>
+${themeCss}
+<style>body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;background:${bgColor}}</style>
+</head>
+<body>
+${skeleton}
+<script>
+// Auto-refresh: this is a cold-start skeleton. Reload after a short delay
+// so the next request hits the now-warm cache.
+setTimeout(function(){location.reload();},2500);
+</script>
+</body>
+</html>`;
+}
+
+
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
 const PREBUILT_HEAD_KV_TTL = 3600;
