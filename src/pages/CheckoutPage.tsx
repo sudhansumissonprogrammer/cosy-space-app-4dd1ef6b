@@ -276,9 +276,15 @@ export default function CheckoutPage() {
   const hasRazorpay = availableMethods.includes("razorpay");
 
   useEffect(() => {
-    if (hasCod) setPaymentMethod("cod");
-    else if (hasRazorpay) setPaymentMethod("razorpay");
-  }, [hasCod, hasRazorpay]);
+    // When partial payment is enabled, always default to razorpay (COD is hidden)
+    if (hasAnyPartialPayment && hasRazorpay) {
+      setPaymentMethod("razorpay");
+    } else if (hasCod) {
+      setPaymentMethod("cod");
+    } else if (hasRazorpay) {
+      setPaymentMethod("razorpay");
+    }
+  }, [hasCod, hasRazorpay, hasAnyPartialPayment]);
 
   // Preload Razorpay script eagerly so it's ready instantly when user clicks Pay
   useEffect(() => {
@@ -357,11 +363,6 @@ export default function CheckoutPage() {
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
   const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasRazorpay;
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
-
-  // When partial payment is enabled, force Razorpay (disable COD)
-  useEffect(() => {
-    if (hasAnyPartialPayment && hasRazorpay) setPaymentMethod("razorpay");
-  }, [hasAnyPartialPayment, hasRazorpay]);
 
   // Coupon logic
   const applyCoupon = async () => {
