@@ -3,19 +3,89 @@
  */
 
 const GOOGLE_FONT_WEIGHTS = "400;500;600;700";
+const DEFAULT_HEADING_FONT = "Alegreya SC";
+const DEFAULT_BODY_FONT = "Inter";
+const DEFAULT_TEXT_COLOR = "#1a1a1a";
+const DEFAULT_BACKGROUND_COLOR = "#ffffff";
+const FONT_READY_TIMEOUT_MS = 1800;
+const SELF_HOSTED_FONTS = new Set([
+  DEFAULT_HEADING_FONT,
+  DEFAULT_BODY_FONT,
+  "Outfit",
+  "Poppins",
+  "Plus Jakarta Sans",
+  "Montserrat Alternates",
+]);
 
 function normalizeGoogleFontName(font: string): string {
   return font.trim().replace(/^['"]|['"]$/g, "").replace(/\s+/g, " ");
 }
 
+export function getResolvedThemeFonts(themeConfig: Record<string, any> | null): {
+  headingFont: string;
+  bodyFont: string;
+} {
+  const edgeHint = getEdgeThemeHint();
+
+  return {
+    headingFont: normalizeGoogleFontName(
+      String(themeConfig?.heading_font || edgeHint?.hf || DEFAULT_HEADING_FONT)
+    ),
+    bodyFont: normalizeGoogleFontName(
+      String(themeConfig?.body_font || edgeHint?.bf || DEFAULT_BODY_FONT)
+    ),
+  };
+}
+
+function getThemeFontList(themeConfig: Record<string, any> | null): string[] {
+  const { headingFont, bodyFont } = getResolvedThemeFonts(themeConfig);
+  return [...new Set([headingFont, bodyFont].filter(Boolean))];
+}
+
 function buildGoogleFontsHref(fonts: string[]): string | null {
   const families = fonts
     .map(normalizeGoogleFontName)
-    .filter(Boolean)
+    .filter((font) => Boolean(font) && !SELF_HOSTED_FONTS.has(font))
     .map((font) => `family=${font.replace(/ /g, "+")}:wght@${GOOGLE_FONT_WEIGHTS}`)
     .join("&");
 
   return families ? `https://fonts.googleapis.com/css2?${families}&display=swap` : null;
+}
+
+function getButtonRadius(buttonStyle: string | undefined, defaultButtonRadius: string) {
+  return buttonStyle === "pill" ? "9999px" : buttonStyle === "square" ? "0px" : defaultButtonRadius;
+}
+
+function waitForStylesheetLoad(link: HTMLLinkElement, timeoutMs = FONT_READY_TIMEOUT_MS): Promise<void> {
+  if (link.dataset.loaded === "true" || link.sheet) {
+    link.dataset.loaded = "true";
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const finalize = () => {
+      link.dataset.loaded = "true";
+      resolve();
+    };
+
+    const handleDone = () => {
+      window.clearTimeout(timeoutId);
+      finalize();
+    };
+
+    const timeoutId = window.setTimeout(handleDone, timeoutMs);
+    link.addEventListener("load", handleDone, { once: true });
+    link.addEventListener("error", handleDone, { once: true });
+  });
+}
+
+async function waitForFontFaces(fonts: string[], timeoutMs = FONT_READY_TIMEOUT_MS) {
+  if (!fonts.length || typeof document === "undefined" || !("fonts" in document)) return;
+
+  await Promise.race([
+    Promise.all(fonts.map((font) => document.fonts.load(`1em \"${font}\"`))),
+    new Promise<void>((resolve) => window.setTimeout(resolve, timeoutMs)),
+  ]);
 }
 
 function ensureGoogleFontsPreconnect() {
@@ -88,10 +158,17 @@ export function buildThemeStyle(
   // v4.1: Use edge theme hint as fallback when themeConfig hasn't loaded yet
   const edgeHint = getEdgeThemeHint();
   const primaryColor = themeConfig?.primary_color || edgeHint?.pc || defaultPrimary;
+  const accentColor = themeConfig?.accent_color || edgeHint?.ac || primaryColor;
+  const textColor = themeConfig?.text_color || edgeHint?.tc || DEFAULT_TEXT_COLOR;
+  const backgroundColor = themeConfig?.background_color || edgeHint?.bg || DEFAULT_BACKGROUND_COLOR;
+  const { headingFont, bodyFont } = getResolvedThemeFonts(themeConfig);
+  const buttonStyle = themeConfig?.button_style || edgeHint?.bs || "rounded";
   const primaryLight = computePrimaryLight(primaryColor);
   const btnTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
   const primaryHsl = hexToHsl(primaryColor);
   const primaryFgHsl = isLightColor(primaryColor) ? "0 0% 10%" : "0 0% 100%";
+  const marqueeGradient =
+    themeConfig?.marquee_gradient || `linear-gradient(90deg, ${primaryColor}, ${primaryLight}, ${primaryColor})`;
 
   const baseOverrides = {
     "--primary": primaryHsl,
@@ -101,37 +178,34 @@ export function buildThemeStyle(
   // Footer text color: contrasts against primary (used as footer bg)
   const footerTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
-  const themeStyle: React.CSSProperties = (previewOverride
-    ? { ...previewOverride, ...baseOverrides, "--storefront-footer-text": footerTextColor }
-    : themeConfig
-    ? {
-        "--storefront-primary": themeConfig.primary_color,
-        "--storefront-primary-light": primaryLight,
-        "--storefront-accent": themeConfig.accent_color,
-        "--storefront-text": themeConfig.text_color,
-        "--storefront-bg": themeConfig.background_color,
-        "--storefront-heading-font": `'${themeConfig.heading_font}'`,
-        "--storefront-body-font": `'${themeConfig.body_font}'`,
-        "--storefront-button-radius":
-          themeConfig.button_style === "pill" ? "9999px" : themeConfig.button_style === "square" ? "0px" : defaultButtonRadius,
-        "--storefront-marquee-gradient": themeConfig.marquee_gradient,
-        "--storefront-btn-text": btnTextColor,
-        "--storefront-footer-text": footerTextColor,
-        ...baseOverrides,
-      }
-    : { ...baseOverrides }) as any;
+  const defaultThemeStyle: React.CSSProperties = {
+    "--storefront-primary": primaryColor,
+    "--storefront-primary-light": primaryLight,
+    "--storefront-accent": accentColor,
+    "--storefront-text": textColor,
+    "--storefront-bg": backgroundColor,
+    "--storefront-heading-font": `'${headingFont}'`,
+    "--storefront-body-font": `'${bodyFont}'`,
+    "--storefront-button-radius": getButtonRadius(buttonStyle, defaultButtonRadius),
+    "--storefront-marquee-gradient": marqueeGradient,
+    "--storefront-btn-text": btnTextColor,
+    "--storefront-footer-text": footerTextColor,
+    ...baseOverrides,
+  } as any;
+
+  const themeStyle: React.CSSProperties = {
+    ...defaultThemeStyle,
+    ...(previewOverride ?? {}),
+  } as any;
 
   return { themeStyle, primaryColor, btnTextColor };
 }
 
 /** Load Google Fonts dynamically for theme config */
 export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
-  if (!themeConfig) return;
-  const fonts = [...new Set([themeConfig.heading_font, themeConfig.body_font].filter(Boolean))]
-    .map((font) => normalizeGoogleFontName(String(font)))
-    .filter(Boolean);
+  const fonts = getThemeFontList(themeConfig);
   const newHref = buildGoogleFontsHref(fonts);
-  if (!newHref) return;
+  if (!newHref) return null;
 
   ensureGoogleFontsPreconnect();
 
@@ -142,10 +216,30 @@ export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
     link.id = linkId;
     link.rel = "stylesheet";
     link.media = "all";
+    link.dataset.loaded = "false";
     document.head.appendChild(link);
   }
   if (link.href !== newHref) {
+    link.dataset.loaded = "false";
     link.media = "all";
     link.href = newHref;
   }
+
+  return link;
+}
+
+export async function ensureThemeFontsLoaded(
+  themeConfig: Record<string, any> | null,
+  timeoutMs = FONT_READY_TIMEOUT_MS
+) {
+  const fonts = getThemeFontList(themeConfig);
+  const stylesheetLink = loadGoogleFonts(themeConfig);
+
+  await Promise.race([
+    Promise.all([
+      waitForFontFaces(fonts, timeoutMs),
+      ...(stylesheetLink ? [waitForStylesheetLoad(stylesheetLink, timeoutMs)] : []),
+    ]),
+    new Promise<void>((resolve) => window.setTimeout(resolve, timeoutMs)),
+  ]);
 }

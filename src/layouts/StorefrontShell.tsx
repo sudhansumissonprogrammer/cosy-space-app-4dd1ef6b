@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useState, Suspense, lazy, type ReactNode } from "react";
+import { useEffect, useRef, useMemo, useState, useLayoutEffect, Suspense, lazy, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic";
 import { CartProvider } from "@/contexts/CartContext";
@@ -9,7 +9,7 @@ import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { trackPageView } from "@/lib/trackPageView";
-import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
+import { buildThemeStyle, ensureThemeFontsLoaded, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 
 // Lazy-load non-critical overlays
@@ -139,23 +139,43 @@ export default function StorefrontShell({
   // Theme config (reactive — updates when cache changes via live preview)
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
-  // Load Google Fonts eagerly on first config, then defer on updates (live preview)
+  // Hold the first storefront paint until the selected theme fonts are ready.
   const fontsLoadedRef = useRef(false);
-  useEffect(() => {
-    if (!themeConfig) return;
-    if (!fontsLoadedRef.current) {
-      // First load — immediate to avoid FOUT (flash of unstyled text)
-      fontsLoadedRef.current = true;
-      loadGoogleFonts(themeConfig);
-    } else {
-      // Subsequent updates (live preview) — defer to idle
-      const schedule =
-        typeof requestIdleCallback !== "undefined"
-          ? (cb: () => void) => requestIdleCallback(cb, { timeout: 3000 })
-          : (cb: () => void) => setTimeout(cb, 1000);
-      schedule(() => loadGoogleFonts(themeConfig));
+  const activeStoreIdRef = useRef<string | null>(null);
+  const [fontsReady, setFontsReady] = useState(false);
+  useLayoutEffect(() => {
+    const storeId = store?.id ?? null;
+
+    if (activeStoreIdRef.current !== storeId) {
+      activeStoreIdRef.current = storeId;
+      fontsLoadedRef.current = false;
+      setFontsReady(false);
     }
-  }, [themeConfig?.heading_font, themeConfig?.body_font]);
+
+    if (!storeId) return;
+
+    let cancelled = false;
+
+    const syncFonts = async () => {
+      if (!fontsLoadedRef.current) {
+        setFontsReady(false);
+        await ensureThemeFontsLoaded(themeConfig, 1800);
+        if (cancelled) return;
+        fontsLoadedRef.current = true;
+        setFontsReady(true);
+        return;
+      }
+
+      loadGoogleFonts(themeConfig);
+      if (!cancelled) setFontsReady(true);
+    };
+
+    void syncFonts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [store?.id, themeConfig?.heading_font, themeConfig?.body_font]);
 
   // Listen for live theme preview messages
   const previewOverride = useThemePreview(store?.id);
@@ -208,8 +228,8 @@ export default function StorefrontShell({
     };
   }, [themeVarsKey]);
 
-  // Loading state — always render empty div; Worker skeleton handles the visual loading state
-  if (isLoading) {
+  // Keep the Worker skeleton visible until store data and the first font pass are ready.
+  if (isLoading || !fontsReady) {
     return <div className="min-h-screen" />;
   }
 
