@@ -197,8 +197,10 @@ export default function StorefrontShell({
   }, [themeVarsKey]);
 
   // Keep the Worker skeleton visible until store data and the first font pass are ready.
+  // Keep the Worker-injected skeleton visible while React hydrates data.
+  // Rendering nothing (or a blank div) causes a white flash between skeleton → content.
   if (isLoading) {
-    return <div className="min-h-screen" />;
+    return skeleton ?? <DefaultSkeleton />;
   }
 
   // Not found
