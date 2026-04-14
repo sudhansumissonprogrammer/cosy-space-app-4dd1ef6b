@@ -1,15 +1,14 @@
 /**
- * Theme 16 Home — Best Sellers + per-category product sections (13 each + View All card).
- * No "Popular Products" section.
+ * Theme 16 Home — Best Sellers + per-category product sections (12 each + View All link).
+ * No "Popular Products" section. All best sellers load at once (no pagination).
  */
 import { useState, useMemo, useRef, useEffect, lazy, Suspense } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
-import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, SlidersHorizontal, Loader2, ArrowRight } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowRight } from "lucide-react";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
 import type { StoreData } from "@/layouts/StorefrontLayout";
