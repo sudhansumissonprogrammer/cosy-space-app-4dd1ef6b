@@ -102,7 +102,7 @@ export default function StorefrontShop() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="mx-auto max-w-6xl lg:max-w-7xl px-2 sm:px-4 py-6">
+    <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-6">
       {/* Breadcrumbs */}
       <nav className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
         <Link to={storefrontPath(slug!, "")} className="hover:text-foreground transition-colors">Home</Link>

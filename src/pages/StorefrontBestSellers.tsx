@@ -55,7 +55,7 @@ export default function StorefrontBestSellers() {
   const pageTitle = showAll ? "Shop All" : "🔥 Best Sellers";
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="mx-auto max-w-7xl px-4 lg:px-6 py-6">
       <div className="mb-5 flex items-center gap-3">
         <Link
           to={storefrontPath(slug!, "")}

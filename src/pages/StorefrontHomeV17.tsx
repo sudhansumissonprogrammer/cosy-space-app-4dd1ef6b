@@ -74,7 +74,7 @@ function V17Categories({ categories, slug }: { categories: any[]; slug: string }
 
   return (
     <section style={{ padding: "30px 15px 10px" }}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <h2
           className="text-center"
           style={{
@@ -157,7 +157,7 @@ function V17BestSellersGrid({ bestSellers, slug, store }: { bestSellers: any[]; 
 
   return (
     <section style={{ padding: "30px 15px 10px" }}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <h2
           className="text-center"
           style={{
@@ -296,7 +296,7 @@ export default function StorefrontHomeV17() {
         useCarousel ? (
           <LazyRender rootMargin="200px">
             <section style={{ padding: "30px 15px" }}>
-              <div className="max-w-6xl mx-auto">
+              <div className="max-w-7xl mx-auto">
                 <h2
                   className="text-center"
                   style={{
@@ -323,7 +323,7 @@ export default function StorefrontHomeV17() {
 
       {/* ─── All Collection ─── */}
       <section style={{ padding: "40px 15px 20px" }}>
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <h2
             className="text-center"
             style={{

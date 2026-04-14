@@ -141,7 +141,7 @@ export default function CategoryDetail() {
 
   if (!categoryLoading && !category) {
     return (
-      <div className="mx-auto max-w-6xl px-2 sm:px-4 py-6">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-6">
         <Button variant="outline" size="sm" onClick={() => navigate(storefrontPath(slug!, ""))} className="mb-4 rounded-full bg-background text-foreground shadow-sm hover:shadow-md">
           <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back
         </Button>
@@ -153,7 +153,7 @@ export default function CategoryDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl lg:max-w-7xl px-2 sm:px-4 py-6">
+    <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-6">
       {/* Breadcrumbs */}
       <nav className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
         <Link to={storefrontPath(slug!, "")} className="hover:text-foreground transition-colors">Home</Link>

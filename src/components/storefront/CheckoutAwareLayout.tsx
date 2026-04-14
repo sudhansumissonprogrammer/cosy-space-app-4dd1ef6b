@@ -192,7 +192,7 @@ export default function CheckoutAwareLayout({
           undefined
         }
       >
-        <div className={`mx-auto flex ${isCheckout ? 'h-11' : 'h-14'} max-w-6xl items-center gap-1.5 sm:gap-3 px-2 sm:px-4`}>
+        <div className={`mx-auto flex ${isCheckout ? 'h-11' : 'h-14'} max-w-7xl items-center gap-1.5 sm:gap-3 px-3 sm:px-4 lg:px-6`}>
           {isCheckout ? (
             <>
               <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onClick={handleBackClick} aria-label="Go back">
