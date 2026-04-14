@@ -270,15 +270,23 @@ export default function CheckoutPage() {
   const storePartialEnabled = (store as any).partial_payment_enabled ?? false;
   const storePartialType = (store as any).partial_payment_type || "percentage";
   const storePartialValue = (store as any).partial_payment_value ?? null;
+  const hasAnyPartialPayment = storePartialEnabled && !!storePartialValue;
 
   const availableMethods = paymentConfig?.payment_methods || ["cod"];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
 
   useEffect(() => {
-    if (hasCod) setPaymentMethod("cod");
-    else if (hasRazorpay) setPaymentMethod("razorpay");
-  }, [hasCod, hasRazorpay]);
+    // When partial payment is enabled, always default to razorpay (COD is hidden)
+    if (hasAnyPartialPayment && hasRazorpay) {
+      setPaymentMethod("razorpay");
+      setPartialPaymentMode("partial");
+    } else if (hasCod) {
+      setPaymentMethod("cod");
+    } else if (hasRazorpay) {
+      setPaymentMethod("razorpay");
+    }
+  }, [hasCod, hasRazorpay, hasAnyPartialPayment]);
 
   // Preload Razorpay script eagerly so it's ready instantly when user clicks Pay
   useEffect(() => {
@@ -334,7 +342,6 @@ export default function CheckoutPage() {
   const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
   // Partial payment calculation (store-level)
-  const hasAnyPartialPayment = storePartialEnabled && !!storePartialValue;
   const partialAdvanceTotal = (() => {
     if (!hasAnyPartialPayment) return total;
     let advance = 0;
@@ -357,11 +364,6 @@ export default function CheckoutPage() {
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
   const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasRazorpay;
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
-
-  // When partial payment is enabled, force Razorpay (disable COD)
-  useEffect(() => {
-    if (hasAnyPartialPayment && hasRazorpay) setPaymentMethod("razorpay");
-  }, [hasAnyPartialPayment, hasRazorpay]);
 
   // Coupon logic
   const applyCoupon = async () => {
