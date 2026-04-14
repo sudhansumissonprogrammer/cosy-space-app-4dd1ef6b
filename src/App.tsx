@@ -295,7 +295,7 @@ function usePrefetchStorefrontData(slug: string | undefined) {
 
         return data;
       },
-      staleTime: 30_000,
+      staleTime: 2 * 60 * 1000,
     });
   }, [slug, queryClient]);
 }
