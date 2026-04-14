@@ -3308,12 +3308,16 @@ export default {
                     // FIX #15: Use the shared cronShellResult
                     const shellResult = cronShellResult;
 
-                    // Warm storefront data
-                    const dataResult = await prefetchStorefrontData(s.slug, ctx, env);
+                    // Warm storefront data + products in parallel
+                    const [dataResult, cronProducts] = await Promise.all([
+                      prefetchStorefrontData(s.slug, ctx, env),
+                      _getInlineProductsOrNull(`${s.slug}.${ROOT_DOMAIN}`, s.slug, env, ctx),
+                    ]);
 
                     // Warm HTML cache with NORMALIZED key
+                    // FIX #28: Include inline products in warmed HTML
                     if (shellResult?.html && dataResult.data) {
-                      const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm");
+                      const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm", cronProducts);
                       // FIX #10: Raised to 3600/7200
                       const htmlResponse = new Response(injected.html, {
                         status: 200,
