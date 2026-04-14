@@ -75,15 +75,14 @@ export function useStorefront(slugOverride?: string) {
       return rpcGetStorefrontShell(slug!);
     },
     enabled: !!slug,
-    staleTime: 60_000,
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     // If we have injected data, use it as initialData for instant render.
-    // initialDataUpdatedAt: 0 marks it as "infinitely stale" so React Query
-    // immediately does a background refetch. This is critical: the browser
-    // or Worker may serve old cached HTML with a stale theme — the background
-    // refetch ensures we always converge to the DB truth within seconds.
+    // Use Date.now() so React Query treats it as fresh (within staleTime)
+    // and avoids an immediate redundant background refetch.
+    // The Worker/KV data is already recent — no need to re-validate instantly.
     ...(injected?.store && slug && !seeded.current
-      ? { initialData: injected, initialDataUpdatedAt: 0 }
+      ? { initialData: injected, initialDataUpdatedAt: Date.now() }
       : {}),
   });
 
