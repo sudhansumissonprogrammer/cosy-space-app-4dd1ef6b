@@ -25,7 +25,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", borderColor: "var(--storefront-text, hsl(var(--foreground)))10" }}>
+      <header className="sticky top-0 z-30 border-b" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", borderColor: "var(--storefront-text, hsl(var(--foreground)))10", minHeight: 60 }}>
         <div className="flex items-center gap-2 px-3 py-2.5">
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>

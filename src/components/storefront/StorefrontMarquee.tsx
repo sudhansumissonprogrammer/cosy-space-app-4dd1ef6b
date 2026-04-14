@@ -26,7 +26,7 @@ export default function StorefrontMarquee({ text }: Props) {
         background: "var(--storefront-marquee-gradient, linear-gradient(90deg, #004643, #02615C, #004643))",
         color: "var(--storefront-marquee-text-color, #ffffff)",
         fontVariant: "small-caps",
-        minHeight: 38,
+        height: 38,
         contain: "layout style",
       }}
       role="marquee"
