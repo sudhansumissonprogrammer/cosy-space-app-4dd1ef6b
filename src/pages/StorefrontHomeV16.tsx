@@ -179,27 +179,24 @@ export default function StorefrontHomeV16() {
   const headerLayout = themeConfig?.header_logo_alignment || "left";
   const hideSearchBar = headerLayout === "left-with-search";
 
-  // Best-selling products with infinite scroll
-  const { products: bestSellingProducts, hasNextPage: bsHasNext, isFetchingNextPage: bsIsFetching, fetchNextPage: bsFetchNext } = useBestSellingProducts(store.id);
-  const bsSentinelRef = useRef<HTMLDivElement>(null);
-  const bsScrollRef = useRef({ hasNextPage: bsHasNext, isFetchingNextPage: bsIsFetching, fetchNextPage: bsFetchNext });
-  bsScrollRef.current = { hasNextPage: bsHasNext, isFetchingNextPage: bsIsFetching, fetchNextPage: bsFetchNext };
-
-  useEffect(() => {
-    const el = bsSentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const s = bsScrollRef.current;
-        if (entry.isIntersecting && s.hasNextPage && !s.isFetchingNextPage) {
-          s.fetchNextPage();
-        }
-      },
-      { rootMargin: "300px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  // Fetch ALL best-selling products at once (no pagination for Theme 16)
+  const { data: bestSellingProducts = [] } = useQuery({
+    queryKey: ["storefront-best-sellers-all", store.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id,display_order")
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .eq("is_best_selling", true)
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!store.id,
+  });
 
   // Categories sorted by display_order (comes from shell data)
   const sortedCategories = useMemo(() => {
