@@ -2991,6 +2991,8 @@ export default {
       const prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
       // FIX #3: Always set Link header
       const linkHeader = _buildLinkPreloadHeader(shellResult.html);
+      // FIX #26: Build Early Hints header for preconnect/preload
+      const earlyHints = _buildEarlyHintsHeaders();
 
       const responseHeaders = new Headers();
       responseHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -2999,7 +3001,9 @@ export default {
       responseHeaders.set("X-Shell-Source", shellResult.source);
       responseHeaders.set("X-Cache-Timestamp", new Date().toISOString());
       responseHeaders.set("X-Data-Source", "streaming");
-      if (linkHeader) responseHeaders.set("Link", linkHeader);
+      // Combine Link header: preload + early hints
+      const combinedLink = [linkHeader, earlyHints].filter(Boolean).join(", ");
+      if (combinedLink) responseHeaders.set("Link", combinedLink);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeaders.set(k, v);
 
       // FIX #2: Pass the ALREADY-RUNNING storefront promise (started before awaits above)
