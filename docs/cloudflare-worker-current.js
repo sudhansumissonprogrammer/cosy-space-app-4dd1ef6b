@@ -3047,9 +3047,8 @@ export default {
     if (!_memShell) {
       const resolvedSlugCD = await resolveDomain(cleanDomain, env);
       if (resolvedSlugCD) {
-        const themeLite = _memThemeCache.get(resolvedSlugCD)?.lite || null;
-        const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-        const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname);
+        // FIX #27: Use pre-cached skeleton
+        const skeletonHtml = _getCachedSkeleton(resolvedSlugCD, hostname);
 
         ctx.waitUntil((async () => {
           try {
@@ -3133,6 +3132,8 @@ export default {
       const prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
       // FIX #3
       const linkHeaderCD = _buildLinkPreloadHeader(shellResultCD.html);
+      // FIX #26: Early Hints for custom domains
+      const earlyHintsCD = _buildEarlyHintsHeaders();
 
       const responseHeadersCD = new Headers();
       responseHeadersCD.set("Content-Type", "text/html; charset=utf-8");
@@ -3141,7 +3142,8 @@ export default {
       responseHeadersCD.set("X-Shell-Source", shellResultCD.source);
       responseHeadersCD.set("X-Cache-Timestamp", new Date().toISOString());
       responseHeadersCD.set("X-Data-Source", "streaming");
-      if (linkHeaderCD) responseHeadersCD.set("Link", linkHeaderCD);
+      const combinedLinkCD = [linkHeaderCD, earlyHintsCD].filter(Boolean).join(", ");
+      if (combinedLinkCD) responseHeadersCD.set("Link", combinedLinkCD);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeadersCD.set(k, v);
 
       // FIX #2: Pass the ALREADY-RUNNING promise
