@@ -161,17 +161,6 @@ export default function ProductDetail() {
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
-  // Show sticky bar when inline CTA scrolls out of view (works on all screens)
-  useEffect(() => {
-    const el = inlineCtaRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setStickyBarVisible(!entry.isIntersecting),
-      { threshold: 0 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [productSlug]);
 
   const deliveryDate = useMemo(() => getDeliveryDate(), []);
 
@@ -247,6 +236,26 @@ export default function ProductDetail() {
       window.dispatchEvent(new Event("storefront:content-ready"));
     });
   }, [isLoading, productSlug]);
+
+  // Show sticky bar when inline CTA scrolls out of view (works on all screens)
+  // Re-run after loading completes so the ref is attached to the DOM
+  useEffect(() => {
+    if (isLoading) return;
+    const raf = requestAnimationFrame(() => {
+      const el = inlineCtaRef.current;
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => setStickyBarVisible(!entry.isIntersecting),
+        { threshold: 0 }
+      );
+      observer.observe(el);
+      (inlineCtaRef as any)._observer = observer;
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      (inlineCtaRef as any)._observer?.disconnect();
+    };
+  }, [productSlug, isLoading]);
 
   const productId = product?.id;
 
