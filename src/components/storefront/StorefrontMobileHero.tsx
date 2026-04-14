@@ -66,13 +66,14 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
     const src = uniqueSlides[0];
     const srcSet = getImageSrcSet(src, [400, 600, 800]);
     return (
-      <div className="block md:hidden w-full h-full" style={{ contain: "layout style" }}>
+      <div className="block md:hidden w-full" style={{ contain: "layout style", aspectRatio: "4/5" }}>
         <img
           src={optimizeImageUrl(src, 800)}
           srcSet={srcSet || undefined}
           sizes="100vw"
           alt={`${storeName} hero banner`}
           className="w-full h-full block object-cover"
+          style={{ aspectRatio: "4/5" }}
           loading="eager"
           fetchPriority="high"
           decoding="sync"
@@ -136,7 +137,7 @@ function MobileHeroCarousel({ images, storeName }: { images: string[]; storeName
   };
 
   return (
-    <div className="relative overflow-hidden touch-pan-y w-full">
+    <div className="relative overflow-hidden touch-pan-y w-full" style={{ aspectRatio: "4/5" }}>
       <div
         className="flex transition-transform duration-500 ease-out select-none"
         style={{ transform: `translateX(-${current * 100}%)` }}
