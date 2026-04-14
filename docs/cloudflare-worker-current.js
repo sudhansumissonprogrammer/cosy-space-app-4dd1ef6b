@@ -1591,6 +1591,63 @@ function _buildProductsKvKey(domain, filters) {
   return key;
 }
 
+function _appendProductPurgeOps(purgeOps, domain, filters, env) {
+  purgeOps.push(cache.delete(_buildProductsCacheKey(domain, filters)).catch(() => {}));
+  if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(_buildProductsKvKey(domain, filters)).catch(() => {}));
+}
+
+async function _fetchStoreCategoryNames(storeId) {
+  try {
+    const params = new URLSearchParams({
+      select: "category",
+      store_id: `eq.${storeId}`,
+      is_active: "eq.true",
+      limit: "1000",
+    });
+    params.set("category", "not.is.null");
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/products?${params}`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Accept: "application/json" },
+    });
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return [...new Set((rows || []).map((r) => r?.category).filter(Boolean))];
+  } catch { return []; }
+}
+
+function _clearInflightProductRequestsForDomain(domain) {
+  for (const key of inflightProductRequests.keys()) {
+    if (key.startsWith(`${domain}:`)) inflightProductRequests.delete(key);
+  }
+}
+
+async function _purgeProductCachesForDomain(domain, storeId, env) {
+  const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
+  const purgeOps = [];
+  const sortValues = ["", "price_asc", "price_desc", "newest"];
+  const MAX_PAGES = 20; // purge up to 20 pages (400 products) per filter combo
+
+  const categoryNames = await _fetchStoreCategoryNames(storeId);
+
+  const appendPagedFilters = (baseFilters) => {
+    for (const sort of sortValues) {
+      for (let p = 0; p < MAX_PAGES; p++) {
+        const filters = { ...baseFilters };
+        if (sort) filters.sort = sort;
+        if (p > 0) filters.page = String(p);
+        _appendProductPurgeOps(purgeOps, cleanDomain, filters, env);
+      }
+    }
+  };
+
+  appendPagedFilters({});
+  for (const cat of categoryNames) {
+    appendPagedFilters({ category: cat });
+  }
+
+  _clearInflightProductRequestsForDomain(cleanDomain);
+  await Promise.all(purgeOps);
+}
+
 async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   const domain = slug ? `${slug}.${ROOT_DOMAIN}` : "unknown";
   const cacheKey = _buildProductsCacheKey(domain, {});
@@ -1712,7 +1769,7 @@ async function handleProductsApi(request, url, ctx, env) {
       const data = await inflightProductRequests.get(coalesceKey);
       return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced");
     } catch {
-      return _fallbackProducts(domain, cacheKey, kvKey, env);
+      return _fallbackProducts(domain, cacheKey, kvKey, filters, env);
     }
   }
 
@@ -1723,7 +1780,7 @@ async function handleProductsApi(request, url, ctx, env) {
     const data = await fetchPromise;
     return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin");
   } catch {
-    return _fallbackProducts(domain, cacheKey, kvKey, env);
+    return _fallbackProducts(domain, cacheKey, kvKey, filters, env);
   } finally {
     inflightProductRequests.delete(coalesceKey);
   }
@@ -1816,7 +1873,8 @@ async function _refreshProductsBackground(domain, filters, cacheKey, env) {
   } catch {}
 }
 
-async function _fallbackProducts(domain, cacheKey, kvKey, env) {
+async function _fallbackProducts(domain, cacheKey, kvKey, filters, env) {
+  // Try exact match first
   try {
     const stale = await cache.match(cacheKey);
     if (stale) return addCorsHeaders(stale, "cache-stale");
@@ -1831,20 +1889,27 @@ async function _fallbackProducts(domain, cacheKey, kvKey, env) {
           "kv-stale",
         );
     } catch {}
+  }
 
-    const defaultKvKey = _buildProductsKvKey(domain, {});
-    if (defaultKvKey !== kvKey) {
-      try {
-        const defaultStale = await env.STORE_KV.get(defaultKvKey, { type: "text" });
-        if (defaultStale)
-          return addCorsHeaders(
-            new Response(defaultStale, {
-              headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-            }),
-            "kv-default-stale",
-          );
-      } catch {}
-    }
+  // For filtered/paged requests, never fall back to page-0 default — return empty
+  if (filters?.category || filters?.page || filters?.sort) {
+    return addCorsHeaders(
+      new Response("[]", { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }),
+      "fallback-empty-scoped",
+    );
+  }
+
+  // Only for page-0 default: try broader fallbacks
+  const defaultKvKey = _buildProductsKvKey(domain, {});
+  if (env?.STORE_KV) {
+    try {
+      const defaultStale = await env.STORE_KV.get(defaultKvKey, { type: "text" });
+      if (defaultStale)
+        return addCorsHeaders(
+          new Response(defaultStale, { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }),
+          "kv-default-stale",
+        );
+    } catch {}
   }
 
   const defaultCacheKey = _buildProductsCacheKey(domain, {});
@@ -1860,22 +1925,102 @@ async function _fallbackProducts(domain, cacheKey, kvKey, env) {
 }
 
 async function handlePurgeProducts(request, url, ctx, env) {
-  const domain = (request.headers.get("host") || url.hostname).toLowerCase().trim();
-  const defaultCacheKey = _buildProductsCacheKey(domain, {});
-  const defaultKvKey = _buildProductsKvKey(domain, {});
-  const purgeOps = [cache.delete(defaultCacheKey).catch(() => {})];
-  if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(defaultKvKey).catch(() => {}));
+  const domain = (request.headers.get("host") || url.hostname).replace(/^www\./, "").toLowerCase().trim();
+  const storeId = await _resolveStoreId(domain, env);
 
-  for (const sort of ["price_asc", "price_desc", "newest"]) {
-    const ck = _buildProductsCacheKey(domain, { sort });
-    purgeOps.push(cache.delete(ck).catch(() => {}));
-    if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(_buildProductsKvKey(domain, { sort })).catch(() => {}));
+  if (storeId) {
+    await _purgeProductCachesForDomain(domain, storeId, env);
+  } else {
+    const purgeOps = [];
+    _appendProductPurgeOps(purgeOps, domain, {}, env);
+    for (const sort of ["price_asc", "price_desc", "newest"]) {
+      _appendProductPurgeOps(purgeOps, domain, { sort }, env);
+    }
+    _clearInflightProductRequestsForDomain(domain);
+    await Promise.all(purgeOps);
   }
 
-  await Promise.all(purgeOps);
   return addCorsHeaders(
     new Response(JSON.stringify({ purged: true, domain }), { headers: { "Content-Type": "application/json" } }),
     "purge",
+  );
+}
+
+async function handlePurgeStore(request, url, ctx, env, hostname) {
+  const normalizedHost = (request.headers.get("host") || hostname || url.hostname)
+    .replace(/^www\./, "").toLowerCase().trim();
+
+  let purgeSlug = url.searchParams.get("slug") || "";
+  if (!purgeSlug && normalizedHost.endsWith(`.${ROOT_DOMAIN}`)) purgeSlug = normalizedHost.replace(`.${ROOT_DOMAIN}`, "");
+  if (!purgeSlug && normalizedHost !== ROOT_DOMAIN && !normalizedHost.endsWith(`.${ROOT_DOMAIN}`)) {
+    purgeSlug = (await resolveDomain(normalizedHost, env)) || "";
+  }
+
+  let customDomain = purgeSlug ? await getCustomDomainForSlug(purgeSlug) : null;
+  if (customDomain) customDomain = customDomain.replace(/^www\./, "").toLowerCase().trim();
+
+  const domainsToPurge = new Set([normalizedHost]);
+  if (purgeSlug) domainsToPurge.add(`${purgeSlug}.${ROOT_DOMAIN}`);
+  if (customDomain) domainsToPurge.add(customDomain);
+
+  // Clear in-memory caches
+  if (purgeSlug) {
+    _memThemeCache.delete(purgeSlug);
+    _memStorefrontCache.delete(purgeSlug);
+    _storeInfoCache.delete(purgeSlug);
+  }
+
+  const purgeOps = [];
+  for (const d of domainsToPurge) {
+    domainStoreIdCache.delete(d);
+    _clearInflightProductRequestsForDomain(d);
+    purgeOps.push(cache.delete(getEarlyCacheKey(d)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
+    if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
+    if (d !== ROOT_DOMAIN && !d.endsWith(`.${ROOT_DOMAIN}`)) {
+      purgeOps.push(cache.delete(new Request(`https://cache/domain-${d}`)).catch(() => {}));
+      if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`domain:${d}`).catch(() => {}));
+    }
+  }
+
+  if (purgeSlug) {
+    purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/slug-domain-${purgeSlug}`)).catch(() => {}));
+    if (env?.STORE_KV) {
+      purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
+    }
+  }
+
+  await Promise.all(purgeOps);
+
+  // Purge ALL product caches (paginated + category) for every domain variant
+  const storeId = purgeSlug
+    ? (await _resolveStoreInfo(purgeSlug, `${purgeSlug}.${ROOT_DOMAIN}`, env)).storeId
+    : await _resolveStoreId(normalizedHost, env);
+
+  if (storeId) {
+    await Promise.all([...domainsToPurge].map((d) => _purgeProductCachesForDomain(d, storeId, env)));
+  } else {
+    const fallbackOps = [];
+    for (const d of domainsToPurge) {
+      _appendProductPurgeOps(fallbackOps, d, {}, env);
+      for (const sort of ["price_asc", "price_desc", "newest"]) {
+        _appendProductPurgeOps(fallbackOps, d, { sort }, env);
+      }
+    }
+    await Promise.all(fallbackOps);
+  }
+
+  return addCorsHeaders(
+    new Response(
+      JSON.stringify({ purged: true, slug: purgeSlug || null, domains: [...domainsToPurge], workerVersion: WORKER_VERSION }),
+      { headers: { "Content-Type": "application/json" } },
+    ),
+    "purge-store",
   );
 }
 
@@ -2556,6 +2701,8 @@ export default {
 
     // ─── API ROUTES ───
     if (url.pathname === "/api/products" && request.method === "GET") return handleProductsApi(request, url, ctx, env);
+    if (url.pathname === "/api/purge-store" && request.method === "POST")
+      return handlePurgeStore(request, url, ctx, env, hostname);
     if (url.pathname === "/api/purge-products" && request.method === "POST")
       return handlePurgeProducts(request, url, ctx, env);
     if (url.pathname === "/api/purge-shell" && request.method === "POST")
