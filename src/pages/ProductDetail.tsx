@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useParams, Link, useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -936,130 +937,135 @@ export default function ProductDetail() {
       {/* Customer Reviews */}
       <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
 
-      {/* Social proof notification — above sticky bar on mobile */}
-      {socialProof && (
-        <div
-          className={`fixed left-3 right-3 z-[51] sm:left-4 sm:right-auto sm:bottom-4 sm:max-w-xs transition-all duration-500 ${
-            socialProof.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-          }`}
-          style={{ bottom: `${isOutOfStock ? "8px" : "7.5rem"}` }}
-        >
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-lg">
-            {product?.image_url && (
-              <img
-                src={optimizeImageUrl(splitImageUrls(product.image_url)[0], 80)}
-                alt=""
-                className="h-12 w-12 rounded-lg object-cover shrink-0"
-              />
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-foreground leading-snug">
-                {socialProof.name} from {socialProof.city} has just purchased {product?.name ? <span className="font-bold">{product.name}</span> : "this"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {Math.floor(Math.random() * 12) + 2} Minutes ago
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sticky Mobile CTA — cleaner (hidden for Theme 18) */}
-      {!isOutOfStock && (store as any)?.theme !== "theme-18" && (
-        <div className="fixed left-0 right-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-          {shippingRemaining > 0 ? (
-            <div className="px-3 pt-2 pb-1">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
-                  <Truck className="h-3 w-3" />
-                  Add ₹{shippingRemaining.toFixed(0)} more for FREE shipping!
-                </span>
-                <span className="text-[9px] text-muted-foreground">{Math.round(shippingProgress)}%</span>
-              </div>
-              <Progress value={shippingProgress} className="h-1.5 bg-accent" />
-            </div>
-          ) : (
-            <div className="px-3 pt-2 pb-1">
-              <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                <Check className="h-3 w-3" /> 🎉 You qualify for FREE shipping!
-              </span>
-            </div>
-          )}
-          <div className="p-3 pt-1.5">
-            <div className="flex items-center gap-3">
-              <div className="shrink-0 min-w-0">
-                <p className="text-sm font-extrabold text-foreground leading-tight">
-                  {currency} {(variantPrice * quantity).toFixed(2)}
-                </p>
-                {hasDiscount && (
-                  <p className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</p>
+      {/* Portal: render fixed elements outside PageTransition animation container */}
+      {createPortal(
+        <>
+          {/* Social proof notification — above sticky bar on mobile */}
+          {socialProof && (
+            <div
+              className={`fixed left-3 right-3 z-[51] sm:left-4 sm:right-auto sm:bottom-4 sm:max-w-xs transition-all duration-500 ${
+                socialProof.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+              }`}
+              style={{ bottom: `${isOutOfStock ? "8px" : "7.5rem"}` }}
+            >
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-lg">
+                {product?.image_url && (
+                  <img
+                    src={optimizeImageUrl(splitImageUrls(product.image_url)[0], 80)}
+                    alt=""
+                    className="h-12 w-12 rounded-lg object-cover shrink-0"
+                  />
                 )}
-              </div>
-              <div className="flex flex-1 gap-2">
-                <button
-                  className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] ${
-                    justAdded ? "bg-emerald-600 text-white" : "btn-gold"
-                  }`}
-                  onClick={handleAddToCart}
-                >
-                  {justAdded ? (
-                    <span className="flex items-center gap-1 animate-fade-in">
-                      <Check className="h-4 w-4" strokeWidth={3} />
-                      Added!
-                    </span>
-                  ) : (
-                    <>
-                      <ShoppingCart className="h-4 w-4" />
-                      Add to Cart
-                    </>
-                  )}
-                </button>
-                <Button
-                    className="h-11 flex-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider"
-                    onClick={handleBuyNow}
-                  >
-                    <ShoppingBag className="h-4 w-4 mr-1" />
-                    Buy Now
-                  </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {!isOutOfStock && (store as any)?.theme !== "theme-18" && <div className="sm:hidden" style={{ height: "7rem" }} />}
-
-      {/* Express Checkout Sticky Bar for returning users */}
-      {!isOutOfStock && showBuyNow && (() => {
-        try {
-          const saved = JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}");
-          if (saved.fullName && saved.phone && saved.streetAddress && saved.pincode) {
-            return (
-              <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-card/95 backdrop-blur-lg border-t border-border px-4 py-3 safe-area-bottom">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      <Zap className="inline h-3 w-3 text-warning mr-0.5" />
-                      Deliver to <strong className="text-foreground">{saved.fullName}</strong> · {saved.pincode}
-                    </p>
-                    <p className="text-lg font-extrabold text-foreground">{currency} {(variantPrice * quantity).toFixed(2)}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      navigate(storefrontPath(store.slug, `checkout?product=${product.id}${selectedVariant ? `&variant=${selectedVariant.id}` : ""}`));
-                    }}
-                    className="flex h-12 items-center gap-2 rounded-xl px-5 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
-                    style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
-                  >
-                    <Zap className="h-4 w-4" />
-                    Express Buy
-                  </button>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground leading-snug">
+                    {socialProof.name} from {socialProof.city} has just purchased {product?.name ? <span className="font-bold">{product.name}</span> : "this"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {Math.floor(Math.random() * 12) + 2} Minutes ago
+                  </p>
                 </div>
               </div>
-            );
-          }
-        } catch {}
-        return null;
-      })()}
+            </div>
+          )}
+
+          {/* Sticky Mobile CTA — cleaner (hidden for Theme 18) */}
+          {!isOutOfStock && (store as any)?.theme !== "theme-18" && (
+            <div className="fixed left-0 right-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-md sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+              {shippingRemaining > 0 ? (
+                <div className="px-3 pt-2 pb-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                      <Truck className="h-3 w-3" />
+                      Add ₹{shippingRemaining.toFixed(0)} more for FREE shipping!
+                    </span>
+                    <span className="text-[9px] text-muted-foreground">{Math.round(shippingProgress)}%</span>
+                  </div>
+                  <Progress value={shippingProgress} className="h-1.5 bg-accent" />
+                </div>
+              ) : (
+                <div className="px-3 pt-2 pb-1">
+                  <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" /> 🎉 You qualify for FREE shipping!
+                  </span>
+                </div>
+              )}
+              <div className="p-3 pt-1.5">
+                <div className="flex items-center gap-3">
+                  <div className="shrink-0 min-w-0">
+                    <p className="text-sm font-extrabold text-foreground leading-tight">
+                      {currency} {(variantPrice * quantity).toFixed(2)}
+                    </p>
+                    {hasDiscount && (
+                      <p className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</p>
+                    )}
+                  </div>
+                  <div className="flex flex-1 gap-2">
+                    <button
+                      className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all active:scale-[0.97] ${
+                        justAdded ? "bg-emerald-600 text-white" : "btn-gold"
+                      }`}
+                      onClick={handleAddToCart}
+                    >
+                      {justAdded ? (
+                        <span className="flex items-center gap-1 animate-fade-in">
+                          <Check className="h-4 w-4" strokeWidth={3} />
+                          Added!
+                        </span>
+                      ) : (
+                        <>
+                          <ShoppingCart className="h-4 w-4" />
+                          Add to Cart
+                        </>
+                      )}
+                    </button>
+                    <Button
+                      className="h-11 flex-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider"
+                      onClick={handleBuyNow}
+                    >
+                      <ShoppingBag className="h-4 w-4 mr-1" />
+                      Buy Now
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Express Checkout Sticky Bar for returning users */}
+          {!isOutOfStock && showBuyNow && (() => {
+            try {
+              const saved = JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}");
+              if (saved.fullName && saved.phone && saved.streetAddress && saved.pincode) {
+                return (
+                  <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-card/95 backdrop-blur-lg border-t border-border px-4 py-3 safe-area-bottom">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          <Zap className="inline h-3 w-3 text-warning mr-0.5" />
+                          Deliver to <strong className="text-foreground">{saved.fullName}</strong> · {saved.pincode}
+                        </p>
+                        <p className="text-lg font-extrabold text-foreground">{currency} {(variantPrice * quantity).toFixed(2)}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigate(storefrontPath(store.slug, `checkout?product=${product.id}${selectedVariant ? `&variant=${selectedVariant.id}` : ""}`));
+                        }}
+                        className="flex h-12 items-center gap-2 rounded-xl px-5 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
+                        style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
+                      >
+                        <Zap className="h-4 w-4" />
+                        Express Buy
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+            } catch {}
+            return null;
+          })()}
+        </>,
+        document.body
+      )}
 
       {/* Theme-16 Buy Now Phone Modal */}
       {(store as any).theme === "theme-16" && (
