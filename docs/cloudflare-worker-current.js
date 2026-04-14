@@ -1846,13 +1846,14 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   return addCorsHeaders(response, source);
 }
 
-async function _refreshProductsBackground(domain, filters, cacheKey, env) {
+async function _refreshProductsBackground(domain, filters, version, env) {
   try {
     const storeId = await _resolveStoreId(domain, env);
     if (!storeId) return;
     const data = await _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
-    const kvKey = _buildProductsKvKey(domain, filters);
+    const cacheKey = _buildProductsCacheKey(domain, filters, version);
+    const kvKey = _buildProductsKvKey(domain, filters, version);
     await Promise.all([
       cache
         .put(
@@ -1869,7 +1870,10 @@ async function _refreshProductsBackground(domain, filters, cacheKey, env) {
   } catch {}
 }
 
-async function _fallbackProducts(domain, cacheKey, kvKey, filters, env) {
+async function _fallbackProducts(domain, filters, version, env) {
+  const cacheKey = _buildProductsCacheKey(domain, filters, version);
+  const kvKey = _buildProductsKvKey(domain, filters, version);
+
   // Try exact match first
   try {
     const stale = await cache.match(cacheKey);
@@ -1894,25 +1898,6 @@ async function _fallbackProducts(domain, cacheKey, kvKey, filters, env) {
       "fallback-empty-scoped",
     );
   }
-
-  // Only for page-0 default: try broader fallbacks
-  const defaultKvKey = _buildProductsKvKey(domain, {});
-  if (env?.STORE_KV) {
-    try {
-      const defaultStale = await env.STORE_KV.get(defaultKvKey, { type: "text" });
-      if (defaultStale)
-        return addCorsHeaders(
-          new Response(defaultStale, { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }),
-          "kv-default-stale",
-        );
-    } catch {}
-  }
-
-  const defaultCacheKey = _buildProductsCacheKey(domain, {});
-  try {
-    const defaultStale = await cache.match(defaultCacheKey);
-    if (defaultStale) return addCorsHeaders(defaultStale, "cache-default-stale");
-  } catch {}
 
   return addCorsHeaders(
     new Response("[]", { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }),
