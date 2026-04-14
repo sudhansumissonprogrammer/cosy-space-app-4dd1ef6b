@@ -619,6 +619,7 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
             {categoryStyle === "style-6" && <RevealGrid categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-8" && <SpotlightCarousel categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-10" && <MagazineStrip categories={categories!} storeSlug={storeSlug} />}
+            {categoryStyle === "style-11" && <TwoRowCircleCarousel categories={categories!} storeSlug={storeSlug} />}
           </>
         )}
       </div>
