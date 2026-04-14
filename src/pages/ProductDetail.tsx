@@ -162,18 +162,26 @@ export default function ProductDetail() {
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
   // Show sticky bar when inline CTA scrolls out of view (works on all screens)
-  // Re-run whenever product loads (ref is null during loading skeleton)
-  const productLoaded = !!product;
+  // Re-run after loading completes so the ref is attached to the DOM
   useEffect(() => {
-    const el = inlineCtaRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setStickyBarVisible(!entry.isIntersecting),
-      { threshold: 0 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [productSlug, productLoaded]);
+    if (isLoading) return;
+    // Small delay to ensure ref is attached after render
+    const raf = requestAnimationFrame(() => {
+      const el = inlineCtaRef.current;
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => setStickyBarVisible(!entry.isIntersecting),
+        { threshold: 0 }
+      );
+      observer.observe(el);
+      // Store cleanup ref
+      (inlineCtaRef as any)._observer = observer;
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      (inlineCtaRef as any)._observer?.disconnect();
+    };
+  }, [productSlug, isLoading]);
 
   const deliveryDate = useMemo(() => getDeliveryDate(), []);
 
