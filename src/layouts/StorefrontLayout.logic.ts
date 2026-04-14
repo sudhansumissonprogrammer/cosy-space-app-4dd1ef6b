@@ -47,16 +47,7 @@ export function useStorefront(slugOverride?: string) {
   const { data, isLoading } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
-      // 1. Check if Worker already injected data synchronously
-      const injectedNow = (window as any).__STOREFRONT_DATA__;
-      if (injectedNow?.store) {
-        const result = injectedNow;
-        delete (window as any).__STOREFRONT_DATA__;
-        delete (window as any).__STOREFRONT_PREFETCH__;
-        return result as any;
-      }
-
-      // 2. Await the index.html prefetch promise if still in flight,
+      // 1. Await the index.html prefetch promise if still in flight,
       // but never block forever (prevents infinite shimmer state).
       const prefetch = (window as any).__STOREFRONT_PREFETCH__;
       if (prefetch) {
@@ -69,8 +60,8 @@ export function useStorefront(slugOverride?: string) {
           ]);
 
           if ((result as any)?.store) {
+            (window as any).__STOREFRONT_DATA__ = result;
             delete (window as any).__STOREFRONT_PREFETCH__;
-            delete (window as any).__STOREFRONT_DATA__;
             return result as any;
           }
         } catch {
@@ -79,13 +70,17 @@ export function useStorefront(slugOverride?: string) {
         }
       }
 
-      // 3. Fresh RPC call — use shell (lightweight, no products)
+      // 2. Fresh RPC call — use shell (lightweight, no products)
+      // This dynamically imports supabase only when needed
       return rpcGetStorefrontShell(slug!);
     },
     enabled: !!slug,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     // If we have injected data, use it as initialData for instant render.
+    // Use Date.now() so React Query treats it as fresh (within staleTime)
+    // and avoids an immediate redundant background refetch.
+    // The Worker/KV data is already recent — no need to re-validate instantly.
     ...(injected?.store && slug && !seeded.current
       ? { initialData: injected, initialDataUpdatedAt: Date.now() }
       : {}),
