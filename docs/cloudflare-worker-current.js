@@ -1645,7 +1645,8 @@ async function _purgeProductCachesForDomain(domain, _storeId, env) {
 
 async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   const domain = slug ? `${slug}.${ROOT_DOMAIN}` : "unknown";
-  const cacheKey = _buildProductsCacheKey(domain, {});
+  const version = await _getProductVersion(domain, env);
+  const cacheKey = _buildProductsCacheKey(domain, {}, version);
 
   try {
     const existing = await cache.match(cacheKey);
@@ -1655,6 +1656,7 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   try {
     const data = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
+    const kvKey = _buildProductsKvKey(domain, {}, version);
     const cacheOps = [
       cache
         .put(
@@ -1665,19 +1667,17 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
         )
         .catch(() => {}),
       env?.STORE_KV
-        ? env.STORE_KV.put(_buildProductsKvKey(domain, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
+        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
         : Promise.resolve(),
     ];
 
     if (customDomain) {
-      const cleanCustom = customDomain
-        .replace(/^www\./, "")
-        .toLowerCase()
-        .trim();
+      const cleanCustom = customDomain.replace(/^www\./, "").toLowerCase().trim();
+      const cvVersion = await _getProductVersion(cleanCustom, env);
       cacheOps.push(
         cache
           .put(
-            _buildProductsCacheKey(cleanCustom, {}),
+            _buildProductsCacheKey(cleanCustom, {}, cvVersion),
             new Response(body, {
               headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
             }),
@@ -1686,9 +1686,7 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
       );
       if (env?.STORE_KV) {
         cacheOps.push(
-          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(
-            () => {},
-          ),
+          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}, cvVersion), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}),
         );
       }
     }
