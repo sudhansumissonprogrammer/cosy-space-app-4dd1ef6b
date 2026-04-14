@@ -9,7 +9,7 @@ import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { trackPageView } from "@/lib/trackPageView";
-import { buildThemeStyle, ensureThemeFontsLoaded, loadGoogleFonts } from "@/lib/themeUtils";
+import { buildThemeStyle, ensureThemeFontsLoaded, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 
 // Lazy-load non-critical overlays
@@ -140,15 +140,21 @@ export default function StorefrontShell({
   const themeConfig = useStorefrontThemeConfig(store?.id);
 
   // Hold the first storefront paint until the selected theme fonts are ready.
-  const fontsLoadedRef = useRef(false);
   const activeStoreIdRef = useRef<string | null>(null);
+  const loadedFontKeyRef = useRef<string | null>(null);
   const [fontsReady, setFontsReady] = useState(false);
+  const { headingFont, bodyFont } = useMemo(
+    () => getResolvedThemeFonts(themeConfig),
+    [themeConfig?.heading_font, themeConfig?.body_font]
+  );
+  const requestedFontKey = `${headingFont}__${bodyFont}`;
+
   useLayoutEffect(() => {
     const storeId = store?.id ?? null;
 
     if (activeStoreIdRef.current !== storeId) {
       activeStoreIdRef.current = storeId;
-      fontsLoadedRef.current = false;
+      loadedFontKeyRef.current = null;
       setFontsReady(false);
     }
 
@@ -157,11 +163,11 @@ export default function StorefrontShell({
     let cancelled = false;
 
     const syncFonts = async () => {
-      if (!fontsLoadedRef.current) {
+      if (loadedFontKeyRef.current !== requestedFontKey) {
         setFontsReady(false);
         await ensureThemeFontsLoaded(themeConfig, 1800);
         if (cancelled) return;
-        fontsLoadedRef.current = true;
+        loadedFontKeyRef.current = requestedFontKey;
         setFontsReady(true);
         return;
       }
@@ -175,7 +181,7 @@ export default function StorefrontShell({
     return () => {
       cancelled = true;
     };
-  }, [store?.id, themeConfig?.heading_font, themeConfig?.body_font]);
+  }, [store?.id, themeConfig, requestedFontKey]);
 
   // Listen for live theme preview messages
   const previewOverride = useThemePreview(store?.id);
