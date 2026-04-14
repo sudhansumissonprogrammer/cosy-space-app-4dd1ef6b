@@ -57,7 +57,7 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
       script.src = "https://connect.facebook.net/en_US/fbevents.js";
       document.head.appendChild(script);
 
-      // noscript pixel
+      // noscript pixel — must go in <body> per HTML5 spec
       const noscript = document.createElement("noscript");
       noscript.id = "fb-pixel-noscript";
       const img = document.createElement("img");
@@ -66,7 +66,7 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
       img.style.display = "none";
       img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`;
       noscript.appendChild(img);
-      document.head.appendChild(noscript);
+      document.body.appendChild(noscript);
     });
 
     // Init + PageView fire immediately via shim (queued until script loads)

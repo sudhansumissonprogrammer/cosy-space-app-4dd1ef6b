@@ -79,13 +79,14 @@ export function fireMetaCAPI(params: CAPIEventParams) {
         custom_data: params.customData || undefined,
       },
     })
-    .then(({ error }) => {
+    .then(({ data, error }) => {
       if (error) {
-        // Cache "no pixel" to avoid repeated 422s
-        if (error.message?.includes("not configured")) {
-          sessionStorage.setItem(cacheKey, "0");
-        }
         console.warn("Meta CAPI warning:", error.message);
+        return;
+      }
+      // Cache "no pixel" when function says meta is not configured
+      if (data?.skipped && data?.reason === "meta_not_configured") {
+        sessionStorage.setItem(cacheKey, "0");
       }
     })
     .catch((err) => {
