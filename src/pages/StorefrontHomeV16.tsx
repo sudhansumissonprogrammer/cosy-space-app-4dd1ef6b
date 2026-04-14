@@ -281,6 +281,8 @@ export default function StorefrontHomeV16() {
                   )}
                 </section>
               )}
+            </Suspense>
+          )}
 
           {/* Per-category sections in sorted order */}
           {sortedCategories.map((cat: any) => (
