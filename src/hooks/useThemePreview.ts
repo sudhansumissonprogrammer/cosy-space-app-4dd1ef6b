@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { loadGoogleFonts } from "@/lib/themeUtils";
 
 /**
  * Listens for postMessage from admin dashboard iframe parent
@@ -34,6 +35,7 @@ export function useThemePreview(storeId?: string) {
       try {
         if (e.data?.type === "theme-preview" && e.data.config) {
           const c = e.data.config;
+          loadGoogleFonts(c);
           // Guard against missing/invalid values
           const primary = c.primary_color || "#000000";
           const accent = c.accent_color || "#666666";
