@@ -113,13 +113,13 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             className={`ripple-container flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[10px] uppercase tracking-wider sm:h-7 sm:text-[10px] transition-all duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "opacity-80 cursor-wait" : "hover:brightness-110"}`}
             style={
               justAdded
-                ? { fontFamily: "'Alegreya SC', serif", fontWeight: 400, letterSpacing: "0.06em" }
+                ? { fontFamily: "'Alegreya SC', serif", fontWeight: 500, letterSpacing: "0.06em" }
                 : {
                     backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
                     color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))",
                     borderRadius: "var(--storefront-button-radius, 0.375rem)",
                     fontFamily: "'Alegreya SC', serif",
-                    fontWeight: 400,
+                    fontWeight: 500,
                     letterSpacing: "0.06em",
                   }
             }
