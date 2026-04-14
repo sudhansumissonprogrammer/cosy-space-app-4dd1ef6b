@@ -1702,20 +1702,23 @@ async function handleProductsApi(request, url, ctx, env) {
     page: url.searchParams.get("page") || "",
     sort: url.searchParams.get("sort") || "",
   };
-  const cacheKey = _buildProductsCacheKey(domain, filters);
+
+  // Get current version for this domain (cached in-memory for 60s)
+  const version = await _getProductVersion(domain, env);
+  const cacheKey = _buildProductsCacheKey(domain, filters, version);
+  const kvKey = _buildProductsKvKey(domain, filters, version);
 
   try {
     const cached = await cache.match(cacheKey);
     if (cached) {
-      const revalKey = `products:${domain}:${filters.category}:${filters.page}:${filters.sort}`;
+      const revalKey = `products:v${version}:${domain}:${filters.category}:${filters.page}:${filters.sort}`;
       if (shouldRevalidate(revalKey)) {
-        ctx.waitUntil(_refreshProductsBackground(domain, filters, cacheKey, env));
+        ctx.waitUntil(_refreshProductsBackground(domain, filters, version, env));
       }
       return addCorsHeaders(cached, "cache-api");
     }
   } catch {}
 
-  const kvKey = _buildProductsKvKey(domain, filters);
   if (env?.STORE_KV) {
     try {
       const kvData = await env.STORE_KV.get(kvKey, { type: "text" });
@@ -1754,7 +1757,6 @@ async function handleProductsApi(request, url, ctx, env) {
     );
   }
 
-  // Coalesce key includes filters so page 0 and page 1 don't share results
   const coalesceKey = `${domain}:${filters.category}:${filters.page}:${filters.sort}`;
 
   if (inflightProductRequests.has(coalesceKey)) {
@@ -1762,7 +1764,7 @@ async function handleProductsApi(request, url, ctx, env) {
       const data = await inflightProductRequests.get(coalesceKey);
       return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced");
     } catch {
-      return _fallbackProducts(domain, cacheKey, kvKey, filters, env);
+      return _fallbackProducts(domain, filters, version, env);
     }
   }
 
@@ -1773,7 +1775,7 @@ async function handleProductsApi(request, url, ctx, env) {
     const data = await fetchPromise;
     return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin");
   } catch {
-    return _fallbackProducts(domain, cacheKey, kvKey, filters, env);
+    return _fallbackProducts(domain, filters, version, env);
   } finally {
     inflightProductRequests.delete(coalesceKey);
   }
