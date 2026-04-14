@@ -2986,6 +2986,50 @@ export default {
       .toLowerCase()
       .trim();
 
+    // FIX #21: Instant skeleton fast path for custom domains
+    // If shell isn't in memory, resolve domain first (fast KV lookup),
+    // then return skeleton immediately while warming everything in background
+    if (!_memShell) {
+      const resolvedSlugCD = await resolveDomain(cleanDomain, env);
+      if (resolvedSlugCD) {
+        const themeLite = _memThemeCache.get(resolvedSlugCD)?.lite || null;
+        const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
+        const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname);
+
+        ctx.waitUntil((async () => {
+          try {
+            const shellResult = await getSpaShell(request, ctx, env);
+            if (shellResult?.html) {
+              const prefetchResult = await prefetchStorefrontData(resolvedSlugCD, ctx, env);
+              if (prefetchResult.data) {
+                const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source);
+                const fullHeaders = new Headers();
+                fullHeaders.set("Content-Type", "text/html; charset=utf-8");
+                fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
+                fullHeaders.set("X-Store-Slug", resolvedSlugCD);
+                fullHeaders.set("X-Data-Source", prefetchResult.source);
+                for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
+                const fullResponse = new Response(injected.html, { status: 200, headers: fullHeaders });
+                await cache.put(getEarlyCacheKey(hostname), fullResponse.clone()).catch(() => {});
+              }
+            }
+          } catch {}
+        })());
+
+        return new Response(skeletonHtml, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            "X-Store-Slug": resolvedSlugCD,
+            "X-Data-Source": "instant-skeleton",
+            "X-Worker-Version": WORKER_VERSION,
+            ...SECURITY_HEADERS,
+          },
+        });
+      }
+    }
+
     // FIX #2: Start storefront promise as soon as we know the domain pattern,
     // but we don't know slug yet — kick off domain resolution + shell in parallel first
     const [resolvedSlug, shellResultCD] = await Promise.all([
