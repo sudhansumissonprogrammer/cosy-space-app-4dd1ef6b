@@ -165,7 +165,7 @@ export default function StorefrontShell({
     const syncFonts = async () => {
       if (loadedFontKeyRef.current !== requestedFontKey) {
         setFontsReady(false);
-        await ensureThemeFontsLoaded(themeConfig, 1800);
+        await ensureThemeFontsLoaded(themeConfig);
         if (cancelled) return;
         loadedFontKeyRef.current = requestedFontKey;
         setFontsReady(true);
