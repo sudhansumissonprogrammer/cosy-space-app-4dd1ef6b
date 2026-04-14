@@ -1807,7 +1807,8 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
         params.set("order", "created_at.desc,id.asc");
         break;
       default:
-        params.set("order", "is_best_selling.desc,created_at.desc,id.asc");
+        // display_order first (manual merchant sorting), then best-selling, then newest
+        params.set("order", "display_order.asc,is_best_selling.desc,created_at.desc,id.asc");
     }
 
     const page = parseInt(filters.page, 10);
