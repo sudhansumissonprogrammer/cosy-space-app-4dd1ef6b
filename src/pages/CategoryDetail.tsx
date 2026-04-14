@@ -119,6 +119,7 @@ export default function CategoryDetail() {
     sentinelElRef.current = el;
   }, []);
 
+  const pageCount = data?.pages.length ?? 0;
   useEffect(() => {
     if (observerRef.current) {
       observerRef.current.disconnect();
@@ -137,7 +138,7 @@ export default function CategoryDetail() {
     observer.observe(el);
     observerRef.current = observer;
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, pageCount]);
 
   if (!categoryLoading && !category) {
     return (

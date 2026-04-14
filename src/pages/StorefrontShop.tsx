@@ -81,6 +81,8 @@ export default function StorefrontShop() {
     sentinelElRef.current = el;
   }, []);
 
+  // Re-attach observer whenever fetching state or data changes
+  const pageCount = data?.pages.length ?? 0;
   useEffect(() => {
     if (observerRef.current) {
       observerRef.current.disconnect();
@@ -99,7 +101,7 @@ export default function StorefrontShop() {
     observer.observe(el);
     observerRef.current = observer;
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, pageCount]);
 
   return (
     <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-6">
