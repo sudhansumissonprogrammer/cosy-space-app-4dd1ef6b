@@ -25,8 +25,9 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
   const { wishlistCount } = useWishlist();
   const { user } = useStorefrontAuth();
   const isCheckout = location.pathname.includes("/checkout");
+  const isProductDetail = location.pathname.includes("/product/");
 
-  if (isCheckout) return null;
+  if (isCheckout || isProductDetail) return null;
 
   const currentPath = location.pathname;
   const storePath = storefrontPath(store.slug);
