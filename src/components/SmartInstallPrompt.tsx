@@ -244,11 +244,10 @@ export default function SmartInstallPrompt({
             <Button
               className="flex-1 font-bold"
               style={{ backgroundColor: primaryColor, color: textColor }}
-              onClick={canNativeInstall ? handleInstall : handleDismissPopup}
-              disabled={!canNativeInstall && !isIOS && !showManualGuide}
+              onClick={handleInstall}
             >
               <Download className="mr-1.5 h-4 w-4" />
-              {canNativeInstall ? "Install App" : "Got it"}
+              Install App
             </Button>
           </div>
         </div>
@@ -281,7 +280,7 @@ export default function SmartInstallPrompt({
 
         {/* Install button */}
         <button
-          onClick={canNativeInstall ? handleInstall : handleDismissStrip}
+          onClick={handleInstall}
           className="shrink-0 rounded-lg px-4 py-1.5 text-xs font-bold bg-white text-[#1a1a2e] active:scale-95 transition-transform"
         >
           INSTALL
