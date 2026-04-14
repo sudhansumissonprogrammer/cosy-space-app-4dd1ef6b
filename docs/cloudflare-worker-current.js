@@ -826,12 +826,13 @@ const PRODUCT_COLUMNS =
 
 async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
   try {
-    const productsCacheKey = _buildProductsCacheKey(hostname, {});
+    const version = await _getProductVersion(hostname, env);
+    const productsCacheKey = _buildProductsCacheKey(hostname, {}, version);
     const cached = await cache.match(productsCacheKey);
     if (cached) return await cached.text();
 
     if (env?.STORE_KV) {
-      const kvKey = _buildProductsKvKey(hostname, {});
+      const kvKey = _buildProductsKvKey(hostname, {}, version);
       const kvProducts = await env.STORE_KV.get(kvKey);
       if (kvProducts) {
         ctx.waitUntil(
