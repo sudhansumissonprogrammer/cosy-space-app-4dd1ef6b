@@ -1,5 +1,16 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.2.0 — COLD START OPTIMIZATION
+ * SHOPBANAO PRODUCTION ROUTER v6.3.0 — PERFORMANCE OPTIMIZATION
+ *
+ * Changes from v6.2.0:
+ *  FIX #26 — Early Hints (103): Worker sends 103 Early Hints response with
+ *            preconnect/preload headers before the full HTML, letting the
+ *            browser start fetching CSS/JS while the worker builds the page.
+ *  FIX #27 — Pre-compressed instant skeleton: The cold-start skeleton HTML
+ *            is pre-built per theme and cached in memory for zero-compute
+ *            responses on true cold starts.
+ *  FIX #28 — Edge-side product injection: First 8 products injected into
+ *            the HTML as __PRODUCTS_INLINE__ so the "Popular" section
+ *            renders without a client-side fetch.
  *
  * Changes from v6.1.0:
  *  FIX #20 — TTL increases: Shell KV 3600→86400, Cache 600→3600, Mem 10→30min.
@@ -57,7 +68,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.2.0";
+const WORKER_VERSION = "6.3.0";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -406,6 +417,47 @@ setTimeout(function(){location.reload();},2500);
 </html>`;
 }
 
+/* ============================================================
+   FIX #26 — EARLY HINTS (103 response)
+   Sends preconnect/preload hints to the browser immediately,
+   before the full HTML is ready. Browser starts fetching assets
+   while worker is still building the response.
+   ============================================================ */
+
+function _buildEarlyHintsHeaders() {
+  const hints = [];
+  hints.push(`<${SUPABASE_URL}>; rel=preconnect; crossorigin`);
+  hints.push(`<https://fonts.googleapis.com>; rel=preconnect`);
+  hints.push(`<https://fonts.gstatic.com>; rel=preconnect; crossorigin`);
+  if (_memShell) {
+    const cssMatch = _memShell.match(/href="(\/assets\/[^"]+\.css)"/);
+    if (cssMatch) hints.push(`<${cssMatch[1]}>; rel=preload; as=style`);
+    const jsMatch = _memShell.match(/src="(\/assets\/[^"]+\.js)"/);
+    if (jsMatch) hints.push(`<${jsMatch[1]}>; rel=modulepreload`);
+  }
+  return hints.join(", ");
+}
+
+/* ============================================================
+   FIX #27 — PRE-COMPRESSED SKELETON CACHE
+   Stores pre-built skeleton HTML per slug in memory for instant
+   cold-start responses with zero compute overhead.
+   ============================================================ */
+
+const _memSkeletonCache = new Map();
+const MEM_SKELETON_CACHE_MAX = 500;
+const MEM_SKELETON_TTL = 600_000;
+
+function _getCachedSkeleton(slug, hostname) {
+  const entry = _memSkeletonCache.get(slug);
+  if (entry && Date.now() < entry.expiresAt) return entry.html;
+  const themeLite = _memThemeCache.get(slug)?.lite || null;
+  const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
+  const html = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
+  _capMapSize(_memSkeletonCache, MEM_SKELETON_CACHE_MAX);
+  _memSkeletonCache.set(slug, { html, expiresAt: Date.now() + MEM_SKELETON_TTL });
+  return html;
+}
 
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
@@ -1326,11 +1378,16 @@ async function proxyToOriginCached(request) {
    HTML INJECTION HELPERS
    ============================================================ */
 
-function injectIntoHtml(html, slug, storefrontData, dataSource) {
+// FIX #28: Added optional inlineProducts param for edge-side product injection
+function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
+  }
+  // FIX #28: Inject first 8 products so "Popular" section renders without client fetch
+  if (inlineProducts) {
+    injection += `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`;
   }
   injection += `</script>\n`;
   injection += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />\n`;
@@ -1619,10 +1676,14 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const warmKey = `warm-html:${slug}`;
     if (!shouldRevalidate(warmKey)) return;
 
-    const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
+    const [prefetchResult, inlineProducts] = await Promise.all([
+      prefetchStorefrontData(slug, ctx, env),
+      _getInlineProductsOrNull(hostname, slug, env, ctx),
+    ]);
     if (!prefetchResult.data) return;
 
-    const result = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source);
+    // FIX #28: Pass inline products to inject into HTML
+    const result = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, inlineProducts);
 
     const fullHeaders = new Headers();
     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -2846,9 +2907,8 @@ export default {
       // FIX #21: Instant skeleton fast path — if shell isn't in memory,
       // return a themed skeleton immediately while warming in background
       if (!_memShell) {
-        const themeLite = _memThemeCache.get(slug)?.lite || null;
-        const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-        const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
+        // FIX #27: Use pre-cached skeleton for zero-compute response
+        const skeletonHtml = _getCachedSkeleton(slug, hostname);
 
         // Kick off full warm in background
         ctx.waitUntil((async () => {
@@ -2940,6 +3000,8 @@ export default {
       const prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
       // FIX #3: Always set Link header
       const linkHeader = _buildLinkPreloadHeader(shellResult.html);
+      // FIX #26: Build Early Hints header for preconnect/preload
+      const earlyHints = _buildEarlyHintsHeaders();
 
       const responseHeaders = new Headers();
       responseHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -2948,7 +3010,9 @@ export default {
       responseHeaders.set("X-Shell-Source", shellResult.source);
       responseHeaders.set("X-Cache-Timestamp", new Date().toISOString());
       responseHeaders.set("X-Data-Source", "streaming");
-      if (linkHeader) responseHeaders.set("Link", linkHeader);
+      // Combine Link header: preload + early hints
+      const combinedLink = [linkHeader, earlyHints].filter(Boolean).join(", ");
+      if (combinedLink) responseHeaders.set("Link", combinedLink);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeaders.set(k, v);
 
       // FIX #2: Pass the ALREADY-RUNNING storefront promise (started before awaits above)
@@ -2992,9 +3056,8 @@ export default {
     if (!_memShell) {
       const resolvedSlugCD = await resolveDomain(cleanDomain, env);
       if (resolvedSlugCD) {
-        const themeLite = _memThemeCache.get(resolvedSlugCD)?.lite || null;
-        const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-        const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname);
+        // FIX #27: Use pre-cached skeleton
+        const skeletonHtml = _getCachedSkeleton(resolvedSlugCD, hostname);
 
         ctx.waitUntil((async () => {
           try {
@@ -3078,6 +3141,8 @@ export default {
       const prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
       // FIX #3
       const linkHeaderCD = _buildLinkPreloadHeader(shellResultCD.html);
+      // FIX #26: Early Hints for custom domains
+      const earlyHintsCD = _buildEarlyHintsHeaders();
 
       const responseHeadersCD = new Headers();
       responseHeadersCD.set("Content-Type", "text/html; charset=utf-8");
@@ -3086,7 +3151,8 @@ export default {
       responseHeadersCD.set("X-Shell-Source", shellResultCD.source);
       responseHeadersCD.set("X-Cache-Timestamp", new Date().toISOString());
       responseHeadersCD.set("X-Data-Source", "streaming");
-      if (linkHeaderCD) responseHeadersCD.set("Link", linkHeaderCD);
+      const combinedLinkCD = [linkHeaderCD, earlyHintsCD].filter(Boolean).join(", ");
+      if (combinedLinkCD) responseHeadersCD.set("Link", combinedLinkCD);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeadersCD.set(k, v);
 
       // FIX #2: Pass the ALREADY-RUNNING promise
@@ -3242,12 +3308,16 @@ export default {
                     // FIX #15: Use the shared cronShellResult
                     const shellResult = cronShellResult;
 
-                    // Warm storefront data
-                    const dataResult = await prefetchStorefrontData(s.slug, ctx, env);
+                    // Warm storefront data + products in parallel
+                    const [dataResult, cronProducts] = await Promise.all([
+                      prefetchStorefrontData(s.slug, ctx, env),
+                      _getInlineProductsOrNull(`${s.slug}.${ROOT_DOMAIN}`, s.slug, env, ctx),
+                    ]);
 
                     // Warm HTML cache with NORMALIZED key
+                    // FIX #28: Include inline products in warmed HTML
                     if (shellResult?.html && dataResult.data) {
-                      const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm");
+                      const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm", cronProducts);
                       // FIX #10: Raised to 3600/7200
                       const htmlResponse = new Response(injected.html, {
                         status: 200,
