@@ -1,69 +1,105 @@
 
 
-# Worker v6.2.0 Bug Fixes — 5 Issues
+# Transform Landing Page: SaaS Product → Service Business
 
-## Issue A — Critical: Replace blind `setTimeout` reload with smart polling
-
-**File:** `docs/cloudflare-worker-current.js`, lines 401-403
-
-Replace the `setTimeout(function(){location.reload();},2500)` in `_buildInstantSkeletonPage()` with a polling mechanism that checks `X-Data-Source` header before reloading. After 3 failed attempts (6s), reload unconditionally as a last resort.
-
-```javascript
-var attempts = 0;
-function checkReady() {
-  attempts++;
-  if (attempts >= 3) { location.reload(); return; }
-  fetch(location.href, { method: 'HEAD', cache: 'no-store' })
-    .then(function(r) {
-      var src = r.headers.get('X-Data-Source') || '';
-      if (src && src !== 'instant-skeleton') {
-        location.reload();
-      } else {
-        setTimeout(checkReady, 2000);
-      }
-    })
-    .catch(function() { setTimeout(checkReady, 2000); });
-}
-setTimeout(checkReady, 2000);
-```
-
-## Issue B — Medium: Align prebuilt head TTLs with shell TTLs
-
-**File:** `docs/cloudflare-worker-current.js`, lines 412-413
-
-- `PREBUILT_HEAD_KV_TTL`: 3600 → **86_400** (match shell KV TTL)
-- `PREBUILT_HEAD_CACHE_TTL`: 600 → **3_600** (match shell Cache TTL)
-
-## Issue C — Medium: Eliminate duplicate `resolveDomain()` for custom domains
-
-**File:** `docs/cloudflare-worker-current.js`, lines 2992-3038
-
-When `!_memShell` and `resolveDomain()` returns null (no slug found), currently falls through to a second `Promise.all([resolveDomain(...), ...])`. Fix: if the skeleton path's `resolveDomain` returns null, return a 404 immediately instead of calling it again.
-
-If skeleton path returns a slug but we still fall through (shouldn't happen since we return), the `Promise.all` block at line 3035 should reuse the already-resolved slug instead of calling `resolveDomain` again.
-
-## Issue D — Low: Update comment for `STOREFRONT_PREFETCH_TIMEOUT_MS`
-
-**File:** `docs/cloudflare-worker-current.js`, line 94
-
-Clarify that this timeout only applies to the warm path (when `_memShell` exists), since the instant skeleton path bypasses `serveStreamedHtml` entirely.
-
-## Issue E — Low: Increase `all-active-slugs` KV TTL from 600s to 3600s
-
-**File:** `docs/cloudflare-worker-current.js`
-
-Three locations to update:
-- Line 2478: `expirationTtl: 600` → `3_600`
-- Line 2483: `expirationTtl: 600` → `3_600`
-- Line 3218: `expirationTtl: 600` → `3_600`
-
-Also update `_slugIndexExpiresAt` memory TTL at line 3221 from `300_000` (5min) to `1_800_000` (30min) for consistency.
+The entire landing page currently reads as "create your own store" (DIY SaaS). You want it repositioned as a **service** — "we build your ecommerce website for ₹10,000". Here's every file that needs changes:
 
 ---
 
-## Version bump
-`WORKER_VERSION`: "6.2.0" → **"6.2.1"**
+## Files to Modify
 
-## Deployment
-After approval, all changes go into `docs/cloudflare-worker-current.js`. You deploy manually to Cloudflare.
+### 1. Hero (`Hero.tsx`) — already mostly done
+- Change subtitle to emphasize "we build it for you"
+- Change CTA buttons: "Start Free Trial" → "Get Started" / "Talk to Us"
+- Update trust badges: remove "Zero Commission", add "Done For You", "Ready in 48 Hours"
+- Remove "7-Day Free Trial" badge, replace with "Professional Service"
+
+### 2. Navbar (`Navbar.tsx`)
+- "Start Free" button → "Get Quote" or "Contact Us"
+- "Store Owner Login" → "Client Login"
+- Remove "Pricing" and "For Sellers" nav links, add "Our Work" / "Process" / "Contact"
+
+### 3. ProblemAwareness (`ProblemAwareness.tsx`)
+- Keep the problems (they still apply), but change solutions to service-oriented language
+- e.g. "We'll build you a professional online store" instead of "Go online and sell"
+
+### 4. CommissionCalculator (`CommissionCalculator.tsx`)
+- Reframe as "How much revenue are you missing without an online store?"
+- Change CTA from "Stop Losing Money — Start Free" → "Get Your Store Built — ₹10,000"
+
+### 5. WhoUses (`WhoUses.tsx`)
+- Change heading from "Built For Businesses Like Yours" (fine) but update descriptions to service tone
+- e.g. "We build custom stores for clothing brands with size variants" instead of "Sell ethnic wear..."
+
+### 6. SolutionFlow (`SolutionFlow.tsx`)
+- Complete rewrite of 4 steps to service flow:
+  1. "Tell Us Your Needs" — Share your business details
+  2. "We Design & Build" — Custom store built by our team
+  3. "Review & Launch" — You approve, we go live
+  4. "Start Selling" — Your store is live, orders flow in
+- Change CTA: "Create Your Store in 10 Minutes" → "Get Your Store Built — ₹10,000"
+
+### 7. StoreLookShowcase (`StoreLookShowcase.tsx`)
+- Change heading: "How Your Store Actually Looks" → "Stores We've Built"
+- Change subtitle to "Real stores built by our team for real businesses"
+
+### 8. Testimonials (`Testimonials.tsx`)
+- Update quotes to sound like service clients (not self-service users)
+- e.g. "The ShopBanao team built my store in 2 days" instead of "Setup took 15 minutes flat"
+
+### 9. FAQ (`FAQ.tsx`)
+- Rewrite all Q&As for service model:
+  - "How does the process work?" / "How long does it take?" / "What's included in ₹10,000?" / "Do I need technical knowledge to manage it?" / "What payment methods will my store support?" / "Can I get a custom domain?" / "What if I need changes later?" / "Do you provide ongoing support?"
+
+### 10. FinalCTA (`FinalCTA.tsx`)
+- "Create Your Online Store in 10 Minutes" → "Get Your Online Store Built for ₹10,000"
+- CTAs: "Start Free Trial" → "Get Started Now", remove "View Themes"
+- Update subtext to service language
+
+### 11. StatsBar (`StatsBar.tsx`)
+- "Stores Created" → "Stores Delivered"
+- Keep revenue and products stats
+
+### 12. Footer (`Footer.tsx`)
+- "Build your online store with zero commission" → "Professional ecommerce websites built for Indian businesses"
+- "Product" section → "Services"
+- Fix duplicate copyright text bug
+
+### 13. ExitIntentPopup (`ExitIntentPopup.tsx`)
+- Remove "free trial" / "live in 10 minutes" language
+- Change to "Get your store built for just ₹10,000 — talk to us today"
+- CTA: "Start Free Trial" → "Get Started" or link to WhatsApp
+
+### 14. StickyMobileCTA (`StickyMobileCTA.tsx`)
+- "Start Free Trial" → "Get Your Store — ₹10,000"
+
+### 15. LiveStorePreview (`LiveStorePreview.tsx`)
+- "See What Sellers Are Building" → "Stores We've Delivered"
+- "Create Your Store Free" → "Get Yours Built"
+
+### 16. LandingJsonLd (`LandingJsonLd.tsx`)
+- Update structured data descriptions to service model
+
+### 17. PaymentTrustStrip (`PaymentTrustStrip.tsx`)
+- Keep as-is (payment partners still relevant)
+
+---
+
+## Key Messaging Shift
+
+| Before (SaaS/DIY) | After (Service) |
+|---|---|
+| Create your store | We build your store |
+| Start Free Trial | Get Started / Contact Us |
+| No coding needed | Done for you |
+| In 10 minutes | Ready in 48 hours |
+| Zero commission | One-time ₹10,000 |
+| Sign up | Get in touch |
+
+---
+
+## Technical Notes
+- All changes are text/copy only — no structural or layout changes needed
+- All CTAs pointing to `/signup` will be changed to WhatsApp link (`https://wa.me/919692282485`) or a contact form
+- The Bauhaus design system and component structure remain untouched
 
