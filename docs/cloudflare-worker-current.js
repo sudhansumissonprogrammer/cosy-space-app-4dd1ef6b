@@ -1,52 +1,69 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.3.0 — SECURITY, PERFORMANCE & BUG FIXES
+ * SHOPBANAO PRODUCTION ROUTER v6.2.1 — COLD START OPTIMIZATION + BUG FIXES
  *
- * Changes from v6.2.1:
- *  #1  — Move SUPABASE_URL / SUPABASE_ANON_KEY to env bindings (env.SUPABASE_URL etc)
- *  #2  — Auth on purge/prewarm endpoints via env.PURGE_SECRET + timing-safe compare
- *  #3  — Fix infinite skeleton reload loop with sessionStorage guard (max 1 reload)
- *  #5  — Add console.error in critical ctx.waitUntil catches for visibility
- *  #6  — In-memory _warmingInFlight Set to prevent duplicate background warms
- *  #7  — Skip _batchKvRead when in-memory theme+storefront caches are hot
- *  #8  — Increase domain resolution TTLs (KV 86400, Cache 3600, Mem 30min)
- *  #10 — Gate _getInlineProductsOrNull on pathname === '/' only
- *  #11 — Add 25s deadline to cron store-warm loop
- *  #12 — Move bot detection before early edge cache to skip I/O for bots
- *  #13 — Move cleanRateLimitMap/cleanRevalMap into ctx.waitUntil
- *  #14 — Explicit HEAD request handler (lightweight, no streaming HTML)
- *  #15 — Remove redundant storeInEdgeCache on streaming responses
- *  #16 — Remove dead slug index code (_getSlugIndex, _slugIndexSet, etc)
- *  #17 — XSS: sanitizeJsonForScript escapes </script, <!--, <script in JSON
- *  #19 — Tighten CORS on mutation endpoints to *.shopbanao.in
- *  #20 — Remove x-forwarded-for fallback from rate limiting
- *  #21 — Slug validation on prewarm endpoint
- *
- * Previous changes from v6.2.1:
+ * Changes from v6.1.0:
  *  FIX #20 — TTL increases: Shell KV 3600→86400, Cache 600→3600, Mem 10→30min.
  *            Storefront KV 3600→14400, Mem 2→10min, Cache 600→1200.
- *  FIX #21 — Instant skeleton fast path for cold starts.
- *  FIX #22 — ORIGIN_TIMEOUT_MS reduced from 8000→3500.
- *  FIX #23 — Removed blocking await _getSlugIndex(env).
- *  FIX #24 — stale-while-revalidate reduced from 7200→600.
- *  FIX #25 — Cron skeleton fallback on DB failure.
- *  FIX #16 — Canonical tag injection.
- *  FIX #17 — CSP loosened for third-party tools.
- *  FIX #18 — Skeleton fallback timeout 5000→3500ms.
- *  FIX #19 — stale-while-revalidate 86400→7200→600.
- *  FIX #1–#15 — All v5 optimizations.
+ *            Shell only changes on deploy; storefront data changes rarely.
+ *  FIX #21 — Instant skeleton fast path: If _memShell is empty (true cold start),
+ *            return a minimal themed skeleton HTML immediately instead of blocking
+ *            on origin fetch. Warms shell in background via ctx.waitUntil.
+ *  FIX #22 — ORIGIN_TIMEOUT_MS reduced from 8000→3500 to fail fast.
+ *  FIX #23 — Removed blocking await _getSlugIndex(env) — fire-and-forget.
+ *  FIX #24 — stale-while-revalidate reduced from 7200→600 on warmed HTML.
+ *  FIX #25 — Cron skeleton fallback: if DB fails for a store, cache a themed
+ *            skeleton instead of leaving the store cold.
+ *
+ * Changes from v6.0.0:
+ *  FIX #16 — Canonical tag injection: <link rel="canonical"> added to all
+ *            storefront HTML to eliminate duplicate content across subdomain
+ *            and custom domain hosts.
+ *  FIX #17 — CSP loosened: Added commonly needed domains (Google Fonts,
+ *            analytics, Razorpay, Tawk.to, Crisp, etc.) to prevent silent
+ *            breakage when merchants add third-party tools.
+ *  FIX #18 — Skeleton fallback timeout reduced from 5000ms to 3500ms for
+ *            faster perceived performance on slow connections.
+ *  FIX #19 — stale-while-revalidate reduced from 86400s to 7200s on warmed
+ *            HTML to ensure merchant changes reflect within ~2 hours.
+ *
+ * Changes from v5.0.0 (All 15 fixes applied):
+ *
+ *  FIX #1  — In-memory SPA shell (_memShell). Zero I/O on warm isolates.
+ *  FIX #2  — Storefront promise starts BEFORE shell/theme/head fetches.
+ *             storefrontPromise is kicked off as the very first async op.
+ *  FIX #3  — Preload Link header sent on EVERY response (not just cache hits).
+ *             Enables browser to prefetch CSS/JS while worker is still resolving.
+ *  FIX #4  — Batch KV reads: shell + theme + storefront in ONE Promise.all.
+ *             _batchKvRead() replaces 3 sequential KV.get calls.
+ *  FIX #5  — Deadline anchored to REQUEST START (not shell fetch completion).
+ *             storefront gets full 1400ms from when request arrived.
+ *  FIX #6  — getSpaShell() checks _memShell first, skips Cache API entirely
+ *             on warm isolates. Cache API read only on cold start.
+ *  FIX #7  — In-memory prebuilt head string (_memPrebuiltHead). Built once,
+ *             stored forever in the isolate.
+ *  FIX #8  — In-memory theme cache per slug (_memThemeCache, 2000 entry cap).
+ *             Saves 50ms KV round-trip on every warm request per store.
+ *  FIX #9  — _resolveStoreInfo() is the single authoritative lookup.
+ *             _resolveStoreId() now delegates to it instead of duplicating.
+ *  FIX #10 — Cache-Control on warmed/prewarmed HTML raised to
+ *             max-age=3600, stale-while-revalidate=600.
+ *  FIX #11 — buildSkeleton() now uses the actual store bgColor (fixes white
+ *             flash on dark-themed stores).
+ *  FIX #12 — In-memory storefront data cache (_memStorefrontCache).
+ *             After first request, DB is never hit again for 2 minutes.
+ *  FIX #13 — STOREFRONT_PREFETCH_TIMEOUT_MS raised to 1000ms.
+ *             With FIX #2 the clock starts earlier, so 1000ms is now safer.
+ *  FIX #14 — Cron warms ALL stores (not just top 20) with concurrency=10.
+ *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.3.0";
+const WORKER_VERSION = "6.2.1";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
-// #1: Secrets moved to env bindings — fallbacks for dev/testing only
-const SUPABASE_URL_FALLBACK = "https://dqepeywgftbpxeeqfuwt.supabase.co";
-const SUPABASE_ANON_KEY_FALLBACK =
+const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
+const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
-
-function _supabaseUrl(env) { return env?.SUPABASE_URL || SUPABASE_URL_FALLBACK; }
-function _supabaseAnonKey(env) { return env?.SUPABASE_ANON_KEY || SUPABASE_ANON_KEY_FALLBACK; }
 
 /* ============================================================
    BOT DETECTION
@@ -71,29 +88,33 @@ function isSocialInAppBrowser(ua) {
    TIMEOUTS
    ============================================================ */
 
+// FIX #22: Reduced from 8000→3500 to fail fast and serve skeleton instead
 const ORIGIN_TIMEOUT_MS = 3_500;
 const EDGE_FN_TIMEOUT_MS = 10_000;
+// FIX #20: Raised from 1000→1500ms. Only applies to warm path (_memShell exists);
+// the instant skeleton path (FIX #21) bypasses serveStreamedHtml entirely.
 const STOREFRONT_PREFETCH_TIMEOUT_MS = 1_500;
 const PRODUCTS_DB_TIMEOUT_MS = 3_000;
 
 const cache = caches.default;
 
 /* ============================================================
-   IN-MEMORY SPA SHELL (zero I/O on warm isolates)
+   FIX #1 — IN-MEMORY SPA SHELL (zero I/O on warm isolates)
    ============================================================ */
 
 let _memShell = null;
 let _memShellTs = 0;
+// FIX #20: Raised from 600_000 (10min) → 1_800_000 (30min)
 const MEM_SHELL_TTL = 1_800_000; // 30 min
 
 /* ============================================================
-   IN-MEMORY PREBUILT HEAD (built once per isolate)
+   FIX #7 — IN-MEMORY PREBUILT HEAD (built once per isolate)
    ============================================================ */
 
 let _memPrebuiltHead = null;
 
 /* ============================================================
-   IN-MEMORY THEME CACHE PER SLUG
+   FIX #8 — IN-MEMORY THEME CACHE PER SLUG
    ============================================================ */
 
 const _memThemeCache = new Map();
@@ -101,18 +122,13 @@ const MEM_THEME_CACHE_MAX = 2_000;
 const MEM_THEME_TTL = 300_000; // 5 min
 
 /* ============================================================
-   IN-MEMORY STOREFRONT DATA CACHE PER SLUG
+   FIX #12 — IN-MEMORY STOREFRONT DATA CACHE PER SLUG
    ============================================================ */
 
 const _memStorefrontCache = new Map();
 const MEM_STOREFRONT_CACHE_MAX = 1_000;
+// FIX #20: Raised from 120_000 (2min) → 600_000 (10min)
 const MEM_STOREFRONT_TTL = 600_000; // 10 min
-
-/* ============================================================
-   #6: IN-MEMORY WARMING FLAG — prevents duplicate background warms
-   ============================================================ */
-
-const _warmingInFlight = new Set();
 
 /* ============================================================
    REVALIDATION COOLDOWN
@@ -179,6 +195,7 @@ function cleanRateLimitMap() {
    SECURITY HEADERS
    ============================================================ */
 
+// FIX #17: Loosened CSP — added commonly needed third-party domains
 const SECURITY_HEADERS = {
   "X-Frame-Options": "SAMEORIGIN",
   "X-Content-Type-Options": "nosniff",
@@ -199,56 +216,6 @@ const SECURITY_HEADERS = {
 };
 
 /* ============================================================
-   #2: PURGE/PREWARM AUTH — timing-safe secret verification
-   ============================================================ */
-
-async function verifyPurgeAuth(request, env) {
-  const token = request.headers.get("X-Purge-Token") || "";
-  const expected = env?.PURGE_SECRET || "";
-  if (!token || !expected) return false;
-  const enc = new TextEncoder();
-  const tokenBytes = enc.encode(token);
-  const expectedBytes = enc.encode(expected);
-  if (tokenBytes.length !== expectedBytes.length) return false;
-  try {
-    return crypto.subtle.timingSafeEqual(tokenBytes, expectedBytes);
-  } catch {
-    // Fallback for environments without timingSafeEqual
-    const key = await crypto.subtle.importKey("raw", enc.encode("hmac-key"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    const sig1 = new Uint8Array(await crypto.subtle.sign("HMAC", key, tokenBytes));
-    const sig2 = new Uint8Array(await crypto.subtle.sign("HMAC", key, expectedBytes));
-    if (sig1.length !== sig2.length) return false;
-    let diff = 0;
-    for (let i = 0; i < sig1.length; i++) diff |= sig1[i] ^ sig2[i];
-    return diff === 0;
-  }
-}
-
-function _unauthorizedResponse() {
-  return new Response(JSON.stringify({ error: "Unauthorized" }), {
-    status: 401,
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-  });
-}
-
-/* ============================================================
-   #19: MUTATION CORS — restricted to *.shopbanao.in
-   ============================================================ */
-
-function addMutationCorsHeaders(response, origin, source) {
-  const res = new Response(response.body, response);
-  const allowedOrigin = origin && (origin.endsWith(".shopbanao.in") || origin === "https://shopbanao.in")
-    ? origin
-    : "https://shopbanao.in";
-  res.headers.set("Access-Control-Allow-Origin", allowedOrigin);
-  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type, X-Purge-Token");
-  res.headers.set("X-Products-Source", source || "unknown");
-  res.headers.set("X-Worker-Version", WORKER_VERSION);
-  return res;
-}
-
-/* ============================================================
    HELPERS
    ============================================================ */
 
@@ -259,14 +226,6 @@ function escapeHtml(str = "") {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/'/g, "&#x27;");
-}
-
-// #17: Sanitize JSON for safe injection inside <script> tags
-function sanitizeJsonForScript(jsonStr) {
-  return jsonStr
-    .replace(/<\/script/gi, "<\\/script")
-    .replace(/<!--/g, "<\\!--")
-    .replace(/<script/gi, "<\\script");
 }
 
 function getProductSlug(pathname) {
@@ -310,8 +269,10 @@ function _capMapSize(map, max) {
 
 /* ============================================================
    SKELETON + THEME BUILDERS
+   FIX #11: buildSkeleton now actually uses bgColor param
    ============================================================ */
 
+// FIX #18: Reduced from 5000ms to 3500ms for faster perceived performance
 function getSkeletonCleanupScript(fallbackMs = 3500) {
   return `<script>(function(){
     var removed=false;
@@ -331,6 +292,7 @@ function getSkeletonCleanupScript(fallbackMs = 3500) {
 }
 
 function buildSkeleton(bgColor, skeletonMuted) {
+  // FIX #11: Use actual store bgColor instead of hardcoded #ffffff
   const skelBg = bgColor || "#ffffff";
   const skelBase = "#f0f0f0";
   const skelShimmer = "#e0e0e0";
@@ -409,8 +371,7 @@ function getSkeletonMuted(textColor) {
 }
 
 /* ============================================================
-   INSTANT SKELETON PAGE (returned on true cold start)
-   #3: sessionStorage guard — max 1 reload, then let SPA hydrate
+   FIX #21 — INSTANT SKELETON PAGE (returned on true cold start)
    ============================================================ */
 
 function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname) {
@@ -419,6 +380,7 @@ function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname) {
   const skeleton = buildSkeleton(bgColor, skeletonMuted);
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
 
+  // Build canonical URL
   let canonicalUrl = `https://${safeSlug}.${ROOT_DOMAIN}/`;
   if (hostname && !hostname.endsWith(`.${ROOT_DOMAIN}`)) {
     canonicalUrl = `https://${hostname}/`;
@@ -437,34 +399,24 @@ ${themeCss}
 <body>
 ${skeleton}
 <script>
-(function(){
-  var MAX_RELOADS = 1;
-  var reloadCount = parseInt(sessionStorage.getItem('_sb_skel_reloads') || '0', 10);
-  if (reloadCount >= MAX_RELOADS) {
-    // Already reloaded once — stop, let SPA hydrate naturally
-    sessionStorage.removeItem('_sb_skel_reloads');
-    return;
-  }
-  function checkReady() {
-    fetch(location.href, { method: 'HEAD', cache: 'no-store' })
-      .then(function(r) {
-        var src = r.headers.get('X-Data-Source') || '';
-        if (src && src !== 'instant-skeleton') {
-          sessionStorage.removeItem('_sb_skel_reloads');
-          location.reload();
-        } else {
-          // Still skeleton — do one reload and mark it
-          sessionStorage.setItem('_sb_skel_reloads', String(reloadCount + 1));
-          setTimeout(function() { location.reload(); }, 2500);
-        }
-      })
-      .catch(function() {
-        sessionStorage.setItem('_sb_skel_reloads', String(reloadCount + 1));
-        setTimeout(function() { location.reload(); }, 2500);
-      });
-  }
-  setTimeout(checkReady, 2000);
-})();
+// FIX #24: Smart polling — only reload when warm content is ready (not another skeleton).
+// Prevents infinite reload loops on slow connections where background warm takes >2.5s.
+var attempts = 0;
+function checkReady() {
+  attempts++;
+  if (attempts >= 3) { location.reload(); return; }
+  fetch(location.href, { method: 'HEAD', cache: 'no-store' })
+    .then(function(r) {
+      var src = r.headers.get('X-Data-Source') || '';
+      if (src && src !== 'instant-skeleton') {
+        location.reload();
+      } else {
+        setTimeout(checkReady, 2000);
+      }
+    })
+    .catch(function() { setTimeout(checkReady, 2000); });
+}
+setTimeout(checkReady, 2000);
 </script>
 </body>
 </html>`;
@@ -473,16 +425,17 @@ ${skeleton}
 
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
+// FIX #25: Aligned with shell TTLs — head is derived from shell, changes at same time
 const PREBUILT_HEAD_KV_TTL = 86_400;
 const PREBUILT_HEAD_CACHE_TTL = 3_600;
 
-function _buildPrebuiltHead(html, env) {
+function _buildPrebuiltHead(html) {
+  // FIX #7: Cache result in module-level variable — computed once per isolate
   if (_memPrebuiltHead) return _memPrebuiltHead;
 
-  const supabaseUrl = _supabaseUrl(env);
   let head = "";
-  head += `<link rel="preconnect" href="${supabaseUrl}" crossorigin />`;
-  head += `<link rel="dns-prefetch" href="${supabaseUrl}" />`;
+  head += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />`;
+  head += `<link rel="dns-prefetch" href="${SUPABASE_URL}" />`;
   head += `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
@@ -505,6 +458,7 @@ function _buildPrebuiltHead(html, env) {
 }
 
 async function getPrebuiltHead(html, env) {
+  // FIX #7: In-memory first
   if (_memPrebuiltHead) return _memPrebuiltHead;
 
   const headCacheKey = new Request("https://cache/prebuilt-head");
@@ -526,28 +480,29 @@ async function getPrebuiltHead(html, env) {
             headCacheKey,
             new Response(cached, { headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` } }),
           )
-          .catch(e => console.error('[cache] prebuilt-head put', e));
+          .catch(() => {});
         return _memPrebuiltHead;
       }
     } catch {}
   }
 
-  const prebuilt = _buildPrebuiltHead(html, env);
+  const prebuilt = _buildPrebuiltHead(html);
 
   cache
     .put(
       headCacheKey,
       new Response(prebuilt, { headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` } }),
     )
-    .catch(e => console.error('[cache] prebuilt-head put', e));
+    .catch(() => {});
   if (env?.STORE_KV) {
-    env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, prebuilt, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(e => console.error('[kv] prebuilt-head put', e));
+    env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, prebuilt, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(() => {});
   }
 
   return prebuilt;
 }
 
 async function _getCachedPrebuiltHead(env) {
+  // FIX #7: In-memory first — avoids all I/O on warm isolates
   if (_memPrebuiltHead) return _memPrebuiltHead;
 
   const headCacheKey = new Request("https://cache/prebuilt-head");
@@ -572,7 +527,7 @@ async function _getCachedPrebuiltHead(env) {
 }
 
 /* ============================================================
-   LINK PRELOAD HEADER (sent on every response)
+   FIX #3 — LINK PRELOAD HEADER (sent on every response)
    ============================================================ */
 
 function _buildLinkPreloadHeader(html) {
@@ -596,16 +551,18 @@ function _buildLinkPreloadHeader(html) {
 }
 
 /* ============================================================
-   SPA SHELL (in-memory → Cache API → KV → origin)
+   FIX #1 + FIX #6 — SPA SHELL (in-memory → Cache API → KV → origin)
    ============================================================ */
 
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
-const SPA_SHELL_KV_TTL = 86_400;
-const SPA_SHELL_CACHE_TTL = 3_600;
+// FIX #20: Shell only changes on deploy — raise TTLs aggressively
+const SPA_SHELL_KV_TTL = 86_400; // was 3600 → 24h
+const SPA_SHELL_CACHE_TTL = 3_600; // was 600 → 1h
 
 let inflightShellFetch = null;
 
 async function getSpaShell(request, ctx, env) {
+  // FIX #1 + #6: In-memory first — zero I/O on warm isolates
   if (_memShell && Date.now() < _memShellTs) {
     return { html: _memShell, source: "mem" };
   }
@@ -639,7 +596,7 @@ async function getSpaShell(request, ctx, env) {
                   },
                 }),
               )
-              .catch(e => console.error('[cache] shell put', e)),
+              .catch(() => {}),
           );
         }
         return { html: kvHtml, source: "kv-shell" };
@@ -695,7 +652,7 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
             },
           }),
         ),
-      ]).catch(e => console.error('[cache] shell origin put', e)),
+      ]).catch(() => {}),
     );
   }
 
@@ -703,11 +660,12 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
 }
 
 /* ============================================================
-   BATCH KV READ (shell + theme + storefront in ONE call)
+   FIX #4 — BATCH KV READ (shell + theme + storefront in ONE call)
    ============================================================ */
 
-const KV_STOREFRONT_TTL = 14_400;
-const CACHE_STOREFRONT_TTL = 1_200;
+// FIX #20: Storefront data changes rarely — raise TTLs
+const KV_STOREFRONT_TTL = 14_400; // was 3600 → 4h
+const CACHE_STOREFRONT_TTL = 1_200; // was 600 → 20min
 
 async function _batchKvRead(slug, env) {
   if (!env?.STORE_KV) return { theme: null, storefront: null, storeInfo: null };
@@ -724,7 +682,7 @@ async function _batchKvRead(slug, env) {
 }
 
 /* ============================================================
-   LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
+   FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
    ============================================================ */
 
 const THEME_LITE_KV_TTL = 3600;
@@ -742,6 +700,7 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
   };
   const liteStr = JSON.stringify(lite);
 
+  // FIX #8: Store in memory immediately
   _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
   _memThemeCache.set(slug, { lite, expiresAt: Date.now() + MEM_THEME_TTL });
 
@@ -751,14 +710,15 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
       themeCacheKey,
       new Response(liteStr, { headers: { "Cache-Control": `public, max-age=${THEME_LITE_CACHE_TTL}` } }),
     )
-    .catch(e => console.error('[cache] theme put', e));
+    .catch(() => {});
 
   if (env?.STORE_KV) {
-    env.STORE_KV.put(`theme-lite:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL }).catch(e => console.error('[kv] theme put', e));
+    env.STORE_KV.put(`theme-lite:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL }).catch(() => {});
   }
 }
 
 async function _getThemeLite(slug, env) {
+  // FIX #8: In-memory first
   const mem = _memThemeCache.get(slug);
   if (mem && Date.now() < mem.expiresAt) return mem.lite;
 
@@ -786,7 +746,7 @@ async function _getThemeLite(slug, env) {
             headers: { "Cache-Control": `public, max-age=${THEME_LITE_CACHE_TTL}` },
           }),
         )
-        .catch(e => console.error('[cache] theme kv→cache', e));
+        .catch(() => {});
     }
     return kvData;
   } catch {
@@ -795,12 +755,13 @@ async function _getThemeLite(slug, env) {
 }
 
 /* ============================================================
-   STOREFRONT DATA (in-memory → Cache API → KV → DB)
+   FIX #12 — STOREFRONT DATA (in-memory → Cache API → KV → DB)
    ============================================================ */
 
 const inflightRequests = new Map();
 
 async function prefetchStorefrontData(slug, ctx, env) {
+  // FIX #12: In-memory first — after first request, DB never called for 2 min
   const mem = _memStorefrontCache.get(slug);
   if (mem && Date.now() < mem.expiresAt) return { data: mem.data, source: "mem" };
 
@@ -832,7 +793,7 @@ async function prefetchStorefrontData(slug, ctx, env) {
                   headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` },
                 }),
               )
-              .catch(e => console.error('[cache] storefront kv→cache', e)),
+              .catch(() => {}),
           );
         }
         return { data: kvData, source: "kv" };
@@ -865,18 +826,17 @@ async function prefetchStorefrontData(slug, ctx, env) {
 async function _fetchShellFromSupabase(slug, ctx, env) {
   const kvKey = `storefront:${slug}`;
   const dataCacheKey = new Request(`https://cache/storefront-data/${slug}`);
-  const supabaseUrl = _supabaseUrl(env);
-  const anonKey = _supabaseAnonKey(env);
 
   const controller = new AbortController();
+  // FIX #13: Raised to 1000ms (FIX #2 starts the clock earlier so this is safe)
   const timeout = setTimeout(() => controller.abort(), STOREFRONT_PREFETCH_TIMEOUT_MS);
 
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/get_storefront_shell`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_storefront_shell`, {
       method: "POST",
       headers: {
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
       },
       signal: controller.signal,
@@ -887,6 +847,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
     const data = await res.json();
 
     if (data) {
+      // FIX #12: Immediately cache in memory
       _capMapSize(_memStorefrontCache, MEM_STOREFRONT_CACHE_MAX);
       _memStorefrontCache.set(slug, { data, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
 
@@ -907,7 +868,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
               new Response(dataStr, { headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` } }),
             ),
             storeId ? _prewarmProducts(storeId, storeSlug, ctx, env, data?.store?.custom_domain) : Promise.resolve(),
-          ]).catch(e => console.error('[cache] storefront db→cache', e)),
+          ]).catch(() => {}),
         );
       }
     }
@@ -919,6 +880,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
   }
 }
 
+// FIX #5: Deadline anchored to request start, not shell fetch completion
 async function prefetchStorefrontDataWithDeadline(slug, ctx, env, deadlineMs) {
   const deadline = new Promise((resolve) =>
     setTimeout(() => resolve({ data: null, source: "deadline-timeout" }), deadlineMs),
@@ -958,7 +920,7 @@ async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
                 },
               }),
             )
-            .catch(e => console.error('[cache] inline products', e)),
+            .catch(() => {}),
         );
         return kvProducts;
       }
@@ -969,39 +931,22 @@ async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
 
 /* ============================================================
    DOMAIN RESOLUTION (in-memory → Cache API → KV → DB)
-   #8: Increased TTLs — KV 86400, Cache 3600, Mem 1800000
    ============================================================ */
 
-// #8: Raised from 3600 → 86400 (24h) — custom domain mappings rarely change
-const KV_DOMAIN_TTL = 86_400;
-// #8: Raised from 300 → 3600 (1h)
-const CACHE_DOMAIN_TTL = 3_600;
-// #8: Raised from 300_000 → 1_800_000 (30min)
-const MEM_DOMAIN_TTL = 1_800_000;
-
-const _memDomainCache = new Map();
-const MEM_DOMAIN_CACHE_MAX = 2_000;
+const KV_DOMAIN_TTL = 3600;
 
 async function resolveDomain(hostname, env) {
   const domain = hostname
     .replace(/^www\./, "")
     .toLowerCase()
     .trim();
-
-  // #8: In-memory first
-  const mem = _memDomainCache.get(domain);
-  if (mem && Date.now() < mem.expiresAt) return mem.slug;
-
   const key = new Request(`https://cache/domain-${domain}`);
 
   try {
     const cached = await cache.match(key);
     if (cached) {
       const data = await cached.json();
-      const slug = data.slug || null;
-      _capMapSize(_memDomainCache, MEM_DOMAIN_CACHE_MAX);
-      _memDomainCache.set(domain, { slug, expiresAt: Date.now() + MEM_DOMAIN_TTL });
-      return slug;
+      return data.slug || null;
     }
   } catch {}
 
@@ -1009,32 +954,25 @@ async function resolveDomain(hostname, env) {
     try {
       const kvData = await env.STORE_KV.get(`domain:${domain}`, { type: "json" });
       if (kvData) {
-        const slug = kvData.slug || null;
-        _capMapSize(_memDomainCache, MEM_DOMAIN_CACHE_MAX);
-        _memDomainCache.set(domain, { slug, expiresAt: Date.now() + MEM_DOMAIN_TTL });
         cache
-          .put(key, new Response(JSON.stringify(kvData), { headers: { "Cache-Control": `public, max-age=${CACHE_DOMAIN_TTL}` } }))
-          .catch(e => console.error('[cache] domain kv→cache', e));
-        return slug;
+          .put(key, new Response(JSON.stringify(kvData), { headers: { "Cache-Control": "public, max-age=300" } }))
+          .catch(() => {});
+        return kvData.slug || null;
       }
     } catch {}
   }
 
-  const supabaseUrl = _supabaseUrl(env);
-  const anonKey = _supabaseAnonKey(env);
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/stores_public?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
-      { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } },
+      `${SUPABASE_URL}/rest/v1/stores_public?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
     );
     if (!res.ok) return null;
     const data = await res.json();
     const slug = data[0]?.slug || null;
 
-    const ttl = slug ? CACHE_DOMAIN_TTL : 60;
+    const ttl = slug ? 300 : 60;
     const cacheData = JSON.stringify({ slug });
-    _capMapSize(_memDomainCache, MEM_DOMAIN_CACHE_MAX);
-    _memDomainCache.set(domain, { slug, expiresAt: Date.now() + (slug ? MEM_DOMAIN_TTL : 60_000) });
     const writes = [
       cache.put(key, new Response(cacheData, { headers: { "Cache-Control": `public, max-age=${ttl}` } })),
     ];
@@ -1048,7 +986,7 @@ async function resolveDomain(hostname, env) {
   }
 }
 
-async function getCustomDomainForSlug(slug, env) {
+async function getCustomDomainForSlug(slug) {
   const key = new Request(`https://cache/slug-domain-${slug}`);
   try {
     const cached = await cache.match(key);
@@ -1058,12 +996,10 @@ async function getCustomDomainForSlug(slug, env) {
     }
   } catch {}
 
-  const supabaseUrl = _supabaseUrl(env);
-  const anonKey = _supabaseAnonKey(env);
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/stores_public?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
-      { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } },
+      `${SUPABASE_URL}/rest/v1/stores_public?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -1072,10 +1008,10 @@ async function getCustomDomainForSlug(slug, env) {
       .put(
         key,
         new Response(JSON.stringify({ custom_domain: customDomain }), {
-          headers: { "Cache-Control": `public, max-age=${CACHE_DOMAIN_TTL}` },
+          headers: { "Cache-Control": "public, max-age=300" },
         }),
       )
-      .catch(e => console.error('[cache] slug-domain put', e));
+      .catch(() => {});
     return customDomain;
   } catch {
     return null;
@@ -1083,7 +1019,8 @@ async function getCustomDomainForSlug(slug, env) {
 }
 
 /* ============================================================
-   COMBINED STORE INFO LOOKUP (single authoritative source)
+   FIX #9 — COMBINED STORE INFO LOOKUP (single authoritative source)
+   _resolveStoreId now delegates here instead of duplicating logic
    ============================================================ */
 
 const _storeInfoCache = new Map();
@@ -1122,10 +1059,10 @@ async function _resolveStoreInfo(slug, hostname, env) {
         .put(
           new Request(`https://cache/slug-domain-${slug}`),
           new Response(JSON.stringify({ custom_domain: result.customDomain }), {
-            headers: { "Cache-Control": `public, max-age=${CACHE_DOMAIN_TTL}` },
+            headers: { "Cache-Control": "public, max-age=300" },
           }),
         )
-        .catch(e => console.error('[cache] slug-domain info', e));
+        .catch(() => {});
       return result;
     }
   } catch {}
@@ -1144,7 +1081,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
               infoCacheKey,
               new Response(JSON.stringify(kvData), { headers: { "Cache-Control": "public, max-age=15" } }),
             )
-            .catch(e => console.error('[cache] store-info nf', e));
+            .catch(() => {});
           return { storeId: null, customDomain: null };
         }
         const result = { storeId: kvData.id || null, customDomain: kvData.cd || null };
@@ -1159,26 +1096,24 @@ async function _resolveStoreInfo(slug, hostname, env) {
             infoCacheKey,
             new Response(JSON.stringify(kvData), { headers: { "Cache-Control": "public, max-age=300" } }),
           )
-          .catch(e => console.error('[cache] store-info kv→cache', e));
+          .catch(() => {});
         cache
           .put(
             new Request(`https://cache/slug-domain-${slug}`),
             new Response(JSON.stringify({ custom_domain: result.customDomain }), {
-              headers: { "Cache-Control": `public, max-age=${CACHE_DOMAIN_TTL}` },
+              headers: { "Cache-Control": "public, max-age=300" },
             }),
           )
-          .catch(e => console.error('[cache] slug-domain kv', e));
+          .catch(() => {});
         return result;
       }
     } catch {}
   }
 
-  const supabaseUrl = _supabaseUrl(env);
-  const anonKey = _supabaseAnonKey(env);
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/stores_public?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
-      { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } },
+      `${SUPABASE_URL}/rest/v1/stores_public?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
     );
     if (!res.ok) return { storeId: null, customDomain: null };
     const rows = await res.json();
@@ -1192,9 +1127,9 @@ async function _resolveStoreInfo(slug, hostname, env) {
       domainStoreIdCache.set(hostname, { storeId: null, expiresAt: Date.now() + 15_000 });
       cache
         .put(infoCacheKey, new Response(JSON.stringify(nfData), { headers: { "Cache-Control": "public, max-age=15" } }))
-        .catch(e => console.error('[cache] store-info nf db', e));
+        .catch(() => {});
       if (env?.STORE_KV) {
-        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 30 }).catch(e => console.error('[kv] store-info nf', e));
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 30 }).catch(() => {});
       }
       return { storeId: null, customDomain: null };
     }
@@ -1212,25 +1147,25 @@ async function _resolveStoreInfo(slug, hostname, env) {
           infoCacheKey,
           new Response(JSON.stringify(cachePayload), { headers: { "Cache-Control": "public, max-age=300" } }),
         )
-        .catch(e => console.error('[cache] store-info db→cache', e)),
+        .catch(() => {}),
       cache
         .put(
           new Request(`https://cache/slug-domain-${slug}`),
           new Response(JSON.stringify({ custom_domain: result.customDomain }), {
-            headers: { "Cache-Control": `public, max-age=${CACHE_DOMAIN_TTL}` },
+            headers: { "Cache-Control": "public, max-age=300" },
           }),
         )
-        .catch(e => console.error('[cache] slug-domain db', e)),
+        .catch(() => {}),
       cache
         .put(
           new Request(`https://cache/store-id:${hostname}`),
           new Response(result.storeId, { headers: { "Cache-Control": "public, max-age=600" } }),
         )
-        .catch(e => console.error('[cache] store-id db', e)),
+        .catch(() => {}),
       env?.STORE_KV
         ? env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(cachePayload), {
             expirationTtl: STORE_INFO_KV_TTL,
-          }).catch(e => console.error('[kv] store-info db', e))
+          }).catch(() => {})
         : Promise.resolve(),
     ]);
 
@@ -1240,6 +1175,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
   }
 }
 
+// FIX #9: _resolveStoreId now delegates to _resolveStoreInfo to avoid duplication
 async function _resolveStoreId(domain, env) {
   const memEntry = domainStoreIdCache.get(domain);
   if (memEntry && Date.now() < memEntry.expiresAt) return memEntry.storeId;
@@ -1268,45 +1204,65 @@ async function _resolveStoreId(domain, env) {
         domainStoreIdCache.set(domain, { storeId: kvVal, expiresAt: Date.now() + 300_000 });
         cache
           .put(storeIdCacheKey, new Response(kvVal, { headers: { "Cache-Control": "public, max-age=600" } }))
-          .catch(e => console.error('[cache] store-id kv→cache', e));
+          .catch(() => {});
         return kvVal;
       }
     } catch {}
   }
 
-  const storeId = await _fetchStoreIdFromDb(domain, env);
+  // Delegate to DB lookup
+  const storeId = await _fetchStoreIdFromDb(domain);
   if (storeId) {
     _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
     domainStoreIdCache.set(domain, { storeId, expiresAt: Date.now() + 300_000 });
     cache
       .put(storeIdCacheKey, new Response(storeId, { headers: { "Cache-Control": "public, max-age=600" } }))
-      .catch(e => console.error('[cache] store-id db→cache', e));
+      .catch(() => {});
     if (env?.STORE_KV) {
-      env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 3600 }).catch(e => console.error('[kv] store-id db', e));
+      env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 3600 }).catch(() => {});
     }
   } else {
     _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
     domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
     cache
       .put(storeIdCacheKey, new Response("__NOT_FOUND__", { headers: { "Cache-Control": "public, max-age=60" } }))
-      .catch(e => console.error('[cache] store-id nf', e));
+      .catch(() => {});
   }
   return storeId;
 }
 
-async function _fetchStoreIdFromDb(domain, env) {
-  const supabaseUrl = _supabaseUrl(env);
-  const anonKey = _supabaseAnonKey(env);
+async function _fetchStoreIdFromDb(domain) {
   const isSubdomain = domain.endsWith(`.${ROOT_DOMAIN}`);
   const query = isSubdomain
     ? `slug=eq.${encodeURIComponent(domain.replace(`.${ROOT_DOMAIN}`, ""))}`
     : `custom_domain=eq.${encodeURIComponent(domain)}`;
-  const res = await fetch(`${supabaseUrl}/rest/v1/stores_public?select=id&${query}&limit=1`, {
-    headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/stores_public?select=id&${query}&limit=1`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
   });
   if (!res.ok) return null;
   const rows = await res.json();
   return rows[0]?.id || null;
+}
+
+/* ============================================================
+   SLUG INDEX
+   ============================================================ */
+
+let _slugIndexSet = null;
+let _slugIndexExpiresAt = 0;
+
+async function _getSlugIndex(env) {
+  if (_slugIndexSet && Date.now() < _slugIndexExpiresAt) return _slugIndexSet;
+  if (!env?.STORE_KV) return null;
+  try {
+    const arr = await env.STORE_KV.get("all-active-slugs", { type: "json" });
+    if (Array.isArray(arr)) {
+      _slugIndexSet = new Set(arr);
+      _slugIndexExpiresAt = Date.now() + 300_000;
+      return _slugIndexSet;
+    }
+  } catch {}
+  return null;
 }
 
 /* ============================================================
@@ -1385,19 +1341,17 @@ async function proxyToOriginCached(request) {
 
 /* ============================================================
    HTML INJECTION HELPERS
-   #17: Uses sanitizeJsonForScript for XSS protection
    ============================================================ */
 
-function injectIntoHtml(html, slug, storefrontData, dataSource, env) {
-  const supabaseUrl = _supabaseUrl(env);
+function injectIntoHtml(html, slug, storefrontData, dataSource) {
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
-    const jsonStr = sanitizeJsonForScript(JSON.stringify(storefrontData));
+    const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
   }
   injection += `</script>\n`;
-  injection += `<link rel="preconnect" href="${supabaseUrl}" crossorigin />\n`;
-  injection += `<link rel="dns-prefetch" href="${supabaseUrl}" />\n`;
+  injection += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />\n`;
+  injection += `<link rel="dns-prefetch" href="${SUPABASE_URL}" />\n`;
   injection += `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />\n`;
 
   let inlineThemeCss = "";
@@ -1421,6 +1375,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, env) {
     );
     const ogImage = escapeHtml(s.og_image_url || s.banner_url || s.logo_url || "");
 
+    // FIX #16: Canonical tag — prefer custom domain, fallback to subdomain
     const canonicalBase = s.custom_domain
       ? `https://${s.custom_domain}`
       : `https://${slug}.${ROOT_DOMAIN}`;
@@ -1445,11 +1400,14 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, env) {
   }
 
   const skeletonMuted = getSkeletonMuted(textColor);
+  // FIX #11: Pass actual bgColor
   const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
+  // LCP preload: hero image (mobile_hero > banner > logo)
   let lcpPreload = "";
   const s = storefrontData?.store;
   if (s) {
+    // Determine hero image — mobile_hero_images first slide, then mobile_hero_url, then banner_url
     let heroImg = "";
     const mhi = s.mobile_hero_images;
     if (Array.isArray(mhi) && mhi.length > 0 && typeof mhi[0] === "string") {
@@ -1460,13 +1418,16 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, env) {
       heroImg = s.banner_url;
     }
     if (heroImg) {
+      // Preload hero as fetchpriority=high with srcset for responsive loading
       const heroEsc = escapeHtml(heroImg);
       lcpPreload += `<link rel="preload" as="image" href="${heroEsc}" fetchpriority="high" />\n`;
     }
+    // Also preload logo (small, needed for header)
     if (s.logo_url) {
       lcpPreload += `<link rel="preload" as="image" href="${escapeHtml(s.logo_url)}" />\n`;
     }
   }
+  // Preload critical font
   lcpPreload += `<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />\n`;
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
@@ -1493,7 +1454,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, env) {
 
 /* ============================================================
    STREAMING HTML RESPONSE
-   #17: Uses sanitizeJsonForScript for XSS protection
+   FIX #2: storefrontPromise is already running when this is called
    ============================================================ */
 
 async function serveStreamedHtml(
@@ -1524,27 +1485,31 @@ async function serveStreamedHtml(
       const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
 
       const productsHint = inlineProducts
-        ? `window.__PRODUCTS_INLINE__=${sanitizeJsonForScript(inlineProducts)};`
+        ? `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`
         : "";
-      const themeHint = themeLite ? `window.__THEME__=${sanitizeJsonForScript(JSON.stringify(themeLite))};` : "";
+      const themeHint = themeLite ? `window.__THEME__=${JSON.stringify(themeLite)};` : "";
       const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}</script>`;
 
       let headChunk = html.slice(0, headEnd);
       headChunk = headChunk.replace("<head>", `<head>${slugScript}${themeCss}${prebuiltHead || ""}`);
       headChunk += "</head>";
 
+      // Flush head immediately — browser starts fetching assets NOW
       await writer.write(enc.encode(headChunk));
 
+      // FIX #2: storefrontPromise was started before shell fetch, so by now
+      // it has had the full allotted time and is very likely resolved already
       const storefrontResult = await storefrontPromise;
 
       const skeletonMuted = getSkeletonMuted(textColor);
+      // FIX #11: Pass actual bgColor
       const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
       let bodyChunk = html.slice(headEnd + 7);
       bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}<div id="root">`);
 
       if (storefrontResult?.data) {
-        const jsonStr = sanitizeJsonForScript(JSON.stringify(storefrontResult.data));
+        const jsonStr = JSON.stringify(storefrontResult.data).replace(/<\/script/gi, "<\\/script");
         bodyChunk = bodyChunk.replace("</body>", `<script>window.__STOREFRONT_DATA__=${jsonStr};</script></body>`);
       }
 
@@ -1552,18 +1517,21 @@ async function serveStreamedHtml(
         const s = storefrontResult.data.store;
         const faviconUrl = escapeHtml(s.logo_url || "");
 
+        // FIX #16: Inject canonical tag via JS in streaming path
         const canonicalBase = s.custom_domain
           ? `https://${s.custom_domain}`
           : `https://${slug}.${ROOT_DOMAIN}`;
 
-        let metaScript = `<script>(function(){document.title=${sanitizeJsonForScript(JSON.stringify(s.meta_title || `${s.name} — Shop Online`))};`;
+        let metaScript = `<script>(function(){document.title=${JSON.stringify(s.meta_title || `${s.name} — Shop Online`)};`;
 
-        metaScript += `var cn=document.querySelector("link[rel='canonical']");if(!cn){cn=document.createElement('link');cn.rel='canonical';document.head.appendChild(cn);}cn.href=${sanitizeJsonForScript(JSON.stringify(canonicalBase + "/"))};`;
+        // Add canonical link
+        metaScript += `var cn=document.querySelector("link[rel='canonical']");if(!cn){cn=document.createElement('link');cn.rel='canonical';document.head.appendChild(cn);}cn.href=${JSON.stringify(canonicalBase + "/")};`;
 
-        metaScript += `var ou=document.querySelector("meta[property='og:url']");if(!ou){ou=document.createElement('meta');ou.setAttribute('property','og:url');document.head.appendChild(ou);}ou.content=${sanitizeJsonForScript(JSON.stringify(canonicalBase + "/"))};`;
+        // Add og:url
+        metaScript += `var ou=document.querySelector("meta[property='og:url']");if(!ou){ou=document.createElement('meta');ou.setAttribute('property','og:url');document.head.appendChild(ou);}ou.content=${JSON.stringify(canonicalBase + "/")};`;
 
         if (faviconUrl) {
-          metaScript += `var li=document.querySelector("link[rel~='icon']");if(!li){li=document.createElement('link');li.rel='icon';document.head.appendChild(li);}li.href=${sanitizeJsonForScript(JSON.stringify(faviconUrl))};`;
+          metaScript += `var li=document.querySelector("link[rel~='icon']");if(!li){li=document.createElement('link');li.rel='icon';document.head.appendChild(li);}li.href=${JSON.stringify(faviconUrl)};`;
         }
         metaScript += `})()</script>`;
         bodyChunk = bodyChunk.replace("</body>", `${metaScript}</body>`);
@@ -1581,27 +1549,24 @@ async function serveStreamedHtml(
 
 /* ============================================================
    CORE STOREFRONT FETCH + INJECT
-   #7: Skip KV reads when memory is hot
-   #10: Gate inline products on pathname === '/'
+   FIX #2: storefront promise starts FIRST (before any awaits)
+   FIX #4: batch KV read for shell+theme+storefront
+   FIX #5: deadline anchored to requestStart
    ============================================================ */
 
 async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, requestStart) {
+  // FIX #2 + #5: Kick off storefront fetch IMMEDIATELY.
+  // Measure remaining deadline from original request arrival.
   const elapsed = Date.now() - (requestStart || Date.now());
   const remaining = Math.max(400, 1400 - elapsed);
   const storefrontPromise = prefetchStorefrontDataWithDeadline(slug, ctx, env, remaining);
 
-  // #7: Skip KV reads when in-memory caches are hot
-  const themeHot = (_memThemeCache.get(slug)?.expiresAt || 0) > Date.now();
-  const storefrontHot = (_memStorefrontCache.get(slug)?.expiresAt || 0) > Date.now();
-
-  // #10: Only fetch inline products for homepage
-  const needsInlineProducts = pathname === "/" || pathname === "";
-
+  // FIX #4: Batch KV reads — all three in one Promise.all
   const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
     getSpaShell(request, ctx, env),
-    (themeHot && storefrontHot) ? Promise.resolve({ theme: null, storefront: null, storeInfo: null }) : _batchKvRead(slug, env),
+    _batchKvRead(slug, env),
     _getCachedPrebuiltHead(env),
-    needsInlineProducts ? _getInlineProductsOrNull(hostname, slug, env, ctx) : Promise.resolve(null),
+    _getInlineProductsOrNull(hostname, slug, env, ctx),
   ]);
 
   // Hydrate in-memory caches from batch KV read
@@ -1614,6 +1579,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
     _memStorefrontCache.set(slug, { data: kvBatch.storefront, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
   }
 
+  // Resolve theme from memory (already populated above if needed)
   const themeLite = _memThemeCache.get(slug)?.lite || kvBatch.theme || null;
 
   if (!shellResult?.html) {
@@ -1622,10 +1588,12 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
   }
 
   const prebuiltHead = cachedHeadMem || (await getPrebuiltHead(shellResult.html, env));
+  // FIX #3: Always build Link header for every response
   const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
+  // Streaming responses: moderate TTL (data injected inline)
   newHeaders.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
   newHeaders.set("X-Store-Slug", slug);
   newHeaders.set("X-Shell-Source", shellResult.source);
@@ -1651,14 +1619,10 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
 
 /* ============================================================
    BACKGROUND HTML WARM
-   #6: In-memory _warmingInFlight flag to prevent duplicate warms
+   FIX #10: Cache-Control raised to 3600/7200
    ============================================================ */
 
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname) {
-  // #6: Skip if already warming this slug in this isolate
-  if (_warmingInFlight.has(slug)) return;
-  _warmingInFlight.add(slug);
-
   try {
     if (hostname) {
       const earlyKey = getEarlyCacheKey(hostname);
@@ -1675,10 +1639,11 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
     if (!prefetchResult.data) return;
 
-    const result = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, env);
+    const result = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source);
 
     const fullHeaders = new Headers();
     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
+    // FIX #10: Raised from 1200 → 3600
     fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
     fullHeaders.set("X-Store-Slug", slug);
     fullHeaders.set("X-Data-Source", prefetchResult.source);
@@ -1690,24 +1655,31 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
 
     if (hostname) {
       const earlyKey = getEarlyCacheKey(hostname);
-      await cache.put(earlyKey, fullResponse.clone()).catch(e => console.error('[cache] warm html put', e));
+      await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
     }
-  } catch (e) {
-    console.error('[warm] background warm failed', e);
-  } finally {
-    _warmingInFlight.delete(slug);
-  }
+  } catch {}
+}
+
+function storeInEdgeCache(ctx, hostname, slug, response) {
+  const earlyKey = getEarlyCacheKey(hostname);
+  ctx.waitUntil(cache.put(earlyKey, response.clone()).catch(() => {}));
 }
 
 /* ============================================================
    PRODUCTS API — VERSION-BASED CACHE INVALIDATION
+   ============================================================
+   Instead of deleting hundreds of cache keys on purge (O(categories × pages × sorts)),
+   we store a version number per domain in KV (`pv:{domain}`).
+   All cache/KV keys include the version: `products:v{ver}:{domain}:...`
+   Purge = bump version (1 KV write). Old keys expire naturally via TTL.
    ============================================================ */
 
 const inflightProductRequests = new Map();
 const inflightDomainResolutions = new Map();
 
+// In-memory version cache: domain → { version, ts }
 const _memProductVersion = new Map();
-const MEM_PV_TTL = 60_000;
+const MEM_PV_TTL = 60_000; // 60s — version is cached in-memory to avoid KV reads
 const MEM_PV_MAX = 5_000;
 
 async function _getProductVersion(domain, env) {
@@ -1731,7 +1703,7 @@ async function _bumpProductVersion(domain, env) {
   const current = await _getProductVersion(domain, env);
   const next = current + 1;
   if (env?.STORE_KV) {
-    await env.STORE_KV.put(`pv:${domain}`, String(next), { expirationTtl: 86400 }).catch(e => console.error('[kv] pv bump', e));
+    await env.STORE_KV.put(`pv:${domain}`, String(next), { expirationTtl: 86400 }).catch(() => {});
   }
   _capMapSize(_memProductVersion, MEM_PV_MAX);
   _memProductVersion.set(domain, { version: next, ts: Date.now() });
@@ -1760,6 +1732,11 @@ function _clearInflightProductRequestsForDomain(domain) {
   }
 }
 
+/**
+ * Version-based purge: bump version number → all old keys become unreachable.
+ * Cost: 1 KV write per domain (vs hundreds of deletes before).
+ * Old keys expire naturally via their TTL (max 30 min for KV, 5 min for Cache API).
+ */
 async function _purgeProductCachesForDomain(domain, _storeId, env) {
   const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
   await _bumpProductVersion(cleanDomain, env);
@@ -1777,7 +1754,7 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   } catch {}
 
   try {
-    const data = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS, env);
+    const data = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
     const kvKey = _buildProductsKvKey(domain, {}, version);
     const cacheOps = [
@@ -1788,9 +1765,9 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
             headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
           }),
         )
-        .catch(e => console.error('[cache] prewarm products', e)),
+        .catch(() => {}),
       env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(e => console.error('[kv] prewarm products', e))
+        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
         : Promise.resolve(),
     ];
 
@@ -1805,11 +1782,11 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
               headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
             }),
           )
-          .catch(e => console.error('[cache] prewarm products cd', e)),
+          .catch(() => {}),
       );
       if (env?.STORE_KV) {
         cacheOps.push(
-          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}, cvVersion), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(e => console.error('[kv] prewarm products cd', e)),
+          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}, cvVersion), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}),
         );
       }
     }
@@ -1826,6 +1803,7 @@ async function handleProductsApi(request, url, ctx, env) {
     sort: url.searchParams.get("sort") || "",
   };
 
+  // Get current version for this domain (cached in-memory for 60s)
   const version = await _getProductVersion(domain, env);
   const cacheKey = _buildProductsCacheKey(domain, filters, version);
   const kvKey = _buildProductsKvKey(domain, filters, version);
@@ -1856,7 +1834,7 @@ async function handleProductsApi(request, url, ctx, env) {
                 },
               }),
             )
-            .catch(e => console.error('[cache] products kv→cache', e)),
+            .catch(() => {}),
         );
         return addCorsHeaders(
           new Response(kvData, {
@@ -1890,7 +1868,7 @@ async function handleProductsApi(request, url, ctx, env) {
     }
   }
 
-  const fetchPromise = _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS, env);
+  const fetchPromise = _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS);
   inflightProductRequests.set(coalesceKey, fetchPromise);
 
   try {
@@ -1903,9 +1881,7 @@ async function handleProductsApi(request, url, ctx, env) {
   }
 }
 
-async function _fetchProductsFromDb(storeId, filters, timeoutMs, env) {
-  const supabaseUrl = _supabaseUrl(env);
-  const anonKey = _supabaseAnonKey(env);
+async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -1931,14 +1907,15 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs, env) {
         params.set("order", "created_at.desc,id.asc");
         break;
       default:
+        // display_order first (manual merchant sorting), then best-selling, then newest
         params.set("order", "display_order.asc,is_best_selling.desc,created_at.desc,id.asc");
     }
 
     const page = parseInt(filters.page, 10);
     if (page > 0) params.set("offset", String(page * PRODUCTS_PAGE_SIZE));
 
-    const res = await fetch(`${supabaseUrl}/rest/v1/products?${params}`, {
-      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, Accept: "application/json" },
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/products?${params}`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Accept: "application/json" },
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -1960,9 +1937,9 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   });
   ctx.waitUntil(
     Promise.all([
-      cache.put(cacheKey, response.clone()).catch(e => console.error('[cache] product response', e)),
+      cache.put(cacheKey, response.clone()).catch(() => {}),
       env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(e => console.error('[kv] product response', e))
+        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
         : Promise.resolve(),
     ]),
   );
@@ -1973,7 +1950,7 @@ async function _refreshProductsBackground(domain, filters, version, env) {
   try {
     const storeId = await _resolveStoreId(domain, env);
     if (!storeId) return;
-    const data = await _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS, env);
+    const data = await _fetchProductsFromDb(storeId, filters, PRODUCTS_DB_TIMEOUT_MS);
     const body = JSON.stringify(data || []);
     const cacheKey = _buildProductsCacheKey(domain, filters, version);
     const kvKey = _buildProductsKvKey(domain, filters, version);
@@ -1985,9 +1962,9 @@ async function _refreshProductsBackground(domain, filters, version, env) {
             headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}` },
           }),
         )
-        .catch(e => console.error('[cache] refresh products', e)),
+        .catch(() => {}),
       env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(e => console.error('[kv] refresh products', e))
+        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
         : Promise.resolve(),
     ]);
   } catch {}
@@ -1997,6 +1974,7 @@ async function _fallbackProducts(domain, filters, version, env) {
   const cacheKey = _buildProductsCacheKey(domain, filters, version);
   const kvKey = _buildProductsKvKey(domain, filters, version);
 
+  // Try exact match first
   try {
     const stale = await cache.match(cacheKey);
     if (stale) return addCorsHeaders(stale, "cache-stale");
@@ -2013,6 +1991,7 @@ async function _fallbackProducts(domain, filters, version, env) {
     } catch {}
   }
 
+  // For filtered/paged requests, never fall back to page-0 default — return empty
   if (filters?.category || filters?.page || filters?.sort) {
     return addCorsHeaders(
       new Response("[]", { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }),
@@ -2027,25 +2006,18 @@ async function _fallbackProducts(domain, filters, version, env) {
 }
 
 async function handlePurgeProducts(request, url, ctx, env) {
-  // #2: Auth required
-  if (!(await verifyPurgeAuth(request, env))) return _unauthorizedResponse();
-
   const domain = (request.headers.get("host") || url.hostname).replace(/^www\./, "").toLowerCase().trim();
+  // Version-based purge: just bump the version — all old keys become unreachable
   await _bumpProductVersion(domain, env);
   _clearInflightProductRequestsForDomain(domain);
 
-  const origin = request.headers.get("Origin") || "";
-  return addMutationCorsHeaders(
+  return addCorsHeaders(
     new Response(JSON.stringify({ purged: true, domain }), { headers: { "Content-Type": "application/json" } }),
-    origin,
     "purge",
   );
 }
 
 async function handlePurgeStore(request, url, ctx, env, hostname) {
-  // #2: Auth required
-  if (!(await verifyPurgeAuth(request, env))) return _unauthorizedResponse();
-
   const normalizedHost = (request.headers.get("host") || hostname || url.hostname)
     .replace(/^www\./, "").toLowerCase().trim();
 
@@ -2055,7 +2027,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     purgeSlug = (await resolveDomain(normalizedHost, env)) || "";
   }
 
-  let customDomain = purgeSlug ? await getCustomDomainForSlug(purgeSlug, env) : null;
+  let customDomain = purgeSlug ? await getCustomDomainForSlug(purgeSlug) : null;
   if (customDomain) customDomain = customDomain.replace(/^www\./, "").toLowerCase().trim();
 
   const domainsToPurge = new Set([normalizedHost]);
@@ -2067,53 +2039,51 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     _memThemeCache.delete(purgeSlug);
     _memStorefrontCache.delete(purgeSlug);
     _storeInfoCache.delete(purgeSlug);
-    _memDomainCache.delete(purgeSlug);
   }
   for (const d of domainsToPurge) {
     _memProductVersion.delete(d);
-    _memDomainCache.delete(d);
   }
 
   const purgeOps = [];
   for (const d of domainsToPurge) {
     domainStoreIdCache.delete(d);
     _clearInflightProductRequestsForDomain(d);
-    purgeOps.push(cache.delete(getEarlyCacheKey(d)).catch(e => console.error('[cache] purge early', e)));
-    purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(e => console.error('[cache] purge store-id', e)));
-    if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(e => console.error('[kv] purge store-id', e)));
+    purgeOps.push(cache.delete(getEarlyCacheKey(d)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
+    if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
     if (d !== ROOT_DOMAIN && !d.endsWith(`.${ROOT_DOMAIN}`)) {
-      purgeOps.push(cache.delete(new Request(`https://cache/domain-${d}`)).catch(e => console.error('[cache] purge domain', e)));
-      if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`domain:${d}`).catch(e => console.error('[kv] purge domain', e)));
+      purgeOps.push(cache.delete(new Request(`https://cache/domain-${d}`)).catch(() => {}));
+      if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`domain:${d}`).catch(() => {}));
     }
   }
 
   if (purgeSlug) {
-    purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(e => console.error('[cache] purge sf', e)));
-    purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(e => console.error('[cache] purge theme', e)));
-    purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(e => console.error('[cache] purge info', e)));
-    purgeOps.push(cache.delete(new Request(`https://cache/slug-domain-${purgeSlug}`)).catch(e => console.error('[cache] purge slug-domain', e)));
+    purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/slug-domain-${purgeSlug}`)).catch(() => {}));
     if (env?.STORE_KV) {
-      purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(e => console.error('[kv] purge sf', e)));
-      purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(e => console.error('[kv] purge theme', e)));
-      purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(e => console.error('[kv] purge info', e)));
+      purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
     }
   }
 
   await Promise.all(purgeOps);
 
+  // Purge ALL product caches (paginated + category) for every domain variant
   const storeId = purgeSlug
     ? (await _resolveStoreInfo(purgeSlug, `${purgeSlug}.${ROOT_DOMAIN}`, env)).storeId
     : await _resolveStoreId(normalizedHost, env);
 
+  // Version-based purge: bump version for all domain variants
   await Promise.all([...domainsToPurge].map((d) => _purgeProductCachesForDomain(d, storeId, env)));
 
-  const origin = request.headers.get("Origin") || "";
-  return addMutationCorsHeaders(
+  return addCorsHeaders(
     new Response(
       JSON.stringify({ purged: true, slug: purgeSlug || null, domains: [...domainsToPurge], workerVersion: WORKER_VERSION }),
       { headers: { "Content-Type": "application/json" } },
     ),
-    origin,
     "purge-store",
   );
 }
@@ -2122,10 +2092,8 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
    EDGE FUNCTION CALLS
    ============================================================ */
 
-async function callEdgeFunction(name, params = {}, env) {
-  const supabaseUrl = _supabaseUrl(env);
-  const anonKey = _supabaseAnonKey(env);
-  const url = new URL(`${supabaseUrl}/functions/v1/${name}`);
+async function callEdgeFunction(name, params = {}) {
+  const url = new URL(`${SUPABASE_URL}/functions/v1/${name}`);
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
   });
@@ -2133,7 +2101,7 @@ async function callEdgeFunction(name, params = {}, env) {
   const timeout = setTimeout(() => controller.abort(), EDGE_FN_TIMEOUT_MS);
   try {
     const res = await fetch(url.toString(), {
-      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -2148,9 +2116,9 @@ async function callEdgeFunction(name, params = {}, env) {
    SEO FILES + BOT HANDLER
    ============================================================ */
 
-async function handleSeoFiles(url, slug, env) {
+async function handleSeoFiles(url, slug) {
   if (url.pathname === "/sitemap.xml") {
-    const res = await callEdgeFunction("seo-page", { type: "sitemap", slug }, env);
+    const res = await callEdgeFunction("seo-page", { type: "sitemap", slug });
     if (res.ok) {
       const body = await res.text();
       return new Response(body, {
@@ -2159,7 +2127,7 @@ async function handleSeoFiles(url, slug, env) {
     }
   }
   if (url.pathname === "/robots.txt") {
-    const res = await callEdgeFunction("seo-page", { type: "robots", slug }, env);
+    const res = await callEdgeFunction("seo-page", { type: "robots", slug });
     if (res.ok) {
       const body = await res.text();
       return new Response(body, {
@@ -2170,7 +2138,7 @@ async function handleSeoFiles(url, slug, env) {
   return null;
 }
 
-async function handleBot(request, slug, url, isCustom, env) {
+async function handleBot(request, slug, url, isCustom) {
   const ua = request.headers.get("User-Agent") || "";
   if (isSocialInAppBrowser(ua)) return null;
   if (!BOT_UA_REGEX.test(ua)) return null;
@@ -2191,7 +2159,7 @@ async function handleBot(request, slug, url, isCustom, env) {
       slug,
       product: productSlug || "",
       domain: domain || "",
-    }, env);
+    });
     if (botRenderRes.ok) {
       const html = await botRenderRes.text();
       return new Response(html, {
@@ -2212,7 +2180,7 @@ async function handleBot(request, slug, url, isCustom, env) {
       product: productSlug || "",
       domain: domain || "",
       social: "true",
-    }, env);
+    });
     if (ogRes.ok) {
       try {
         const og = await ogRes.json();
@@ -2240,7 +2208,7 @@ function buildOgHtml(og, finalUrl) {
   const img = escapeHtml(og.image || "");
   const siteName = escapeHtml(og.title?.split("—")[0]?.trim() || og.title || "");
   const safeUrl = escapeHtml(finalUrl);
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="website"><meta property="og:site_name" content="${siteName}">${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}"><meta http-equiv="refresh" content="0;url=${safeUrl}"><script>window.location.replace(${sanitizeJsonForScript(JSON.stringify(finalUrl))});</script></head><body><p>Redirecting to <a href="${safeUrl}">${siteName}</a>...</p></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="website"><meta property="og:site_name" content="${siteName}">${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}"><meta http-equiv="refresh" content="0;url=${safeUrl}"><script>window.location.replace(${JSON.stringify(finalUrl)});</script></head><body><p>Redirecting to <a href="${safeUrl}">${siteName}</a>...</p></body></html>`;
 }
 
 /* ============================================================
@@ -2248,15 +2216,13 @@ function buildOgHtml(og, finalUrl) {
    ============================================================ */
 
 async function handlePurgeShell(request, url, ctx, env, hostname) {
-  // #2: Auth required
-  if (!(await verifyPurgeAuth(request, env))) return _unauthorizedResponse();
-
   let purgeSlug = url.searchParams.get("slug") || "";
   if (!purgeSlug && hostname.endsWith(`.${ROOT_DOMAIN}`)) purgeSlug = hostname.replace(`.${ROOT_DOMAIN}`, "");
   if (!purgeSlug && hostname !== ROOT_DOMAIN && !hostname.endsWith(`.${ROOT_DOMAIN}`)) {
     purgeSlug = (await resolveDomain(hostname, env)) || "";
   }
 
+  // Reset in-memory caches
   _memShell = null;
   _memShellTs = 0;
   _memPrebuiltHead = null;
@@ -2269,52 +2235,45 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
   }
 
   const purgeOps = [
-    cache.delete(new Request("https://cache/spa-shell")).catch(e => console.error('[cache] purge shell', e)),
-    cache.delete(new Request("https://cache/prebuilt-head")).catch(e => console.error('[cache] purge head', e)),
+    cache.delete(new Request("https://cache/spa-shell")).catch(() => {}),
+    cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}),
   ];
 
   if (env?.STORE_KV) {
-    purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(e => console.error('[kv] purge shell', e)));
-    purgeOps.push(env.STORE_KV.delete(PREBUILT_HEAD_KV_KEY).catch(e => console.error('[kv] purge head', e)));
+    purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
+    purgeOps.push(env.STORE_KV.delete(PREBUILT_HEAD_KV_KEY).catch(() => {}));
   }
 
   if (purgeSlug) {
-    purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(e => console.error('[cache] purge early sub', e)));
-    purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(e => console.error('[cache] purge early host', e)));
-    purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(e => console.error('[cache] purge sf shell', e)));
-    purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(e => console.error('[cache] purge theme shell', e)));
-    purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(e => console.error('[cache] purge info shell', e)));
+    purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
+    purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
 
     if (env?.STORE_KV) {
-      purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(e => console.error('[kv] purge sf shell', e)));
-      purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(e => console.error('[kv] purge theme shell', e)));
-      purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(e => console.error('[kv] purge info shell', e)));
+      purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
     }
   }
 
   await Promise.all(purgeOps);
   inflightShellFetch = null;
 
-  const origin = request.headers.get("Origin") || "";
-  return addMutationCorsHeaders(
+  return addCorsHeaders(
     new Response(JSON.stringify({ purged: true, slug: purgeSlug || null, workerVersion: WORKER_VERSION }), {
       headers: { "Content-Type": "application/json" },
     }),
-    origin,
     "purge",
   );
 }
 
 /* ============================================================
    PREWARM HANDLER
-   #2: Auth required
-   #21: Slug validation
    ============================================================ */
 
 async function handlePrewarm(request, url, ctx, env) {
-  // #2: Auth required
-  if (!(await verifyPurgeAuth(request, env))) return _unauthorizedResponse();
-
   let body;
   try {
     body = await request.json();
@@ -2330,11 +2289,9 @@ async function handlePrewarm(request, url, ctx, env) {
 
   const slug = body.slug;
   const domain = body.domain;
-
-  // #21: Slug validation
-  if (!slug || !/^[a-z0-9-]{1,63}$/.test(slug)) {
+  if (!slug) {
     return addCorsHeaders(
-      new Response(JSON.stringify({ error: "Invalid or missing slug" }), {
+      new Response(JSON.stringify({ error: "Missing slug" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       }),
@@ -2349,7 +2306,7 @@ async function handlePrewarm(request, url, ctx, env) {
     results.spaShell = shellResult?.source || "failed";
 
     if (shellResult?.html) {
-      const built = _buildPrebuiltHead(shellResult.html, env);
+      const built = _buildPrebuiltHead(shellResult.html);
       const headCacheKey = new Request("https://cache/prebuilt-head");
       await Promise.all([
         cache
@@ -2357,9 +2314,9 @@ async function handlePrewarm(request, url, ctx, env) {
             headCacheKey,
             new Response(built, { headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` } }),
           )
-          .catch(e => console.error('[cache] prewarm head', e)),
+          .catch(() => {}),
         env?.STORE_KV
-          ? env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, built, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(e => console.error('[kv] prewarm head', e))
+          ? env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, built, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(() => {})
           : Promise.resolve(),
       ]);
       results.prebuiltHead = "warmed";
@@ -2374,12 +2331,12 @@ async function handlePrewarm(request, url, ctx, env) {
       const cacheData = JSON.stringify({ slug });
       const writes = [
         cache
-          .put(domainKey, new Response(cacheData, { headers: { "Cache-Control": `public, max-age=${CACHE_DOMAIN_TTL}` } }))
-          .catch(e => console.error('[cache] prewarm domain', e)),
+          .put(domainKey, new Response(cacheData, { headers: { "Cache-Control": "public, max-age=300" } }))
+          .catch(() => {}),
       ];
       if (env?.STORE_KV)
         writes.push(
-          env.STORE_KV.put(`domain:${cleanDomain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }).catch(e => console.error('[kv] prewarm domain', e)),
+          env.STORE_KV.put(`domain:${cleanDomain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }).catch(() => {}),
         );
       await Promise.all(writes);
       results.domainMapping = "warmed";
@@ -2388,6 +2345,7 @@ async function handlePrewarm(request, url, ctx, env) {
     const subDomain = `${slug}.${ROOT_DOMAIN}`;
     let storeId = null;
 
+    // Purge negative caches before re-fetching
     const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
     await cache.delete(infoCacheKey).catch(() => {});
     _storeInfoCache.delete(slug);
@@ -2413,10 +2371,10 @@ async function handlePrewarm(request, url, ctx, env) {
             new Request(`https://cache/store-id:${subDomain}`),
             new Response(storeIdStr, { headers: { "Cache-Control": "public, max-age=600" } }),
           )
-          .catch(e => console.error('[cache] prewarm store-id', e)),
+          .catch(() => {}),
       ];
       if (env?.STORE_KV)
-        idWrites.push(env.STORE_KV.put(`store-id:${subDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(e => console.error('[kv] prewarm store-id', e)));
+        idWrites.push(env.STORE_KV.put(`store-id:${subDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(() => {}));
       if (domain) {
         const cleanDomain = domain
           .replace(/^www\./, "")
@@ -2428,11 +2386,11 @@ async function handlePrewarm(request, url, ctx, env) {
               new Request(`https://cache/store-id:${cleanDomain}`),
               new Response(storeIdStr, { headers: { "Cache-Control": "public, max-age=600" } }),
             )
-            .catch(e => console.error('[cache] prewarm store-id cd', e)),
+            .catch(() => {}),
         );
         if (env?.STORE_KV)
           idWrites.push(
-            env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(e => console.error('[kv] prewarm store-id cd', e)),
+            env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(() => {}),
           );
       }
       await Promise.all(idWrites);
@@ -2440,7 +2398,7 @@ async function handlePrewarm(request, url, ctx, env) {
 
     if (storeId) {
       try {
-        const products = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS, env);
+        const products = await _fetchProductsFromDb(storeId, {}, PRODUCTS_DB_TIMEOUT_MS);
         const prodBody = JSON.stringify(products || []);
         const cacheOps = [];
         const subVersion = await _getProductVersion(subDomain, env);
@@ -2456,12 +2414,12 @@ async function handlePrewarm(request, url, ctx, env) {
                 },
               }),
             )
-            .catch(e => console.error('[cache] prewarm products', e)),
+            .catch(() => {}),
         );
         if (env?.STORE_KV)
           cacheOps.push(
             env.STORE_KV.put(_buildProductsKvKey(subDomain, {}, subVersion), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(
-              e => console.error('[kv] prewarm products', e),
+              () => {},
             ),
           );
         if (domain) {
@@ -2481,13 +2439,13 @@ async function handlePrewarm(request, url, ctx, env) {
                   },
                 }),
               )
-              .catch(e => console.error('[cache] prewarm products cd', e)),
+              .catch(() => {}),
           );
           if (env?.STORE_KV)
             cacheOps.push(
               env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}, cdVersion), prodBody, {
                 expirationTtl: PRODUCTS_KV_TTL,
-              }).catch(e => console.error('[kv] prewarm products cd', e)),
+              }).catch(() => {}),
             );
         }
         await Promise.all(cacheOps);
@@ -2497,8 +2455,9 @@ async function handlePrewarm(request, url, ctx, env) {
       }
     }
 
+    // FIX #10: Raised to 3600/7200
     if (shellResult?.html && dataResult.data) {
-      const injected = injectIntoHtml(shellResult.html, slug, dataResult.data, "prewarm", env);
+      const injected = injectIntoHtml(shellResult.html, slug, dataResult.data, "prewarm");
       const htmlResponse = new Response(injected.html, {
         status: 200,
         headers: {
@@ -2512,7 +2471,7 @@ async function handlePrewarm(request, url, ctx, env) {
       });
 
       const subEarlyKey = getEarlyCacheKey(`${slug}.${ROOT_DOMAIN}`);
-      await cache.put(subEarlyKey, htmlResponse.clone()).catch(e => console.error('[cache] prewarm early', e));
+      await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
 
       if (domain) {
         const cleanDomain = domain
@@ -2520,7 +2479,7 @@ async function handlePrewarm(request, url, ctx, env) {
           .toLowerCase()
           .trim();
         const domEarlyKey = getEarlyCacheKey(cleanDomain);
-        await cache.put(domEarlyKey, htmlResponse.clone()).catch(e => console.error('[cache] prewarm early cd', e));
+        await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
       }
 
       results.fullHtml = "warmed";
@@ -2528,35 +2487,35 @@ async function handlePrewarm(request, url, ctx, env) {
       results.fullHtml = "skipped";
     }
 
-    // Keep slug index update in prewarm (but removed dead _getSlugIndex code)
     if (env?.STORE_KV) {
       try {
         const currentIndex = await env.STORE_KV.get("all-active-slugs", { type: "json" });
         if (Array.isArray(currentIndex) && !currentIndex.includes(slug)) {
           currentIndex.push(slug);
-          await env.STORE_KV.put("all-active-slugs", JSON.stringify(currentIndex), { expirationTtl: 3_600 }).catch(() => {});
+          await env.STORE_KV.put("all-active-slugs", JSON.stringify(currentIndex), { expirationTtl: 3_600 }).catch(
+            () => {},
+          );
+          if (_slugIndexSet) _slugIndexSet.add(slug);
         } else if (!currentIndex) {
           await env.STORE_KV.put("all-active-slugs", JSON.stringify([slug]), { expirationTtl: 3_600 }).catch(() => {});
+          _slugIndexSet = new Set([slug]);
+          _slugIndexExpiresAt = Date.now() + 1_800_000;
         }
       } catch {}
     }
 
-    const origin = request.headers.get("Origin") || "";
-    return addMutationCorsHeaders(
+    return addCorsHeaders(
       new Response(JSON.stringify({ success: true, slug, domain: domain || null, results }), {
         headers: { "Content-Type": "application/json" },
       }),
-      origin,
       "prewarm",
     );
   } catch (err) {
-    const origin = request.headers.get("Origin") || "";
-    return addMutationCorsHeaders(
+    return addCorsHeaders(
       new Response(JSON.stringify({ success: false, error: err?.message || "Unknown error", results }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       }),
-      origin,
       "prewarm-error",
     );
   }
@@ -2572,7 +2531,6 @@ function buildNotFoundHtml(safeSlug, rootDomain) {
 
 /* ============================================================
    CACHED FETCH (HARDENED)
-   #15: Removed storeInEdgeCache on streaming response
    ============================================================ */
 
 async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env = {}, requestStart = Date.now()) {
@@ -2633,21 +2591,25 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
     return new Response("Server Error", { status: 500 });
   }
 
-  // #15: Removed redundant storeInEdgeCache here — background warm handles this
+  const contentType = res.headers.get("content-type") || "";
+  if (res.status === 200 && contentType.includes("text/html")) {
+    if (slug) {
+      if (res.headers.get("X-Store-Slug") === slug) storeInEdgeCache(ctx, hostname, slug, res);
+    } else {
+      storeInEdgeCache(ctx, hostname, "", res);
+    }
+  }
 
   return addDiagnosticHeaders(res, { slug, cacheStatus: "MISS", dataSource });
 }
 
 /* ============================================================
    MAIN FETCH HANDLER
-   #12: Bot detection moved before early edge cache
-   #13: Cleanup moved to ctx.waitUntil
-   #14: Explicit HEAD handler
-   #20: Removed x-forwarded-for fallback
    ============================================================ */
 
 export default {
   async fetch(request, env, ctx) {
+    // FIX #5: Record request start time immediately
     const requestStart = Date.now();
 
     const url = new URL(request.url);
@@ -2656,8 +2618,6 @@ export default {
     // ─── HEALTH CHECK ───
     if (url.pathname === "/__health") {
       try {
-        const supabaseUrl = _supabaseUrl(env);
-        const anonKey = _supabaseAnonKey(env);
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
         const originCheck = await fetch(`https://${ORIGIN_HOST}/`, {
@@ -2728,77 +2688,10 @@ export default {
       return proxyToOrigin(request);
     }
 
-    // #13: Move cleanup to ctx.waitUntil — don't block critical path
-    ctx.waitUntil(Promise.resolve().then(() => { cleanRateLimitMap(); cleanRevalMap(); }));
+    cleanRateLimitMap();
+    cleanRevalMap();
 
-    // #12: Bot detection BEFORE edge cache — skip all I/O for bots
-    const ua = request.headers.get("User-Agent") || "";
-    const isBot = BOT_UA_REGEX.test(ua) && !isSocialInAppBrowser(ua);
-
-    if (isBot) {
-      // #20: Only use cf-connecting-ip
-      const botIp = request.headers.get("cf-connecting-ip") || "unknown";
-      if (isRateLimited(`bot:${botIp}`, true)) {
-        return new Response("Too Many Requests", { status: 429, headers: { "Retry-After": "60" } });
-      }
-
-      // Resolve slug for bot handler
-      let botSlug = "";
-      let isCustom = false;
-      if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-        botSlug = hostname.replace(`.${ROOT_DOMAIN}`, "");
-      } else if (hostname !== ROOT_DOMAIN && hostname !== `www.${ROOT_DOMAIN}`) {
-        botSlug = await resolveDomain(hostname, env) || "";
-        isCustom = !!botSlug;
-      }
-
-      if (botSlug) {
-        const seoResponse = await handleSeoFiles(url, botSlug, env);
-        if (seoResponse) return seoResponse;
-        const botResponse = await handleBot(request, botSlug, url, isCustom, env);
-        if (botResponse) return botResponse;
-      }
-      // Fall through to normal handling if bot handler returns null
-    }
-
-    // #14: Explicit HEAD handler — lightweight response, no streaming
-    if (request.method === "HEAD") {
-      const isCacheableHead =
-        !url.pathname.startsWith("/api") &&
-        !url.pathname.startsWith("/rest") &&
-        !url.pathname.startsWith("/admin") &&
-        !url.pathname.startsWith("/dashboard");
-
-      if (isCacheableHead) {
-        const earlyKey = getEarlyCacheKey(hostname);
-        const earlyHit = await cache.match(earlyKey);
-        if (earlyHit) {
-          const headRes = new Response(null, {
-            status: 200,
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-              "X-Data-Source": earlyHit.headers.get("X-Data-Source") || "edge",
-              "X-Worker-Version": WORKER_VERSION,
-              "X-Store-Slug": earlyHit.headers.get("X-Store-Slug") || "",
-              "Cache-Control": "no-store",
-            },
-          });
-          return headRes;
-        }
-        // No cached response — return skeleton indicator
-        return new Response(null, {
-          status: 200,
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            "X-Data-Source": "instant-skeleton",
-            "X-Worker-Version": WORKER_VERSION,
-            "Cache-Control": "no-store",
-          },
-        });
-      }
-    }
-
-    // ─── EARLY EDGE CACHE EXIT (bots already handled above) ───
+    // ─── EARLY EDGE CACHE EXIT ───
     const isCacheableRequest =
       request.method === "GET" &&
       !url.pathname.startsWith("/api") &&
@@ -2809,6 +2702,9 @@ export default {
       url.pathname !== "/robots.txt" &&
       url.pathname !== "/__health" &&
       !request.headers.get("cookie")?.includes("auth");
+
+    const ua = request.headers.get("User-Agent") || "";
+    const isBot = BOT_UA_REGEX.test(ua);
 
     if (isCacheableRequest && !isBot) {
       const earlyKey = getEarlyCacheKey(hostname);
@@ -2846,10 +2742,10 @@ export default {
                       revalSlug,
                       prefetchResult.data,
                       prefetchResult.source,
-                      env,
                     );
                     const fullHeaders = new Headers();
                     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
+                    // FIX #10
                     fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
                     fullHeaders.set("X-Store-Slug", revalSlug);
                     fullHeaders.set("X-Data-Source", prefetchResult.source);
@@ -2857,8 +2753,7 @@ export default {
                     fullHeaders.set("X-Cache-Timestamp", new Date().toISOString());
                     for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
                     const fullResponse = new Response(result.html, { status: 200, headers: fullHeaders });
-                    const revalEarlyKey = getEarlyCacheKey(hostname);
-                    await cache.put(revalEarlyKey, fullResponse.clone()).catch(e => console.error('[cache] reval put', e));
+                    storeInEdgeCache(ctx, hostname, revalSlug, fullResponse);
                   }
                 }
               } catch {}
@@ -2872,8 +2767,7 @@ export default {
 
     // ─── API ROUTES (rate-limited) ───
     if (url.pathname.startsWith("/api/")) {
-      // #20: Only use cf-connecting-ip — no x-forwarded-for fallback
-      const clientIP = request.headers.get("cf-connecting-ip") || "unknown";
+      const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown";
       if (isRateLimited(clientIP, true)) {
         return new Response(JSON.stringify({ error: "Rate limited" }), {
           status: 429,
@@ -2893,10 +2787,7 @@ export default {
       if (url.pathname === "/api/purge-shell" && request.method === "POST")
         return handlePurgeShell(request, url, ctx, env, hostname);
       if (url.pathname === "/api/prewarm") {
-        if (request.method === "OPTIONS") {
-          const origin = request.headers.get("Origin") || "";
-          return addMutationCorsHeaders(new Response(null, { status: 204 }), origin, "preflight");
-        }
+        if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
         if (request.method === "POST") return handlePrewarm(request, url, ctx, env);
         return addCorsHeaders(
           new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -2916,16 +2807,14 @@ export default {
 
     // ─── SUPABASE PROXY ───
     if (url.pathname.startsWith("/rest/v1/") || url.pathname.startsWith("/functions/v1/")) {
-      const supabaseUrl = _supabaseUrl(env);
-      const anonKey = _supabaseAnonKey(env);
       const targetUrl = new URL(request.url);
-      targetUrl.hostname = new URL(supabaseUrl).hostname;
+      targetUrl.hostname = new URL(SUPABASE_URL).hostname;
       targetUrl.port = "";
       const headers = new Headers(request.headers);
-      headers.set("Host", new URL(supabaseUrl).hostname);
+      headers.set("Host", new URL(SUPABASE_URL).hostname);
       if (!headers.has("apikey")) {
-        headers.set("apikey", anonKey);
-        headers.set("Authorization", `Bearer ${anonKey}`);
+        headers.set("apikey", SUPABASE_ANON_KEY);
+        headers.set("Authorization", `Bearer ${SUPABASE_ANON_KEY}`);
       }
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), EDGE_FN_TIMEOUT_MS);
@@ -2954,7 +2843,7 @@ export default {
       if (storeMatch) {
         const redirectSlug = storeMatch[1];
         const remainingPath = storeMatch[2] || "";
-        const customDomain = await getCustomDomainForSlug(redirectSlug, env);
+        const customDomain = await getCustomDomainForSlug(redirectSlug);
         if (customDomain) return Response.redirect(`https://${customDomain}${remainingPath}${url.search}`, 301);
         return Response.redirect(`https://${redirectSlug}.${ROOT_DOMAIN}${remainingPath}${url.search}`, 301);
       }
@@ -2968,19 +2857,24 @@ export default {
       const slug = hostname.replace(`.${ROOT_DOMAIN}`, "");
       if (!slug || slug.includes(".") || slug === "www") return cachedFetch(request, "", ctx, false, env, requestStart);
 
-      // Instant skeleton fast path — if shell isn't in memory
+      // FIX #23: Fire-and-forget — was blocking critical path for no reason
+      _getSlugIndex(env).catch(() => {});
+
+      // FIX #21: Instant skeleton fast path — if shell isn't in memory,
+      // return a themed skeleton immediately while warming in background
       if (!_memShell) {
         const themeLite = _memThemeCache.get(slug)?.lite || null;
         const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
         const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
 
+        // Kick off full warm in background
         ctx.waitUntil((async () => {
           try {
             const shellResult = await getSpaShell(request, ctx, env);
             if (shellResult?.html) {
               const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
               if (prefetchResult.data) {
-                const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, env);
+                const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source);
                 const fullHeaders = new Headers();
                 fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                 fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
@@ -2989,10 +2883,10 @@ export default {
                 for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
                 const fullResponse = new Response(injected.html, { status: 200, headers: fullHeaders });
                 const earlyKey = getEarlyCacheKey(hostname);
-                await cache.put(earlyKey, fullResponse.clone()).catch(e => console.error('[cache] skeleton warm', e));
+                await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
               }
             }
-          } catch (e) { console.error('[skeleton] background warm failed', e); }
+          } catch {}
         })());
 
         return new Response(skeletonHtml, {
@@ -3008,25 +2902,21 @@ export default {
         });
       }
 
+      // FIX #2: Start storefront promise FIRST before any other awaits
       const elapsed0 = Date.now() - requestStart;
       const storefrontDeadline = Math.max(400, 1400 - elapsed0);
       const earlyStorefrontPromise = prefetchStorefrontDataWithDeadline(slug, ctx, env, storefrontDeadline);
 
-      // #7: Skip KV reads when memory is hot
-      const themeHot = (_memThemeCache.get(slug)?.expiresAt || 0) > Date.now();
-      const storefrontHot = (_memStorefrontCache.get(slug)?.expiresAt || 0) > Date.now();
-
-      // #10: Gate inline products on homepage
-      const needsInlineProducts = url.pathname === "/" || url.pathname === "";
-
+      // FIX #4: Batch KV read + shell in parallel
       const [shellResult, storeInfo, kvBatch, cachedHead, inlineProducts] = await Promise.all([
         getSpaShell(request, ctx, env),
         _resolveStoreInfo(slug, hostname, env),
-        (themeHot && storefrontHot) ? Promise.resolve({ theme: null, storefront: null, storeInfo: null }) : _batchKvRead(slug, env),
+        _batchKvRead(slug, env),
         _getCachedPrebuiltHead(env),
-        needsInlineProducts ? _getInlineProductsOrNull(hostname, slug, env, ctx) : Promise.resolve(null),
+        _getInlineProductsOrNull(hostname, slug, env, ctx),
       ]);
 
+      // Hydrate in-memory caches from batch
       if (kvBatch.theme && !(_memThemeCache.get(slug)?.expiresAt > Date.now())) {
         _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
         _memThemeCache.set(slug, { lite: kvBatch.theme, expiresAt: Date.now() + MEM_THEME_TTL });
@@ -3054,11 +2944,10 @@ export default {
         return Response.redirect(`https://${storeInfo.customDomain}${url.pathname}${url.search}`, 301);
       }
 
-      // Bot handling already done above for bots; for non-bots, check SEO files
-      if (!isBot) {
-        const seoResponse = await handleSeoFiles(url, slug, env);
-        if (seoResponse) return seoResponse;
-      }
+      const seoResponse = await handleSeoFiles(url, slug);
+      if (seoResponse) return seoResponse;
+      const botResponse = await handleBot(request, slug, url, false);
+      if (botResponse) return botResponse;
 
       if (!shellResult?.html) {
         const response = await proxyToOrigin(request);
@@ -3066,6 +2955,7 @@ export default {
       }
 
       const prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
+      // FIX #3: Always set Link header
       const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
       const responseHeaders = new Headers();
@@ -3078,6 +2968,7 @@ export default {
       if (linkHeader) responseHeaders.set("Link", linkHeader);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeaders.set(k, v);
 
+      // FIX #2: Pass the ALREADY-RUNNING storefront promise (started before awaits above)
       const response = await serveStreamedHtml(
         slug,
         shellResult,
@@ -3099,8 +2990,7 @@ export default {
       return Response.redirect(`https://${apex}${url.pathname}${url.search}`, 301);
     }
 
-    // #20: Only use cf-connecting-ip
-    const clientIP = request.headers.get("cf-connecting-ip") || "unknown";
+    const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for");
     if (isRateLimited(clientIP, false)) {
       return new Response("Too Many Requests", {
         status: 429,
@@ -3113,7 +3003,9 @@ export default {
       .toLowerCase()
       .trim();
 
-    // Instant skeleton fast path for custom domains
+    // FIX #21: Instant skeleton fast path for custom domains
+    // If shell isn't in memory, resolve domain first (fast KV lookup),
+    // then return skeleton immediately while warming everything in background
     if (!_memShell) {
       const resolvedSlugCD = await resolveDomain(cleanDomain, env);
       if (resolvedSlugCD) {
@@ -3127,7 +3019,7 @@ export default {
             if (shellResult?.html) {
               const prefetchResult = await prefetchStorefrontData(resolvedSlugCD, ctx, env);
               if (prefetchResult.data) {
-                const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source, env);
+                const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source);
                 const fullHeaders = new Headers();
                 fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                 fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
@@ -3135,10 +3027,10 @@ export default {
                 fullHeaders.set("X-Data-Source", prefetchResult.source);
                 for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
                 const fullResponse = new Response(injected.html, { status: 200, headers: fullHeaders });
-                await cache.put(getEarlyCacheKey(hostname), fullResponse.clone()).catch(e => console.error('[cache] cd skeleton warm', e));
+                await cache.put(getEarlyCacheKey(hostname), fullResponse.clone()).catch(() => {});
               }
             }
-          } catch (e) { console.error('[skeleton-cd] background warm failed', e); }
+          } catch {}
         })());
 
       return new Response(skeletonHtml, {
@@ -3153,35 +3045,37 @@ export default {
           },
         });
       }
+      // FIX #26: No slug found for this domain — return 404 immediately
+      // instead of falling through to a duplicate resolveDomain() call
       return new Response(
-        `<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>Store Not Found</h1><p>No store is configured for <b>${escapeHtml(cleanDomain)}</b></p></body></html>`,
+        `<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>Store Not Found</h1><p>No store is configured for <b>${cleanDomain}</b></p></body></html>`,
         { status: 404, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", ...SECURITY_HEADERS } }
       );
     }
 
+    // FIX #2: Start storefront promise as soon as we know the domain pattern,
+    // but we don't know slug yet — kick off domain resolution + shell in parallel first
     const [resolvedSlug, shellResultCD] = await Promise.all([
       resolveDomain(cleanDomain, env),
       getSpaShell(request, ctx, env),
     ]);
 
     if (resolvedSlug) {
+      // FIX #2: Now we know the slug, start storefront immediately
       const elapsed1 = Date.now() - requestStart;
       const storefrontDeadlineCD = Math.max(400, 1400 - elapsed1);
       const earlyStorefrontPromiseCD = prefetchStorefrontDataWithDeadline(resolvedSlug, ctx, env, storefrontDeadlineCD);
 
-      // #7: Skip KV reads when memory is hot
-      const themeHotCD = (_memThemeCache.get(resolvedSlug)?.expiresAt || 0) > Date.now();
-      const storefrontHotCD = (_memStorefrontCache.get(resolvedSlug)?.expiresAt || 0) > Date.now();
-      const needsInlineProductsCD = url.pathname === "/" || url.pathname === "";
-
+      // FIX #4: Batch remaining slug-dependent data
       const [seoResponse, botResponse, kvBatchCD, cachedHeadCDReal, inlineProductsCDReal] = await Promise.all([
-        handleSeoFiles(url, resolvedSlug, env),
-        isBot ? Promise.resolve(null) : Promise.resolve(null), // bots handled above
-        (themeHotCD && storefrontHotCD) ? Promise.resolve({ theme: null, storefront: null, storeInfo: null }) : _batchKvRead(resolvedSlug, env),
+        handleSeoFiles(url, resolvedSlug),
+        handleBot(request, resolvedSlug, url, true),
+        _batchKvRead(resolvedSlug, env),
         _getCachedPrebuiltHead(env),
-        needsInlineProductsCD ? _getInlineProductsOrNull(hostname, resolvedSlug, env, ctx) : Promise.resolve(null),
+        _getInlineProductsOrNull(hostname, resolvedSlug, env, ctx),
       ]);
 
+      // Hydrate in-memory from batch
       if (kvBatchCD.theme && !(_memThemeCache.get(resolvedSlug)?.expiresAt > Date.now())) {
         _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
         _memThemeCache.set(resolvedSlug, { lite: kvBatchCD.theme, expiresAt: Date.now() + MEM_THEME_TTL });
@@ -3197,6 +3091,7 @@ export default {
       const themeLiteCD = _memThemeCache.get(resolvedSlug)?.lite || kvBatchCD.theme || null;
 
       if (seoResponse) return seoResponse;
+      if (botResponse) return botResponse;
 
       if (!shellResultCD?.html) {
         const response = await proxyToOrigin(request);
@@ -3204,6 +3099,7 @@ export default {
       }
 
       const prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
+      // FIX #3
       const linkHeaderCD = _buildLinkPreloadHeader(shellResultCD.html);
 
       const responseHeadersCD = new Headers();
@@ -3216,6 +3112,7 @@ export default {
       if (linkHeaderCD) responseHeadersCD.set("Link", linkHeaderCD);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeadersCD.set(k, v);
 
+      // FIX #2: Pass the ALREADY-RUNNING promise
       const responseCD = await serveStreamedHtml(
         resolvedSlug,
         shellResultCD,
@@ -3248,22 +3145,19 @@ export default {
 
   /* ============================================================
      SCHEDULED HANDLER — DB Keepalive + Full Store Warming
-     #11: Added 25-second deadline to prevent runaway CPU
-     #16: Removed dead slug index reads
+     FIX #14: Warm ALL stores (not just top 20), concurrency=10
+     FIX #15: Fetch shell ONCE before the loop, reuse for all stores
      ============================================================ */
   async scheduled(event, env, ctx) {
     const keepaliveStart = Date.now();
-    const supabaseUrl = _supabaseUrl(env);
-    const anonKey = _supabaseAnonKey(env);
-
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
-      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/get_platform_config_public`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_platform_config_public`, {
         method: "POST",
         headers: {
-          apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           "Content-Type": "application/json",
         },
         signal: controller.signal,
@@ -3272,6 +3166,7 @@ export default {
       clearTimeout(timeout);
       const dbPingMs = Date.now() - keepaliveStart;
 
+      // FIX #15: Fetch shell once, outside the per-store loop
       let cronShellResult = null;
       try {
         cronShellResult = await getSpaShell(new Request(`https://${ROOT_DOMAIN}/`), ctx, env);
@@ -3280,21 +3175,13 @@ export default {
       ctx.waitUntil(
         (async () => {
           try {
-            // #11: 25-second deadline for the entire warm loop
-            const cronDeadline = Date.now() + 25_000;
-
             let allStores = [];
             let offset = 0;
             const pageSize = 500;
             while (true) {
-              // #11: Check deadline
-              if (Date.now() > cronDeadline) {
-                console.log(`[keepalive] deadline reached during store fetch at offset ${offset}`);
-                break;
-              }
               const storesRes = await fetch(
-                `${supabaseUrl}/rest/v1/stores_public?select=id,slug,custom_domain&is_suspended=eq.false&limit=${pageSize}&offset=${offset}&order=updated_at.desc`,
-                { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } },
+                `${SUPABASE_URL}/rest/v1/stores_public?select=id,slug,custom_domain&is_suspended=eq.false&limit=${pageSize}&offset=${offset}&order=updated_at.desc`,
+                { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
               );
               if (!storesRes.ok) break;
               const batch = await storesRes.json();
@@ -3306,6 +3193,7 @@ export default {
 
             if (allStores.length === 0) return;
 
+            // Sync KV store-info for all stores (skip unchanged)
             if (env?.STORE_KV) {
               const allSlugs = allStores.filter((s) => s.slug && s.id).map((s) => s.slug);
               const readPromises = allSlugs.map((slug) => env.STORE_KV.get(`store-info:${slug}`).catch(() => null));
@@ -3322,12 +3210,12 @@ export default {
                 if (existingValues[i] !== payload) {
                   kvWrites.push(
                     env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(
-                      e => console.error('[kv] cron store-info', e),
+                      () => {},
                     ),
                   );
                   const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
                   kvWrites.push(
-                    env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(e => console.error('[kv] cron store-id', e)),
+                    env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {}),
                   );
                   if (s.custom_domain) {
                     const cleanCustom = s.custom_domain
@@ -3335,12 +3223,12 @@ export default {
                       .toLowerCase()
                       .trim();
                     kvWrites.push(
-                      env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 3600 }).catch(e => console.error('[kv] cron store-id cd', e)),
+                      env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 3600 }).catch(() => {}),
                     );
                     kvWrites.push(
                       env.STORE_KV.put(`domain:${cleanCustom}`, JSON.stringify({ slug: s.slug }), {
                         expirationTtl: KV_DOMAIN_TTL,
-                      }).catch(e => console.error('[kv] cron domain', e)),
+                      }).catch(() => {}),
                     );
                   }
                   kvWriteCount++;
@@ -3350,8 +3238,10 @@ export default {
               }
 
               kvWrites.push(
-                env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 3_600 }).catch(e => console.error('[kv] cron slugs', e)),
+                env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 3_600 }).catch(() => {}),
               );
+              _slugIndexSet = new Set(allSlugs);
+              _slugIndexExpiresAt = Date.now() + 1_800_000;
 
               if (kvWrites.length > 0) await Promise.all(kvWrites);
               console.log(
@@ -3359,28 +3249,29 @@ export default {
               );
             }
 
+            // FIX #14: Warm ALL stores with concurrency=10
+            // FIX #15: Reuse cronShellResult (fetched once above)
             const CONCURRENCY = 10;
             let warmedHtml = 0,
               warmedProducts = 0;
 
             for (let i = 0; i < allStores.length; i += CONCURRENCY) {
-              // #11: Check deadline before each batch
-              if (Date.now() > cronDeadline) {
-                console.log(`[keepalive] deadline reached at store ${i}/${allStores.length}`);
-                break;
-              }
-
               const batch = allStores.slice(i, i + CONCURRENCY);
               await Promise.all(
                 batch.map(async (s) => {
                   try {
                     if (!s.slug || !s.id) return;
 
+                    // FIX #15: Use the shared cronShellResult
                     const shellResult = cronShellResult;
+
+                    // Warm storefront data
                     const dataResult = await prefetchStorefrontData(s.slug, ctx, env);
 
+                    // Warm HTML cache with NORMALIZED key
                     if (shellResult?.html && dataResult.data) {
-                      const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm", env);
+                      const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm");
+                      // FIX #10: Raised to 3600/7200
                       const htmlResponse = new Response(injected.html, {
                         status: 200,
                         headers: {
@@ -3392,7 +3283,7 @@ export default {
                         },
                       });
                       const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`);
-                      await cache.put(subEarlyKey, htmlResponse.clone()).catch(e => console.error('[cache] cron warm', e));
+                      await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
 
                       if (s.custom_domain) {
                         const cleanCustom = s.custom_domain
@@ -3400,10 +3291,12 @@ export default {
                           .toLowerCase()
                           .trim();
                         const domEarlyKey = getEarlyCacheKey(cleanCustom);
-                        await cache.put(domEarlyKey, htmlResponse.clone()).catch(e => console.error('[cache] cron warm cd', e));
+                        await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
                       }
                       warmedHtml++;
                     } else if (shellResult?.html) {
+                      // FIX #25: Cron skeleton fallback — if DB failed, cache a themed skeleton
+                      // so the store is never left completely cold
                       const themeLite = _memThemeCache.get(s.slug)?.lite || null;
                       const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
                       const skeletonHtml = _buildInstantSkeletonPage(s.slug, bg, themeLite, `${s.slug}.${ROOT_DOMAIN}`);
@@ -3417,12 +3310,13 @@ export default {
                         },
                       });
                       const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`);
-                      await cache.put(subEarlyKey, skeletonResponse.clone()).catch(e => console.error('[cache] cron skel', e));
+                      await cache.put(subEarlyKey, skeletonResponse.clone()).catch(() => {});
                     }
 
+                    // Warm products
                     if (dataResult.data?.store?.id) {
                       await _prewarmProducts(dataResult.data.store.id, s.slug, ctx, env, s.custom_domain).catch(
-                        e => console.error('[cache] cron products', e),
+                        () => {},
                       );
                       warmedProducts++;
                     }
