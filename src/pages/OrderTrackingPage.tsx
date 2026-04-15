@@ -74,8 +74,9 @@ export default function OrderTrackingPage() {
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
 
-  const searchOrder = async () => {
-    if (!query.trim()) return;
+  const searchOrder = useCallback(async (searchQuery?: string) => {
+    const q = (searchQuery || query).trim();
+    if (!q) return;
     setLoading(true);
     setError("");
     setOrder(null);
@@ -83,9 +84,6 @@ export default function OrderTrackingPage() {
     setSearched(true);
 
     try {
-      const q = query.trim();
-
-      // Try searching by order ID (partial match on first 8 chars)
       let { data, error: err } = await supabase
         .from("orders")
           .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
@@ -96,7 +94,6 @@ export default function OrderTrackingPage() {
       if (err) throw err;
 
       if (!data?.length) {
-        // Try partial ID match
         const { data: partialData } = await supabase
           .from("orders")
           .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
@@ -114,7 +111,6 @@ export default function OrderTrackingPage() {
 
       setOrder(data[0]);
 
-      // Fetch items
       const { data: items } = await supabase
         .from("order_items")
         .select("product_name, quantity, unit_price, total")
@@ -126,7 +122,15 @@ export default function OrderTrackingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [query]);
+
+  // Auto-search when page loads with an id parameter
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (id) {
+      searchOrder(id);
+    }
+  }, []);
 
   const statusColors: Record<string, string> = {
     pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
