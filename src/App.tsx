@@ -146,6 +146,15 @@ const LoadingSpinner = () => {
     (hostname.endsWith(".shopbanao.in") && hostname !== "shopbanao.in" && hostname !== "www.shopbanao.in") ||
     !!(window as any).__STORE_SLUG__;
 
+  // PWA standalone mode: the native splash screen already provides visual feedback,
+  // so showing a skeleton on top of it creates a jarring double-loading effect.
+  // Return a blank screen and let the actual content appear directly.
+  const isStandalone = window.matchMedia?.("(display-mode: standalone)")?.matches
+    || (window.navigator as any).standalone === true;
+  if (isStandalone) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
   if (!isStorefront) {
     // Dashboard/admin/auth/landing — skeleton instead of black spinner
     return (
