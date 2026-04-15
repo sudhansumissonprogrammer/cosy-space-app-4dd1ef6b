@@ -1,5 +1,5 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.2.0 — COLD START OPTIMIZATION
+ * SHOPBANAO PRODUCTION ROUTER v6.2.1 — COLD START OPTIMIZATION + BUG FIXES
  *
  * Changes from v6.1.0:
  *  FIX #20 — TTL increases: Shell KV 3600→86400, Cache 600→3600, Mem 10→30min.
@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.2.0";
+const WORKER_VERSION = "6.2.1";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -91,7 +91,8 @@ function isSocialInAppBrowser(ua) {
 // FIX #22: Reduced from 8000→3500 to fail fast and serve skeleton instead
 const ORIGIN_TIMEOUT_MS = 3_500;
 const EDGE_FN_TIMEOUT_MS = 10_000;
-// FIX #20: Raised from 1000→1500ms. Instant skeleton (FIX #21) starts early enough.
+// FIX #20: Raised from 1000→1500ms. Only applies to warm path (_memShell exists);
+// the instant skeleton path (FIX #21) bypasses serveStreamedHtml entirely.
 const STOREFRONT_PREFETCH_TIMEOUT_MS = 1_500;
 const PRODUCTS_DB_TIMEOUT_MS = 3_000;
 
@@ -398,9 +399,24 @@ ${themeCss}
 <body>
 ${skeleton}
 <script>
-// Auto-refresh: this is a cold-start skeleton. Reload after a short delay
-// so the next request hits the now-warm cache.
-setTimeout(function(){location.reload();},2500);
+// FIX #24: Smart polling — only reload when warm content is ready (not another skeleton).
+// Prevents infinite reload loops on slow connections where background warm takes >2.5s.
+var attempts = 0;
+function checkReady() {
+  attempts++;
+  if (attempts >= 3) { location.reload(); return; }
+  fetch(location.href, { method: 'HEAD', cache: 'no-store' })
+    .then(function(r) {
+      var src = r.headers.get('X-Data-Source') || '';
+      if (src && src !== 'instant-skeleton') {
+        location.reload();
+      } else {
+        setTimeout(checkReady, 2000);
+      }
+    })
+    .catch(function() { setTimeout(checkReady, 2000); });
+}
+setTimeout(checkReady, 2000);
 </script>
 </body>
 </html>`;
@@ -409,8 +425,9 @@ setTimeout(function(){location.reload();},2500);
 
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
-const PREBUILT_HEAD_KV_TTL = 3600;
-const PREBUILT_HEAD_CACHE_TTL = 600;
+// FIX #25: Aligned with shell TTLs — head is derived from shell, changes at same time
+const PREBUILT_HEAD_KV_TTL = 86_400;
+const PREBUILT_HEAD_CACHE_TTL = 3_600;
 
 function _buildPrebuiltHead(html) {
   // FIX #7: Cache result in module-level variable — computed once per isolate
@@ -2475,14 +2492,14 @@ async function handlePrewarm(request, url, ctx, env) {
         const currentIndex = await env.STORE_KV.get("all-active-slugs", { type: "json" });
         if (Array.isArray(currentIndex) && !currentIndex.includes(slug)) {
           currentIndex.push(slug);
-          await env.STORE_KV.put("all-active-slugs", JSON.stringify(currentIndex), { expirationTtl: 600 }).catch(
+          await env.STORE_KV.put("all-active-slugs", JSON.stringify(currentIndex), { expirationTtl: 3_600 }).catch(
             () => {},
           );
           if (_slugIndexSet) _slugIndexSet.add(slug);
         } else if (!currentIndex) {
-          await env.STORE_KV.put("all-active-slugs", JSON.stringify([slug]), { expirationTtl: 600 }).catch(() => {});
+          await env.STORE_KV.put("all-active-slugs", JSON.stringify([slug]), { expirationTtl: 3_600 }).catch(() => {});
           _slugIndexSet = new Set([slug]);
-          _slugIndexExpiresAt = Date.now() + 300_000;
+          _slugIndexExpiresAt = Date.now() + 1_800_000;
         }
       } catch {}
     }
@@ -3016,7 +3033,7 @@ export default {
           } catch {}
         })());
 
-        return new Response(skeletonHtml, {
+      return new Response(skeletonHtml, {
           status: 200,
           headers: {
             "Content-Type": "text/html; charset=utf-8",
@@ -3028,6 +3045,12 @@ export default {
           },
         });
       }
+      // FIX #26: No slug found for this domain — return 404 immediately
+      // instead of falling through to a duplicate resolveDomain() call
+      return new Response(
+        `<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>Store Not Found</h1><p>No store is configured for <b>${cleanDomain}</b></p></body></html>`,
+        { status: 404, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", ...SECURITY_HEADERS } }
+      );
     }
 
     // FIX #2: Start storefront promise as soon as we know the domain pattern,
@@ -3215,10 +3238,10 @@ export default {
               }
 
               kvWrites.push(
-                env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 600 }).catch(() => {}),
+                env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 3_600 }).catch(() => {}),
               );
               _slugIndexSet = new Set(allSlugs);
-              _slugIndexExpiresAt = Date.now() + 300_000;
+              _slugIndexExpiresAt = Date.now() + 1_800_000;
 
               if (kvWrites.length > 0) await Promise.all(kvWrites);
               console.log(
