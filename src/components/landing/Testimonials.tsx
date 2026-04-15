@@ -1,9 +1,9 @@
 import { Quote, Star } from "lucide-react";
 
 const testimonials = [
-  { quote: "The ShopBanao team built my store in just 2 days. I was paying ₹15,000/month in marketplace commissions — now I keep 100% of my revenue.", metric: "Saved ₹45,000 in 3 months", name: "Priya Sharma", role: "Fashion Boutique Owner", city: "Mumbai", color: "red" },
-  { quote: "I had no idea how to build a website. ShopBanao handled everything — domain, payments, design. Now I get 34 orders a week directly.", metric: "34 orders/week", name: "Rahul Verma", role: "Electronics Store", city: "Delhi", color: "blue" },
-  { quote: "Best ₹10,000 I ever spent. My store looks professional, customers trust it, and I stopped paying commissions to marketplaces.", metric: "₹15,000/month saved", name: "Anita Desai", role: "Home Baker", city: "Pune", color: "yellow" },
+  { quote: "I was losing ₹15,000/month in marketplace commissions. Switched to ShopBanao and saved ₹45,000 in just 3 months. Setup took 15 minutes flat!", metric: "Saved ₹45,000 in 3 months", name: "Priya Sharma", role: "Fashion Boutique Owner", city: "Mumbai", color: "red" },
+  { quote: "WhatsApp integration changed everything. I went from 8 orders a week to 34 — customers message me directly and I convert instantly.", metric: "34 orders/week", name: "Rahul Verma", role: "Electronics Store", city: "Delhi", color: "blue" },
+  { quote: "I was paying ₹15,000/month in commissions on Swiggy. Now I pay ₹999 flat and keep 100% of my revenue. Best business decision I've made.", metric: "₹15,000/month saved", name: "Anita Desai", role: "Home Baker", city: "Pune", color: "yellow" },
 ];
 
 const colorMap: Record<string, { border: string; bg: string; text: string }> = {
@@ -26,12 +26,13 @@ const Testimonials = () => (
       <div className="text-center mb-12">
         <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">Testimonials</span>
         <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-6xl tracking-tighter leading-[0.9] text-foreground">
-          Real Results From<br /><span className="text-bauhaus-blue">Our Clients</span>
+          Real Results From<br /><span className="text-bauhaus-blue">Real Sellers</span>
         </h2>
       </div>
       <div className="grid md:grid-cols-3 gap-6">
         {testimonials.map((t) => (
           <div key={t.name} className={`bg-bauhaus-white border-4 border-foreground shadow-bauhaus-lg relative hover:-translate-y-1 transition-transform duration-200 border-t-8 ${colorMap[t.color].border}`}>
+            {/* Metric badge */}
             <div className={`${colorMap[t.color].bg} px-4 py-2 border-b-2 border-foreground`}>
               <span className={`font-black text-lg ${colorMap[t.color].text}`}>{t.metric}</span>
             </div>

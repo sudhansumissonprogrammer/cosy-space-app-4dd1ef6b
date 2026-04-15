@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import PaymentTrustStrip from "@/components/landing/PaymentTrustStrip";
-
+import StatsBar from "@/components/landing/StatsBar";
 import LandingJsonLd from "@/components/landing/LandingJsonLd";
 
 /** Prefetch auth chunks during idle time so /login and /signup load instantly */
@@ -54,7 +54,7 @@ const Index = () => {
       <Navbar />
       <Hero />
       <PaymentTrustStrip />
-      
+      <StatsBar />
       <Suspense fallback={null}>
         <ProblemAwareness />
         <CommissionCalculator />
@@ -62,8 +62,8 @@ const Index = () => {
         <SolutionFlow />
         <StoreLookShowcase showOverlays={false} />
         <Testimonials />
-        {/* <ComparisonTable /> */}
-        {/* <Pricing /> */}
+        <ComparisonTable />
+        <Pricing />
         <FAQ />
         <FinalCTA />
         <Footer />

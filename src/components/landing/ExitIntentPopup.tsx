@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-
-const WA_LINK = "https://wa.me/919692282485?text=Hi!%20I%20want%20to%20get%20my%20online%20store%20built";
+import { useNavigate } from "react-router-dom";
 
 const ExitIntentPopup = () => {
   const [show, setShow] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const cooldownUntil = sessionStorage.getItem("exit_cooldown");
@@ -46,21 +46,21 @@ const ExitIntentPopup = () => {
           Wait! Don't Leave Yet
         </h3>
         <p className="text-muted-foreground font-medium text-sm mb-6">
-          Get your professional online store built for just ₹10,000 — custom domain, payments & everything included. Ready in 48 hours.
+          Start your free 7-day trial today — zero commission, no credit card needed. Your store can be live in 10 minutes.
         </p>
 
-        <a
-          href={WA_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => setShow(false)}
-          className="block w-full bg-bauhaus-red text-bauhaus-white font-black uppercase tracking-wider text-sm py-3.5 border-3 border-foreground shadow-[4px_4px_0px_0px_hsl(var(--foreground))] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all duration-150"
+        <button
+          onClick={() => {
+            setShow(false);
+            navigate("/signup");
+          }}
+          className="w-full bg-bauhaus-red text-bauhaus-white font-black uppercase tracking-wider text-sm py-3.5 border-3 border-foreground shadow-[4px_4px_0px_0px_hsl(var(--foreground))] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all duration-150"
         >
-          Get Started — Talk to Us →
-        </a>
+          Start Free Trial →
+        </button>
 
         <p className="text-xs text-muted-foreground mt-3 font-medium">
-          One-time ₹10,000 • Ready in 48 hours • Ongoing support
+          No credit card • Cancel anytime • 0% commission
         </p>
       </div>
     </div>

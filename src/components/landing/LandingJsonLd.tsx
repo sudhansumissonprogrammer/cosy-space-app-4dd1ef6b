@@ -21,7 +21,7 @@ const LandingJsonLd = () => {
           availableLanguage: ["English", "Hindi"],
         },
         description:
-          "ShopBanao builds professional ecommerce websites for Indian businesses — custom domain, UPI payments, and everything included for ₹10,000.",
+          "ShopBanao is India's easiest platform to create your own online store — zero commission, WhatsApp ordering, and UPI payments built in.",
       },
       {
         "@context": "https://schema.org",
@@ -36,23 +36,16 @@ const LandingJsonLd = () => {
       },
       {
         "@context": "https://schema.org",
-        "@type": "Service",
-        name: "ShopBanao — Ecommerce Website Development",
-        serviceType: "Ecommerce Website Development",
-        provider: {
-          "@type": "Organization",
-          name: "ShopBanao",
-          url: "https://shopbanao.in",
-        },
-        areaServed: {
-          "@type": "Country",
-          name: "India",
-        },
+        "@type": "SoftwareApplication",
+        name: "ShopBanao",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web",
+        url: "https://shopbanao.in",
         offers: {
           "@type": "Offer",
-          price: "10000",
+          price: "0",
           priceCurrency: "INR",
-          description: "Complete ecommerce website built for your business — custom domain, payments, design, and launch included.",
+          description: "Free plan available — launch your store at zero cost",
         },
         aggregateRating: {
           "@type": "AggregateRating",
@@ -62,7 +55,7 @@ const LandingJsonLd = () => {
           worstRating: "1",
         },
         description:
-          "We build professional online stores for Indian businesses. Custom design, UPI & card payments, WhatsApp integration, and custom domain — all for ₹10,000.",
+          "Create your online store in 10 minutes. Manage products, accept UPI payments, and take orders via WhatsApp — zero commission.",
       },
     ];
 

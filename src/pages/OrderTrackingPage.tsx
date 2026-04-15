@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -74,9 +74,8 @@ export default function OrderTrackingPage() {
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
 
-  const searchOrder = useCallback(async (searchQuery?: string) => {
-    const q = (searchQuery || query).trim();
-    if (!q) return;
+  const searchOrder = async () => {
+    if (!query.trim()) return;
     setLoading(true);
     setError("");
     setOrder(null);
@@ -84,6 +83,9 @@ export default function OrderTrackingPage() {
     setSearched(true);
 
     try {
+      const q = query.trim();
+
+      // Try searching by order ID (partial match on first 8 chars)
       let { data, error: err } = await supabase
         .from("orders")
           .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
@@ -94,6 +96,7 @@ export default function OrderTrackingPage() {
       if (err) throw err;
 
       if (!data?.length) {
+        // Try partial ID match
         const { data: partialData } = await supabase
           .from("orders")
           .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
@@ -111,6 +114,7 @@ export default function OrderTrackingPage() {
 
       setOrder(data[0]);
 
+      // Fetch items
       const { data: items } = await supabase
         .from("order_items")
         .select("product_name, quantity, unit_price, total")
@@ -122,15 +126,7 @@ export default function OrderTrackingPage() {
     } finally {
       setLoading(false);
     }
-  }, [query]);
-
-  // Auto-search when page loads with an id parameter
-  useEffect(() => {
-    const id = searchParams.get("id");
-    if (id) {
-      searchOrder(id);
-    }
-  }, []);
+  };
 
   const statusColors: Record<string, string> = {
     pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -163,7 +159,7 @@ export default function OrderTrackingPage() {
                   placeholder="e.g. A1B2C3D4 or +919876543210"
                   onKeyDown={(e) => e.key === "Enter" && searchOrder()}
                 />
-                <Button onClick={() => searchOrder()} disabled={loading || !query.trim()}>
+                <Button onClick={searchOrder} disabled={loading || !query.trim()}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>
