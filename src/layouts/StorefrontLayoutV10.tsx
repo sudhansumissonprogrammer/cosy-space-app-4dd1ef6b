@@ -33,7 +33,7 @@ export default function StorefrontLayoutV10({ slugOverride }: { slugOverride?: s
     <StorefrontShell
       slugOverride={slugOverride}
       defaultPrimary="#1a1a1a"
-      wrapperClassName="storefront-font min-h-screen"
+      wrapperClassName="storefront-font min-h-screen overflow-x-hidden"
       wrapperStyle={{ "--storefront-bottom-nav-height": "64px", fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif", backgroundColor: "var(--storefront-bg, #f7f5f0)", color: "var(--storefront-text, #1a1a1a)" } as React.CSSProperties}
       skeleton={<StorefrontV10Skeleton />}
     >
