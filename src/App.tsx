@@ -107,6 +107,7 @@ if (_path.startsWith("/dashboard") || _path.startsWith("/admin") || _path === "/
   import("@/components/ui/toaster").catch(() => {});
   import("@/components/ui/tooltip").catch(() => {});
   import("@/components/ui/sonner").catch(() => {});
+  import("@/integrations/supabase/client").catch(() => {});
   if (_path.startsWith("/dashboard")) {
     import("./layouts/DashboardLayout").catch(() => {});
     import("./pages/Dashboard").catch(() => {});
