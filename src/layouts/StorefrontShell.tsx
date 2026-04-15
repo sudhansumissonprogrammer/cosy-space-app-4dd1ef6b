@@ -106,7 +106,7 @@ export default function StorefrontShell({
   defaultPrimary = "#004643",
   defaultButtonRadius = "0.5rem",
   wrapperStyle,
-  wrapperClassName = "storefront-font min-h-screen font-sans",
+  wrapperClassName = "storefront-font min-h-screen font-sans overflow-x-hidden",
   notFoundLabel = "Store",
   skeleton,
   children,
