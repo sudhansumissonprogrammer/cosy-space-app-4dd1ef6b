@@ -35,12 +35,12 @@ const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: 
 
 const heroVariants = [
   {
-    headline: <>Launch Your Own Online Store —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — ready to sell instantly.",
+    headline: <>Get Your Online Store<br />Built for ₹10,000 with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
+    sub: "A fully branded online store with custom domain, UPI payments & everything you need — ready to sell instantly.",
   },
   {
-    headline: <>Launch Your Own Online Store —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — ready to sell instantly.",
+    headline: <>Get Your Online Store<br />Built for ₹10,000 with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
+    sub: "A fully branded online store with custom domain, UPI payments & everything you need — ready to sell instantly.",
   },
 ];
 
