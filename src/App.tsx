@@ -93,6 +93,31 @@ const LazyAuthRoutes = lazy(() => import("./routes/AuthRoutes"));
 const LazyIndex = lazy(() => import("./pages/Index"));
 const LazyThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
 
+/**
+ * Eagerly prefetch dashboard chunks so they download IN PARALLEL
+ * instead of sequentially (DashboardProviders → AuthRoutes → DashboardLayout → Dashboard).
+ * Called once at module load time if the URL is a dashboard/admin path.
+ */
+const _path = window.location.pathname;
+if (_path.startsWith("/dashboard") || _path.startsWith("/admin") || _path === "/login" || _path === "/signup") {
+  // Fire all imports immediately — they resolve into the module cache,
+  // so when React's lazy() asks for them later, they're already loaded.
+  import("./routes/AuthRoutes").catch(() => {});
+  import("@/contexts/AuthContext").catch(() => {});
+  import("@/components/ui/toaster").catch(() => {});
+  import("@/components/ui/tooltip").catch(() => {});
+  import("@/components/ui/sonner").catch(() => {});
+  if (_path.startsWith("/dashboard")) {
+    import("./layouts/DashboardLayout").catch(() => {});
+    import("./pages/Dashboard").catch(() => {});
+    import("@/integrations/supabase/client").catch(() => {});
+  }
+  if (_path.startsWith("/admin")) {
+    import("./layouts/AdminLayout").catch(() => {});
+    import("./pages/admin/AdminOverview").catch(() => {});
+  }
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
