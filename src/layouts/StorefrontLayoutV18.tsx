@@ -57,9 +57,13 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         .storefront-font main { padding-top: 0; }
         .storefront-font .smart-header + main { padding-top: 3.5rem; }
         .v18-hero-pull { margin-top: -3.5rem; }
-        .storefront-font nav[class*="bottom-nav"], .storefront-font div[class*="bottom-nav"], .storefront-font .fixed.bottom-0 { background-color: #0a0a0a; border-color: rgba(255,255,255,0.1); }
-        .storefront-font nav[class*="bottom-nav"] svg, .storefront-font div[class*="bottom-nav"] svg, .storefront-font .fixed.bottom-0 svg { color: #ffffff; stroke: #ffffff; }
-        .storefront-font nav[class*="bottom-nav"] span, .storefront-font div[class*="bottom-nav"] span, .storefront-font .fixed.bottom-0 span { color: #ffffff; }
+        .storefront-font nav[class*="bottom-nav"], .storefront-font div[class*="bottom-nav"], .storefront-font .fixed.bottom-0 { background-color: #0a0a0a !important; border-color: rgba(255,255,255,0.1) !important; }
+        .storefront-font nav[class*="bottom-nav"] svg, .storefront-font div[class*="bottom-nav"] svg, .storefront-font .fixed.bottom-0 svg { color: #ffffff !important; stroke: #ffffff !important; }
+        .storefront-font nav[class*="bottom-nav"] span, .storefront-font div[class*="bottom-nav"] span, .storefront-font .fixed.bottom-0 span { color: #ffffff !important; }
+        .storefront-font nav[class*="bottom-nav"] a, .storefront-font div[class*="bottom-nav"] a, .storefront-font .fixed.bottom-0 a { color: #ffffff !important; }
+        .storefront-font nav[class*="bottom-nav"] button, .storefront-font div[class*="bottom-nav"] button, .storefront-font .fixed.bottom-0 button { color: #ffffff !important; }
+        .storefront-font nav[class*="bottom-nav"] [class*="rounded-full"], .storefront-font div[class*="bottom-nav"] [class*="rounded-full"] { --storefront-bg: #0a0a0a; }
+        .storefront-font nav[class*="bottom-nav"] .pointer-events-auto > div { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.15) !important; }
       `}</style>
       <CheckoutAwareLayout
         store={store}
