@@ -4,14 +4,20 @@
  * Uses the per-store purge endpoint (/api/purge-store) which invalidates
  * only that store's caches (products + storefront data + early HTML).
  *
- * v2: Removed legacy /api/purge-shell and /api/purge-products calls —
- * /api/purge-store already handles everything via version bump.
- * This reduces Worker requests from 6 → 2 (or 3 → 1 without custom domain).
+ * v3: Added X-Purge-Token header for authenticated purge requests.
  */
 
 const PURGE_COOLDOWN_MS = 5_000;
 const inflightPurges = new Map<string, Promise<boolean>>();
 const recentPurges = new Map<string, { ts: number; result: boolean }>();
+
+function getPurgeToken(): string {
+  try {
+    return import.meta.env.VITE_PURGE_SECRET || "";
+  } catch {
+    return "";
+  }
+}
 
 export async function purgeStoreCache(
   slug: string,
@@ -31,9 +37,14 @@ export async function purgeStoreCache(
     domains.push(`https://${customDomain}`);
   }
 
+  const purgeToken = getPurgeToken();
+
   // Single purge-store call per domain — handles products + shell + storefront
   const requests = domains.map((base) =>
-    fetch(`${base}/api/purge-store?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null)
+    fetch(`${base}/api/purge-store?slug=${encodeURIComponent(slug)}`, {
+      method: "POST",
+      headers: purgeToken ? { "X-Purge-Token": purgeToken } : {},
+    }).catch(() => null)
   );
 
   const task = (async () => {
