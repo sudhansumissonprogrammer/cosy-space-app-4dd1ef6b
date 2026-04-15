@@ -1,69 +1,96 @@
 
 
-# Worker v6.2.0 Bug Fixes — 5 Issues
+# Worker v6.3.0 — Security, Performance & Bug Fixes
 
-## Issue A — Critical: Replace blind `setTimeout` reload with smart polling
-
-**File:** `docs/cloudflare-worker-current.js`, lines 401-403
-
-Replace the `setTimeout(function(){location.reload();},2500)` in `_buildInstantSkeletonPage()` with a polling mechanism that checks `X-Data-Source` header before reloading. After 3 failed attempts (6s), reload unconditionally as a last resort.
-
-```javascript
-var attempts = 0;
-function checkReady() {
-  attempts++;
-  if (attempts >= 3) { location.reload(); return; }
-  fetch(location.href, { method: 'HEAD', cache: 'no-store' })
-    .then(function(r) {
-      var src = r.headers.get('X-Data-Source') || '';
-      if (src && src !== 'instant-skeleton') {
-        location.reload();
-      } else {
-        setTimeout(checkReady, 2000);
-      }
-    })
-    .catch(function() { setTimeout(checkReady, 2000); });
-}
-setTimeout(checkReady, 2000);
-```
-
-## Issue B — Medium: Align prebuilt head TTLs with shell TTLs
-
-**File:** `docs/cloudflare-worker-current.js`, lines 412-413
-
-- `PREBUILT_HEAD_KV_TTL`: 3600 → **86_400** (match shell KV TTL)
-- `PREBUILT_HEAD_CACHE_TTL`: 600 → **3_600** (match shell Cache TTL)
-
-## Issue C — Medium: Eliminate duplicate `resolveDomain()` for custom domains
-
-**File:** `docs/cloudflare-worker-current.js`, lines 2992-3038
-
-When `!_memShell` and `resolveDomain()` returns null (no slug found), currently falls through to a second `Promise.all([resolveDomain(...), ...])`. Fix: if the skeleton path's `resolveDomain` returns null, return a 404 immediately instead of calling it again.
-
-If skeleton path returns a slug but we still fall through (shouldn't happen since we return), the `Promise.all` block at line 3035 should reuse the already-resolved slug instead of calling `resolveDomain` again.
-
-## Issue D — Low: Update comment for `STOREFRONT_PREFETCH_TIMEOUT_MS`
-
-**File:** `docs/cloudflare-worker-current.js`, line 94
-
-Clarify that this timeout only applies to the warm path (when `_memShell` exists), since the instant skeleton path bypasses `serveStreamedHtml` entirely.
-
-## Issue E — Low: Increase `all-active-slugs` KV TTL from 600s to 3600s
-
-**File:** `docs/cloudflare-worker-current.js`
-
-Three locations to update:
-- Line 2478: `expirationTtl: 600` → `3_600`
-- Line 2483: `expirationTtl: 600` → `3_600`
-- Line 3218: `expirationTtl: 600` → `3_600`
-
-Also update `_slugIndexExpiresAt` memory TTL at line 3221 from `300_000` (5min) to `1_800_000` (30min) for consistency.
+Version bump: 6.2.1 → **6.3.0**. All changes in `docs/cloudflare-worker-current.js` plus two client-side files.
 
 ---
 
-## Version bump
-`WORKER_VERSION`: "6.2.0" → **"6.2.1"**
+## Phase 1: Critical Security
 
-## Deployment
-After approval, all changes go into `docs/cloudflare-worker-current.js`. You deploy manually to Cloudflare.
+**Issue #1 — Move secrets to env bindings**
+Replace hardcoded `SUPABASE_URL` and `SUPABASE_ANON_KEY` with `env.SUPABASE_URL || <fallback>` and `env.SUPABASE_ANON_KEY || <fallback>`. All ~15 call sites updated. After deploying, add these as Workers Secrets in Cloudflare dashboard.
+
+**Issue #2 — Auth on purge/prewarm endpoints**
+Add `verifyPurgeAuth(request, env)` using `crypto.subtle.timingSafeEqual` against `env.PURGE_SECRET`. Gate all 4 mutation endpoints (`purge-store`, `purge-shell`, `purge-products`, `prewarm`) behind this check. Update `src/lib/purgeStoreCache.ts` to send `X-Purge-Token` header. Prewarm goes through the edge function so no client change needed there.
+
+**Issue #3 — Fix infinite skeleton reload loop**
+Replace polling with `sessionStorage`-guarded approach. Max 1 reload. If still skeleton after reload, stop and let SPA hydrate naturally.
+
+**Issue #17 — XSS in JSON injection**
+Create `sanitizeJsonForScript()` that escapes `</script`, `<!--`, and `<script` inside JSON strings. Use in `injectIntoHtml` (line 1349) and `serveStreamedHtml` (line 1512).
+
+**Issue #20 — Remove x-forwarded-for fallback**
+Lines 2770 and 2993: use only `cf-connecting-ip`.
+
+**Issue #21 — Slug validation on prewarm**
+Add `if (!/^[a-z0-9-]{1,63}$/.test(slug)) return 400` in `handlePrewarm`.
+
+---
+
+## Phase 2: Performance
+
+**Issue #6 — In-memory "is warming" flag**
+Add `_warmingInFlight` Set. Skip `cache.match(earlyKey)` in `_warmFullHtmlInBackground` if slug already warming.
+
+**Issue #7 — Skip KV reads when memory is hot**
+Check `_memThemeCache` and `_memStorefrontCache` freshness before `_batchKvRead`. Pass resolved null if both hot.
+
+**Issue #10 — Gate inline products on pathname**
+Only call `_getInlineProductsOrNull` when `pathname === '/'` or `pathname === ''`.
+
+**Issue #12 — Bot detection before I/O**
+Move `BOT_UA_REGEX` check to right after static asset handling, before early edge cache. Bots skip all cache warming and go directly to `handleBot`.
+
+**Issue #14 — Handle HEAD requests explicitly**
+Add HEAD handler near top of fetch. Return lightweight response with `X-Data-Source` from edge cache only — no streaming HTML generation.
+
+**Issue #15 — Remove redundant storeInEdgeCache on streaming**
+Remove `storeInEdgeCache(ctx, hostname, slug, res)` in `cachedFetch` (line 2597). Background warm already handles this.
+
+---
+
+## Phase 3: Cost & Cleanup
+
+**Issue #5 — Add console.error in critical catches**
+Replace silent `.catch(() => {})` with `.catch(e => console.error('[cache]', e))` in shell/storefront/early HTML cache writes.
+
+**Issue #13 — Move cleanup to ctx.waitUntil**
+Move `cleanRateLimitMap()` and `cleanRevalMap()` into `ctx.waitUntil` to unblock critical path.
+
+**Issue #16 — Remove dead slug index code**
+Remove `_getSlugIndex`, `_slugIndexSet`, `_slugIndexExpiresAt`, and the fire-and-forget call. Keep KV write in cron.
+
+**Issue #19 — Tighten CORS on mutation endpoints**
+Restrict purge/prewarm CORS to `*.shopbanao.in` origins. Keep `*` for `/api/products`.
+
+---
+
+## Phase 4: Improvements
+
+**Issue #8 — Increase domain resolution TTLs**
+KV: 3600 → 86400. Cache API: 300 → 3600. Memory: 300_000 → 1_800_000.
+
+**Issue #11 — Cron timeout**
+Add 25-second deadline to store-warm loop. Break on timeout.
+
+**Issue #9 — No change needed** (streaming await is correct, head already flushed).
+
+**Issue #18 — CSP nonce deferred** to a future version (requires larger refactor).
+
+---
+
+## Client-Side Changes
+
+- `src/lib/purgeStoreCache.ts`: Add `X-Purge-Token` header to purge fetch calls
+- `src/lib/prewarmStore.ts`: No change (calls go through edge function)
+
+---
+
+## Post-Deploy Requirements
+
+Add these as **Workers Secrets** in Cloudflare dashboard:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`  
+- `PURGE_SECRET` (generate a random 32+ char string, also set as `VITE_PURGE_SECRET` in Lovable env)
 
