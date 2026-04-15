@@ -99,7 +99,7 @@ const LazyThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
  * Called once at module load time if the URL is a dashboard/admin path.
  */
 const _path = window.location.pathname;
-if (_path.startsWith("/dashboard") || _path.startsWith("/admin") || _path === "/login" || _path === "/signup") {
+if (_path.startsWith("/dashboard") || _path.startsWith("/admin") || _path === "/login" || _path === "/signup" || _path === "/forgot-password" || _path === "/reset-password") {
   // Fire all imports immediately — they resolve into the module cache,
   // so when React's lazy() asks for them later, they're already loaded.
   import("./routes/AuthRoutes").catch(() => {});
