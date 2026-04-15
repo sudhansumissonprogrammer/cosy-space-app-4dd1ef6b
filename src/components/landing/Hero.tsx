@@ -35,12 +35,12 @@ const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: 
 
 const heroVariants = [
   {
-    headline: <>Launch Your Own Store in 5 Minutes —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — live in 10 minutes.",
+    headline: <>Launch Your Own Online Store —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
+    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — ready to sell instantly.",
   },
   {
-    headline: <>Launch Your Own Store in 5 Minutes —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — live in 10 minutes.",
+    headline: <>Launch Your Own Online Store —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
+    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — ready to sell instantly.",
   },
 ];
 
