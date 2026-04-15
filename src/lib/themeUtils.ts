@@ -211,16 +211,41 @@ export function buildThemeStyle(
   return { themeStyle, primaryColor, btnTextColor };
 }
 
-/** Load Google Fonts dynamically for theme config */
+/** Load Google Fonts dynamically for theme config.
+ *
+ * IMPORTANT: The Cloudflare Worker injects a `<link id="storefront-google-fonts">`
+ * in the HTML shell with ALL theme fonts (including self-hosted ones like Inter).
+ * React's `buildGoogleFontsHref` filters self-hosted fonts, producing a different
+ * URL. Overwriting the Worker's href would cause a re-fetch and a visible FOUT
+ * (Flash of Unstyled Text). So if the Worker already injected a link with a valid
+ * href containing the required fonts, we leave it untouched.
+ */
 export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
   const fonts = getThemeFontList(themeConfig);
   const newHref = buildGoogleFontsHref(fonts);
+
+  const linkId = "storefront-google-fonts";
+  let link = document.getElementById(linkId) as HTMLLinkElement;
+
+  // If Worker already injected the link, check if it already covers our fonts.
+  // Only re-set href if a required font family is missing from the existing URL.
+  if (link && link.href) {
+    const existingHref = link.href;
+    const allFontsCovered = fonts
+      .map(normalizeGoogleFontName)
+      .filter((f) => Boolean(f) && !SELF_HOSTED_FONTS.has(f))
+      .every((f) => existingHref.includes(f.replace(/ /g, "+")));
+
+    if (allFontsCovered) {
+      // Worker link already has everything we need — don't touch it
+      return link;
+    }
+  }
+
   if (!newHref) return null;
 
   ensureGoogleFontsPreconnect();
 
-  const linkId = "storefront-google-fonts";
-  let link = document.getElementById(linkId) as HTMLLinkElement;
   if (!link) {
     link = document.createElement("link");
     link.id = linkId;
