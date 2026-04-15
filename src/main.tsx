@@ -21,7 +21,6 @@ if ("requestIdleCallback" in window) {
     import('@fontsource/montserrat-alternates/600.css');
   }, 500);
 }
-import { isCustomDomainHost, isSubdomainHost, isRootDomainHost, isPreviewHost, isLocalHost } from "@/lib/subdomain";
 
 // Defer global error handlers to idle time — not needed during first paint
 if ("requestIdleCallback" in window) {
