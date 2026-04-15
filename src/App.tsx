@@ -111,7 +111,6 @@ if (_path.startsWith("/dashboard") || _path.startsWith("/admin") || _path === "/
   if (_path.startsWith("/dashboard")) {
     import("./layouts/DashboardLayout").catch(() => {});
     import("./pages/Dashboard").catch(() => {});
-    import("@/integrations/supabase/client").catch(() => {});
   }
   if (_path.startsWith("/admin")) {
     import("./layouts/AdminLayout").catch(() => {});
