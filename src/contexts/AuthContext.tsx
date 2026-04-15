@@ -12,10 +12,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Synchronous check: does localStorage contain a Supabase session?
+ * If not, we know loading=false immediately — no spinner for anonymous users.
+ */
+function hasStoredSession(): boolean {
+  try {
+    // Supabase stores session under this key pattern
+    const key = Object.keys(localStorage).find(
+      (k) => k.startsWith("sb-") && k.endsWith("-auth-token")
+    );
+    return !!key && !!localStorage.getItem(key);
+  } catch {
+    return false; // localStorage blocked — assume no session
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Start loading=false if there's clearly no stored session — skip spinner entirely
+  const [loading, setLoading] = useState(() => hasStoredSession());
 
   useEffect(() => {
     // 1. Restore session from storage FIRST — this is the source of truth
