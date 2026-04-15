@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+const WA_LINK = "https://wa.me/919692282485?text=Hi!%20I%20want%20to%20get%20my%20online%20store%20built";
+
 const CommissionCalculator = () => {
   const [revenue, setRevenue] = useState(50000);
   const [commission, setCommission] = useState(25);
@@ -12,7 +14,7 @@ const CommissionCalculator = () => {
         <div className="text-center mb-12">
           <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">Calculator</span>
           <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-5xl tracking-tighter leading-[0.9] text-foreground">
-            How Much Are You<br /><span className="text-bauhaus-red">Losing?</span>
+            How Much Revenue Are You<br /><span className="text-bauhaus-red">Missing?</span>
           </h2>
         </div>
         <div className="bg-bauhaus-white border-2 sm:border-4 border-foreground shadow-bauhaus sm:shadow-bauhaus-lg p-4 sm:p-6 md:p-10">
@@ -43,8 +45,8 @@ const CommissionCalculator = () => {
             </div>
           </div>
           <div className="mt-8 text-center">
-            <a href="/signup" className="inline-flex items-center gap-2 bg-bauhaus-yellow text-foreground font-bold uppercase tracking-wider px-8 py-3.5 border-2 border-foreground shadow-bauhaus-md hover:bg-bauhaus-yellow/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
-              Stop Losing Money — Start Free
+            <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-bauhaus-yellow text-foreground font-bold uppercase tracking-wider px-8 py-3.5 border-2 border-foreground shadow-bauhaus-md hover:bg-bauhaus-yellow/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
+              Get Your Store Built — ₹10,000
             </a>
           </div>
         </div>

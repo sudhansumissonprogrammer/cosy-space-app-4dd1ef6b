@@ -74,7 +74,6 @@ const stores = [
 function StoreRow({ store, storeIdx }: { store: (typeof stores)[0]; storeIdx: number }) {
   return (
     <div className="py-6 sm:py-8">
-      {/* Store label */}
       <div className="flex items-center gap-2 mb-4 px-5 sm:px-8 lg:px-12">
         <div className={`w-3.5 h-3.5 ${store.color} border-2 border-foreground rotate-45`} />
         <h3 className="font-black uppercase text-base sm:text-xl lg:text-2xl tracking-tight text-foreground">
@@ -84,8 +83,6 @@ function StoreRow({ store, storeIdx }: { store: (typeof stores)[0]; storeIdx: nu
           {store.type}
         </span>
       </div>
-
-      {/* Horizontally scrollable phone cards */}
       <div className="overflow-x-auto scrollbar-hide">
         <div className="flex items-start gap-4 sm:gap-6 px-5 sm:px-8 lg:px-12 pb-2" style={{ width: "max-content" }}>
           {store.screens.map((screen, i) => (
@@ -127,24 +124,21 @@ const StoreLookShowcase = ({ showOverlays = true }: { showOverlays?: boolean }) 
           backgroundSize: "24px 24px",
         }}
       />
-
-      {/* Section header */}
       <div className="text-center pt-10 sm:pt-14 lg:pt-20 pb-2 sm:pb-4 px-5 sm:px-8 relative z-10">
         <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">
-          Mobile Optimized
+          Our Portfolio
         </span>
         <h2 className="font-black uppercase text-2xl sm:text-4xl lg:text-5xl tracking-tighter leading-[0.9] text-foreground">
-          How Your Store
+          Stores We've
           <br />
           <span className="text-bauhaus-blue font-['Alegreya_SC',serif] italic">
-            Actually Looks
+            Built
           </span>
         </h2>
         <p className="mt-3 text-sm sm:text-base text-muted-foreground font-medium max-w-xl mx-auto">
-          Beautiful, fast, mobile-first stores your customers will love.
+          Real stores built by our team for real businesses across India.
         </p>
       </div>
-
       <div className="relative z-10 pb-8 sm:pb-12">
         {displayStores.map((store, storeIdx) => (
           <StoreRow key={store.name} store={store} storeIdx={storeIdx} />

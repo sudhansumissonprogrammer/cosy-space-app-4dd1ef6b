@@ -1,12 +1,12 @@
 import { Shirt, Gem, Store, CakeSlice, Cpu, Gift } from "lucide-react";
 
 const audiences = [
-  { icon: Shirt, title: "Clothing & Fashion", desc: "Sell ethnic wear, western, kids fashion with size variants.", color: "red" },
-  { icon: Gem, title: "Jewellery Shops", desc: "Showcase collections, manage custom orders & pricing.", color: "yellow" },
-  { icon: Store, title: "Grocery & Local Stores", desc: "Bring your local store online — take orders 24/7.", color: "blue" },
-  { icon: CakeSlice, title: "Bakers & Food Business", desc: "Take cake orders, set delivery slots, manage requests.", color: "red" },
-  { icon: Cpu, title: "Electronics & Accessories", desc: "Sell gadgets, accessories, and electronics with variants.", color: "yellow" },
-  { icon: Gift, title: "Gift & Handmade Products", desc: "Sell custom gifts, artwork, crafts & handmade items.", color: "blue" },
+  { icon: Shirt, title: "Clothing & Fashion", desc: "We build custom stores for clothing brands with size variants, lookbooks & collections.", color: "red" },
+  { icon: Gem, title: "Jewellery Shops", desc: "Showcase your jewellery collections with stunning product pages & custom pricing.", color: "yellow" },
+  { icon: Store, title: "Grocery & Local Stores", desc: "We bring your local store online with 24/7 ordering & delivery management.", color: "blue" },
+  { icon: CakeSlice, title: "Bakers & Food Business", desc: "Custom stores for bakers with order management, delivery slots & menu display.", color: "red" },
+  { icon: Cpu, title: "Electronics & Accessories", desc: "Professional stores for gadgets & electronics with variants & specifications.", color: "yellow" },
+  { icon: Gift, title: "Gift & Handmade Products", desc: "Beautiful stores for artisans & gift shops with custom product showcases.", color: "blue" },
 ];
 
 const colorMap: Record<string, string> = { red: "bg-bauhaus-red", blue: "bg-bauhaus-blue", yellow: "bg-bauhaus-yellow" };
@@ -18,9 +18,9 @@ const WhoUses = () => {
       <div className="absolute bottom-8 left-8 w-24 h-24 border-4 border-white/20 rotate-45 opacity-30" />
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-12">
-          <span className="font-bold uppercase tracking-widest text-xs text-primary-foreground/70 mb-2 block">For Everyone</span>
+          <span className="font-bold uppercase tracking-widest text-xs text-primary-foreground/70 mb-2 block">We Build For Everyone</span>
           <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-6xl tracking-tighter leading-[0.9] text-primary-foreground">
-            Built For Businesses<br />Like Yours
+            Stores We Build For<br />Businesses Like Yours
           </h2>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
