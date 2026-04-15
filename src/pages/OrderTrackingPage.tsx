@@ -163,7 +163,7 @@ export default function OrderTrackingPage() {
                   placeholder="e.g. A1B2C3D4 or +919876543210"
                   onKeyDown={(e) => e.key === "Enter" && searchOrder()}
                 />
-                <Button onClick={searchOrder} disabled={loading || !query.trim()}>
+                <Button onClick={() => searchOrder()} disabled={loading || !query.trim()}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>
