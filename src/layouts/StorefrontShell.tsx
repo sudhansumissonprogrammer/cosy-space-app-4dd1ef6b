@@ -197,11 +197,15 @@ export default function StorefrontShell({
   }, [themeVarsKey]);
 
   // Keep skeleton visible while data loads.
-  // IMPORTANT: never render a blank div — it causes a white flash between skeleton → content.
-  // Instead, keep the same skeleton the user already sees so the transition is seamless.
+  // If the Worker's #sf-skel overlay is present, render an invisible placeholder
+  // so we don't show a SECOND (white/unthemed) skeleton underneath it.
+  // Only show the React skeleton in preview/localhost where the Worker isn't serving.
   if (isLoading) {
-    // Remove the inline HTML skeleton from #root if it's still there
-    // (React has now mounted, so we take over rendering the skeleton)
+    const edgeSkelPresent = typeof document !== "undefined" && !!document.getElementById("sf-skel");
+    if (edgeSkelPresent) {
+      // Worker skeleton is already covering the screen — just hold space, don't flash white
+      return <div className="min-h-screen" style={{ background: "transparent" }} />;
+    }
     return skeleton ?? <DefaultSkeleton />;
   }
 
