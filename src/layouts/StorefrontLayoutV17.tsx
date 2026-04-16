@@ -89,6 +89,19 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   );
 }
 
+function V17Skeleton() {
+  return (
+    <div className="min-h-screen font-sans" style={{ backgroundColor: "#FAFAF6" }}>
+      <nav className="sticky top-0 z-30 border-b" style={{ height: 56, backgroundColor: "#FAFAF6", borderColor: "#e8e8e3", display: "flex", alignItems: "center", padding: "0 16px", gap: 12 }}>
+        <div className="animate-pulse" style={{ height: 32, width: 32, borderRadius: 8, backgroundColor: "rgba(43,76,63,0.12)" }} />
+        <div className="animate-pulse" style={{ height: 12, width: 80, borderRadius: 4, backgroundColor: "rgba(43,76,63,0.10)" }} />
+        <div style={{ flex: 1 }} />
+        <div className="animate-pulse" style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: "rgba(43,76,63,0.10)" }} />
+      </nav>
+    </div>
+  );
+}
+
 export default function StorefrontLayoutV17({ slugOverride }: { slugOverride?: string } = {}) {
   return (
     <StorefrontShell
@@ -96,6 +109,7 @@ export default function StorefrontLayoutV17({ slugOverride }: { slugOverride?: s
       showExitIntent
       defaultPrimary="#2B4C3F"
       defaultButtonRadius="0.5rem"
+      skeleton={<V17Skeleton />}
     >
       {({ store, themeConfig }) => <V17Inner store={store} themeConfig={themeConfig} />}
     </StorefrontShell>
