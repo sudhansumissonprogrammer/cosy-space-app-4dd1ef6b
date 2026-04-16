@@ -68,7 +68,7 @@ const Hero = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
-                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">Ready in 48 Hours</span>
+                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">Ready in 4-6 Days</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />

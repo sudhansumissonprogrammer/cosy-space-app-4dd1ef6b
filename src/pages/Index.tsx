@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import PaymentTrustStrip from "@/components/landing/PaymentTrustStrip";
+const PaymentTrustStrip = lazy(() => import("@/components/landing/PaymentTrustStrip"));
 
 import LandingJsonLd from "@/components/landing/LandingJsonLd";
 
@@ -56,7 +56,7 @@ const Index = () => {
       <LandingJsonLd />
       <Navbar />
       <Hero />
-      <PaymentTrustStrip />
+      <Fb><PaymentTrustStrip /></Fb>
       
       <Fb><SocialProofStrip /></Fb>
       <Fb><ProblemAwareness /></Fb>
