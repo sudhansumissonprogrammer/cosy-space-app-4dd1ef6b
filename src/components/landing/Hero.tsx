@@ -49,7 +49,7 @@ const Hero = () => {
             </h1>
 
             <p className="font-medium text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed mb-7 sm:mb-8 max-w-md">
-              We build you a fully branded online store with custom domain, UPI payments & everything you need — ready to sell in 48 hours.
+              We build you a fully branded online store with custom domain, UPI payments & everything you need — ready to sell in 4-6 days.
             </p>
 
             <div className="flex flex-row gap-3 mb-6 sm:mb-7">
