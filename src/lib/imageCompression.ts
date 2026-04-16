@@ -10,13 +10,13 @@
 const MAX_RAW_SIZE = 5 * 1024 * 1024; // 5MB — reject before processing
 const SKIP_THRESHOLD_KB = 100; // Don't compress images already under 100KB
 const HEAVY_THRESHOLD_KB = 200; // Heavy compression for images above 200KB
-const MAX_OUTPUT_KB = 120; // target output size for light compression
-const HEAVY_OUTPUT_KB = 100; // target output size for heavy compression
+const MAX_OUTPUT_KB = 200; // target output size for light compression
+const HEAVY_OUTPUT_KB = 150; // target output size for heavy compression — never below 100KB
 const DEFAULT_MAX_DIMENSION = 1200;
 const DEFAULT_QUALITY = 0.92; // near-lossless
-const HEAVY_QUALITY = 0.80; // starting quality for heavy compression
-const MIN_QUALITY = 0.75; // never go below this for light compression
-const HEAVY_MIN_QUALITY = 0.55; // lower floor for heavy compression
+const HEAVY_QUALITY = 0.85; // starting quality for heavy compression
+const MIN_QUALITY = 0.80; // never go below this for light compression
+const HEAVY_MIN_QUALITY = 0.72; // higher floor to preserve visual quality
 
 /** @deprecated Multi-size variants removed — single 800w upload only */
 export const IMAGE_VARIANT_WIDTHS = [800] as const;
