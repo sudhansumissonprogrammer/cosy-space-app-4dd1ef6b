@@ -15,6 +15,9 @@ import arrokCategories from "@/assets/showcase-arrok-categories.webp";
 import medivaHome from "@/assets/showcase-mediva-home.webp";
 import medivaShop from "@/assets/showcase-mediva-shop.webp";
 import medivaCategories from "@/assets/showcase-mediva-categories.webp";
+import quickrashanHome from "@/assets/showcase-quickrashan-home.webp";
+import quickrashanShop from "@/assets/showcase-quickrashan-shop.webp";
+import quickrashanCategories from "@/assets/showcase-quickrashan-categories.webp";
 
 const stores = [
   {
@@ -46,6 +49,16 @@ const stores = [
       { label: "Home Page", img: medivaHome },
       { label: "Shop All", img: medivaShop },
       { label: "Categories", img: medivaCategories },
+    ],
+  },
+  {
+    name: "QuickRashan",
+    type: "Grocery Store",
+    color: "bg-bauhaus-blue",
+    screens: [
+      { label: "Home Page", img: quickrashanHome },
+      { label: "All Brands", img: quickrashanShop },
+      { label: "Categories", img: quickrashanCategories },
     ],
   },
   {

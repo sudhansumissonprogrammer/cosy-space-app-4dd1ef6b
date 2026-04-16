@@ -11,14 +11,12 @@ function prefetchAuthOnIdle() {
   if (idlePrefetched) return;
   idlePrefetched = true;
   const start = () => {
-    // DashboardProviders bundle (AuthContext + Radix)
     Promise.all([
       import("@/components/ui/toaster"),
       import("@/components/ui/tooltip"),
       import("@/contexts/AuthContext"),
       import("@/components/ui/sonner"),
     ]).catch(() => {});
-    // Auth pages
     import("@/pages/Login").catch(() => {});
     import("@/pages/Signup").catch(() => {});
     import("@/routes/AuthRoutes").catch(() => {});
@@ -30,15 +28,15 @@ function prefetchAuthOnIdle() {
   }
 }
 
-// Below-fold: lazy load to keep initial bundle small & fast
+// Below-fold: lazy load
+const SocialProofStrip = lazy(() => import("@/components/landing/SocialProofStrip"));
 const ProblemAwareness = lazy(() => import("@/components/landing/ProblemAwareness"));
 const CommissionCalculator = lazy(() => import("@/components/landing/CommissionCalculator"));
 const WhoUses = lazy(() => import("@/components/landing/WhoUses"));
 const SolutionFlow = lazy(() => import("@/components/landing/SolutionFlow"));
 const StoreLookShowcase = lazy(() => import("@/components/landing/StoreLookShowcase"));
 const Testimonials = lazy(() => import("@/components/landing/Testimonials"));
-const ComparisonTable = lazy(() => import("@/components/landing/ComparisonTable"));
-const Pricing = lazy(() => import("@/components/landing/Pricing"));
+const ClientResults = lazy(() => import("@/components/landing/ClientResults"));
 const TrustReasons = lazy(() => import("@/components/landing/TrustReasons"));
 const FAQ = lazy(() => import("@/components/landing/FAQ"));
 const FinalCTA = lazy(() => import("@/components/landing/FinalCTA"));
@@ -57,14 +55,14 @@ const Index = () => {
       <PaymentTrustStrip />
       
       <Suspense fallback={null}>
+        <SocialProofStrip />
         <ProblemAwareness />
         <CommissionCalculator />
         <WhoUses />
         <SolutionFlow />
         <StoreLookShowcase showOverlays={false} />
         <Testimonials />
-        {/* <ComparisonTable /> */}
-        {/* <Pricing /> */}
+        <ClientResults />
         <TrustReasons />
         <FAQ />
         <FinalCTA />

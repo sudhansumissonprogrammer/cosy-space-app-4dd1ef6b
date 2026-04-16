@@ -1,10 +1,12 @@
-import { ArrowRight, ShieldCheck, Clock, Globe, Package, TrendingUp, ExternalLink, Headphones } from "lucide-react";
+import { ArrowRight, ShieldCheck, Clock, Globe, Package, TrendingUp, ExternalLink } from "lucide-react";
 import overlaysMobile from "@/assets/showcase-overlays-mobile.webp";
 import serdiyaMobile from "@/assets/showcase-serdiya-mobile.webp";
+import quickrashanMobile from "@/assets/showcase-quickrashan-mobile.webp";
 
 const liveStores = [
   { img: overlaysMobile, label: "Overlays", url: "https://overlays.shopbanao.in" },
   { img: serdiyaMobile, label: "Serdiya Jewellers", url: "https://serdiyajewellers.shop" },
+  { img: quickrashanMobile, label: "QuickRashan", url: "https://quickrashan.in" },
 ];
 
 const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: string; url: string; className?: string }) => (
@@ -39,7 +41,7 @@ const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-0 max-w-7xl mx-auto w-full">
           <div className="flex flex-col justify-center lg:py-20 xl:py-24">
             <div className="inline-flex items-center gap-2 border-2 border-foreground px-3 py-1.5 mb-6 sm:mb-7 shadow-bauhaus-sm bg-bauhaus-yellow w-fit">
-              <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">Professional Service</span>
+              <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">✦ 10+ Stores Delivered</span>
             </div>
 
             <h1 className="font-black text-[28px] sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-[1.1] text-foreground mb-4 sm:mb-5">
@@ -59,7 +61,7 @@ const Hero = () => {
               </a>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-5">
+            <div className="flex items-center gap-3 sm:gap-5 mb-4">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
                 <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">Done For You</span>
@@ -73,15 +75,19 @@ const Hero = () => {
                 <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">Custom Domain</span>
               </div>
             </div>
+            <p className="text-[11px] sm:text-xs font-semibold text-muted-foreground/60">
+              Trusted by businesses across India
+            </p>
           </div>
 
           <div className="hidden lg:flex bg-bauhaus-blue items-center justify-center relative overflow-hidden min-h-[520px] -mr-12 xl:-mr-16">
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(hsl(var(--bauhaus-white)) 2px, transparent 2px)", backgroundSize: "20px 20px" }} />
             <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
             <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
-            <div className="relative z-10 flex items-end gap-5 xl:gap-7 px-6">
-              <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} className="w-[190px] xl:w-[210px] -rotate-3 translate-y-3" />
-              <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[190px] xl:w-[210px] rotate-3 -translate-y-3" />
+            <div className="relative z-10 flex items-end gap-4 xl:gap-5 px-4">
+              <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} className="w-[160px] xl:w-[175px] -rotate-6 translate-y-4" />
+              <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[170px] xl:w-[190px] -translate-y-2 z-10" />
+              <PhoneMockup img={liveStores[2].img} label={liveStores[2].label} url={liveStores[2].url} className="w-[160px] xl:w-[175px] rotate-6 translate-y-4" />
             </div>
             <div className="absolute bottom-5 left-5 bg-bauhaus-white border-3 border-foreground shadow-bauhaus-lg p-3 w-44 z-20">
               <div className="flex items-center justify-between mb-1.5">
@@ -103,9 +109,10 @@ const Hero = () => {
       </div>
 
       <div className="lg:hidden bg-bauhaus-blue border-t-4 border-foreground">
-        <div className="flex justify-center gap-4 py-6 px-5 overflow-hidden">
-          <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} className="w-[145px] sm:w-[165px] -rotate-2" />
-          <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[145px] sm:w-[165px] rotate-2" />
+        <div className="flex justify-center gap-3 py-6 px-4 overflow-x-auto">
+          <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} className="w-[120px] sm:w-[140px] -rotate-3" />
+          <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[130px] sm:w-[150px] z-10" />
+          <PhoneMockup img={liveStores[2].img} label={liveStores[2].label} url={liveStores[2].url} className="w-[120px] sm:w-[140px] rotate-3" />
         </div>
         <div className="grid grid-cols-3 border-t-4 border-foreground">
           <div className="bg-bauhaus-white border-r-2 border-foreground p-3 sm:p-4">
