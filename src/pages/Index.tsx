@@ -56,7 +56,7 @@ const Index = () => {
       <LandingJsonLd />
       <Navbar />
       <Hero />
-      <PaymentTrustStrip />
+      <Fb><PaymentTrustStrip /></Fb>
       
       <Fb><SocialProofStrip /></Fb>
       <Fb><ProblemAwareness /></Fb>
