@@ -371,7 +371,7 @@ export default function StorefrontHomeV3() {
         </div>
 
         {/* Grid */}
-        {isProductsLoading ? (
+        {(isProductsLoading && !edgeSkelVisible) ? (
           <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 520 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="rounded-2xl" style={{ aspectRatio: "4/5" }} />
