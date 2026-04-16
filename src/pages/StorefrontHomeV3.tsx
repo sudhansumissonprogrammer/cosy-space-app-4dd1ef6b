@@ -286,7 +286,7 @@ export default function StorefrontHomeV3() {
     customDomain: (store as any)?.custom_domain,
   });
 
-  const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
+  const { products, isLoading: isProductsLoading, edgeSkelVisible } = useStorefrontProducts(store.id);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
@@ -371,7 +371,7 @@ export default function StorefrontHomeV3() {
         </div>
 
         {/* Grid */}
-        {isProductsLoading ? (
+        {(isProductsLoading && !edgeSkelVisible) ? (
           <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" style={{ minHeight: 520 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="rounded-2xl" style={{ aspectRatio: "4/5" }} />

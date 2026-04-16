@@ -83,7 +83,7 @@ export default function StorefrontHomeV18() {
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]);
   const categoriesLoading = storeCategories === undefined;
 
-  const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);
+  const { products, isLoading: productsLoading, edgeSkelVisible } = useStorefrontProducts(store?.id);
   const bsQuery = useBestSellingProducts(store?.id);
   const bestSellers = bsQuery.products;
   const showBestSellers = store?.best_selling_carousel && bestSellers.length > 0;
@@ -201,7 +201,7 @@ export default function StorefrontHomeV18() {
       {products.length > 0 && (
         <section style={{ backgroundColor: V18_BG }}>
           <DarkSectionTitle title="New Arrivals" />
-          {productsLoading ? (
+          {(productsLoading && !edgeSkelVisible) ? (
             <div className={gridClass}>
               {Array.from({ length: 4 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />

@@ -202,7 +202,7 @@ export default function StorefrontHomeV17() {
 
   const _themeConfig = useStorefrontThemeConfig(store?.id);
 
-  const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);
+  const { products, isLoading: productsLoading, edgeSkelVisible } = useStorefrontProducts(store?.id);
   const bsQuery = useBestSellingProducts(store?.id);
   const bestSellers = bsQuery.products;
   const useCarousel = store?.best_selling_carousel === true;
@@ -350,7 +350,7 @@ export default function StorefrontHomeV17() {
             Unmatched design and superior comfort. <strong>Limited drop. No restocks.</strong>
           </p>
 
-          {productsLoading ? (
+          {(productsLoading && !edgeSkelVisible) ? (
             <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: "15px", columnGap: "15px", rowGap: "30px" }}>
               {Array.from({ length: ABOVE_FOLD_COUNT }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
