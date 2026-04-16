@@ -41,7 +41,7 @@ const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-0 max-w-7xl mx-auto w-full">
           <div className="flex flex-col justify-center lg:py-20 xl:py-24">
             <div className="inline-flex items-center gap-2 border-2 border-foreground px-3 py-1.5 mb-6 sm:mb-7 shadow-bauhaus-sm bg-bauhaus-yellow w-fit">
-              <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">✦ 10+ Stores Delivered</span>
+              <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">✦ 20+ Stores Delivered</span>
             </div>
 
             <h1 className="font-black text-[28px] sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-[1.1] text-foreground mb-4 sm:mb-5">

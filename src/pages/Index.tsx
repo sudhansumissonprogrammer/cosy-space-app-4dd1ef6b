@@ -28,7 +28,7 @@ function prefetchAuthOnIdle() {
   }
 }
 
-// Below-fold: lazy load
+// Near-fold: eager-ish via lazy with individual suspense
 const SocialProofStrip = lazy(() => import("@/components/landing/SocialProofStrip"));
 const ProblemAwareness = lazy(() => import("@/components/landing/ProblemAwareness"));
 const CommissionCalculator = lazy(() => import("@/components/landing/CommissionCalculator"));
@@ -44,6 +44,10 @@ const Footer = lazy(() => import("@/components/landing/Footer"));
 const LandingWhatsApp = lazy(() => import("@/components/landing/LandingWhatsApp"));
 const ExitIntentPopup = lazy(() => import("@/components/landing/ExitIntentPopup"));
 
+const Fb = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={null}>{children}</Suspense>
+);
+
 const Index = () => {
   useEffect(() => { prefetchAuthOnIdle(); }, []);
 
@@ -54,22 +58,20 @@ const Index = () => {
       <Hero />
       <PaymentTrustStrip />
       
-      <Suspense fallback={null}>
-        <SocialProofStrip />
-        <ProblemAwareness />
-        <CommissionCalculator />
-        <WhoUses />
-        <SolutionFlow />
-        <StoreLookShowcase showOverlays={false} />
-        <Testimonials />
-        <ClientResults />
-        <TrustReasons />
-        <FAQ />
-        <FinalCTA />
-        <Footer />
-        <LandingWhatsApp />
-        <ExitIntentPopup />
-      </Suspense>
+      <Fb><SocialProofStrip /></Fb>
+      <Fb><ProblemAwareness /></Fb>
+      <Fb><CommissionCalculator /></Fb>
+      <Fb><WhoUses /></Fb>
+      <Fb><SolutionFlow /></Fb>
+      <Fb><StoreLookShowcase showOverlays={false} /></Fb>
+      <Fb><Testimonials /></Fb>
+      <Fb><ClientResults /></Fb>
+      <Fb><TrustReasons /></Fb>
+      <Fb><FAQ /></Fb>
+      <Fb><FinalCTA /></Fb>
+      <Fb><Footer /></Fb>
+      <Fb><LandingWhatsApp /></Fb>
+      <Fb><ExitIntentPopup /></Fb>
     </div>
   );
 };
