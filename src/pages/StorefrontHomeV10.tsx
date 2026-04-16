@@ -71,7 +71,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
     customDomain: (store as any)?.custom_domain,
   });
 
-  const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
+  const { products, isLoading: isProductsLoading, edgeSkelVisible } = useStorefrontProducts(store.id);
   const { products: allBestSellers } = useBestSellingProducts(store.id);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
@@ -90,7 +90,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
       <StorySection store={store} />
       <div className="py-4">
         <HomeSectionHeader title="Curated For You" slug={effectiveSlug} linkTo="shop" />
-        {isProductsLoading ? (
+        {(isProductsLoading && !edgeSkelVisible) ? (
           <div className="grid grid-cols-2 gap-1.5 sm:gap-4 px-2 sm:px-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-72 rounded-lg" />
