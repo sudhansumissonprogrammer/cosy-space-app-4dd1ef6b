@@ -31,10 +31,10 @@ function useCountUp(end: number, duration = 1200) {
 }
 
 const metrics = [
-  { end: 10, suffix: "+", label: "Stores Delivered", color: "bg-bauhaus-red" },
+  { end: 20, suffix: "+", label: "Stores Delivered", color: "bg-bauhaus-red" },
   { end: 5, suffix: "L+", label: "Revenue Generated", prefix: "₹", color: "bg-bauhaus-blue" },
   { end: 5, suffix: "+", label: "Cities Across India", color: "bg-bauhaus-yellow" },
-  { end: 48, suffix: "hr", label: "Average Delivery", color: "bg-bauhaus-red" },
+  { end: 6, suffix: " Days", label: "Average Delivery", prefix: "4-", color: "bg-bauhaus-red" },
 ];
 
 const SocialProofStrip = () => {

@@ -28,7 +28,7 @@ function prefetchAuthOnIdle() {
   }
 }
 
-// Below-fold: lazy load
+// Near-fold: eager-ish via lazy with individual suspense
 const SocialProofStrip = lazy(() => import("@/components/landing/SocialProofStrip"));
 const ProblemAwareness = lazy(() => import("@/components/landing/ProblemAwareness"));
 const CommissionCalculator = lazy(() => import("@/components/landing/CommissionCalculator"));
@@ -44,32 +44,11 @@ const Footer = lazy(() => import("@/components/landing/Footer"));
 const LandingWhatsApp = lazy(() => import("@/components/landing/LandingWhatsApp"));
 const ExitIntentPopup = lazy(() => import("@/components/landing/ExitIntentPopup"));
 
-const Index = () => {
-  useEffect(() => { prefetchAuthOnIdle(); }, []);
+const Fb = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={null}>{children}</Suspense>
+);
 
-  return (
-    <div className="min-h-screen bg-background font-outfit">
-      <LandingJsonLd />
-      <Navbar />
-      <Hero />
-      <PaymentTrustStrip />
-      
-      <Suspense fallback={null}>
-        <SocialProofStrip />
-        <ProblemAwareness />
-        <CommissionCalculator />
-        <WhoUses />
-        <SolutionFlow />
-        <StoreLookShowcase showOverlays={false} />
-        <Testimonials />
-        <ClientResults />
-        <TrustReasons />
-        <FAQ />
-        <FinalCTA />
-        <Footer />
-        <LandingWhatsApp />
-        <ExitIntentPopup />
-      </Suspense>
+// ... (keep the Index component definition below)
     </div>
   );
 };
