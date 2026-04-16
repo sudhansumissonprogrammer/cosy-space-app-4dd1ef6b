@@ -1,94 +1,98 @@
-import { Check, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { Check, ArrowRight, Star } from "lucide-react";
 
-const monthly = [
-  { name: "Starter", price: 999, desc: "Perfect for getting started", features: ["100 Products", "Custom Domain", "UPI Payments", "WhatsApp Orders", "Basic Analytics", "Email Support"], color: "blue", popular: false, includesFrom: null as string | null },
-  { name: "Growth", price: 1299, desc: "Best for serious sellers", features: ["500 Products", "Custom Domain", "All Payment Options", "WhatsApp + SMS", "Advanced Analytics Dashboard", "Facebook Pixel + Tracking", "Priority Support", "Coupons & Discounts", "SEO Tools", "App Integration", "Mobile App", "Payment Gateway Integration", "AI Product Descriptions", "AI Store Content Generator"], color: "red", popular: true, includesFrom: null as string | null },
-  { name: "Pro", price: 1999, desc: "For established brands", features: ["Unlimited Products", "Multiple Domains", "Custom Theme Design", "Sales Funnel Builder", "Dedicated Account Manager", "Priority WhatsApp Support", "API Access", "White-label Branding"], color: "yellow", popular: false, includesFrom: "Growth" },
+const WA_LINK = "https://wa.me/919692282485?text=Hi!%20I%20want%20to%20get%20my%20online%20store%20built";
+
+const included = [
+  "Custom Domain Setup",
+  "Mobile-Optimized Store",
+  "UPI, Cards & COD Payments",
+  "Product Catalog (Unlimited)",
+  "WhatsApp Order Notifications",
+  "SEO Optimized Pages",
+  "SSL Certificate & Security",
+  "Social Media Integration",
+  "Analytics Dashboard",
+  "Coupons & Discounts",
+  "Shipping Configuration",
+  "About Us, Contact, Policies Pages",
 ];
 
-const colorMap: Record<string, { bg: string; text: string }> = {
-  red: { bg: "bg-bauhaus-red", text: "text-primary-foreground" },
-  blue: { bg: "bg-bauhaus-blue", text: "text-primary-foreground" },
-  yellow: { bg: "bg-bauhaus-yellow", text: "text-foreground" },
-};
-
-const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
-
 const Pricing = () => {
-  const [annual, setAnnual] = useState(false);
-
   return (
     <section id="pricing" className="border-b-4 border-foreground py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8 bg-bauhaus-canvas">
-      <div className="max-w-6xl mx-auto">
-        {/* Urgency banner */}
-        <div className="bg-bauhaus-red text-primary-foreground text-center font-bold text-sm sm:text-base py-3 px-4 border-2 border-foreground shadow-bauhaus mb-8">
-          🔥 Launch Offer — Lock in these prices before they increase
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-10">
+          <span className="inline-block font-bold uppercase tracking-widest text-xs text-primary-foreground bg-bauhaus-blue border-2 border-foreground px-4 py-1.5 shadow-bauhaus-sm mb-4">
+            Pricing
+          </span>
+          <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-6xl tracking-tighter leading-[0.9] text-foreground">
+            One Price.<br /><span className="text-bauhaus-red">Everything Included.</span>
+          </h2>
+          <p className="font-medium text-muted-foreground mt-4 max-w-md mx-auto">
+            No monthly fees. No commission. No hidden charges. Just one simple payment.
+          </p>
         </div>
 
-        <div className="text-center mb-8">
-          <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">Pricing</span>
-          <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-6xl tracking-tighter leading-[0.9] text-foreground">
-            Simple, Honest<br /><span className="text-bauhaus-red">Pricing</span>
-          </h2>
-          <p className="font-medium text-muted-foreground mt-4 max-w-md mx-auto">No commission. No hidden fees. Just one flat monthly price.</p>
+        {/* Main pricing card */}
+        <div className="bg-bauhaus-white border-4 border-foreground shadow-bauhaus-lg relative max-w-xl mx-auto">
+          {/* Popular badge */}
+          <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-widest text-xs px-6 py-2 border-2 border-foreground shadow-bauhaus-sm whitespace-nowrap flex items-center gap-1.5">
+            <Star className="h-3.5 w-3.5 fill-current" /> Most Popular
+          </div>
 
-          {/* Annual toggle */}
-          <div className="flex items-center justify-center gap-3 mt-6">
-            <span className={`font-bold text-sm ${!annual ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
-            <button onClick={() => setAnnual(!annual)} aria-label="Toggle annual billing" className={`relative inline-flex h-8 w-[52px] items-center rounded-full border-2 border-foreground transition-colors duration-300 ${annual ? "bg-bauhaus-blue" : "bg-muted"}`}>
-              <span className={`inline-block h-5 w-5 rounded-full bg-bauhaus-white border-2 border-foreground transition-transform duration-300 ${annual ? "translate-x-[26px]" : "translate-x-[4px]"}`} />
-            </button>
-            <span className={`font-bold text-sm ${annual ? "text-foreground" : "text-muted-foreground"}`}>Annual</span>
-            {annual && <span className="bg-bauhaus-blue text-primary-foreground font-bold text-xs px-2 py-1 border border-foreground">Save 20%</span>}
+          {/* Price header */}
+          <div className="bg-bauhaus-red p-6 sm:p-8 border-b-4 border-foreground text-center">
+            <h3 className="font-bold uppercase tracking-wider text-sm text-primary-foreground mb-1">Complete Online Store</h3>
+            <div className="font-black text-5xl sm:text-6xl text-primary-foreground">
+              ₹10,000
+            </div>
+            <p className="font-semibold text-primary-foreground/80 text-sm mt-1">One-time payment • No recurring fees</p>
+          </div>
+
+          {/* Features grid */}
+          <div className="p-6 sm:p-8">
+            <p className="font-bold uppercase tracking-wider text-xs text-muted-foreground mb-4">Everything you get:</p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {included.map((f) => (
+                <div key={f} className="flex items-center gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-bauhaus-blue flex items-center justify-center flex-shrink-0">
+                    <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
+                  </div>
+                  <span className="font-medium text-sm text-foreground">{f}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="p-6 sm:p-8 pt-0 space-y-3">
+            <a
+              href={WA_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-6 py-4 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200"
+            >
+              Get Your Store Built <ArrowRight className="h-4 w-4" />
+            </a>
+            <p className="text-center text-xs text-muted-foreground font-medium">
+              Ready in 48 hours • Ongoing support included • Custom domain free
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-start">
-          {monthly.map((p) => {
-            const price = annual ? Math.round(p.price * 0.8) : p.price;
-            const period = annual ? "/month" : "/month";
-            return (
-              <div key={p.name} className={`bg-bauhaus-white border-2 sm:border-4 border-foreground shadow-bauhaus sm:shadow-bauhaus-lg relative hover:-translate-y-2 transition-transform duration-200 ${p.popular ? "lg:-mt-4 lg:mb-4" : ""}`}>
-                {p.popular && <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-widest text-xs px-6 py-2 border-2 border-foreground shadow-bauhaus-sm whitespace-nowrap">🔥 Most Popular</div>}
-                <div className={`${colorMap[p.color].bg} p-6 border-b-4 border-foreground`}>
-                  <h3 className={`font-bold uppercase tracking-wider text-sm ${colorMap[p.color].text}`}>{p.name}</h3>
-                  <div className={`font-black text-4xl ${colorMap[p.color].text} mt-2`}>
-                    {fmt(price)}<span className="font-medium text-base opacity-80">{period}</span>
-                  </div>
-                  {annual && (
-                    <div className="mt-1 space-y-0.5">
-                      <div className={`font-medium text-xs ${colorMap[p.color].text} opacity-70 line-through`}>{fmt(p.price)}/month</div>
-                      <div className={`font-bold text-sm ${colorMap[p.color].text} opacity-90`}>{fmt(price * 12)}/year</div>
-                    </div>
-                  )}
-                  <p className={`font-medium text-sm ${colorMap[p.color].text} opacity-80 mt-1`}>{p.desc}</p>
-                </div>
-                <div className="p-6 space-y-3">
-                  {p.includesFrom && (
-                    <div className="flex items-center gap-2 pb-3 mb-1 border-b-2 border-dashed border-muted">
-                      <Check className="h-4 w-4 text-bauhaus-red flex-shrink-0" strokeWidth={3} />
-                      <span className="font-bold text-sm text-foreground">Everything in {p.includesFrom}</span>
-                    </div>
-                  )}
-                  {p.features.map((f) => (
-                    <div key={f} className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full ${colorMap[p.color].bg} flex items-center justify-center flex-shrink-0`}><Check className={`h-3 w-3 ${colorMap[p.color].text}`} strokeWidth={3} /></div>
-                      <span className="font-medium text-sm text-foreground">{f}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-6 pt-0 space-y-2">
-                  <a href="/signup" className={`flex items-center justify-center gap-2 w-full ${colorMap[p.color].bg} ${colorMap[p.color].text} font-bold uppercase tracking-wider text-sm px-6 py-3.5 border-2 border-foreground shadow-bauhaus hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200`}>
-                    Start Free Trial <ArrowRight className="h-4 w-4" />
-                  </a>
-                  <p className="text-center text-xs text-muted-foreground font-medium">7-day free trial • Cancel anytime • No card required</p>
-                </div>
-              </div>
-            );
-          })}
+        {/* Bottom reassurance */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          {[
+            { label: "Ready in 48 Hours", sub: "Fast delivery guaranteed" },
+            { label: "Free Revisions", sub: "Until you're 100% happy" },
+            { label: "Ongoing Support", sub: "We're always here to help" },
+          ].map((item) => (
+            <div key={item.label} className="bg-bauhaus-white border-2 border-foreground p-4 shadow-bauhaus-sm">
+              <p className="font-bold text-sm uppercase tracking-tight text-foreground">{item.label}</p>
+              <p className="text-xs text-muted-foreground font-medium mt-0.5">{item.sub}</p>
+            </div>
+          ))}
         </div>
-        <p className="text-center font-medium text-sm text-muted-foreground mt-8">👉 Most users start with the Growth plan and upgrade later.</p>
       </div>
     </section>
   );
