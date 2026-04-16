@@ -48,7 +48,30 @@ const Fb = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={null}>{children}</Suspense>
 );
 
-// ... (keep the Index component definition below)
+const Index = () => {
+  useEffect(() => { prefetchAuthOnIdle(); }, []);
+
+  return (
+    <div className="min-h-screen bg-background font-outfit">
+      <LandingJsonLd />
+      <Navbar />
+      <Hero />
+      <PaymentTrustStrip />
+      
+      <Fb><SocialProofStrip /></Fb>
+      <Fb><ProblemAwareness /></Fb>
+      <Fb><CommissionCalculator /></Fb>
+      <Fb><WhoUses /></Fb>
+      <Fb><SolutionFlow /></Fb>
+      <Fb><StoreLookShowcase showOverlays={false} /></Fb>
+      <Fb><Testimonials /></Fb>
+      <Fb><ClientResults /></Fb>
+      <Fb><TrustReasons /></Fb>
+      <Fb><FAQ /></Fb>
+      <Fb><FinalCTA /></Fb>
+      <Fb><Footer /></Fb>
+      <Fb><LandingWhatsApp /></Fb>
+      <Fb><ExitIntentPopup /></Fb>
     </div>
   );
 };
