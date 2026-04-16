@@ -10,8 +10,8 @@
 const MAX_RAW_SIZE = 5 * 1024 * 1024; // 5MB — reject before processing
 const SKIP_THRESHOLD_KB = 100; // Don't compress images already under 100KB
 const HEAVY_THRESHOLD_KB = 200; // Heavy compression for images above 200KB
-const MAX_OUTPUT_KB = 200; // target output size for light compression
-const HEAVY_OUTPUT_KB = 150; // target output size for heavy compression — never below 100KB
+const MAX_OUTPUT_KB = 120; // target output size for light compression
+const HEAVY_OUTPUT_KB = 100; // target output size for heavy compression
 const DEFAULT_MAX_DIMENSION = 1200;
 const DEFAULT_QUALITY = 0.92; // near-lossless
 const HEAVY_QUALITY = 0.85; // starting quality for heavy compression
