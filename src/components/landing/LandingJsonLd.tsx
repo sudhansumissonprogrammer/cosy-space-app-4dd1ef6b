@@ -21,7 +21,7 @@ const LandingJsonLd = () => {
           availableLanguage: ["English", "Hindi"],
         },
         description:
-          "ShopBanao builds professional ecommerce websites for Indian businesses — custom domain, UPI payments, and everything included for ₹10,000.",
+          "ShopBanao builds professional ecommerce websites for Indian businesses — custom domain, UPI payments, and everything included.",
       },
       {
         "@context": "https://schema.org",
@@ -62,7 +62,7 @@ const LandingJsonLd = () => {
           worstRating: "1",
         },
         description:
-          "We build professional online stores for Indian businesses. Custom design, UPI & card payments, WhatsApp integration, and custom domain — all for ₹10,000.",
+          "We build professional online stores for Indian businesses. Custom design, UPI & card payments, WhatsApp integration, and custom domain included.",
       },
     ];
 

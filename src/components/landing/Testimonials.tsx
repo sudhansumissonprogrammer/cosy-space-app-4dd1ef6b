@@ -3,7 +3,7 @@ import { Quote, Star } from "lucide-react";
 const testimonials = [
   { quote: "The ShopBanao team built my store in just 2 days. I was paying ₹15,000/month in marketplace commissions — now I keep 100% of my revenue.", metric: "Saved ₹45,000 in 3 months", name: "Priya Sharma", role: "Fashion Boutique Owner", city: "Mumbai", color: "red" },
   { quote: "I had no idea how to build a website. ShopBanao handled everything — domain, payments, design. Now I get 34 orders a week directly.", metric: "34 orders/week", name: "Rahul Verma", role: "Electronics Store", city: "Delhi", color: "blue" },
-  { quote: "Best ₹10,000 I ever spent. My store looks professional, customers trust it, and I stopped paying commissions to marketplaces.", metric: "₹15,000/month saved", name: "Anita Desai", role: "Home Baker", city: "Pune", color: "yellow" },
+  { quote: "Best decision I ever made. My store looks professional, customers trust it, and I stopped paying commissions to marketplaces.", metric: "₹15,000/month saved", name: "Anita Desai", role: "Home Baker", city: "Pune", color: "yellow" },
 ];
 
 const colorMap: Record<string, { border: string; bg: string; text: string }> = {
