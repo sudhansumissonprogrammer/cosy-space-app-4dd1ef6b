@@ -43,7 +43,7 @@ const Hero = () => {
             </div>
 
             <h1 className="font-black text-[28px] sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-[1.1] text-foreground mb-4 sm:mb-5">
-              Get Your Online Store<br />Built for ₹10,000 with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span>
+              Get Your Online Store<br />Built by <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span>
             </h1>
 
             <p className="font-medium text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed mb-7 sm:mb-8 max-w-md">

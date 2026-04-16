@@ -46,7 +46,7 @@ const ExitIntentPopup = () => {
           Wait! Don't Leave Yet
         </h3>
         <p className="text-muted-foreground font-medium text-sm mb-6">
-          Get your professional online store built for just ₹10,000 — custom domain, payments & everything included. Ready in 48 hours.
+          Get your professional online store built by our team — custom domain, payments & everything included. Ready in 48 hours.
         </p>
 
         <a
@@ -60,7 +60,7 @@ const ExitIntentPopup = () => {
         </a>
 
         <p className="text-xs text-muted-foreground mt-3 font-medium">
-          One-time ₹10,000 • Ready in 48 hours • Ongoing support
+          Done for you • Ready in 48 hours • Ongoing support
         </p>
       </div>
     </div>

@@ -42,9 +42,9 @@ const SolutionFlow = () => {
           </p>
           <div className="flex flex-col items-center gap-2 pt-4">
             <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className="inline-block bg-bauhaus-red text-bauhaus-white font-black text-base md:text-lg uppercase tracking-wider px-8 py-4 border-2 md:border-4 border-foreground shadow-[4px_4px_0px_0px_hsl(var(--foreground))] md:shadow-bauhaus hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_hsl(var(--foreground))] transition-all duration-200">
-              Get Your Store Built — ₹10,000
+              Get Your Store Built Now
             </a>
-            <span className="text-xs md:text-sm text-muted-foreground font-semibold">Ready in 48 hours • One-time payment</span>
+            <span className="text-xs md:text-sm text-muted-foreground font-semibold">Ready in 48 hours • Done for you</span>
           </div>
         </div>
       </div>

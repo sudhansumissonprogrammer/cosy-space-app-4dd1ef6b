@@ -9,12 +9,12 @@ const FinalCTA = () => {
       <div className="absolute bottom-8 right-8 w-32 h-32 bg-bauhaus-white/50 rotate-45 translate-x-1/2 translate-y-1/2" />
       <div className="max-w-4xl mx-auto relative z-10 text-center">
         <h2 className="font-black uppercase text-2xl sm:text-4xl md:text-5xl lg:text-7xl tracking-tighter leading-[0.9] text-foreground mb-6">
-          Get Your Online Store<br />Built for ₹10,000
+          Get Your Online Store<br />Built by Experts
         </h2>
         <p className="font-medium text-lg text-foreground/80 mb-4 max-w-lg mx-auto">
           We build your complete ecommerce website — custom domain, payments, everything. Ready to sell.
         </p>
-        <p className="text-sm font-semibold text-foreground/60 mb-8">One-time payment • Ready in 48 hours • Ongoing support</p>
+        <p className="text-sm font-semibold text-foreground/60 mb-8">Done for you • Ready in 48 hours • Ongoing support</p>
         <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4">
           <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-6 sm:px-8 py-3 sm:py-4 border-2 border-foreground shadow-bauhaus sm:shadow-bauhaus-md hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
             Get Started Now <ArrowRight className="h-5 w-5" />

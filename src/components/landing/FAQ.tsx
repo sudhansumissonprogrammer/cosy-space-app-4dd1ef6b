@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 const faqs = [
   { q: "How does the process work?", a: "It's simple — you share your business details, products & preferences. Our team designs and builds your store. You review it, we make changes, and launch it on your domain. Done!" },
   { q: "How long does it take?", a: "Most stores are ready within 48 hours. Complex stores with many products may take 3-4 days. We'll give you a timeline upfront." },
-  { q: "What's included in ₹10,000?", a: "Everything you need: custom design, product upload, UPI & card payments setup, WhatsApp integration, custom domain connection, mobile-optimized store, and basic SEO setup." },
+  { q: "What's included?", a: "Everything you need: custom design, product upload, UPI & card payments setup, WhatsApp integration, custom domain connection, mobile-optimized store, and basic SEO setup." },
   { q: "Do I need technical knowledge to manage it?", a: "Not at all! We provide an easy dashboard where you can add products, manage orders, and track sales. If you can use WhatsApp, you can manage your store." },
   { q: "What payment methods will my store support?", a: "We set up UPI, credit/debit cards, net banking, wallets, and Cash on Delivery. Payments go directly to your bank account." },
   { q: "Can I get a custom domain?", a: "Yes! We'll connect your own domain (like yourstore.com) or set you up with a free shopbanao.in subdomain." },
