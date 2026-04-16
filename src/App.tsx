@@ -91,6 +91,8 @@ const InstallApp = lazy(() => import("./pages/InstallApp"));
 const LazyAuthRoutes = lazy(() => import("./routes/AuthRoutes"));
 // Landing page — standalone, no DashboardProviders needed
 const LazyIndex = lazy(() => import("./pages/Index"));
+const LazyLandingPrivacy = lazy(() => import("./pages/LandingPrivacyPolicy"));
+const LazyLandingTerms = lazy(() => import("./pages/LandingTerms"));
 const LazyThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
 
 /**
@@ -737,10 +739,13 @@ function AppRouter() {
   // ── LANDING PAGE: Render directly without DashboardProviders ──
   // This avoids loading AuthProvider (171KB Supabase) + Radix UI (150KB)
   // just to show the marketing landing page.
-  if (location.pathname === "/" || location.pathname === "/theme") {
+  if (location.pathname === "/" || location.pathname === "/theme" || location.pathname === "/privacy-policy" || location.pathname === "/terms") {
     return (
       <Suspense fallback={<LoadingSpinner />}>
-        {location.pathname === "/theme" ? <LazyThemeShowcase /> : <LazyIndex />}
+        {location.pathname === "/theme" ? <LazyThemeShowcase /> : 
+         location.pathname === "/privacy-policy" ? <LazyLandingPrivacy /> :
+         location.pathname === "/terms" ? <LazyLandingTerms /> :
+         <LazyIndex />}
       </Suspense>
     );
   }

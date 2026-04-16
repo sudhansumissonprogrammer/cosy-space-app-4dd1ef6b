@@ -1,4 +1,5 @@
 import { MessageCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import logo from "@/assets/shopbanao-logo.png";
 
 const Footer = () => {
@@ -22,11 +23,11 @@ const Footer = () => {
             </div>
           </div>
           <div>
-            <h4 className="font-bold uppercase tracking-widest text-xs text-primary-foreground/50 mb-4">Company</h4>
+            <h4 className="font-bold uppercase tracking-widest text-xs text-primary-foreground/50 mb-4">Legal</h4>
             <div className="space-y-2">
-              {["About Us", "Our Work", "Blog", "Contact", "Privacy Policy"].map((l) => (
-                <a key={l} href="#" className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">{l}</a>
-              ))}
+              <Link to="/privacy-policy" className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">Privacy Policy</Link>
+              <Link to="/terms" className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">Terms & Conditions</Link>
+              <a href="https://wa.me/919692282485" target="_blank" rel="noopener noreferrer" className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">Contact Us</a>
             </div>
           </div>
           <div>
