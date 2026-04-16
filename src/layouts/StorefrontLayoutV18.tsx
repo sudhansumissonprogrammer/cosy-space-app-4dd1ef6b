@@ -86,6 +86,19 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   );
 }
 
+function V18Skeleton() {
+  return (
+    <div className="min-h-screen font-sans" style={{ backgroundColor: "#0a0a0a" }}>
+      <nav className="sticky top-0 z-30" style={{ height: 56, backgroundColor: "transparent", display: "flex", alignItems: "center", padding: "0 16px", gap: 12 }}>
+        <div className="animate-pulse" style={{ height: 32, width: 32, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.10)" }} />
+        <div className="animate-pulse" style={{ height: 12, width: 80, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.08)" }} />
+        <div style={{ flex: 1 }} />
+        <div className="animate-pulse" style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.08)" }} />
+      </nav>
+    </div>
+  );
+}
+
 export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: string } = {}) {
   return (
     <StorefrontShell
@@ -93,6 +106,7 @@ export default function StorefrontLayoutV18({ slugOverride }: { slugOverride?: s
       showWhatsApp={false}
       defaultPrimary="#ffffff"
       defaultButtonRadius="0"
+      skeleton={<V18Skeleton />}
       wrapperClassName="storefront-font min-h-screen font-sans overflow-x-hidden"
       wrapperStyle={{
         backgroundColor: "#0a0a0a",
