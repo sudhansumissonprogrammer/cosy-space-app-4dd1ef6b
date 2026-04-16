@@ -64,7 +64,8 @@ const Index = () => {
         <StoreLookShowcase showOverlays={false} />
         <Testimonials />
         {/* <ComparisonTable /> */}
-        {/* <Pricing /> */}
+        <Pricing />
+        <TrustReasons />
         <FAQ />
         <FinalCTA />
         <Footer />
