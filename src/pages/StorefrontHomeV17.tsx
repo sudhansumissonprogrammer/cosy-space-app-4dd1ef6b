@@ -202,7 +202,7 @@ export default function StorefrontHomeV17() {
 
   const _themeConfig = useStorefrontThemeConfig(store?.id);
 
-  const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);
+  const { products, isLoading: productsLoading, edgeSkelVisible } = useStorefrontProducts(store?.id);
   const bsQuery = useBestSellingProducts(store?.id);
   const bestSellers = bsQuery.products;
   const useCarousel = store?.best_selling_carousel === true;
