@@ -401,15 +401,34 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 max-w-[380px] mx-auto">
-        <Button onClick={handlePrint} className="flex-1 gap-2" size="sm">
-          <Printer className="h-3.5 w-3.5" />
-          Print Label
-        </Button>
-        <Button variant="outline" onClick={onClose} size="sm" className="gap-2">
-          <X className="h-3.5 w-3.5" />
-          Close
-        </Button>
+      <div className="flex flex-col gap-2 max-w-[380px] mx-auto">
+        {order.customer_phone && (
+          <Button
+            onClick={async () => {
+              setSending(true);
+              const res = await sendInvoiceToWhatsApp({ order, store, ownerEmail });
+              setSending(false);
+              if (res.success) toast.success("Invoice sent on WhatsApp");
+              else toast.error(res.error || "Failed to send invoice");
+            }}
+            disabled={sending}
+            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+            size="sm"
+          >
+            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            {sending ? "Sending…" : "Send Invoice on WhatsApp"}
+          </Button>
+        )}
+        <div className="flex gap-2">
+          <Button onClick={handlePrint} className="flex-1 gap-2" size="sm">
+            <Printer className="h-3.5 w-3.5" />
+            Print Label
+          </Button>
+          <Button variant="outline" onClick={onClose} size="sm" className="gap-2">
+            <X className="h-3.5 w-3.5" />
+            Close
+          </Button>
+        </div>
       </div>
     </div>
   );
