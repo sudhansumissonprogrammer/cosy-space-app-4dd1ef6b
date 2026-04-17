@@ -1414,6 +1414,14 @@ function BulkMessagingTab({ storeId, initialNumbers }: { storeId: string; initia
   };
 
   const sendBulk = async () => {
+    // ⚠️ WhatsApp bulk send temporarily disabled — feature coming soon
+    toast({
+      title: "🚧 Coming soon",
+      description: "Bulk WhatsApp messaging is temporarily disabled. This feature will be available soon!",
+    });
+    return;
+
+    // eslint-disable-next-line no-unreachable
     if (sendMode === "text" && !message.trim()) return;
     if (sendMode === "template" && !selectedTemplate) return;
     if (numbers.length === 0) return;
@@ -2279,6 +2287,14 @@ function ScheduleTab({ storeId }: { storeId: string }) {
   };
 
   const sendNow = async (item: any) => {
+    // ⚠️ WhatsApp send temporarily disabled — feature coming soon
+    toast({
+      title: "🚧 Coming soon",
+      description: "Scheduled WhatsApp send is temporarily disabled. This feature will be available soon!",
+    });
+    return;
+
+    // eslint-disable-next-line no-unreachable
     const phoneList = item.recipient_phones || [];
     if (!phoneList.length) return;
 
