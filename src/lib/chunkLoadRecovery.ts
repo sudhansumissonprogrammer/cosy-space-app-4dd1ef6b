@@ -1,4 +1,4 @@
-const RECOVERY_STORAGE_KEY = "storefront_chunk_recovery_ts";
+const RECOVERY_STORAGE_KEY = "chunk_recovery_ts";
 const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
 
 const CHUNK_ERROR_PATTERNS = [
@@ -29,7 +29,9 @@ export function recoverFromChunkLoadError(error: unknown): boolean {
 
   try {
     const lastAttempt = Number(sessionStorage.getItem(RECOVERY_STORAGE_KEY) || "0");
-    if (Date.now() - lastAttempt < RECOVERY_COOLDOWN_MS) return false;
+    // Within cooldown: still report "handled" so ErrorBoundary doesn't show
+    // the broken UI for a second chunk error while the first reload is pending.
+    if (Date.now() - lastAttempt < RECOVERY_COOLDOWN_MS) return true;
 
     sessionStorage.setItem(RECOVERY_STORAGE_KEY, String(Date.now()));
 
