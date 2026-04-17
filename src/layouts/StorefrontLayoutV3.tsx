@@ -49,26 +49,6 @@ function BottomTabBar({ store }: { store: StoreData }) {
   );
 }
 
-function StorefrontV3Skeleton() {
-  return (
-    <div className="min-h-screen bg-background font-sans">
-      <div className="sticky top-0 z-30 border-b bg-card px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-9 rounded-xl" />
-          <Skeleton className="h-9 flex-1 rounded-full" />
-          <Skeleton className="h-9 w-9 rounded-xl" />
-        </div>
-      </div>
-      <div className="px-3 py-3"><Skeleton className="h-40 w-full rounded-2xl" /></div>
-      <div className="px-3">
-        <div className="grid grid-cols-2 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (<Skeleton key={i} className="h-56 rounded-2xl" />))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: string } = {}) {
   return (
     <StorefrontShell
@@ -77,7 +57,6 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
       defaultButtonRadius="0.75rem"
       wrapperStyle={{ "--storefront-bottom-nav-height": "56px" } as React.CSSProperties}
       wrapperClassName="storefront-font min-h-screen font-sans theme-v3-wa-fix overflow-x-hidden"
-      skeleton={<StorefrontV3Skeleton />}
     >
       {({ store }) => (
         <>

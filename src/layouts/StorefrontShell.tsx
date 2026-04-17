@@ -14,6 +14,15 @@ import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 
 // Lazy-load non-critical overlays
 const SideCart = lazy(() => import("@/components/storefront/SideCart"));
+
+/**
+ * Single-skeleton policy: while React is loading the storefront,
+ * we render `null` so the inline skeleton in the DOM stays visible.
+ *  - Production: Cloudflare Worker injects #sf-skel before our JS loads
+ *  - Preview / localhost: index.html ships an inline skeleton inside #root
+ * React-level skeletons are intentionally REMOVED to avoid the
+ * "double skeleton" flash and to ship less JS per theme.
+ */
 const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhatsApp"));
 const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
 const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
@@ -63,26 +72,9 @@ interface StorefrontShellProps {
   wrapperClassName?: string;
   /** Label for not-found page (e.g. "Restaurant" for V13) */
   notFoundLabel?: string;
-  /** Custom skeleton component */
-  skeleton?: ReactNode;
   children: (props: ShellRenderProps) => ReactNode;
 }
 
-/** Minimal fallback skeleton for preview/localhost (Worker provides the real one) */
-function DefaultSkeleton() {
-  return (
-    <div className="min-h-screen bg-background font-sans">
-      <nav className="sticky top-0 z-30 border-b bg-card/80">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-          <div className="h-10 w-10 rounded-lg bg-muted/60" />
-          <div className="h-10 w-24 rounded-lg bg-muted/60" />
-          <div className="flex-1" />
-          <div className="h-9 w-9 rounded-full bg-muted/60" />
-        </div>
-      </nav>
-    </div>
-  );
-}
 
 /**
  * StorefrontShell — centralizes ALL shared storefront logic:
@@ -108,7 +100,6 @@ export default function StorefrontShell({
   wrapperStyle,
   wrapperClassName = "storefront-font min-h-screen font-sans overflow-x-hidden",
   notFoundLabel = "Store",
-  skeleton,
   children,
 }: StorefrontShellProps) {
   const { store, isLoading, slug } = useStorefront(slugOverride);
@@ -196,13 +187,11 @@ export default function StorefrontShell({
     };
   }, [themeVarsKey]);
 
-  // Keep skeleton visible while data loads.
-  // IMPORTANT: never render a blank div — it causes a white flash between skeleton → content.
-  // Instead, keep the same skeleton the user already sees so the transition is seamless.
+  // Single-skeleton policy: while data loads, render `null`.
+  // The inline skeleton (Worker #sf-skel in production, index.html fallback in preview)
+  // remains visible until storefront:content-ready fires from the page (Home/Shop/Category/Product).
   if (isLoading) {
-    // Remove the inline HTML skeleton from #root if it's still there
-    // (React has now mounted, so we take over rendering the skeleton)
-    return skeleton ?? <DefaultSkeleton />;
+    return null;
   }
 
   // Not found
