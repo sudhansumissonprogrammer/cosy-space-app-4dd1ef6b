@@ -2773,6 +2773,83 @@ export default {
       }
     }
 
+    // ─── CLOUDFLARE IMAGE RESIZING (/cf-img) ───
+    // v6.3.0: Edge-resized images via Cloudflare's `cf.image` fetch option.
+    // Query params: url (required), w (width), q (quality 1-100).
+    // Cached for 1 year — first hit pays transform cost, all repeats are free.
+    // Falls back to passthrough fetch if Image Resizing isn't enabled in dashboard.
+    if (url.pathname === "/cf-img") {
+      const targetUrl = url.searchParams.get("url");
+      if (!targetUrl) {
+        return new Response("Missing url param", { status: 400 });
+      }
+      // Whitelist allowed origins to prevent abuse
+      let parsedTarget;
+      try {
+        parsedTarget = new URL(targetUrl);
+      } catch {
+        return new Response("Invalid url", { status: 400 });
+      }
+      const allowed =
+        parsedTarget.hostname.endsWith(".supabase.co") ||
+        parsedTarget.hostname.endsWith(".r2.dev") ||
+        parsedTarget.hostname.endsWith(".cloudinary.com") ||
+        parsedTarget.hostname.endsWith(".unsplash.com") ||
+        parsedTarget.hostname.endsWith(".shopify.com") ||
+        parsedTarget.hostname.endsWith(".myshopify.com") ||
+        parsedTarget.hostname === "cdn.shopify.com";
+      if (!allowed) {
+        return new Response("Origin not allowed", { status: 403 });
+      }
+
+      const w = parseInt(url.searchParams.get("w") || "800", 10);
+      const q = parseInt(url.searchParams.get("q") || "82", 10);
+      const width = Math.min(Math.max(w, 16), 2000);
+      const quality = Math.min(Math.max(q, 30), 95);
+
+      // Cache key normalized to (origin URL + width + quality)
+      const cacheKey = new Request(
+        `https://cf-img-cache/${encodeURIComponent(targetUrl)}?w=${width}&q=${quality}`,
+        { method: "GET" }
+      );
+      const cached = await cache.match(cacheKey);
+      if (cached) {
+        const r = new Response(cached.body, cached);
+        r.headers.set("X-CF-Img-Cache", "HIT");
+        return r;
+      }
+
+      try {
+        const imgRes = await fetch(targetUrl, {
+          cf: {
+            image: {
+              width,
+              quality,
+              format: "auto",
+              fit: "scale-down",
+              metadata: "none",
+            },
+            cacheEverything: true,
+            cacheTtl: 31536000,
+          },
+        });
+        if (!imgRes.ok) {
+          // Fallback: passthrough original
+          return fetch(targetUrl);
+        }
+        const headers = new Headers(imgRes.headers);
+        headers.set("Cache-Control", "public, max-age=31536000, immutable");
+        headers.set("X-CF-Img-Cache", "MISS");
+        headers.set("Access-Control-Allow-Origin", "*");
+        const finalRes = new Response(imgRes.body, { status: 200, headers });
+        ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));
+        return finalRes;
+      } catch {
+        // Last resort fallback
+        return fetch(targetUrl);
+      }
+    }
+
     // ─── API ROUTES (rate-limited) ───
     if (url.pathname.startsWith("/api/")) {
       const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown";
