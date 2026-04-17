@@ -121,7 +121,7 @@ export default function CategoryManagement() {
   const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > MAX_FILE_SIZE) { toast.error("Image must be under 5MB"); return; }
+    if (file.size > MAX_FILE_SIZE) { toast.error("Image must be under 6MB"); return; }
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
   };

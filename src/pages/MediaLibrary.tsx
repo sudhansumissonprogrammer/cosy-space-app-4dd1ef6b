@@ -71,7 +71,7 @@ export default function MediaLibrary() {
     try {
       for (const file of Array.from(files)) {
         if (file.size > MAX_FILE_SIZE) {
-          toast.error(`${file.name} exceeds 5MB limit`);
+          toast.error(`${file.name} exceeds 6MB limit`);
           continue;
         }
         const basePath = generateUploadPath(user.id, storeId) + `/library`;
@@ -182,7 +182,7 @@ export default function MediaLibrary() {
         <div className="text-center">
           <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">Drag & drop images here or click to upload</p>
-          <p className="text-xs text-muted-foreground">Max 5MB per image</p>
+          <p className="text-xs text-muted-foreground">Max 6MB per image</p>
         </div>
       </div>
 

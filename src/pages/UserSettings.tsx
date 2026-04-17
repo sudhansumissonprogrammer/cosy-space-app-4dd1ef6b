@@ -138,7 +138,7 @@ export default function UserSettings() {
   const handleAvatarChange = (file: File | undefined) => {
     if (!file) return;
     if (file.size > MAX_FILE_SIZE) {
-      toast.error("File must be less than 5MB");
+      toast.error("File must be less than 6MB");
       return;
     }
     setAvatarFile(file);

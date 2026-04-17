@@ -131,7 +131,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const handleCategoryImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > MAX_FILE_SIZE) { toast.error("Image must be under 5MB"); return; }
+    if (file.size > MAX_FILE_SIZE) { toast.error("Image must be under 6MB"); return; }
     setCategoryImageFile(file);
     setCategoryImagePreview(URL.createObjectURL(file));
   };
@@ -273,7 +273,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const handleFileSelect = (file: File | null) => {
     if (file) {
       if (file.size > MAX_FILE_SIZE) {
-        toast.error("File must be less than 5MB");
+        toast.error("File must be less than 6MB");
         return;
       }
       setImageFile(file);
@@ -296,7 +296,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
     const newPreviews: { url: string; isExisting: boolean }[] = [];
     for (const file of fileArr.slice(0, Math.max(0, remaining))) {
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`${file.name} exceeds 5MB limit`);
+        toast.error(`${file.name} exceeds 6MB limit`);
         continue;
       }
       newFiles.push(file);
@@ -670,7 +670,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                   <span className="text-[10px] text-muted-foreground">Library</span>
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground">Max 5MB per image</p>
+              <p className="text-xs text-muted-foreground">Max 6MB per image</p>
 
               {/* Media Library Picker */}
               <MediaLibraryPicker
