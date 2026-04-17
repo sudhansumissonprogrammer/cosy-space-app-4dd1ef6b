@@ -8,15 +8,15 @@
  */
 
 const MAX_RAW_SIZE = 6 * 1024 * 1024; // 6MB — reject before processing
-const SKIP_THRESHOLD_KB = 100; // Don't compress images already under 100KB
-const HEAVY_THRESHOLD_KB = 200; // Heavy compression for images above 200KB
-const MAX_OUTPUT_KB = 120; // target output size for light compression
-const HEAVY_OUTPUT_KB = 100; // target output size for heavy compression
-const DEFAULT_MAX_DIMENSION = 1200;
-const DEFAULT_QUALITY = 0.92; // near-lossless
-const HEAVY_QUALITY = 0.80; // starting quality for heavy compression
-const MIN_QUALITY = 0.75; // never go below this for light compression
-const HEAVY_MIN_QUALITY = 0.55; // lower floor for heavy compression
+const SKIP_THRESHOLD_KB = 80; // Skip compression if already under 80KB (already in target range)
+const HEAVY_THRESHOLD_KB = 300; // Only "heavy" if image is genuinely large
+const MAX_OUTPUT_KB = 120; // target output size — strict 80-120KB band
+const HEAVY_OUTPUT_KB = 120; // same target — quality stays high regardless
+const DEFAULT_MAX_DIMENSION = 1200; // keep full sharpness on retina screens
+const DEFAULT_QUALITY = 0.92; // near-lossless start
+const HEAVY_QUALITY = 0.88; // higher start for heavy — preserves clarity
+const MIN_QUALITY = 0.85; // strict floor — never visibly degrade
+const HEAVY_MIN_QUALITY = 0.78; // floor for heavy — still visually clean
 
 /** @deprecated Multi-size variants removed — single 800w upload only */
 export const IMAGE_VARIANT_WIDTHS = [800] as const;
@@ -179,8 +179,8 @@ export async function processImageMultiSize(
   file: File,
   quality?: number,
 ): Promise<MultiSizeResult> {
-  // Delegate to processImage with 800px max dimension
-  const main = await processImage(file, 800, quality);
+  // Use 1200px max — keeps images sharp on retina/zoom while staying ~100KB
+  const main = await processImage(file, DEFAULT_MAX_DIMENSION, quality);
   const variants = new Map<VariantWidth, File>();
   variants.set(800, main.file);
   return { main, variants };
