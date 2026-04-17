@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.3.1";
+const WORKER_VERSION = "6.3.2";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -2727,6 +2727,7 @@ export default {
       !url.pathname.startsWith("/rest") &&
       !url.pathname.startsWith("/admin") &&
       !url.pathname.startsWith("/dashboard") &&
+      url.pathname !== "/cf-img" &&
       url.pathname !== "/sitemap.xml" &&
       url.pathname !== "/robots.txt" &&
       url.pathname !== "/__health" &&
