@@ -62,12 +62,18 @@ export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendIn
 
     // Ensure phone has country code (default to +91 for India if missing)
     let phone = String(order.customer_phone).replace(/[^\d]/g, "");
-    if (phone.length === 10) {
-      phone = "91" + phone; // Add India country code if 10-digit number
-    }
-    if (phone.length < 10) {
+    
+    // Handle various phone number formats
+    if (phone.startsWith("91") && phone.length === 12) {
+      // Already has 91 prefix (e.g., 919876543210) - use as is
+      phone = phone;
+    } else if (phone.length === 10) {
+      // 10 digit Indian number - add 91 prefix
+      phone = "91" + phone;
+    } else if (phone.length < 10) {
       return { success: false, error: "Invalid phone number" };
     }
+    // If longer than 12 digits or other format, use as-is (might be other country)
 
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
