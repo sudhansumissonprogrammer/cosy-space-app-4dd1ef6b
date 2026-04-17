@@ -80,6 +80,14 @@ export function clearChunkLoadRecoveryState() {
   try {
     sessionStorage.removeItem(RECOVERY_STORAGE_KEY);
     sessionStorage.removeItem(LEGACY_RECOVERY_STORAGE_KEY);
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("__r")) {
+      url.searchParams.delete("__r");
+      const nextSearch = url.searchParams.toString();
+      const nextUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}${url.hash}`;
+      window.history.replaceState(window.history.state, "", nextUrl);
+    }
   } catch {
     // Ignore storage access failures.
   }
