@@ -272,7 +272,8 @@ function _capMapSize(map, max) {
    FIX #11: buildSkeleton now actually uses bgColor param
    ============================================================ */
 
-// FIX #18: Reduced from 5000ms to 3500ms for faster perceived performance
+// FIX #26: Faster skeleton removal — 80ms fade (was 380ms total).
+// Saves ~300ms of perceived wait between data-ready and real content visible.
 function getSkeletonCleanupScript(fallbackMs = 3500) {
   return `<script>(function(){
     var removed=false;
@@ -281,9 +282,9 @@ function getSkeletonCleanupScript(fallbackMs = 3500) {
       var s=document.getElementById('sf-skel');
       if(!s)return;
       removed=true;
-      s.style.transition='opacity 180ms ease-out';
+      s.style.transition='opacity 80ms linear';
       s.style.opacity='0';
-      setTimeout(function(){s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();},200);
+      setTimeout(function(){s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();},90);
     }
     window.addEventListener('storefront:content-ready',kill,{once:true});
     window.addEventListener('storefront:mounted',kill,{once:true});
