@@ -190,13 +190,11 @@ export default function StorefrontShell({
     };
   }, [themeVarsKey]);
 
-  // Keep skeleton visible while data loads.
-  // IMPORTANT: never render a blank div — it causes a white flash between skeleton → content.
-  // Instead, keep the same skeleton the user already sees so the transition is seamless.
+  // Single-skeleton policy: while data loads, render `null`.
+  // The inline skeleton (Worker #sf-skel in production, index.html fallback in preview)
+  // remains visible until storefront:content-ready fires from the page (Home/Shop/Category/Product).
   if (isLoading) {
-    // Remove the inline HTML skeleton from #root if it's still there
-    // (React has now mounted, so we take over rendering the skeleton)
-    return skeleton ?? <DefaultSkeleton />;
+    return null;
   }
 
   // Not found
