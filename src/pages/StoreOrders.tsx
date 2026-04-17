@@ -134,6 +134,23 @@ export default function StoreOrders() {
 
   const paginatedOrders = filteredOrders;
 
+  // Group orders by day (Today / Yesterday / dated heading) — Shopify style
+  const groupedByDay = useMemo(() => {
+    const groups = new Map<string, { label: string; orders: any[] }>();
+    for (const o of paginatedOrders) {
+      const d = new Date(o.created_at);
+      const key = format(d, "yyyy-MM-dd");
+      let label: string;
+      if (isToday(d)) label = "Today";
+      else if (isYesterday(d)) label = "Yesterday";
+      else label = isSameYear(d, new Date()) ? format(d, "EEEE, MMM d") : format(d, "EEEE, MMM d, yyyy");
+      const existing = groups.get(key);
+      if (existing) existing.orders.push(o);
+      else groups.set(key, { label, orders: [o] });
+    }
+    return Array.from(groups.values());
+  }, [paginatedOrders]);
+
   const hasActiveFilters = !!search || !!statusFilter || !!dateFrom || !!dateTo;
   const clearAllFilters = () => {
     setSearch("");
