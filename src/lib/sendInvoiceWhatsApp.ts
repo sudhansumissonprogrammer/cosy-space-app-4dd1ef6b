@@ -283,3 +283,12 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
     return null;
   }
 }
+
+function formatDate(d: string): string {
+  try {
+    const date = new Date(d);
+    return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return "";
+  }
+}
