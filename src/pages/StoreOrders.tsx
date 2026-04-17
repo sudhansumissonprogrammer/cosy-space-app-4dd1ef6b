@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
 import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
+import { sendInvoiceToWhatsApp } from "@/lib/sendInvoiceWhatsApp";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy, Trash2 } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy, Trash2, Send, MessageCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -59,6 +60,21 @@ export default function StoreOrders() {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [mobileDetailOrder, setMobileDetailOrder] = useState<any>(null);
+  const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
+
+  const handleSendInvoice = async (order: any) => {
+    if (!order?.customer_phone) {
+      toast.error("No customer phone number on this order");
+      return;
+    }
+    setSendingInvoiceId(order.id);
+    const t = toast.loading("Generating invoice & sending to WhatsApp…");
+    const res = await sendInvoiceToWhatsApp({ order, store });
+    toast.dismiss(t);
+    if (res.success) toast.success("Invoice sent on WhatsApp ✅");
+    else toast.error(res.error || "Failed to send invoice");
+    setSendingInvoiceId(null);
+  };
 
   // Search & filter state
   const [search, setSearch] = useState("");
@@ -608,7 +624,25 @@ export default function StoreOrders() {
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</TableCell>
                               <TableCell>
-                                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
+                                <div className="flex items-center gap-1">
+                                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
+                                  {order.customer_phone && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                      title="Send invoice on WhatsApp"
+                                      disabled={sendingInvoiceId === order.id}
+                                      onClick={() => handleSendInvoice(order)}
+                                    >
+                                      {sendingInvoiceId === order.id ? (
+                                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+                                      ) : (
+                                        <Send className="h-3.5 w-3.5" />
+                                      )}
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -648,6 +682,8 @@ export default function StoreOrders() {
                 setMobileDetailOrder((prev: any) => prev ? { ...prev, status: v } : null);
               }}
               onInvoice={() => { setInvoiceOrder(mobileDetailOrder); }}
+              onSendInvoice={() => handleSendInvoice(mobileDetailOrder)}
+              isSendingInvoice={sendingInvoiceId === mobileDetailOrder.id}
               onDelete={() => deleteOrder.mutate(mobileDetailOrder.id)}
               isDeleting={deleteOrder.isPending}
               onClose={() => setMobileDetailOrder(null)}
@@ -702,11 +738,13 @@ export default function StoreOrders() {
 /* ══════════════════════════════════════════════
    Mobile Order Detail — Shopify-style bottom sheet
    ══════════════════════════════════════════════ */
-function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onDelete, isDeleting, onClose }: {
+function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvoice, isSendingInvoice, onDelete, isDeleting, onClose }: {
   order: any;
   store: any;
   onStatusChange: (status: string) => void;
   onInvoice: () => void;
+  onSendInvoice: () => void;
+  isSendingInvoice?: boolean;
   onDelete: () => void;
   isDeleting?: boolean;
   onClose: () => void;
@@ -874,6 +912,20 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onDelete, 
             }}
           >
             ✅ Mark as Fully Paid (Collected {order.currency} {Number(order.balance_due).toFixed(0)})
+          </Button>
+        )}
+        {order.customer_phone && (
+          <Button
+            variant="outline"
+            className="w-full h-10 text-sm font-medium border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+            onClick={onSendInvoice}
+            disabled={isSendingInvoice}
+          >
+            {isSendingInvoice ? (
+              <><div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" /> Sending invoice…</>
+            ) : (
+              <><MessageCircle className="h-4 w-4 mr-2" /> Send Invoice on WhatsApp</>
+            )}
           </Button>
         )}
         <div className="flex gap-2">
