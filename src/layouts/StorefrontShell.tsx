@@ -72,8 +72,6 @@ interface StorefrontShellProps {
   wrapperClassName?: string;
   /** Label for not-found page (e.g. "Restaurant" for V13) */
   notFoundLabel?: string;
-  /** Custom skeleton component */
-  skeleton?: ReactNode;
   children: (props: ShellRenderProps) => ReactNode;
 }
 
