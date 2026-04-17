@@ -466,8 +466,7 @@ export default function StoreOrders() {
 
           {/* ── MOBILE: Card list view ── */}
           {isMobile ? (
-            <div className="space-y-2">
-              {/* Mobile select all */}
+            <div className="space-y-3">
               <div className="flex items-center gap-2 px-1">
                 <Checkbox
                   checked={paginatedOrders.length > 0 && selectedOrders.size === paginatedOrders.length}
@@ -475,47 +474,61 @@ export default function StoreOrders() {
                 />
                 <span className="text-xs text-muted-foreground">Select all</span>
               </div>
-              {paginatedOrders.map((order: any) => (
-                <div
-                  key={order.id}
-                  className="flex items-start gap-2 rounded-xl border bg-card p-3.5 transition-colors"
-                >
-                  <Checkbox
-                    checked={selectedOrders.has(order.id)}
-                    onCheckedChange={() => toggleOrderSelection(order.id)}
-                    className="mt-1 shrink-0"
-                  />
-                  <button
-                    onClick={() => setMobileDetailOrder(order)}
-                    className="flex-1 text-left active:bg-accent/50 transition-colors"
-                  >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono text-xs font-semibold text-foreground">{getOrderDisplayId(order)}</span>
-                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", statusColor(order.status))}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              {groupedByDay.map((group) => {
+                const dayTotal = group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+                const currency = group.orders[0]?.currency || "";
+                return (
+                  <div key={group.label} className="space-y-2">
+                    <div className="sticky top-0 z-10 -mx-1 flex items-center justify-between bg-background/95 backdrop-blur px-2 py-1.5 border-b border-border">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">{group.label}</h3>
+                      <span className="text-[10px] text-muted-foreground">
+                        {group.orders.length} order{group.orders.length > 1 ? "s" : ""} · {currency} {dayTotal.toFixed(0)}
                       </span>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    {group.orders.map((order: any) => (
+                      <div
+                        key={order.id}
+                        className="flex items-start gap-2 rounded-xl border bg-card p-3.5 transition-colors"
+                      >
+                        <Checkbox
+                          checked={selectedOrders.has(order.id)}
+                          onCheckedChange={() => toggleOrderSelection(order.id)}
+                          className="mt-1 shrink-0"
+                        />
+                        <button
+                          onClick={() => setMobileDetailOrder(order)}
+                          className="flex-1 text-left active:bg-accent/50 transition-colors"
+                        >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-mono text-xs font-semibold text-foreground">{getOrderDisplayId(order)}</span>
+                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", statusColor(order.status))}>
+                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            </span>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </div>
+                        <div className="mt-2 flex items-center justify-between">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{order.customer_name || "Guest"}</p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</p>
+                          </div>
+                          <p className="text-sm font-bold text-foreground shrink-0">{order.currency} {Number(order.total).toFixed(0)}</p>
+                        </div>
+                        {order.order_items && order.order_items.length > 0 && (
+                          <p className="mt-1.5 text-[11px] text-muted-foreground line-clamp-1">
+                            {order.order_items.map((i: any) => i.product_name).join(", ")}
+                          </p>
+                        )}
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{order.customer_name || "Guest"}</p>
-                      <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), "MMM d, yyyy · h:mm a")}</p>
-                    </div>
-                    <p className="text-sm font-bold text-foreground shrink-0">{order.currency} {Number(order.total).toFixed(0)}</p>
-                  </div>
-                  {order.order_items && order.order_items.length > 0 && (
-                    <p className="mt-1.5 text-[11px] text-muted-foreground line-clamp-1">
-                      {order.order_items.map((i: any) => i.product_name).join(", ")}
-                    </p>
-                  )}
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            /* ── DESKTOP: Table view ── */
+            /* ── DESKTOP: Table view with day section headers ── */
             <Card>
               <CardContent className="p-0">
                 <Table>
@@ -534,56 +547,74 @@ export default function StoreOrders() {
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead>Payment</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
                       <TableHead className="w-12" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedOrders.map((order: any) => (
-                      <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-primary/5" : ""}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedOrders.has(order.id)}
-                            onCheckedChange={() => toggleOrderSelection(order.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">{getOrderDisplayId(order)}</TableCell>
-                        <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
-                          {[order.street_address, order.city, order.state, order.pincode].filter(Boolean).join(", ")}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span>{order.currency} {Number(order.total).toFixed(2)}</span>
-                          {order.payment_type === "partial" && (
-                            <div className="text-[10px] text-purple-600 dark:text-purple-400 mt-0.5">
-                              Adv: {order.currency}{Number(order.advance_paid || 0).toFixed(0)} | Due: {order.currency}{Number(order.balance_due || 0).toFixed(0)}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
-                        <TableCell>
-                          <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
-                            <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {STATUS_OPTIONS.map((s) => (
-                                <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {order.tracking_number && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Truck className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-[10px] text-muted-foreground">{order.tracking_number}</span>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "MMM d, HH:mm")}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {groupedByDay.map((group) => {
+                      const dayTotal = group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+                      const currency = group.orders[0]?.currency || "";
+                      return (
+                        <>
+                          <TableRow key={`hdr-${group.label}`} className="bg-muted/40 hover:bg-muted/40">
+                            <TableCell colSpan={10} className="py-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-foreground">{group.label}</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {group.orders.length} order{group.orders.length > 1 ? "s" : ""} · {currency} {dayTotal.toFixed(0)}
+                                </span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {group.orders.map((order: any) => (
+                            <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-primary/5" : ""}>
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedOrders.has(order.id)}
+                                  onCheckedChange={() => toggleOrderSelection(order.id)}
+                                />
+                              </TableCell>
+                              <TableCell className="font-mono text-xs text-muted-foreground">{getOrderDisplayId(order)}</TableCell>
+                              <TableCell className="font-medium text-foreground">{order.customer_name || "—"}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{order.customer_phone || "—"}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                                {[order.street_address, order.city, order.state, order.pincode].filter(Boolean).join(", ")}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span>{order.currency} {Number(order.total).toFixed(2)}</span>
+                                {order.payment_type === "partial" && (
+                                  <div className="text-[10px] text-purple-600 dark:text-purple-400 mt-0.5">
+                                    Adv: {order.currency}{Number(order.advance_paid || 0).toFixed(0)} | Due: {order.currency}{Number(order.balance_due || 0).toFixed(0)}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-xs uppercase">{order.payment_method || "cod"}</TableCell>
+                              <TableCell>
+                                <Select value={order.status} onValueChange={(v) => handleStatusChange(order, v)}>
+                                  <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {STATUS_OPTIONS.map((s) => (
+                                      <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {order.tracking_number && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <Truck className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-[10px] text-muted-foreground">{order.tracking_number}</span>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</TableCell>
+                              <TableCell>
+                                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
