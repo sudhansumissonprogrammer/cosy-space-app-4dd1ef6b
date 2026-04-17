@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import CategoryProductsDialog from "@/components/CategoryProductsDialog";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 6 * 1024 * 1024;
 
 export default function CategoryManagement() {
   const { storeId } = useStoreSlugParam();
@@ -121,7 +121,7 @@ export default function CategoryManagement() {
   const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > MAX_FILE_SIZE) { toast.error("Image must be under 5MB"); return; }
+    if (file.size > MAX_FILE_SIZE) { toast.error("Image must be under 6MB"); return; }
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
   };

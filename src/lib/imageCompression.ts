@@ -1,13 +1,13 @@
 /**
  * Central image processing utility for ALL uploads.
- * - Validates file size (rejects raw files > 5MB)
+ * - Validates file size (rejects raw files > 6MB)
  * - Skips compression for images already under 100KB
  * - Resizes to max dimension (maintains aspect ratio)
  * - Converts to WebP (falls back to JPEG)
  * - Targets 90–120KB output with high quality floor (0.75 min)
  */
 
-const MAX_RAW_SIZE = 5 * 1024 * 1024; // 5MB — reject before processing
+const MAX_RAW_SIZE = 6 * 1024 * 1024; // 6MB — reject before processing
 const SKIP_THRESHOLD_KB = 100; // Don't compress images already under 100KB
 const HEAVY_THRESHOLD_KB = 200; // Heavy compression for images above 200KB
 const MAX_OUTPUT_KB = 120; // target output size for light compression
@@ -135,7 +135,7 @@ function scaleDimensions(
  * Process a single image to a given max dimension.
  * Returns a WebP file under 120KB (or best-effort JPEG fallback).
  * Skips compression entirely for images already under 100KB.
- * Throws if the raw file exceeds 5MB.
+ * Throws if the raw file exceeds 6MB.
  */
 export async function processImage(
   file: File,
@@ -145,7 +145,7 @@ export async function processImage(
   const originalSize = file.size;
 
   if (file.size > MAX_RAW_SIZE) {
-    throw new Error(`Image too large (${formatSize(file.size)}). Maximum allowed is 5MB.`);
+    throw new Error(`Image too large (${formatSize(file.size)}). Maximum allowed is 6MB.`);
   }
 
   // Skip compression for any image under 100KB — preserve quality

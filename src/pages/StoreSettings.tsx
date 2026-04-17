@@ -120,10 +120,10 @@ export default function StoreSettings() {
     }
   }, [store]);
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024;
+  const MAX_FILE_SIZE = 6 * 1024 * 1024;
 
   const uploadFile = async (file: File, bucket: string) => {
-    if (file.size > MAX_FILE_SIZE) throw new Error("File must be less than 5MB");
+    if (file.size > MAX_FILE_SIZE) throw new Error("File must be less than 6MB");
     const basePath = generateUploadPath(user!.id, storeId!);
     const result = await uploadOptimizedImage(file, bucket, basePath);
     if (result.compressionMessage) toast.success(result.compressionMessage);
