@@ -950,8 +950,14 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
         )}
         <div className="flex gap-2">
           <Select value={order.status} onValueChange={onStatusChange}>
-            <SelectTrigger className="flex-1 h-11 text-sm font-medium">
-              <SelectValue placeholder="Update status" />
+            <SelectTrigger
+              className="flex-1 h-11 text-sm font-semibold border-2 border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors shadow-sm [&>svg]:opacity-100 [&>svg]:text-primary"
+              aria-label="Change order status"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-primary/70">Status:</span>
+                <SelectValue placeholder="Update status" />
+              </div>
             </SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map(s => (
