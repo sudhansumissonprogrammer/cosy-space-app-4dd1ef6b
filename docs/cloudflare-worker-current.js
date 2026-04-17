@@ -2727,6 +2727,7 @@ export default {
       !url.pathname.startsWith("/rest") &&
       !url.pathname.startsWith("/admin") &&
       !url.pathname.startsWith("/dashboard") &&
+      url.pathname !== "/cf-img" &&
       url.pathname !== "/sitemap.xml" &&
       url.pathname !== "/robots.txt" &&
       url.pathname !== "/__health" &&
