@@ -682,6 +682,8 @@ export default function StoreOrders() {
                 setMobileDetailOrder((prev: any) => prev ? { ...prev, status: v } : null);
               }}
               onInvoice={() => { setInvoiceOrder(mobileDetailOrder); }}
+              onSendInvoice={() => handleSendInvoice(mobileDetailOrder)}
+              isSendingInvoice={sendingInvoiceId === mobileDetailOrder.id}
               onDelete={() => deleteOrder.mutate(mobileDetailOrder.id)}
               isDeleting={deleteOrder.isPending}
               onClose={() => setMobileDetailOrder(null)}
