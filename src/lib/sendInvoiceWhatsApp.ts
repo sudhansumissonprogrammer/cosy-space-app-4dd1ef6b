@@ -98,38 +98,55 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   );
 
   // ── Header ──
-  let headerY = 18;
+  let headerY = 14;
+  const headerHeight = 22;
+  
+  // Brand header background
+  doc.setFillColor(250, 250, 250);
+  doc.rect(margin, headerY, pageW - margin * 2, headerHeight, "F");
+  
+  // Left side: Logo + Store Name
+  let logoX = margin + 3;
   if (logoData) {
-    try { doc.addImage(logoData, "JPEG", margin, 12, 18, 18); } catch {}
+    try { 
+      doc.addImage(logoData, "JPEG", logoX, headerY + 3, 16, 16); 
+      logoX += 19;
+    } catch {}
   }
+  
+  // Store name - bold and prominent
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.setTextColor(20, 20, 20);
-  doc.text(store?.name || "Invoice", margin + (logoData ? 22 : 0), headerY);
-
+  doc.setFontSize(14);
+  doc.setTextColor(25, 25, 25);
+  doc.text(store?.name || "Invoice", logoX, headerY + 12);
+  
+  // Store tagline/address below name
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(110, 110, 110);
+  doc.setFontSize(7);
+  doc.setTextColor(100, 100, 100);
   const storeAddr = [store?.location, store?.city, store?.state].filter(Boolean).join(", ");
-  if (storeAddr) doc.text(storeAddr, margin + (logoData ? 22 : 0), headerY + 5);
-  if (ownerEmail) doc.text(ownerEmail, margin + (logoData ? 22 : 0), headerY + 9);
-
-  // Invoice tag (right)
+  if (storeAddr) {
+    doc.text(storeAddr, logoX, headerY + 17);
+  }
+  
+  // Right side: INVOICE label
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(20, 20, 20);
-  doc.text("INVOICE", pageW - margin, headerY, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setTextColor(80, 80, 80);
-  doc.text(orderShort, pageW - margin, headerY + 5, { align: "right" });
-  doc.setFontSize(8);
-  doc.text(formatDate(order.created_at), pageW - margin, headerY + 9, { align: "right" });
+  doc.text("INVOICE", pageW - margin - 3, headerY + 8, { align: "right" });
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(60, 60, 60);
+  doc.text(orderShort, pageW - margin - 3, headerY + 13, { align: "right" });
+  doc.setFontSize(7);
+  doc.setTextColor(120, 120, 120);
+  doc.text(formatDate(order.created_at), pageW - margin - 3, headerY + 17, { align: "right" });
 
-  // Divider
-  doc.setDrawColor(20, 20, 20);
-  doc.setLineWidth(0.4);
-  doc.line(margin, 34, pageW - margin, 34);
+  // Divider line
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.3);
+  doc.line(margin, headerY + headerHeight + 2, pageW - margin, headerY + headerHeight + 2);
 
   // ── Ship To + Payment ──
   doc.setFont("helvetica", "bold");
