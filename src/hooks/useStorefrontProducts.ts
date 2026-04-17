@@ -82,14 +82,13 @@ export function useStorefrontProducts(storeId: string | undefined) {
     enabled: !!storeId,
   });
 
-  // Signal content-ready once products arrive — removes Worker #sf-skel
+  // Signal content-ready once products arrive — removes Worker #sf-skel.
+  // Fire SYNCHRONOUSLY (no rAF) so skeleton removal isn't delayed by 1 frame.
   const signalled = useRef(false);
   useEffect(() => {
     if (!signalled.current && data !== undefined && !isLoading) {
       signalled.current = true;
-      requestAnimationFrame(() => {
-        window.dispatchEvent(new Event("storefront:content-ready"));
-      });
+      window.dispatchEvent(new Event("storefront:content-ready"));
     }
   }, [data, isLoading]);
 

@@ -168,14 +168,16 @@
         var done=false;
         function kill(){
           if(done) return;
-          var s=document.getElementById('sf-skel');
-          if(!s) return;
           done=true;
-          s.style.transition='opacity 150ms ease-out';
-          s.style.opacity='0';
-          setTimeout(function(){s.style.display='none';if(s.remove)s.remove();},160);
+          /* Kill BOTH skeletons together — Worker #sf-skel + inline #inline-skel */
+          ['sf-skel','inline-skel'].forEach(function(id){
+            var s=document.getElementById(id);
+            if(!s) return;
+            s.style.transition='opacity 80ms linear';
+            s.style.opacity='0';
+            setTimeout(function(){s.style.display='none';if(s.remove)s.remove();},90);
+          });
         }
-        /* Listen for content-ready (products rendered) instead of just React mount */
         window.addEventListener('storefront:content-ready',function(){kill();},{once:true});
         /* Hard fallback: 12s timeout */
         setTimeout(kill,12000);
