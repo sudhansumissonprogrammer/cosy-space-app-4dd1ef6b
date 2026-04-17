@@ -60,7 +60,15 @@ export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendIn
       `📄 Invoice: ${signed.signedUrl}\n\n` +
       `Thank you for shopping with us! 🙏`;
 
-    const phone = String(order.customer_phone).replace(/[^\d]/g, "");
+    // Ensure phone has country code (default to +91 for India if missing)
+    let phone = String(order.customer_phone).replace(/[^\d]/g, "");
+    if (phone.length === 10) {
+      phone = "91" + phone; // Add India country code if 10-digit number
+    }
+    if (phone.length < 10) {
+      return { success: false, error: "Invalid phone number" };
+    }
+
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
     window.open(waUrl, "_blank", "noopener,noreferrer");
