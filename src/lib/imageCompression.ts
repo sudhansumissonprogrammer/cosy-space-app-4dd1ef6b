@@ -7,7 +7,7 @@
  * - Targets 90–120KB output with high quality floor (0.75 min)
  */
 
-const MAX_RAW_SIZE = 5 * 1024 * 1024; // 5MB — reject before processing
+const MAX_RAW_SIZE = 6 * 1024 * 1024; // 6MB — reject before processing
 const SKIP_THRESHOLD_KB = 100; // Don't compress images already under 100KB
 const HEAVY_THRESHOLD_KB = 200; // Heavy compression for images above 200KB
 const MAX_OUTPUT_KB = 120; // target output size for light compression
