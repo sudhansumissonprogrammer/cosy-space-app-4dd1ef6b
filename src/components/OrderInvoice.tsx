@@ -408,7 +408,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               setSending(true);
               const res = await sendInvoiceToWhatsApp({ order, store, ownerEmail });
               setSending(false);
-              if (res.success) toast.success("WhatsApp opened — tap Send to deliver invoice");
+              if (res.success) toast.success("Invoice ready — choose WhatsApp to send the PDF");
               else toast.error(res.error || "Failed to generate invoice");
             }}
             disabled={sending}
