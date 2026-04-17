@@ -97,10 +97,11 @@ function hasActiveRecoveryContext() {
   if (typeof window === "undefined") return false;
 
   try {
-    if (new URL(window.location.href).searchParams.has("__r")) return true;
-
     const state = readRecoveryState();
-    return !!state && Date.now() - state.ts < RECOVERY_COOLDOWN_MS;
+    const hasRecentState = !!state && Date.now() - state.ts < RECOVERY_COOLDOWN_MS;
+    if (hasRecentState) return true;
+
+    return false;
   } catch {
     return false;
   }
@@ -148,10 +149,7 @@ export function installChunkLoadRecovery() {
 
   (window as Window & { __chunkRecoveryInstalled?: boolean }).__chunkRecoveryInstalled = true;
 
-  const clearRecovery = () => clearChunkLoadRecoveryState();
-  window.addEventListener("load", clearRecovery, { once: true });
-  window.addEventListener("pageshow", clearRecovery);
-  window.addEventListener("storefront:content-ready", clearRecovery);
+  window.addEventListener("storefront:content-ready", clearChunkLoadRecoveryState);
 
   window.addEventListener("vite:preloadError", (event: Event) => {
     const preloadEvent = event as Event & { payload?: unknown; preventDefault?: () => void };
