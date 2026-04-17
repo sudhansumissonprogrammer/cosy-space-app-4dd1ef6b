@@ -193,26 +193,11 @@ function SetupTab({ storeId }: { storeId: string }) {
                   <Button
                     variant="outline"
                     disabled={!testPhone.trim() || testing}
-                    onClick={async () => {
-                      setTesting(true);
-                      try {
-                        const res = await supabase.functions.invoke("whatsapp-send", {
-                          body: {
-                            store_id: storeId,
-                            recipient_phone: testPhone.trim(),
-                            message_body: "✅ This is a test message from your store dashboard. WhatsApp API is working!",
-                            message_type: "manual",
-                          },
-                        });
-                        if (res.error) throw res.error;
-                        const data = res.data as any;
-                        if (data?.error) throw new Error(data.error);
-                        toast({ title: "✅ Test message sent!", description: "Check your WhatsApp for the message" });
-                      } catch (e: any) {
-                        toast({ title: "❌ Test failed", description: e.message || "Check your credentials", variant: "destructive" });
-                      } finally {
-                        setTesting(false);
-                      }
+                    onClick={() => {
+                      toast({
+                        title: "🚧 Coming soon",
+                        description: "WhatsApp messaging is temporarily disabled. This feature will be available soon!",
+                      });
                     }}
                   >
                     <Send className="mr-1.5 h-4 w-4" />
@@ -388,17 +373,14 @@ function ChatTab({ storeId }: { storeId: string }) {
         setUploadingMedia(false);
       }
 
-      const res = await supabase.functions.invoke("whatsapp-send", {
-        body: {
-          store_id: storeId,
-          recipient_phone: selectedPhone,
-          message_body: message.trim() || (mediaType ? `[${mediaType}]` : ""),
-          message_type: "manual",
-          ...(mediaUrl ? { media_url: mediaUrl, media_type: mediaType } : {}),
-        },
+      // ⚠️ WhatsApp send temporarily disabled — feature coming soon
+      toast({
+        title: "🚧 Coming soon",
+        description: "Direct WhatsApp messaging is temporarily disabled. This feature will be available soon!",
       });
-      if (res.error) throw res.error;
-      if ((res.data as any)?.error) throw new Error((res.data as any).error);
+      void mediaUrl; void mediaType; void selectedPhone;
+      setSending(false);
+      return;
       setMessage("");
       setShowEmoji(false);
       setMediaPreview(null);
@@ -1432,6 +1414,14 @@ function BulkMessagingTab({ storeId, initialNumbers }: { storeId: string; initia
   };
 
   const sendBulk = async () => {
+    // ⚠️ WhatsApp bulk send temporarily disabled — feature coming soon
+    toast({
+      title: "🚧 Coming soon",
+      description: "Bulk WhatsApp messaging is temporarily disabled. This feature will be available soon!",
+    });
+    return;
+
+    // eslint-disable-next-line no-unreachable
     if (sendMode === "text" && !message.trim()) return;
     if (sendMode === "template" && !selectedTemplate) return;
     if (numbers.length === 0) return;
@@ -2297,6 +2287,14 @@ function ScheduleTab({ storeId }: { storeId: string }) {
   };
 
   const sendNow = async (item: any) => {
+    // ⚠️ WhatsApp send temporarily disabled — feature coming soon
+    toast({
+      title: "🚧 Coming soon",
+      description: "Scheduled WhatsApp send is temporarily disabled. This feature will be available soon!",
+    });
+    return;
+
+    // eslint-disable-next-line no-unreachable
     const phoneList = item.recipient_phones || [];
     if (!phoneList.length) return;
 
