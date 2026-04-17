@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 
 export default function UserSettings() {
   const { user, signOut } = useAuth();

@@ -20,7 +20,7 @@ import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 6 * 1024 * 1024;
 
 interface MediaItem {
   id: string;

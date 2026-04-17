@@ -26,7 +26,7 @@ import { copyExternalImageInBackground, isExternalImageUrl } from "@/lib/externa
 
 import { cn } from "@/lib/utils";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 const MAX_PRODUCT_IMAGES = 5;
 
 interface ProductFormProps {

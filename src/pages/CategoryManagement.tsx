@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import CategoryProductsDialog from "@/components/CategoryProductsDialog";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 6 * 1024 * 1024;
 
 export default function CategoryManagement() {
   const { storeId } = useStoreSlugParam();
