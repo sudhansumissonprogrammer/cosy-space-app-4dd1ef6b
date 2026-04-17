@@ -556,8 +556,8 @@ export default function StoreOrders() {
                       const dayTotal = group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
                       const currency = group.orders[0]?.currency || "";
                       return (
-                        <>
-                          <TableRow key={`hdr-${group.label}`} className="bg-muted/40 hover:bg-muted/40">
+                        <React.Fragment key={group.label}>
+                          <TableRow className="bg-muted/40 hover:bg-muted/40">
                             <TableCell colSpan={10} className="py-2">
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-semibold uppercase tracking-wider text-foreground">{group.label}</span>
