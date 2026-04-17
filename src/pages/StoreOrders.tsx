@@ -624,7 +624,25 @@ export default function StoreOrders() {
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</TableCell>
                               <TableCell>
-                                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
+                                <div className="flex items-center gap-1">
+                                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
+                                  {order.customer_phone && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                      title="Send invoice on WhatsApp"
+                                      disabled={sendingInvoiceId === order.id}
+                                      onClick={() => handleSendInvoice(order)}
+                                    >
+                                      {sendingInvoiceId === order.id ? (
+                                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+                                      ) : (
+                                        <Send className="h-3.5 w-3.5" />
+                                      )}
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
