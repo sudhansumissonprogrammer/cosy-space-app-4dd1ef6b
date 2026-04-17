@@ -70,20 +70,12 @@ export async function sendOrderWhatsApp(
     body = body.replace(/\{\{store_name\}\}/g, orderData.store_name || "our store");
     body = body.replace(/\{\{currency\}\}/g, orderData.currency || "₹");
 
-    // Send via edge function (fire and forget) - edge function handles credential resolution
-    supabase.functions.invoke("whatsapp-send", {
-      body: {
-        store_id: storeId,
-        recipient_phone: orderData.customer_phone,
-        recipient_name: orderData.customer_name,
-        message_body: body,
-        message_type: messageType,
-        order_id: orderId,
-      },
-    }).catch(console.error);
+    // ⚠️ WhatsApp auto-send temporarily disabled — feature coming soon
+    // Re-enable by uncommenting once Meta WhatsApp Business API is configured.
+    void body; void storeId; void orderId; void messageType;
+    // supabase.functions.invoke("whatsapp-send", { ... }).catch(console.error);
   } catch (err) {
-    // Silently fail - WhatsApp is optional
-    console.error("WhatsApp auto-send failed:", err);
+    console.error("WhatsApp auto-send skipped:", err);
   }
 }
 
@@ -136,16 +128,9 @@ export async function sendAbandonedCartWhatsApp(
     body = body.replace(/\{\{store_name\}\}/g, cartData?.store_name || "our store");
     body = body.replace(/\{\{currency\}\}/g, cartData?.currency || "₹");
 
-    supabase.functions.invoke("whatsapp-send", {
-      body: {
-        store_id: storeId,
-        recipient_phone: customerPhone,
-        message_body: body,
-        message_type: "abandoned_cart",
-        abandoned_cart_id: abandonedCartId,
-      },
-    }).catch(console.error);
+    // ⚠️ WhatsApp cart recovery temporarily disabled — feature coming soon
+    void body; void storeId; void customerPhone; void abandonedCartId;
   } catch (err) {
-    console.error("WhatsApp cart recovery failed:", err);
+    console.error("WhatsApp cart recovery skipped:", err);
   }
 }
