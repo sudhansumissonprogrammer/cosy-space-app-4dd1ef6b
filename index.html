@@ -47,14 +47,12 @@
       body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
       #root{min-height:100vh}
     </style>
-    <!--
-      Lightweight prefetch: only starts /api/products fetch early.
-      No DOM manipulation, no image preloading, no hybrid card injection.
-    -->
     <script>
       (function(){
-        /* Eagerly inject Google Fonts <link> from Worker __THEME__ hint */
+        /* If Worker already injected fonts (data-sf-font), skip — single source of truth.
+           Otherwise (preview/localhost), fall back to dynamic Google Fonts injection. */
         function injectGFont(hf,bf){
+          if(document.querySelector('link[data-sf-font]'))return;
           var self=['Inter','Plus Jakarta Sans','Montserrat Alternates'];
           var families=[];
           [hf,bf].forEach(function(f){if(f&&self.indexOf(f)===-1){var seen=families.indexOf(f);if(seen===-1)families.push(f);}});
@@ -122,7 +120,8 @@
   <meta property="og:locale" content="en_IN">
 </head>
   <body>
-    <!-- Worker injects #sf-skel BEFORE #root. This script runs after both exist. -->
+    <!-- Worker injects #sf-skel BEFORE #root in production. Inline skeleton is
+         the fallback ONLY for preview/localhost where the Worker isn't in front. -->
     <div id="root">
       <!-- Inline skeleton — visible until React mounts and replaces #root children.
            Eliminates white flash on cold load before JS is ready. -->
@@ -150,8 +149,16 @@
       </div>
     </div>
     <script>
-      /* Hide inline skeleton on non-storefront routes (landing, dashboard, login) */
+      /* Skeleton visibility logic.
+         v6.3.0: If Worker already injected #sf-skel (sets window.__SF_WORKER__),
+         remove the inline duplicate immediately — Worker skeleton is the single
+         source of truth in production. Otherwise fall back to route-based hiding. */
       (function(){
+        if(window.__SF_WORKER__){
+          var sk=document.getElementById('inline-skel');
+          if(sk){sk.style.display='none';if(sk.remove)sk.remove();}
+          return;
+        }
         var p=location.pathname;var h=location.hostname;
         var isSf=p.indexOf('/store/')===0;
         if(!isSf && h.endsWith('.shopbanao.in') && h!=='shopbanao.in' && h!=='www.shopbanao.in'){

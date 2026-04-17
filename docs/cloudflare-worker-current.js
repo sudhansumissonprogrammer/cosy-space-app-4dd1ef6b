@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.2.3";
+const WORKER_VERSION = "6.3.0";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -300,7 +300,9 @@ function buildSkeleton(bgColor, skeletonMuted) {
 
   const shimmerKeyframes = `<style id="sf-skel-anim">@keyframes sf-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}.sf-ph{background:linear-gradient(90deg,${skelBase} 25%,${skelShimmer} 50%,${skelBase} 75%);background-size:800px 100%;animation:sf-shimmer 1.4s ease-in-out infinite;border-radius:4px}</style>`;
 
-  let s = `${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
+  // v6.3.0: Set __SF_WORKER__ flag BEFORE skeleton so index.html knows Worker
+  // already injected its skeleton — inline skeleton fallback is suppressed.
+  let s = `<script>window.__SF_WORKER__=true;</script>${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
   s += `<nav style="height:56px;background:${skelBg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
   s += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
   s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
@@ -363,8 +365,8 @@ function buildThemeCssFromConfig(tc) {
     // highest priority so the actual font files (woff2) start downloading in
     // parallel with HTML parsing — regardless of which font the merchant chose.
     // Saves ~200-400ms FOUT on cold loads for ALL stores (not just Poppins).
-    css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" />\n`;
-    css += `<link id="storefront-google-fonts" rel="stylesheet" href="${googleFontsHref}" data-loaded="false" />\n`;
+    css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
+    css += `<link id="storefront-google-fonts" rel="stylesheet" href="${googleFontsHref}" data-loaded="false" data-sf-font="1" />\n`;
     css += `<noscript><link rel="stylesheet" href="${googleFontsHref}" /></noscript>\n`;
     css += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
   }
@@ -2768,6 +2770,83 @@ export default {
         }
 
         return addDiagnosticHeaders(earlyHit, { slug: cachedSlug, cacheStatus: "HIT", dataSource: cachedDataSource });
+      }
+    }
+
+    // ─── CLOUDFLARE IMAGE RESIZING (/cf-img) ───
+    // v6.3.0: Edge-resized images via Cloudflare's `cf.image` fetch option.
+    // Query params: url (required), w (width), q (quality 1-100).
+    // Cached for 1 year — first hit pays transform cost, all repeats are free.
+    // Falls back to passthrough fetch if Image Resizing isn't enabled in dashboard.
+    if (url.pathname === "/cf-img") {
+      const targetUrl = url.searchParams.get("url");
+      if (!targetUrl) {
+        return new Response("Missing url param", { status: 400 });
+      }
+      // Whitelist allowed origins to prevent abuse
+      let parsedTarget;
+      try {
+        parsedTarget = new URL(targetUrl);
+      } catch {
+        return new Response("Invalid url", { status: 400 });
+      }
+      const allowed =
+        parsedTarget.hostname.endsWith(".supabase.co") ||
+        parsedTarget.hostname.endsWith(".r2.dev") ||
+        parsedTarget.hostname.endsWith(".cloudinary.com") ||
+        parsedTarget.hostname.endsWith(".unsplash.com") ||
+        parsedTarget.hostname.endsWith(".shopify.com") ||
+        parsedTarget.hostname.endsWith(".myshopify.com") ||
+        parsedTarget.hostname === "cdn.shopify.com";
+      if (!allowed) {
+        return new Response("Origin not allowed", { status: 403 });
+      }
+
+      const w = parseInt(url.searchParams.get("w") || "800", 10);
+      const q = parseInt(url.searchParams.get("q") || "82", 10);
+      const width = Math.min(Math.max(w, 16), 2000);
+      const quality = Math.min(Math.max(q, 30), 95);
+
+      // Cache key normalized to (origin URL + width + quality)
+      const cacheKey = new Request(
+        `https://cf-img-cache/${encodeURIComponent(targetUrl)}?w=${width}&q=${quality}`,
+        { method: "GET" }
+      );
+      const cached = await cache.match(cacheKey);
+      if (cached) {
+        const r = new Response(cached.body, cached);
+        r.headers.set("X-CF-Img-Cache", "HIT");
+        return r;
+      }
+
+      try {
+        const imgRes = await fetch(targetUrl, {
+          cf: {
+            image: {
+              width,
+              quality,
+              format: "auto",
+              fit: "scale-down",
+              metadata: "none",
+            },
+            cacheEverything: true,
+            cacheTtl: 31536000,
+          },
+        });
+        if (!imgRes.ok) {
+          // Fallback: passthrough original
+          return fetch(targetUrl);
+        }
+        const headers = new Headers(imgRes.headers);
+        headers.set("Cache-Control", "public, max-age=31536000, immutable");
+        headers.set("X-CF-Img-Cache", "MISS");
+        headers.set("Access-Control-Allow-Origin", "*");
+        const finalRes = new Response(imgRes.body, { status: 200, headers });
+        ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));
+        return finalRes;
+      } catch {
+        // Last resort fallback
+        return fetch(targetUrl);
       }
     }
 

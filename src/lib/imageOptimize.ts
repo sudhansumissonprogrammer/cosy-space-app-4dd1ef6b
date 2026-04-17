@@ -16,6 +16,23 @@ import type { VariantWidth } from "./imageCompression";
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
 
+/**
+ * v6.3.0: Route through Cloudflare Worker `/cf-img` endpoint, which uses
+ * Cloudflare Image Resizing (cf.image) at the edge — auto WebP/AVIF, exact
+ * size, 1-year edge cache. Disabled on localhost / preview where Worker
+ * isn't in front (falls back to direct Supabase render API).
+ */
+function shouldUseCfImg(): boolean {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  if (h === "localhost" || h.startsWith("127.") || h.endsWith(".lovable.app")) return false;
+  return true;
+}
+
+function cfImgUrl(originUrl: string, width: number, quality: number): string {
+  return `/cf-img?url=${encodeURIComponent(originUrl)}&w=${width}&q=${quality}`;
+}
+
 /** We now store only 800w — render API handles responsive sizes */
 const PIPELINE_WIDTHS: number[] = [400, 800];
 
@@ -39,12 +56,14 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // ── 1. Our pipeline images: use Supabase render API for any size ──
+  // ── 1. Our pipeline images: prefer Cloudflare resize at edge ──
   if (isOptimizedUrl(url)) {
-    // Resolve to the 800w stored file, then use render API if smaller size needed
     const baseUrl = resolveVariantUrl(url, 800);
-    if (width >= 800) return baseUrl;
-    // Use render API to resize on-the-fly
+    if (width >= 800 && !shouldUseCfImg()) return baseUrl;
+    if (shouldUseCfImg()) {
+      return cfImgUrl(baseUrl, width, quality);
+    }
+    // Fallback: Supabase render API
     try {
       const u = new URL(baseUrl);
       u.pathname = u.pathname.replace(
@@ -60,8 +79,9 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 2. Shopify CDN ──
+  // ── 2. Shopify CDN: route through CF resize for max savings ──
   if (url.includes("cdn/shop/") || url.includes("cdn.shopify.com")) {
+    if (shouldUseCfImg()) return cfImgUrl(url, width, quality);
     const u = new URL(url);
     u.searchParams.set("width", String(width));
     u.searchParams.set("format", "webp");
@@ -70,6 +90,7 @@ export function optimizeImageUrl(
 
   // ── 3. Unsplash ──
   if (url.includes("images.unsplash.com")) {
+    if (shouldUseCfImg()) return cfImgUrl(url, width, quality);
     const u = new URL(url);
     u.searchParams.set("w", String(width));
     u.searchParams.set("q", String(quality));
@@ -78,9 +99,10 @@ export function optimizeImageUrl(
     return u.toString();
   }
 
-  // ── 4. Supabase Storage ──
+  // ── 4. Supabase Storage (external/legacy uploads): route through CF ──
   if (url.includes("supabase.co/storage")) {
-    // Use render/image transform API for on-the-fly resizing
+    if (shouldUseCfImg()) return cfImgUrl(url, width, quality);
+    // Fallback: Supabase render API
     try {
       const u = new URL(url);
       u.pathname = u.pathname.replace(
@@ -97,8 +119,8 @@ export function optimizeImageUrl(
   }
 
   // ── 5. External URL ──
-  // Default to direct URL for fastest first paint. Optional proxy can be enabled via env.
   if (url.startsWith("https://") || url.startsWith("http://")) {
+    if (shouldUseCfImg()) return cfImgUrl(url, width, quality);
     if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
       return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-ops?action=resize&url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }

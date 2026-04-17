@@ -221,14 +221,21 @@ export function buildThemeStyle(
  * href containing the required fonts, we leave it untouched.
  */
 export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
+  // v6.3.0: If Worker already injected the storefront font link (data-sf-font),
+  // it's the single source of truth — never overwrite or duplicate.
+  const workerInjected = document.querySelector('link[data-sf-font]') as HTMLLinkElement | null;
+  if (workerInjected) {
+    workerInjected.dataset.loaded = workerInjected.sheet ? "true" : workerInjected.dataset.loaded || "false";
+    return workerInjected;
+  }
+
   const fonts = getThemeFontList(themeConfig);
   const newHref = buildGoogleFontsHref(fonts);
 
   const linkId = "storefront-google-fonts";
   let link = document.getElementById(linkId) as HTMLLinkElement;
 
-  // If Worker already injected the link, check if it already covers our fonts.
-  // Only re-set href if a required font family is missing from the existing URL.
+  // If something else already injected the link, check if it covers our fonts.
   if (link && link.href) {
     const existingHref = link.href;
     const allFontsCovered = fonts
@@ -237,7 +244,6 @@ export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
       .every((f) => existingHref.includes(f.replace(/ /g, "+")));
 
     if (allFontsCovered) {
-      // Worker link already has everything we need — don't touch it
       return link;
     }
   }
