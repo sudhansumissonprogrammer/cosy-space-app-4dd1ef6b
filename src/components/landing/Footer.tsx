@@ -1,5 +1,4 @@
 import { MessageCircle } from "lucide-react";
-import { Link } from "react-router-dom";
 import logo from "@/assets/shopbanao-logo.png";
 
 const Footer = () => {
@@ -12,22 +11,22 @@ const Footer = () => {
               <img src={logo} alt="ShopBanao" className="h-14 w-auto" />
               <span className="text-2xl text-primary-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>ShopBanao</span>
             </div>
-            <p className="font-medium text-sm text-primary-foreground/60 leading-relaxed">Professional ecommerce websites built for Indian businesses. Your store, your domain, your brand.</p>
+            <p className="font-medium text-sm text-primary-foreground/60 leading-relaxed">Build your online store with zero commission. Your store, your domain, your rules.</p>
           </div>
           <div>
-            <h4 className="font-bold uppercase tracking-widest text-xs text-primary-foreground/50 mb-4">Services</h4>
+            <h4 className="font-bold uppercase tracking-widest text-xs text-primary-foreground/50 mb-4">Product</h4>
             <div className="space-y-2">
-              {["Store Building", "Custom Design", "Domain Setup", "Payment Integration", "Ongoing Support"].map((l) => (
+              {["Features", "Pricing", "Integrations", "Themes", "API"].map((l) => (
                 <a key={l} href="#" className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">{l}</a>
               ))}
             </div>
           </div>
           <div>
-            <h4 className="font-bold uppercase tracking-widest text-xs text-primary-foreground/50 mb-4">Legal</h4>
+            <h4 className="font-bold uppercase tracking-widest text-xs text-primary-foreground/50 mb-4">Company</h4>
             <div className="space-y-2">
-              <Link to="/privacy-policy" className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">Privacy Policy</Link>
-              <Link to="/terms" className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">Terms & Conditions</Link>
-              <a href="https://wa.me/919692282485" target="_blank" rel="noopener noreferrer" className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">Contact Us</a>
+              {["About Us", "Blog", "Careers", "Contact", "Privacy Policy"].map((l) => (
+                <a key={l} href="#" className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">{l}</a>
+              ))}
             </div>
           </div>
           <div>
@@ -41,7 +40,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="pt-8 border-t-2 border-primary-foreground/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="font-medium text-xs text-primary-foreground/40">© 2025 ShopBanao. All rights reserved.</p>
+          <p className="font-medium text-xs text-primary-foreground/40"><p className="font-medium text-xs text-primary-foreground/40">© 2025 ShopBanao. All rights reserved.</p>. All rights reserved.</p>
           <div className="flex items-center gap-1">
             <span className="font-medium text-xs text-primary-foreground/40">Made with</span>
             <span className="text-bauhaus-red">■</span>

@@ -779,12 +779,7 @@ export default function ProductDetail() {
                     ) : (
                       <span className={`flex items-center gap-2 ${cartBounce ? "animate-bounce-once" : ""}`}>
                         <ShoppingCart className="h-4 w-4" />
-                        {(store as any)?.theme === "theme-16" ? (
-                          <span className="flex flex-col items-center leading-tight">
-                            <span>Add to Cart</span>
-                            <span className="text-[9px] opacity-80 normal-case tracking-normal">कार्ट में डालें</span>
-                          </span>
-                        ) : "Add to Cart"}
+                        Add to Cart
                       </span>
                     )}
                   </button>
@@ -796,12 +791,7 @@ export default function ProductDetail() {
                       onClick={handleBuyNow}
                     >
                       <ShoppingBag className="h-4 w-4" />
-                      {(store as any)?.theme === "theme-16" ? (
-                        <span className="flex flex-col items-center leading-tight">
-                          <span>Buy Now</span>
-                          <span className="text-[9px] opacity-80 normal-case tracking-normal">अभी खरीदें</span>
-                        </span>
-                      ) : "Buy Now"}
+                      Buy Now
                     </button>
                   )}
                 </div>
@@ -1055,12 +1045,7 @@ export default function ProductDetail() {
                       ) : (
                         <>
                           <ShoppingCart className="h-3.5 w-3.5" />
-                          {(store as any)?.theme === "theme-16" ? (
-                            <span className="flex flex-col items-center leading-tight">
-                              <span>Add to Cart</span>
-                              <span className="text-[9px] opacity-80 normal-case tracking-normal">कार्ट में डालें</span>
-                            </span>
-                          ) : "Add to Cart"}
+                          Add to Cart
                         </>
                       )}
                     </button>
@@ -1070,12 +1055,7 @@ export default function ProductDetail() {
                       onClick={handleBuyNow}
                     >
                       <ShoppingBag className="h-3.5 w-3.5" />
-                      {(store as any)?.theme === "theme-16" ? (
-                        <span className="flex flex-col items-center leading-tight">
-                          <span>Buy Now</span>
-                          <span className="text-[9px] opacity-80 normal-case tracking-normal">अभी खरीदें</span>
-                        </span>
-                      ) : "Buy Now"}
+                      Buy Now
                     </button>
                   </div>
                 </div>

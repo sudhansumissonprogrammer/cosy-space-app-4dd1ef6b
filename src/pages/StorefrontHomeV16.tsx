@@ -223,7 +223,7 @@ export default function StorefrontHomeV16() {
     customDomain: (store as any)?.custom_domain,
   });
 
-  const { products: initialProducts, isLoading: isInitialLoading, edgeSkelVisible } = useStorefrontProducts(store.id);
+  const { products: initialProducts, isLoading: isInitialLoading } = useStorefrontProducts(store.id);
   const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
   const themeConfig = useStorefrontThemeConfig(store.id);
 

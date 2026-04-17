@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
 const faqs = [
-  { q: "How does the process work?", a: "It's simple — you share your business details, products & preferences. Our team designs and builds your store. You review it, we make changes, and launch it on your domain. Done!" },
-  { q: "How long does it take?", a: "Most stores are ready within 48 hours. Complex stores with many products may take 3-4 days. We'll give you a timeline upfront." },
-  { q: "What's included?", a: "Everything you need: custom design, product upload, UPI & card payments setup, WhatsApp integration, custom domain connection, mobile-optimized store, and basic SEO setup." },
-  { q: "Do I need technical knowledge to manage it?", a: "Not at all! We provide an easy dashboard where you can add products, manage orders, and track sales. If you can use WhatsApp, you can manage your store." },
-  { q: "What payment methods will my store support?", a: "We set up UPI, credit/debit cards, net banking, wallets, and Cash on Delivery. Payments go directly to your bank account." },
-  { q: "Can I get a custom domain?", a: "Yes! We'll connect your own domain (like yourstore.com) or set you up with a free shopbanao.in subdomain." },
-  { q: "What if I need changes later?", a: "Minor changes and updates are included. For major redesigns or new features, we offer affordable maintenance packages." },
-  { q: "Do you provide ongoing support?", a: "Yes — we provide support via WhatsApp to help you with any questions or issues. We're always just a message away." },
+  { q: "How quickly can I set up my store?", a: "You can have your store live in under 10 minutes. Just sign up, add your products, choose a theme, and you're ready to sell." },
+  { q: "Do I need any technical knowledge?", a: "Not at all! ShopBanao is designed for non-technical users. If you can use WhatsApp, you can run a store on ShopBanao." },
+  { q: "What payment methods are supported?", a: "We support UPI, credit/debit cards, net banking, wallets, and Cash on Delivery. Payments go directly to your bank account." },
+  { q: "Is there any commission on sales?", a: "Zero commission, ever. You keep 100% of your sales revenue. We only charge a flat monthly subscription fee." },
+  { q: "Can I use my own domain name?", a: "Yes! You can connect your own domain (like yourstore.com) or use a free shopbanao.in subdomain." },
+  { q: "What happens after the free trial?", a: "After 7 days, you can choose a plan that fits your needs. Your store and data remain intact. No surprise charges." },
+  { q: "Do you provide delivery/shipping support?", a: "Yes, we integrate with Shiprocket, Delhivery, and other logistics partners. You can also set up local delivery zones." },
+  { q: "Can I migrate from another platform?", a: "Absolutely. We offer free migration support. Our team will help you move your products, customers, and orders seamlessly." },
 ];
 
 const FAQ_SCRIPT_ID = "faq-jsonld";

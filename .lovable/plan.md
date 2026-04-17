@@ -1,81 +1,69 @@
 
 
-# High-Converting Landing Page Overhaul
+# Worker v6.2.0 Bug Fixes — 5 Issues
 
-## What We're Building
+## Issue A — Critical: Replace blind `setTimeout` reload with smart polling
 
-A major upgrade to the ShopBanao landing page to position it as a trusted ecommerce agency, add quickrashan.in as a third showcase store, and maximize conversions with proven landing page patterns.
+**File:** `docs/cloudflare-worker-current.js`, lines 401-403
 
-## Changes Overview
+Replace the `setTimeout(function(){location.reload();},2500)` in `_buildInstantSkeletonPage()` with a polling mechanism that checks `X-Data-Source` header before reloading. After 3 failed attempts (6s), reload unconditionally as a last resort.
 
-### 1. Capture quickrashan.in Mobile Screenshot
-- Take a mobile screenshot of quickrashan.in and save it as `src/assets/showcase-quickrashan-mobile.webp`
-- Also capture Home, Shop, and Categories pages for the StoreLookShowcase portfolio section
+```javascript
+var attempts = 0;
+function checkReady() {
+  attempts++;
+  if (attempts >= 3) { location.reload(); return; }
+  fetch(location.href, { method: 'HEAD', cache: 'no-store' })
+    .then(function(r) {
+      var src = r.headers.get('X-Data-Source') || '';
+      if (src && src !== 'instant-skeleton') {
+        location.reload();
+      } else {
+        setTimeout(checkReady, 2000);
+      }
+    })
+    .catch(function() { setTimeout(checkReady, 2000); });
+}
+setTimeout(checkReady, 2000);
+```
 
-### 2. Hero Section — Add 3rd Phone Mockup
-- Add QuickRashan as a third phone mockup in the hero alongside Overlays and Serdiya Jewellers
-- Desktop: Show all 3 phones in a fan layout (left tilted, center straight, right tilted)
-- Mobile: Show all 3 phones in a scrollable row
-- Update the hero badge from "Professional Service" to "10+ Stores Delivered"
-- Add a subtle "Trusted by businesses across India" line with a small client count indicator
+## Issue B — Medium: Align prebuilt head TTLs with shell TTLs
 
-### 3. New "Social Proof Strip" Section (Below Hero)
-- A thin, high-impact strip right after PaymentTrustStrip showing:
-  - "10+ Stores Delivered" | "₹5L+ Revenue Generated" | "Cities Across India" | "48hr Delivery"
-- Animated count-up numbers for engagement
-- Bauhaus-style design with colored blocks
+**File:** `docs/cloudflare-worker-current.js`, lines 412-413
 
-### 4. StoreLookShowcase — Add QuickRashan
-- Add QuickRashan as a new store entry in the portfolio showcase:
-  - Name: "QuickRashan", Type: "Grocery Store", with Home/Shop/Categories screenshots
-  - Link to quickrashan.in
+- `PREBUILT_HEAD_KV_TTL`: 3600 → **86_400** (match shell KV TTL)
+- `PREBUILT_HEAD_CACHE_TTL`: 600 → **3_600** (match shell Cache TTL)
 
-### 5. Enhanced Trust Section (Replace current TrustReasons)
-- Keep the existing 6 trust cards but add:
-  - A "Trusted Agency" badge/banner at top
-  - Real client logos strip (Overlays, Serdiya, QuickRashan, Arrok, Mediva)
-  - "10+ Stores Delivered Successfully" headline
-  - Add a "What You Get" checklist-style section showing deliverables
+## Issue C — Medium: Eliminate duplicate `resolveDomain()` for custom domains
 
-### 6. Add "Results" / Client Success Section
-- New section between Testimonials and TrustReasons
-- Show 3-4 metric cards: "10+ Stores Built", "48hr Average Delivery", "100% Client Satisfaction", "5+ Cities Served"
-- Strong visual impact with large numbers and bauhaus color blocks
+**File:** `docs/cloudflare-worker-current.js`, lines 2992-3038
 
-### 7. Improved FinalCTA
-- Add urgency: "Limited Slots Available This Month"
-- Add WhatsApp icon to the CTA button
-- Add trust indicators: "No upfront payment until you see the design"
+When `!_memShell` and `resolveDomain()` returns null (no slug found), currently falls through to a second `Promise.all([resolveDomain(...), ...])`. Fix: if the skeleton path's `resolveDomain` returns null, return a 404 immediately instead of calling it again.
 
-### 8. StickyMobileCTA Enhancement
-- Add a small trust badge like "10+ stores built" next to the CTA button
+If skeleton path returns a slug but we still fall through (shouldn't happen since we return), the `Promise.all` block at line 3035 should reuse the already-resolved slug instead of calling `resolveDomain` again.
 
-## Files to Create/Edit
-- **New**: `src/assets/showcase-quickrashan-mobile.webp` (screenshot capture)
-- **New**: `src/assets/showcase-quickrashan-home.webp`, `showcase-quickrashan-shop.webp`, `showcase-quickrashan-categories.webp`
-- **New**: `src/components/landing/SocialProofStrip.tsx` — count-up metrics strip
-- **New**: `src/components/landing/ClientResults.tsx` — success metrics section
-- **Edit**: `src/components/landing/Hero.tsx` — add 3rd mockup, update badge
-- **Edit**: `src/components/landing/StoreLookShowcase.tsx` — add QuickRashan store
-- **Edit**: `src/components/landing/TrustReasons.tsx` — enhance with client logos & stronger copy
-- **Edit**: `src/components/landing/FinalCTA.tsx` — urgency + trust indicators
-- **Edit**: `src/components/landing/StickyMobileCTA.tsx` — trust badge
-- **Edit**: `src/pages/Index.tsx` — add new sections in the right order
+## Issue D — Low: Update comment for `STOREFRONT_PREFETCH_TIMEOUT_MS`
 
-## Final Section Order
-1. Navbar
-2. Hero (3 phone mockups)
-3. PaymentTrustStrip
-4. **SocialProofStrip** (new — 10+ stores, revenue, etc.)
-5. ProblemAwareness
-6. CommissionCalculator
-7. WhoUses
-8. SolutionFlow
-9. StoreLookShowcase (with QuickRashan added)
-10. Testimonials
-11. **ClientResults** (new — success metrics)
-12. TrustReasons (enhanced)
-13. FAQ
-14. FinalCTA (with urgency)
-15. Footer
+**File:** `docs/cloudflare-worker-current.js`, line 94
+
+Clarify that this timeout only applies to the warm path (when `_memShell` exists), since the instant skeleton path bypasses `serveStreamedHtml` entirely.
+
+## Issue E — Low: Increase `all-active-slugs` KV TTL from 600s to 3600s
+
+**File:** `docs/cloudflare-worker-current.js`
+
+Three locations to update:
+- Line 2478: `expirationTtl: 600` → `3_600`
+- Line 2483: `expirationTtl: 600` → `3_600`
+- Line 3218: `expirationTtl: 600` → `3_600`
+
+Also update `_slugIndexExpiresAt` memory TTL at line 3221 from `300_000` (5min) to `1_800_000` (30min) for consistency.
+
+---
+
+## Version bump
+`WORKER_VERSION`: "6.2.0" → **"6.2.1"**
+
+## Deployment
+After approval, all changes go into `docs/cloudflare-worker-current.js`. You deploy manually to Cloudflare.
 
