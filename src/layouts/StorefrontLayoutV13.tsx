@@ -4,7 +4,6 @@ import { Store, MapPin } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
-import { Skeleton } from "@/components/ui/skeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 

@@ -134,17 +134,9 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
   );
 }
 
-function StorefrontV2Skeleton() {
-  return (
-    <div className="min-h-screen bg-background font-sans">
-      <Skeleton className="h-screen w-full" />
-    </div>
-  );
-}
-
 export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: string } = {}) {
   return (
-    <StorefrontShell slugOverride={slugOverride} defaultPrimary="#004643" skeleton={<StorefrontV2Skeleton />}>
+    <StorefrontShell slugOverride={slugOverride} defaultPrimary="#004643">
       {({ store }) => (
         <>
           <DesktopNavBar store={store} />

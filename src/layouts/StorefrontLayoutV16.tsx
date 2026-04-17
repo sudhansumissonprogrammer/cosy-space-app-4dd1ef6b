@@ -5,7 +5,6 @@
 import { Suspense, lazy } from "react";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
-import ClassicStorefrontSkeleton from "@/components/storefront/ClassicStorefrontSkeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
 
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
@@ -20,7 +19,6 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
     <StorefrontShell
       slugOverride={slugOverride}
       showExitIntent
-      skeleton={<ClassicStorefrontSkeleton />}
     >
       {({ store, themeConfig }) => {
         const rawNavStyle = (themeConfig as any)?.mobile_nav_style || "classic";

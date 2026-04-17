@@ -2,7 +2,6 @@ import { Suspense, lazy } from "react";
 import type { Tables } from "@/integrations/supabase/types";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
-import ClassicStorefrontSkeleton from "@/components/storefront/ClassicStorefrontSkeleton";
 import StorefrontShell from "@/layouts/StorefrontShell";
 
 // Re-export for backward compatibility — other layouts import these
@@ -22,7 +21,6 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
     <StorefrontShell
       slugOverride={slugOverride}
       showExitIntent
-      skeleton={<ClassicStorefrontSkeleton />}
     >
       {({ store, themeConfig }) => {
         const rawNavStyle = (themeConfig as any)?.mobile_nav_style || "classic";
