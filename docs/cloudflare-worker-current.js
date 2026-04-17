@@ -1,5 +1,5 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.2.1 — COLD START OPTIMIZATION + BUG FIXES
+ * SHOPBANAO PRODUCTION ROUTER v6.3.1 — COLD START OPTIMIZATION + BUG FIXES
  *
  * Changes from v6.1.0:
  *  FIX #20 — TTL increases: Shell KV 3600→86400, Cache 600→3600, Mem 10→30min.
@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.3.0";
+const WORKER_VERSION = "6.3.1";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -292,7 +292,7 @@ function getSkeletonCleanupScript(fallbackMs = 3500) {
   })()</script>`;
 }
 
-function buildSkeleton(bgColor, skeletonMuted) {
+function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true) {
   // FIX #11: Use actual store bgColor instead of hardcoded #ffffff
   const skelBg = bgColor || "#ffffff";
   const skelBase = "#f0f0f0";
@@ -321,7 +321,7 @@ function buildSkeleton(bgColor, skeletonMuted) {
     s += `</div></div>`;
   }
   s += `</div></div>`;
-  s += getSkeletonCleanupScript();
+  if (includeCleanup) s += getSkeletonCleanupScript();
   return s;
 }
 
@@ -385,7 +385,7 @@ function getSkeletonMuted(textColor) {
 function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname) {
   const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
   const skeletonMuted = themeLite ? getSkeletonMuted(themeLite.tc || themeLite.text_color || "#1a1a1a") : "#e8e8e8";
-  const skeleton = buildSkeleton(bgColor, skeletonMuted);
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, false);
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
 
   // Build canonical URL
@@ -407,24 +407,39 @@ ${themeCss}
 <body>
 ${skeleton}
 <script>
-// FIX #24: Smart polling — only reload when warm content is ready (not another skeleton).
-// Prevents infinite reload loops on slow connections where background warm takes >2.5s.
+// FIX #27: Keep the first skeleton visible until warm HTML is ready,
+// then swap the full document in-place with NO hard reload.
 var attempts = 0;
+var swapping = false;
+function scheduleNext() {
+  var delay = attempts < 6 ? 400 : 1200;
+  setTimeout(checkReady, delay);
+}
 function checkReady() {
+  if (swapping) return;
   attempts++;
-  if (attempts >= 3) { location.reload(); return; }
-  fetch(location.href, { method: 'HEAD', cache: 'no-store' })
+  fetch(location.href, { method: 'GET', cache: 'no-store', headers: { 'x-sf-warm-check': '1' } })
     .then(function(r) {
       var src = r.headers.get('X-Data-Source') || '';
-      if (src && src !== 'instant-skeleton') {
-        location.reload();
-      } else {
-        setTimeout(checkReady, 2000);
+      var type = r.headers.get('content-type') || '';
+      if (!src || src === 'instant-skeleton' || type.indexOf('text/html') === -1) {
+        scheduleNext();
+        return null;
       }
+      return r.text();
     })
-    .catch(function() { setTimeout(checkReady, 2000); });
+    .then(function(html) {
+      if (!html || swapping) return;
+      swapping = true;
+      document.open('text/html', 'replace');
+      document.write(html);
+      document.close();
+    })
+    .catch(function() {
+      scheduleNext();
+    });
 }
-setTimeout(checkReady, 2000);
+setTimeout(checkReady, 250);
 </script>
 </body>
 </html>`;
@@ -665,6 +680,12 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
   }
 
   return html;
+}
+
+async function getFreshSpaShell(request, ctx, env) {
+  const shellCacheKey = new Request("https://cache/spa-shell");
+  const html = await _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey);
+  return html ? { html, source: "origin-fresh" } : null;
 }
 
 /* ============================================================
@@ -2948,14 +2969,14 @@ export default {
       // FIX #21: Instant skeleton fast path — if shell isn't in memory,
       // return a themed skeleton immediately while warming in background
       if (!_memShell) {
-        const themeLite = _memThemeCache.get(slug)?.lite || null;
+        const themeLite = _memThemeCache.get(slug)?.lite || (await _getThemeLite(slug, env)) || null;
         const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
         const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
 
         // Kick off full warm in background
         ctx.waitUntil((async () => {
           try {
-            const shellResult = await getSpaShell(request, ctx, env);
+            const shellResult = await getFreshSpaShell(request, ctx, env);
             if (shellResult?.html) {
               const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
               if (prefetchResult.data) {
@@ -3094,13 +3115,13 @@ export default {
     if (!_memShell) {
       const resolvedSlugCD = await resolveDomain(cleanDomain, env);
       if (resolvedSlugCD) {
-        const themeLite = _memThemeCache.get(resolvedSlugCD)?.lite || null;
+        const themeLite = _memThemeCache.get(resolvedSlugCD)?.lite || (await _getThemeLite(resolvedSlugCD, env)) || null;
         const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
         const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname);
 
         ctx.waitUntil((async () => {
           try {
-            const shellResult = await getSpaShell(request, ctx, env);
+            const shellResult = await getFreshSpaShell(request, ctx, env);
             if (shellResult?.html) {
               const prefetchResult = await prefetchStorefrontData(resolvedSlugCD, ctx, env);
               if (prefetchResult.data) {
