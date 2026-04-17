@@ -16,6 +16,11 @@
     <link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://dqepeywgftbpxeeqfuwt.supabase.co" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
+    <!-- Critical storefront fonts: body (Poppins 400) + logo fallback (Alegreya SC 700).
+         Preloading saves ~200-400ms FOUT on first paint for storefront cold loads. -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/poppins-400.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/poppins-600.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-700.woff2" crossorigin />
     <!-- Storefront fonts (Alegreya SC, etc.) still load from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
