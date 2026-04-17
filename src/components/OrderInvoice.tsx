@@ -1,9 +1,11 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Printer, X } from "lucide-react";
+import { Printer, X, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendInvoiceToWhatsApp } from "@/lib/sendInvoiceWhatsApp";
+import { toast } from "sonner";
 
 interface OrderInvoiceProps {
   order: any;
@@ -13,6 +15,7 @@ interface OrderInvoiceProps {
 
 export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [sending, setSending] = useState(false);
 
   const { data: ownerEmail } = useQuery({
     queryKey: ["store-public-email", store?.id],
@@ -315,6 +318,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
             <thead>
               <tr className="bg-foreground text-background">
                 <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider w-5">#</th>
+                <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider w-9">Img</th>
                 <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider">Item</th>
                 <th className="px-1.5 py-1 text-center text-[7px] font-medium uppercase tracking-wider w-8">Qty</th>
                 <th className="px-1.5 py-1 text-right text-[7px] font-medium uppercase tracking-wider w-16">Price</th>
@@ -322,19 +326,29 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               </tr>
             </thead>
             <tbody>
-              {items.map((item: any, idx: number) => (
-                <tr key={item.id || idx} className={idx % 2 === 1 ? "bg-muted/30" : ""}>
-                  <td className="px-1.5 py-1 text-[9px] text-muted-foreground">{idx + 1}</td>
-                  <td className="px-1.5 py-1 text-[9px] font-medium text-foreground truncate max-w-[120px]">{item.product_name}</td>
-                  <td className="px-1.5 py-1 text-[9px] text-center text-muted-foreground">{item.quantity || 1}</td>
-                  <td className="px-1.5 py-1 text-[9px] text-right tabular-nums text-muted-foreground">
-                    {currencySymbol}{Number(item.unit_price || item.total / (item.quantity || 1)).toFixed(2)}
-                  </td>
-                  <td className="px-1.5 py-1 text-[9px] text-right tabular-nums font-medium text-foreground">
-                    {currencySymbol}{Number(item.total).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
+              {items.map((item: any, idx: number) => {
+                const img = item.products?.image_url || item.image_url;
+                return (
+                  <tr key={item.id || idx} className={idx % 2 === 1 ? "bg-muted/30" : ""}>
+                    <td className="px-1.5 py-1 text-[9px] text-muted-foreground">{idx + 1}</td>
+                    <td className="px-1 py-1">
+                      {img ? (
+                        <img src={img} alt="" className="h-7 w-7 rounded object-cover border border-border" />
+                      ) : (
+                        <div className="h-7 w-7 rounded bg-muted border border-border" />
+                      )}
+                    </td>
+                    <td className="px-1.5 py-1 text-[9px] font-medium text-foreground truncate max-w-[100px]">{item.product_name}</td>
+                    <td className="px-1.5 py-1 text-[9px] text-center text-muted-foreground">{item.quantity || 1}</td>
+                    <td className="px-1.5 py-1 text-[9px] text-right tabular-nums text-muted-foreground">
+                      {currencySymbol}{Number(item.unit_price || item.total / (item.quantity || 1)).toFixed(2)}
+                    </td>
+                    <td className="px-1.5 py-1 text-[9px] text-right tabular-nums font-medium text-foreground">
+                      {currencySymbol}{Number(item.total).toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -387,15 +401,34 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 max-w-[380px] mx-auto">
-        <Button onClick={handlePrint} className="flex-1 gap-2" size="sm">
-          <Printer className="h-3.5 w-3.5" />
-          Print Label
-        </Button>
-        <Button variant="outline" onClick={onClose} size="sm" className="gap-2">
-          <X className="h-3.5 w-3.5" />
-          Close
-        </Button>
+      <div className="flex flex-col gap-2 max-w-[380px] mx-auto">
+        {order.customer_phone && (
+          <Button
+            onClick={async () => {
+              setSending(true);
+              const res = await sendInvoiceToWhatsApp({ order, store, ownerEmail });
+              setSending(false);
+              if (res.success) toast.success("Invoice sent on WhatsApp");
+              else toast.error(res.error || "Failed to send invoice");
+            }}
+            disabled={sending}
+            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+            size="sm"
+          >
+            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            {sending ? "Sending…" : "Send Invoice on WhatsApp"}
+          </Button>
+        )}
+        <div className="flex gap-2">
+          <Button onClick={handlePrint} className="flex-1 gap-2" size="sm">
+            <Printer className="h-3.5 w-3.5" />
+            Print Label
+          </Button>
+          <Button variant="outline" onClick={onClose} size="sm" className="gap-2">
+            <X className="h-3.5 w-3.5" />
+            Close
+          </Button>
+        </div>
       </div>
     </div>
   );
