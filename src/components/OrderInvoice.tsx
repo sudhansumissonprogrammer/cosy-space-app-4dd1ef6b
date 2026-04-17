@@ -408,8 +408,8 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               setSending(true);
               const res = await sendInvoiceToWhatsApp({ order, store, ownerEmail });
               setSending(false);
-              if (res.success) toast.success("Invoice sent on WhatsApp");
-              else toast.error(res.error || "Failed to send invoice");
+              if (res.success) toast.success("WhatsApp opened — tap Send to deliver invoice");
+              else toast.error(res.error || "Failed to generate invoice");
             }}
             disabled={sending}
             className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"

@@ -9,8 +9,9 @@ interface SendInvoiceArgs {
 }
 
 /**
- * Generate a PDF invoice for an order, upload it to Supabase storage,
- * and send the public URL to the customer via WhatsApp as a document.
+ * Generate a PDF invoice, upload to storage, then open WhatsApp (web/app)
+ * with a pre-filled message containing the invoice link.
+ * Avoids Meta WhatsApp Business API entirely — works for every store.
  */
 export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendInvoiceArgs): Promise<{ success: boolean; error?: string }> {
   try {
@@ -21,11 +22,11 @@ export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendIn
       return { success: false, error: "Store info missing" };
     }
 
-    // ── 1. Build PDF (with product images) ──
+    // ── 1. Build PDF ──
     const pdf = await buildInvoicePdf(order, store, ownerEmail);
     const pdfBlob = pdf.output("blob");
 
-    // ── 2. Upload to storage (whatsapp-media bucket) ──
+    // ── 2. Upload to storage ──
     const orderShort = order.order_number ? `${1000 + order.order_number}` : order.id.slice(0, 8);
     const fileName = `${store.id}/invoices/invoice-${orderShort}-${Date.now()}.pdf`;
 
@@ -40,39 +41,30 @@ export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendIn
       return { success: false, error: `Upload failed: ${uploadError.message}` };
     }
 
-    // ── 3. Create a signed URL valid for 7 days ──
+    // ── 3. Signed URL (30 days) ──
     const { data: signed, error: signedErr } = await supabase.storage
       .from("whatsapp-media")
-      .createSignedUrl(fileName, 60 * 60 * 24 * 7);
+      .createSignedUrl(fileName, 60 * 60 * 24 * 30);
 
     if (signedErr || !signed?.signedUrl) {
       return { success: false, error: `Could not generate file URL: ${signedErr?.message || "unknown"}` };
     }
 
-    // ── 4. Send via WhatsApp ──
+    // ── 4. Build WhatsApp deep link & open it ──
     const currency = order.currency || store?.currency || "INR";
     const symbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
-    const caption = `Hi ${order.customer_name || "there"}! 👋\n\nHere's your invoice for order #${orderShort} from ${store.name}.\n\nTotal: ${symbol}${Number(order.total).toFixed(0)}\n\nThank you for shopping with us! 🙏`;
+    const message =
+      `Hi ${order.customer_name || "there"}! 👋\n\n` +
+      `Here's your invoice for order #${orderShort} from *${store.name}*.\n\n` +
+      `💰 Total: ${symbol}${Number(order.total).toFixed(0)}\n` +
+      `📄 Invoice: ${signed.signedUrl}\n\n` +
+      `Thank you for shopping with us! 🙏`;
 
-    const { data, error } = await supabase.functions.invoke("whatsapp-send", {
-      body: {
-        store_id: store.id,
-        recipient_phone: order.customer_phone,
-        recipient_name: order.customer_name || null,
-        message_body: caption,
-        message_type: "invoice",
-        order_id: order.id,
-        media_url: signed.signedUrl,
-        media_type: "document",
-      },
-    });
+    const phone = String(order.customer_phone).replace(/[^\d]/g, "");
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
-    if (data?.error) {
-      return { success: false, error: data.error };
-    }
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err?.message || "Failed to send invoice" };
