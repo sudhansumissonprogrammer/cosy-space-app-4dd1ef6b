@@ -1,69 +1,77 @@
 
+## Plan: 3 High-ROI Cold-Load Fixes
 
-# Worker v6.2.0 Bug Fixes — 5 Issues
-
-## Issue A — Critical: Replace blind `setTimeout` reload with smart polling
-
-**File:** `docs/cloudflare-worker-current.js`, lines 401-403
-
-Replace the `setTimeout(function(){location.reload();},2500)` in `_buildInstantSkeletonPage()` with a polling mechanism that checks `X-Data-Source` header before reloading. After 3 failed attempts (6s), reload unconditionally as a last resort.
-
-```javascript
-var attempts = 0;
-function checkReady() {
-  attempts++;
-  if (attempts >= 3) { location.reload(); return; }
-  fetch(location.href, { method: 'HEAD', cache: 'no-store' })
-    .then(function(r) {
-      var src = r.headers.get('X-Data-Source') || '';
-      if (src && src !== 'instant-skeleton') {
-        location.reload();
-      } else {
-        setTimeout(checkReady, 2000);
-      }
-    })
-    .catch(function() { setTimeout(checkReady, 2000); });
-}
-setTimeout(checkReady, 2000);
-```
-
-## Issue B — Medium: Align prebuilt head TTLs with shell TTLs
-
-**File:** `docs/cloudflare-worker-current.js`, lines 412-413
-
-- `PREBUILT_HEAD_KV_TTL`: 3600 → **86_400** (match shell KV TTL)
-- `PREBUILT_HEAD_CACHE_TTL`: 600 → **3_600** (match shell Cache TTL)
-
-## Issue C — Medium: Eliminate duplicate `resolveDomain()` for custom domains
-
-**File:** `docs/cloudflare-worker-current.js`, lines 2992-3038
-
-When `!_memShell` and `resolveDomain()` returns null (no slug found), currently falls through to a second `Promise.all([resolveDomain(...), ...])`. Fix: if the skeleton path's `resolveDomain` returns null, return a 404 immediately instead of calling it again.
-
-If skeleton path returns a slug but we still fall through (shouldn't happen since we return), the `Promise.all` block at line 3035 should reuse the already-resolved slug instead of calling `resolveDomain` again.
-
-## Issue D — Low: Update comment for `STOREFRONT_PREFETCH_TIMEOUT_MS`
-
-**File:** `docs/cloudflare-worker-current.js`, line 94
-
-Clarify that this timeout only applies to the warm path (when `_memShell` exists), since the instant skeleton path bypasses `serveStreamedHtml` entirely.
-
-## Issue E — Low: Increase `all-active-slugs` KV TTL from 600s to 3600s
-
-**File:** `docs/cloudflare-worker-current.js`
-
-Three locations to update:
-- Line 2478: `expirationTtl: 600` → `3_600`
-- Line 2483: `expirationTtl: 600` → `3_600`
-- Line 3218: `expirationTtl: 600` → `3_600`
-
-Also update `_slugIndexExpiresAt` memory TTL at line 3221 from `300_000` (5min) to `1_800_000` (30min) for consistency.
+### Goal
+Cut storefront cold LCP from ~4-7s to ~2-3s by eliminating render waterfalls and oversized images.
 
 ---
 
-## Version bump
-`WORKER_VERSION`: "6.2.0" → **"6.2.1"**
+### Fix 1 — Kill Duplicate Skeleton
 
-## Deployment
-After approval, all changes go into `docs/cloudflare-worker-current.js`. You deploy manually to Cloudflare.
+**Problem:** Both Worker (`#sf-skel`) and `index.html` (`#inline-skel`) render skeletons. In production they briefly overlap; both must be cleaned up; extra DOM/paint work.
 
+**Changes:**
+- `index.html`: Wrap inline skeleton in a `<script>` check — only inject if `window.__SF_WORKER__` flag is NOT set (Worker sets this when injecting `#sf-skel`). This makes Worker skeleton the single source of truth in production; inline skeleton remains for preview/localhost only.
+- `docs/cloudflare-worker-current.js`: Add `<script>window.__SF_WORKER__=true</script>` before `#sf-skel` injection. Bump version to **6.3.0**.
+- `src/main.tsx` / cleanup script: Simplify — only one skeleton ID to remove.
+
+---
+
+### Fix 2 — Unify Fonts (Single Source of Truth in Worker)
+
+**Problem:** Fonts load in 3 places (Worker preload + `index.html` CSS link + React `loadGoogleFonts`). Causes 200–600ms waterfall + FOUT on font swap.
+
+**Changes:**
+- `docs/cloudflare-worker-current.js`: Read `theme_config.heading_font` and `body_font` from KV-cached store data. Inject:
+  - `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>`
+  - `<link rel="preload" as="style" href="...">` for the exact merchant fonts
+  - `<link rel="stylesheet" href="...">` with `display=swap`
+- `index.html`: Remove the hardcoded Poppins/Alegreya preload + stylesheet links (only keep Inter for landing page, gated by route).
+- `src/lib/themeUtils.ts` `loadGoogleFonts()`: Add a guard — skip if `document.querySelector('link[data-sf-font]')` exists (Worker already injected). Mark Worker-injected links with `data-sf-font="1"`.
+- Result: Storefront pages get fonts from Worker (1 round-trip, parallel with HTML). Landing page keeps its own Inter setup. React only injects fonts as fallback for preview/localhost.
+
+---
+
+### Fix 3 — Cloudflare Image Resizing
+
+**Problem:** Supabase Render API adds 100–300ms latency + counted transformations. External/legacy images served at full size (up to 2MB) → LCP 4-7s.
+
+**Changes:**
+- `docs/cloudflare-worker-current.js`: Add new route `/cf-img` that uses `fetch(originalUrl, { cf: { image: { width, quality, format: 'auto', fit: 'scale-down' } } })`. Cache responses in Cache API with 1-year TTL. Accept query params: `url`, `w`, `q`.
+- `src/lib/imageOptimize.ts`: 
+  - Add `USE_CF_IMAGE_RESIZE` flag (default true in production).
+  - Replace Supabase Render API path with `/cf-img?url=...&w=...&q=...` for both pipeline images and external Supabase URLs.
+  - Update `getImageSrcSet` and `preloadHeroImage` to use the new path.
+- Worker version → **6.3.0**.
+
+**Manual step (user):** Enable Image Resizing in Cloudflare Dashboard → Speed → Optimization → toggle on. Already covered by Workers Paid plan.
+
+---
+
+### Files Touched
+1. `docs/cloudflare-worker-current.js` — skeleton flag, font injection, `/cf-img` route, version bump
+2. `index.html` — remove storefront font links + inline skeleton guard
+3. `src/main.tsx` — skeleton cleanup simplification
+4. `src/lib/themeUtils.ts` — `loadGoogleFonts` guard
+5. `src/lib/imageOptimize.ts` — route through `/cf-img`
+
+### Expected Impact
+| Metric | Before | After |
+|---|---|---|
+| LCP (cold, mobile 4G) | 4–7s | 2–3s |
+| Image bytes | 200KB–2MB | 30–80KB |
+| Font waterfall | 3 stages | 1 stage (Worker) |
+| Skeleton paint work | 2x | 1x |
+
+### Deployment Steps
+1. I write all code changes (single response in default mode).
+2. You copy `docs/cloudflare-worker-current.js` → Cloudflare Worker editor → Deploy.
+3. You enable Cloudflare Image Resizing toggle.
+4. Test cold load on mobile (incognito) on a real store.
+
+### Risk / Rollback
+- Image resize: if CF toggle isn't enabled, `/cf-img` still works (passthrough fetch); just no resizing.
+- Font unify: React `loadGoogleFonts` remains as fallback for preview.
+- Skeleton: inline skeleton remains intact for localhost/preview.
+
+Ready to ship — approve to proceed.
