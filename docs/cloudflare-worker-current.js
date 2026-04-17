@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.2.3";
+const WORKER_VERSION = "6.3.0";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -300,7 +300,9 @@ function buildSkeleton(bgColor, skeletonMuted) {
 
   const shimmerKeyframes = `<style id="sf-skel-anim">@keyframes sf-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}.sf-ph{background:linear-gradient(90deg,${skelBase} 25%,${skelShimmer} 50%,${skelBase} 75%);background-size:800px 100%;animation:sf-shimmer 1.4s ease-in-out infinite;border-radius:4px}</style>`;
 
-  let s = `${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
+  // v6.3.0: Set __SF_WORKER__ flag BEFORE skeleton so index.html knows Worker
+  // already injected its skeleton — inline skeleton fallback is suppressed.
+  let s = `<script>window.__SF_WORKER__=true;</script>${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
   s += `<nav style="height:56px;background:${skelBg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
   s += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
   s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
@@ -363,8 +365,8 @@ function buildThemeCssFromConfig(tc) {
     // highest priority so the actual font files (woff2) start downloading in
     // parallel with HTML parsing — regardless of which font the merchant chose.
     // Saves ~200-400ms FOUT on cold loads for ALL stores (not just Poppins).
-    css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" />\n`;
-    css += `<link id="storefront-google-fonts" rel="stylesheet" href="${googleFontsHref}" data-loaded="false" />\n`;
+    css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
+    css += `<link id="storefront-google-fonts" rel="stylesheet" href="${googleFontsHref}" data-loaded="false" data-sf-font="1" />\n`;
     css += `<noscript><link rel="stylesheet" href="${googleFontsHref}" /></noscript>\n`;
     css += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
   }
