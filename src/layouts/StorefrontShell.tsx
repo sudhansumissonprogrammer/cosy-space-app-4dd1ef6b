@@ -100,7 +100,6 @@ export default function StorefrontShell({
   wrapperStyle,
   wrapperClassName = "storefront-font min-h-screen font-sans overflow-x-hidden",
   notFoundLabel = "Store",
-  skeleton,
   children,
 }: StorefrontShellProps) {
   const { store, isLoading, slug } = useStorefront(slugOverride);
