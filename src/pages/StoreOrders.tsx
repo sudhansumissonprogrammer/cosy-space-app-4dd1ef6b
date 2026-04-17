@@ -62,6 +62,7 @@ export default function StoreOrders() {
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [mobileDetailOrder, setMobileDetailOrder] = useState<any>(null);
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
+  const [createOrderOpen, setCreateOrderOpen] = useState(false);
 
   const handleSendInvoice = async (order: any) => {
     if (!order?.customer_phone) {
