@@ -316,11 +316,29 @@ export default function StoreOrders() {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
-          <p className="text-sm text-muted-foreground">{store?.name}</p>
+          <p className="text-sm text-muted-foreground truncate">{store?.name}</p>
         </div>
+        <Button
+          size="sm"
+          className="h-9 gap-1.5 shrink-0"
+          onClick={() => setCreateOrderOpen(true)}
+          disabled={!storeId}
+        >
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Create Order</span>
+        </Button>
       </div>
+
+      {storeId && (
+        <CreateOrderDialog
+          open={createOrderOpen}
+          onOpenChange={setCreateOrderOpen}
+          storeId={storeId}
+          storeCurrency={store?.currency || "INR"}
+        />
+      )}
 
       {/* Search & Filter Bar */}
       <Card className="border shadow-none">
