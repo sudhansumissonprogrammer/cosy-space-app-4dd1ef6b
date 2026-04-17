@@ -318,6 +318,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
             <thead>
               <tr className="bg-foreground text-background">
                 <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider w-5">#</th>
+                <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider w-9">Img</th>
                 <th className="px-1.5 py-1 text-left text-[7px] font-medium uppercase tracking-wider">Item</th>
                 <th className="px-1.5 py-1 text-center text-[7px] font-medium uppercase tracking-wider w-8">Qty</th>
                 <th className="px-1.5 py-1 text-right text-[7px] font-medium uppercase tracking-wider w-16">Price</th>
@@ -325,19 +326,29 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               </tr>
             </thead>
             <tbody>
-              {items.map((item: any, idx: number) => (
-                <tr key={item.id || idx} className={idx % 2 === 1 ? "bg-muted/30" : ""}>
-                  <td className="px-1.5 py-1 text-[9px] text-muted-foreground">{idx + 1}</td>
-                  <td className="px-1.5 py-1 text-[9px] font-medium text-foreground truncate max-w-[120px]">{item.product_name}</td>
-                  <td className="px-1.5 py-1 text-[9px] text-center text-muted-foreground">{item.quantity || 1}</td>
-                  <td className="px-1.5 py-1 text-[9px] text-right tabular-nums text-muted-foreground">
-                    {currencySymbol}{Number(item.unit_price || item.total / (item.quantity || 1)).toFixed(2)}
-                  </td>
-                  <td className="px-1.5 py-1 text-[9px] text-right tabular-nums font-medium text-foreground">
-                    {currencySymbol}{Number(item.total).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
+              {items.map((item: any, idx: number) => {
+                const img = item.products?.image_url || item.image_url;
+                return (
+                  <tr key={item.id || idx} className={idx % 2 === 1 ? "bg-muted/30" : ""}>
+                    <td className="px-1.5 py-1 text-[9px] text-muted-foreground">{idx + 1}</td>
+                    <td className="px-1 py-1">
+                      {img ? (
+                        <img src={img} alt="" className="h-7 w-7 rounded object-cover border border-border" />
+                      ) : (
+                        <div className="h-7 w-7 rounded bg-muted border border-border" />
+                      )}
+                    </td>
+                    <td className="px-1.5 py-1 text-[9px] font-medium text-foreground truncate max-w-[100px]">{item.product_name}</td>
+                    <td className="px-1.5 py-1 text-[9px] text-center text-muted-foreground">{item.quantity || 1}</td>
+                    <td className="px-1.5 py-1 text-[9px] text-right tabular-nums text-muted-foreground">
+                      {currencySymbol}{Number(item.unit_price || item.total / (item.quantity || 1)).toFixed(2)}
+                    </td>
+                    <td className="px-1.5 py-1 text-[9px] text-right tabular-nums font-medium text-foreground">
+                      {currencySymbol}{Number(item.total).toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
