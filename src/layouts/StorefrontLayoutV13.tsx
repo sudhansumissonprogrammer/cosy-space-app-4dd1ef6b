@@ -80,21 +80,6 @@ function WhatsAppOrderBar({ store, tableNumber }: { store: StoreData; tableNumbe
   );
 }
 
-function RestaurantSkeleton() {
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-30 border-b bg-card px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-10 w-10 rounded-xl" />
-          <div className="flex flex-col gap-1"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-20" /></div>
-        </div>
-      </div>
-      <div className="px-4 py-4"><Skeleton className="h-10 w-full rounded-xl" /></div>
-      <div className="px-4 space-y-3">{Array.from({ length: 5 }).map((_, i) => (<Skeleton key={i} className="h-24 rounded-xl" />))}</div>
-    </div>
-  );
-}
-
 export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: string } = {}) {
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get("table");
@@ -107,7 +92,6 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
       defaultPrimary="#25D366"
       defaultButtonRadius="0.75rem"
       notFoundLabel="Restaurant"
-      skeleton={<RestaurantSkeleton />}
     >
       {({ store }) => (
         <>
