@@ -738,11 +738,13 @@ export default function StoreOrders() {
 /* ══════════════════════════════════════════════
    Mobile Order Detail — Shopify-style bottom sheet
    ══════════════════════════════════════════════ */
-function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onDelete, isDeleting, onClose }: {
+function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvoice, isSendingInvoice, onDelete, isDeleting, onClose }: {
   order: any;
   store: any;
   onStatusChange: (status: string) => void;
   onInvoice: () => void;
+  onSendInvoice: () => void;
+  isSendingInvoice?: boolean;
   onDelete: () => void;
   isDeleting?: boolean;
   onClose: () => void;
