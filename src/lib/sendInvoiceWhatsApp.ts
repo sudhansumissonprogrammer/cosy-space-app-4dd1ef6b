@@ -9,9 +9,9 @@ interface SendInvoiceArgs {
 }
 
 /**
- * Generate a PDF invoice, upload to storage, then open WhatsApp (web/app)
- * with a pre-filled message containing the invoice link.
- * Avoids Meta WhatsApp Business API entirely — works for every store.
+ * Generate a PDF invoice (matches the on-screen 4x6 label design) and share it
+ * directly to WhatsApp as a file using the Web Share API. Falls back to
+ * uploading + wa.me link when file sharing is unavailable.
  */
 export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendInvoiceArgs): Promise<{ success: boolean; error?: string }> {
   try {
@@ -22,74 +22,98 @@ export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendIn
       return { success: false, error: "Store info missing" };
     }
 
-    // ── 1. Build PDF ──
-    const pdf = await buildInvoicePdf(order, store, ownerEmail);
-    const pdfBlob = pdf.output("blob");
-
-    // ── 2. Upload to storage ──
-    const orderShort = order.order_number ? `${1000 + order.order_number}` : order.id.slice(0, 8);
-    const fileName = `${store.id}/invoices/invoice-${orderShort}-${Date.now()}.pdf`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("whatsapp-media")
-      .upload(fileName, pdfBlob, {
-        contentType: "application/pdf",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      return { success: false, error: `Upload failed: ${uploadError.message}` };
-    }
-
-    // ── 3. Signed URL (30 days) ──
-    const { data: signed, error: signedErr } = await supabase.storage
-      .from("whatsapp-media")
-      .createSignedUrl(fileName, 60 * 60 * 24 * 30);
-
-    if (signedErr || !signed?.signedUrl) {
-      return { success: false, error: `Could not generate file URL: ${signedErr?.message || "unknown"}` };
-    }
-
-    // ── 4. Build WhatsApp deep link & open it ──
-    const currency = order.currency || store?.currency || "INR";
-    const symbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
-    const message =
-      `Hi ${order.customer_name || "there"}! 👋\n\n` +
-      `Here's your invoice for order #${orderShort} from *${store.name}*.\n\n` +
-      `💰 Total: ${symbol}${Number(order.total).toFixed(0)}\n` +
-      `📄 Invoice: ${signed.signedUrl}\n\n` +
-      `Thank you for shopping with us! 🙏`;
-
-    // Ensure phone has country code (default to +91 for India if missing)
+    // ── Format phone (with +91 default for India) ──
     let phone = String(order.customer_phone).replace(/[^\d]/g, "");
-    
-    // Handle various phone number formats
     if (phone.startsWith("91") && phone.length === 12) {
-      // Already has 91 prefix (e.g., 919876543210) - use as is
-      phone = phone;
+      // already prefixed
     } else if (phone.length === 10) {
-      // 10 digit Indian number - add 91 prefix
       phone = "91" + phone;
     } else if (phone.length < 10) {
       return { success: false, error: "Invalid phone number" };
     }
-    // If longer than 12 digits or other format, use as-is (might be other country)
 
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    // ── Build PDF (mirrors the on-screen label design) ──
+    const pdf = await buildInvoicePdf(order, store, ownerEmail);
+    const pdfBlob = pdf.output("blob");
+    const orderShort = order.order_number ? `${1000 + order.order_number}` : order.id.slice(0, 8).toUpperCase();
+    const fileName = `Invoice-${orderShort}.pdf`;
+    const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
 
+    const currency = order.currency || store?.currency || "INR";
+    const symbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
+    const shortMessage =
+      `Hi ${order.customer_name || "there"}! 👋\n\n` +
+      `Here's your invoice for order #${orderShort} from *${store.name}*.\n\n` +
+      `💰 Total: ${symbol}${Number(order.total).toFixed(0)}\n\n` +
+      `Thank you for shopping with us! 🙏`;
+
+    // ── Strategy 1: Web Share API with file (mobile / modern browsers) ──
+    const navAny = navigator as any;
+    if (navAny.canShare && navAny.canShare({ files: [pdfFile] })) {
+      try {
+        await navAny.share({
+          files: [pdfFile],
+          title: `Invoice ${orderShort}`,
+          text: shortMessage,
+        });
+        return { success: true };
+      } catch (shareErr: any) {
+        // User cancelled — treat as success (don't fall back)
+        if (shareErr?.name === "AbortError") return { success: true };
+        // Otherwise fall through to upload-link fallback
+      }
+    }
+
+    // ── Strategy 2: Fallback — upload PDF, share signed URL via wa.me ──
+    const uploadPath = `${store.id}/invoices/invoice-${orderShort}-${Date.now()}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from("whatsapp-media")
+      .upload(uploadPath, pdfBlob, { contentType: "application/pdf", upsert: true });
+
+    if (uploadError) {
+      // Last resort: trigger browser download so the user can attach manually
+      triggerDownload(pdfBlob, fileName);
+      const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(shortMessage + "\n\n📎 Invoice PDF downloaded — please attach it in WhatsApp.")}`;
+      window.open(waUrl, "_blank", "noopener,noreferrer");
+      return { success: true };
+    }
+
+    const { data: signed } = await supabase.storage
+      .from("whatsapp-media")
+      .createSignedUrl(uploadPath, 60 * 60 * 24 * 30);
+
+    const linkMessage = signed?.signedUrl
+      ? `${shortMessage}\n\n📄 Invoice: ${signed.signedUrl}`
+      : shortMessage;
+
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(linkMessage)}`;
     window.open(waUrl, "_blank", "noopener,noreferrer");
-
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err?.message || "Failed to send invoice" };
   }
 }
 
-/* ───────────────── PDF Builder (mirrors on-screen invoice) ───────────────── */
+function triggerDownload(blob: Blob, fileName: string) {
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch {}
+}
+
+/* ───────────────── PDF Builder — mirrors on-screen 4x6 label invoice ───────────────── */
 async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Promise<jsPDF> {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const margin = 14;
+  // 100mm x 150mm — same as print label format
+  const doc = new jsPDF({ unit: "mm", format: [100, 150] });
+  const pageW = 100;
+  const pageH = 150;
+  const margin = 4;
 
   const items = order.order_items || [];
   const currency = order.currency || store?.currency || "INR";
@@ -97,124 +121,137 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   const subtotal = items.reduce((s: number, i: any) => s + Number(i.total || 0), 0);
   const orderShort = order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 
-  // ── Pre-load images (logo + product thumbs) as data URLs ──
+  // Pre-load logo + product thumbs
   const logoData = store?.logo_url ? await urlToDataUrl(store.logo_url) : null;
   const itemImages: (string | null)[] = await Promise.all(
     items.map((it: any) => urlToDataUrl(it.products?.image_url || it.image_url || null))
   );
 
   // ── Header ──
-  let headerY = 14;
-  const headerHeight = 22;
-  
-  // Brand header background
-  doc.setFillColor(250, 250, 250);
-  doc.rect(margin, headerY, pageW - margin * 2, headerHeight, "F");
-  
-  // Left side: Logo + Store Name
-  let logoX = margin + 3;
+  let y = margin + 2;
+
+  // Logo (left) + INVOICE label (right)
   if (logoData) {
-    try { 
-      doc.addImage(logoData, "JPEG", logoX, headerY + 3, 16, 16); 
-      logoX += 19;
-    } catch {}
+    try { doc.addImage(logoData, "JPEG", margin, y, 14, 14); } catch {}
   }
-  
-  // Store name - bold and prominent
+
+  // Store name (next to logo, or alone if no logo)
+  const nameX = logoData ? margin + 16 : margin;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(25, 25, 25);
-  doc.text(store?.name || "Invoice", logoX, headerY + 12);
-  
-  // Store tagline/address below name
+  doc.setFontSize(11);
+  doc.setTextColor(20, 20, 20);
+  doc.text(store?.name || "Store", nameX, y + 6);
+
+  // Address line under name
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6);
+  doc.setTextColor(110, 110, 110);
+  const storeAddr = [store?.location, store?.city, store?.state].filter(Boolean).join(", ");
+  if (storeAddr) {
+    const addrLine = ownerEmail ? `${storeAddr} | ${ownerEmail}` : storeAddr;
+    doc.text(addrLine.slice(0, 60), nameX, y + 10);
+  }
+
+  // INVOICE label (right)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(40, 40, 40);
+  doc.text("INVOICE", pageW - margin, y + 5, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(100, 100, 100);
-  const storeAddr = [store?.location, store?.city, store?.state].filter(Boolean).join(", ");
-  if (storeAddr) {
-    doc.text(storeAddr, logoX, headerY + 17);
-  }
-  
-  // Right side: INVOICE label
+  doc.text(orderShort, pageW - margin, y + 9, { align: "right" });
+
+  // Header divider
+  y += 16;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.4);
+  doc.line(margin, y, pageW - margin, y);
+  y += 3;
+
+  // ── Ship To + Order Info ──
+  const colW = (pageW - margin * 2) / 2;
+
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(80, 80, 80);
-  doc.text("INVOICE", pageW - margin - 3, headerY + 8, { align: "right" });
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(60, 60, 60);
-  doc.text(orderShort, pageW - margin - 3, headerY + 13, { align: "right" });
-  doc.setFontSize(7);
-  doc.setTextColor(120, 120, 120);
-  doc.text(formatDate(order.created_at), pageW - margin - 3, headerY + 17, { align: "right" });
+  doc.setFontSize(6);
+  doc.setTextColor(130, 130, 130);
+  doc.text("SHIP TO", margin, y);
+  doc.text("ORDER INFO", pageW - margin, y, { align: "right" });
 
-  // Divider line
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.3);
-  doc.line(margin, headerY + headerHeight + 2, pageW - margin, headerY + headerHeight + 2);
-
-  // ── Ship To + Payment ──
+  y += 3.5;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  doc.text("SHIP TO", margin, 41);
-  doc.text("PAYMENT", pageW - margin, 41, { align: "right" });
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
   doc.setTextColor(20, 20, 20);
-  doc.text(order.customer_name || "Customer", margin, 47);
-
+  doc.text(order.customer_name || "Customer", margin, y);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
+  doc.setFontSize(7);
   doc.setTextColor(80, 80, 80);
-  let y = 52;
-  if (order.customer_phone) { doc.text(order.customer_phone, margin, y); y += 4; }
+  doc.text(formatDate(order.created_at), pageW - margin, y, { align: "right" });
+
+  y += 3.5;
+  if (order.customer_phone) {
+    doc.setFontSize(7);
+    doc.setTextColor(80, 80, 80);
+    doc.text(order.customer_phone, margin, y);
+  }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(20, 20, 20);
+  doc.text((order.payment_method || "cod").toUpperCase(), pageW - margin, y, { align: "right" });
+
+  y += 3.5;
   const addr = [order.street_address, order.city, order.state, order.pincode].filter(Boolean).join(", ");
   if (addr) {
-    const lines = doc.splitTextToSize(addr, 95);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(80, 80, 80);
+    const lines = doc.splitTextToSize(addr, colW - 2);
     doc.text(lines, margin, y);
-    y += lines.length * 4;
+    y += lines.length * 2.8;
   }
 
+  // Status badge (right side, under payment method)
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(20, 20, 20);
-  doc.text((order.payment_method || "cod").toUpperCase(), pageW - margin, 47, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(80, 80, 80);
-  doc.text(`Status: ${order.status}`, pageW - margin, 52, { align: "right" });
+  doc.setFontSize(6);
+  doc.setTextColor(60, 60, 60);
+  doc.text(`Status: ${String(order.status).toUpperCase()}`, pageW - margin, y, { align: "right" });
 
-  // ── Items table (with image column) ──
-  const tableY = Math.max(y + 6, 66);
+  y += 2;
+  doc.setLineDashPattern([0.5, 0.5], 0);
+  doc.setDrawColor(170, 170, 170);
+  doc.setLineWidth(0.2);
+  doc.line(margin, y, pageW - margin, y);
+  doc.setLineDashPattern([], 0);
+  y += 2;
+
+  // ── Items table (with image column, matching screen) ──
   autoTable(doc, {
-    startY: tableY,
-    head: [["#", "Image", "Item", "Qty", "Price", "Amount"]],
+    startY: y,
+    head: [["#", "Img", "Item", "Qty", "Price", "Amt"]],
     body: items.map((it: any, idx: number) => [
       String(idx + 1),
-      "", // image cell — drawn manually
+      "",
       it.product_name,
       String(it.quantity || 1),
       `${symbol}${Number(it.unit_price || it.total / (it.quantity || 1)).toFixed(2)}`,
       `${symbol}${Number(it.total).toFixed(2)}`,
     ]),
-    styles: { font: "helvetica", fontSize: 9, cellPadding: 2, valign: "middle", minCellHeight: 14 },
-    headStyles: { fillColor: [25, 25, 25], textColor: 255, fontStyle: "bold", minCellHeight: 8 },
+    styles: { font: "helvetica", fontSize: 7, cellPadding: 1.2, valign: "middle", minCellHeight: 9 },
+    headStyles: { fillColor: [25, 25, 25], textColor: 255, fontStyle: "bold", fontSize: 6.5, minCellHeight: 5 },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
     columnStyles: {
-      0: { cellWidth: 8, halign: "center" },
-      1: { cellWidth: 16, halign: "center" },
-      3: { halign: "center", cellWidth: 14 },
-      4: { halign: "right", cellWidth: 26 },
-      5: { halign: "right", cellWidth: 26 },
+      0: { cellWidth: 5, halign: "center" },
+      1: { cellWidth: 9, halign: "center" },
+      3: { halign: "center", cellWidth: 7 },
+      4: { halign: "right", cellWidth: 14 },
+      5: { halign: "right", cellWidth: 14 },
     },
     margin: { left: margin, right: margin },
     didDrawCell: (data) => {
       if (data.section === "body" && data.column.index === 1) {
         const img = itemImages[data.row.index];
         if (img) {
-          const size = 11;
+          const size = 7;
           const x = data.cell.x + (data.cell.width - size) / 2;
           const cy = data.cell.y + (data.cell.height - size) / 2;
           try { doc.addImage(img, "JPEG", x, cy, size, size); } catch {}
@@ -224,67 +261,68 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
   });
 
   // ── Totals ──
-  const finalY = (doc as any).lastAutoTable.finalY + 6;
-  const totalsX = pageW - margin - 60;
+  let finalY = (doc as any).lastAutoTable.finalY + 3;
+  const totalsLabelX = pageW - margin - 30;
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(60, 60, 60);
-  doc.text("Subtotal", totalsX, finalY);
+  doc.setFontSize(7.5);
+  doc.setTextColor(80, 80, 80);
+  doc.text("Subtotal", totalsLabelX, finalY);
   doc.text(`${symbol}${subtotal.toFixed(2)}`, pageW - margin, finalY, { align: "right" });
 
-  let tY = finalY + 6;
   if (Number(order.total) !== subtotal) {
+    finalY += 4;
     const diff = Number(order.total) - subtotal;
-    doc.text(diff < 0 ? "Discount" : "Shipping/Tax", totalsX, tY);
-    doc.text(`${symbol}${diff.toFixed(2)}`, pageW - margin, tY, { align: "right" });
-    tY += 6;
+    doc.text(diff < 0 ? "Discount" : "Shipping/Tax", totalsLabelX, finalY);
+    doc.text(`${symbol}${diff.toFixed(2)}`, pageW - margin, finalY, { align: "right" });
   }
 
+  finalY += 2;
   doc.setDrawColor(20, 20, 20);
-  doc.line(totalsX, tY, pageW - margin, tY);
-  tY += 6;
+  doc.setLineWidth(0.4);
+  doc.line(totalsLabelX, finalY, pageW - margin, finalY);
+  finalY += 4;
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  doc.setFontSize(9);
   doc.setTextColor(20, 20, 20);
-  doc.text("Total", totalsX, tY);
-  doc.text(`${symbol}${Number(order.total).toFixed(2)}`, pageW - margin, tY, { align: "right" });
+  doc.text("Total", totalsLabelX, finalY);
+  doc.text(`${symbol}${Number(order.total).toFixed(2)}`, pageW - margin, finalY, { align: "right" });
 
   if (order.payment_type === "partial") {
-    tY += 7;
+    finalY += 5;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(7);
     doc.setTextColor(108, 52, 131);
-    doc.text("Advance Paid", totalsX, tY);
-    doc.text(`${symbol}${Number(order.advance_paid || 0).toFixed(2)}`, pageW - margin, tY, { align: "right" });
-    tY += 5;
-    doc.text("Balance Due (COD)", totalsX, tY);
-    doc.text(`${symbol}${Number(order.balance_due || 0).toFixed(2)}`, pageW - margin, tY, { align: "right" });
+    doc.text("Advance Paid", totalsLabelX, finalY);
+    doc.text(`${symbol}${Number(order.advance_paid || 0).toFixed(2)}`, pageW - margin, finalY, { align: "right" });
+    finalY += 3.5;
+    doc.text("Balance Due (COD)", totalsLabelX, finalY);
+    doc.text(`${symbol}${Number(order.balance_due || 0).toFixed(2)}`, pageW - margin, finalY, { align: "right" });
   }
 
   // ── Tracking ──
   if (order.tracking_number) {
-    tY += 10;
+    finalY += 6;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
+    doc.setFontSize(6);
     doc.setTextColor(120, 120, 120);
-    doc.text("TRACKING", margin, tY);
+    doc.text("TRACKING", margin, finalY);
     doc.setFont("courier", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(7);
     doc.setTextColor(20, 20, 20);
-    doc.text(order.tracking_number, margin, tY + 5);
+    doc.text(order.tracking_number, margin, finalY + 3);
   }
 
   // ── Footer ──
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
+  doc.setFontSize(8);
   doc.setTextColor(20, 20, 20);
-  doc.text("Thank you for your purchase!", pageW / 2, doc.internal.pageSize.getHeight() - 15, { align: "center" });
+  doc.text("Thank you!", pageW / 2, pageH - 6, { align: "center" });
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
+  doc.setFontSize(6);
   doc.setTextColor(150, 150, 150);
-  doc.text("Computer-generated invoice — no signature required.", pageW / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+  doc.text("Computer-generated — no signature required.", pageW / 2, pageH - 3, { align: "center" });
 
   return doc;
 }
