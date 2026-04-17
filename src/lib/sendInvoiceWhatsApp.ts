@@ -21,8 +21,8 @@ export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendIn
       return { success: false, error: "Store info missing" };
     }
 
-    // ── 1. Build PDF ──
-    const pdf = buildInvoicePdf(order, store, ownerEmail);
+    // ── 1. Build PDF (with product images) ──
+    const pdf = await buildInvoicePdf(order, store, ownerEmail);
     const pdfBlob = pdf.output("blob");
 
     // ── 2. Upload to storage (whatsapp-media bucket) ──
