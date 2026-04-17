@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -612,7 +612,7 @@ export default function StoreOrders() {
                               </TableCell>
                             </TableRow>
                           ))}
-                        </>
+                        </React.Fragment>
                       );
                     })}
                   </TableBody>
