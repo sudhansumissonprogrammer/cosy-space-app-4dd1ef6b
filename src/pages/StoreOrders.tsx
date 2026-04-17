@@ -914,6 +914,20 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             ✅ Mark as Fully Paid (Collected {order.currency} {Number(order.balance_due).toFixed(0)})
           </Button>
         )}
+        {order.customer_phone && (
+          <Button
+            variant="outline"
+            className="w-full h-10 text-sm font-medium border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+            onClick={onSendInvoice}
+            disabled={isSendingInvoice}
+          >
+            {isSendingInvoice ? (
+              <><div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" /> Sending invoice…</>
+            ) : (
+              <><MessageCircle className="h-4 w-4 mr-2" /> Send Invoice on WhatsApp</>
+            )}
+          </Button>
+        )}
         <div className="flex gap-2">
           <Select value={order.status} onValueChange={onStatusChange}>
             <SelectTrigger className="flex-1 h-11 text-sm font-medium">
