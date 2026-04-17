@@ -2,6 +2,35 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { isCustomDomainHost, isSubdomainHost, isRootDomainHost, isPreviewHost, isLocalHost } from "@/lib/subdomain";
+import { installChunkLoadRecovery } from "@/lib/chunkLoadRecovery";
+
+declare global {
+  interface Window {
+    requestIdleCallback?: (
+      callback: (deadline: IdleDeadline) => void,
+      options?: { timeout?: number }
+    ) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  }
+}
+
+if (typeof window !== "undefined" && typeof window.requestIdleCallback !== "function") {
+  window.requestIdleCallback = (callback) => {
+    const start = Date.now();
+    return window.setTimeout(() => {
+      callback({
+        didTimeout: false,
+        timeRemaining: () => Math.max(0, 50 - (Date.now() - start)),
+      });
+    }, 1);
+  };
+}
+
+if (typeof window !== "undefined" && typeof window.cancelIdleCallback !== "function") {
+  window.cancelIdleCallback = (handle) => window.clearTimeout(handle);
+}
+
+installChunkLoadRecovery();
 
 // Defer non-critical font CSS imports — they block initial render for ALL routes
 // but are only needed by dashboard (Montserrat Alternates) and landing (Plus Jakarta Sans).

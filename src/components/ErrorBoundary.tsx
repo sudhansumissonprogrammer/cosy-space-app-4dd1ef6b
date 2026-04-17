@@ -1,5 +1,6 @@
 import React from "react";
 import { logError } from "@/lib/logError";
+import { recoverFromChunkLoadError } from "@/lib/chunkLoadRecovery";
 
 interface Props {
   children: React.ReactNode;
@@ -28,6 +29,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
+    if (recoverFromChunkLoadError(error)) return;
+
     logError({
       message: error.message,
       stack: error.stack,
@@ -41,6 +44,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   };
 
   handleReload = () => {
+    if (recoverFromChunkLoadError(this.state.error)) return;
     window.location.reload();
   };
 
