@@ -4,30 +4,20 @@ import "./index.css";
 import { isCustomDomainHost, isSubdomainHost, isRootDomainHost, isPreviewHost, isLocalHost } from "@/lib/subdomain";
 import { installChunkLoadRecovery } from "@/lib/chunkLoadRecovery";
 
-declare global {
-  interface Window {
-    requestIdleCallback?: (
-      callback: (deadline: IdleDeadline) => void,
-      options?: { timeout?: number }
-    ) => number;
-    cancelIdleCallback?: (handle: number) => void;
-  }
-}
-
-if (typeof window !== "undefined" && typeof window.requestIdleCallback !== "function") {
-  window.requestIdleCallback = (callback) => {
+if (typeof window !== "undefined" && typeof (window as any).requestIdleCallback !== "function") {
+  (window as any).requestIdleCallback = (callback: (deadline: IdleDeadline) => void) => {
     const start = Date.now();
     return window.setTimeout(() => {
       callback({
         didTimeout: false,
         timeRemaining: () => Math.max(0, 50 - (Date.now() - start)),
-      });
+      } as IdleDeadline);
     }, 1);
   };
 }
 
-if (typeof window !== "undefined" && typeof window.cancelIdleCallback !== "function") {
-  window.cancelIdleCallback = (handle) => window.clearTimeout(handle);
+if (typeof window !== "undefined" && typeof (window as any).cancelIdleCallback !== "function") {
+  (window as any).cancelIdleCallback = (handle: number) => window.clearTimeout(handle);
 }
 
 installChunkLoadRecovery();
