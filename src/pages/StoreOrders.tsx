@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
 import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
+import { sendInvoiceToWhatsApp } from "@/lib/sendInvoiceWhatsApp";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy, Trash2 } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, Search, X, CalendarIcon, CheckSquare, ChevronRight, Phone, MapPin, CreditCard, Package, FileText, Copy, Trash2, Send, MessageCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -59,6 +60,21 @@ export default function StoreOrders() {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [mobileDetailOrder, setMobileDetailOrder] = useState<any>(null);
+  const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
+
+  const handleSendInvoice = async (order: any) => {
+    if (!order?.customer_phone) {
+      toast.error("No customer phone number on this order");
+      return;
+    }
+    setSendingInvoiceId(order.id);
+    const t = toast.loading("Generating invoice & sending to WhatsApp…");
+    const res = await sendInvoiceToWhatsApp({ order, store });
+    toast.dismiss(t);
+    if (res.success) toast.success("Invoice sent on WhatsApp ✅");
+    else toast.error(res.error || "Failed to send invoice");
+    setSendingInvoiceId(null);
+  };
 
   // Search & filter state
   const [search, setSearch] = useState("");
