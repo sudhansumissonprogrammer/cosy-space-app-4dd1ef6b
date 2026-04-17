@@ -1,6 +1,6 @@
 import React from "react";
 import { logError } from "@/lib/logError";
-import { recoverFromChunkLoadError } from "@/lib/chunkLoadRecovery";
+import { isRecoverableChunkLoadError, recoverFromChunkLoadError } from "@/lib/chunkLoadRecovery";
 
 interface Props {
   children: React.ReactNode;
@@ -25,6 +25,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
+    if (isRecoverableChunkLoadError(error)) {
+      return { hasError: false, error: null };
+    }
     return { hasError: true, error };
   }
 
