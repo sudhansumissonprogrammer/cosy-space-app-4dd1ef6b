@@ -70,11 +70,11 @@ export default function StoreOrders() {
       return;
     }
     setSendingInvoiceId(order.id);
-    const t = toast.loading("Generating invoice & sending to WhatsApp…");
+    const t = toast.loading("Generating invoice…");
     const res = await sendInvoiceToWhatsApp({ order, store });
     toast.dismiss(t);
-    if (res.success) toast.success("Invoice sent on WhatsApp ✅");
-    else toast.error(res.error || "Failed to send invoice");
+    if (res.success) toast.success("WhatsApp opened — tap Send to deliver invoice ✅");
+    else toast.error(res.error || "Failed to generate invoice");
     setSendingInvoiceId(null);
   };
 
