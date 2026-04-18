@@ -166,8 +166,10 @@ export default function StorefrontHome() {
     return extraProducts;
   }, [initialNonBestSelling, extraProducts, isDefaultSort]);
 
-  // Show loading state for custom sorts on first fetch
-  const showSkeleton = (isInitialLoading && !edgeSkelVisible) || (!isDefaultSort && isPaginatedLoading && displayProducts.length === 0);
+  // Show loading state ONLY for custom sorts on first fetch.
+  // For initial load, the edge-injected #sf-skel covers the page until content is ready —
+  // showing a second React skeleton causes a visible "double skeleton" flash.
+  const showSkeleton = !isDefaultSort && isPaginatedLoading && displayProducts.length === 0;
 
   // Stable observer — uses refs to avoid recreating IntersectionObserver on every state change
   const scrollStateRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
