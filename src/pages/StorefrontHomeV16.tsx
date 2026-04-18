@@ -190,9 +190,7 @@ function CategorySection({
     <section ref={sectionRef}>
       <SectionHeading title={category.name} />
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-        </div>
+        <div style={{ minHeight: 320 }} />
       ) : (
         <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {displayProducts.map((product: any, idx: number) => (
