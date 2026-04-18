@@ -29,6 +29,28 @@ function shouldUseCfImg(): boolean {
   return true;
 }
 
+/**
+ * Hosts whitelisted in the Cloudflare Worker's /cf-img endpoint.
+ * Must mirror docs/cloudflare-worker-current.js. URLs from any other
+ * origin would get 403 "Origin not allowed", so we serve them directly.
+ */
+function isCfImgAllowedOrigin(originUrl: string): boolean {
+  try {
+    const h = new URL(originUrl).hostname;
+    return (
+      h.endsWith(".supabase.co") ||
+      h.endsWith(".r2.dev") ||
+      h.endsWith(".cloudinary.com") ||
+      h.endsWith(".unsplash.com") ||
+      h.endsWith(".shopify.com") ||
+      h.endsWith(".myshopify.com") ||
+      h === "cdn.shopify.com"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function cfImgUrl(originUrl: string, width: number, quality: number): string {
   return `/cf-img?url=${encodeURIComponent(originUrl)}&w=${width}&q=${quality}`;
 }
@@ -120,7 +142,7 @@ export function optimizeImageUrl(
 
   // ── 5. External URL ──
   if (url.startsWith("https://") || url.startsWith("http://")) {
-    if (shouldUseCfImg()) return cfImgUrl(url, width, quality);
+    if (shouldUseCfImg() && isCfImgAllowedOrigin(url)) return cfImgUrl(url, width, quality);
     if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
       return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-ops?action=resize&url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }
