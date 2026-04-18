@@ -29,6 +29,28 @@ function shouldUseCfImg(): boolean {
   return true;
 }
 
+/**
+ * Hosts whitelisted in the Cloudflare Worker's /cf-img endpoint.
+ * Must mirror docs/cloudflare-worker-current.js. URLs from any other
+ * origin would get 403 "Origin not allowed", so we serve them directly.
+ */
+function isCfImgAllowedOrigin(originUrl: string): boolean {
+  try {
+    const h = new URL(originUrl).hostname;
+    return (
+      h.endsWith(".supabase.co") ||
+      h.endsWith(".r2.dev") ||
+      h.endsWith(".cloudinary.com") ||
+      h.endsWith(".unsplash.com") ||
+      h.endsWith(".shopify.com") ||
+      h.endsWith(".myshopify.com") ||
+      h === "cdn.shopify.com"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function cfImgUrl(originUrl: string, width: number, quality: number): string {
   return `/cf-img?url=${encodeURIComponent(originUrl)}&w=${width}&q=${quality}`;
 }
