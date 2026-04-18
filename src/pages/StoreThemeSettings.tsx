@@ -233,6 +233,9 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "elegant-black-white", "lux-black-gold", "midnight-navy", "velvet-merlot", "crimson-royale",
     "ghost-persian", "emerald-luxe", "plum-cream", "ocean-teal", "teal-elegance",
   ],
+  "theme-19": [
+    "ocean-teal", "emerald-luxe", "mint-fresh", "saffron-bloom",
+  ],
 };
 
 /* ── Get sorted color combinations for a given theme ── */
@@ -349,6 +352,13 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_text: DEFAULT_MARQUEE_TEXT,
     marquee_enabled: false, product_card_style: "style-5", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "transparent",
   },
+  "theme-19": {
+    primary_color: "#036B52", accent_color: "#FFD33D", text_color: "#1a1a1a", background_color: "#f6f7f9",
+    heading_font: "Poppins", body_font: "Inter", button_style: "pill",
+    marquee_gradient: "linear-gradient(90deg, #FFD33D, #FFC107, #FFD33D)",
+    marquee_text: "Free delivery on all orders! • Fresh & quick • Pay on delivery",
+    marquee_enabled: true, product_card_style: "style-1", category_style: "style-4", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
+  },
 };
 
 const THEMES = [
@@ -365,6 +375,7 @@ const THEMES = [
   { id: "theme-16", name: "Classic + Quick Buy", description: "Classic theme with phone-first Buy Now flow — collects number & auto-fills address", available: true },
   { id: "theme-17", name: "Streetwear", description: "Dark green streetwear aesthetic with centered logo & trust ticker", available: true },
   { id: "theme-18", name: "Dark Streetwear", description: "All-black editorial layout with edge-to-edge product grids", available: true },
+  { id: "theme-19", name: "Quick Commerce Grocery", description: "Blinkit-style green header, yellow category tiles, ADD-to-stepper cards — built for grocery & quick delivery", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
