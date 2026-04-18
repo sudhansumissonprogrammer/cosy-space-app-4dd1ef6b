@@ -142,7 +142,7 @@ export function optimizeImageUrl(
 
   // ── 5. External URL ──
   if (url.startsWith("https://") || url.startsWith("http://")) {
-    if (shouldUseCfImg()) return cfImgUrl(url, width, quality);
+    if (shouldUseCfImg() && isCfImgAllowedOrigin(url)) return cfImgUrl(url, width, quality);
     if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
       return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-ops?action=resize&url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }
