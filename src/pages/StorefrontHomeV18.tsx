@@ -202,11 +202,7 @@ export default function StorefrontHomeV18() {
         <section style={{ backgroundColor: V18_BG }}>
           <DarkSectionTitle title="New Arrivals" />
           {productsLoading ? (
-            <div className={gridClass}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <ProductCardSkeleton key={i} />
-              ))}
-            </div>
+            <div style={{ minHeight: 320 }} />
           ) : (
             <div className={gridClass}>
               {products.map((p: any, i: number) => (

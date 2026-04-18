@@ -88,14 +88,8 @@ function BestSellersSection({ storeId, slug, store, cardStyle, isCarousel }: {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (isLoading) {
-    return (
-      <section>
-        <SectionHeading title="🔥 Best Selling" />
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-        </div>
-      </section>
-    );
+    // Single-skeleton policy: edge-injected #sf-skel covers initial load
+    return <section style={{ minHeight: 320 }} />;
   }
 
   if (products.length === 0) return null;
@@ -190,9 +184,7 @@ function CategorySection({
     <section ref={sectionRef}>
       <SectionHeading title={category.name} />
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-        </div>
+        <div style={{ minHeight: 320 }} />
       ) : (
         <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {displayProducts.map((product: any, idx: number) => (
