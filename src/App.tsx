@@ -101,6 +101,104 @@ const LazyThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
  * Called once at module load time if the URL is a dashboard/admin path.
  */
 const _path = window.location.pathname;
+
+/**
+ * 🚀 STOREFRONT CRITICAL-PATH OPTIMIZATION
+ * Kick off layout + home chunk imports at module-load time (before React even
+ * renders) so they download IN PARALLEL with React boot. Without this, chunks
+ * are only requested from inside `ThemeAwareStorefront` which runs after React
+ * mounts the tree (~50-150ms later).
+ *
+ * Theme is resolved from:
+ *   1. Worker-injected window.__STOREFRONT_DATA__.store.theme (instant)
+ *   2. localStorage cache from previous visit
+ *   3. Default theme-1
+ */
+(function prewarmStorefrontChunks() {
+  try {
+    const hostname = window.location.hostname;
+    const path = _path;
+    const isStorefront =
+      path.startsWith("/store/") ||
+      (window as any).__STORE_SLUG__ ||
+      (hostname.endsWith(".shopbanao.in") &&
+        hostname !== "shopbanao.in" &&
+        hostname !== "www.shopbanao.in") ||
+      (hostname !== "localhost" &&
+        hostname !== "shopbanao.in" &&
+        hostname !== "www.shopbanao.in" &&
+        !hostname.endsWith(".lovable.app") &&
+        !hostname.endsWith(".lovableproject.com"));
+    if (!isStorefront) return;
+
+    let slug: string | undefined;
+    if ((window as any).__STORE_SLUG__) slug = (window as any).__STORE_SLUG__;
+    if (!slug && path.startsWith("/store/")) slug = path.split("/store/")[1]?.split("/")[0];
+    if (!slug && hostname.endsWith(".shopbanao.in")) {
+      const sub = hostname.replace(".shopbanao.in", "");
+      if (sub && !sub.includes(".")) slug = sub;
+    }
+
+    let theme = "theme-1";
+    const injected = (window as any).__STOREFRONT_DATA__;
+    if (injected?.store?.theme) {
+      theme = injected.store.theme;
+    } else if (slug) {
+      try {
+        const cached = localStorage.getItem(`storefront_theme_${slug}`);
+        if (cached) theme = cached;
+      } catch {}
+    }
+
+    // Fire the layout chunk import — runs in parallel with React/index.js parsing
+    const layoutImports: Record<string, () => Promise<any>> = {
+      "theme-19": () => import("./layouts/StorefrontLayoutV19"),
+      "theme-18": () => import("./layouts/StorefrontLayoutV18"),
+      "theme-17": () => import("./layouts/StorefrontLayoutV17"),
+      "theme-16": () => import("./layouts/StorefrontLayoutV16"),
+      "theme-15": () => import("./layouts/StorefrontLayoutV15"),
+      "theme-14": () => import("./layouts/StorefrontLayoutV14"),
+      "theme-13": () => import("./layouts/StorefrontLayoutV13"),
+      "theme-12": () => import("./layouts/StorefrontLayoutV12"),
+      "theme-11": () => import("./layouts/StorefrontLayoutV11"),
+      "theme-10": () => import("./layouts/StorefrontLayoutV10"),
+      "theme-3": () => import("./layouts/StorefrontLayoutV3"),
+      "theme-2": () => import("./layouts/StorefrontLayoutV2"),
+    };
+    (layoutImports[theme] || (() => import("./layouts/StorefrontLayout")))().catch(() => {});
+
+    // Fire the home/route chunk based on landing path
+    const isHome = path === "/" || /\/store\/[^/]+\/?$/.test(path);
+    if (isHome) {
+      const homeImports: Record<string, () => Promise<any>> = {
+        "theme-19": () => import("./pages/StorefrontHomeV19"),
+        "theme-18": () => import("./pages/StorefrontHomeV18"),
+        "theme-17": () => import("./pages/StorefrontHomeV17"),
+        "theme-16": () => import("./pages/StorefrontHomeV16"),
+        "theme-15": () => import("./pages/StorefrontHomeV15"),
+        "theme-14": () => import("./pages/StorefrontHomeV14"),
+        "theme-13": () => import("./pages/StorefrontHomeV13"),
+        "theme-12": () => import("./pages/StorefrontHomeV12"),
+        "theme-11": () => import("./pages/StorefrontHomeV3"),
+        "theme-10": () => import("./pages/StorefrontHomeV10"),
+        "theme-3": () => import("./pages/StorefrontHomeV3"),
+        "theme-2": () => import("./pages/StorefrontHomeV2"),
+      };
+      (homeImports[theme] || (() => import("./pages/StorefrontHome")))().catch(() => {});
+    } else if (/\/product\//.test(path)) {
+      import("./pages/ProductDetail").catch(() => {});
+    } else if (/\/category\//.test(path)) {
+      import("./pages/CategoryDetail").catch(() => {});
+    } else if (/\/shop\/?$/.test(path)) {
+      import("./pages/StorefrontShop").catch(() => {});
+    } else if (/\/cart\/?$/.test(path)) {
+      import("./pages/CartPage").catch(() => {});
+    } else if (/\/checkout\/?$/.test(path)) {
+      import("./pages/CheckoutPage").catch(() => {});
+    }
+  } catch {}
+})();
+
 if (_path.startsWith("/dashboard") || _path.startsWith("/admin") || _path === "/login" || _path === "/signup" || _path === "/forgot-password" || _path === "/reset-password") {
   // Fire all imports immediately — they resolve into the module cache,
   // so when React's lazy() asks for them later, they're already loaded.
