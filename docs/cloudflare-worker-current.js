@@ -57,7 +57,27 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.3.2";
+const WORKER_VERSION = "6.4.0";
+
+/* ============================================================
+   v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
+
+   Problem: Products were inlined as JSON in <script>window.__PRODUCTS_INLINE__>.
+   The browser preload scanner CANNOT read URLs from inside <script> tags,
+   so image downloads only began after React mounted (~2.5s in).
+
+   Fix: Two-pronged image fast-path:
+     1. Inject <link rel="preload" as="image" fetchpriority="high"> tags for
+        the first 6 product images directly in <head>. The preload scanner
+        reads these at byte 0 and starts downloads immediately (~50ms).
+     2. Render real <img> tags for the first 8 products inside the skeleton
+        DOM. These act as a hidden "preloader grid" — the browser fetches
+        them in parallel with the React JS bundle. By the time React mounts,
+        images are already in the HTTP cache, so first paint is instant.
+
+   Result: Hero product images download in parallel with JS instead of
+   sequentially after JS executes. Expected gain: 2-3s on cold load.
+   ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
