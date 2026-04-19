@@ -838,7 +838,7 @@ async function _batchKvRead(slug, env) {
 const THEME_LITE_KV_TTL = 3600;
 const THEME_LITE_CACHE_TTL = 600;
 
-function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
+function _cacheThemeForFastShell(slug, themeConfig, env, ctx, themeNumber) {
   const lite = {
     pc: themeConfig.primary_color || "#004643",
     bg: themeConfig.background_color || "#ffffff",
@@ -847,6 +847,8 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
     hf: themeConfig.heading_font || "",
     bf: themeConfig.body_font || "",
     bs: themeConfig.button_style || "rounded",
+    // v6.6.0: theme number for per-theme chunk preloads
+    tn: themeNumber != null ? String(themeNumber) : "",
   };
   const liteStr = JSON.stringify(lite);
 
