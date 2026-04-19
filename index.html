@@ -202,15 +202,17 @@
         function hasRealContent(){
           var root=document.getElementById('root');
           if(!root) return false;
-          /* Look for any child that is NOT the inline skeleton placeholder
-             AND has actual rendered size on screen */
+          /* Real content = wrapper has substantial height AND at least one
+             image/picture has begun rendering. Prevents premature skeleton
+             removal when React commits an empty wrapper while lazy chunks
+             are still resolving. */
+          var totalHeight=0;
           var kids=root.children;
           for(var i=0;i<kids.length;i++){
-            var k=kids[i];
-            if(k.id==='inline-skel') continue;
-            if(k.offsetHeight>50) return true;
+            totalHeight+=kids[i].offsetHeight;
           }
-          return false;
+          if(totalHeight<400) return false;
+          return !!root.querySelector('img,picture,[data-storefront-ready]');
         }
 
         function waitForPaint(){
