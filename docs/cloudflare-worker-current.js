@@ -1849,8 +1849,25 @@ async function serveStreamedHtml(
       const storefrontResult = await storefrontPromise;
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      // FIX #11: Pass actual bgColor
-      const skeleton = buildSkeleton(bgColor, skeletonMuted);
+      // FIX #11: Pass actual bgColor. v6.7.0: themeLite drives SSR header+hero.
+      // If fresh data arrived, enrich themeLite with store name/logo/banner so
+      // the SSR header renders the real brand identity (cached themeLite may
+      // be from before owner uploaded a logo).
+      let _themeLiteForStream = themeLite;
+      if (storefrontResult?.data?.store) {
+        const _s = storefrontResult.data.store;
+        _themeLiteForStream = {
+          ...(themeLite || {}),
+          nm: themeLite?.nm || _s.name || "",
+          lg: themeLite?.lg || _s.logo_url || "",
+          bn: themeLite?.bn || _s.banner_url || "",
+          mh: themeLite?.mh || _s.mobile_hero_url ||
+            (Array.isArray(_s.mobile_hero_images) && typeof _s.mobile_hero_images[0] === "string"
+              ? _s.mobile_hero_images[0]
+              : ""),
+        };
+      }
+      const skeleton = buildSkeleton(bgColor, skeletonMuted, true, _themeLiteForStream);
 
       // v6.4.0: Hidden product preloader grid — real <img> tags so the
       // preload-scanner queues image downloads in parallel with React JS.
