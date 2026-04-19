@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.7.0";
+const WORKER_VERSION = "6.5.0";
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
@@ -149,54 +149,6 @@ const _memStorefrontCache = new Map();
 const MEM_STOREFRONT_CACHE_MAX = 1_000;
 // FIX #20: Raised from 120_000 (2min) → 600_000 (10min)
 const MEM_STOREFRONT_TTL = 600_000; // 10 min
-
-/* ============================================================
-   v6.6.0 — THEME-AWARE CHUNK PRELOADS
-   Asset manifest maps theme number → {layout, home} chunk URLs so the
-   worker can inject <link rel="modulepreload"> for the active theme's
-   code. Eliminates the index.js → theme-layout → theme-home waterfall
-   on cold loads (saves ~600-1000ms on a fresh device).
-   ============================================================ */
-
-let _memAssetManifest = null;
-let _memAssetManifestTs = 0;
-const ASSET_MANIFEST_TTL = 1_800_000; // 30 min — invalidated on deploy
-let _inflightAssetManifest = null;
-
-async function _getAssetManifest(request) {
-  if (_memAssetManifest && Date.now() < _memAssetManifestTs) return _memAssetManifest;
-  if (_inflightAssetManifest) return _inflightAssetManifest;
-
-  const origin = new URL(request.url).origin;
-  _inflightAssetManifest = (async () => {
-    try {
-      const r = await fetch(`${origin}/asset-manifest.json`, {
-        cf: { cacheTtl: 300, cacheEverything: true },
-      });
-      if (!r.ok) return null;
-      const json = await r.json();
-      _memAssetManifest = json;
-      _memAssetManifestTs = Date.now() + ASSET_MANIFEST_TTL;
-      return json;
-    } catch {
-      return null;
-    } finally {
-      _inflightAssetManifest = null;
-    }
-  })();
-  return _inflightAssetManifest;
-}
-
-function _buildThemeChunkPreloads(themeNumber, manifest) {
-  if (!manifest || !themeNumber) return "";
-  const key = String(themeNumber);
-  const entry = manifest.themes && manifest.themes[key];
-  if (!entry) return "";
-  let out = "";
-  if (entry.layout) out += `<link rel="modulepreload" href="${entry.layout}" />`;
-  if (entry.home) out += `<link rel="modulepreload" href="${entry.home}" />`;
-  return out;
-}
 
 /* ============================================================
    REVALIDATION COOLDOWN
@@ -390,67 +342,7 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
   })()</script>`;
 }
 
-/**
- * v6.7.0 (Step C — SSR header + hero):
- * Build a real, styled header (logo + name) and hero image (if banner_url
- * or mobile_hero_url available) from the cached themeLite. Painted instantly
- * by the worker — sits inside the #sf-skel overlay so React hydration is
- * unaffected. When `storefront:content-ready` fires, the overlay fades and
- * React's real header takes over (zero flicker, zero hydration mismatch).
- */
-function _buildSsrHeaderHero(themeLite, isMobile) {
-  if (!themeLite) return { header: "", hero: "" };
-  const name = (themeLite.nm || "").replace(/[<>"'&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "&": "&amp;" }[c]));
-  const logo = (themeLite.lg || "").replace(/[<>"']/g, "");
-  const heroImg = (isMobile ? (themeLite.mh || themeLite.bn) : (themeLite.bn || themeLite.mh)) || "";
-  const heroEsc = heroImg.replace(/[<>"']/g, "");
-  const bg = themeLite.bg || "#ffffff";
-  const text = themeLite.tc || "#1a1a1a";
-  const headingFont = themeLite.hf || "Inter";
-  const align = themeLite.hla || "left";
-
-  // Header — matches DesktopNavBar/MobileAppHeader heights (h-14 = 56px) and
-  // the standard storefront header layout. Only logo + name are rendered;
-  // nav links + cart icons are intentionally omitted (they need real data).
-  let header = `<nav style="position:relative;height:56px;background:${bg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);z-index:1">`;
-  if (align === "center") {
-    header += `<div style="flex:1"></div>`;
-    header += `<div style="display:flex;align-items:center;gap:10px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)">`;
-  } else {
-    header += `<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">`;
-  }
-  if (logo) {
-    header += `<img src="${logo}" alt="" width="32" height="32" style="width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0" />`;
-  } else {
-    header += `<div style="width:32px;height:32px;border-radius:8px;background:${text};opacity:0.08;flex-shrink:0"></div>`;
-  }
-  if (name) {
-    header += `<span style="font-family:${headingFont},Inter,sans-serif;font-weight:600;font-size:15px;color:${text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span>`;
-  }
-  header += `</div>`;
-  if (align === "center") {
-    header += `<div style="flex:1"></div>`;
-  }
-  // Right-side icons placeholder (search/account/cart) — small dots so the
-  // header looks balanced without rendering interactive elements.
-  header += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%;flex-shrink:0"></div>`;
-  header += `</nav>`;
-
-  // Hero — only rendered if we have an image. Aspect ratios match the real
-  // StorefrontHero (16:9 desktop) / StorefrontMobileHero (4:5 portrait) to
-  // prevent CLS when React takes over.
-  let hero = "";
-  if (heroEsc) {
-    const aspect = isMobile ? "4/5" : "16/6";
-    hero = `<div style="width:100%;background:${bg};overflow:hidden">` +
-      `<img src="${heroEsc}" alt="" fetchpriority="high" decoding="async" ` +
-      `style="display:block;width:100%;aspect-ratio:${aspect};object-fit:cover;background:${bg}" />` +
-      `</div>`;
-  }
-  return { header, hero };
-}
-
-function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true, themeLite = null, hostname = "") {
+function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true) {
   // FIX #11: Use actual store bgColor instead of hardcoded #ffffff
   const skelBg = bgColor || "#ffffff";
   const skelBase = "#f0f0f0";
@@ -458,30 +350,15 @@ function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true, themeLite 
 
   const shimmerKeyframes = `<style id="sf-skel-anim">@keyframes sf-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}.sf-ph{background:linear-gradient(90deg,${skelBase} 25%,${skelShimmer} 50%,${skelBase} 75%);background-size:800px 100%;animation:sf-shimmer 1.4s ease-in-out infinite;border-radius:4px}</style>`;
 
-  // v6.7.0 (Step C): Try to render real header + hero from themeLite.
-  // We don't know the device server-side, but mobile-first hero (4/5) is
-  // the dominant case for shopbanao.in traffic. Hero img uses object-fit:cover
-  // so it works at any width.
-  const ssr = _buildSsrHeaderHero(themeLite, true);
-  const useSsrHeader = !!ssr.header && !!themeLite?.nm; // only when we have a real name
-
   // v6.3.0: Set __SF_WORKER__ flag BEFORE skeleton so index.html knows Worker
   // already injected its skeleton — inline skeleton fallback is suppressed.
   let s = `<script>window.__SF_WORKER__=true;</script>${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
-
-  if (useSsrHeader) {
-    s += ssr.header;
-    s += ssr.hero; // empty string if no hero image
-  } else {
-    // Fallback: original placeholder header
-    s += `<nav style="height:56px;background:${skelBg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
-    s += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
-    s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
-    s += `<div style="flex:1"></div>`;
-    s += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%"></div>`;
-    s += `</nav>`;
-  }
-
+  s += `<nav style="height:56px;background:${skelBg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
+  s += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
+  s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
+  s += `<div style="flex:1"></div>`;
+  s += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%"></div>`;
+  s += `</nav>`;
   s += `<div class="sf-ph" style="height:6px;width:100%;border-radius:0;margin-bottom:16px"></div>`;
   s += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 12px">`;
   for (let i = 0; i < 4; i++) {
@@ -558,7 +435,7 @@ function getSkeletonMuted(textColor) {
 function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlineProducts) {
   const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
   const skeletonMuted = themeLite ? getSkeletonMuted(themeLite.tc || themeLite.text_color || "#1a1a1a") : "#e8e8e8";
-  const skeleton = buildSkeleton(bgColor, skeletonMuted, false, themeLite, hostname);
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, false);
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
 
   // Build canonical URL
@@ -913,7 +790,7 @@ async function _batchKvRead(slug, env) {
 const THEME_LITE_KV_TTL = 3600;
 const THEME_LITE_CACHE_TTL = 600;
 
-function _cacheThemeForFastShell(slug, themeConfig, env, ctx, themeNumber, storeRow) {
+function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
   const lite = {
     pc: themeConfig.primary_color || "#004643",
     bg: themeConfig.background_color || "#ffffff",
@@ -922,19 +799,6 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx, themeNumber, store
     hf: themeConfig.heading_font || "",
     bf: themeConfig.body_font || "",
     bs: themeConfig.button_style || "rounded",
-    // v6.6.0: theme number for per-theme chunk preloads
-    tn: themeNumber != null ? String(themeNumber) : "",
-    // v6.7.0 (Step C): real store fields so worker can SSR header+hero
-    // (no extra KV reads needed at request time)
-    nm: (storeRow && storeRow.name) || "",
-    lg: (storeRow && storeRow.logo_url) || "",
-    bn: (storeRow && storeRow.banner_url) || "",
-    mh: (storeRow && (storeRow.mobile_hero_url ||
-      (Array.isArray(storeRow.mobile_hero_images) && typeof storeRow.mobile_hero_images[0] === "string"
-        ? storeRow.mobile_hero_images[0]
-        : ""))) || "",
-    hla: themeConfig.header_logo_alignment || "left",
-    hs: themeConfig.header_style || "normal",
   };
   const liteStr = JSON.stringify(lite);
 
@@ -1090,7 +954,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       _memStorefrontCache.set(slug, { data, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
 
       if (data?.theme_config) {
-        _cacheThemeForFastShell(slug, data.theme_config, env, ctx, data?.store?.theme, data?.store);
+        _cacheThemeForFastShell(slug, data.theme_config, env, ctx);
       }
 
       if (ctx) {
@@ -1703,23 +1567,8 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   }
 
   const skeletonMuted = getSkeletonMuted(textColor);
-  // FIX #11: Pass actual bgColor. v6.7.0: also pass themeLite for SSR header+hero.
-  const _themeLiteForSkel = (storefrontData?.store && storefrontData?.theme_config) ? {
-    bg: storefrontData.theme_config.background_color || bgColor,
-    tc: storefrontData.theme_config.text_color || textColor,
-    pc: storefrontData.theme_config.primary_color,
-    hf: storefrontData.theme_config.heading_font,
-    hla: storefrontData.theme_config.header_logo_alignment,
-    hs: storefrontData.theme_config.header_style,
-    nm: storefrontData.store.name || "",
-    lg: storefrontData.store.logo_url || "",
-    bn: storefrontData.store.banner_url || "",
-    mh: storefrontData.store.mobile_hero_url ||
-      (Array.isArray(storefrontData.store.mobile_hero_images) && typeof storefrontData.store.mobile_hero_images[0] === "string"
-        ? storefrontData.store.mobile_hero_images[0]
-        : ""),
-  } : null;
-  const skeleton = buildSkeleton(bgColor, skeletonMuted, true, _themeLiteForSkel);
+  // FIX #11: Pass actual bgColor
+  const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
   // LCP preload: hero image (mobile_hero > banner > logo)
   let lcpPreload = "";
@@ -1849,25 +1698,8 @@ async function serveStreamedHtml(
       const storefrontResult = await storefrontPromise;
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      // FIX #11: Pass actual bgColor. v6.7.0: themeLite drives SSR header+hero.
-      // If fresh data arrived, enrich themeLite with store name/logo/banner so
-      // the SSR header renders the real brand identity (cached themeLite may
-      // be from before owner uploaded a logo).
-      let _themeLiteForStream = themeLite;
-      if (storefrontResult?.data?.store) {
-        const _s = storefrontResult.data.store;
-        _themeLiteForStream = {
-          ...(themeLite || {}),
-          nm: themeLite?.nm || _s.name || "",
-          lg: themeLite?.lg || _s.logo_url || "",
-          bn: themeLite?.bn || _s.banner_url || "",
-          mh: themeLite?.mh || _s.mobile_hero_url ||
-            (Array.isArray(_s.mobile_hero_images) && typeof _s.mobile_hero_images[0] === "string"
-              ? _s.mobile_hero_images[0]
-              : ""),
-        };
-      }
-      const skeleton = buildSkeleton(bgColor, skeletonMuted, true, _themeLiteForStream);
+      // FIX #11: Pass actual bgColor
+      const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
       // v6.4.0: Hidden product preloader grid — real <img> tags so the
       // preload-scanner queues image downloads in parallel with React JS.
@@ -1980,16 +1812,11 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
   if (linkHeader) newHeaders.set("Link", linkHeader);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) newHeaders.set(k, v);
 
-  // v6.6.0: Per-theme chunk preloads
-  const _manifest = await _getAssetManifest(request);
-  const _themePreloads = _buildThemeChunkPreloads(themeLite?.tn, _manifest);
-  const _prebuiltHeadWithTheme = (prebuiltHead || "") + _themePreloads;
-
   const response = await serveStreamedHtml(
     slug,
     shellResult,
     themeLite,
-    _prebuiltHeadWithTheme,
+    prebuiltHead,
     inlineProducts,
     storefrontPromise,
     newHeaders,
@@ -2745,7 +2572,7 @@ async function handlePrewarm(request, url, ctx, env) {
     results.storefrontData = dataResult.source;
 
     if (dataResult.data?.theme_config) {
-      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx, dataResult.data?.store?.theme, dataResult.data?.store);
+      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx);
       results.themeLite = "warmed";
     }
 
@@ -3444,17 +3271,12 @@ export default {
       if (linkHeader) responseHeaders.set("Link", linkHeader);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeaders.set(k, v);
 
-      // v6.6.0: Per-theme chunk preloads
-      const _manifestSD = await _getAssetManifest(request);
-      const _themePreloadsSD = _buildThemeChunkPreloads(themeLite?.tn, _manifestSD);
-      const _prebuiltHeadSD = (prebuiltHead || "") + _themePreloadsSD;
-
       // FIX #2: Pass the ALREADY-RUNNING storefront promise (started before awaits above)
       const response = await serveStreamedHtml(
         slug,
         shellResult,
         themeLite,
-        _prebuiltHeadSD,
+        prebuiltHead,
         inlineProducts,
         earlyStorefrontPromise,
         responseHeaders,
@@ -3601,17 +3423,12 @@ export default {
       if (linkHeaderCD) responseHeadersCD.set("Link", linkHeaderCD);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeadersCD.set(k, v);
 
-      // v6.6.0: Per-theme chunk preloads
-      const _manifestCD = await _getAssetManifest(request);
-      const _themePreloadsCD = _buildThemeChunkPreloads(themeLiteCD?.tn, _manifestCD);
-      const _prebuiltHeadCDFinal = (prebuiltHeadCD || "") + _themePreloadsCD;
-
       // FIX #2: Pass the ALREADY-RUNNING promise
       const responseCD = await serveStreamedHtml(
         resolvedSlug,
         shellResultCD,
         themeLiteCD,
-        _prebuiltHeadCDFinal,
+        prebuiltHeadCD,
         inlineProductsCDReal,
         earlyStorefrontPromiseCD,
         responseHeadersCD,

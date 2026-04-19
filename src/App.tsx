@@ -28,12 +28,8 @@ const DashboardProviders = lazy(() =>
   }))
 );
 
-// Storefront layouts.
-// 🚀 Theme-1 (the default + most popular ~57% of stores) is EAGERLY imported so
-// it bundles into the main entry. This eliminates the index.js → layout-chunk →
-// home-chunk waterfall for the majority of cold loads. All other themes remain
-// lazy so they don't bloat the main bundle.
-import StorefrontLayout from "./layouts/StorefrontLayout";
+// Storefront layouts — ALL lazy loaded for clean chunk isolation
+const StorefrontLayout = lazy(() => import("./layouts/StorefrontLayout"));
 const StorefrontLayoutV2 = lazy(() => import("./layouts/StorefrontLayoutV2"));
 const StorefrontLayoutV3 = lazy(() => import("./layouts/StorefrontLayoutV3"));
 const StorefrontLayoutV10 = lazy(() => import("./layouts/StorefrontLayoutV10"));
@@ -47,9 +43,8 @@ const StorefrontLayoutV17 = lazy(() => import("./layouts/StorefrontLayoutV17"));
 const StorefrontLayoutV18 = lazy(() => import("./layouts/StorefrontLayoutV18"));
 const StorefrontLayoutV19 = lazy(() => import("./layouts/StorefrontLayoutV19"));
 
-// Storefront home pages.
-// 🚀 Theme-1's home is eagerly imported (bundled into main entry) — see note above.
-import StorefrontHome from "./pages/StorefrontHome";
+// Storefront home pages — ALL lazy loaded
+const StorefrontHome = lazy(() => import("./pages/StorefrontHome"));
 const StorefrontHomeV2 = lazy(() => import("./pages/StorefrontHomeV2"));
 const StorefrontHomeV3 = lazy(() => import("./pages/StorefrontHomeV3"));
 const StorefrontHomeV10 = lazy(() => import("./pages/StorefrontHomeV10"));
