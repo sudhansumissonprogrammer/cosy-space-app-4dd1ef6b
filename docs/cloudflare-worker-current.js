@@ -1862,11 +1862,16 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
   if (linkHeader) newHeaders.set("Link", linkHeader);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) newHeaders.set(k, v);
 
+  // v6.6.0: Per-theme chunk preloads
+  const _manifest = await _getAssetManifest(request);
+  const _themePreloads = _buildThemeChunkPreloads(themeLite?.tn, _manifest);
+  const _prebuiltHeadWithTheme = (prebuiltHead || "") + _themePreloads;
+
   const response = await serveStreamedHtml(
     slug,
     shellResult,
     themeLite,
-    prebuiltHead,
+    _prebuiltHeadWithTheme,
     inlineProducts,
     storefrontPromise,
     newHeaders,
@@ -3321,12 +3326,17 @@ export default {
       if (linkHeader) responseHeaders.set("Link", linkHeader);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeaders.set(k, v);
 
+      // v6.6.0: Per-theme chunk preloads
+      const _manifestSD = await _getAssetManifest(request);
+      const _themePreloadsSD = _buildThemeChunkPreloads(themeLite?.tn, _manifestSD);
+      const _prebuiltHeadSD = (prebuiltHead || "") + _themePreloadsSD;
+
       // FIX #2: Pass the ALREADY-RUNNING storefront promise (started before awaits above)
       const response = await serveStreamedHtml(
         slug,
         shellResult,
         themeLite,
-        prebuiltHead,
+        _prebuiltHeadSD,
         inlineProducts,
         earlyStorefrontPromise,
         responseHeaders,
@@ -3473,12 +3483,17 @@ export default {
       if (linkHeaderCD) responseHeadersCD.set("Link", linkHeaderCD);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeadersCD.set(k, v);
 
+      // v6.6.0: Per-theme chunk preloads
+      const _manifestCD = await _getAssetManifest(request);
+      const _themePreloadsCD = _buildThemeChunkPreloads(themeLiteCD?.tn, _manifestCD);
+      const _prebuiltHeadCDFinal = (prebuiltHeadCD || "") + _themePreloadsCD;
+
       // FIX #2: Pass the ALREADY-RUNNING promise
       const responseCD = await serveStreamedHtml(
         resolvedSlug,
         shellResultCD,
         themeLiteCD,
-        prebuiltHeadCD,
+        _prebuiltHeadCDFinal,
         inlineProductsCDReal,
         earlyStorefrontPromiseCD,
         responseHeadersCD,
