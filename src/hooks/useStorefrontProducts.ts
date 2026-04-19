@@ -83,12 +83,19 @@ export function useStorefrontProducts(storeId: string | undefined) {
   });
 
   // Signal content-ready once products arrive — removes Worker #sf-skel.
-  // Fire SYNCHRONOUSLY (no rAF) so skeleton removal isn't delayed by 1 frame.
+  // Wait TWO animation frames so React has actually committed + painted the
+  // real content to the screen BEFORE we fade the skeleton. Without this,
+  // the skeleton fades while the home-page chunks/images are still mounting,
+  // producing a brief blank white flash between skeleton and content.
   const signalled = useRef(false);
   useEffect(() => {
     if (!signalled.current && data !== undefined && !isLoading) {
       signalled.current = true;
-      window.dispatchEvent(new Event("storefront:content-ready"));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.dispatchEvent(new Event("storefront:content-ready"));
+        });
+      });
     }
   }, [data, isLoading]);
 
