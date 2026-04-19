@@ -478,41 +478,11 @@ ${themeCss}
 ${skeleton}
 ${productPreloaderGrid}
 <script>
-// v6.5.0: Keep the first skeleton visible until warm HTML is ready, then
-// swap the document in-place. We poll faster (every 250ms initially) so
-// once the background warm completes the user sees real content within
-// ~250ms instead of waiting up to 400ms.
-var attempts = 0;
-var swapping = false;
-function scheduleNext() {
-  var delay = attempts < 8 ? 250 : 1000;
-  setTimeout(checkReady, delay);
-}
-function checkReady() {
-  if (swapping) return;
-  attempts++;
-  fetch(location.href, { method: 'GET', cache: 'no-store', headers: { 'x-sf-warm-check': '1' } })
-    .then(function(r) {
-      var src = r.headers.get('X-Data-Source') || '';
-      var type = r.headers.get('content-type') || '';
-      if (!src || src === 'instant-skeleton' || type.indexOf('text/html') === -1) {
-        scheduleNext();
-        return null;
-      }
-      return r.text();
-    })
-    .then(function(html) {
-      if (!html || swapping) return;
-      swapping = true;
-      document.open('text/html', 'replace');
-      document.write(html);
-      document.close();
-    })
-    .catch(function() {
-      scheduleNext();
-    });
-}
-setTimeout(checkReady, 150);
+// v6.6.0: No more document.write swap (was causing double/triple skeletons).
+// Just hard-reload so the user gets the now-warm cached HTML on next hit.
+// This page is only served by the cron warmer fallback now — the main
+// request paths (subdomain + custom domain) ship the real React shell.
+setTimeout(function(){ try { location.reload(); } catch(e) {} }, 1500);
 </script>
 </body>
 </html>`;
