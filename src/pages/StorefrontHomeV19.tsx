@@ -41,6 +41,19 @@ export default function StorefrontHomeV19() {
 
   return (
     <div className="space-y-5 pb-4">
+      {/* Store hero banner if uploaded */}
+      {(store as any).banner_url && (
+        <Link to={storefrontPath(slug, "shop")} className="block rounded-2xl overflow-hidden shadow-sm">
+          <img
+            src={optimizeImageUrl((store as any).banner_url, 800, 85)}
+            alt={store.name}
+            className="w-full h-auto block"
+            loading="eager"
+            fetchPriority="high"
+          />
+        </Link>
+      )}
+
       {/* Promo carousel — swipeable */}
       <div className="-mx-1 overflow-x-auto scrollbar-hide">
         <div className="flex gap-3 px-1 snap-x snap-mandatory">
