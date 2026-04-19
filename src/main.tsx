@@ -87,17 +87,22 @@ function isDashboardHost(): boolean {
 if ("serviceWorker" in navigator) {
   if (isStorefrontHost()) {
     // ── STOREFRONT: Aggressive SW cleanup ──
-    // Legacy SWs on storefront hosts cause stale HTML, wrong pages,
-    // and HTML↔JS version skew. Clean them up once per session.
-    const cleanupDone = sessionStorage.getItem("sw_cleanup_v2");
+    // Legacy SWs on storefront hosts cause stale HTML. Clean up ONCE per device
+    // (localStorage, not sessionStorage) — otherwise every new tab triggers a
+    // full reload + double skeleton on first visit.
+    const CLEANUP_KEY = "sw_cleanup_v3";
+    const cleanupDone = (() => {
+      try { return localStorage.getItem(CLEANUP_KEY); } catch { return "1"; }
+    })();
     if (!cleanupDone) {
-      sessionStorage.setItem("sw_cleanup_v2", "1");
+      try { localStorage.setItem(CLEANUP_KEY, "1"); } catch {}
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         if (registrations.length > 0) {
           Promise.all(registrations.map((r) => r.unregister())).then(() => {
             caches.keys().then((keys) => {
               Promise.all(keys.map((k) => caches.delete(k))).then(() => {
-                window.location.reload();
+                // Use replace() so reload doesn't pollute history
+                window.location.replace(window.location.href);
               });
             });
           });
