@@ -108,13 +108,16 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 2. Shopify CDN: route through CF resize for max savings ──
-  if (url.includes("cdn/shop/") || url.includes("cdn.shopify.com")) {
-    if (shouldUseCfImg()) return cfImgUrl(url, width, quality);
-    const u = new URL(url);
-    u.searchParams.set("width", String(width));
-    u.searchParams.set("format", "webp");
-    return u.toString();
+  // ── 2. Shopify CDN (incl. custom Shopify domains using /cdn/shop/): native resize ──
+  if (url.includes("/cdn/shop/") || url.includes("cdn.shopify.com")) {
+    // Shopify supports ?width= natively — use it directly to avoid CF allowlist issues
+    try {
+      const u = new URL(url);
+      u.searchParams.set("width", String(width));
+      return u.toString();
+    } catch {
+      return url;
+    }
   }
 
   // ── 3. Unsplash ──
