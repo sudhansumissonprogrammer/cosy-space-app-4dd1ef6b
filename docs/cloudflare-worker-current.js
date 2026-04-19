@@ -1487,7 +1487,7 @@ async function proxyToOriginCached(request) {
    HTML INJECTION HELPERS
    ============================================================ */
 
-function injectIntoHtml(html, slug, storefrontData, dataSource) {
+function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
