@@ -233,17 +233,27 @@
             });
             return;
           }
-          /* Poll every 50ms up to ~6s after data-ready */
+          /* Poll every 32ms (~2 frames) up to ~10s after start */
           if(waitForPaint._tries===undefined) waitForPaint._tries=0;
           waitForPaint._tries++;
-          if(waitForPaint._tries>120){killNow();return;}
-          setTimeout(waitForPaint,50);
+          if(waitForPaint._tries>300){killNow();return;}
+          setTimeout(waitForPaint,32);
         }
 
         window.addEventListener('storefront:content-ready',function(){
           dataReady=true;
           waitForPaint();
         },{once:true});
+
+        /* Also start polling immediately — handles cases where the
+           content-ready event fires before this listener attaches, or where
+           a page (e.g. error/empty state) never dispatches it but still
+           paints valid content. */
+        if(document.readyState!=='loading'){
+          setTimeout(waitForPaint,200);
+        }else{
+          document.addEventListener('DOMContentLoaded',function(){setTimeout(waitForPaint,200);},{once:true});
+        }
 
         /* Hard fallback: 12s timeout */
         setTimeout(killNow,12000);
