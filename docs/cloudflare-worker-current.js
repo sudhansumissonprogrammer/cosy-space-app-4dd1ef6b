@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.6.0";
+const WORKER_VERSION = "6.7.0";
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
@@ -3178,7 +3178,11 @@ export default {
       // awaits the prefetch (already supported in StorefrontLayout.logic.ts),
       // and renders → ONE skeleton only, identical to the warm path.
       if (!_memShell) {
-        const COLD_DATA_DEADLINE = 600;
+        // v6.7.0: Raised deadline from 600ms → 1300ms so the inline-data path
+        // catches ~95% of cold hits. Eliminates the browser-side self-call
+        // (window.__STOREFRONT_PREFETCH__ → /?__sf_data=1) which was the
+        // mysterious "Unknown 557ms" subrequest doubling request counts.
+        const COLD_DATA_DEADLINE = 1300;
         const [shellResult, prefetchResult, inlineProductsCold] = await Promise.all([
           getSpaShell(request, ctx, env),
           prefetchStorefrontDataWithDeadline(slug, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
@@ -3326,7 +3330,8 @@ export default {
     if (!_memShell) {
       const resolvedSlugCD = await resolveDomain(cleanDomain, env);
       if (resolvedSlugCD) {
-        const COLD_DATA_DEADLINE = 600;
+        // v6.7.0: Same fix as subdomain path — eliminate self-call subrequest.
+        const COLD_DATA_DEADLINE = 1300;
         const [shellResult, prefetchResult, inlineProductsCdCold] = await Promise.all([
           getSpaShell(request, ctx, env),
           prefetchStorefrontDataWithDeadline(resolvedSlugCD, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
