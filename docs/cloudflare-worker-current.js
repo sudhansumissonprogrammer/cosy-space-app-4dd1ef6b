@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.7.0";
+const WORKER_VERSION = "6.8.0";
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
@@ -139,16 +139,22 @@ let _memPrebuiltHead = null;
 
 const _memThemeCache = new Map();
 const MEM_THEME_CACHE_MAX = 2_000;
-const MEM_THEME_TTL = 300_000; // 5 min
+// v6.8.0: Raised from 5min → 30min. Themes change rarely; cache invalidation
+// already happens on dashboard save via /api/purge-cache. Reduces Supabase
+// roundtrips on theme misses by ~6x per isolate.
+const MEM_THEME_TTL = 1_800_000; // 30 min
 
 /* ============================================================
    FIX #12 — IN-MEMORY STOREFRONT DATA CACHE PER SLUG
    ============================================================ */
 
 const _memStorefrontCache = new Map();
-const MEM_STOREFRONT_CACHE_MAX = 1_000;
-// FIX #20: Raised from 120_000 (2min) → 600_000 (10min)
-const MEM_STOREFRONT_TTL = 600_000; // 10 min
+// v6.8.0: Doubled from 1k → 2k slots to handle more stores per isolate
+const MEM_STOREFRONT_CACHE_MAX = 2_000;
+// v6.8.0: Raised from 10min → 30min. SWR pattern means stale data is still
+// served instantly while a background refetch updates it. Cuts shell RPC
+// calls by ~3x per isolate.
+const MEM_STOREFRONT_TTL = 1_800_000; // 30 min
 
 /* ============================================================
    REVALIDATION COOLDOWN
@@ -1107,8 +1113,10 @@ async function resolveDomain(hostname, env) {
     try {
       const kvData = await env.STORE_KV.get(`domain:${domain}`, { type: "json" });
       if (kvData) {
+        // v6.8.0: 5min → 1hr. Domain↔slug mapping changes only on custom-domain
+        // connect/disconnect; purge endpoints already invalidate explicitly.
         cache
-          .put(key, new Response(JSON.stringify(kvData), { headers: { "Cache-Control": "public, max-age=300" } }))
+          .put(key, new Response(JSON.stringify(kvData), { headers: { "Cache-Control": "public, max-age=3600" } }))
           .catch(() => {});
         return kvData.slug || null;
       }
@@ -1124,7 +1132,8 @@ async function resolveDomain(hostname, env) {
     const data = await res.json();
     const slug = data[0]?.slug || null;
 
-    const ttl = slug ? 300 : 60;
+    // v6.8.0: 5min hit / 1min miss → 1hr hit / 2min miss
+    const ttl = slug ? 3600 : 120;
     const cacheData = JSON.stringify({ slug });
     const writes = [
       cache.put(key, new Response(cacheData, { headers: { "Cache-Control": `public, max-age=${ttl}` } })),
@@ -1290,22 +1299,25 @@ async function _resolveStoreInfo(slug, hostname, env) {
     const result = { storeId: row.id, customDomain: row.custom_domain || null };
     const cachePayload = { id: result.storeId, cd: result.customDomain };
     _capMapSize(_storeInfoCache, STORE_INFO_CACHE_MAX);
-    _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 300_000 });
+    // v6.8.0: 5min → 30min in-memory. Reduces store-info lookups by ~6x per isolate.
+    _storeInfoCache.set(slug, { ...result, expiresAt: Date.now() + 1_800_000 });
     _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
-    domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 300_000 });
+    // v6.8.0: 5min → 30min in-memory. Store info changes only on rename/domain-update.
+    domainStoreIdCache.set(hostname, { storeId: result.storeId, expiresAt: Date.now() + 1_800_000 });
 
     await Promise.all([
       cache
         .put(
           infoCacheKey,
-          new Response(JSON.stringify(cachePayload), { headers: { "Cache-Control": "public, max-age=300" } }),
+          // v6.8.0: 5min → 1hr. Purge invalidates on store updates.
+          new Response(JSON.stringify(cachePayload), { headers: { "Cache-Control": "public, max-age=3600" } }),
         )
         .catch(() => {}),
       cache
         .put(
           new Request(`https://cache/slug-domain-${slug}`),
           new Response(JSON.stringify({ custom_domain: result.customDomain }), {
-            headers: { "Cache-Control": "public, max-age=300" },
+            headers: { "Cache-Control": "public, max-age=3600" },
           }),
         )
         .catch(() => {}),
