@@ -606,11 +606,17 @@ function CustomDomainNotFound() {
  * Detects if the current hostname is a custom domain and resolves slug from DB.
  */
 function useCustomDomainSlug() {
-  const [slug, setSlug] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const attempted = useRef(false);
   const hostname = window.location.hostname;
   const customHost = isCustomDomainHost(hostname);
+
+  // 🚀 Worker fast-path: if __STORE_SLUG__ was injected by the Cloudflare Worker
+  // (or by a previous in-page script), use it instantly with NO supabase query.
+  // This eliminates a 300-500ms sequential DB roundtrip on cold custom-domain loads.
+  const injectedSlug = customHost ? ((window as any).__STORE_SLUG__ as string | undefined) : undefined;
+
+  const [slug, setSlug] = useState<string | null>(injectedSlug || null);
+  const [loading, setLoading] = useState(false);
+  const attempted = useRef(!!injectedSlug);
 
   useEffect(() => {
     if (!customHost || attempted.current) return;
