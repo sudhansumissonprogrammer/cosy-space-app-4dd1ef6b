@@ -1,77 +1,100 @@
 
-## Plan: 3 High-ROI Cold-Load Fixes
+The user wants Theme V19 to feel more like real Blinkit. Current state has the right structural pieces (green header, yellow marquee, ADD stepper, 4-tab nav) but lacks Blinkit's signature density, motion, and flow polish. Let me identify the key gaps vs real Blinkit and propose a tight upgrade.
 
-### Goal
-Cut storefront cold LCP from ~4-7s to ~2-3s by eliminating render waterfalls and oversized images.
+## Blinkit signature elements we're missing
 
----
+Based on real Blinkit analysis:
 
-### Fix 1 — Kill Duplicate Skeleton
+1. **Header** — Blinkit shows "Delivery in 8 minutes" big & bold + address line below. WhatsApp icon is not Blinkit-native (replace with profile/cart icons).
+2. **Search bar** — Blinkit has a *rotating placeholder* ("Search 'milk'" → "Search 'bread'" → "Search 'eggs'") with typewriter effect.
+3. **Promo banners** — Blinkit uses a *swipeable carousel* of large colorful banners, not a single static yellow tile.
+4. **Categories** — Blinkit uses **circular product images on colored pastel backgrounds** (not yellow squares with green labels). 4 cols mobile, label below circle.
+5. **Product cards** — Blinkit shows a **delivery time badge** ("⏱ 11 MINS") on every card, weight/qty under name ("500 g"), and the ADD button is *outlined green* (not solid), morphing to solid green stepper.
+6. **Section headers** — Blinkit doesn't use green gradient bands. It's plain bold black text with "see all →" right-aligned. Below it: horizontal product scroll.
+7. **Sticky category rail** — Blinkit has a horizontal scrollable category chip rail that sticks below header on scroll.
+8. **Cart FAB** — Blinkit shows a fixed bottom green bar "View Cart · 3 items · ₹240 →" instead of bottom nav cart tab.
+9. **Animations** — Add-to-cart has a subtle scale bounce; stepper +/- has haptic-style press feedback.
 
-**Problem:** Both Worker (`#sf-skel`) and `index.html` (`#inline-skel`) render skeletons. In production they briefly overlap; both must be cleaned up; extra DOM/paint work.
+## Plan — V19 Blinkit refinement (single iteration)
 
-**Changes:**
-- `index.html`: Wrap inline skeleton in a `<script>` check — only inject if `window.__SF_WORKER__` flag is NOT set (Worker sets this when injecting `#sf-skel`). This makes Worker skeleton the single source of truth in production; inline skeleton remains for preview/localhost only.
-- `docs/cloudflare-worker-current.js`: Add `<script>window.__SF_WORKER__=true</script>` before `#sf-skel` injection. Bump version to **6.3.0**.
-- `src/main.tsx` / cleanup script: Simplify — only one skeleton ID to remove.
+### Files to modify (5 files, no new files)
 
----
+**1. `src/components/storefront/v19/V19Header.tsx`**
+- Replace "Set delivery location" with two-line:
+  - Line 1 (bold, 18px): "Delivery in 11 minutes"
+  - Line 2 (12px, opacity 80): "HOME · {store name or address} ▼"
+- Replace WhatsApp icon with circular avatar/profile icon (User from lucide)
+- Search bar: animated rotating placeholder using local state + interval (cycles through ["milk", "bread", "eggs", "atta", "cold drinks"])
+- Keep yellow marquee but make it taller and bolder
 
-### Fix 2 — Unify Fonts (Single Source of Truth in Worker)
+**2. `src/pages/StorefrontHomeV19.tsx`**
+- **Promo carousel**: Replace single yellow tile with a horizontal-scroll banner row (3 colored banners — yellow, pink, mint) using store banner_url + 2 generated gradient cards. Snap-x scroll.
+- **Categories**: Switch from yellow squares to **circular images on pastel backgrounds** (4 cols, rotating pastel colors: #FFF1D6, #FFE5E5, #DDEBFF, #E5F7E5, #FFE7F3, #F0E5FF). Round image top, name below circle in dark text.
+- **Section headers**: Drop the green gradient band. Use plain `text-[18px] font-black text-gray-900` with "see all →" right-aligned in primary green.
+- Add a "Buy again" / "Recently viewed" horizontal scroll if products available.
+- Keep horizontal product scroll per category but tighten card width to 42% (Blinkit shows ~2.3 cards visible).
 
-**Problem:** Fonts load in 3 places (Worker preload + `index.html` CSS link + React `loadGoogleFonts`). Causes 200–600ms waterfall + FOUT on font swap.
+**3. `src/components/storefront/v19/V19ProductCard.tsx`**
+- Add **delivery badge** at top-left of image: white pill with green clock icon + "11 MINS" (Blinkit signature)
+- Add **weight/qty line** under name: small gray text (use product.weight or fallback "1 piece")
+- Change ADD button from solid green → **outlined green** (`border-2 border-[#036B52] text-[#036B52] bg-white`)
+- Stepper stays solid green (morph effect already correct)
+- Add subtle scale animation on ADD click (`active:scale-95 transition-transform`)
+- Discount badge: move to top-left corner *above* delivery badge, use Blinkit purple `#0C831F` style or keep blue
 
-**Changes:**
-- `docs/cloudflare-worker-current.js`: Read `theme_config.heading_font` and `body_font` from KV-cached store data. Inject:
-  - `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>`
-  - `<link rel="preload" as="style" href="...">` for the exact merchant fonts
-  - `<link rel="stylesheet" href="...">` with `display=swap`
-- `index.html`: Remove the hardcoded Poppins/Alegreya preload + stylesheet links (only keep Inter for landing page, gated by route).
-- `src/lib/themeUtils.ts` `loadGoogleFonts()`: Add a guard — skip if `document.querySelector('link[data-sf-font]')` exists (Worker already injected). Mark Worker-injected links with `data-sf-font="1"`.
-- Result: Storefront pages get fonts from Worker (1 round-trip, parallel with HTML). Landing page keeps its own Inter setup. React only injects fonts as fallback for preview/localhost.
+**4. `src/layouts/StorefrontLayoutV19.tsx`**
+- Update CSS:
+  - Remove `.v19-section-header` green gradient (replace with plain section title rule)
+  - Add `.v19-cat-circle` circular pastel category style
+  - Add `.v19-promo-card` for swipeable banner cards
+  - Add `.v19-delivery-badge` for product card time pill
+  - Add `.v19-add-btn-outline` (replace solid)
+  - Add `.v19-cart-fab` for sticky "View Cart" bottom bar
+  - Keep yellow marquee, beef up font weight
 
----
+**5. `src/components/storefront/v19/V19BottomNav.tsx`**
+- Add a **floating "View Cart" bar** above the bottom nav when cart has items: shows "{count} items · ₹{total}" + arrow → links to /cart
+- Bar is full-width, green (#036B52), 44px tall, sits above bottom nav with shadow
+- Hide it on /cart and /checkout routes
 
-### Fix 3 — Cloudflare Image Resizing
+### Visual reference (ASCII)
 
-**Problem:** Supabase Render API adds 100–300ms latency + counted transformations. External/legacy images served at full size (up to 2MB) → LCP 4-7s.
+```text
+┌─────────────────────────────┐
+│ Delivery in 11 minutes  (👤)│  ← Header dark green
+│ HOME · Stylebazaar       ▼  │
+│ ┌─────────────────────────┐ │
+│ │🔍 Search "milk"         │ │  ← rotating placeholder
+│ └─────────────────────────┘ │
+│ ✦ Free delivery on orders   │  ← yellow marquee
+├─────────────────────────────┤
+│ [yellow banner][pink][mint] │  ← swipeable promo
+│                             │
+│ ⓪ ⓪ ⓪ ⓪                    │  ← circular pastel cats
+│ Dairy Snacks Fruits Drinks  │
+│                             │
+│ Dairy & Bread      see all →│
+│ ┌────┐ ┌────┐ ┌────┐        │  ← horiz scroll cards
+│ │11m │ │11m │ │11m │        │  ← delivery badge
+│ │ img│ │ img│ │ img│        │
+│ │name│ │name│ │name│        │
+│ │500g│ │1L  │ │250g│        │
+│ │₹40 │ │₹60 │ │₹35 │        │
+│ │[ADD│ │[-1+│ │[ADD│        │  ← outlined ADD
+│ └────┘ └────┘ └────┘        │
+│                             │
+├─────────────────────────────┤
+│ 🛒 3 items · ₹240        →  │  ← floating cart FAB
+├─────────────────────────────┤
+│ Home  Cats  Cart  Account   │  ← bottom nav
+└─────────────────────────────┘
+```
 
-**Changes:**
-- `docs/cloudflare-worker-current.js`: Add new route `/cf-img` that uses `fetch(originalUrl, { cf: { image: { width, quality, format: 'auto', fit: 'scale-down' } } })`. Cache responses in Cache API with 1-year TTL. Accept query params: `url`, `w`, `q`.
-- `src/lib/imageOptimize.ts`: 
-  - Add `USE_CF_IMAGE_RESIZE` flag (default true in production).
-  - Replace Supabase Render API path with `/cf-img?url=...&w=...&q=...` for both pipeline images and external Supabase URLs.
-  - Update `getImageSrcSet` and `preloadHeroImage` to use the new path.
-- Worker version → **6.3.0**.
+### Out of scope (intentionally)
+- Live GPS / address picker (user said visual clone only)
+- Real "delivery in X mins" calculation (hardcode 11 MINS as Blinkit-style placeholder)
+- Product detail page redesign — only home + cards in this round (can do next round)
 
-**Manual step (user):** Enable Image Resizing in Cloudflare Dashboard → Speed → Optimization → toggle on. Already covered by Workers Paid plan.
-
----
-
-### Files Touched
-1. `docs/cloudflare-worker-current.js` — skeleton flag, font injection, `/cf-img` route, version bump
-2. `index.html` — remove storefront font links + inline skeleton guard
-3. `src/main.tsx` — skeleton cleanup simplification
-4. `src/lib/themeUtils.ts` — `loadGoogleFonts` guard
-5. `src/lib/imageOptimize.ts` — route through `/cf-img`
-
-### Expected Impact
-| Metric | Before | After |
-|---|---|---|
-| LCP (cold, mobile 4G) | 4–7s | 2–3s |
-| Image bytes | 200KB–2MB | 30–80KB |
-| Font waterfall | 3 stages | 1 stage (Worker) |
-| Skeleton paint work | 2x | 1x |
-
-### Deployment Steps
-1. I write all code changes (single response in default mode).
-2. You copy `docs/cloudflare-worker-current.js` → Cloudflare Worker editor → Deploy.
-3. You enable Cloudflare Image Resizing toggle.
-4. Test cold load on mobile (incognito) on a real store.
-
-### Risk / Rollback
-- Image resize: if CF toggle isn't enabled, `/cf-img` still works (passthrough fetch); just no resizing.
-- Font unify: React `loadGoogleFonts` remains as fallback for preview.
-- Skeleton: inline skeleton remains intact for localhost/preview.
-
-Ready to ship — approve to proceed.
+### Risks
+- Rotating search placeholder uses `setInterval` — must clean up on unmount
+- Floating cart FAB needs to coordinate with bottom nav z-index and not overlap product content (add 130px bottom padding when cart has items)
