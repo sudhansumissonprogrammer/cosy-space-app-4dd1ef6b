@@ -390,7 +390,67 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
   })()</script>`;
 }
 
-function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true) {
+/**
+ * v6.7.0 (Step C — SSR header + hero):
+ * Build a real, styled header (logo + name) and hero image (if banner_url
+ * or mobile_hero_url available) from the cached themeLite. Painted instantly
+ * by the worker — sits inside the #sf-skel overlay so React hydration is
+ * unaffected. When `storefront:content-ready` fires, the overlay fades and
+ * React's real header takes over (zero flicker, zero hydration mismatch).
+ */
+function _buildSsrHeaderHero(themeLite, isMobile) {
+  if (!themeLite) return { header: "", hero: "" };
+  const name = (themeLite.nm || "").replace(/[<>"'&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "&": "&amp;" }[c]));
+  const logo = (themeLite.lg || "").replace(/[<>"']/g, "");
+  const heroImg = (isMobile ? (themeLite.mh || themeLite.bn) : (themeLite.bn || themeLite.mh)) || "";
+  const heroEsc = heroImg.replace(/[<>"']/g, "");
+  const bg = themeLite.bg || "#ffffff";
+  const text = themeLite.tc || "#1a1a1a";
+  const headingFont = themeLite.hf || "Inter";
+  const align = themeLite.hla || "left";
+
+  // Header — matches DesktopNavBar/MobileAppHeader heights (h-14 = 56px) and
+  // the standard storefront header layout. Only logo + name are rendered;
+  // nav links + cart icons are intentionally omitted (they need real data).
+  let header = `<nav style="position:relative;height:56px;background:${bg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);z-index:1">`;
+  if (align === "center") {
+    header += `<div style="flex:1"></div>`;
+    header += `<div style="display:flex;align-items:center;gap:10px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)">`;
+  } else {
+    header += `<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">`;
+  }
+  if (logo) {
+    header += `<img src="${heroEsc && false}${logo}" alt="" width="32" height="32" style="width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0" />`;
+  } else {
+    header += `<div style="width:32px;height:32px;border-radius:8px;background:${text};opacity:0.08;flex-shrink:0"></div>`;
+  }
+  if (name) {
+    header += `<span style="font-family:${headingFont},Inter,sans-serif;font-weight:600;font-size:15px;color:${text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span>`;
+  }
+  header += `</div>`;
+  if (align === "center") {
+    header += `<div style="flex:1"></div>`;
+  }
+  // Right-side icons placeholder (search/account/cart) — small dots so the
+  // header looks balanced without rendering interactive elements.
+  header += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%;flex-shrink:0"></div>`;
+  header += `</nav>`;
+
+  // Hero — only rendered if we have an image. Aspect ratios match the real
+  // StorefrontHero (16:9 desktop) / StorefrontMobileHero (4:5 portrait) to
+  // prevent CLS when React takes over.
+  let hero = "";
+  if (heroEsc) {
+    const aspect = isMobile ? "4/5" : "16/6";
+    hero = `<div style="width:100%;background:${bg};overflow:hidden">` +
+      `<img src="${heroEsc}" alt="" fetchpriority="high" decoding="async" ` +
+      `style="display:block;width:100%;aspect-ratio:${aspect};object-fit:cover;background:${bg}" />` +
+      `</div>`;
+  }
+  return { header, hero };
+}
+
+function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true, themeLite = null, hostname = "") {
   // FIX #11: Use actual store bgColor instead of hardcoded #ffffff
   const skelBg = bgColor || "#ffffff";
   const skelBase = "#f0f0f0";
@@ -398,15 +458,30 @@ function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true) {
 
   const shimmerKeyframes = `<style id="sf-skel-anim">@keyframes sf-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}.sf-ph{background:linear-gradient(90deg,${skelBase} 25%,${skelShimmer} 50%,${skelBase} 75%);background-size:800px 100%;animation:sf-shimmer 1.4s ease-in-out infinite;border-radius:4px}</style>`;
 
+  // v6.7.0 (Step C): Try to render real header + hero from themeLite.
+  // We don't know the device server-side, but mobile-first hero (4/5) is
+  // the dominant case for shopbanao.in traffic. Hero img uses object-fit:cover
+  // so it works at any width.
+  const ssr = _buildSsrHeaderHero(themeLite, true);
+  const useSsrHeader = !!ssr.header && !!themeLite?.nm; // only when we have a real name
+
   // v6.3.0: Set __SF_WORKER__ flag BEFORE skeleton so index.html knows Worker
   // already injected its skeleton — inline skeleton fallback is suppressed.
   let s = `<script>window.__SF_WORKER__=true;</script>${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
-  s += `<nav style="height:56px;background:${skelBg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
-  s += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
-  s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
-  s += `<div style="flex:1"></div>`;
-  s += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%"></div>`;
-  s += `</nav>`;
+
+  if (useSsrHeader) {
+    s += ssr.header;
+    s += ssr.hero; // empty string if no hero image
+  } else {
+    // Fallback: original placeholder header
+    s += `<nav style="height:56px;background:${skelBg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
+    s += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
+    s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
+    s += `<div style="flex:1"></div>`;
+    s += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%"></div>`;
+    s += `</nav>`;
+  }
+
   s += `<div class="sf-ph" style="height:6px;width:100%;border-radius:0;margin-bottom:16px"></div>`;
   s += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 12px">`;
   for (let i = 0; i < 4; i++) {
