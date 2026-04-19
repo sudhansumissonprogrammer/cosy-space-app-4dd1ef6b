@@ -176,13 +176,14 @@
         function kill(){
           if(done) return;
           done=true;
-          /* Kill BOTH skeletons together — Worker #sf-skel + inline #inline-skel */
+          /* Kill BOTH skeletons together — Worker #sf-skel + inline #inline-skel.
+             Hide instantly (no fade) so there's zero blank-white gap between
+             skeleton disappearing and real content appearing. */
           ['sf-skel','inline-skel'].forEach(function(id){
             var s=document.getElementById(id);
             if(!s) return;
-            s.style.transition='opacity 80ms linear';
-            s.style.opacity='0';
-            setTimeout(function(){s.style.display='none';if(s.remove)s.remove();},90);
+            s.style.display='none';
+            if(s.remove)s.remove();
           });
         }
         window.addEventListener('storefront:content-ready',function(){kill();},{once:true});
