@@ -169,16 +169,24 @@
       })();
     </script>
     <script>
-      /* Remove Worker skeleton — waits for storefront:content-ready (actual data)
-         so there's ONE skeleton → real content with no intermediate flash. */
+      /* Remove skeleton ONLY after real storefront content has actually
+         painted into #root. This prevents the blank-white flash that
+         happens when storefront:content-ready fires before lazy-loaded
+         home page chunks (hero, grids, images) have mounted.
+
+         Strategy:
+           1. Wait for storefront:content-ready (data ready signal)
+           2. Then poll until #root contains rendered content beyond the
+              inline skeleton (i.e. real React DOM with non-zero size)
+           3. Wait 2 animation frames so the browser actually paints
+           4. Then hide both skeletons instantly */
       (function(){
         var done=false;
-        function kill(){
+        var dataReady=false;
+
+        function killNow(){
           if(done) return;
           done=true;
-          /* Kill BOTH skeletons together — Worker #sf-skel + inline #inline-skel.
-             Hide instantly (no fade) so there's zero blank-white gap between
-             skeleton disappearing and real content appearing. */
           ['sf-skel','inline-skel'].forEach(function(id){
             var s=document.getElementById(id);
             if(!s) return;
@@ -186,9 +194,43 @@
             if(s.remove)s.remove();
           });
         }
-        window.addEventListener('storefront:content-ready',function(){kill();},{once:true});
+
+        function hasRealContent(){
+          var root=document.getElementById('root');
+          if(!root) return false;
+          /* Look for any child that is NOT the inline skeleton placeholder
+             AND has actual rendered size on screen */
+          var kids=root.children;
+          for(var i=0;i<kids.length;i++){
+            var k=kids[i];
+            if(k.id==='inline-skel') continue;
+            if(k.offsetHeight>50) return true;
+          }
+          return false;
+        }
+
+        function waitForPaint(){
+          if(done) return;
+          if(hasRealContent()){
+            requestAnimationFrame(function(){
+              requestAnimationFrame(killNow);
+            });
+            return;
+          }
+          /* Poll every 50ms up to ~6s after data-ready */
+          if(waitForPaint._tries===undefined) waitForPaint._tries=0;
+          waitForPaint._tries++;
+          if(waitForPaint._tries>120){killNow();return;}
+          setTimeout(waitForPaint,50);
+        }
+
+        window.addEventListener('storefront:content-ready',function(){
+          dataReady=true;
+          waitForPaint();
+        },{once:true});
+
         /* Hard fallback: 12s timeout */
-        setTimeout(kill,12000);
+        setTimeout(killNow,12000);
       })();
     </script>
     <script>
