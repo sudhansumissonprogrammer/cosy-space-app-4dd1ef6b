@@ -1648,8 +1648,18 @@ async function serveStreamedHtml(
       const themeHint = themeLite ? `window.__THEME__=${JSON.stringify(themeLite)};` : "";
       const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}</script>`;
 
+      // v6.4.0: Preload-scanner image fast-path — emit <link rel="preload">
+      // tags for the first 6 product images directly in <head>. The browser
+      // starts downloading them BEFORE any JS runs.
+      const productImagePreloads = inlineProducts
+        ? _buildProductImagePreloads(inlineProducts, 6)
+        : "";
+
       let headChunk = html.slice(0, headEnd);
-      headChunk = headChunk.replace("<head>", `<head>${slugScript}${themeCss}${prebuiltHead || ""}`);
+      headChunk = headChunk.replace(
+        "<head>",
+        `<head>${slugScript}${themeCss}${productImagePreloads}${prebuiltHead || ""}`,
+      );
       headChunk += "</head>";
 
       // Flush head immediately — browser starts fetching assets NOW
@@ -1663,8 +1673,22 @@ async function serveStreamedHtml(
       // FIX #11: Pass actual bgColor
       const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
+      // v6.4.0: Hidden product preloader grid — real <img> tags so the
+      // preload-scanner queues image downloads in parallel with React JS.
+      // Prefer fresh storefront data (richer); fall back to inlineProducts.
+      let preloaderProductsJson = inlineProducts || "";
+      if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
+        preloaderProductsJson = JSON.stringify(storefrontResult.data.products);
+      }
+      const productPreloaderGrid = preloaderProductsJson
+        ? _buildProductPreloaderGrid(preloaderProductsJson, 8)
+        : "";
+
       let bodyChunk = html.slice(headEnd + 7);
-      bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}<div id="root">`);
+      bodyChunk = bodyChunk.replace(
+        '<div id="root">',
+        `${skeleton}${productPreloaderGrid}<div id="root">`,
+      );
 
       if (storefrontResult?.data) {
         const jsonStr = JSON.stringify(storefrontResult.data).replace(/<\/script/gi, "<\\/script");
