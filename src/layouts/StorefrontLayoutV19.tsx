@@ -1,6 +1,5 @@
 /**
- * Theme 19 — Quick Commerce Grocery (Blinkit/Zepto/While style)
- * Green sticky header + yellow promo + green section bands + Blinkit-style ADD stepper.
+ * Theme 19 — Quick Commerce Grocery (Blinkit-style)
  */
 import { Suspense, lazy } from "react";
 import { Outlet } from "react-router-dom";
@@ -11,21 +10,25 @@ const LazyV19BottomNav = lazy(() => import("@/components/storefront/v19/V19Botto
 
 const V19_STYLES = `
   body { background: #f6f7f9 !important; }
-  .v19-section-header { background: linear-gradient(90deg, #036B52 0%, #048061 100%); color: #fff; border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 18px; }
-  .v19-section-header a { font-size: 13px; font-weight: 600; color: #fff; display: inline-flex; align-items: center; gap: 4px; opacity: 0.95; }
-  .v19-promo { background: linear-gradient(135deg, #FFD33D 0%, #FFC107 100%); border-radius: 16px; overflow: hidden; padding: 18px; color: #1a1a1a; }
-  .v19-promo h2 { font-size: 24px; font-weight: 900; line-height: 1.1; margin-bottom: 4px; }
-  .v19-promo p { font-size: 13px; font-weight: 500; opacity: 0.85; margin-bottom: 14px; }
-  .v19-promo .cta { background: #036B52; color: #fff; font-weight: 700; font-size: 13px; padding: 8px 18px; border-radius: 999px; display: inline-block; }
-  .v19-cat-tile { background: #FFD33D; border-radius: 12px; aspect-ratio: 1/1; position: relative; overflow: hidden; display: block; }
-  .v19-cat-tile-label { position: absolute; left: 0; right: 0; bottom: 0; background: #036B52; color: #fff; font-size: 11px; font-weight: 700; text-align: center; padding: 4px; line-height: 1.1; }
-  .v19-card { background: #fff; border-radius: 14px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-  .v19-add-btn-solid { background: #036B52; color: #fff; font-weight: 800; font-size: 11px; letter-spacing: 0.5px; padding: 7px 16px; border-radius: 999px; text-transform: uppercase; }
+  .v19-section-title { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; margin-bottom: 10px; }
+  .v19-section-title h3 { font-size: 18px; font-weight: 900; color: #1a1a1a; letter-spacing: -0.01em; }
+  .v19-section-title a { font-size: 12px; font-weight: 700; color: #036B52; display: inline-flex; align-items: center; gap: 2px; }
+  .v19-cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .v19-cat-circle .circle { width: 100%; aspect-ratio: 1/1; border-radius: 14px; position: relative; overflow: hidden; }
+  .v19-cat-circle .label { font-size: 11px; font-weight: 600; color: #1a1a1a; text-align: center; line-height: 1.2; max-width: 100%; }
+  .v19-promo-card { flex-shrink: 0; width: 78%; border-radius: 16px; overflow: hidden; padding: 18px; color: #1a1a1a; min-height: 130px; display: flex; flex-direction: column; justify-content: space-between; }
+  .v19-promo-card h2 { font-size: 22px; font-weight: 900; line-height: 1.05; }
+  .v19-promo-card p { font-size: 12px; font-weight: 500; opacity: 0.8; margin-top: 4px; }
+  .v19-promo-card .cta { background: #036B52; color: #fff; font-weight: 700; font-size: 12px; padding: 6px 14px; border-radius: 999px; display: inline-block; align-self: flex-start; margin-top: 10px; }
+  .v19-card { background: #fff; border-radius: 12px; padding: 8px; border: 1px solid #f0f0f0; }
+  .v19-add-btn-outline { background: #fff; color: #036B52; font-weight: 800; font-size: 12px; letter-spacing: 0.3px; padding: 6px 18px; border-radius: 8px; text-transform: uppercase; border: 1.5px solid #036B52; }
   .v19-stepper { background: #036B52; color: #fff; border-radius: 8px; display: inline-flex; align-items: center; font-weight: 700; font-size: 13px; overflow: hidden; }
-  .v19-stepper button { width: 30px; height: 28px; display: flex; align-items: center; justify-content: center; }
-  .v19-marquee-yellow { background: #FFD33D; color: #036B52; font-weight: 700; font-size: 12px; padding: 6px 0; overflow: hidden; white-space: nowrap; }
+  .v19-stepper button { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+  .v19-delivery-badge { position: absolute; left: 6px; top: 6px; z-index: 10; background: #fff; color: #036B52; font-size: 9px; font-weight: 800; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); letter-spacing: 0.3px; }
+  .v19-marquee-yellow { background: #FFD33D; color: #036B52; font-weight: 800; font-size: 11px; padding: 7px 0; overflow: hidden; white-space: nowrap; letter-spacing: 0.4px; }
   .storefront-font main { padding-top: 0; padding-bottom: 80px; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; }
 `;
 
 function V19Inner({ store }: { store: any }) {
