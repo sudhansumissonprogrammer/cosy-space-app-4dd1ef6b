@@ -25,7 +25,14 @@ const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY ===
 function shouldUseCfImg(): boolean {
   if (typeof window === "undefined") return false;
   const h = window.location.hostname;
-  if (h === "localhost" || h.startsWith("127.") || h.endsWith(".lovable.app")) return false;
+  if (
+    h === "localhost" ||
+    h.startsWith("127.") ||
+    h.endsWith(".lovable.app") ||
+    h.endsWith(".lovableproject.com")
+  ) {
+    return false;
+  }
   return true;
 }
 
