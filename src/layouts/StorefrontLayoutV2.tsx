@@ -141,7 +141,7 @@ export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: st
         <>
           <DesktopNavBar store={store} />
           <div className="md:hidden"><TransparentNav store={store} scrolled={false} /></div>
-          <main className="pb-20 md:pb-0"><Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense></main>
+          <main className="pb-20 md:pb-0"><Suspense fallback={null}><Outlet context={store} /></Suspense></main>
           <StorefrontFooter store={store} />
           <div className="md:hidden">
             <MobileBottomNav store={store} />

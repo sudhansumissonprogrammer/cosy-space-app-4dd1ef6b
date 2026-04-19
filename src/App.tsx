@@ -148,70 +148,43 @@ const LoadingSpinner = () => {
     (hostname.endsWith(".shopbanao.in") && hostname !== "shopbanao.in" && hostname !== "www.shopbanao.in") ||
     !!(window as any).__STORE_SLUG__;
 
-  // PWA standalone mode: the native splash screen already provides visual feedback,
-  // so showing a skeleton on top of it creates a jarring double-loading effect.
-  // Return a blank screen and let the actual content appear directly.
+  // Storefront: render `null` so the inline skeleton in index.html (or the
+  // Worker-injected #sf-skel) stays visible. Rendering a React skeleton here
+  // creates a "double skeleton" flash because React replaces #root contents
+  // before the lazy chunks are ready. The inline skeleton is removed only
+  // when `storefront:content-ready` fires (real content is painted).
+  if (isStorefront) {
+    return null;
+  }
+
+  // PWA standalone mode: the native splash screen already provides visual feedback.
   const isStandalone = window.matchMedia?.("(display-mode: standalone)")?.matches
     || (window.navigator as any).standalone === true;
   if (isStandalone) {
     return <div className="min-h-screen bg-background" />;
   }
 
-  if (!isStorefront) {
-    // Dashboard/admin/auth/landing — skeleton instead of black spinner
-    return (
-      <div className="min-h-screen bg-background animate-pulse">
-        {/* Navbar skeleton */}
-        <div className="sticky top-0 z-30 border-b border-border/40 bg-background">
-          <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-            <div className="h-8 w-28 rounded bg-muted/50" />
-            <div className="flex-1" />
-            <div className="h-8 w-20 rounded bg-muted/50" />
-            <div className="h-8 w-20 rounded bg-muted/50" />
-          </div>
-        </div>
-        {/* Hero skeleton */}
-        <div className="mx-auto max-w-4xl px-4 pt-12 pb-8 text-center space-y-4">
-          <div className="h-5 w-40 mx-auto rounded bg-muted/40" />
-          <div className="h-10 w-3/4 mx-auto rounded bg-muted/40" />
-          <div className="h-10 w-1/2 mx-auto rounded bg-muted/40" />
-          <div className="h-5 w-2/3 mx-auto rounded bg-muted/30" />
-          <div className="flex justify-center gap-3 pt-4">
-            <div className="h-12 w-40 rounded-lg bg-muted/50" />
-            <div className="h-12 w-32 rounded-lg bg-muted/30" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Storefront — render a lightweight skeleton so users see content structure
-  // while lazy layout/page chunks download. Previously returned null which
-  // caused a blank screen because React already replaced the index.html skeleton.
+  // Dashboard/admin/auth/landing — skeleton instead of black spinner
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur-md">
+    <div className="min-h-screen bg-background animate-pulse">
+      {/* Navbar skeleton */}
+      <div className="sticky top-0 z-30 border-b border-border/40 bg-background">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-          <div className="h-10 w-10 rounded-lg bg-muted/60" />
-          <div className="h-10 w-24 rounded-lg bg-muted/60" />
+          <div className="h-8 w-28 rounded bg-muted/50" />
           <div className="flex-1" />
-          <div className="h-9 w-9 rounded-full bg-muted/60" />
-          <div className="h-9 w-9 rounded-full bg-muted/60" />
+          <div className="h-8 w-20 rounded bg-muted/50" />
+          <div className="h-8 w-20 rounded bg-muted/50" />
         </div>
       </div>
-      <div className="w-full bg-muted/60" style={{ aspectRatio: "16/7" }} />
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[0,1,2,3].map(i => (
-            <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
-              <div className="w-full bg-muted/60" style={{ aspectRatio: "4/5" }} />
-              <div className="p-2.5 space-y-2">
-                <div className="h-3 w-16 rounded bg-muted/60" />
-                <div className="h-4 w-full rounded bg-muted/60" />
-                <div className="h-4 w-20 rounded bg-muted/60" />
-              </div>
-            </div>
-          ))}
+      {/* Hero skeleton */}
+      <div className="mx-auto max-w-4xl px-4 pt-12 pb-8 text-center space-y-4">
+        <div className="h-5 w-40 mx-auto rounded bg-muted/40" />
+        <div className="h-10 w-3/4 mx-auto rounded bg-muted/40" />
+        <div className="h-10 w-1/2 mx-auto rounded bg-muted/40" />
+        <div className="h-5 w-2/3 mx-auto rounded bg-muted/30" />
+        <div className="flex justify-center gap-3 pt-4">
+          <div className="h-12 w-40 rounded-lg bg-muted/50" />
+          <div className="h-12 w-32 rounded-lg bg-muted/30" />
         </div>
       </div>
     </div>
