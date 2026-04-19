@@ -105,21 +105,29 @@ export function useStorefront(slugOverride?: string) {
         localStorage.setItem(`storefront_theme_${store.slug}`, store.theme);
       } catch {}
 
-      // Prefetch custom pages for sidebar menu
-      queryClient.prefetchQuery({
-        queryKey: ["storefront-custom-pages", store.id],
-        queryFn: async () => {
-          const { supabase } = await import("@/integrations/supabase/client");
-          const { data: pages } = await supabase
-            .from("store_pages")
-            .select("id, title, slug, content, image_url")
-            .eq("store_id", store.id)
-            .eq("page_type", "custom")
-            .eq("is_active", true)
-            .order("display_order", { ascending: true });
-          return pages ?? [];
-        },
-        staleTime: 5 * 60 * 1000,
+      // 🚀 Defer custom-pages prefetch to idle — it's only used by the sidebar
+      // menu and is NOT on the critical render path. Running it inline here
+      // competes for the supabase connection with product fetches.
+      const schedule =
+        typeof requestIdleCallback !== "undefined"
+          ? (cb: () => void) => requestIdleCallback(cb, { timeout: 3000 })
+          : (cb: () => void) => setTimeout(cb, 1500);
+      schedule(() => {
+        queryClient.prefetchQuery({
+          queryKey: ["storefront-custom-pages", store.id],
+          queryFn: async () => {
+            const { supabase } = await import("@/integrations/supabase/client");
+            const { data: pages } = await supabase
+              .from("store_pages")
+              .select("id, title, slug, content, image_url")
+              .eq("store_id", store.id)
+              .eq("page_type", "custom")
+              .eq("is_active", true)
+              .order("display_order", { ascending: true });
+            return pages ?? [];
+          },
+          staleTime: 5 * 60 * 1000,
+        });
       });
     }
 
