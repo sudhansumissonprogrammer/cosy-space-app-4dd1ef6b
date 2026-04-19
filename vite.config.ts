@@ -1,8 +1,54 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
+
+/**
+ * Emits /asset-manifest.json mapping theme number → {layout, home} chunk URLs.
+ * The Cloudflare Worker reads this manifest once and injects
+ * <link rel="modulepreload"> for the active theme's chunks, eliminating
+ * the index.js → theme-layout → theme-home waterfall on cold loads.
+ */
+function themeAssetManifestPlugin(): Plugin {
+  return {
+    name: "theme-asset-manifest",
+    apply: "build",
+    generateBundle(_options, bundle) {
+      const themes: Record<string, { layout?: string; home?: string }> = {};
+
+      // Theme numbers we ship: 1 (default StorefrontHome/Layout), 2, 3, 10–19.
+      // The "default" theme is named StorefrontLayout (no V suffix) and StorefrontHome.
+      const layoutPattern = /(?:^|\/)StorefrontLayout(V(\d+))?(?:-[A-Za-z0-9_-]+)?\.js$/;
+      const homePattern = /(?:^|\/)StorefrontHome(V(\d+))?(?:-[A-Za-z0-9_-]+)?\.js$/;
+
+      for (const fileName of Object.keys(bundle)) {
+        if (!fileName.endsWith(".js")) continue;
+
+        const layoutMatch = fileName.match(layoutPattern);
+        if (layoutMatch) {
+          const v = layoutMatch[2] ? layoutMatch[2] : "1";
+          themes[v] ||= {};
+          themes[v].layout = "/" + fileName;
+          continue;
+        }
+
+        const homeMatch = fileName.match(homePattern);
+        if (homeMatch) {
+          const v = homeMatch[2] ? homeMatch[2] : "1";
+          themes[v] ||= {};
+          themes[v].home = "/" + fileName;
+        }
+      }
+
+      this.emitFile({
+        type: "asset",
+        fileName: "asset-manifest.json",
+        source: JSON.stringify({ version: 1, themes }, null, 2),
+      });
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -16,6 +62,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    themeAssetManifestPlugin(),
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: null,
@@ -78,6 +125,10 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true,
     rollupOptions: {
       output: {
+        // Stable, predictable chunk names so the asset manifest can map
+        // theme number → chunk URL deterministically.
+        chunkFileNames: "assets/[name]-[hash].js",
+        entryFileNames: "assets/[name]-[hash].js",
         /**
          * Cycle-safe chunk strategy.
          * Rules:
