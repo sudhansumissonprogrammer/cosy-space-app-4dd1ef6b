@@ -3302,62 +3302,55 @@ export default {
       .toLowerCase()
       .trim();
 
-    // FIX #21 + v6.5.0: Instant skeleton fast path for custom domains.
-    // After domain resolve, fetch theme + inline products in parallel so the
-    // cold HTML carries product image preloads + preloader grid.
+    // v6.6.0: Cold-start unified path (custom domain) — same fix as subdomain.
+    // Always serve real React shell + injected data on cold start; never use
+    // the document.write swap pattern that caused 2-3 skeleton flashes.
     if (!_memShell) {
       const resolvedSlugCD = await resolveDomain(cleanDomain, env);
       if (resolvedSlugCD) {
-        const cachedThemeCD = _memThemeCache.get(resolvedSlugCD)?.lite || null;
-        const [themeLiteFreshCD, inlineProductsCdCold] = await Promise.all([
-          cachedThemeCD ? Promise.resolve(cachedThemeCD) : _getThemeLite(resolvedSlugCD, env),
+        const COLD_DATA_DEADLINE = 600;
+        const [shellResult, prefetchResult, inlineProductsCdCold] = await Promise.all([
+          getSpaShell(request, ctx, env),
+          prefetchStorefrontDataWithDeadline(resolvedSlugCD, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
           _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
         ]);
-        const themeLite = cachedThemeCD || themeLiteFreshCD || null;
-        const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-        const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname, inlineProductsCdCold);
 
-        ctx.waitUntil((async () => {
-          try {
-            const shellResult = await getFreshSpaShell(request, ctx, env);
-            if (shellResult?.html) {
-              const [prefetchResult, inlineProductsCdBg] = await Promise.all([
-                prefetchStorefrontData(resolvedSlugCD, ctx, env),
-                _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
-              ]);
-              if (prefetchResult.data) {
-                const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source, inlineProductsCdBg);
-                const fullHeaders = new Headers();
-                fullHeaders.set("Content-Type", "text/html; charset=utf-8");
-                fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
-                fullHeaders.set("X-Store-Slug", resolvedSlugCD);
-                fullHeaders.set("X-Data-Source", prefetchResult.source);
-                for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
-                const fullResponse = new Response(injected.html, { status: 200, headers: fullHeaders });
-                await cache.put(getEarlyCacheKey(hostname), fullResponse.clone()).catch(() => {});
-              }
-            }
-          } catch {}
-        })());
+        if (shellResult?.html && prefetchResult?.data) {
+          const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source, inlineProductsCdCold);
+          const headers = new Headers();
+          headers.set("Content-Type", "text/html; charset=utf-8");
+          headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+          headers.set("X-Store-Slug", resolvedSlugCD);
+          headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
+          headers.set("X-Worker-Version", WORKER_VERSION);
+          for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
+          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, resolvedSlugCD, ctx, env, hostname, url.pathname));
+          return new Response(injected.html, { status: 200, headers });
+        }
 
-      return new Response(skeletonHtml, {
-          status: 200,
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "no-store",
-            "X-Store-Slug": resolvedSlugCD,
-            "X-Data-Source": "instant-skeleton",
-            "X-Worker-Version": WORKER_VERSION,
-            ...SECURITY_HEADERS,
-          },
-        });
+        if (shellResult?.html) {
+          const dataPromiseScript = _buildPrefetchPromiseScript(resolvedSlugCD);
+          const headPreloads = inlineProductsCdCold ? _buildProductImagePreloads(inlineProductsCdCold, 6) : "";
+          let html = shellResult.html;
+          html = html.replace("</head>", `${headPreloads}\n${dataPromiseScript}\n</head>`);
+          const headers = new Headers();
+          headers.set("Content-Type", "text/html; charset=utf-8");
+          headers.set("Cache-Control", "no-store");
+          headers.set("X-Store-Slug", resolvedSlugCD);
+          headers.set("X-Data-Source", "cold-shell-only");
+          headers.set("X-Worker-Version", WORKER_VERSION);
+          for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
+          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, resolvedSlugCD, ctx, env, hostname, url.pathname));
+          return new Response(html, { status: 200, headers });
+        }
+        // Fall through to standard path if shell unavailable
+      } else {
+        // FIX #26: No slug found for this domain — return 404 immediately
+        return new Response(
+          `<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>Store Not Found</h1><p>No store is configured for <b>${cleanDomain}</b></p></body></html>`,
+          { status: 404, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", ...SECURITY_HEADERS } }
+        );
       }
-      // FIX #26: No slug found for this domain — return 404 immediately
-      // instead of falling through to a duplicate resolveDomain() call
-      return new Response(
-        `<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>Store Not Found</h1><p>No store is configured for <b>${cleanDomain}</b></p></body></html>`,
-        { status: 404, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", ...SECURITY_HEADERS } }
-      );
     }
 
     // FIX #2: Start storefront promise as soon as we know the domain pattern,
