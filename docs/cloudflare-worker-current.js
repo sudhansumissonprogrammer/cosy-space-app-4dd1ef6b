@@ -1004,7 +1004,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       _memStorefrontCache.set(slug, { data, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
 
       if (data?.theme_config) {
-        _cacheThemeForFastShell(slug, data.theme_config, env, ctx);
+        _cacheThemeForFastShell(slug, data.theme_config, env, ctx, data?.store?.theme);
       }
 
       if (ctx) {
@@ -2622,7 +2622,7 @@ async function handlePrewarm(request, url, ctx, env) {
     results.storefrontData = dataResult.source;
 
     if (dataResult.data?.theme_config) {
-      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx);
+      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx, dataResult.data?.store?.theme);
       results.themeLite = "warmed";
     }
 
