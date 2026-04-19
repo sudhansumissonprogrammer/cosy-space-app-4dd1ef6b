@@ -18,6 +18,7 @@ const PROMO_CARDS = [
   { bg: "linear-gradient(135deg, #FFD33D 0%, #FFC107 100%)", title: "Fresh deals", subtitle: "in minutes" },
   { bg: "linear-gradient(135deg, #FFB7C5 0%, #FF8FA3 100%)", title: "Snack attack", subtitle: "30% off today" },
   { bg: "linear-gradient(135deg, #B8E6C1 0%, #7DD3A0 100%)", title: "Daily essentials", subtitle: "starting ₹19" },
+  { bg: "linear-gradient(135deg, #C5DDFF 0%, #8FB5FF 100%)", title: "New arrivals", subtitle: "fresh stock daily" },
 ];
 
 export default function StorefrontHomeV19() {
@@ -40,6 +41,19 @@ export default function StorefrontHomeV19() {
 
   return (
     <div className="space-y-5 pb-4">
+      {/* Store hero banner if uploaded */}
+      {(store as any).banner_url && (
+        <Link to={storefrontPath(slug, "shop")} className="block rounded-2xl overflow-hidden shadow-sm">
+          <img
+            src={optimizeImageUrl((store as any).banner_url, 800, 85)}
+            alt={store.name}
+            className="w-full h-auto block"
+            loading="eager"
+            fetchPriority="high"
+          />
+        </Link>
+      )}
+
       {/* Promo carousel — swipeable */}
       <div className="-mx-1 overflow-x-auto scrollbar-hide">
         <div className="flex gap-3 px-1 snap-x snap-mandatory">
