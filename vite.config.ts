@@ -14,20 +14,20 @@ function themeAssetManifestPlugin(): Plugin {
   return {
     name: "theme-asset-manifest",
     apply: "build",
-    generateBundle(_options, bundle) {
+    enforce: "post",
+    async writeBundle(options, bundle) {
       const themes: Record<string, { layout?: string; home?: string }> = {};
 
-      // Theme numbers we ship: 1 (default StorefrontHome/Layout), 2, 3, 10–19.
-      // The "default" theme is named StorefrontLayout (no V suffix) and StorefrontHome.
-      const layoutPattern = /(?:^|\/)StorefrontLayout(V(\d+))?(?:-[A-Za-z0-9_-]+)?\.js$/;
-      const homePattern = /(?:^|\/)StorefrontHome(V(\d+))?(?:-[A-Za-z0-9_-]+)?\.js$/;
+      // Layout chunks: StorefrontLayout(V<n>)?-<hash>.js  (no V = theme 1)
+      const layoutPattern = /(?:^|\/)StorefrontLayout(?:V(\d+))?-[A-Za-z0-9_-]+\.js$/;
+      const homePattern = /(?:^|\/)StorefrontHome(?:V(\d+))?-[A-Za-z0-9_-]+\.js$/;
 
       for (const fileName of Object.keys(bundle)) {
         if (!fileName.endsWith(".js")) continue;
 
         const layoutMatch = fileName.match(layoutPattern);
         if (layoutMatch) {
-          const v = layoutMatch[2] ? layoutMatch[2] : "1";
+          const v = layoutMatch[1] ? layoutMatch[1] : "1";
           themes[v] ||= {};
           themes[v].layout = "/" + fileName;
           continue;
@@ -35,17 +35,19 @@ function themeAssetManifestPlugin(): Plugin {
 
         const homeMatch = fileName.match(homePattern);
         if (homeMatch) {
-          const v = homeMatch[2] ? homeMatch[2] : "1";
+          const v = homeMatch[1] ? homeMatch[1] : "1";
           themes[v] ||= {};
           themes[v].home = "/" + fileName;
         }
       }
 
-      this.emitFile({
-        type: "asset",
-        fileName: "asset-manifest.json",
-        source: JSON.stringify({ version: 1, themes }, null, 2),
-      });
+      const outDir = (options.dir || path.resolve(__dirname, "dist"));
+      const fs = await import("node:fs/promises");
+      const manifestPath = path.join(outDir, "asset-manifest.json");
+      const payload = JSON.stringify({ version: 1, themes }, null, 2);
+      await fs.writeFile(manifestPath, payload, "utf8");
+      // eslint-disable-next-line no-console
+      console.log(`[theme-asset-manifest] wrote ${manifestPath} (${Object.keys(themes).length} themes)`);
     },
   };
 }
