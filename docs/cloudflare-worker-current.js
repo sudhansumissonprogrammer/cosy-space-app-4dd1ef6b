@@ -3288,9 +3288,12 @@ export default {
           try {
             const shellResult = await getFreshSpaShell(request, ctx, env);
             if (shellResult?.html) {
-              const prefetchResult = await prefetchStorefrontData(resolvedSlugCD, ctx, env);
+              const [prefetchResult, inlineProductsCdBg] = await Promise.all([
+                prefetchStorefrontData(resolvedSlugCD, ctx, env),
+                _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
+              ]);
               if (prefetchResult.data) {
-                const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source);
+                const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source, inlineProductsCdBg);
                 const fullHeaders = new Headers();
                 fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                 fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
