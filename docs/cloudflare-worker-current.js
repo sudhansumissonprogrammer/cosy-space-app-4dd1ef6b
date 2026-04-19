@@ -2896,6 +2896,38 @@ export default {
       }
     }
 
+    // ─── v6.6.0: STOREFRONT DATA-ONLY ENDPOINT ───
+    // When the cold path ships shell + Promise (no embedded data),
+    // the browser fetches this endpoint to resolve __STOREFRONT_PREFETCH__.
+    // No HTML, just JSON — same prefetchStorefrontData payload.
+    if (url.searchParams.get("__sf_data") === "1" || request.headers.get("x-sf-data-only") === "1") {
+      try {
+        let dataSlug = null;
+        if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
+          dataSlug = hostname.replace(`.${ROOT_DOMAIN}`, "").replace(/^www\./, "");
+        } else if (hostname !== ROOT_DOMAIN && !hostname.startsWith("www.")) {
+          dataSlug = await resolveDomain(hostname.replace(/^www\./, ""), env);
+        }
+        if (dataSlug) {
+          const result = await prefetchStorefrontData(dataSlug, ctx, env);
+          if (result?.data) {
+            return new Response(JSON.stringify(result.data), {
+              status: 200,
+              headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Cache-Control": "public, max-age=60, stale-while-revalidate=600",
+                "X-Data-Source": result.source || "data-only",
+                ...SECURITY_HEADERS,
+              },
+            });
+          }
+        }
+        return new Response("null", { status: 404, headers: { "Content-Type": "application/json" } });
+      } catch {
+        return new Response("null", { status: 500, headers: { "Content-Type": "application/json" } });
+      }
+    }
+
     // ─── STATIC ASSETS ───
     const isStaticAsset =
       url.pathname.startsWith("/assets/") ||
