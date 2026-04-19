@@ -420,7 +420,7 @@ function _buildSsrHeaderHero(themeLite, isMobile) {
     header += `<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">`;
   }
   if (logo) {
-    header += `<img src="${heroEsc && false}${logo}" alt="" width="32" height="32" style="width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0" />`;
+    header += `<img src="${logo}" alt="" width="32" height="32" style="width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0" />`;
   } else {
     header += `<div style="width:32px;height:32px;border-radius:8px;background:${text};opacity:0.08;flex-shrink:0"></div>`;
   }
@@ -558,7 +558,7 @@ function getSkeletonMuted(textColor) {
 function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlineProducts) {
   const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
   const skeletonMuted = themeLite ? getSkeletonMuted(themeLite.tc || themeLite.text_color || "#1a1a1a") : "#e8e8e8";
-  const skeleton = buildSkeleton(bgColor, skeletonMuted, false);
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, false, themeLite, hostname);
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
 
   // Build canonical URL
@@ -1703,8 +1703,23 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   }
 
   const skeletonMuted = getSkeletonMuted(textColor);
-  // FIX #11: Pass actual bgColor
-  const skeleton = buildSkeleton(bgColor, skeletonMuted);
+  // FIX #11: Pass actual bgColor. v6.7.0: also pass themeLite for SSR header+hero.
+  const _themeLiteForSkel = (storefrontData?.store && storefrontData?.theme_config) ? {
+    bg: storefrontData.theme_config.background_color || bgColor,
+    tc: storefrontData.theme_config.text_color || textColor,
+    pc: storefrontData.theme_config.primary_color,
+    hf: storefrontData.theme_config.heading_font,
+    hla: storefrontData.theme_config.header_logo_alignment,
+    hs: storefrontData.theme_config.header_style,
+    nm: storefrontData.store.name || "",
+    lg: storefrontData.store.logo_url || "",
+    bn: storefrontData.store.banner_url || "",
+    mh: storefrontData.store.mobile_hero_url ||
+      (Array.isArray(storefrontData.store.mobile_hero_images) && typeof storefrontData.store.mobile_hero_images[0] === "string"
+        ? storefrontData.store.mobile_hero_images[0]
+        : ""),
+  } : null;
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, true, _themeLiteForSkel);
 
   // LCP preload: hero image (mobile_hero > banner > logo)
   let lcpPreload = "";
