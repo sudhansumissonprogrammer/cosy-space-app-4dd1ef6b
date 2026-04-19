@@ -119,10 +119,12 @@ export default defineConfig(({ mode }) => ({
             return "radix";
           }
 
-          // === Lucide icons — pure leaf SVGs, no circular risk ===
-          if (id.includes("node_modules/lucide-react")) {
-            return "icons";
-          }
+          // === Lucide icons ===
+          // NOTE: Previously grouped into "icons" chunk (~55KB) — this forced
+          // every storefront cold load to download the full icon library even
+          // though StorefrontNotFound only uses one icon. Letting Vite split
+          // per-route allows tree-shaking: each page only ships the ~3-5 icons
+          // it actually uses (saves ~50KB raw / ~10KB gz on cold load).
 
           // Charts (recharts/d3) left to Vite's default splitting
           // to avoid circular dep with framework chunk
