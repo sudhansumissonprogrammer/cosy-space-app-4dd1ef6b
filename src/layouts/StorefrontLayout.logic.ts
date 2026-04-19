@@ -82,8 +82,12 @@ export function useStorefront(slugOverride?: string) {
     enabled: !!slug,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    // Seed initialData with a stale timestamp so React Query schedules an
+    // immediate background refetch. This guarantees that if the merchant
+    // changed the theme/colors, a refresh on the storefront picks up the
+    // new values within ~1 RTT (instead of waiting 2 minutes for staleTime).
     ...(injected?.store && slug && !seeded.current
-      ? { initialData: injected, initialDataUpdatedAt: Date.now() }
+      ? { initialData: injected, initialDataUpdatedAt: 0 }
       : {}),
   });
 
