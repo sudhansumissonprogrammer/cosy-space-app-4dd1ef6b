@@ -49,6 +49,29 @@
     </style>
     <script>
       (function(){
+        /* ─── Phase 1: Pre-React Facebook Pixel shim + early init ───
+           Create fbq shim synchronously so any event queued before React loads
+           is buffered. If Worker injected __STOREFRONT_DATA__ with a pixel ID,
+           fire init+PageView NOW (saves ~500ms vs waiting for React useEffect). */
+        (function initFbqEarly(){
+          var w=window;if(w.fbq)return;
+          var q=function(){q.callMethod?q.callMethod.apply(q,arguments):q.queue.push(arguments)};
+          if(!w._fbq)w._fbq=q;q.push=q;q.loaded=true;q.version='2.0';q.queue=[];w.fbq=q;
+          var pid=w.__STOREFRONT_DATA__&&w.__STOREFRONT_DATA__.store&&w.__STOREFRONT_DATA__.store.facebook_pixel_id;
+          if(pid){
+            w.__SF_PIXEL_INITED__=pid;
+            w.fbq('init',pid);
+            w.fbq('track','PageView');
+            /* Defer the actual SDK download to idle — events stay queued in shim */
+            var loadSdk=function(){
+              if(document.getElementById('fb-pixel-script'))return;
+              var s=document.createElement('script');s.id='fb-pixel-script';s.async=true;
+              s.src='https://connect.facebook.net/en_US/fbevents.js';document.head.appendChild(s);
+            };
+            if('requestIdleCallback' in w){w.requestIdleCallback(loadSdk,{timeout:4000});}else{setTimeout(loadSdk,2000);}
+          }
+        })();
+
         /* If Worker already injected fonts (data-sf-font), skip — single source of truth.
            Otherwise (preview/localhost), fall back to dynamic Google Fonts injection. */
         function injectGFont(hf,bf){

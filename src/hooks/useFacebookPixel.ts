@@ -39,8 +39,12 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
   useEffect(() => {
     if (!pixelId) return;
 
+    // Phase 1: If index.html inline script already initialized this pixel,
+    // skip — avoids duplicate init + duplicate PageView.
+    const alreadyInited = (window as any).__SF_PIXEL_INITED__ === pixelId;
+
     // Don't inject twice
-    if (document.getElementById("fb-pixel-script")) return;
+    if (document.getElementById("fb-pixel-script") && alreadyInited) return;
 
     // Defer actual script loading to idle time — events are queued by shim
     const schedule =
@@ -70,8 +74,12 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
     });
 
     // Init + PageView fire immediately via shim (queued until script loads)
-    window.fbq("init", pixelId);
-    window.fbq("track", "PageView");
+    // — but skip if inline script already did it (avoids double PageView).
+    if (!alreadyInited) {
+      window.fbq("init", pixelId);
+      window.fbq("track", "PageView");
+      (window as any).__SF_PIXEL_INITED__ = pixelId;
+    }
 
     return () => {
       document.getElementById("fb-pixel-script")?.remove();
