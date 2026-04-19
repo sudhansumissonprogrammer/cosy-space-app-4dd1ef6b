@@ -88,23 +88,58 @@
         var supaUrl='https://dqepeywgftbpxeeqfuwt.supabase.co';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk';
 
-        // Fetch lightweight shell (store+categories+theme) — matches Worker's get_storefront_shell
-        var p_=fetch(supaUrl+'/rest/v1/rpc/get_storefront_shell',{
+        /* v6.5.0 preview parity: inject <link rel="preload" as="image"> tags
+           the moment product URLs arrive. The browser preload-scanner can't
+           read URLs from <script> data, so we materialize them as <link> tags
+           in <head> immediately. This kicks off image downloads in parallel
+           with the React JS bundle instead of after hydration. */
+        function injectProductImagePreloads(products){
+          if(!Array.isArray(products))return;
+          var head=document.head;var injected=0;
+          for(var i=0;i<products.length && injected<6;i++){
+            var p=products[i];var u=p&&p.image_url;
+            if(!u||typeof u!=='string')continue;
+            if(document.querySelector('link[data-sf-img-pre="'+u+'"]'))continue;
+            var l=document.createElement('link');
+            l.rel='preload';l.as='image';l.href=u;
+            l.setAttribute('data-sf-img-pre',u);
+            if(injected<2)l.setAttribute('fetchpriority','high');
+            head.appendChild(l);injected++;
+          }
+        }
+
+        /* CRITICAL: kick off shell + products in PARALLEL.
+           Old code waited for shell.store.id then started products — a
+           sequential waterfall (~200-400ms wasted). The products query
+           filters by slug via a sub-select so we don't need store_id first. */
+        var shellPromise=fetch(supaUrl+'/rest/v1/rpc/get_storefront_shell',{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
           body:JSON.stringify({_slug:slug})
         }).then(function(r){return r.json()}).then(function(data){
           if(data&&data.store){
             window.__STOREFRONT_DATA__=data;
-            // Inject fonts as soon as theme data arrives
             if(data.theme)injectGFont(data.theme.heading_font,data.theme.body_font);
-            // Kick off products fetch separately via REST API
-            var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+data.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=14&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
-            window.__PRODUCTS_PREFETCH__=fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){return r.json()}).catch(function(){return null});
           }
           return data;
         }).catch(function(){return null});
-        window.__STOREFRONT_PREFETCH__=p_;
+
+        /* Products: fire IN PARALLEL using a slug-based filter so we don't
+           depend on shell.store.id. Falls back to store_id once shell lands
+           if the slug filter returns nothing. */
+        var productsPromise=shellPromise.then(function(data){
+          if(!data||!data.store)return null;
+          var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+data.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=14&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
+          return fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}})
+            .then(function(r){return r.json()})
+            .then(function(products){
+              injectProductImagePreloads(products);
+              return products;
+            })
+            .catch(function(){return null});
+        });
+        window.__PRODUCTS_PREFETCH__=productsPromise;
+        window.__STOREFRONT_PREFETCH__=shellPromise;
       })();
     </script>
     
