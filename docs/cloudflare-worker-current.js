@@ -272,9 +272,13 @@ function _capMapSize(map, max) {
    FIX #11: buildSkeleton now actually uses bgColor param
    ============================================================ */
 
-// FIX #26: Faster skeleton removal — 80ms fade (was 380ms total).
-// Saves ~300ms of perceived wait between data-ready and real content visible.
-function getSkeletonCleanupScript(fallbackMs = 3500) {
+// FIX #27: Wait for at least one real image to finish loading before fading
+// the skeleton. Previously, kill() fired on storefront:content-ready (which
+// signals data arrival) — but lazy chunks + image downloads hadn't painted
+// yet, producing a 1-2s blank-white flash between skeleton removal and
+// content visibility. Now we poll until an <img> in #root has complete=true
+// && naturalWidth>0, then fade in 80ms.
+function getSkeletonCleanupScript(fallbackMs = 12000) {
   return `<script>(function(){
     var removed=false;
     function kill(){
@@ -286,8 +290,34 @@ function getSkeletonCleanupScript(fallbackMs = 3500) {
       s.style.opacity='0';
       setTimeout(function(){s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();},90);
     }
-    window.addEventListener('storefront:content-ready',kill,{once:true});
-    window.addEventListener('storefront:mounted',kill,{once:true});
+    function hasRealContent(){
+      var root=document.getElementById('root');
+      if(!root)return false;
+      var totalHeight=0;var kids=root.children;
+      for(var i=0;i<kids.length;i++){totalHeight+=kids[i].offsetHeight;}
+      if(totalHeight<400)return false;
+      if(root.querySelector('[data-storefront-ready]'))return true;
+      var imgs=root.querySelectorAll('img');
+      if(!imgs.length)return false;
+      for(var j=0;j<imgs.length;j++){
+        if(imgs[j].complete && imgs[j].naturalWidth>0)return true;
+      }
+      return false;
+    }
+    var tries=0;
+    function waitForPaint(){
+      if(removed)return;
+      if(hasRealContent()){
+        requestAnimationFrame(function(){requestAnimationFrame(kill);});
+        return;
+      }
+      tries++;
+      if(tries>300){kill();return;}
+      setTimeout(waitForPaint,32);
+    }
+    window.addEventListener('storefront:content-ready',waitForPaint,{once:true});
+    if(document.readyState!=='loading'){setTimeout(waitForPaint,200);}
+    else{document.addEventListener('DOMContentLoaded',function(){setTimeout(waitForPaint,200);},{once:true});}
     setTimeout(kill,${fallbackMs});
   })()</script>`;
 }
