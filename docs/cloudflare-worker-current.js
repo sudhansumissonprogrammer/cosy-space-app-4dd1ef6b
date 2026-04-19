@@ -1579,8 +1579,13 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   // the browser begins downloading them at byte 0 (BEFORE any JS executes).
   let productImagePreloads = "";
   let productPreloaderGrid = "";
+  let productsJson = "";
   if (Array.isArray(storefrontData?.products) && storefrontData.products.length > 0) {
-    const productsJson = JSON.stringify(storefrontData.products);
+    productsJson = JSON.stringify(storefrontData.products);
+  } else if (inlineProducts && typeof inlineProducts === "string") {
+    productsJson = inlineProducts;
+  }
+  if (productsJson) {
     productImagePreloads = _buildProductImagePreloads(productsJson, 6);
     productPreloaderGrid = _buildProductPreloaderGrid(productsJson, 8);
   }
