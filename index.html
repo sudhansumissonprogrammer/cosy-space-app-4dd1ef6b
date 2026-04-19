@@ -237,27 +237,20 @@
         function hasRealContent(){
           var root=document.getElementById('root');
           if(!root) return false;
-          /* Real content = wrapper has substantial height AND at least one
-             image has actually FINISHED loading (complete + naturalWidth>0).
-             Just checking that an <img> exists in the DOM isn't enough — the
-             skeleton would fade while images are still downloading, producing
-             a blank flash. We wait until at least one image has a real bitmap
-             ready to paint, which means the user will see content immediately. */
+          /* Real content = wrapper has substantial height. We do NOT wait for
+             images to finish decoding — Supabase image-transform can take 2-3s
+             per image, which would block FCP unnecessarily. The product card
+             grid reserves layout space (aspect-ratio), so fading the skeleton
+             on first commit shows the user the page structure immediately
+             while images stream in progressively (browser-native behavior). */
           var totalHeight=0;
           var kids=root.children;
           for(var i=0;i<kids.length;i++){
             totalHeight+=kids[i].offsetHeight;
           }
-          if(totalHeight<400) return false;
-          /* Explicit ready signal short-circuits image wait (used by pages
-             that don't have above-the-fold images, e.g. text-only views). */
-          if(root.querySelector('[data-storefront-ready]')) return true;
-          var imgs=root.querySelectorAll('img');
-          if(!imgs.length) return false;
-          for(var j=0;j<imgs.length;j++){
-            if(imgs[j].complete && imgs[j].naturalWidth>0) return true;
-          }
-          return false;
+          /* Need real React content (not just early shell). 400px ensures
+             nav + at least one section is mounted before we fade. */
+          return totalHeight>=400;
         }
 
         function waitForPaint(){
