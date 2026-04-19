@@ -31,7 +31,7 @@ export default function V19ProductCard({ product, slug, store, priority = false 
   return (
     <div className="v19-card relative">
       <Link to={productPath} className="block">
-        <div className="relative w-full overflow-hidden rounded-lg bg-gray-50" style={{ aspectRatio: "1/1" }}>
+        <div className="relative w-full overflow-hidden rounded-lg bg-gray-50 aspect-square">
           {/* Delivery time pill — Blinkit signature */}
           <div className="v19-delivery-badge">
             <Clock className="h-2.5 w-2.5" strokeWidth={3} />

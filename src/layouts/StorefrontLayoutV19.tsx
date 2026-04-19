@@ -14,7 +14,7 @@ const V19_STYLES = `
   .v19-section-title h3 { font-size: 18px; font-weight: 900; color: #1a1a1a; letter-spacing: -0.01em; }
   .v19-section-title a { font-size: 12px; font-weight: 700; color: #036B52; display: inline-flex; align-items: center; gap: 2px; }
   .v19-cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .v19-cat-circle .circle { width: 100%; aspect-ratio: 1/1; border-radius: 14px; position: relative; overflow: hidden; }
+  .v19-cat-circle .circle { width: 100%; padding-top: 100%; border-radius: 14px; position: relative; overflow: hidden; }
   .v19-cat-circle .label { font-size: 11px; font-weight: 600; color: #1a1a1a; text-align: center; line-height: 1.2; max-width: 100%; }
   .v19-promo-card { flex-shrink: 0; width: 78%; border-radius: 16px; overflow: hidden; padding: 18px; color: #1a1a1a; min-height: 130px; display: flex; flex-direction: column; justify-content: space-between; }
   .v19-promo-card h2 { font-size: 22px; font-weight: 900; line-height: 1.05; }
