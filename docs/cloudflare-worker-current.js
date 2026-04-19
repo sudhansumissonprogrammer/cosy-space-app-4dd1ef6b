@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.4.1";
+const WORKER_VERSION = "6.5.0";
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
@@ -432,7 +432,7 @@ function getSkeletonMuted(textColor) {
    FIX #21 — INSTANT SKELETON PAGE (returned on true cold start)
    ============================================================ */
 
-function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname) {
+function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlineProducts) {
   const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
   const skeletonMuted = themeLite ? getSkeletonMuted(themeLite.tc || themeLite.text_color || "#1a1a1a") : "#e8e8e8";
   const skeleton = buildSkeleton(bgColor, skeletonMuted, false);
@@ -444,6 +444,24 @@ function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname) {
     canonicalUrl = `https://${hostname}/`;
   }
 
+  // v6.5.0 — Inject product image preloads + preloader grid into the cold
+  // skeleton so images start downloading at byte 0, in parallel with the
+  // background warm fetch. Without this the cold path lost the entire
+  // preload-scanner advantage from v6.4.x.
+  let productImagePreloads = "";
+  let productPreloaderGrid = "";
+  if (inlineProducts && typeof inlineProducts === "string") {
+    productImagePreloads = _buildProductImagePreloads(inlineProducts, 6);
+    productPreloaderGrid = _buildProductPreloaderGrid(inlineProducts, 8);
+  }
+
+  // Preconnect to Supabase storage so image TLS/TCP is already warm by the
+  // time the preload scanner starts the actual image fetches.
+  const preconnects =
+    `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />` +
+    `<link rel="dns-prefetch" href="${SUPABASE_URL}" />` +
+    `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -451,18 +469,23 @@ function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="canonical" href="${canonicalUrl}" />
 <script>window.__STORE_SLUG__="${safeSlug}";</script>
+${preconnects}
+${productImagePreloads}
 ${themeCss}
 <style>body{margin:0;font-family:'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;background:${bgColor}}</style>
 </head>
 <body>
 ${skeleton}
+${productPreloaderGrid}
 <script>
-// FIX #27: Keep the first skeleton visible until warm HTML is ready,
-// then swap the full document in-place with NO hard reload.
+// v6.5.0: Keep the first skeleton visible until warm HTML is ready, then
+// swap the document in-place. We poll faster (every 250ms initially) so
+// once the background warm completes the user sees real content within
+// ~250ms instead of waiting up to 400ms.
 var attempts = 0;
 var swapping = false;
 function scheduleNext() {
-  var delay = attempts < 6 ? 400 : 1200;
+  var delay = attempts < 8 ? 250 : 1000;
   setTimeout(checkReady, delay);
 }
 function checkReady() {
@@ -489,7 +512,7 @@ function checkReady() {
       scheduleNext();
     });
 }
-setTimeout(checkReady, 250);
+setTimeout(checkReady, 150);
 </script>
 </body>
 </html>`;
@@ -3128,12 +3151,21 @@ export default {
       // FIX #23: Fire-and-forget — was blocking critical path for no reason
       _getSlugIndex(env).catch(() => {});
 
-      // FIX #21: Instant skeleton fast path — if shell isn't in memory,
-      // return a themed skeleton immediately while warming in background
+      // FIX #21 + v6.5.0: Instant skeleton fast path — if shell isn't in
+      // memory, return a themed skeleton immediately while warming in
+      // background. Fetch inline products IN PARALLEL with theme so we can
+      // inject <link rel="preload" as="image"> tags + a hidden preloader
+      // grid into the cold HTML — images now download in parallel with the
+      // background warm fetch.
       if (!_memShell) {
-        const themeLite = _memThemeCache.get(slug)?.lite || (await _getThemeLite(slug, env)) || null;
+        const cachedTheme = _memThemeCache.get(slug)?.lite || null;
+        const [themeLiteFresh, inlineProductsCold] = await Promise.all([
+          cachedTheme ? Promise.resolve(cachedTheme) : _getThemeLite(slug, env),
+          _getInlineProductsOrNull(hostname, slug, env, ctx),
+        ]);
+        const themeLite = cachedTheme || themeLiteFresh || null;
         const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-        const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
+        const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname, inlineProductsCold);
 
         // Kick off full warm in background
         ctx.waitUntil((async () => {
@@ -3274,15 +3306,20 @@ export default {
       .toLowerCase()
       .trim();
 
-    // FIX #21: Instant skeleton fast path for custom domains
-    // If shell isn't in memory, resolve domain first (fast KV lookup),
-    // then return skeleton immediately while warming everything in background
+    // FIX #21 + v6.5.0: Instant skeleton fast path for custom domains.
+    // After domain resolve, fetch theme + inline products in parallel so the
+    // cold HTML carries product image preloads + preloader grid.
     if (!_memShell) {
       const resolvedSlugCD = await resolveDomain(cleanDomain, env);
       if (resolvedSlugCD) {
-        const themeLite = _memThemeCache.get(resolvedSlugCD)?.lite || (await _getThemeLite(resolvedSlugCD, env)) || null;
+        const cachedThemeCD = _memThemeCache.get(resolvedSlugCD)?.lite || null;
+        const [themeLiteFreshCD, inlineProductsCdCold] = await Promise.all([
+          cachedThemeCD ? Promise.resolve(cachedThemeCD) : _getThemeLite(resolvedSlugCD, env),
+          _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
+        ]);
+        const themeLite = cachedThemeCD || themeLiteFreshCD || null;
         const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-        const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname);
+        const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname, inlineProductsCdCold);
 
         ctx.waitUntil((async () => {
           try {
