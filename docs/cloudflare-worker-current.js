@@ -151,6 +151,54 @@ const MEM_STOREFRONT_CACHE_MAX = 1_000;
 const MEM_STOREFRONT_TTL = 600_000; // 10 min
 
 /* ============================================================
+   v6.6.0 — THEME-AWARE CHUNK PRELOADS
+   Asset manifest maps theme number → {layout, home} chunk URLs so the
+   worker can inject <link rel="modulepreload"> for the active theme's
+   code. Eliminates the index.js → theme-layout → theme-home waterfall
+   on cold loads (saves ~600-1000ms on a fresh device).
+   ============================================================ */
+
+let _memAssetManifest = null;
+let _memAssetManifestTs = 0;
+const ASSET_MANIFEST_TTL = 1_800_000; // 30 min — invalidated on deploy
+let _inflightAssetManifest = null;
+
+async function _getAssetManifest(request) {
+  if (_memAssetManifest && Date.now() < _memAssetManifestTs) return _memAssetManifest;
+  if (_inflightAssetManifest) return _inflightAssetManifest;
+
+  const origin = new URL(request.url).origin;
+  _inflightAssetManifest = (async () => {
+    try {
+      const r = await fetch(`${origin}/asset-manifest.json`, {
+        cf: { cacheTtl: 300, cacheEverything: true },
+      });
+      if (!r.ok) return null;
+      const json = await r.json();
+      _memAssetManifest = json;
+      _memAssetManifestTs = Date.now() + ASSET_MANIFEST_TTL;
+      return json;
+    } catch {
+      return null;
+    } finally {
+      _inflightAssetManifest = null;
+    }
+  })();
+  return _inflightAssetManifest;
+}
+
+function _buildThemeChunkPreloads(themeNumber, manifest) {
+  if (!manifest || !themeNumber) return "";
+  const key = String(themeNumber);
+  const entry = manifest.themes && manifest.themes[key];
+  if (!entry) return "";
+  let out = "";
+  if (entry.layout) out += `<link rel="modulepreload" href="${entry.layout}" />`;
+  if (entry.home) out += `<link rel="modulepreload" href="${entry.home}" />`;
+  return out;
+}
+
+/* ============================================================
    REVALIDATION COOLDOWN
    ============================================================ */
 
