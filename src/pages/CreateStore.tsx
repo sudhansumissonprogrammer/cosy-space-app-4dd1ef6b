@@ -303,50 +303,46 @@ export default function CreateStore() {
           if (themeErr) console.warn("Theme config insert failed:", themeErr.message);
         });
 
-        // AI-powered content generation (non-blocking)
+        // Fast static content (replaces slow AI generation to speed up store creation)
         try {
-          const { data: aiData, error: aiErr } = await supabase.functions.invoke(
-            "generate-store-content",
-            {
-              body: {
-                store_name: name.trim(),
-                store_description: description.trim() || name.trim(),
-              },
-            }
-          );
+          const storeName = name.trim();
+          const shortDesc = description.trim();
 
-          if (!aiErr && aiData && !aiData.error) {
-            const updatePayload: Record<string, string> = {};
-            if (aiData.store_description) updatePayload.description = aiData.store_description;
-            if (aiData.meta_title) updatePayload.meta_title = aiData.meta_title;
-            if (aiData.meta_description) updatePayload.meta_description = aiData.meta_description;
-            if (aiData.about_us) updatePayload.about_us_text = aiData.about_us;
+          const aboutUs = `Welcome to ${storeName}! 🛍️\n\nWe are passionate about bringing you carefully curated products with quality you can trust. Every item in our collection is hand-picked to ensure it meets our high standards.\n\nOur mission is simple — make shopping easy, affordable, and delightful for every customer. From fast delivery to friendly support, we are here for you at every step.\n\nThank you for choosing ${storeName}. We can't wait to serve you! ❤️`;
 
-            if (Object.keys(updatePayload).length > 0) {
-              await (supabase as any)
-                .from("stores")
-                .update(updatePayload)
-                .eq("id", newStore.id);
-            }
+          const metaTitle = `${storeName} — Shop Online`.substring(0, 60);
+          const metaDescription = (shortDesc
+            ? `${storeName}: ${shortDesc}`
+            : `Shop the best products at ${storeName}. Quality items, fast delivery, and great prices. Order now!`
+          ).substring(0, 150);
 
-            if (aiData.about_us) {
-              await (supabase as any).from("store_pages").insert({
-                store_id: newStore.id,
-                title: "About Us",
-                slug: "about-us",
-                page_type: "about",
-                content: aiData.about_us,
-                is_active: true,
-                display_order: 0,
-              }).then(({ error: pageErr }: any) => {
-                if (pageErr) console.warn("About page insert failed:", pageErr.message);
-              });
-            }
-          } else {
-            console.warn("AI content generation skipped:", aiErr || aiData?.error);
+          const updatePayload: Record<string, string> = {
+            meta_title: metaTitle,
+            meta_description: metaDescription,
+            about_us_text: aboutUs,
+          };
+          if (!shortDesc) {
+            updatePayload.description = `Discover quality products at ${storeName}. Shop now for the best deals!`;
           }
-        } catch (aiError) {
-          console.warn("AI content generation failed (non-blocking):", aiError);
+
+          await (supabase as any)
+            .from("stores")
+            .update(updatePayload)
+            .eq("id", newStore.id);
+
+          await (supabase as any).from("store_pages").insert({
+            store_id: newStore.id,
+            title: "About Us",
+            slug: "about-us",
+            page_type: "about",
+            content: aboutUs,
+            is_active: true,
+            display_order: 0,
+          }).then(({ error: pageErr }: any) => {
+            if (pageErr) console.warn("About page insert failed:", pageErr.message);
+          });
+        } catch (contentError) {
+          console.warn("Static content generation failed (non-blocking):", contentError);
         }
 
         // Seed 3 demo categories + 4 demo products
