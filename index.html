@@ -190,8 +190,12 @@
           ['sf-skel','inline-skel'].forEach(function(id){
             var s=document.getElementById(id);
             if(!s) return;
-            s.style.display='none';
-            if(s.remove)s.remove();
+            /* Fade out smoothly so user never sees a blank flash */
+            s.style.opacity='0';
+            s.style.pointerEvents='none';
+            setTimeout(function(){
+              if(s.parentNode) s.parentNode.removeChild(s);
+            },220);
           });
         }
 
