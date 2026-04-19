@@ -1574,6 +1574,17 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   // Preload critical font
   lcpPreload += `<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />\n`;
 
+  // v6.4.0: Preload-scanner image fast-path —
+  // emit <link rel="preload" as="image"> for the first 6 product images so
+  // the browser begins downloading them at byte 0 (BEFORE any JS executes).
+  let productImagePreloads = "";
+  let productPreloaderGrid = "";
+  if (Array.isArray(storefrontData?.products) && storefrontData.products.length > 0) {
+    const productsJson = JSON.stringify(storefrontData.products);
+    productImagePreloads = _buildProductImagePreloads(productsJson, 6);
+    productPreloaderGrid = _buildProductPreloaderGrid(productsJson, 8);
+  }
+
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
   let cssPreload = cssMatch ? `<link rel="preload" href="${cssMatch[1]}" as="style" />\n` : "";
 
@@ -1590,9 +1601,12 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 
   let injectedHtml = html.replace(
     "<head>",
-    `<head>${injection}${ogMeta}${inlineThemeCss}${lcpPreload}${cssPreload}${modulePreloads}`,
+    `<head>${injection}${ogMeta}${inlineThemeCss}${productImagePreloads}${lcpPreload}${cssPreload}${modulePreloads}`,
   );
-  injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}<div id="root">`);
+  // Inject skeleton + invisible product preloader grid before #root.
+  // The grid's <img> tags are read by the preload-scanner, queueing image
+  // downloads in parallel with the React JS bundle.
+  injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}${productPreloaderGrid}<div id="root">`);
   return { html: injectedHtml, dataSource };
 }
 
