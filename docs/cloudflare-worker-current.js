@@ -57,7 +57,27 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.3.2";
+const WORKER_VERSION = "6.4.0";
+
+/* ============================================================
+   v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
+
+   Problem: Products were inlined as JSON in <script>window.__PRODUCTS_INLINE__>.
+   The browser preload scanner CANNOT read URLs from inside <script> tags,
+   so image downloads only began after React mounted (~2.5s in).
+
+   Fix: Two-pronged image fast-path:
+     1. Inject <link rel="preload" as="image" fetchpriority="high"> tags for
+        the first 6 product images directly in <head>. The preload scanner
+        reads these at byte 0 and starts downloads immediately (~50ms).
+     2. Render real <img> tags for the first 8 products inside the skeleton
+        DOM. These act as a hidden "preloader grid" — the browser fetches
+        them in parallel with the React JS bundle. By the time React mounts,
+        images are already in the HTTP cache, so first paint is instant.
+
+   Result: Hero product images download in parallel with JS instead of
+   sequentially after JS executes. Expected gain: 2-3s on cold load.
+   ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 
@@ -989,6 +1009,71 @@ async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
 }
 
 /* ============================================================
+   v6.4.0 — PRELOAD-SCANNER IMAGE FAST-PATH HELPERS
+   ============================================================ */
+
+/** Parse the inline products JSON string and return the first N image URLs. */
+function _extractTopProductImages(inlineProductsStr, n) {
+  if (!inlineProductsStr) return [];
+  try {
+    const arr = JSON.parse(inlineProductsStr);
+    if (!Array.isArray(arr)) return [];
+    const out = [];
+    for (let i = 0; i < arr.length && out.length < n; i++) {
+      const p = arr[i];
+      const url =
+        (p && (p.image_url || (Array.isArray(p.product_images) && p.product_images[0]?.image_url))) || "";
+      if (url && typeof url === "string" && url.startsWith("http")) {
+        out.push({ url, name: p.name || "" });
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Build `<link rel="preload" as="image">` tags for the first N product images.
+ * The preload scanner sees these BEFORE any JS executes — downloads start
+ * within ~50ms of HTML arrival instead of ~2500ms after React renders.
+ */
+function _buildProductImagePreloads(inlineProductsStr, count = 6) {
+  const items = _extractTopProductImages(inlineProductsStr, count);
+  if (!items.length) return "";
+  let out = "";
+  for (let i = 0; i < items.length; i++) {
+    const u = escapeHtml(items[i].url);
+    const fp = i < 2 ? ` fetchpriority="high"` : "";
+    out += `<link rel="preload" as="image" href="${u}"${fp} />\n`;
+  }
+  return out;
+}
+
+/**
+ * Build a hidden "preloader grid" of <img> tags for the first N products.
+ * The browser parses these and queues the image downloads in parallel with
+ * the React bundle download. Images land in the HTTP cache so when React
+ * eventually renders the real product cards, the <img> requests are
+ * served instantly from cache — no second network round trip.
+ *
+ * The grid is visually invisible but technically present so the
+ * preload-scanner picks up every <img src>.
+ */
+function _buildProductPreloaderGrid(inlineProductsStr, count = 8) {
+  const items = _extractTopProductImages(inlineProductsStr, count);
+  if (!items.length) return "";
+  let imgs = "";
+  for (let i = 0; i < items.length; i++) {
+    const u = escapeHtml(items[i].url);
+    const eager = i < 4 ? ' loading="eager"' : ' loading="lazy"';
+    const fp = i < 2 ? ' fetchpriority="high"' : "";
+    imgs += `<img src="${u}" alt=""${eager}${fp} decoding="async" width="1" height="1" />`;
+  }
+  return `<div aria-hidden="true" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;clip:rect(0 0 0 0)">${imgs}</div>`;
+}
+
+/* ============================================================
    DOMAIN RESOLUTION (in-memory → Cache API → KV → DB)
    ============================================================ */
 
@@ -1489,6 +1574,17 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   // Preload critical font
   lcpPreload += `<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />\n`;
 
+  // v6.4.0: Preload-scanner image fast-path —
+  // emit <link rel="preload" as="image"> for the first 6 product images so
+  // the browser begins downloading them at byte 0 (BEFORE any JS executes).
+  let productImagePreloads = "";
+  let productPreloaderGrid = "";
+  if (Array.isArray(storefrontData?.products) && storefrontData.products.length > 0) {
+    const productsJson = JSON.stringify(storefrontData.products);
+    productImagePreloads = _buildProductImagePreloads(productsJson, 6);
+    productPreloaderGrid = _buildProductPreloaderGrid(productsJson, 8);
+  }
+
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
   let cssPreload = cssMatch ? `<link rel="preload" href="${cssMatch[1]}" as="style" />\n` : "";
 
@@ -1505,9 +1601,12 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
 
   let injectedHtml = html.replace(
     "<head>",
-    `<head>${injection}${ogMeta}${inlineThemeCss}${lcpPreload}${cssPreload}${modulePreloads}`,
+    `<head>${injection}${ogMeta}${inlineThemeCss}${productImagePreloads}${lcpPreload}${cssPreload}${modulePreloads}`,
   );
-  injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}<div id="root">`);
+  // Inject skeleton + invisible product preloader grid before #root.
+  // The grid's <img> tags are read by the preload-scanner, queueing image
+  // downloads in parallel with the React JS bundle.
+  injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}${productPreloaderGrid}<div id="root">`);
   return { html: injectedHtml, dataSource };
 }
 
@@ -1549,8 +1648,18 @@ async function serveStreamedHtml(
       const themeHint = themeLite ? `window.__THEME__=${JSON.stringify(themeLite)};` : "";
       const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}</script>`;
 
+      // v6.4.0: Preload-scanner image fast-path — emit <link rel="preload">
+      // tags for the first 6 product images directly in <head>. The browser
+      // starts downloading them BEFORE any JS runs.
+      const productImagePreloads = inlineProducts
+        ? _buildProductImagePreloads(inlineProducts, 6)
+        : "";
+
       let headChunk = html.slice(0, headEnd);
-      headChunk = headChunk.replace("<head>", `<head>${slugScript}${themeCss}${prebuiltHead || ""}`);
+      headChunk = headChunk.replace(
+        "<head>",
+        `<head>${slugScript}${themeCss}${productImagePreloads}${prebuiltHead || ""}`,
+      );
       headChunk += "</head>";
 
       // Flush head immediately — browser starts fetching assets NOW
@@ -1564,8 +1673,22 @@ async function serveStreamedHtml(
       // FIX #11: Pass actual bgColor
       const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
+      // v6.4.0: Hidden product preloader grid — real <img> tags so the
+      // preload-scanner queues image downloads in parallel with React JS.
+      // Prefer fresh storefront data (richer); fall back to inlineProducts.
+      let preloaderProductsJson = inlineProducts || "";
+      if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
+        preloaderProductsJson = JSON.stringify(storefrontResult.data.products);
+      }
+      const productPreloaderGrid = preloaderProductsJson
+        ? _buildProductPreloaderGrid(preloaderProductsJson, 8)
+        : "";
+
       let bodyChunk = html.slice(headEnd + 7);
-      bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}<div id="root">`);
+      bodyChunk = bodyChunk.replace(
+        '<div id="root">',
+        `${skeleton}${productPreloaderGrid}<div id="root">`,
+      );
 
       if (storefrontResult?.data) {
         const jsonStr = JSON.stringify(storefrontResult.data).replace(/<\/script/gi, "<\\/script");
