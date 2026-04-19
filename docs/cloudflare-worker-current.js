@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.5.0";
+const WORKER_VERSION = "6.6.0";
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
@@ -149,6 +149,54 @@ const _memStorefrontCache = new Map();
 const MEM_STOREFRONT_CACHE_MAX = 1_000;
 // FIX #20: Raised from 120_000 (2min) → 600_000 (10min)
 const MEM_STOREFRONT_TTL = 600_000; // 10 min
+
+/* ============================================================
+   v6.6.0 — THEME-AWARE CHUNK PRELOADS
+   Asset manifest maps theme number → {layout, home} chunk URLs so the
+   worker can inject <link rel="modulepreload"> for the active theme's
+   code. Eliminates the index.js → theme-layout → theme-home waterfall
+   on cold loads (saves ~600-1000ms on a fresh device).
+   ============================================================ */
+
+let _memAssetManifest = null;
+let _memAssetManifestTs = 0;
+const ASSET_MANIFEST_TTL = 1_800_000; // 30 min — invalidated on deploy
+let _inflightAssetManifest = null;
+
+async function _getAssetManifest(request) {
+  if (_memAssetManifest && Date.now() < _memAssetManifestTs) return _memAssetManifest;
+  if (_inflightAssetManifest) return _inflightAssetManifest;
+
+  const origin = new URL(request.url).origin;
+  _inflightAssetManifest = (async () => {
+    try {
+      const r = await fetch(`${origin}/asset-manifest.json`, {
+        cf: { cacheTtl: 300, cacheEverything: true },
+      });
+      if (!r.ok) return null;
+      const json = await r.json();
+      _memAssetManifest = json;
+      _memAssetManifestTs = Date.now() + ASSET_MANIFEST_TTL;
+      return json;
+    } catch {
+      return null;
+    } finally {
+      _inflightAssetManifest = null;
+    }
+  })();
+  return _inflightAssetManifest;
+}
+
+function _buildThemeChunkPreloads(themeNumber, manifest) {
+  if (!manifest || !themeNumber) return "";
+  const key = String(themeNumber);
+  const entry = manifest.themes && manifest.themes[key];
+  if (!entry) return "";
+  let out = "";
+  if (entry.layout) out += `<link rel="modulepreload" href="${entry.layout}" />`;
+  if (entry.home) out += `<link rel="modulepreload" href="${entry.home}" />`;
+  return out;
+}
 
 /* ============================================================
    REVALIDATION COOLDOWN
@@ -790,7 +838,7 @@ async function _batchKvRead(slug, env) {
 const THEME_LITE_KV_TTL = 3600;
 const THEME_LITE_CACHE_TTL = 600;
 
-function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
+function _cacheThemeForFastShell(slug, themeConfig, env, ctx, themeNumber) {
   const lite = {
     pc: themeConfig.primary_color || "#004643",
     bg: themeConfig.background_color || "#ffffff",
@@ -799,6 +847,8 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
     hf: themeConfig.heading_font || "",
     bf: themeConfig.body_font || "",
     bs: themeConfig.button_style || "rounded",
+    // v6.6.0: theme number for per-theme chunk preloads
+    tn: themeNumber != null ? String(themeNumber) : "",
   };
   const liteStr = JSON.stringify(lite);
 
@@ -954,7 +1004,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       _memStorefrontCache.set(slug, { data, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
 
       if (data?.theme_config) {
-        _cacheThemeForFastShell(slug, data.theme_config, env, ctx);
+        _cacheThemeForFastShell(slug, data.theme_config, env, ctx, data?.store?.theme);
       }
 
       if (ctx) {
@@ -1812,11 +1862,16 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
   if (linkHeader) newHeaders.set("Link", linkHeader);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) newHeaders.set(k, v);
 
+  // v6.6.0: Per-theme chunk preloads
+  const _manifest = await _getAssetManifest(request);
+  const _themePreloads = _buildThemeChunkPreloads(themeLite?.tn, _manifest);
+  const _prebuiltHeadWithTheme = (prebuiltHead || "") + _themePreloads;
+
   const response = await serveStreamedHtml(
     slug,
     shellResult,
     themeLite,
-    prebuiltHead,
+    _prebuiltHeadWithTheme,
     inlineProducts,
     storefrontPromise,
     newHeaders,
@@ -2572,7 +2627,7 @@ async function handlePrewarm(request, url, ctx, env) {
     results.storefrontData = dataResult.source;
 
     if (dataResult.data?.theme_config) {
-      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx);
+      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx, dataResult.data?.store?.theme);
       results.themeLite = "warmed";
     }
 
@@ -3271,12 +3326,17 @@ export default {
       if (linkHeader) responseHeaders.set("Link", linkHeader);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeaders.set(k, v);
 
+      // v6.6.0: Per-theme chunk preloads
+      const _manifestSD = await _getAssetManifest(request);
+      const _themePreloadsSD = _buildThemeChunkPreloads(themeLite?.tn, _manifestSD);
+      const _prebuiltHeadSD = (prebuiltHead || "") + _themePreloadsSD;
+
       // FIX #2: Pass the ALREADY-RUNNING storefront promise (started before awaits above)
       const response = await serveStreamedHtml(
         slug,
         shellResult,
         themeLite,
-        prebuiltHead,
+        _prebuiltHeadSD,
         inlineProducts,
         earlyStorefrontPromise,
         responseHeaders,
@@ -3423,12 +3483,17 @@ export default {
       if (linkHeaderCD) responseHeadersCD.set("Link", linkHeaderCD);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) responseHeadersCD.set(k, v);
 
+      // v6.6.0: Per-theme chunk preloads
+      const _manifestCD = await _getAssetManifest(request);
+      const _themePreloadsCD = _buildThemeChunkPreloads(themeLiteCD?.tn, _manifestCD);
+      const _prebuiltHeadCDFinal = (prebuiltHeadCD || "") + _themePreloadsCD;
+
       // FIX #2: Pass the ALREADY-RUNNING promise
       const responseCD = await serveStreamedHtml(
         resolvedSlug,
         shellResultCD,
         themeLiteCD,
-        prebuiltHeadCD,
+        _prebuiltHeadCDFinal,
         inlineProductsCDReal,
         earlyStorefrontPromiseCD,
         responseHeadersCD,
