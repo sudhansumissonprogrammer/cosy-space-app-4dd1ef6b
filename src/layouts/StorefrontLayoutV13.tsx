@@ -97,7 +97,7 @@ export default function StorefrontLayoutV13({ slugOverride }: { slugOverride?: s
         <>
           <RestaurantHeader store={store} tableNumber={tableNumber} />
           <main className="pb-28">
-            <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={{ ...store, tableNumber }} /></Suspense>
+            <Suspense fallback={null}><Outlet context={{ ...store, tableNumber }} /></Suspense>
           </main>
           <WhatsAppOrderBar store={store} tableNumber={tableNumber} />
         </>

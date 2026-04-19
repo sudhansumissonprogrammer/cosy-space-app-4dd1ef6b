@@ -27,7 +27,7 @@ export default function StorefrontLayoutV12({ slugOverride }: { slugOverride?: s
           <DesktopNavBar store={store} />
           <div className="md:hidden"><ElegantHeader store={store} colors={V12_COLORS} /></div>
           <main className="pb-16 md:pb-0">
-            <Suspense fallback={<StorefrontContentSkeleton />}><Outlet context={store} /></Suspense>
+            <Suspense fallback={null}><Outlet context={store} /></Suspense>
           </main>
           <ElegantFooter store={store} colors={V12_COLORS} />
           <ElegantTabBar store={store} colors={V12_COLORS} />
