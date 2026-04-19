@@ -292,6 +292,24 @@ function getLayoutComponent(theme: string) {
   }
 }
 
+function prefetchLayoutChunk(theme: string) {
+  switch (theme) {
+    case "theme-19": return import("./layouts/StorefrontLayoutV19");
+    case "theme-18": return import("./layouts/StorefrontLayoutV18");
+    case "theme-17": return import("./layouts/StorefrontLayoutV17");
+    case "theme-16": return import("./layouts/StorefrontLayoutV16");
+    case "theme-15": return import("./layouts/StorefrontLayoutV15");
+    case "theme-14": return import("./layouts/StorefrontLayoutV14");
+    case "theme-13": return import("./layouts/StorefrontLayoutV13");
+    case "theme-12": return import("./layouts/StorefrontLayoutV12");
+    case "theme-11": return import("./layouts/StorefrontLayoutV11");
+    case "theme-10": return import("./layouts/StorefrontLayoutV10");
+    case "theme-3": return import("./layouts/StorefrontLayoutV3");
+    case "theme-2": return import("./layouts/StorefrontLayoutV2");
+    default: return import("./layouts/StorefrontLayout");
+  }
+}
+
 /**
  * Renders storefront directly using cached/injected theme — NO spinner, NO waterfall.
  * The layout itself handles data fetching and shows its own skeleton if needed.
@@ -551,18 +569,21 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
     startRoutePrefetch((window as any).__STOREFRONT_DATA__?.store?.id || cachedBulk?.store?.id);
   }, [effectiveSlug, queryClient, startRoutePrefetch]);
 
-  // 🚀 Eagerly start loading the TARGET page chunk (not just home)
-  const chunkStarted = useRef(false);
-  if (!chunkStarted.current) {
-    chunkStarted.current = true;
-    const path = window.location.pathname;
-    // If landing on home, prefetch home chunk; otherwise prefetch target page chunk
+  // 🚀 Eagerly start loading the right layout/page chunks.
+  // Re-run when theme changes from the instant fallback to the real store theme,
+  // otherwise custom-domain visits can prefetch theme-1 first and theme-19 late.
+  const chunkPrefetchKeyRef = useRef("");
+  const path = window.location.pathname;
+  const chunkPrefetchKey = `${theme}:${path}`;
+  if (chunkPrefetchKeyRef.current !== chunkPrefetchKey) {
+    chunkPrefetchKeyRef.current = chunkPrefetchKey;
+    prefetchLayoutChunk(theme).catch(() => {});
+
     const isHomePage = path === "/" || /\/store\/[^/]+\/?$/.test(path);
     if (isHomePage) {
       prefetchHomeChunk(theme).catch(() => {});
     } else {
       prefetchTargetPageChunk(path);
-      // Also prefetch home chunk at lower priority for back navigation
       requestIdleCallback?.(() => prefetchHomeChunk(theme).catch(() => {}));
     }
   }
