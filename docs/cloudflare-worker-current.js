@@ -1009,6 +1009,71 @@ async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
 }
 
 /* ============================================================
+   v6.4.0 — PRELOAD-SCANNER IMAGE FAST-PATH HELPERS
+   ============================================================ */
+
+/** Parse the inline products JSON string and return the first N image URLs. */
+function _extractTopProductImages(inlineProductsStr, n) {
+  if (!inlineProductsStr) return [];
+  try {
+    const arr = JSON.parse(inlineProductsStr);
+    if (!Array.isArray(arr)) return [];
+    const out = [];
+    for (let i = 0; i < arr.length && out.length < n; i++) {
+      const p = arr[i];
+      const url =
+        (p && (p.image_url || (Array.isArray(p.product_images) && p.product_images[0]?.image_url))) || "";
+      if (url && typeof url === "string" && url.startsWith("http")) {
+        out.push({ url, name: p.name || "" });
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Build `<link rel="preload" as="image">` tags for the first N product images.
+ * The preload scanner sees these BEFORE any JS executes — downloads start
+ * within ~50ms of HTML arrival instead of ~2500ms after React renders.
+ */
+function _buildProductImagePreloads(inlineProductsStr, count = 6) {
+  const items = _extractTopProductImages(inlineProductsStr, count);
+  if (!items.length) return "";
+  let out = "";
+  for (let i = 0; i < items.length; i++) {
+    const u = escapeHtml(items[i].url);
+    const fp = i < 2 ? ` fetchpriority="high"` : "";
+    out += `<link rel="preload" as="image" href="${u}"${fp} />\n`;
+  }
+  return out;
+}
+
+/**
+ * Build a hidden "preloader grid" of <img> tags for the first N products.
+ * The browser parses these and queues the image downloads in parallel with
+ * the React bundle download. Images land in the HTTP cache so when React
+ * eventually renders the real product cards, the <img> requests are
+ * served instantly from cache — no second network round trip.
+ *
+ * The grid is visually invisible but technically present so the
+ * preload-scanner picks up every <img src>.
+ */
+function _buildProductPreloaderGrid(inlineProductsStr, count = 8) {
+  const items = _extractTopProductImages(inlineProductsStr, count);
+  if (!items.length) return "";
+  let imgs = "";
+  for (let i = 0; i < items.length; i++) {
+    const u = escapeHtml(items[i].url);
+    const eager = i < 4 ? ' loading="eager"' : ' loading="lazy"';
+    const fp = i < 2 ? ' fetchpriority="high"' : "";
+    imgs += `<img src="${u}" alt=""${eager}${fp} decoding="async" width="1" height="1" />`;
+  }
+  return `<div aria-hidden="true" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;clip:rect(0 0 0 0)">${imgs}</div>`;
+}
+
+/* ============================================================
    DOMAIN RESOLUTION (in-memory → Cache API → KV → DB)
    ============================================================ */
 
