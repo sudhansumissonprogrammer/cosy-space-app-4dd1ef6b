@@ -121,33 +121,33 @@
 </head>
   <body>
     <!-- Worker injects #sf-skel BEFORE #root in production. Inline skeleton is
-         the fallback ONLY for preview/localhost where the Worker isn't in front. -->
-    <div id="root">
-      <!-- Inline skeleton — visible until React mounts and replaces #root children.
-           Eliminates white flash on cold load before JS is ready. -->
-      <div id="inline-skel" style="min-height:100vh;background:#fafafa;font-family:'Inter','Segoe UI',sans-serif">
-        <nav style="position:sticky;top:0;z-index:30;border-bottom:1px solid #e5e7eb;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px)">
-          <div style="max-width:80rem;margin:0 auto;display:flex;align-items:center;gap:12px;padding:0 16px;height:56px">
-            <div style="width:40px;height:40px;border-radius:8px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div>
-            <div style="flex:1"></div>
-            <div style="width:96px;height:40px;border-radius:8px;background:#e5e7eb;position:absolute;left:50%;transform:translateX(-50%);animation:skel-pulse 1.5s ease-in-out infinite"></div>
-            <div style="flex:1"></div>
-            <div style="width:36px;height:36px;border-radius:50%;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div>
-            <div style="width:36px;height:36px;border-radius:50%;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div>
-          </div>
-        </nav>
-        <div style="max-width:80rem;margin:0 auto;padding:24px 16px">
-          <div style="height:28px;width:160px;border-radius:6px;background:#e5e7eb;margin-bottom:20px;animation:skel-pulse 1.5s ease-in-out infinite"></div>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
-            <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
-            <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
-            <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
-            <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
-          </div>
+         the fallback ONLY for preview/localhost where the Worker isn't in front.
+         CRITICAL: Skeleton sits OUTSIDE #root as a fixed overlay, so React's
+         first commit can't wipe it. We hide it explicitly only after real
+         storefront content has painted (see hide-skel script below). -->
+    <div id="inline-skel" style="position:fixed;inset:0;z-index:9999;min-height:100vh;background:#fafafa;font-family:'Inter','Segoe UI',sans-serif;overflow:hidden;transition:opacity .2s ease-out">
+      <nav style="position:sticky;top:0;z-index:30;border-bottom:1px solid #e5e7eb;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px)">
+        <div style="max-width:80rem;margin:0 auto;display:flex;align-items:center;gap:12px;padding:0 16px;height:56px;position:relative">
+          <div style="width:40px;height:40px;border-radius:8px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div>
+          <div style="flex:1"></div>
+          <div style="width:96px;height:40px;border-radius:8px;background:#e5e7eb;position:absolute;left:50%;transform:translateX(-50%);animation:skel-pulse 1.5s ease-in-out infinite"></div>
+          <div style="flex:1"></div>
+          <div style="width:36px;height:36px;border-radius:50%;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div>
+          <div style="width:36px;height:36px;border-radius:50%;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div>
         </div>
-        <style>@keyframes skel-pulse{0%,100%{opacity:.6}50%{opacity:.3}}</style>
+      </nav>
+      <div style="max-width:80rem;margin:0 auto;padding:24px 16px">
+        <div style="height:28px;width:160px;border-radius:6px;background:#e5e7eb;margin-bottom:20px;animation:skel-pulse 1.5s ease-in-out infinite"></div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+          <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
+          <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
+          <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
+          <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
+        </div>
       </div>
+      <style>@keyframes skel-pulse{0%,100%{opacity:.6}50%{opacity:.3}}</style>
     </div>
+    <div id="root"></div>
     <script>
       /* Skeleton visibility logic.
          v6.3.0: If Worker already injected #sf-skel (sets window.__SF_WORKER__),
