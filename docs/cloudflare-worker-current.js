@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.4.0";
+const WORKER_VERSION = "6.4.1";
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
@@ -1487,7 +1487,7 @@ async function proxyToOriginCached(request) {
    HTML INJECTION HELPERS
    ============================================================ */
 
-function injectIntoHtml(html, slug, storefrontData, dataSource) {
+function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
@@ -1579,8 +1579,13 @@ function injectIntoHtml(html, slug, storefrontData, dataSource) {
   // the browser begins downloading them at byte 0 (BEFORE any JS executes).
   let productImagePreloads = "";
   let productPreloaderGrid = "";
+  let productsJson = "";
   if (Array.isArray(storefrontData?.products) && storefrontData.products.length > 0) {
-    const productsJson = JSON.stringify(storefrontData.products);
+    productsJson = JSON.stringify(storefrontData.products);
+  } else if (inlineProducts && typeof inlineProducts === "string") {
+    productsJson = inlineProducts;
+  }
+  if (productsJson) {
     productImagePreloads = _buildProductImagePreloads(productsJson, 6);
     productPreloaderGrid = _buildProductPreloaderGrid(productsJson, 8);
   }
@@ -1818,10 +1823,13 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const warmKey = `warm-html:${slug}`;
     if (!shouldRevalidate(warmKey)) return;
 
-    const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
+    const [prefetchResult, inlineProducts] = await Promise.all([
+      prefetchStorefrontData(slug, ctx, env),
+      _getInlineProductsOrNull(hostname, slug, env, ctx),
+    ]);
     if (!prefetchResult.data) return;
 
-    const result = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source);
+    const result = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, inlineProducts);
 
     const fullHeaders = new Headers();
     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -3132,9 +3140,12 @@ export default {
           try {
             const shellResult = await getFreshSpaShell(request, ctx, env);
             if (shellResult?.html) {
-              const prefetchResult = await prefetchStorefrontData(slug, ctx, env);
+              const [prefetchResult, inlineProductsBg] = await Promise.all([
+                prefetchStorefrontData(slug, ctx, env),
+                _getInlineProductsOrNull(hostname, slug, env, ctx),
+              ]);
               if (prefetchResult.data) {
-                const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source);
+                const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, inlineProductsBg);
                 const fullHeaders = new Headers();
                 fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                 fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
@@ -3277,9 +3288,12 @@ export default {
           try {
             const shellResult = await getFreshSpaShell(request, ctx, env);
             if (shellResult?.html) {
-              const prefetchResult = await prefetchStorefrontData(resolvedSlugCD, ctx, env);
+              const [prefetchResult, inlineProductsCdBg] = await Promise.all([
+                prefetchStorefrontData(resolvedSlugCD, ctx, env),
+                _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
+              ]);
               if (prefetchResult.data) {
-                const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source);
+                const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source, inlineProductsCdBg);
                 const fullHeaders = new Headers();
                 fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                 fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
