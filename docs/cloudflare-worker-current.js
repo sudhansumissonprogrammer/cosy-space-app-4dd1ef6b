@@ -3151,12 +3151,21 @@ export default {
       // FIX #23: Fire-and-forget — was blocking critical path for no reason
       _getSlugIndex(env).catch(() => {});
 
-      // FIX #21: Instant skeleton fast path — if shell isn't in memory,
-      // return a themed skeleton immediately while warming in background
+      // FIX #21 + v6.5.0: Instant skeleton fast path — if shell isn't in
+      // memory, return a themed skeleton immediately while warming in
+      // background. Fetch inline products IN PARALLEL with theme so we can
+      // inject <link rel="preload" as="image"> tags + a hidden preloader
+      // grid into the cold HTML — images now download in parallel with the
+      // background warm fetch.
       if (!_memShell) {
-        const themeLite = _memThemeCache.get(slug)?.lite || (await _getThemeLite(slug, env)) || null;
+        const cachedTheme = _memThemeCache.get(slug)?.lite || null;
+        const [themeLiteFresh, inlineProductsCold] = await Promise.all([
+          cachedTheme ? Promise.resolve(cachedTheme) : _getThemeLite(slug, env),
+          _getInlineProductsOrNull(hostname, slug, env, ctx),
+        ]);
+        const themeLite = cachedTheme || themeLiteFresh || null;
         const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-        const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname);
+        const skeletonHtml = _buildInstantSkeletonPage(slug, bg, themeLite, hostname, inlineProductsCold);
 
         // Kick off full warm in background
         ctx.waitUntil((async () => {
@@ -3297,15 +3306,20 @@ export default {
       .toLowerCase()
       .trim();
 
-    // FIX #21: Instant skeleton fast path for custom domains
-    // If shell isn't in memory, resolve domain first (fast KV lookup),
-    // then return skeleton immediately while warming everything in background
+    // FIX #21 + v6.5.0: Instant skeleton fast path for custom domains.
+    // After domain resolve, fetch theme + inline products in parallel so the
+    // cold HTML carries product image preloads + preloader grid.
     if (!_memShell) {
       const resolvedSlugCD = await resolveDomain(cleanDomain, env);
       if (resolvedSlugCD) {
-        const themeLite = _memThemeCache.get(resolvedSlugCD)?.lite || (await _getThemeLite(resolvedSlugCD, env)) || null;
+        const cachedThemeCD = _memThemeCache.get(resolvedSlugCD)?.lite || null;
+        const [themeLiteFreshCD, inlineProductsCdCold] = await Promise.all([
+          cachedThemeCD ? Promise.resolve(cachedThemeCD) : _getThemeLite(resolvedSlugCD, env),
+          _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
+        ]);
+        const themeLite = cachedThemeCD || themeLiteFreshCD || null;
         const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-        const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname);
+        const skeletonHtml = _buildInstantSkeletonPage(resolvedSlugCD, bg, themeLite, hostname, inlineProductsCdCold);
 
         ctx.waitUntil((async () => {
           try {
