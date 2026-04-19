@@ -518,6 +518,22 @@ setTimeout(checkReady, 150);
 </html>`;
 }
 
+/* ============================================================
+   v6.6.0 — Cold-shell-only Prefetch Promise
+   When the cold path has the shell but data isn't ready within the
+   deadline, we ship the real shell + a prefetch Promise that React
+   awaits (StorefrontLayout.logic.ts already supports
+   window.__STOREFRONT_PREFETCH__). React boots ONCE, awaits, renders.
+   No document.write. No double skeleton.
+   ============================================================ */
+function _buildPrefetchPromiseScript(slug) {
+  const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
+  return `<script>
+window.__STORE_SLUG__="${safeSlug}";
+window.__STOREFRONT_PREFETCH__=fetch("/?__sf_data=1",{cache:"no-store",headers:{"x-sf-data-only":"1"}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
+</script>`;
+}
+
 
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
