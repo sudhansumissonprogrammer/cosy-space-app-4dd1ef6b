@@ -838,7 +838,7 @@ async function _batchKvRead(slug, env) {
 const THEME_LITE_KV_TTL = 3600;
 const THEME_LITE_CACHE_TTL = 600;
 
-function _cacheThemeForFastShell(slug, themeConfig, env, ctx, themeNumber) {
+function _cacheThemeForFastShell(slug, themeConfig, env, ctx, themeNumber, storeRow) {
   const lite = {
     pc: themeConfig.primary_color || "#004643",
     bg: themeConfig.background_color || "#ffffff",
@@ -849,6 +849,17 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx, themeNumber) {
     bs: themeConfig.button_style || "rounded",
     // v6.6.0: theme number for per-theme chunk preloads
     tn: themeNumber != null ? String(themeNumber) : "",
+    // v6.7.0 (Step C): real store fields so worker can SSR header+hero
+    // (no extra KV reads needed at request time)
+    nm: (storeRow && storeRow.name) || "",
+    lg: (storeRow && storeRow.logo_url) || "",
+    bn: (storeRow && storeRow.banner_url) || "",
+    mh: (storeRow && (storeRow.mobile_hero_url ||
+      (Array.isArray(storeRow.mobile_hero_images) && typeof storeRow.mobile_hero_images[0] === "string"
+        ? storeRow.mobile_hero_images[0]
+        : ""))) || "",
+    hla: themeConfig.header_logo_alignment || "left",
+    hs: themeConfig.header_style || "normal",
   };
   const liteStr = JSON.stringify(lite);
 
@@ -1004,7 +1015,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       _memStorefrontCache.set(slug, { data, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
 
       if (data?.theme_config) {
-        _cacheThemeForFastShell(slug, data.theme_config, env, ctx, data?.store?.theme);
+        _cacheThemeForFastShell(slug, data.theme_config, env, ctx, data?.store?.theme, data?.store);
       }
 
       if (ctx) {
@@ -2627,7 +2638,7 @@ async function handlePrewarm(request, url, ctx, env) {
     results.storefrontData = dataResult.source;
 
     if (dataResult.data?.theme_config) {
-      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx, dataResult.data?.store?.theme);
+      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx, dataResult.data?.store?.theme, dataResult.data?.store);
       results.themeLite = "warmed";
     }
 
