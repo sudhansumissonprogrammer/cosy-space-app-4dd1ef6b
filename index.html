@@ -203,16 +203,26 @@
           var root=document.getElementById('root');
           if(!root) return false;
           /* Real content = wrapper has substantial height AND at least one
-             image/picture has begun rendering. Prevents premature skeleton
-             removal when React commits an empty wrapper while lazy chunks
-             are still resolving. */
+             image has actually FINISHED loading (complete + naturalWidth>0).
+             Just checking that an <img> exists in the DOM isn't enough — the
+             skeleton would fade while images are still downloading, producing
+             a blank flash. We wait until at least one image has a real bitmap
+             ready to paint, which means the user will see content immediately. */
           var totalHeight=0;
           var kids=root.children;
           for(var i=0;i<kids.length;i++){
             totalHeight+=kids[i].offsetHeight;
           }
           if(totalHeight<400) return false;
-          return !!root.querySelector('img,picture,[data-storefront-ready]');
+          /* Explicit ready signal short-circuits image wait (used by pages
+             that don't have above-the-fold images, e.g. text-only views). */
+          if(root.querySelector('[data-storefront-ready]')) return true;
+          var imgs=root.querySelectorAll('img');
+          if(!imgs.length) return false;
+          for(var j=0;j<imgs.length;j++){
+            if(imgs[j].complete && imgs[j].naturalWidth>0) return true;
+          }
+          return false;
         }
 
         function waitForPaint(){
