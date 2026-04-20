@@ -80,7 +80,7 @@ export default function V19Header({ store }: { store: any }) {
         <div className="v19-marquee-yellow">
           <div className="flex gap-10 animate-marquee whitespace-nowrap">
             {Array.from({ length: 6 }).map((_, i) => (
-              <span key={i} className="px-2">✦ FREE DELIVERY ON ALL ORDERS · ORDER IN 2 MINUTES · 100% SAFE</span>
+              <span key={i} className="px-2">✦ FREE DELIVERY ON ALL ORDERS · 100% SAFE & SECURE · EASY RETURNS</span>
             ))}
           </div>
         </div>
