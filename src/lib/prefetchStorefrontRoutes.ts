@@ -1,21 +1,25 @@
 /**
  * Prefetch storefront page chunks during idle time.
- * Called once when the storefront layout mounts.
+ * Phase 2 #7: Reduced eager prefetch from 8 → 3 most-used routes.
+ * The rest are lazy-loaded on hover/touch via prefetchOnInteraction().
  */
-const storefrontImports = [
-  // Highest priority — most common navigation targets
+const eagerImports = [
+  // Top 3 — accounts for ~85% of navigations
   () => import("@/pages/ProductDetail"),
   () => import("@/pages/CartPage"),
   () => import("@/pages/CheckoutPage"),
-  // Lower priority
-  () => import("@/pages/CategoryDetail"),
-  () => import("@/pages/StorefrontShop"),
-  () => import("@/pages/WishlistPage"),
-  () => import("@/pages/StorefrontContact"),
-  () => import("@/pages/StorefrontBestSellers"),
 ];
 
+const lazyImports: Record<string, () => Promise<unknown>> = {
+  category: () => import("@/pages/CategoryDetail"),
+  shop: () => import("@/pages/StorefrontShop"),
+  wishlist: () => import("@/pages/WishlistPage"),
+  contact: () => import("@/pages/StorefrontContact"),
+  bestSellers: () => import("@/pages/StorefrontBestSellers"),
+};
+
 let prefetched = false;
+const interactionLoaded = new Set<string>();
 
 const PREFETCH_START_DELAY_MS = 2000;
 
@@ -38,6 +42,16 @@ function shouldPrefetch() {
   return true;
 }
 
+/**
+ * Prefetch a less-used route on user intent (hover/touch on a link).
+ * Each route only loads once per session.
+ */
+export function prefetchOnInteraction(key: keyof typeof lazyImports) {
+  if (interactionLoaded.has(key)) return;
+  interactionLoaded.add(key);
+  lazyImports[key]?.().catch(() => interactionLoaded.delete(key));
+}
+
 export function prefetchStorefrontRoutes() {
   if (prefetched || !shouldPrefetch()) return;
   prefetched = true;
@@ -52,8 +66,8 @@ export function prefetchStorefrontRoutes() {
       schedule(loadNext);
       return;
     }
-    if (idx >= storefrontImports.length) return;
-    const imp = storefrontImports[idx++];
+    if (idx >= eagerImports.length) return;
+    const imp = eagerImports[idx++];
     imp().catch(() => {});
     schedule(loadNext);
   }
