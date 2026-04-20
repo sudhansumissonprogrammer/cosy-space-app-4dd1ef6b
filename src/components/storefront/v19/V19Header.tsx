@@ -24,14 +24,14 @@ export default function V19Header({ store }: { store: any }) {
       {/* Top: Delivery info + profile */}
       <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
         <Link to={storefrontPath(slug)} className="flex-1 min-w-0">
-          <div className="text-white text-[18px] font-black leading-tight tracking-tight">
+          <div className="text-white text-[22px] font-black leading-tight tracking-tight">
             Delivery in 11 minutes
           </div>
-          <div className="mt-0.5 inline-flex items-center gap-1 text-white/85 text-[12px] font-medium max-w-full">
-            <span className="font-bold">HOME</span>
+          <div className="mt-1 inline-flex items-center gap-1 text-white text-[14px] font-bold max-w-full">
+            <span className="font-extrabold">HOME</span>
             <span>·</span>
             <span className="truncate">{addressLine}</span>
-            <ChevronDown className="h-3 w-3 flex-shrink-0" strokeWidth={2.5} />
+            <ChevronDown className="h-4 w-4 flex-shrink-0" strokeWidth={2.5} />
           </div>
         </Link>
         <Link
