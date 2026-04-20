@@ -33,8 +33,8 @@ const ContactUs = () => (
       <div className="flex items-start gap-3 p-5 border-2 border-border rounded-lg">
         <MapPin className="h-6 w-6 text-primary shrink-0 mt-0.5" />
         <div>
-          <div className="font-bold text-foreground">Address</div>
-          <div className="text-sm text-muted-foreground">ShopBanao<br/>Odisha, India</div>
+          <div className="font-bold text-foreground">Registered Address</div>
+          <div className="text-sm text-muted-foreground">ShopBanao<br/>Nuagaon, Bhubaneswar<br/>Odisha 751002, India</div>
         </div>
       </div>
     </div>
