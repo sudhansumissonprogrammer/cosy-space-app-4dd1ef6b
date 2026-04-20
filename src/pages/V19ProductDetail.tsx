@@ -37,6 +37,7 @@ export default function V19ProductDetail() {
   const slug = store?.slug || "";
   const { addToCart, items, updateQuantity } = useCart();
   const totalItems = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
+  const { track } = useRecentlyViewed(store?.id);
 
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -119,6 +120,21 @@ export default function V19ProductDetail() {
   });
 
   const images = useMemo(() => (product ? resolveProductImages(product) : []), [product]);
+
+  // Track recently viewed (only after product loads)
+  useEffect(() => {
+    if (!product) return;
+    track({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      image_url: product.image_url,
+      price: Number(product.price),
+      sale_price: product.sale_price ? Number(product.sale_price) : null,
+      currency: product.currency,
+    });
+  }, [product, track]);
+
   const activeVariant: Variant | null = useMemo(() => {
     if (!product || !selectedVariantId) return null;
     return (product.product_variants || []).find((v: any) => v.id === selectedVariantId) || null;
