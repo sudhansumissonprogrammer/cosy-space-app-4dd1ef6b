@@ -34,7 +34,8 @@ export default function V19ProductDetail() {
   const store = useOutletContext<StoreData>();
   const navigate = useNavigate();
   const slug = store?.slug || "";
-  const { addToCart, items, updateQuantity, totalItems } = useCart();
+  const { addToCart, items, updateQuantity } = useCart();
+  const totalItems = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
 
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
