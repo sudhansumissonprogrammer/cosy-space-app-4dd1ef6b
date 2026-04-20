@@ -7,7 +7,7 @@ import { Plus, Minus, Package, Clock } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, resolveProductImages } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
-import { useProductCardActions } from "@/hooks/useProductCardActions";
+import { useCart } from "@/contexts/CartContext";
 
 interface Props {
   product: any;
@@ -17,7 +17,12 @@ interface Props {
 }
 
 export default function V19ProductCard({ product, slug, store, priority = false }: Props) {
-  const { cartQty, effectivePrice, handleAddToCart, updateQuantity } = useProductCardActions(product);
+  const { items, addToCart, updateQuantity } = useCart();
+  const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
+  const cartQty = cartItem?.quantity || 0;
+  const effectivePrice = product.sale_price && Number(product.sale_price) < Number(product.price)
+    ? Number(product.sale_price)
+    : Number(product.price);
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
   const images = resolveProductImages(product);
   const img = images[0];
@@ -28,8 +33,15 @@ export default function V19ProductCard({ product, slug, store, priority = false 
   const lowStock = tracksStock && stock > 0 && stock <= 5;
 
   const onAdd = (e: React.MouseEvent) => {
-    if (outOfStock) { e.preventDefault(); e.stopPropagation(); return; }
-    e.preventDefault(); e.stopPropagation(); handleAddToCart(e);
+    e.preventDefault(); e.stopPropagation();
+    if (outOfStock) return;
+    addToCart({
+      productId: product.id,
+      name: product.name,
+      price: effectivePrice,
+      image: product.image_url || undefined,
+      quantity: 1,
+    }, { silent: true });
   };
   const onInc = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty + 1); };
   const onDec = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty - 1); };
