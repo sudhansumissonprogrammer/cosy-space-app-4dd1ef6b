@@ -9,6 +9,12 @@ import V19Header from "@/components/storefront/v19/V19Header";
 const LazyV19BottomNav = lazy(() => import("@/components/storefront/v19/V19BottomNav"));
 
 const V19_STYLES = `
+  /* Theme 19 — Okra font (Blinkit's typeface). Falls back to Mulish from
+     Google Fonts which is the closest free match, then Helvetica/Arial. */
+  @import url('https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap');
+  .storefront-font, .storefront-font * {
+    font-family: 'Okra', 'Mulish', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+  }
   body { background: #f6f7f9 !important; }
   .v19-section-title { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; margin-bottom: 10px; }
   .v19-section-title h3 { font-size: 18px; font-weight: 900; color: #1a1a1a; letter-spacing: -0.01em; }
