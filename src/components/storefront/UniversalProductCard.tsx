@@ -5,6 +5,7 @@ import ProductCardStyle2 from "./ProductCardStyle2";
 import ProductCardStyle3 from "./ProductCardStyle3";
 import ProductCardStyle4 from "./ProductCardStyle4";
 import ProductCardStyle5 from "./ProductCardStyle5";
+import V19ProductCard from "./v19/V19ProductCard";
 
 import VariantPickerDialog from "./VariantPickerDialog";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
@@ -30,6 +31,10 @@ export default function UniversalProductCard({ product, slug, store, priority = 
 
   const card = (() => {
     const variantGate = hasVariants ? onVariantRequired : undefined;
+    // Theme 19 (Quick Commerce) — force Blinkit-style card across the entire storefront
+    if (store?.theme === "theme-19") {
+      return <V19ProductCard product={product} slug={slug} store={store} priority={priority} />;
+    }
     switch (cardStyle) {
       case "style-2":
         return <ProductCardStyle2 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
