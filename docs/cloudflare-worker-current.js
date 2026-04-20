@@ -124,8 +124,9 @@ const cache = caches.default;
 
 let _memShell = null;
 let _memShellTs = 0;
-// FIX #20: Raised from 600_000 (10min) → 1_800_000 (30min)
-const MEM_SHELL_TTL = 1_800_000; // 30 min
+// v6.9.1: Keep shell memory TTL short so new frontend publishes don't stay pinned
+// on hot isolates after deploys. Storefront data can stay long-lived; the SPA shell cannot.
+const MEM_SHELL_TTL = 60_000; // 1 min
 
 /* ============================================================
    FIX #7 — IN-MEMORY PREBUILT HEAD (built once per isolate)
@@ -537,9 +538,9 @@ window.__STOREFRONT_PREFETCH__=fetch("/?__sf_data=1",{cache:"no-store",headers:{
 
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
-// FIX #25: Aligned with shell TTLs — head is derived from shell, changes at same time
-const PREBUILT_HEAD_KV_TTL = 86_400;
-const PREBUILT_HEAD_CACHE_TTL = 3_600;
+// v6.9.1: Derived from the SPA shell, so it must expire on the same short window.
+const PREBUILT_HEAD_KV_TTL = 300;
+const PREBUILT_HEAD_CACHE_TTL = 60;
 
 function _buildPrebuiltHead(html) {
   // FIX #7: Cache result in module-level variable — computed once per isolate
@@ -667,9 +668,10 @@ function _buildLinkPreloadHeader(html) {
    ============================================================ */
 
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
-// FIX #20: Shell only changes on deploy — raise TTLs aggressively
-const SPA_SHELL_KV_TTL = 86_400; // was 3600 → 24h
-const SPA_SHELL_CACHE_TTL = 3_600; // was 600 → 1h
+// v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
+// custom domains/subdomains to keep serving old JS bundle references after deploy.
+const SPA_SHELL_KV_TTL = 300; // 5 min
+const SPA_SHELL_CACHE_TTL = 60; // 1 min
 
 let inflightShellFetch = null;
 
