@@ -64,15 +64,18 @@ function HorizontalScroller({ children, ariaLabel }: { children: React.ReactNode
 
 function PromoCarousel({ slug }: { slug: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  // Auto-rotate every 5s — only on desktop (where multiple promos visible)
+  // Auto-rotate every 5s — only on desktop (where multiple promos visible).
+  // Scroll exactly one card width (matches snap points → no janky mid-card stops).
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!window.matchMedia("(min-width: 1024px)").matches) return;
     const id = setInterval(() => {
       const el = ref.current;
       if (!el) return;
+      const card = el.querySelector<HTMLElement>(".v19-promo-card");
+      const step = card ? card.offsetWidth + 12 /* gap */ : el.clientWidth * 0.25;
       const max = el.scrollWidth - el.clientWidth;
-      const next = el.scrollLeft + el.clientWidth * 0.4;
+      const next = el.scrollLeft + step;
       el.scrollTo({ left: next > max - 8 ? 0 : next, behavior: "smooth" });
     }, 5000);
     return () => clearInterval(id);
@@ -81,7 +84,9 @@ function PromoCarousel({ slug }: { slug: string }) {
   const scrollBy = (dir: 1 | -1) => {
     const el = ref.current;
     if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth * 0.5, behavior: "smooth" });
+    const card = el.querySelector<HTMLElement>(".v19-promo-card");
+    const step = card ? card.offsetWidth + 12 : el.clientWidth * 0.5;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
   };
 
   return (
@@ -95,12 +100,7 @@ function PromoCarousel({ slug }: { slug: string }) {
             <div
               key={i}
               className="v19-promo-card"
-              style={{
-                background: promo.bg,
-                width: "78%",
-                maxWidth: 320,
-                minHeight: 130,
-              }}
+              style={{ background: promo.bg }}
             >
               <div>
                 <h2>{promo.title}</h2>
@@ -118,12 +118,6 @@ function PromoCarousel({ slug }: { slug: string }) {
       <button type="button" aria-label="Next" onClick={() => scrollBy(1)} className="v19-carousel-arrow right">
         <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
       </button>
-      {/* Width override for responsive promo */}
-      <style>{`
-        @media (min-width: 640px) { .v19-promo-card { width: 45% !important; max-width: 360px; } }
-        @media (min-width: 768px) { .v19-promo-card { width: 32% !important; max-width: 360px; } }
-        @media (min-width: 1024px) { .v19-promo-card { width: 24% !important; max-width: 320px; min-height: 160px !important; } }
-      `}</style>
     </div>
   );
 }
@@ -215,15 +209,15 @@ export default function StorefrontHomeV19() {
             <h3>Recently viewed</h3>
           </div>
           <HorizontalScroller ariaLabel="Recently viewed">
-            {recentVisible.slice(0, 12).map((r) => {
+            {recentVisible.slice(0, 12).map((r, i) => {
               const fullProduct = products.find((p) => p.id === r.id);
               if (!fullProduct) return null;
               return (
                 <div
                   key={r.id}
-                  className="flex-shrink-0 snap-start w-[42%] sm:w-[28%] md:w-[22%] lg:w-[18%] xl:w-[15%]"
+                  className="flex-shrink-0 snap-start w-[44%] sm:w-[30%] md:w-[24%] lg:w-[19%] xl:w-[16%]"
                 >
-                  <V19ProductCard product={fullProduct} slug={slug} store={store} />
+                  <V19ProductCard product={fullProduct} slug={slug} store={store} priority={i < 2} />
                 </div>
               );
             })}
@@ -244,7 +238,7 @@ export default function StorefrontHomeV19() {
               {items.map((p, i) => (
                 <div
                   key={p.id}
-                  className="flex-shrink-0 snap-start w-[42%] sm:w-[28%] md:w-[22%] lg:w-[18%] xl:w-[15%]"
+                  className="flex-shrink-0 snap-start w-[44%] sm:w-[30%] md:w-[24%] lg:w-[19%] xl:w-[16%]"
                 >
                   <V19ProductCard product={p} slug={slug} store={store} priority={i < 2} />
                 </div>
