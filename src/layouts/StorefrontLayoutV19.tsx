@@ -44,7 +44,7 @@ const V19_STYLES = `
   .v19-stock-low { background: #FEF2E2; color: #B25C00; }
   .v19-stock-out { background: #FEE2E2; color: #B91C1C; }
   .v19-marquee-yellow { background: #FFD33D; color: #036B52; font-weight: 900; font-size: 12px; padding: 7px 0; overflow: hidden; white-space: nowrap; letter-spacing: 0.4px; }
-  .storefront-font main { padding-top: 0; padding-bottom: 80px; }
+  .storefront-font main { padding-top: 0; padding-bottom: 64px; }
   @media (min-width: 768px) { .storefront-font main { padding-bottom: 24px; } }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { scrollbar-width: none; }
