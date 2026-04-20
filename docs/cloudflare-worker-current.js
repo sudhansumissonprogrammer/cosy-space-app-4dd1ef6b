@@ -2987,6 +2987,42 @@ export default {
       return proxyToOrigin(request);
     }
 
+    // ─── PHASE 1 FIX #1: SUPABASE STORAGE IMAGE EDGE CACHE (1yr immutable) ───
+    // Product images never mutate (filenames are content-hashed on upload).
+    // Cache them at the edge for 1 year. Repeat visitors → 0 origin hits,
+    // 0 Supabase storage egress, instant load.
+    if (
+      url.pathname.startsWith("/storage/v1/object/public/product-images/") ||
+      url.pathname.startsWith("/storage/v1/object/public/store-logos/") ||
+      url.pathname.startsWith("/storage/v1/object/public/store-banners/")
+    ) {
+      const imgCacheKey = new Request(
+        `https://sb-img-cache${url.pathname}${url.search}`,
+        { method: "GET" }
+      );
+      const imgCached = await cache.match(imgCacheKey);
+      if (imgCached) {
+        const r = new Response(imgCached.body, imgCached);
+        r.headers.set("X-SB-Img-Cache", "HIT");
+        return r;
+      }
+      try {
+        const sbRes = await fetch(`${SUPABASE_URL}${url.pathname}${url.search}`, {
+          cf: { cacheEverything: true, cacheTtl: 31536000 },
+        });
+        if (!sbRes.ok) return sbRes;
+        const headers = new Headers(sbRes.headers);
+        headers.set("Cache-Control", "public, max-age=31536000, immutable");
+        headers.set("X-SB-Img-Cache", "MISS");
+        headers.set("Access-Control-Allow-Origin", "*");
+        const finalRes = new Response(sbRes.body, { status: 200, headers });
+        ctx.waitUntil(cache.put(imgCacheKey, finalRes.clone()));
+        return finalRes;
+      } catch {
+        return fetch(`${SUPABASE_URL}${url.pathname}${url.search}`);
+      }
+    }
+
     cleanRateLimitMap();
     cleanRevalMap();
 
