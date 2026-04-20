@@ -14,7 +14,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 
-interface Category { id: string; name: string; slug: string; image_url: string | null; }
+interface Category { id: string; name: string; slug: string; image_url: string | null; show_on_home?: boolean; }
 
 const PASTELS = ["#FFF1D6", "#FFE5E5", "#DDEBFF", "#E5F7E5", "#FFE7F3", "#F0E5FF", "#FFF7CC", "#D6F5F0", "#FFE9D6", "#E0F0FF"];
 
@@ -143,7 +143,9 @@ export default function StorefrontHomeV19() {
 
   if (!store) return null;
 
-  const visibleCategories = categories.filter((c) => productsByCategory.has(c.name));
+  // Only categories the merchant chose to show on home (default true) AND have products
+  const homeEligible = categories.filter((c) => c.show_on_home !== false);
+  const visibleCategories = homeEligible.filter((c) => productsByCategory.has(c.name));
 
   // Recent items that still exist in current product list
   const productIds = new Set(products.map((p) => p.id));
@@ -172,14 +174,14 @@ export default function StorefrontHomeV19() {
       <PromoCarousel slug={slug} />
 
       {/* Categories — circular pastel, fully responsive */}
-      {categories.length > 0 && (
+      {homeEligible.length > 0 && (
         <section>
           <div className="v19-section-title">
             <h3>Shop by category</h3>
             <Link to={storefrontPath(slug, "categories")}>see all <ChevronRight className="h-3 w-3" /></Link>
           </div>
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 lg:gap-4">
-            {categories.slice(0, 10).map((cat, i) => (
+            {homeEligible.slice(0, 10).map((cat, i) => (
               <Link key={cat.id} to={storefrontPath(slug, `category/${cat.slug}`)} className="v19-cat-circle">
                 <div className="circle" style={{ background: PASTELS[i % PASTELS.length] }}>
                   {cat.image_url ? (

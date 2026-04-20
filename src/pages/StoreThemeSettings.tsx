@@ -2155,6 +2155,55 @@ export default function StoreThemeSettings() {
     setDirty(true);
   };
 
+  // ── Home page categories visibility (per-category toggle) ──
+  const { data: allCategories = [] } = useQuery({
+    queryKey: ["theme-settings-categories", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, image_url, show_on_home, display_order")
+        .eq("store_id", storeId!)
+        .order("display_order", { ascending: true })
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data as Array<{ id: string; name: string; image_url: string | null; show_on_home: boolean; display_order: number }>;
+    },
+    enabled: !!storeId,
+  });
+
+  const toggleCategoryHome = useMutation({
+    mutationFn: async ({ id, show }: { id: string; show: boolean }) => {
+      const { error } = await supabase
+        .from("categories")
+        .update({ show_on_home: show })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, show }) => {
+      await queryClient.cancelQueries({ queryKey: ["theme-settings-categories", storeId] });
+      const prev = queryClient.getQueryData<any[]>(["theme-settings-categories", storeId]);
+      queryClient.setQueryData<any[]>(["theme-settings-categories", storeId], (old) =>
+        (old || []).map((c) => (c.id === id ? { ...c, show_on_home: show } : c))
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["theme-settings-categories", storeId], ctx.prev);
+      toast.error("Failed to update category");
+    },
+    onSuccess: () => {
+      // Invalidate storefront caches so home page reflects change
+      queryClient.invalidateQueries({ queryKey: ["storefront-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+      if (store?.slug) {
+        import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
+          purgeStoreCache(store.slug, (store as any).custom_domain)
+        );
+      }
+    },
+  });
+  const homeShownCount = allCategories.filter((c) => c.show_on_home !== false).length;
+
   const selectedCombo = COLOR_COMBINATIONS.find(
     (c) =>
       c.primary === config.primary_color &&
@@ -2683,6 +2732,63 @@ export default function StoreThemeSettings() {
                 ))}
               </div>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Home Page Categories — per-category visibility toggle */}
+          <div>
+            <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h4 className="text-sm font-semibold">Home Page Categories</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Choose which categories appear as sections on your storefront home page.
+                </p>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {homeShownCount} of {allCategories.length} shown
+              </Badge>
+            </div>
+
+            {allCategories.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                No categories yet. Create categories first to manage their home page visibility.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[420px] overflow-y-auto rounded-lg border border-border p-2 bg-muted/30">
+                {allCategories.map((cat) => {
+                  const isOn = cat.show_on_home !== false;
+                  return (
+                    <label
+                      key={cat.id}
+                      htmlFor={`home-cat-${cat.id}`}
+                      className={`flex items-center gap-3 rounded-md border p-2.5 cursor-pointer transition-colors ${
+                        isOn ? "border-foreground/20 bg-background" : "border-border bg-background/50"
+                      }`}
+                    >
+                      <div className="h-10 w-10 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                        {cat.image_url ? (
+                          <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <Tag className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+                      <span className="flex-1 text-sm font-medium truncate">{cat.name}</span>
+                      <Switch
+                        id={`home-cat-${cat.id}`}
+                        checked={isOn}
+                        onCheckedChange={(checked) =>
+                          toggleCategoryHome.mutate({ id: cat.id, show: checked })
+                        }
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              💡 Categories with no products are automatically hidden. Toggle changes apply instantly to your live storefront.
+            </p>
           </div>
 
           <Separator />
