@@ -8,6 +8,7 @@ import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/im
 import { getProductRating, getDiscountPercent } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 
 
 interface Props {
@@ -26,6 +27,8 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
   const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const themeConfig = useStorefrontThemeConfig(store.id);
+  const bilingualCta = (store as any).theme === "theme-16" && !!themeConfig?.bilingual_cta;
 
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
 
@@ -126,7 +129,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             onClick={(e) => { createRipple(e); handleAdd(e); }}
             disabled={isAdding}
           >
-            {isAdding ? (<><Loader2 className="h-3 w-3 animate-spin" /><span className="whitespace-nowrap">Adding...</span></>) : justAdded ? (<><Check className="h-3 w-3" strokeWidth={3} /><span className="whitespace-nowrap">Added ✓</span></>) : (<><ShoppingCart className="h-3 w-3" /><span className="whitespace-nowrap">Add to Cart</span></>)}
+            {isAdding ? (<><Loader2 className="h-3 w-3 animate-spin" /><span className="whitespace-nowrap">Adding...</span></>) : justAdded ? (<><Check className="h-3 w-3" strokeWidth={3} /><span className="whitespace-nowrap">Added ✓</span></>) : (<><ShoppingCart className="h-3 w-3" /><span className="whitespace-nowrap">{bilingualCta ? "Add to Cart / कार्ट में जोड़ें" : "Add to Cart"}</span></>)}
           </button>
         )}
       </div>

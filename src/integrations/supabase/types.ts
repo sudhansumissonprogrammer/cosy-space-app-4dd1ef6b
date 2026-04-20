@@ -1415,6 +1415,7 @@ export type Database = {
         Row: {
           accent_color: string
           background_color: string
+          bilingual_cta: boolean
           body_font: string
           button_style: string
           category_style: string
@@ -1437,6 +1438,7 @@ export type Database = {
         Insert: {
           accent_color?: string
           background_color?: string
+          bilingual_cta?: boolean
           body_font?: string
           button_style?: string
           category_style?: string
@@ -1459,6 +1461,7 @@ export type Database = {
         Update: {
           accent_color?: string
           background_color?: string
+          bilingual_cta?: boolean
           body_font?: string
           button_style?: string
           category_style?: string

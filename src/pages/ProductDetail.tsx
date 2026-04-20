@@ -134,6 +134,8 @@ export default function ProductDetail() {
   const { addToCart, items, cartTotal, closeCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
+  const mainThemeConfig = useStorefrontThemeConfig(store?.id);
+  const bilingualCta = (store as any)?.theme === "theme-16" && !!(mainThemeConfig as any)?.bilingual_cta;
 
   // Fetch store shipping config for free shipping threshold
   const { data: shippingConfig } = useQuery({
@@ -779,7 +781,7 @@ export default function ProductDetail() {
                     ) : (
                       <span className={`flex items-center gap-2 ${cartBounce ? "animate-bounce-once" : ""}`}>
                         <ShoppingCart className="h-4 w-4" />
-                        Add to Cart
+                        {bilingualCta ? "Add / जोड़ें" : "Add to Cart"}
                       </span>
                     )}
                   </button>
@@ -791,7 +793,7 @@ export default function ProductDetail() {
                       onClick={handleBuyNow}
                     >
                       <ShoppingBag className="h-4 w-4" />
-                      Buy Now
+                      {bilingualCta ? "Buy Now / अभी खरीदें" : "Buy Now"}
                     </button>
                   )}
                 </div>
@@ -1045,7 +1047,7 @@ export default function ProductDetail() {
                       ) : (
                         <>
                           <ShoppingCart className="h-3.5 w-3.5" />
-                          Add to Cart
+                          {bilingualCta ? "Add / जोड़ें" : "Add to Cart"}
                         </>
                       )}
                     </button>
@@ -1055,7 +1057,7 @@ export default function ProductDetail() {
                       onClick={handleBuyNow}
                     >
                       <ShoppingBag className="h-3.5 w-3.5" />
-                      Buy Now
+                      {bilingualCta ? "Buy / खरीदें" : "Buy Now"}
                     </button>
                   </div>
                 </div>
