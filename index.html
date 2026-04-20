@@ -178,32 +178,55 @@
   <meta property="og:locale" content="en_IN">
 </head>
   <body>
-    <!-- Worker injects #sf-skel BEFORE #root in production. Inline skeleton is
-         the fallback ONLY for preview/localhost where the Worker isn't in front.
-         CRITICAL: Skeleton sits OUTSIDE #root as a fixed overlay, so React's
-         first commit can't wipe it. We hide it explicitly only after real
-         storefront content has painted (see hide-skel script below). -->
-    <div id="inline-skel" style="position:fixed;inset:0;z-index:9999;min-height:100vh;background:#fafafa;font-family:'Inter','Segoe UI',sans-serif;overflow:hidden;transition:opacity .2s ease-out">
-      <nav style="position:sticky;top:0;z-index:30;border-bottom:1px solid #e5e7eb;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px)">
-        <div style="max-width:80rem;margin:0 auto;display:flex;align-items:center;gap:12px;padding:0 16px;height:56px;position:relative">
-          <div style="width:40px;height:40px;border-radius:8px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div>
-          <div style="flex:1"></div>
-          <div style="width:96px;height:40px;border-radius:8px;background:#e5e7eb;position:absolute;left:50%;transform:translateX(-50%);animation:skel-pulse 1.5s ease-in-out infinite"></div>
-          <div style="flex:1"></div>
-          <div style="width:36px;height:36px;border-radius:50%;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div>
-          <div style="width:36px;height:36px;border-radius:50%;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div>
-        </div>
+    <!-- Inline preview/localhost skeleton — MIRRORS the Cloudflare Worker's
+         #sf-skel design exactly (shimmer animation, themed bg, 4-card grid)
+         so users see the SAME skeleton in preview and production. -->
+    <style id="sf-skel-anim">
+      @keyframes sf-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+      .sf-ph{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:800px 100%;animation:sf-shimmer 1.4s ease-in-out infinite;border-radius:4px}
+    </style>
+    <div id="inline-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:#ffffff;z-index:2147483000;pointer-events:none;overflow:hidden;transition:opacity .22s ease-out">
+      <nav style="height:56px;background:#ffffff;border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>
+        <div class="sf-ph" style="height:12px;width:80px"></div>
+        <div style="flex:1"></div>
+        <div class="sf-ph" style="width:28px;height:28px;border-radius:50%"></div>
       </nav>
-      <div style="max-width:80rem;margin:0 auto;padding:24px 16px">
-        <div style="height:28px;width:160px;border-radius:6px;background:#e5e7eb;margin-bottom:20px;animation:skel-pulse 1.5s ease-in-out infinite"></div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
-          <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
-          <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
-          <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
-          <div style="border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;background:#fff"><div style="aspect-ratio:4/5;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="padding:10px"><div style="height:12px;width:60%;border-radius:4px;background:#e5e7eb;margin-bottom:8px;animation:skel-pulse 1.5s ease-in-out infinite"></div><div style="height:14px;width:40%;border-radius:4px;background:#e5e7eb;animation:skel-pulse 1.5s ease-in-out infinite"></div></div></div>
+      <div class="sf-ph" style="height:6px;width:100%;border-radius:0;margin-bottom:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 12px">
+        <div style="border-radius:12px;overflow:hidden;background:#ffffff;border:1px solid #ececec;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+          <div class="sf-ph" style="width:100%;aspect-ratio:4/5;border-radius:0"></div>
+          <div style="padding:10px 10px 12px">
+            <div class="sf-ph" style="height:11px;width:75%;margin-bottom:8px"></div>
+            <div class="sf-ph" style="height:11px;width:45%;margin-bottom:10px"></div>
+            <div class="sf-ph" style="height:28px;width:100%;border-radius:6px"></div>
+          </div>
+        </div>
+        <div style="border-radius:12px;overflow:hidden;background:#ffffff;border:1px solid #ececec;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+          <div class="sf-ph" style="width:100%;aspect-ratio:4/5;border-radius:0"></div>
+          <div style="padding:10px 10px 12px">
+            <div class="sf-ph" style="height:11px;width:75%;margin-bottom:8px"></div>
+            <div class="sf-ph" style="height:11px;width:45%;margin-bottom:10px"></div>
+            <div class="sf-ph" style="height:28px;width:100%;border-radius:6px"></div>
+          </div>
+        </div>
+        <div style="border-radius:12px;overflow:hidden;background:#ffffff;border:1px solid #ececec;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+          <div class="sf-ph" style="width:100%;aspect-ratio:4/5;border-radius:0"></div>
+          <div style="padding:10px 10px 12px">
+            <div class="sf-ph" style="height:11px;width:75%;margin-bottom:8px"></div>
+            <div class="sf-ph" style="height:11px;width:45%;margin-bottom:10px"></div>
+            <div class="sf-ph" style="height:28px;width:100%;border-radius:6px"></div>
+          </div>
+        </div>
+        <div style="border-radius:12px;overflow:hidden;background:#ffffff;border:1px solid #ececec;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+          <div class="sf-ph" style="width:100%;aspect-ratio:4/5;border-radius:0"></div>
+          <div style="padding:10px 10px 12px">
+            <div class="sf-ph" style="height:11px;width:75%;margin-bottom:8px"></div>
+            <div class="sf-ph" style="height:11px;width:45%;margin-bottom:10px"></div>
+            <div class="sf-ph" style="height:28px;width:100%;border-radius:6px"></div>
+          </div>
         </div>
       </div>
-      <style>@keyframes skel-pulse{0%,100%{opacity:.6}50%{opacity:.3}}</style>
     </div>
     <div id="root"></div>
     <script>
