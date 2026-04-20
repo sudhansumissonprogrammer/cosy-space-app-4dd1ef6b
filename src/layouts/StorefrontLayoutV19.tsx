@@ -39,10 +39,17 @@ const V19_STYLES = `
   .scrollbar-hide { scrollbar-width: none; }
 `;
 
+// Inject styles once at module load — prevents FOUC / "blank flash" between route transitions
+if (typeof document !== "undefined" && !document.getElementById("v19-theme-styles")) {
+  const styleEl = document.createElement("style");
+  styleEl.id = "v19-theme-styles";
+  styleEl.textContent = V19_STYLES;
+  document.head.appendChild(styleEl);
+}
+
 function V19Inner({ store }: { store: any }) {
   return (
     <>
-      <style>{V19_STYLES}</style>
       <V19Header store={store} />
       <main>
         <div className="max-w-3xl mx-auto px-3 pt-3">
