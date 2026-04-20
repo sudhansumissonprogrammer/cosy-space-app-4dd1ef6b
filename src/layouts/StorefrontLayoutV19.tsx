@@ -2,7 +2,7 @@
  * Theme 19 — Quick Commerce Grocery (Blinkit-style)
  */
 import { Suspense, lazy, useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import V19Header from "@/components/storefront/v19/V19Header";
 import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
@@ -67,6 +67,11 @@ function V19RouteSkeleton() {
 }
 
 function V19Inner({ store }: { store: any }) {
+  const location = useLocation();
+  // Product detail page renders its own header + sticky add-to-cart bar,
+  // so we hide the layout's V19Header and V19BottomNav there.
+  const isProductDetail = /\/product\/[^/]+/.test(location.pathname);
+
   // Prefetch all storefront page chunks during idle time so navigation feels instant.
   useEffect(() => {
     const t = setTimeout(() => prefetchStorefrontRoutes(), 1500);
@@ -75,17 +80,19 @@ function V19Inner({ store }: { store: any }) {
 
   return (
     <>
-      <V19Header store={store} />
+      {!isProductDetail && <V19Header store={store} />}
       <main>
-        <div className="max-w-3xl mx-auto px-3 pt-3">
+        <div className={isProductDetail ? "" : "max-w-3xl mx-auto px-3 pt-3"}>
           <Suspense fallback={<V19RouteSkeleton />}>
             <Outlet context={store} />
           </Suspense>
         </div>
       </main>
-      <Suspense fallback={null}>
-        <LazyV19BottomNav store={store} />
-      </Suspense>
+      {!isProductDetail && (
+        <Suspense fallback={null}>
+          <LazyV19BottomNav store={store} />
+        </Suspense>
+      )}
     </>
   );
 }
