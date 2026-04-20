@@ -61,6 +61,11 @@ const V19_STYLES = `
   }
   .v19-carousel-arrow.left { left: 4px; }
   .v19-carousel-arrow.right { right: 4px; }
+  /* Promo card responsive widths (lifted out of inline <style> to avoid re-mount churn) */
+  .v19-promo-card { width: 78%; max-width: 320px; }
+  @media (min-width: 640px) { .v19-promo-card { width: 45%; max-width: 360px; } }
+  @media (min-width: 768px) { .v19-promo-card { width: 32%; max-width: 360px; } }
+  @media (min-width: 1024px) { .v19-promo-card { width: 24%; max-width: 320px; min-height: 160px; } }
 `;
 
 if (typeof document !== "undefined" && !document.getElementById("v19-theme-styles")) {
@@ -70,21 +75,9 @@ if (typeof document !== "undefined" && !document.getElementById("v19-theme-style
   document.head.appendChild(styleEl);
 }
 
+/** Empty fallback — Shell already renders a skeleton, this prevents double-flash. */
 function V19RouteSkeleton() {
-  return (
-    <div className="animate-pulse">
-      <div className="h-8 w-40 rounded bg-gray-200 mb-4" />
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="v19-card">
-            <div className="aspect-square rounded-lg bg-gray-200" />
-            <div className="mt-2 h-3 w-3/4 rounded bg-gray-200" />
-            <div className="mt-1.5 h-3 w-1/2 rounded bg-gray-200" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <div className="min-h-[200px]" />;
 }
 
 function V19Inner({ store }: { store: any }) {
