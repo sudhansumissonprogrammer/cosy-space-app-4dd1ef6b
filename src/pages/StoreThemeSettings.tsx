@@ -2736,6 +2736,63 @@ export default function StoreThemeSettings() {
 
           <Separator />
 
+          {/* Home Page Categories — per-category visibility toggle */}
+          <div>
+            <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h4 className="text-sm font-semibold">Home Page Categories</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Choose which categories appear as sections on your storefront home page.
+                </p>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {homeShownCount} of {allCategories.length} shown
+              </Badge>
+            </div>
+
+            {allCategories.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                No categories yet. Create categories first to manage their home page visibility.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[420px] overflow-y-auto rounded-lg border border-border p-2 bg-muted/30">
+                {allCategories.map((cat) => {
+                  const isOn = cat.show_on_home !== false;
+                  return (
+                    <label
+                      key={cat.id}
+                      htmlFor={`home-cat-${cat.id}`}
+                      className={`flex items-center gap-3 rounded-md border p-2.5 cursor-pointer transition-colors ${
+                        isOn ? "border-foreground/20 bg-background" : "border-border bg-background/50"
+                      }`}
+                    >
+                      <div className="h-10 w-10 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                        {cat.image_url ? (
+                          <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <Tag className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+                      <span className="flex-1 text-sm font-medium truncate">{cat.name}</span>
+                      <Switch
+                        id={`home-cat-${cat.id}`}
+                        checked={isOn}
+                        onCheckedChange={(checked) =>
+                          toggleCategoryHome.mutate({ id: cat.id, show: checked })
+                        }
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              💡 Categories with no products are automatically hidden. Toggle changes apply instantly to your live storefront.
+            </p>
+          </div>
+
+          <Separator />
+
           {/* Full Storefront Preview */}
           <div>
             <div className="mb-3 flex items-center justify-between">
