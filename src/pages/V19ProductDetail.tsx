@@ -537,9 +537,19 @@ export default function V19ProductDetail() {
                 ₹{mrpToShow.toFixed(0)}
               </span>
             )}
+            {Number(product.stock_quantity ?? 0) > 0 && Number(product.stock_quantity ?? 0) <= 5 && (
+              <span className="text-[10px] font-bold text-orange-600 mt-0.5">Only {product.stock_quantity} left!</span>
+            )}
           </div>
           <div className="flex-1" />
-          {cartQty > 0 ? (
+          {Number(product.stock_quantity ?? 0) <= 0 && product.stock_quantity !== null ? (
+            <button
+              disabled
+              className="px-7 h-11 rounded-lg text-gray-500 bg-gray-200 text-[14px] font-extrabold uppercase tracking-wide cursor-not-allowed"
+            >
+              Out of stock
+            </button>
+          ) : cartQty > 0 ? (
             <div
               className="inline-flex items-center text-white font-extrabold rounded-lg overflow-hidden"
               style={{ background: "#036B52", height: 44 }}
