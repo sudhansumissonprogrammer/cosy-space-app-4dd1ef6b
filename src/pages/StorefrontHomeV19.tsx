@@ -14,7 +14,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 
-interface Category { id: string; name: string; slug: string; image_url: string | null; }
+interface Category { id: string; name: string; slug: string; image_url: string | null; show_on_home?: boolean; }
 
 const PASTELS = ["#FFF1D6", "#FFE5E5", "#DDEBFF", "#E5F7E5", "#FFE7F3", "#F0E5FF", "#FFF7CC", "#D6F5F0", "#FFE9D6", "#E0F0FF"];
 
@@ -143,7 +143,9 @@ export default function StorefrontHomeV19() {
 
   if (!store) return null;
 
-  const visibleCategories = categories.filter((c) => productsByCategory.has(c.name));
+  // Only categories the merchant chose to show on home (default true) AND have products
+  const homeEligible = categories.filter((c) => c.show_on_home !== false);
+  const visibleCategories = homeEligible.filter((c) => productsByCategory.has(c.name));
 
   // Recent items that still exist in current product list
   const productIds = new Set(products.map((p) => p.id));
