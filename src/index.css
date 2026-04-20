@@ -4,18 +4,16 @@
 
 /* Self-hosted Inter font — eliminates Google Fonts roundtrips */
 @font-face {
-  font-family: 'Inter';
+  font-family: "Inter";
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url('/fonts/inter-latin.woff2') format('woff2');
-  font-variation-settings: 'opsz' 14;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
-    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
-    U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("/fonts/inter-latin.woff2") format("woff2");
+  font-variation-settings: "opsz" 14;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-
-
 
 @layer base {
   :root {
@@ -70,22 +68,25 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-display: swap;
-    
 
     /* Storefront theme defaults (overridden by inline CSS vars) */
     --storefront-primary: #004643;
     --storefront-accent: #004643;
     --storefront-text: #222222;
-    --storefront-bg: #F0EDE5;
-    --storefront-heading-font: 'Alegreya SC';
-    --storefront-body-font: 'Inter';
+    --storefront-bg: #f0ede5;
+    --storefront-heading-font: "Alegreya SC";
+    --storefront-body-font: "Inter";
     --storefront-button-radius: 0.5rem;
-    --storefront-marquee-gradient: linear-gradient(90deg, #004643, #02615C, #004643);
+    --storefront-marquee-gradient: linear-gradient(90deg, #004643, #02615c, #004643);
   }
 
   .dark {
@@ -143,7 +144,7 @@
   .storefront-font th,
   .storefront-font td,
   .storefront-font li {
-    font-family: var(--storefront-body-font, 'Inter'), system-ui, sans-serif;
+    font-family: var(--storefront-body-font, "Inter"), system-ui, sans-serif;
   }
 
   .storefront-font h1,
@@ -152,20 +153,22 @@
   .storefront-font h4,
   .storefront-font h5,
   .storefront-font h6 {
-    font-family: var(--storefront-heading-font, 'Alegreya SC'), serif;
+    font-family: var(--storefront-heading-font, "Alegreya SC"), serif;
   }
 
   /* Inputs and textareas always use body font */
   .storefront-font input,
   .storefront-font textarea,
   .storefront-font select,
-  input, textarea, select {
-    font-family: var(--storefront-body-font, 'Inter'), 'Segoe UI', sans-serif !important;
+  input,
+  textarea,
+  select {
+    font-family: var(--storefront-body-font, "Inter"), "Segoe UI", sans-serif !important;
   }
 
   /* Search placeholder uses body font */
   .storefront-font input[placeholder="Search products..."]::placeholder {
-    font-family: var(--storefront-body-font, 'Inter'), sans-serif !important;
+    font-family: var(--storefront-body-font, "Inter"), sans-serif !important;
   }
 
   body {
@@ -191,7 +194,9 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     border: none;
-    transition: background 0.2s, filter 0.2s;
+    transition:
+      background 0.2s,
+      filter 0.2s;
   }
   .btn-gold:hover {
     filter: brightness(1.15);
@@ -216,10 +221,19 @@
 }
 
 @keyframes bounce-once {
-  0%, 100% { transform: scale(1); }
-  30% { transform: scale(1.08); }
-  50% { transform: scale(0.95); }
-  70% { transform: scale(1.03); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.08);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  70% {
+    transform: scale(1.03);
+  }
 }
 
 .animate-bounce-once {
@@ -227,32 +241,66 @@
 }
 
 @keyframes shimmer {
-  100% { transform: translateX(100%); }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes confetti-fall {
-  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
-  100% { transform: translateY(60vh) rotate(720deg) scale(0.3); opacity: 0; }
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(60vh) rotate(720deg) scale(0.3);
+    opacity: 0;
+  }
 }
 
 @keyframes float-particle {
-  0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
-  50% { transform: translateY(-20px) scale(1.3); opacity: 0.7; }
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) scale(1.3);
+    opacity: 0.7;
+  }
 }
 
 @keyframes progress-grow {
-  0% { width: 0%; }
-  100% { width: 85%; }
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 85%;
+  }
 }
 
 @keyframes vibrate {
-  0%, 100% { transform: translateX(0); }
-  15% { transform: translateX(-3px); }
-  30% { transform: translateX(3px); }
-  45% { transform: translateX(-2px); }
-  60% { transform: translateX(2px); }
-  75% { transform: translateX(-1px); }
-  90% { transform: translateX(1px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-3px);
+  }
+  30% {
+    transform: translateX(3px);
+  }
+  45% {
+    transform: translateX(-2px);
+  }
+  60% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+  90% {
+    transform: translateX(1px);
+  }
 }
 
 .safe-bottom {
@@ -269,7 +317,9 @@
 .scroll-reveal-section {
   opacity: 0;
   transform: translateY(24px);
-  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .scroll-reveal-section.scroll-revealed {
   opacity: 1;
@@ -278,8 +328,14 @@
 
 /* ── Premium UX: Staggered grid reveal ── */
 @keyframes stagger-fade-in {
-  from { opacity: 0; transform: translateY(16px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .stagger-card {
   animation: stagger-fade-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -288,10 +344,19 @@
 
 /* ── Premium UX: Cart bounce ── */
 @keyframes cart-bounce {
-  0%, 100% { transform: scale(1); }
-  30% { transform: scale(1.25); }
-  50% { transform: scale(0.9); }
-  70% { transform: scale(1.1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.25);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+  70% {
+    transform: scale(1.1);
+  }
 }
 .cart-bounce {
   animation: cart-bounce 0.5s ease-out;
@@ -299,8 +364,14 @@
 
 /* ── Premium UX: Page transition fade ── */
 @keyframes page-fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Premium UX: Smart header show/hide ── */
@@ -313,9 +384,16 @@
 
 /* ── Premium UX: Quantity stepper bounce ── */
 @keyframes qty-bounce {
-  0%, 100% { transform: scale(1); }
-  40% { transform: scale(1.3); }
-  70% { transform: scale(0.9); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.3);
+  }
+  70% {
+    transform: scale(0.9);
+  }
 }
 .qty-bounce {
   animation: qty-bounce 0.3s ease-out;
@@ -335,7 +413,6 @@
   pointer-events: none;
 }
 
-
 /* ── Premium UX: Ripple effect ── */
 .ripple-container {
   position: relative;
@@ -350,7 +427,10 @@
   pointer-events: none;
 }
 @keyframes ripple-expand {
-  to { transform: scale(4); opacity: 0; }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
 /* ── Premium UX: Rubber-band overscroll ── */
@@ -389,7 +469,7 @@
   --input: 0 0% 7%;
   --ring: 0 0% 7%;
   --radius: 0px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
 }
 
 /* Theme 18 — full-bleed product cards */
@@ -408,7 +488,9 @@
 
 /* ── Micro-interactions: haptic press feel ── */
 .btn-press {
-  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.12s ease;
+  transition:
+    transform 0.12s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.12s ease;
 }
 .btn-press:active {
   transform: scale(0.95);
