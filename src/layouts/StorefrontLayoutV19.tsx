@@ -1,10 +1,11 @@
 /**
  * Theme 19 — Quick Commerce Grocery (Blinkit-style)
  */
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import V19Header from "@/components/storefront/v19/V19Header";
+import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 
 const LazyV19BottomNav = lazy(() => import("@/components/storefront/v19/V19BottomNav"));
 
@@ -66,6 +67,12 @@ function V19RouteSkeleton() {
 }
 
 function V19Inner({ store }: { store: any }) {
+  // Prefetch all storefront page chunks during idle time so navigation feels instant.
+  useEffect(() => {
+    const t = setTimeout(() => prefetchStorefrontRoutes(), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <>
       <V19Header store={store} />
