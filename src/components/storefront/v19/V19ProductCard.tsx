@@ -41,10 +41,6 @@ export default function V19ProductCard({ product, slug, store, priority = false 
     <div className="v19-card relative h-full flex flex-col">
       <Link to={productPath} className="block">
         <div className="relative w-full overflow-hidden rounded-lg bg-gray-50 aspect-square">
-          <div className="v19-delivery-badge">
-            <Clock className="h-2.5 w-2.5" strokeWidth={3} />
-            <span>11 MINS</span>
-          </div>
           {discountPercent && (
             <div className="absolute left-1.5 top-7 z-10 text-white text-[9px] font-black px-1.5 py-0.5 rounded-sm" style={{ background: "#0C831F" }}>
               {discountPercent}% OFF
