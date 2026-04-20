@@ -45,10 +45,10 @@ export default function V19Header({ store }: { store: any }) {
       <header className="sticky top-0 z-40 shadow-md md:hidden" style={{ background: "#036B52" }}>
         <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
           <Link to={storefrontPath(slug)} className="flex-1 min-w-0">
-            <div className="text-white text-[22px] font-black leading-tight tracking-tight">
-              Delivery in 11 minutes
+            <div className="text-white text-[20px] font-black leading-tight tracking-tight truncate">
+              {store?.name || "Shop"}
             </div>
-            <div className="mt-1 inline-flex items-center gap-1 text-white text-[14px] font-bold max-w-full">
+            <div className="mt-1 inline-flex items-center gap-1 text-white text-[13px] font-bold max-w-full">
               <span className="font-extrabold">HOME</span>
               <span>·</span>
               <span className="truncate">{addressLine}</span>
@@ -80,7 +80,7 @@ export default function V19Header({ store }: { store: any }) {
         <div className="v19-marquee-yellow">
           <div className="flex gap-10 animate-marquee whitespace-nowrap">
             {Array.from({ length: 6 }).map((_, i) => (
-              <span key={i} className="px-2">✦ FREE DELIVERY ON ALL ORDERS · ORDER IN 2 MINUTES · 100% SAFE</span>
+              <span key={i} className="px-2">✦ FREE DELIVERY ON ALL ORDERS · 100% SAFE & SECURE · EASY RETURNS</span>
             ))}
           </div>
         </div>
@@ -102,8 +102,7 @@ export default function V19Header({ store }: { store: any }) {
               </div>
             )}
             <div className="leading-tight">
-              <div className="text-[16px] font-black text-gray-900 truncate max-w-[180px]">{store?.name}</div>
-              <div className="text-[11px] text-gray-500 font-semibold">Delivery in 11 minutes</div>
+              <div className="text-[16px] font-black text-gray-900 truncate max-w-[220px]">{store?.name}</div>
             </div>
           </Link>
 

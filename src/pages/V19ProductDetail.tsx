@@ -341,17 +341,6 @@ export default function V19ProductDetail() {
         </div>
       )}
 
-      {/* Delivery time pill */}
-      <div className="px-4 pt-3">
-        <div
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wide"
-          style={{ background: "#F0FAF7", color: "#036B52" }}
-        >
-          <Clock className="h-3 w-3" strokeWidth={3} />
-          <span>11 MINS</span>
-        </div>
-      </div>
-
       {/* Title block */}
       <div className="px-4 pt-2 pb-3">
         <h1 className="text-[18px] font-extrabold text-gray-900 leading-snug">{product.name}</h1>
