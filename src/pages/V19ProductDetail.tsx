@@ -18,6 +18,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, resolveProductImages } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
 import V19ProductCard from "@/components/storefront/v19/V19ProductCard";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 const SEARCH_TERMS = ['"milk"', '"bread"', '"eggs"', '"atta"', '"chips"', '"chocolate"'];
