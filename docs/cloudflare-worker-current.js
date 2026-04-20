@@ -2390,8 +2390,21 @@ async function handleBot(request, slug, url, isCustom) {
   const isSocialBot = SOCIAL_BOT_REGEX.test(ua) || INSTAGRAM_CRAWLER_REGEX.test(ua);
   const productSlug = getProductSlug(url.pathname);
 
+  // PHASE 1 FIX #3: Bot HTML cached aggressively at the edge.
+  // Bots re-crawl periodically anyway. 24h cache + 7d SWR = ~95% fewer
+  // bot-render edge function invocations + zero DB hits for repeat bot crawls.
   if (isSearchBot) {
     const domain = isCustom ? hostname : null;
+    const botCacheKey = new Request(
+      `https://bot-cache/search/${encodeURIComponent(hostname)}${url.pathname}`,
+      { method: "GET" }
+    );
+    const botCached = await cache.match(botCacheKey);
+    if (botCached) {
+      const r = new Response(botCached.body, botCached);
+      r.headers.set("X-Bot-Cache", "HIT");
+      return r;
+    }
     const botRenderRes = await callEdgeFunction("bot-render", {
       slug,
       product: productSlug || "",
@@ -2399,19 +2412,33 @@ async function handleBot(request, slug, url, isCustom) {
     });
     if (botRenderRes.ok) {
       const html = await botRenderRes.text();
-      return new Response(html, {
+      const finalRes = new Response(html, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+          "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+          "X-Bot-Cache": "MISS",
           ...SECURITY_HEADERS,
         },
       });
+      // Cache at edge for 24h (only the response body + headers; cache.put handles TTL)
+      try { await cache.put(botCacheKey, finalRes.clone()); } catch {}
+      return finalRes;
     }
     return null;
   }
 
   if (isSocialBot) {
     const domain = isCustom ? hostname : null;
+    const socialCacheKey = new Request(
+      `https://bot-cache/social/${encodeURIComponent(hostname)}${url.pathname}`,
+      { method: "GET" }
+    );
+    const socialCached = await cache.match(socialCacheKey);
+    if (socialCached) {
+      const r = new Response(socialCached.body, socialCached);
+      r.headers.set("X-Bot-Cache", "HIT");
+      return r;
+    }
     const ogRes = await callEdgeFunction("bot-render", {
       slug,
       product: productSlug || "",
@@ -2424,13 +2451,16 @@ async function handleBot(request, slug, url, isCustom) {
         const finalUrl = isCustom
           ? `https://${hostname}${url.pathname}`
           : buildSubdomainUrl(slug, url.pathname, url.search);
-        return new Response(buildOgHtml(og, finalUrl), {
+        const finalRes = new Response(buildOgHtml(og, finalUrl), {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+            "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+            "X-Bot-Cache": "MISS",
             ...SECURITY_HEADERS,
           },
         });
+        try { await cache.put(socialCacheKey, finalRes.clone()); } catch {}
+        return finalRes;
       } catch {}
     }
     return null;
