@@ -88,6 +88,7 @@ const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
 const StorefrontAccount = lazy(() => import("./pages/StorefrontAccount"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
+const V19CartPage = lazy(() => import("./pages/V19CartPage"));
 const InstallApp = lazy(() => import("./pages/InstallApp"));
 
 // Auth + Admin + Dashboard — fully lazy, never loaded on storefront
@@ -311,7 +312,7 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
       <Route path="category/:categorySlug" element={<CategoryDetail />} />
       <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
-      <Route path="cart" element={<CartPage />} />
+      <Route path="cart" element={theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
       <Route path="wishlist" element={<WishlistPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
       <Route path="login" element={<StorefrontLogin />} />
