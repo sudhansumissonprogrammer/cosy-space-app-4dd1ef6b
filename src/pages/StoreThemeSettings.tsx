@@ -272,6 +272,7 @@ interface ThemeConfig {
   mobile_nav_enabled: boolean;
   mobile_nav_style: string;
   header_style: string;
+  bilingual_cta?: boolean;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
@@ -1940,6 +1941,7 @@ export default function StoreThemeSettings() {
         mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? false,
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
+        bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
       });
     } else {
       setConfig(defaults);
@@ -2477,6 +2479,27 @@ export default function StoreThemeSettings() {
               </>
             )}
           </div>
+
+          {/* Bilingual CTA — Theme 16 (Classic + Quick Buy) only */}
+          {currentTheme === "theme-16" && (
+            <>
+              <Separator />
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <h4 className="text-sm font-semibold">Bilingual CTA Buttons (English + Hindi)</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Show "Add to Cart / कार्ट में जोड़ें" and "Buy Now / अभी खरीदें" on product cards & product page. Designed to boost conversions for Hindi-speaking shoppers.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={!!config.bilingual_cta}
+                    onCheckedChange={(checked) => updateField("bilingual_cta" as any, checked)}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Mobile Bottom Navigation Style */}
           {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-15" || currentTheme === "theme-16" || currentTheme === "theme-18") && (
