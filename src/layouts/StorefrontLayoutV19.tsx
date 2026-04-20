@@ -47,13 +47,33 @@ if (typeof document !== "undefined" && !document.getElementById("v19-theme-style
   document.head.appendChild(styleEl);
 }
 
+/** Lightweight skeleton shown while the next route's lazy chunk is fetching. */
+function V19RouteSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="h-8 w-40 rounded bg-gray-200 mb-4" />
+      <div className="grid grid-cols-2 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="v19-card">
+            <div className="aspect-square rounded-lg bg-gray-200" />
+            <div className="mt-2 h-3 w-3/4 rounded bg-gray-200" />
+            <div className="mt-1.5 h-3 w-1/2 rounded bg-gray-200" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function V19Inner({ store }: { store: any }) {
   return (
     <>
       <V19Header store={store} />
       <main>
         <div className="max-w-3xl mx-auto px-3 pt-3">
-          <Outlet context={store} />
+          <Suspense fallback={<V19RouteSkeleton />}>
+            <Outlet context={store} />
+          </Suspense>
         </div>
       </main>
       <Suspense fallback={null}>
