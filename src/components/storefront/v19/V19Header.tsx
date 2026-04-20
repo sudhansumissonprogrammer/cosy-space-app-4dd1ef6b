@@ -102,8 +102,7 @@ export default function V19Header({ store }: { store: any }) {
               </div>
             )}
             <div className="leading-tight">
-              <div className="text-[16px] font-black text-gray-900 truncate max-w-[180px]">{store?.name}</div>
-              <div className="text-[11px] text-gray-500 font-semibold">Delivery in 11 minutes</div>
+              <div className="text-[16px] font-black text-gray-900 truncate max-w-[220px]">{store?.name}</div>
             </div>
           </Link>
 
