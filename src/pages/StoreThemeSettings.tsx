@@ -2155,6 +2155,55 @@ export default function StoreThemeSettings() {
     setDirty(true);
   };
 
+  // ── Home page categories visibility (per-category toggle) ──
+  const { data: allCategories = [] } = useQuery({
+    queryKey: ["theme-settings-categories", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, image_url, show_on_home, display_order")
+        .eq("store_id", storeId!)
+        .order("display_order", { ascending: true })
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data as Array<{ id: string; name: string; image_url: string | null; show_on_home: boolean; display_order: number }>;
+    },
+    enabled: !!storeId,
+  });
+
+  const toggleCategoryHome = useMutation({
+    mutationFn: async ({ id, show }: { id: string; show: boolean }) => {
+      const { error } = await supabase
+        .from("categories")
+        .update({ show_on_home: show })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, show }) => {
+      await queryClient.cancelQueries({ queryKey: ["theme-settings-categories", storeId] });
+      const prev = queryClient.getQueryData<any[]>(["theme-settings-categories", storeId]);
+      queryClient.setQueryData<any[]>(["theme-settings-categories", storeId], (old) =>
+        (old || []).map((c) => (c.id === id ? { ...c, show_on_home: show } : c))
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["theme-settings-categories", storeId], ctx.prev);
+      toast.error("Failed to update category");
+    },
+    onSuccess: () => {
+      // Invalidate storefront caches so home page reflects change
+      queryClient.invalidateQueries({ queryKey: ["storefront-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+      if (store?.slug) {
+        import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
+          purgeStoreCache(store.slug, (store as any).custom_domain)
+        );
+      }
+    },
+  });
+  const homeShownCount = allCategories.filter((c) => c.show_on_home !== false).length;
+
   const selectedCombo = COLOR_COMBINATIONS.find(
     (c) =>
       c.primary === config.primary_color &&
