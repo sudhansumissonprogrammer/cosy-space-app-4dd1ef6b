@@ -55,16 +55,19 @@ export default function V19ProductDetail() {
     queryKey: ["v19-product", store?.id, productSlug],
     enabled: !!store?.id && !!productSlug,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productSlug || "");
+      let query = supabase
         .from("products")
         .select(`*,
           product_images(id, image_url, display_order),
           product_variants(id, name, price, stock_quantity, display_order, is_active)
         `)
         .eq("store_id", store!.id)
-        .or(`slug.eq.${productSlug},id.eq.${productSlug}`)
-        .eq("is_active", true)
-        .maybeSingle();
+        .eq("is_active", true);
+      query = isUuid
+        ? query.eq("id", productSlug!)
+        : query.eq("slug", productSlug!);
+      const { data, error } = await query.maybeSingle();
       if (error) throw error;
       return data;
     },
