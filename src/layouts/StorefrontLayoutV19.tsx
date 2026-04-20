@@ -14,24 +14,26 @@ const V19_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap');
   .storefront-font, .storefront-font * {
     font-family: 'Okra', 'Mulish', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    font-weight: 600;
+    color: #0f0f0f;
   }
-  body { background: #f6f7f9 !important; }
+  body { background: #f6f7f9 !important; color: #0f0f0f; }
   .v19-section-title { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; margin-bottom: 10px; }
-  .v19-section-title h3 { font-size: 18px; font-weight: 900; color: #1a1a1a; letter-spacing: -0.01em; }
-  .v19-section-title a { font-size: 12px; font-weight: 700; color: #036B52; display: inline-flex; align-items: center; gap: 2px; }
+  .v19-section-title h3 { font-size: 20px; font-weight: 900; color: #0a0a0a; letter-spacing: -0.01em; }
+  .v19-section-title a { font-size: 13px; font-weight: 800; color: #036B52; display: inline-flex; align-items: center; gap: 2px; }
   .v19-cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .v19-cat-circle .circle { width: 100%; padding-top: 100%; border-radius: 14px; position: relative; overflow: hidden; }
-  .v19-cat-circle .label { font-size: 11px; font-weight: 600; color: #1a1a1a; text-align: center; line-height: 1.2; max-width: 100%; }
-  .v19-promo-card { flex-shrink: 0; width: 78%; border-radius: 16px; overflow: hidden; padding: 18px; color: #1a1a1a; min-height: 130px; display: flex; flex-direction: column; justify-content: space-between; }
-  .v19-promo-card h2 { font-size: 22px; font-weight: 900; line-height: 1.05; }
-  .v19-promo-card p { font-size: 12px; font-weight: 500; opacity: 0.8; margin-top: 4px; }
-  .v19-promo-card .cta { background: #036B52; color: #fff; font-weight: 700; font-size: 12px; padding: 6px 14px; border-radius: 999px; display: inline-block; align-self: flex-start; margin-top: 10px; }
+  .v19-cat-circle .label { font-size: 12px; font-weight: 700; color: #0a0a0a; text-align: center; line-height: 1.25; max-width: 100%; }
+  .v19-promo-card { flex-shrink: 0; width: 78%; border-radius: 16px; overflow: hidden; padding: 18px; color: #0a0a0a; min-height: 130px; display: flex; flex-direction: column; justify-content: space-between; }
+  .v19-promo-card h2 { font-size: 24px; font-weight: 900; line-height: 1.05; color: #0a0a0a; }
+  .v19-promo-card p { font-size: 13px; font-weight: 600; opacity: 0.85; margin-top: 4px; color: #0a0a0a; }
+  .v19-promo-card .cta { background: #036B52; color: #fff; font-weight: 800; font-size: 13px; padding: 6px 14px; border-radius: 999px; display: inline-block; align-self: flex-start; margin-top: 10px; }
   .v19-card { background: #fff; border-radius: 12px; padding: 8px; border: 1px solid #f0f0f0; }
-  .v19-add-btn-outline { background: #fff; color: #036B52; font-weight: 800; font-size: 12px; letter-spacing: 0.3px; padding: 6px 18px; border-radius: 8px; text-transform: uppercase; border: 1.5px solid #036B52; }
-  .v19-stepper { background: #036B52; color: #fff; border-radius: 8px; display: inline-flex; align-items: center; font-weight: 700; font-size: 13px; overflow: hidden; }
+  .v19-add-btn-outline { background: #fff; color: #036B52; font-weight: 900; font-size: 13px; letter-spacing: 0.3px; padding: 6px 18px; border-radius: 8px; text-transform: uppercase; border: 1.5px solid #036B52; }
+  .v19-stepper { background: #036B52; color: #fff; border-radius: 8px; display: inline-flex; align-items: center; font-weight: 800; font-size: 14px; overflow: hidden; }
   .v19-stepper button { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
-  .v19-delivery-badge { position: absolute; left: 6px; top: 6px; z-index: 10; background: #fff; color: #036B52; font-size: 9px; font-weight: 800; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); letter-spacing: 0.3px; }
-  .v19-marquee-yellow { background: #FFD33D; color: #036B52; font-weight: 800; font-size: 11px; padding: 7px 0; overflow: hidden; white-space: nowrap; letter-spacing: 0.4px; }
+  .v19-delivery-badge { position: absolute; left: 6px; top: 6px; z-index: 10; background: #fff; color: #036B52; font-size: 10px; font-weight: 900; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); letter-spacing: 0.3px; }
+  .v19-marquee-yellow { background: #FFD33D; color: #036B52; font-weight: 900; font-size: 12px; padding: 7px 0; overflow: hidden; white-space: nowrap; letter-spacing: 0.4px; }
   .storefront-font main { padding-top: 0; padding-bottom: 80px; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { scrollbar-width: none; }
