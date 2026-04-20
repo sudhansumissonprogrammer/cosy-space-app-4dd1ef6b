@@ -16,8 +16,8 @@ const V19_STYLES = `
   .storefront-font, .storefront-font * {
     font-family: 'Okra', 'Mulish', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
     font-weight: 600;
-    color: #0f0f0f;
   }
+  .storefront-font { color: #0f0f0f; }
   body { background: #f6f7f9 !important; color: #0f0f0f; }
   .v19-section-title { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; margin-bottom: 10px; }
   .v19-section-title h3 { font-size: 20px; font-weight: 900; color: #0a0a0a; letter-spacing: -0.01em; }
