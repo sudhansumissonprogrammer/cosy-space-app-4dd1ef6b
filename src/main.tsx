@@ -60,58 +60,58 @@ createRoot(rootElement).render(<App />);
 // Worker skeleton is removed only by storefront:content-ready or 12s fallback.
 
 /**
- * Determine if current host is a storefront (custom domain or subdomain).
- * SW should NEVER be registered on storefront hosts to prevent stale HTML caching.
+ * Any live/public host must NOT use a service worker, otherwise browsers can
+ * keep serving stale HTML/JS after publish. Only preview/local are safe.
  */
-function isStorefrontHost(): boolean {
+function isPublishedHost(): boolean {
   const hostname = window.location.hostname;
-  return isCustomDomainHost(hostname) || isSubdomainHost(hostname);
+  return !isPreviewHost(hostname) && !isLocalHost(hostname);
 }
 
-/**
- * Determine if current host is the primary app/dashboard domain
- * where SW is safe to register.
- */
-function isDashboardHost(): boolean {
+function isSafeSwHost(): boolean {
   const hostname = window.location.hostname;
-  return isRootDomainHost(hostname) || isPreviewHost(hostname) || isLocalHost(hostname);
+  return isPreviewHost(hostname) || isLocalHost(hostname);
 }
 
 /**
  * Service Worker strategy:
- * - Storefront hosts (custom domains + subdomains): NEVER register SW.
+ * - All live/public hosts: NEVER register SW.
  *   Instead, aggressively clean up any legacy SW + caches to prevent
- *   stale HTML/JS from being served.
- * - Dashboard/app hosts: Register SW normally for offline/caching benefits.
+ *   stale HTML/JS from being served after publish.
+ * - Only preview/local hosts register SW.
  */
 if ("serviceWorker" in navigator) {
-  if (isStorefrontHost()) {
-    // ── STOREFRONT: Aggressive SW cleanup ──
-    // Legacy SWs on storefront hosts cause stale HTML. Clean up ONCE per device
+  if (isPublishedHost()) {
+    // ── LIVE HOSTS: Aggressive SW cleanup ──
+    // Legacy SWs on published hosts cause stale HTML. Clean up ONCE per device
     // (localStorage, not sessionStorage) — otherwise every new tab triggers a
     // full reload + double skeleton on first visit.
-    const CLEANUP_KEY = "sw_cleanup_v3";
+    const CLEANUP_KEY = "sw_cleanup_v4";
     const cleanupDone = (() => {
       try { return localStorage.getItem(CLEANUP_KEY); } catch { return "1"; }
     })();
     if (!cleanupDone) {
       try { localStorage.setItem(CLEANUP_KEY, "1"); } catch {}
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        if (registrations.length > 0) {
-          Promise.all(registrations.map((r) => r.unregister())).then(() => {
-            caches.keys().then((keys) => {
-              Promise.all(keys.map((k) => caches.delete(k))).then(() => {
-                // Use replace() so reload doesn't pollute history
-                window.location.replace(window.location.href);
-              });
-            });
+      Promise.all([
+        navigator.serviceWorker.getRegistrations(),
+        caches.keys().catch(() => [] as string[]),
+      ]).then(([registrations, keys]) => {
+        const hadWorker = registrations.length > 0;
+        const hadCaches = keys.length > 0;
+
+        Promise.all(registrations.map((r) => r.unregister()))
+          .then(() => Promise.all(keys.map((k) => caches.delete(k))))
+          .then(() => {
+            if (hadWorker || hadCaches) {
+              // Use replace() so reload doesn't pollute history
+              window.location.replace(window.location.href);
+            }
           });
-        }
       });
     }
-    // Do NOT register SW on storefront hosts — ever.
-  } else if (isDashboardHost()) {
-    // ── DASHBOARD: Normal SW registration (idle) ──
+    // Do NOT register SW on live hosts — ever.
+  } else if (isSafeSwHost()) {
+    // ── PREVIEW/LOCAL ONLY: Normal SW registration (idle) ──
     const registerSW = () => {
       navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
     };
