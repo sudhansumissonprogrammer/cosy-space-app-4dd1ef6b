@@ -29,7 +29,7 @@ export default function StorefrontBestSellers() {
   const cardStyle = themeConfig?.product_card_style || "style-1";
 
   // Show all products for themes that use Shop as full catalog
-  const showAll = ["theme-12"].includes(store.theme);
+  const showAll = ["theme-10", "theme-12"].includes(store.theme);
 
   const { data: products, isLoading } = useQuery({
     queryKey: showAll ? ["storefront-shop-all", store.id] : ["storefront-best-sellers", store.id],
