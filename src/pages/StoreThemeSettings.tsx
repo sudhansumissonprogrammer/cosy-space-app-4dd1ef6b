@@ -1753,17 +1753,6 @@ export default function StoreThemeSettings() {
           purgeStoreCache(store.slug, (store as any).custom_domain)
         );
       }
-
-      // Reload both preview iframes so the live storefront preview drops stale
-      // category cache and immediately reflects the latest show_on_home toggles.
-      setTimeout(() => {
-        try {
-          iframeRef.current?.contentWindow?.location.reload();
-          iframeDesktopRef.current?.contentWindow?.location.reload();
-        } catch {
-          setIframeKey((k) => k + 1);
-        }
-      }, 150);
     },
   });
   const homeShownCount = allCategories.filter((c) => c.show_on_home !== false).length;

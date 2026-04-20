@@ -143,10 +143,8 @@ export default function StorefrontHomeV19() {
 
   if (!store) return null;
 
-  // Only categories the merchant explicitly toggled ON for the home page AND that have products.
-  // Strict === true so that any category with the toggle off (or unknown state) is hidden,
-  // matching the dashboard "Home Page Categories" switch behavior exactly.
-  const homeEligible = categories.filter((c) => c.show_on_home === true);
+  // Only categories the merchant chose to show on home (default true) AND have products
+  const homeEligible = categories.filter((c) => c.show_on_home !== false);
   const visibleCategories = homeEligible.filter((c) => productsByCategory.has(c.name));
 
   // Recent items that still exist in current product list
