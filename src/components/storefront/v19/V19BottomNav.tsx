@@ -37,8 +37,8 @@ export default function V19BottomNav({ store }: { store: any }) {
           style={{
             background: GREEN,
             color: "#fff",
-            height: 52,
-            bottom: "calc(60px + env(safe-area-inset-bottom, 0px) + 8px)",
+            height: 46,
+            bottom: "calc(50px + env(safe-area-inset-bottom, 0px) + 6px)",
           }}
         >
           <div className="flex items-center gap-2.5">
@@ -64,7 +64,7 @@ export default function V19BottomNav({ store }: { store: any }) {
         className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white border-t"
         style={{ borderColor: "#e5e7eb", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div className="flex items-stretch justify-around h-[60px]">
+        <div className="flex items-stretch justify-around h-[50px]">
           {items.map((item) => {
             const active = item.match(location.pathname);
             const Icon = item.icon;
@@ -76,17 +76,17 @@ export default function V19BottomNav({ store }: { store: any }) {
                 style={{ color: active ? GREEN : "#6b7280" }}
               >
                 <div className="relative">
-                  <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.4 : 1.8} />
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.4 : 1.8} />
                   {item.badge && item.badge > 0 ? (
                     <span
-                      className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] rounded-full text-white text-[9px] font-bold flex items-center justify-center px-1"
+                      className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] rounded-full text-white text-[8px] font-bold flex items-center justify-center px-1"
                       style={{ background: GREEN }}
                     >
                       {item.badge > 9 ? "9+" : item.badge}
                     </span>
                   ) : null}
                 </div>
-                <span className="text-[10px] font-semibold">{item.label}</span>
+                <span className="text-[9px] font-semibold">{item.label}</span>
               </Link>
             );
           })}
