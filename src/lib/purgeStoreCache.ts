@@ -1,12 +1,11 @@
 /**
  * Purge all edge caches for a store.
  *
- * Uses the per-store purge endpoint (/api/purge-store) which invalidates
- * only that store's caches (products + storefront data + early HTML).
+ * Uses both per-store purge endpoints:
+ * - /api/purge-shell clears the cached SPA shell + prebuilt head
+ * - /api/purge-store clears store data, product caches, and domain mappings
  *
- * v2: Removed legacy /api/purge-shell and /api/purge-products calls —
- * /api/purge-store already handles everything via version bump.
- * This reduces Worker requests from 6 → 2 (or 3 → 1 without custom domain).
+ * This prevents mixed old/new asset references on custom domains after publish.
  */
 
 const PURGE_COOLDOWN_MS = 5_000;
@@ -31,17 +30,22 @@ export async function purgeStoreCache(
     domains.push(`https://${customDomain}`);
   }
 
-  // Single purge-store call per domain — handles products + shell + storefront
-  const requests = domains.map((base) =>
-    fetch(`${base}/api/purge-store?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null)
-  );
+  const requests = domains.map(async (base) => {
+    const [shellRes, storeRes] = await Promise.allSettled([
+      fetch(`${base}/api/purge-shell?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
+      fetch(`${base}/api/purge-store?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
+    ]);
+
+    const shellOk = shellRes.status === "fulfilled" && !!shellRes.value?.ok;
+    const storeOk = storeRes.status === "fulfilled" && !!storeRes.value?.ok;
+
+    return shellOk || storeOk;
+  });
 
   const task = (async () => {
     try {
       const results = await Promise.allSettled(requests);
-      return results.some(
-        (r) => r.status === "fulfilled" && r.value && (r.value as Response).ok
-      );
+      return results.some((r) => r.status === "fulfilled" && r.value);
     } catch {
       return false;
     }
