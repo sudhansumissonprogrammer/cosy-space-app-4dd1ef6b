@@ -2,7 +2,7 @@
  * Theme 19 — Quick Commerce Grocery (Blinkit-style)
  */
 import { Suspense, lazy, useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import V19Header from "@/components/storefront/v19/V19Header";
 import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
