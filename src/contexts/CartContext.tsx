@@ -12,7 +12,7 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
+  addToCart: (item: Omit<CartItem, "quantity"> & { quantity?: number }, options?: { silent?: boolean }) => void;
   removeFromCart: (productId: string, variantId?: string) => void;
   updateQuantity: (productId: string, variantId: string | undefined, quantity: number) => void;
   clearCart: () => void;
@@ -103,7 +103,7 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
   const openCart = useCallback(() => setIsCartOpen(true), []);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
 
-  const addToCart = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
+  const addToCart = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }, options?: { silent?: boolean }) => {
     setItems((prev) => {
       const idx = prev.findIndex(
         (i) => i.productId === item.productId && i.variantId === item.variantId
@@ -115,7 +115,7 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
       }
       return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
-    setIsCartOpen(true);
+    if (!options?.silent) setIsCartOpen(true);
     // Trigger cart bounce animation
     setCartBounce(true);
     setTimeout(() => setCartBounce(false), 500);
