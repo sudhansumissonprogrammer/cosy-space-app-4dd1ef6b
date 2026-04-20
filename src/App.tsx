@@ -30,9 +30,6 @@ const DashboardProviders = lazy(() =>
 
 // Storefront layouts — ALL lazy loaded for clean chunk isolation
 const StorefrontLayout = lazy(() => import("./layouts/StorefrontLayout"));
-const StorefrontLayoutV2 = lazy(() => import("./layouts/StorefrontLayoutV2"));
-const StorefrontLayoutV3 = lazy(() => import("./layouts/StorefrontLayoutV3"));
-const StorefrontLayoutV10 = lazy(() => import("./layouts/StorefrontLayoutV10"));
 const StorefrontLayoutV11 = lazy(() => import("./layouts/StorefrontLayoutV11"));
 const StorefrontLayoutV12 = lazy(() => import("./layouts/StorefrontLayoutV12"));
 const StorefrontLayoutV13 = lazy(() => import("./layouts/StorefrontLayoutV13"));
@@ -45,9 +42,7 @@ const StorefrontLayoutV19 = lazy(() => import("./layouts/StorefrontLayoutV19"));
 
 // Storefront home pages — ALL lazy loaded
 const StorefrontHome = lazy(() => import("./pages/StorefrontHome"));
-const StorefrontHomeV2 = lazy(() => import("./pages/StorefrontHomeV2"));
 const StorefrontHomeV3 = lazy(() => import("./pages/StorefrontHomeV3"));
-const StorefrontHomeV10 = lazy(() => import("./pages/StorefrontHomeV10"));
 const StorefrontHomeV11 = lazy(() => import("./pages/StorefrontHomeV11"));
 const StorefrontHomeV12 = lazy(() => import("./pages/StorefrontHomeV12"));
 const StorefrontHomeV13 = lazy(() => import("./pages/StorefrontHomeV13"));
@@ -180,9 +175,6 @@ const _path = window.location.pathname;
       "theme-13": () => import("./layouts/StorefrontLayoutV13"),
       "theme-12": () => import("./layouts/StorefrontLayoutV12"),
       "theme-11": () => import("./layouts/StorefrontLayoutV11"),
-      "theme-10": () => import("./layouts/StorefrontLayoutV10"),
-      "theme-3": () => import("./layouts/StorefrontLayoutV3"),
-      "theme-2": () => import("./layouts/StorefrontLayoutV2"),
     };
     (layoutImports[theme] || (() => import("./layouts/StorefrontLayout")))().catch(() => {});
 
@@ -199,9 +191,6 @@ const _path = window.location.pathname;
         "theme-13": () => import("./pages/StorefrontHomeV13"),
         "theme-12": () => import("./pages/StorefrontHomeV12"),
         "theme-11": () => import("./pages/StorefrontHomeV3"),
-        "theme-10": () => import("./pages/StorefrontHomeV10"),
-        "theme-3": () => import("./pages/StorefrontHomeV3"),
-        "theme-2": () => import("./pages/StorefrontHomeV2"),
       };
       (homeImports[theme] || (() => import("./pages/StorefrontHome")))().catch(() => {});
     } else if (/\/product\//.test(path)) {
@@ -314,7 +303,7 @@ const StorefrontCustomPage = lazy(() => import("./pages/StorefrontCustomPage"));
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
   // V11 re-exports V3 exactly — map directly to avoid double lazy chunk
-  const HomeComponent = theme === "theme-19" ? StorefrontHomeV19 : theme === "theme-18" ? StorefrontHomeV18 : theme === "theme-17" ? StorefrontHomeV17 : theme === "theme-16" ? StorefrontHomeV16 : theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV3 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+  const HomeComponent = theme === "theme-19" ? StorefrontHomeV19 : theme === "theme-18" ? StorefrontHomeV18 : theme === "theme-17" ? StorefrontHomeV17 : theme === "theme-16" ? StorefrontHomeV16 : theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV3 : StorefrontHome;
   return (
     <>
       <Route index element={<HomeComponent />} />
@@ -375,9 +364,6 @@ function getLayoutComponent(theme: string) {
     case "theme-13": return StorefrontLayoutV13;
     case "theme-12": return StorefrontLayoutV12;
     case "theme-11": return StorefrontLayoutV11;
-    case "theme-10": return StorefrontLayoutV10;
-    case "theme-3": return StorefrontLayoutV3;
-    case "theme-2": return StorefrontLayoutV2;
     default: return StorefrontLayout;
   }
 }
@@ -393,9 +379,6 @@ function prefetchLayoutChunk(theme: string) {
     case "theme-13": return import("./layouts/StorefrontLayoutV13");
     case "theme-12": return import("./layouts/StorefrontLayoutV12");
     case "theme-11": return import("./layouts/StorefrontLayoutV11");
-    case "theme-10": return import("./layouts/StorefrontLayoutV10");
-    case "theme-3": return import("./layouts/StorefrontLayoutV3");
-    case "theme-2": return import("./layouts/StorefrontLayoutV2");
     default: return import("./layouts/StorefrontLayout");
   }
 }
@@ -598,9 +581,6 @@ function prefetchHomeChunk(theme: string) {
     case "theme-13": return import("./pages/StorefrontHomeV13");
     case "theme-12": return import("./pages/StorefrontHomeV12");
     case "theme-11": return import("./pages/StorefrontHomeV3"); // V11 = V3
-    case "theme-10": return import("./pages/StorefrontHomeV10");
-    case "theme-3": return import("./pages/StorefrontHomeV3");
-    case "theme-2": return import("./pages/StorefrontHomeV2");
     default: return import("./pages/StorefrontHome");
   }
 }
