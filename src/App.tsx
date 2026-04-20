@@ -96,6 +96,23 @@ const LazyAuthRoutes = lazy(() => import("./routes/AuthRoutes"));
 // Landing page — standalone, no DashboardProviders needed
 const LazyIndex = lazy(() => import("./pages/Index"));
 const LazyThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
+const LandingPrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
+const LandingTerms = lazy(() => import("./pages/legal/TermsAndConditions"));
+const LandingRefund = lazy(() => import("./pages/legal/RefundPolicy"));
+const LandingShipping = lazy(() => import("./pages/legal/ShippingPolicy"));
+const LandingContact = lazy(() => import("./pages/legal/ContactUs"));
+const LandingAbout = lazy(() => import("./pages/legal/AboutUs"));
+
+const LANDING_LEGAL_PATHS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
+  "/privacy-policy": LandingPrivacyPolicy,
+  "/terms": LandingTerms,
+  "/terms-and-conditions": LandingTerms,
+  "/refund-policy": LandingRefund,
+  "/cancellation-policy": LandingRefund,
+  "/shipping-policy": LandingShipping,
+  "/contact-us": LandingContact,
+  "/about-us": LandingAbout,
+};
 
 /**
  * Eagerly prefetch dashboard chunks so they download IN PARALLEL
@@ -845,6 +862,16 @@ function AppRouter() {
     return (
       <Suspense fallback={<LoadingSpinner />}>
         {location.pathname === "/theme" ? <LazyThemeShowcase /> : <LazyIndex />}
+      </Suspense>
+    );
+  }
+
+  // ── LANDING LEGAL PAGES (Razorpay/SaaS compliance) ──
+  const LegalComp = LANDING_LEGAL_PATHS[location.pathname];
+  if (LegalComp) {
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <LegalComp />
       </Suspense>
     );
   }
