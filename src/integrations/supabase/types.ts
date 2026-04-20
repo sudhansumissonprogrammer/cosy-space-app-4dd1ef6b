@@ -69,6 +69,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          show_on_home: boolean
           slug: string
           store_id: string
         }
@@ -78,6 +79,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          show_on_home?: boolean
           slug: string
           store_id: string
         }
@@ -87,6 +89,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          show_on_home?: boolean
           slug?: string
           store_id?: string
         }
