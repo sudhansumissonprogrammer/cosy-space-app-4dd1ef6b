@@ -33,7 +33,7 @@ export default function V19BottomNav({ store }: { store: any }) {
       {showCartFab && (
         <Link
           to={storefrontPath(slug, "cart")}
-          className="fixed inset-x-3 z-40 sm:hidden flex items-center justify-between rounded-xl px-4 shadow-2xl active:scale-[0.98] transition-transform"
+          className="fixed inset-x-3 z-40 md:hidden flex items-center justify-between rounded-xl px-4 shadow-2xl active:scale-[0.98] transition-transform"
           style={{
             background: GREEN,
             color: "#fff",
@@ -61,7 +61,7 @@ export default function V19BottomNav({ store }: { store: any }) {
       )}
 
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 sm:hidden bg-white border-t"
+        className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white border-t"
         style={{ borderColor: "#e5e7eb", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-stretch justify-around h-[60px]">
