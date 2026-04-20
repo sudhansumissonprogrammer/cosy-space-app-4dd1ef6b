@@ -18,6 +18,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, resolveProductImages } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
 import V19ProductCard from "@/components/storefront/v19/V19ProductCard";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 const SEARCH_TERMS = ['"milk"', '"bread"', '"eggs"', '"atta"', '"chips"', '"chocolate"'];
@@ -36,6 +37,7 @@ export default function V19ProductDetail() {
   const slug = store?.slug || "";
   const { addToCart, items, updateQuantity } = useCart();
   const totalItems = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
+  const { track } = useRecentlyViewed(store?.id);
 
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -118,6 +120,21 @@ export default function V19ProductDetail() {
   });
 
   const images = useMemo(() => (product ? resolveProductImages(product) : []), [product]);
+
+  // Track recently viewed (only after product loads)
+  useEffect(() => {
+    if (!product) return;
+    track({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      image_url: product.image_url,
+      price: Number(product.price),
+      sale_price: product.sale_price ? Number(product.sale_price) : null,
+      currency: product.currency,
+    });
+  }, [product, track]);
+
   const activeVariant: Variant | null = useMemo(() => {
     if (!product || !selectedVariantId) return null;
     return (product.product_variants || []).find((v: any) => v.id === selectedVariantId) || null;
@@ -520,9 +537,19 @@ export default function V19ProductDetail() {
                 ₹{mrpToShow.toFixed(0)}
               </span>
             )}
+            {Number(product.stock_quantity ?? 0) > 0 && Number(product.stock_quantity ?? 0) <= 5 && (
+              <span className="text-[10px] font-bold text-orange-600 mt-0.5">Only {product.stock_quantity} left!</span>
+            )}
           </div>
           <div className="flex-1" />
-          {cartQty > 0 ? (
+          {Number(product.stock_quantity ?? 0) <= 0 && product.stock_quantity !== null ? (
+            <button
+              disabled
+              className="px-7 h-11 rounded-lg text-gray-500 bg-gray-200 text-[14px] font-extrabold uppercase tracking-wide cursor-not-allowed"
+            >
+              Out of stock
+            </button>
+          ) : cartQty > 0 ? (
             <div
               className="inline-flex items-center text-white font-extrabold rounded-lg overflow-hidden"
               style={{ background: "#036B52", height: 44 }}

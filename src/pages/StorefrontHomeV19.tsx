@@ -1,67 +1,106 @@
 /**
- * StorefrontHomeV19 — Blinkit-style home: swipeable promo carousel, circular pastel categories, plain section titles.
+ * StorefrontHomeV19 — Blinkit-style home, fully responsive.
+ * Mobile: swipeable promos, 4-col category circles, horizontal product strips.
+ * Desktop: multi-promo carousel with auto-rotate + arrows, 8-10 col categories, dense product grids with arrow nav.
  */
+import { useEffect, useMemo, useRef } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
-import { ChevronRight, Tag } from "lucide-react";
+import { ChevronRight, ChevronLeft, Tag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import V19ProductCard from "@/components/storefront/v19/V19ProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 
 interface Category { id: string; name: string; slug: string; image_url: string | null; }
 
-const PASTELS = ["#FFF1D6", "#FFE5E5", "#DDEBFF", "#E5F7E5", "#FFE7F3", "#F0E5FF", "#FFF7CC", "#D6F5F0"];
+const PASTELS = ["#FFF1D6", "#FFE5E5", "#DDEBFF", "#E5F7E5", "#FFE7F3", "#F0E5FF", "#FFF7CC", "#D6F5F0", "#FFE9D6", "#E0F0FF"];
 
 const PROMO_CARDS = [
   { bg: "linear-gradient(135deg, #FFD33D 0%, #FFC107 100%)", title: "Fresh deals", subtitle: "in minutes" },
   { bg: "linear-gradient(135deg, #FFB7C5 0%, #FF8FA3 100%)", title: "Snack attack", subtitle: "30% off today" },
   { bg: "linear-gradient(135deg, #B8E6C1 0%, #7DD3A0 100%)", title: "Daily essentials", subtitle: "starting ₹19" },
   { bg: "linear-gradient(135deg, #C5DDFF 0%, #8FB5FF 100%)", title: "New arrivals", subtitle: "fresh stock daily" },
+  { bg: "linear-gradient(135deg, #FFE7B5 0%, #FFC36A 100%)", title: "Weekend savings", subtitle: "up to 40% off" },
 ];
 
-export default function StorefrontHomeV19() {
-  const params = useParams<{ slug: string }>();
-  const store = useOutletContext<StoreData>();
-  const slug = params.slug || (store as any)?.slug || "";
-  const queryClient = useQueryClient();
-  const categories = (queryClient.getQueryData<Category[]>(["storefront-categories", store?.id]) || []) as Category[];
-  const { products } = useStorefrontProducts(store?.id);
+function HorizontalScroller({ children, ariaLabel }: { children: React.ReactNode; ariaLabel?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scrollBy = (dir: 1 | -1) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
+  return (
+    <div className="v19-carousel-wrap relative">
+      <div
+        ref={ref}
+        className="flex gap-2.5 lg:gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 md:mx-0 md:px-0 snap-x"
+        aria-label={ariaLabel}
+      >
+        {children}
+      </div>
+      <button
+        type="button"
+        aria-label="Scroll left"
+        onClick={() => scrollBy(-1)}
+        className="v19-carousel-arrow left"
+      >
+        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+      </button>
+      <button
+        type="button"
+        aria-label="Scroll right"
+        onClick={() => scrollBy(1)}
+        className="v19-carousel-arrow right"
+      >
+        <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+      </button>
+    </div>
+  );
+}
 
-  if (!store) return null;
+function PromoCarousel({ slug }: { slug: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Auto-rotate every 5s — only on desktop (where multiple promos visible)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(min-width: 1024px)").matches) return;
+    const id = setInterval(() => {
+      const el = ref.current;
+      if (!el) return;
+      const max = el.scrollWidth - el.clientWidth;
+      const next = el.scrollLeft + el.clientWidth * 0.4;
+      el.scrollTo({ left: next > max - 8 ? 0 : next, behavior: "smooth" });
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
 
-  const productsByCategory = new Map<string, any[]>();
-  for (const p of products) {
-    const cat = (p as any).category || "Other";
-    if (!productsByCategory.has(cat)) productsByCategory.set(cat, []);
-    productsByCategory.get(cat)!.push(p);
-  }
-  const visibleCategories = categories.filter((c) => productsByCategory.has(c.name));
+  const scrollBy = (dir: 1 | -1) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.5, behavior: "smooth" });
+  };
 
   return (
-    <div className="space-y-5 pb-4">
-      {/* Store hero banner if uploaded */}
-      {(store as any).banner_url && (
-        <Link to={storefrontPath(slug, "shop")} className="block rounded-2xl overflow-hidden shadow-sm">
-          <img
-            src={optimizeImageUrl((store as any).banner_url, 800, 85)}
-            alt={store.name}
-            className="w-full h-auto block"
-            loading="eager"
-            fetchPriority="high"
-          />
-        </Link>
-      )}
-
-      {/* Promo carousel — swipeable */}
-      <div className="-mx-1 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-3 px-1 snap-x snap-mandatory">
+    <div className="v19-carousel-wrap relative">
+      <div
+        ref={ref}
+        className="overflow-x-auto scrollbar-hide -mx-1 snap-x snap-mandatory"
+      >
+        <div className="flex gap-3 px-1">
           {PROMO_CARDS.map((promo, i) => (
             <div
               key={i}
-              className="v19-promo-card snap-start"
-              style={{ background: promo.bg }}
+              className="v19-promo-card"
+              style={{
+                background: promo.bg,
+                width: "78%",
+                maxWidth: 320,
+                minHeight: 130,
+              }}
             >
               <div>
                 <h2>{promo.title}</h2>
@@ -73,16 +112,80 @@ export default function StorefrontHomeV19() {
           ))}
         </div>
       </div>
+      <button type="button" aria-label="Previous" onClick={() => scrollBy(-1)} className="v19-carousel-arrow left">
+        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+      </button>
+      <button type="button" aria-label="Next" onClick={() => scrollBy(1)} className="v19-carousel-arrow right">
+        <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+      </button>
+      {/* Width override for responsive promo */}
+      <style>{`
+        @media (min-width: 640px) { .v19-promo-card { width: 45% !important; max-width: 360px; } }
+        @media (min-width: 768px) { .v19-promo-card { width: 32% !important; max-width: 360px; } }
+        @media (min-width: 1024px) { .v19-promo-card { width: 24% !important; max-width: 320px; min-height: 160px !important; } }
+      `}</style>
+    </div>
+  );
+}
 
-      {/* Categories — circular pastel */}
+export default function StorefrontHomeV19() {
+  const params = useParams<{ slug: string }>();
+  const store = useOutletContext<StoreData>();
+  const slug = params.slug || (store as any)?.slug || "";
+  const queryClient = useQueryClient();
+  const categories = (queryClient.getQueryData<Category[]>(["storefront-categories", store?.id]) || []) as Category[];
+  const { products } = useStorefrontProducts(store?.id);
+  const { items: recent } = useRecentlyViewed(store?.id);
+
+  const productsByCategory = useMemo(() => {
+    const m = new Map<string, any[]>();
+    for (const p of products) {
+      const cat = (p as any).category || "Other";
+      if (!m.has(cat)) m.set(cat, []);
+      m.get(cat)!.push(p);
+    }
+    return m;
+  }, [products]);
+
+  if (!store) return null;
+
+  const visibleCategories = categories.filter((c) => productsByCategory.has(c.name));
+
+  // Recent items that still exist in current product list
+  const productIds = new Set(products.map((p) => p.id));
+  const recentVisible = recent.filter((r) => productIds.has(r.id));
+
+  return (
+    <div className="space-y-5 md:space-y-7 pb-4">
+      {/* Hero banner with aspect-ratio reservation to prevent CLS */}
+      {(store as any).banner_url && (
+        <Link to={storefrontPath(slug, "shop")} className="block rounded-2xl overflow-hidden shadow-sm">
+          <div className="w-full" style={{ aspectRatio: "16 / 6" }}>
+            <img
+              src={optimizeImageUrl((store as any).banner_url, 1400, 85)}
+              alt={store.name}
+              className="w-full h-full object-cover block"
+              loading="eager"
+              fetchPriority="high"
+              width={1400}
+              height={525}
+            />
+          </div>
+        </Link>
+      )}
+
+      {/* Promo carousel */}
+      <PromoCarousel slug={slug} />
+
+      {/* Categories — circular pastel, fully responsive */}
       {categories.length > 0 && (
         <section>
           <div className="v19-section-title">
             <h3>Shop by category</h3>
             <Link to={storefrontPath(slug, "categories")}>see all <ChevronRight className="h-3 w-3" /></Link>
           </div>
-          <div className="grid grid-cols-4 gap-3">
-            {categories.slice(0, 8).map((cat, i) => (
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 lg:gap-4">
+            {categories.slice(0, 10).map((cat, i) => (
               <Link key={cat.id} to={storefrontPath(slug, `category/${cat.slug}`)} className="v19-cat-circle">
                 <div className="circle" style={{ background: PASTELS[i % PASTELS.length] }}>
                   {cat.image_url ? (
@@ -105,22 +208,48 @@ export default function StorefrontHomeV19() {
         </section>
       )}
 
+      {/* Recently viewed rail */}
+      {recentVisible.length >= 3 && (
+        <section>
+          <div className="v19-section-title">
+            <h3>Recently viewed</h3>
+          </div>
+          <HorizontalScroller ariaLabel="Recently viewed">
+            {recentVisible.slice(0, 12).map((r) => {
+              const fullProduct = products.find((p) => p.id === r.id);
+              if (!fullProduct) return null;
+              return (
+                <div
+                  key={r.id}
+                  className="flex-shrink-0 snap-start w-[42%] sm:w-[28%] md:w-[22%] lg:w-[18%] xl:w-[15%]"
+                >
+                  <V19ProductCard product={fullProduct} slug={slug} store={store} />
+                </div>
+              );
+            })}
+          </HorizontalScroller>
+        </section>
+      )}
+
       {/* Per-category horizontal product strips */}
       {visibleCategories.map((cat) => {
-        const items = (productsByCategory.get(cat.name) || []).slice(0, 8);
+        const items = (productsByCategory.get(cat.name) || []).slice(0, 12);
         return (
           <section key={cat.id}>
             <div className="v19-section-title">
               <h3>{cat.name}</h3>
               <Link to={storefrontPath(slug, `category/${cat.slug}`)}>see all <ChevronRight className="h-3 w-3" /></Link>
             </div>
-            <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3">
+            <HorizontalScroller ariaLabel={cat.name}>
               {items.map((p, i) => (
-                <div key={p.id} className="flex-shrink-0" style={{ width: "42%" }}>
+                <div
+                  key={p.id}
+                  className="flex-shrink-0 snap-start w-[42%] sm:w-[28%] md:w-[22%] lg:w-[18%] xl:w-[15%]"
+                >
                   <V19ProductCard product={p} slug={slug} store={store} priority={i < 2} />
                 </div>
               ))}
-            </div>
+            </HorizontalScroller>
           </section>
         );
       })}
@@ -131,8 +260,8 @@ export default function StorefrontHomeV19() {
             <h3>All Products</h3>
             <Link to={storefrontPath(slug, "shop")}>see all <ChevronRight className="h-3 w-3" /></Link>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {products.slice(0, 8).map((p, i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {products.slice(0, 18).map((p, i) => (
               <V19ProductCard key={p.id} product={p} slug={slug} store={store} priority={i < 2} />
             ))}
           </div>
