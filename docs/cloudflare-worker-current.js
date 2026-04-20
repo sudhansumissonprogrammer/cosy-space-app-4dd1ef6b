@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "7.0.0-phase1-cache-bots-images";
+const WORKER_VERSION = "7.1.0-phase2-kv-ttl-extended";
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
@@ -783,9 +783,10 @@ async function getFreshSpaShell(request, ctx, env) {
    FIX #4 — BATCH KV READ (shell + theme + storefront in ONE call)
    ============================================================ */
 
-// FIX #20: Storefront data changes rarely — raise TTLs
-const KV_STOREFRONT_TTL = 14_400; // was 3600 → 4h
-const CACHE_STOREFRONT_TTL = 1_200; // was 600 → 20min
+// FIX #20 + Phase 2 #6: Storefront data changes rarely — push TTLs higher.
+// Auto-purge on store update keeps freshness; SWR serves stale instantly.
+const KV_STOREFRONT_TTL = 21_600; // was 14400 → 6h (Phase 2 #6)
+const CACHE_STOREFRONT_TTL = 3_600; // was 1200 → 1h (Phase 2 #6)
 
 async function _batchKvRead(slug, env) {
   if (!env?.STORE_KV) return { theme: null, storefront: null, storeInfo: null };
