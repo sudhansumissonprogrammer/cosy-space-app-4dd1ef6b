@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "6.9.0-phase2-critical-css";
+const WORKER_VERSION = "7.0.0-phase1-cache-bots-images";
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
@@ -2390,8 +2390,21 @@ async function handleBot(request, slug, url, isCustom) {
   const isSocialBot = SOCIAL_BOT_REGEX.test(ua) || INSTAGRAM_CRAWLER_REGEX.test(ua);
   const productSlug = getProductSlug(url.pathname);
 
+  // PHASE 1 FIX #3: Bot HTML cached aggressively at the edge.
+  // Bots re-crawl periodically anyway. 24h cache + 7d SWR = ~95% fewer
+  // bot-render edge function invocations + zero DB hits for repeat bot crawls.
   if (isSearchBot) {
     const domain = isCustom ? hostname : null;
+    const botCacheKey = new Request(
+      `https://bot-cache/search/${encodeURIComponent(hostname)}${url.pathname}`,
+      { method: "GET" }
+    );
+    const botCached = await cache.match(botCacheKey);
+    if (botCached) {
+      const r = new Response(botCached.body, botCached);
+      r.headers.set("X-Bot-Cache", "HIT");
+      return r;
+    }
     const botRenderRes = await callEdgeFunction("bot-render", {
       slug,
       product: productSlug || "",
@@ -2399,19 +2412,33 @@ async function handleBot(request, slug, url, isCustom) {
     });
     if (botRenderRes.ok) {
       const html = await botRenderRes.text();
-      return new Response(html, {
+      const finalRes = new Response(html, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+          "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+          "X-Bot-Cache": "MISS",
           ...SECURITY_HEADERS,
         },
       });
+      // Cache at edge for 24h (only the response body + headers; cache.put handles TTL)
+      try { await cache.put(botCacheKey, finalRes.clone()); } catch {}
+      return finalRes;
     }
     return null;
   }
 
   if (isSocialBot) {
     const domain = isCustom ? hostname : null;
+    const socialCacheKey = new Request(
+      `https://bot-cache/social/${encodeURIComponent(hostname)}${url.pathname}`,
+      { method: "GET" }
+    );
+    const socialCached = await cache.match(socialCacheKey);
+    if (socialCached) {
+      const r = new Response(socialCached.body, socialCached);
+      r.headers.set("X-Bot-Cache", "HIT");
+      return r;
+    }
     const ogRes = await callEdgeFunction("bot-render", {
       slug,
       product: productSlug || "",
@@ -2424,13 +2451,16 @@ async function handleBot(request, slug, url, isCustom) {
         const finalUrl = isCustom
           ? `https://${hostname}${url.pathname}`
           : buildSubdomainUrl(slug, url.pathname, url.search);
-        return new Response(buildOgHtml(og, finalUrl), {
+        const finalRes = new Response(buildOgHtml(og, finalUrl), {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+            "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+            "X-Bot-Cache": "MISS",
             ...SECURITY_HEADERS,
           },
         });
+        try { await cache.put(socialCacheKey, finalRes.clone()); } catch {}
+        return finalRes;
       } catch {}
     }
     return null;
@@ -2955,6 +2985,42 @@ export default {
       if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/static/"))
         return proxyToOriginCached(request);
       return proxyToOrigin(request);
+    }
+
+    // ─── PHASE 1 FIX #1: SUPABASE STORAGE IMAGE EDGE CACHE (1yr immutable) ───
+    // Product images never mutate (filenames are content-hashed on upload).
+    // Cache them at the edge for 1 year. Repeat visitors → 0 origin hits,
+    // 0 Supabase storage egress, instant load.
+    if (
+      url.pathname.startsWith("/storage/v1/object/public/product-images/") ||
+      url.pathname.startsWith("/storage/v1/object/public/store-logos/") ||
+      url.pathname.startsWith("/storage/v1/object/public/store-banners/")
+    ) {
+      const imgCacheKey = new Request(
+        `https://sb-img-cache${url.pathname}${url.search}`,
+        { method: "GET" }
+      );
+      const imgCached = await cache.match(imgCacheKey);
+      if (imgCached) {
+        const r = new Response(imgCached.body, imgCached);
+        r.headers.set("X-SB-Img-Cache", "HIT");
+        return r;
+      }
+      try {
+        const sbRes = await fetch(`${SUPABASE_URL}${url.pathname}${url.search}`, {
+          cf: { cacheEverything: true, cacheTtl: 31536000 },
+        });
+        if (!sbRes.ok) return sbRes;
+        const headers = new Headers(sbRes.headers);
+        headers.set("Cache-Control", "public, max-age=31536000, immutable");
+        headers.set("X-SB-Img-Cache", "MISS");
+        headers.set("Access-Control-Allow-Origin", "*");
+        const finalRes = new Response(sbRes.body, { status: 200, headers });
+        ctx.waitUntil(cache.put(imgCacheKey, finalRes.clone()));
+        return finalRes;
+      } catch {
+        return fetch(`${SUPABASE_URL}${url.pathname}${url.search}`);
+      }
     }
 
     cleanRateLimitMap();
