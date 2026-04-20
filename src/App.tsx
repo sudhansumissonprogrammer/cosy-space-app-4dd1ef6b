@@ -68,6 +68,7 @@ const StorefrontTerms = lazy(() => import("./pages/StorefrontTerms"));
 const StorefrontPrivacyPolicy = lazy(() => import("./pages/StorefrontPrivacyPolicy"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const V19ProductDetail = lazy(() => import("./pages/V19ProductDetail"));
 const ProductDetailSkeleton = () => (
   <div className="mx-auto max-w-6xl px-4 py-8 space-y-4">
     <div className="h-8 w-48 rounded bg-muted/60" />
@@ -309,7 +310,7 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="terms" element={<StorefrontTerms />} />
       <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
       <Route path="category/:categorySlug" element={<CategoryDetail />} />
-      <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}><ProductDetail /></Suspense>} />
+      <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
       <Route path="cart" element={<CartPage />} />
       <Route path="wishlist" element={<WishlistPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
