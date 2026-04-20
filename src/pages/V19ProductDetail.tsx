@@ -163,7 +163,7 @@ export default function V19ProductDetail() {
       price: effectivePrice,
       image: images[0] || product.image_url || undefined,
       quantity: 1,
-    });
+    }, { silent: true });
   };
 
   const handleShare = async () => {
