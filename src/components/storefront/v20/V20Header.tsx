@@ -3,12 +3,13 @@
  */
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, ChevronDown, User, ShoppingCart } from "lucide-react";
+import { Search, ChevronDown, User, ShoppingCart, MapPin } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import DeliveryLocationDialog, { getSavedDeliveryLabel } from "@/components/storefront/DeliveryLocationDialog";
 
 const SEARCH_TERMS = ['"new arrivals"', '"trending"', '"best sellers"', '"offers"', '"deals"', '"new in"'];
 
