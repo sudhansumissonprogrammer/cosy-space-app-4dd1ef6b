@@ -47,7 +47,7 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
           View All <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
-      <div className="relative px-0 md:px-12">
+      <div className="relative px-0 md:px-12 overflow-hidden">
         <Carousel
           setApi={setApi}
           opts={{
@@ -59,11 +59,11 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
           ]}
           className="w-full"
         >
-          <CarouselContent className="-ml-3">
+          <CarouselContent className="-ml-2">
             {products.map((product) => (
               <CarouselItem
                 key={product.id}
-                className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
+                className="pl-2 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
               >
                 <UniversalProductCard
                   product={product}
