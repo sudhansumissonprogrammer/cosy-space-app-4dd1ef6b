@@ -1,7 +1,7 @@
 /**
  * V20 Product Detail — Theme 20 (Multi Purpose). Duplicated from V19ProductDetail.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -17,6 +17,12 @@ import { getDiscountPercent } from "@/lib/productUtils";
 import V20ProductCard from "@/components/storefront/v20/V20ProductCard";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { ZoomHint } from "@/components/storefront/ZoomableGallery";
+import {
+  DeliveryEtaPill, CouponTeaser, TopReviewsStrip, BundleCard, StockUrgencyStrip, StickyAddInfo,
+} from "@/components/storefront/PdpEnhancements";
+
+const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
 const SEARCH_TERMS = ['"new arrivals"', '"trending"', '"best sellers"', '"offers"', '"deals"', '"new in"'];
 
@@ -36,6 +42,7 @@ export default function V20ProductDetail() {
   const [highlightsOpen, setHighlightsOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [termIdx, setTermIdx] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
