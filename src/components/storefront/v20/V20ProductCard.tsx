@@ -121,7 +121,7 @@ export default function V20ProductCard({ product, slug, store, priority = false 
           ) : cartQty > 0 ? (
             <div className="v20-stepper">
               <button onClick={onDec} aria-label="Decrease" className="active:scale-90 transition-transform"><Minus className="h-3.5 w-3.5" strokeWidth={3} /></button>
-              <span className="px-2 min-w-[20px] text-center">{cartQty}</span>
+              <span key={cartQty} className="qty-flip px-2 min-w-[20px] text-center">{cartQty}</span>
               <button onClick={onInc} aria-label="Increase" className="active:scale-90 transition-transform"><Plus className="h-3.5 w-3.5" strokeWidth={3} /></button>
             </div>
           ) : (
