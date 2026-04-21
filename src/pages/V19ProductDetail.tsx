@@ -303,6 +303,7 @@ export default function V19ProductDetail() {
 
       {/* Image gallery — swipeable with snap */}
       <div className="relative bg-white">
+        {images.length > 0 && <ZoomHint onClick={() => setZoomOpen(true)} />}
         <div
           ref={galleryRef}
           onScroll={onGalleryScroll}
