@@ -231,6 +231,32 @@ export default function StorefrontHomeV19() {
 
   if (!store) return null;
 
+  // Loading skeleton — show while products are being fetched
+  const isLoadingProducts = allProducts.length === 0 && products.length === 0;
+  if (isLoadingProducts && categories.length === 0) {
+    return (
+      <div className="space-y-5 pb-4 animate-pulse">
+        <div className="rounded-2xl bg-gray-200 w-full" style={{ aspectRatio: "16 / 6" }} />
+        <div className="flex gap-3 overflow-hidden">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-gray-200 flex-shrink-0 w-[78%] sm:w-[45%] md:w-[24%] h-[130px]" />
+          ))}
+        </div>
+        <div>
+          <div className="h-5 w-32 bg-gray-200 rounded mb-3" />
+          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className="rounded-xl bg-gray-200" style={{ aspectRatio: "1 / 1" }} />
+                <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const homeEligibleCategories = categories.filter((category) => category.show_on_home !== false);
   const visibleCategories = homeEligibleCategories.filter((category) => getCategoryItems(category).length > 0);
 

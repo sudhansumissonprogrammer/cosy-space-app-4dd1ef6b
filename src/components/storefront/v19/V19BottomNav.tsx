@@ -14,7 +14,8 @@ export default function V19BottomNav({ store }: { store: any }) {
   const { cartCount, cartTotal } = useCart();
   const { user } = useStorefrontAuth();
   const isCheckout = location.pathname.includes("/checkout") || location.pathname.endsWith("/cart");
-  if (isCheckout) return null;
+  const isProductDetail = /\/product\/[^/]+/.test(location.pathname);
+  if (isCheckout || isProductDetail) return null;
 
   const slug = store?.slug || "";
   const storePath = storefrontPath(slug);
