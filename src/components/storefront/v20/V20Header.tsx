@@ -23,6 +23,7 @@ export default function V20Header({ store }: { store: any }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [savedLabel, setSavedLabel] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
   const { cartCount } = useCart();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -39,6 +40,14 @@ export default function V20Header({ store }: { store: any }) {
   useEffect(() => {
     if (store?.id) setSavedLabel(getSavedDeliveryLabel(store.id));
   }, [store?.id]);
+
+  // P5 — Header shrink on scroll
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const products = (queryClient.getQueryData<any[]>(["storefront-products", store?.id]) || []) as any[];
 
@@ -126,9 +135,9 @@ export default function V20Header({ store }: { store: any }) {
       </header>
 
       {/* ============ DESKTOP HEADER (md+) ============ */}
-      <header className="hidden md:block sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
+      <header className={`header-shrink ${scrolled ? "is-shrunk" : ""} hidden md:block sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-3 flex items-center gap-5">
-          <Link to={storefrontPath(slug)} className="flex items-center flex-shrink-0">
+          <Link to={storefrontPath(slug)} className="logo-shrink flex items-center flex-shrink-0">
             {logoSrc ? (
               <img
                 src={store?.logo_url ? optimizeImageUrl(store.logo_url, 200, 90) : ""}
@@ -201,7 +210,7 @@ export default function V20Header({ store }: { store: any }) {
         {topCats.length > 0 && (
           <div className="border-t border-gray-100 bg-white">
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
-              <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2">
+              <nav className="chip-snap-strip flex items-center gap-1 overflow-x-auto scrollbar-hide py-2">
                 {(() => {
                   const isHome = location.pathname.endsWith(slug) || location.pathname.endsWith(slug + "/");
                   return (
