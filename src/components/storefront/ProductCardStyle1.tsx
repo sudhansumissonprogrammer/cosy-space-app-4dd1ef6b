@@ -72,8 +72,8 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
               </span>
             </div>
           )}
-          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute top-2 z-10 flex items-center justify-center rounded-full p-1.5 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden`} style={{ left: "auto", right: "0.5rem", color: "hsl(var(--destructive))", backgroundColor: "rgba(255,255,255,0.35)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "none", boxShadow: "none" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
-            <Heart className={`h-[18px] w-[18px] transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-white stroke-[2.25]"}`} style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.35))" }} aria-hidden="true" />
+          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute top-2 z-10 flex items-center justify-center p-1 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden`} style={{ left: "auto", right: "0.5rem", color: "hsl(var(--destructive))", background: "transparent", border: "none", boxShadow: "none", backdropFilter: "none", WebkitBackdropFilter: "none" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+            <Heart className={`h-[20px] w-[20px] transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-white stroke-[2.25]"}`} style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))" }} aria-hidden="true" />
           </button>
           {(() => {
             const images = resolveProductImages(product);
