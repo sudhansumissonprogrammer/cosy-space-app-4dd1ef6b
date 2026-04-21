@@ -137,13 +137,11 @@ export default function StorefrontLayoutV19({ slugOverride }: { slugOverride?: s
         color: "#1a1a1a",
         "--storefront-text": "#1a1a1a",
         "--storefront-bg": "#ffffff",
-        "--storefront-primary": "#036B52",
         "--storefront-btn-text": "#ffffff",
         "--background": "0 0% 96%",
         "--foreground": "0 0% 10%",
         "--card": "0 0% 100%",
         "--card-foreground": "0 0% 10%",
-        "--primary": "163 95% 21%",
         "--primary-foreground": "0 0% 100%",
       } as React.CSSProperties}
     >
