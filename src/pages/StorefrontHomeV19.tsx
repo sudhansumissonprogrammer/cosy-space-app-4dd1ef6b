@@ -146,15 +146,33 @@ export default function StorefrontHomeV19() {
   const { products } = useStorefrontProducts(store?.id);
   const { items: recent } = useRecentlyViewed(store?.id);
 
+  // Fetch ALL products (not just first page) so per-category carousels are complete
+  const { data: allProducts = [] } = useQuery({
+    queryKey: ["storefront-products-all-v19", store?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id")
+        .eq("store_id", store!.id)
+        .eq("is_active", true)
+        .order("is_best_selling", { ascending: false })
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!store?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const productsByCategory = useMemo(() => {
     const m = new Map<string, any[]>();
-    for (const p of products) {
+    const source = allProducts.length > 0 ? allProducts : products;
+    for (const p of source) {
       const cat = (p as any).category || "Other";
       if (!m.has(cat)) m.set(cat, []);
       m.get(cat)!.push(p);
     }
     return m;
-  }, [products]);
+  }, [allProducts, products]);
 
   if (!store) return null;
 
