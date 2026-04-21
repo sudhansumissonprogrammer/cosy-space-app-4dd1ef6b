@@ -2,6 +2,7 @@
  * Shared hook for product card add-to-cart and wishlist actions.
  * Eliminates duplicate handler code across 6+ product card components.
  */
+import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ interface Product {
 export function useProductCardActions(product: Product) {
   const { addToCart, items, updateQuantity } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const [heartBursting, setHeartBursting] = useState(false);
 
   const wishlisted = isWishlisted(product.id);
   const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
@@ -47,6 +49,7 @@ export function useProductCardActions(product: Product) {
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const wasWishlisted = wishlisted;
     toggleWishlist({
       productId: product.id,
       name: product.name,
@@ -55,7 +58,12 @@ export function useProductCardActions(product: Product) {
       image: product.image_url || undefined,
       slug: product.slug || product.id,
     });
-    toast.success(wishlisted ? "Removed from wishlist" : "Added to wishlist");
+    // Only burst on add (not remove)
+    if (!wasWishlisted) {
+      setHeartBursting(true);
+      window.setTimeout(() => setHeartBursting(false), 650);
+    }
+    toast.success(wasWishlisted ? "Removed from wishlist" : "Added to wishlist");
   };
 
   return {
@@ -64,6 +72,7 @@ export function useProductCardActions(product: Product) {
     effectivePrice,
     handleAddToCart,
     handleToggleWishlist,
+    heartBursting,
     updateQuantity,
   };
 }
