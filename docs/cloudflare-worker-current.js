@@ -2764,7 +2764,8 @@ async function handlePrewarm(request, url, ctx, env) {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=600",
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+          ETag: `W/"${slug}-prewarm-${Date.now().toString(36)}"`,
           "X-Store-Slug": slug,
           "X-Data-Source": "prewarm",
           "X-Shell-Source": shellResult.source,
