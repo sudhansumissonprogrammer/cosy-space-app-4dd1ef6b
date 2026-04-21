@@ -105,7 +105,7 @@ export default function V19ProductCard({ product, slug, store, priority = false 
               ₹{Number(effectivePrice).toFixed(0)}
             </span>
             {product.sale_price && Number(product.sale_price) < Number(product.price) && (
-              <span className="text-[11px] text-gray-400 line-through leading-none mt-0.5">
+              <span className="price-strike-draw text-[11px] text-gray-400 leading-none mt-0.5">
                 ₹{Number(product.price).toFixed(0)}
               </span>
             )}
@@ -121,7 +121,7 @@ export default function V19ProductCard({ product, slug, store, priority = false 
           ) : cartQty > 0 ? (
             <div className="v19-stepper">
               <button onClick={onDec} aria-label="Decrease" className="active:scale-90 transition-transform"><Minus className="h-3.5 w-3.5" strokeWidth={3} /></button>
-              <span className="px-2 min-w-[20px] text-center">{cartQty}</span>
+              <span key={cartQty} className="qty-flip px-2 min-w-[20px] text-center">{cartQty}</span>
               <button onClick={onInc} aria-label="Increase" className="active:scale-90 transition-transform"><Plus className="h-3.5 w-3.5" strokeWidth={3} /></button>
             </div>
           ) : (

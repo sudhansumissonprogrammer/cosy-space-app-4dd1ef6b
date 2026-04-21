@@ -662,13 +662,113 @@
 }
 .sale-badge-pulse { animation: sale-pulse 2.4s ease-in-out infinite; }
 
+/* ============== Polish Pack v2 ============== */
+
+/* P1 — Cart "+1" floating badge (anchored to data-cart-target via CartPlusOneOverlay) */
+.cart-plus-one {
+  position: fixed; z-index: 9998; pointer-events: none;
+  font-weight: 900; font-size: 13px;
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--storefront-primary, hsl(var(--primary)));
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  animation: cart-plus-one 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+@keyframes cart-plus-one {
+  0%   { opacity: 0; transform: translate(-50%, 4px) scale(0.6); }
+  20%  { opacity: 1; transform: translate(-50%, -8px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -42px) scale(0.95); }
+}
+
+/* P2 — Add-to-cart button checkmark morph */
+.btn-added { position: relative; }
+.btn-added::after {
+  content: "✓ Added";
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: inherit; color: inherit;
+  border-radius: inherit;
+  font-weight: 800; letter-spacing: 0.02em;
+  animation: btn-added-pop 1100ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes btn-added-pop {
+  0%   { opacity: 0; transform: scale(0.85); }
+  15%  { opacity: 1; transform: scale(1); }
+  85%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.96); }
+}
+
+/* P3 — Price strikethrough draw on mount */
+.price-strike-draw { position: relative; display: inline-block; }
+.price-strike-draw::after {
+  content: "";
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 1.5px; background: currentColor;
+  transform: scaleX(0); transform-origin: left center;
+  animation: price-strike 320ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
+}
+@keyframes price-strike { to { transform: scaleX(1); } }
+
+/* P4 — Image LQIP blur-up (used by OptimizedImage when loaded class added) */
+.img-blurup { filter: blur(12px); transform: scale(1.04); transition: filter 0.45s ease, transform 0.45s ease; }
+.img-blurup.is-loaded { filter: blur(0); transform: scale(1); }
+
+/* P5 — Header shrink on scroll (V19/V20) */
+.header-shrink { transition: padding 0.25s ease, box-shadow 0.25s ease; }
+.header-shrink.is-shrunk { padding-top: 4px !important; padding-bottom: 4px !important; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.header-shrink.is-shrunk .logo-shrink { transform: scale(0.88); transform-origin: left center; }
+.logo-shrink { transition: transform 0.25s ease; will-change: transform; }
+
+/* P6 — BackToTop bounce in/out */
+.back-to-top-enter { animation: btt-in 360ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.back-to-top-exit  { animation: btt-out 200ms ease-in forwards; }
+@keyframes btt-in {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.6); }
+  60%  { opacity: 1; transform: translateY(-3px) scale(1.08); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes btt-out {
+  to { opacity: 0; transform: translateY(10px) scale(0.7); }
+}
+
+/* P7 — Horizontal chip strip swipe momentum + snap */
+.chip-snap-strip {
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-left: 16px;
+}
+.chip-snap-strip > * { scroll-snap-align: start; }
+
+/* P9 — Quantity stepper number flip */
+.qty-flip {
+  display: inline-block;
+  animation: qty-flip 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+@keyframes qty-flip {
+  0%   { transform: rotateX(-90deg); opacity: 0; }
+  60%  { transform: rotateX(15deg); opacity: 1; }
+  100% { transform: rotateX(0); opacity: 1; }
+}
+
+/* P10 — Toast bouncy entry (Sonner) */
+[data-sonner-toaster] [data-sonner-toast] {
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  animation-duration: 360ms !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card-tilt, .card-img-zoom img, .cta-shimmer::before,
   .chip-magnetic, .nav-pill-indicator, .heart-burst.bursting svg,
   .heart-burst.bursting::before, .gallery-dot-active,
   .search-focus-expand, .arrow-nudge,
   .heading-underline-draw::after, .sale-badge-pulse,
-  .skeleton-fade-out, .content-fade-in {
+  .skeleton-fade-out, .content-fade-in,
+  .cart-plus-one, .btn-added::after, .price-strike-draw::after,
+  .img-blurup, .header-shrink, .logo-shrink,
+  .back-to-top-enter, .back-to-top-exit, .qty-flip {
     animation: none !important;
     transition: none !important;
     transform: none !important;

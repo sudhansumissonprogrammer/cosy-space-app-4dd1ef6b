@@ -120,7 +120,7 @@ export default function StorefrontProductCard({ product, slug, store, priority =
           {product.sale_price ? (
             <>
               <span className="text-sm font-extrabold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
-              <span className="text-[10px] line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 45%, transparent)" }}>{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
+              <span className="price-strike-draw text-[10px]" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 45%, transparent)" }}>{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
               {discountPercent && <span className="rounded-full bg-success px-1.5 py-0.5 text-[9px] font-bold text-success-foreground">{discountPercent}% off</span>}
             </>
           ) : (

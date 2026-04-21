@@ -119,6 +119,10 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
     // Trigger cart bounce animation
     setCartBounce(true);
     setTimeout(() => setCartBounce(false), 500);
+    // Fire global "+1" event for floating badge overlay
+    if (typeof window !== "undefined") {
+      try { window.dispatchEvent(new CustomEvent("cart:add", { detail: { productId: item.productId } })); } catch {}
+    }
     fireAddToCartAnalytics(item, currency, storeId);
   }, [slug, storeId, currency]);
 

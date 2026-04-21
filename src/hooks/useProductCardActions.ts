@@ -20,6 +20,7 @@ export function useProductCardActions(product: Product) {
   const { addToCart, items, updateQuantity } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const [heartBursting, setHeartBursting] = useState(false);
+  const [addedFlash, setAddedFlash] = useState(false);
 
   const wishlisted = isWishlisted(product.id);
   const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
@@ -43,7 +44,9 @@ export function useProductCardActions(product: Product) {
       image: product.image_url || undefined,
       quantity: 1,
     });
-    // Side cart opens automatically — no toast needed
+    // Brief "✓ Added" morph on the button (P2)
+    setAddedFlash(true);
+    window.setTimeout(() => setAddedFlash(false), 1100);
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
@@ -58,7 +61,6 @@ export function useProductCardActions(product: Product) {
       image: product.image_url || undefined,
       slug: product.slug || product.id,
     });
-    // Only burst on add (not remove)
     if (!wasWishlisted) {
       setHeartBursting(true);
       window.setTimeout(() => setHeartBursting(false), 650);
@@ -73,6 +75,7 @@ export function useProductCardActions(product: Product) {
     handleAddToCart,
     handleToggleWishlist,
     heartBursting,
+    addedFlash,
     updateQuantity,
   };
 }
