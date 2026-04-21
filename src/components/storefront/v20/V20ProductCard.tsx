@@ -105,7 +105,7 @@ export default function V20ProductCard({ product, slug, store, priority = false 
               ₹{Number(effectivePrice).toFixed(0)}
             </span>
             {product.sale_price && Number(product.sale_price) < Number(product.price) && (
-              <span className="text-[11px] text-gray-400 line-through leading-none mt-0.5">
+              <span className="price-strike-draw text-[11px] text-gray-400 leading-none mt-0.5">
                 ₹{Number(product.price).toFixed(0)}
               </span>
             )}
