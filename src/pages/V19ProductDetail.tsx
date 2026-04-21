@@ -561,6 +561,30 @@ export default function V19ProductDetail() {
         </div>
       )}
 
+      {/* Top reviews quick strip */}
+      <TopReviewsStrip reviews={reviews} />
+
+      {/* Frequently bought together bundle */}
+      <BundleCard
+        basePrice={effectivePrice}
+        similar={similarProducts}
+        onAddBundle={(ids) => {
+          handleAdd();
+          (similarProducts || []).filter((p: any) => ids.includes(p.id)).forEach((p: any) => {
+            const sp = p.sale_price ? Number(p.sale_price) : null;
+            const bp = Number(p.price || 0);
+            const eff = sp && sp < bp ? sp : bp;
+            addToCart({
+              productId: p.id,
+              name: p.name,
+              price: eff,
+              image: p.image_url || undefined,
+              quantity: 1,
+            }, { silent: true });
+          });
+        }}
+      />
+
       {/* Similar products carousel */}
       {similarProducts.length > 0 && (
         <div className="border-t border-gray-100 pt-4 pb-4">
