@@ -59,7 +59,7 @@ export default function CategoryDetail() {
 
   const rawProducts = data?.pages.flatMap((p) => p.products) || [];
   const products = useMemo(() => applySort(rawProducts, sort), [rawProducts, sort]);
-  const totalEstimate = data?.pages?.[0]?.total ?? rawProducts.length;
+  const totalEstimate = hasNextPage ? `${rawProducts.length}+` : rawProducts.length;
 
   const contentReadyRef = useRef(false);
   useEffect(() => { contentReadyRef.current = false; }, [categorySlug]);

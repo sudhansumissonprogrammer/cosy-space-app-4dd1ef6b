@@ -54,7 +54,7 @@ export default function StorefrontShop() {
 
   const rawProducts = data?.pages.flatMap((p) => p.products) || [];
   const products = useMemo(() => applySort(rawProducts, sort), [rawProducts, sort]);
-  const totalEstimate = data?.pages?.[0]?.total ?? rawProducts.length;
+  const totalEstimate = hasNextPage ? `${rawProducts.length}+` : rawProducts.length;
 
   const signalled = useRef(false);
   useEffect(() => {
