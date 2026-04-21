@@ -24,7 +24,7 @@ export default function V20DesktopCartFab({ store }: { store: any }) {
       style={{ background: PRIMARY, color: "#fff" }}
       aria-label="View cart"
     >
-      <div className="relative h-10 w-10 rounded-lg bg-white/15 flex items-center justify-center">
+      <div className="relative h-10 w-10 rounded-lg bg-white/15 flex items-center justify-center" data-cart-target>
         <ShoppingCart className="h-5 w-5 text-white" strokeWidth={2.5} />
         <span
           className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-yellow-400 text-[11px] font-black flex items-center justify-center"
