@@ -2,7 +2,7 @@
  * Shared mobile app-style header used by V3 and V11 themes.
  * Features: hamburger menu, logo, search button, cart button.
  */
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart, Search, Menu } from "lucide-react";
@@ -19,13 +19,21 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
   const { cartCount, openCart } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <>
-      <header className="sticky top-0 z-30 border-b" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", borderColor: "var(--storefront-text, hsl(var(--foreground)))10", minHeight: 60 }}>
+      <header className={`header-shrink ${scrolled ? "is-shrunk" : ""} sticky top-0 z-30 border-b`} style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", borderColor: "var(--storefront-text, hsl(var(--foreground)))10", minHeight: 60 }}>
         <div className="flex items-center gap-2 px-3 py-2.5">
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
@@ -47,7 +55,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
             </SheetContent>
           </Sheet>
 
-          <Link to={storefrontPath(store.slug)} className="flex items-center shrink-0">
+          <Link to={storefrontPath(store.slug)} className="logo-shrink flex items-center shrink-0">
             {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[160px] object-contain" /> : <StoreTextLogo storeName={store.name} size="text-base" color="var(--storefront-text, hsl(var(--foreground)))" />}
           </Link>
 

@@ -36,11 +36,11 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
   return (
     <Link
       to={storefrontPath(slug, `product/${product.slug || product.id}`)}
-      className="block cursor-pointer group"
+      className="card-tilt block cursor-pointer group"
       style={{ backgroundColor: "var(--storefront-bg, #0a0a0a)" }}
     >
       {/* Image — square, no border-radius, full-bleed */}
-      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/4" }}>
+      <div className="card-img-zoom relative w-full overflow-hidden" style={{ aspectRatio: "3/4" }}>
         <img
           src={optimized}
           srcSet={srcSet}

@@ -49,14 +49,14 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
 
   return (
     <div
-      className="group rounded-xl overflow-hidden transition-all duration-300 ease-out cursor-pointer relative"
+      className="card-tilt group rounded-xl overflow-hidden transition-all duration-300 ease-out cursor-pointer relative"
       style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}
-      onMouseEnter={(e) => { prefetchProductDetail(); e.currentTarget.style.boxShadow = cardHoverShadow; e.currentTarget.style.transform = "translateY(-4px)"; }}
+      onMouseEnter={(e) => { prefetchProductDetail(); e.currentTarget.style.boxShadow = cardHoverShadow; }}
       onTouchStart={prefetchProductDetail}
-      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; e.currentTarget.style.transform = "translateY(0)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; }}
     >
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
-        <div className="relative w-full overflow-hidden rounded-lg group-hover:scale-[1.02] transition-transform duration-300" style={{ aspectRatio: "4/5" }}>
+        <div className="card-img-zoom relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: "4/5" }}>
           {discountPercent && (
             <div className="absolute left-2 top-2 z-10">
               <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground">

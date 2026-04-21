@@ -75,7 +75,10 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
                   : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)",
               }}
             >
-              <div className="relative">
+              <div
+                className={`relative flex items-center justify-center rounded-full transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${item.active ? "px-3 py-1" : "px-1 py-1"}`}
+                style={item.active ? { backgroundColor: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 14%, transparent)" } : undefined}
+              >
                 <item.icon className="h-5 w-5" strokeWidth={item.active ? 2.5 : 1.8} />
                 {count > 0 && (
                   <span className="absolute -right-2 -top-1.5 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px] px-0.5">

@@ -47,7 +47,7 @@ export default function StorefrontSearchBar({
   const showDropdown = focused && searchQuery.trim().length > 0;
 
   return (
-    <div ref={wrapperRef} className="relative flex-1 z-[60]">
+    <div ref={wrapperRef} className="search-focus-expand relative flex-1 z-[60]">
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }} />
       <Input
         placeholder="Search products..."
