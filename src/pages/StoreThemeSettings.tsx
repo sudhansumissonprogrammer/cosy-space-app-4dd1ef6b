@@ -161,6 +161,24 @@ const COLOR_COMBINATIONS = [
     background: "#FAFAF6",
     marquee: "linear-gradient(90deg, #2B4C3F, #1B5E4B, #2B4C3F)",
   },
+  {
+    id: "quick-commerce-green",
+    name: "Quick Commerce Green",
+    primary: "#036B52",
+    accent: "#FFD33D",
+    text: "#1a1a1a",
+    background: "#f6f7f9",
+    marquee: "linear-gradient(90deg, #FFD33D, #FFC107, #FFD33D)",
+  },
+  {
+    id: "fitness-black",
+    name: "Fitness Black",
+    primary: "#0F0B0A",
+    accent: "#FFD33D",
+    text: "#0F0B0A",
+    background: "#f6f7f9",
+    marquee: "linear-gradient(90deg, #0F0B0A, #2a2422, #0F0B0A)",
+  },
 ];
 
 /* ── Per-theme recommended color combinations (curated for best visual result) ── */
@@ -234,7 +252,7 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "ghost-persian", "emerald-luxe", "plum-cream", "ocean-teal", "teal-elegance",
   ],
   "theme-19": [
-    "ocean-teal", "emerald-luxe", "mint-fresh", "saffron-bloom",
+    "quick-commerce-green", "fitness-black",
   ],
 };
 
