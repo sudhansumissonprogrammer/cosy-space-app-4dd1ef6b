@@ -136,7 +136,9 @@ export default function CategoryManagement() {
       if (imageFile) {
         // Crop to square first so it looks perfect in circles
         const squareFile = await cropToSquare(imageFile);
-        const basePath = generateUploadPath(storeId!, "categories");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("You must be signed in to upload images");
+        const basePath = generateUploadPath(user.id, storeId!) + "-cat";
         const result = await uploadOptimizedImage(squareFile, "product-images", basePath);
         if (result.compressionMessage) toast.success(result.compressionMessage);
         image_url = result.mainUrl;
