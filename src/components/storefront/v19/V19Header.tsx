@@ -9,6 +9,7 @@ import { Link, useLocation } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 
 const SEARCH_TERMS = ['"milk"', '"bread"', '"eggs"', '"atta"', '"cold drinks"', '"chips"', '"chocolate"'];
 
@@ -24,6 +25,9 @@ export default function V19Header({ store }: { store: any }) {
   const location = useLocation();
   const queryClient = useQueryClient();
   const categories = (queryClient.getQueryData<Category[]>(["storefront-categories", store?.id]) || []) as Category[];
+  const themeConfig = useStorefrontThemeConfig(store?.id);
+  const marqueeEnabled = themeConfig?.marquee_enabled !== false;
+  const marqueeText = themeConfig?.marquee_text || "✦ FREE DELIVERY ON ALL ORDERS · 100% SAFE & SECURE · EASY RETURNS";
 
   useEffect(() => {
     const id = setInterval(() => setTermIdx((i) => (i + 1) % SEARCH_TERMS.length), 2200);
@@ -77,13 +81,15 @@ export default function V19Header({ store }: { store: any }) {
           </button>
         </div>
 
-        <div className="v19-marquee-yellow">
-          <div className="flex gap-10 animate-marquee whitespace-nowrap">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <span key={i} className="px-2">✦ FREE DELIVERY ON ALL ORDERS · 100% SAFE & SECURE · EASY RETURNS</span>
-            ))}
+        {marqueeEnabled && (
+          <div className="v19-marquee-yellow">
+            <div className="flex gap-10 animate-marquee whitespace-nowrap">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <span key={i} className="px-2">{marqueeText}</span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* ============ DESKTOP HEADER (md+) ============ */}

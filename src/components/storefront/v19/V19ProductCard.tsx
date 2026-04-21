@@ -53,8 +53,8 @@ export default function V19ProductCard({ product, slug, store, priority = false 
     <div className="v19-card relative h-full flex flex-col">
       <Link to={productPath} className="block">
         <div className="relative w-full overflow-hidden rounded-lg bg-gray-50 aspect-square">
-          {discountPercent && (
-            <div className="absolute left-1.5 top-7 z-10 text-white text-[9px] font-black px-1.5 py-0.5 rounded-sm" style={{ background: "#0C831F" }}>
+          {discountPercent && !outOfStock && (
+            <div className="absolute left-1.5 top-1.5 z-10 text-white text-[9px] font-black px-1.5 py-0.5 rounded-sm" style={{ background: "#0C831F" }}>
               {discountPercent}% OFF
             </div>
           )}
@@ -65,13 +65,13 @@ export default function V19ProductCard({ product, slug, store, priority = false 
           ) : null}
           {img ? (
             <img
-              src={optimizeImageUrl(img, 400, 85)}
+              src={optimizeImageUrl(img, 280, 80)}
               alt={product.name}
-              className={`h-full w-full object-cover scale-110 ${outOfStock ? "opacity-50" : ""}`}
+              className={`h-full w-full object-contain p-1.5 ${outOfStock ? "opacity-50" : ""}`}
               loading={priority ? "eager" : "lazy"}
               fetchPriority={priority ? "high" : "auto"}
-              width={400}
-              height={400}
+              width={280}
+              height={280}
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center">
