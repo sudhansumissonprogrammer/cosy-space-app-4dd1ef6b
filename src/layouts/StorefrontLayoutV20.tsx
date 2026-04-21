@@ -142,7 +142,7 @@ function V20Inner({ store }: { store: any }) {
           className={
             isProductDetail
               ? ""
-              : "max-w-3xl mx-auto px-4 pt-3"
+              : "max-w-3xl md:max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-3"
           }
         >
           <Suspense fallback={<V20RouteSkeleton />}>
