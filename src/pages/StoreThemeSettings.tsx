@@ -1924,8 +1924,8 @@ export default function StoreThemeSettings() {
     ? mapDbProductsToPreview(storeProducts)
     : DEFAULT_PRODUCTS;
 
-  const previewCategories = storeCategories && storeCategories.length > 0
-    ? mapDbCategoriesToPreview(storeCategories)
+  const previewCategories = allCategories && allCategories.length > 0
+    ? mapDbCategoriesToPreview(allCategories.filter((category) => category.show_on_home !== false))
     : DEFAULT_CATEGORIES;
 
   // Local override ensures instant UI tick update when Apply is clicked,
@@ -2216,12 +2216,34 @@ export default function StoreThemeSettings() {
       if (ctx?.prev) queryClient.setQueryData(["theme-settings-categories", storeId], ctx.prev);
       toast.error("Failed to update category");
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       // Invalidate storefront caches so home page reflects change
       queryClient.invalidateQueries({ queryKey: ["storefront-categories"] });
-      queryClient.invalidateQueries({ queryKey: ["storefront-categories-all"] });
-      queryClient.invalidateQueries({ queryKey: ["storefront-products-all-v19"] });
-      queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-categories-all", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-products-all-v19", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-bulk", store?.slug] });
+      queryClient.setQueryData<any[]>(["theme-settings-categories", storeId], (old) =>
+        (old || []).map((c) => (c.id === variables.id ? { ...c, show_on_home: variables.show } : c))
+      );
+
+      if (store?.slug) {
+        try {
+          const raw = localStorage.getItem(`storefront_data_${store.slug}`);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed?.categories)) {
+              parsed.categories = parsed.categories.map((category: any) =>
+                category?.id === variables.id
+                  ? { ...category, show_on_home: variables.show }
+                  : category
+              );
+              parsed._cachedAt = Date.now();
+              localStorage.setItem(`storefront_data_${store.slug}`, JSON.stringify(parsed));
+            }
+          }
+        } catch {}
+      }
+
       if (store?.slug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
           purgeStoreCache(store.slug, (store as any).custom_domain)
