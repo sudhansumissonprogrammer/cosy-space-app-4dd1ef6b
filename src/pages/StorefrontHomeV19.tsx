@@ -211,36 +211,6 @@ export default function StorefrontHomeV19() {
           </div>
         </section>
       )}
-              <Link
-                key={cat.id}
-                to={storefrontPath(slug, `category/${cat.slug}`)}
-                className="group flex flex-col items-center"
-              >
-                <div
-                  className="relative w-full overflow-hidden rounded-xl transition-transform group-active:scale-95"
-                  style={{ aspectRatio: "1 / 1", background: PASTELS[i % PASTELS.length] }}
-                >
-                  {cat.image_url ? (
-                    <img
-                      src={optimizeImageUrl(cat.image_url, 300, 85)}
-                      alt={cat.name}
-                      className="absolute inset-0 w-full h-full object-contain p-2"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Tag className="h-8 w-8 text-gray-700" />
-                    </div>
-                  )}
-                </div>
-                <span className="mt-1.5 text-[12px] sm:text-[13px] font-medium text-center text-gray-800 line-clamp-2 leading-tight">
-                  {cat.name}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
