@@ -22,6 +22,8 @@ export default function V19Header({ store }: { store: any }) {
   const slug = store?.slug || "";
   const [termIdx, setTermIdx] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [savedLabel, setSavedLabel] = useState<string | null>(null);
   const { cartCount } = useCart();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -34,6 +36,10 @@ export default function V19Header({ store }: { store: any }) {
     const id = setInterval(() => setTermIdx((i) => (i + 1) % SEARCH_TERMS.length), 2200);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (store?.id) setSavedLabel(getSavedDeliveryLabel(store.id));
+  }, [store?.id]);
 
   // Lazy-load product list for the search overlay only when opened
   const products = (queryClient.getQueryData<any[]>(["storefront-products", store?.id]) || []) as any[];
