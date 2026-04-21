@@ -213,7 +213,7 @@ export default function V19ProductDetail() {
   if (isLoading) {
     return (
       <div className="bg-white min-h-screen pb-32">
-        <div className="h-12 bg-[#036B52]" />
+        <div className="h-12" style={{ background: "var(--storefront-primary, #036B52)" }} />
         <div className="aspect-square bg-gray-100 animate-pulse" />
         <div className="p-4 space-y-3">
           <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse" />

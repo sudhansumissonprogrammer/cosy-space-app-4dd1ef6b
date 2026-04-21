@@ -159,7 +159,7 @@ export default function V19Header({ store }: { store: any }) {
             <ShoppingCart className="h-5 w-5" strokeWidth={2.2} />
             <span>My Cart</span>
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-yellow-400 text-[10px] font-black flex items-center justify-center text-[#036B52]">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-yellow-400 text-[10px] font-black flex items-center justify-center" style={{ color: "var(--storefront-primary, #036B52)" }}>
                 {cartCount > 9 ? "9+" : cartCount}
               </span>
             )}
@@ -171,16 +171,18 @@ export default function V19Header({ store }: { store: any }) {
           <div className="border-t border-gray-100 bg-white">
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
               <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2">
-                <Link
-                  to={storefrontPath(slug)}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
-                    location.pathname.endsWith(slug) || location.pathname.endsWith(slug + "/")
-                      ? "bg-[#036B52] text-white"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  Home
-                </Link>
+                {(() => {
+                  const isHome = location.pathname.endsWith(slug) || location.pathname.endsWith(slug + "/");
+                  return (
+                    <Link
+                      to={storefrontPath(slug)}
+                      className="flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors"
+                      style={isHome ? { background: "var(--storefront-primary, #036B52)", color: "#fff" } : undefined}
+                    >
+                      <span className={isHome ? "" : "text-gray-700"}>Home</span>
+                    </Link>
+                  );
+                })()}
                 {topCats.map((cat) => {
                   const path = storefrontPath(slug, `category/${cat.slug}`);
                   const active = location.pathname.includes(`/category/${cat.slug}`);
@@ -188,17 +190,17 @@ export default function V19Header({ store }: { store: any }) {
                     <Link
                       key={cat.id}
                       to={path}
-                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
-                        active ? "bg-[#036B52] text-white" : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                      className="flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors"
+                      style={active ? { background: "var(--storefront-primary, #036B52)", color: "#fff" } : undefined}
                     >
-                      {cat.name}
+                      <span className={active ? "" : "text-gray-700"}>{cat.name}</span>
                     </Link>
                   );
                 })}
                 <Link
                   to={storefrontPath(slug, "categories")}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold text-[#036B52] hover:bg-gray-100 inline-flex items-center gap-1"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold hover:bg-gray-100 inline-flex items-center gap-1"
+                  style={{ color: "var(--storefront-primary, #036B52)" }}
                 >
                   All Categories <ChevronDown className="h-3 w-3" strokeWidth={3} />
                 </Link>
