@@ -162,16 +162,18 @@ export default function V20Header({ store }: { store: any }) {
             <ChevronDown className="h-4 w-4 text-gray-700 flex-shrink-0" strokeWidth={2.5} />
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            className="flex-1 flex items-center gap-2 bg-gray-100 hover:bg-gray-50 border border-gray-200 rounded-xl px-4 h-11 text-left transition-colors min-w-0"
-          >
-            <Search className="h-4 w-4 text-gray-500 flex-shrink-0" strokeWidth={2.5} />
-            <span className="text-[14px] text-gray-600 font-semibold truncate">
-              Search {SEARCH_TERMS[termIdx]}
-            </span>
-          </button>
+          <div className="search-focus-expand flex-1 rounded-xl min-w-0">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="w-full flex items-center gap-2 bg-gray-100 hover:bg-gray-50 border border-gray-200 rounded-xl px-4 h-11 text-left transition-colors min-w-0"
+            >
+              <Search className="h-4 w-4 text-gray-500 flex-shrink-0" strokeWidth={2.5} />
+              <span className="text-[14px] text-gray-600 font-semibold truncate">
+                Search {SEARCH_TERMS[termIdx]}
+              </span>
+            </button>
+          </div>
 
           <Link
             to={storefrontPath(slug, "account")}
@@ -219,7 +221,7 @@ export default function V20Header({ store }: { store: any }) {
                     <Link
                       key={cat.id}
                       to={path}
-                      className="flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors"
+                      className="chip-magnetic flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors"
                       style={active ? { background: "var(--storefront-primary, #036B52)", color: "#fff" } : undefined}
                     >
                       <span className={active ? "" : "text-gray-700"}>{cat.name}</span>
