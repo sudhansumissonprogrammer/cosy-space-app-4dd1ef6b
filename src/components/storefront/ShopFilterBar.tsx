@@ -4,7 +4,7 @@ import { ArrowDownAZ, ArrowUpAZ, IndianRupee, BadgePercent, PackageCheck, Filter
 export type SortKey = "default" | "price-asc" | "price-desc" | "discount" | "in-stock";
 
 interface ShopFilterBarProps {
-  total: number;
+  total: number | string;
   showing: number;
   sort: SortKey;
   onSortChange: (s: SortKey) => void;
