@@ -2394,9 +2394,8 @@ export default function StoreThemeSettings() {
               })}
             </div>
           </div>
-          )}
 
-          {currentTheme !== "theme-19" && <Separator />}
+          <Separator />
 
           {/* Fonts */}
           <div>
