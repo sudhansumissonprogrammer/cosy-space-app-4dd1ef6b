@@ -1,7 +1,7 @@
 /**
  * V20 Product Detail — Theme 20 (Multi Purpose). Duplicated from V19ProductDetail.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -17,6 +17,12 @@ import { getDiscountPercent } from "@/lib/productUtils";
 import V20ProductCard from "@/components/storefront/v20/V20ProductCard";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { ZoomHint } from "@/components/storefront/ZoomableGallery";
+import {
+  DeliveryEtaPill, CouponTeaser, TopReviewsStrip, BundleCard, StockUrgencyStrip, StickyAddInfo,
+} from "@/components/storefront/PdpEnhancements";
+
+const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
 const SEARCH_TERMS = ['"new arrivals"', '"trending"', '"best sellers"', '"offers"', '"deals"', '"new in"'];
 
@@ -36,6 +42,7 @@ export default function V20ProductDetail() {
   const [highlightsOpen, setHighlightsOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [termIdx, setTermIdx] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -258,12 +265,13 @@ export default function V20ProductDetail() {
       </header>
 
       <div className="relative bg-white">
+        {images.length > 0 && <ZoomHint onClick={() => setZoomOpen(true)} />}
         <div ref={galleryRef} onScroll={onGalleryScroll} className="v20pdp-snap v20pdp-noscrollbar flex overflow-x-auto">
           {(images.length ? images : [null]).map((img, i) => (
             <div key={i} className="flex-shrink-0 w-full aspect-square bg-white flex items-center justify-center">
               {img ? (
-                <img src={optimizeImageUrl(img, 800, 90)} alt={`${product.name} ${i + 1}`} className="max-h-full max-w-full object-contain p-6"
-                  loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : "auto"} />
+                <img src={optimizeImageUrl(img, 800, 90)} alt={`${product.name} ${i + 1}`} className="max-h-full max-w-full object-contain p-6 cursor-zoom-in"
+                  loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : "auto"} onClick={() => setZoomOpen(true)} />
               ) : (
                 <Package className="h-16 w-16 text-gray-300" />
               )}
@@ -350,6 +358,11 @@ export default function V20ProductDetail() {
         <div className="text-[11px] text-gray-500 font-medium mt-1">(Inclusive of all taxes)</div>
       </div>
 
+      {/* PDP enhancements: urgency + delivery + coupon */}
+      <StockUrgencyStrip stock={product.stock_quantity} />
+      <DeliveryEtaPill />
+      <CouponTeaser storeId={store?.id || ""} orderTotal={effectivePrice} />
+
       <div className="px-4 py-4 border-t border-gray-100">
         <h3 className="text-[14px] font-extrabold text-gray-900 mb-3">Why shop from {store?.name}?</h3>
         <div className="grid grid-cols-3 gap-3">
@@ -416,6 +429,30 @@ export default function V20ProductDetail() {
         </div>
       )}
 
+      {/* Top reviews quick strip */}
+      <TopReviewsStrip reviews={reviews} />
+
+      {/* Frequently bought together bundle */}
+      <BundleCard
+        basePrice={effectivePrice}
+        similar={similarProducts}
+        onAddBundle={(ids) => {
+          handleAdd();
+          (similarProducts || []).filter((p: any) => ids.includes(p.id)).forEach((p: any) => {
+            const sp = p.sale_price ? Number(p.sale_price) : null;
+            const bp = Number(p.price || 0);
+            const eff = sp && sp < bp ? sp : bp;
+            addToCart({
+              productId: p.id,
+              name: p.name,
+              price: eff,
+              image: p.image_url || undefined,
+              quantity: 1,
+            }, { silent: true });
+          });
+        }}
+      />
+
       {similarProducts.length > 0 && (
         <div className="border-t border-gray-100 pt-4 pb-4">
           <div className="px-4 mb-3 flex items-center justify-between">
@@ -433,34 +470,37 @@ export default function V20ProductDetail() {
       )}
 
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="flex flex-col">
-            <span className="text-[16px] font-black text-gray-900 leading-none">₹{effectivePrice.toFixed(0)}</span>
-            {showStrike && <span className="text-[11px] text-gray-400 line-through font-semibold mt-0.5 leading-none">₹{mrpToShow.toFixed(0)}</span>}
-            {Number(product.stock_quantity ?? 0) > 0 && Number(product.stock_quantity ?? 0) <= 5 && (
-              <span className="text-[10px] font-bold text-orange-600 mt-0.5">Only {product.stock_quantity} left!</span>
-            )}
+        <div className="max-w-3xl mx-auto px-3 py-2.5 flex items-center gap-3">
+          <StickyAddInfo thumb={images[0] || product.image_url} name={product.name} />
+          <div className="flex flex-col items-end shrink-0">
+            <span className="text-[15px] font-black text-gray-900 leading-none">₹{effectivePrice.toFixed(0)}</span>
+            {showStrike && <span className="text-[10px] text-gray-400 line-through font-semibold mt-0.5 leading-none">₹{mrpToShow.toFixed(0)}</span>}
           </div>
-          <div className="flex-1" />
           {Number(product.stock_quantity ?? 0) <= 0 && product.stock_quantity !== null ? (
-            <button disabled className="px-7 h-11 rounded-lg text-gray-500 bg-gray-200 text-[14px] font-extrabold uppercase tracking-wide cursor-not-allowed">Out of stock</button>
+            <button disabled className="px-5 h-11 rounded-lg text-gray-500 bg-gray-200 text-[13px] font-extrabold uppercase tracking-wide cursor-not-allowed">Out of stock</button>
           ) : cartQty > 0 ? (
             <div className="inline-flex items-center text-white font-extrabold rounded-lg overflow-hidden" style={{ background: "var(--storefront-primary, #036B52)", height: 44 }}>
-              <button onClick={() => updateQuantity(product.id, selectedVariantId || undefined, cartQty - 1)} className="w-11 h-full flex items-center justify-center active:bg-black/10" aria-label="Decrease">
+              <button onClick={() => updateQuantity(product.id, selectedVariantId || undefined, cartQty - 1)} className="w-10 h-full flex items-center justify-center active:bg-black/10" aria-label="Decrease">
                 <Minus className="h-4 w-4" strokeWidth={3} />
               </button>
-              <span className="px-3 min-w-[36px] text-center text-[15px]">{cartQty}</span>
-              <button onClick={() => updateQuantity(product.id, selectedVariantId || undefined, cartQty + 1)} className="w-11 h-full flex items-center justify-center active:bg-black/10" aria-label="Increase">
+              <span className="px-2 min-w-[32px] text-center text-[15px]">{cartQty}</span>
+              <button onClick={() => updateQuantity(product.id, selectedVariantId || undefined, cartQty + 1)} className="w-10 h-full flex items-center justify-center active:bg-black/10" aria-label="Increase">
                 <Plus className="h-4 w-4" strokeWidth={3} />
               </button>
             </div>
           ) : (
-            <button onClick={handleAdd} className="px-7 h-11 rounded-lg text-white text-[14px] font-extrabold uppercase tracking-wide active:scale-[0.98] transition-transform" style={{ background: "var(--storefront-primary, #036B52)" }}>
+            <button onClick={handleAdd} className="px-5 h-11 rounded-lg text-white text-[13px] font-extrabold uppercase tracking-wide active:scale-[0.98] transition-transform shrink-0" style={{ background: "var(--storefront-primary, #036B52)" }}>
               Add to cart
             </button>
           )}
         </div>
       </div>
+
+      {zoomOpen && (
+        <Suspense fallback={null}>
+          <ZoomableGallery images={images} initialIndex={galleryIdx} alt={product.name} open={zoomOpen} onClose={() => setZoomOpen(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }
