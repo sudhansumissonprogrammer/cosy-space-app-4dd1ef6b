@@ -66,7 +66,7 @@ export default function V19Header({ store }: { store: any }) {
               ) : (
                 <div
                   className="text-white text-[24px] leading-tight truncate"
-                  style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 800, letterSpacing: "0.04em" }}
+                  style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, letterSpacing: "0.04em" }}
                 >
                   {store?.name || "Shop"}
                 </div>
@@ -144,7 +144,7 @@ export default function V19Header({ store }: { store: any }) {
                 className="text-[26px] truncate max-w-[260px]"
                 style={{
                   fontFamily: "'Alegreya SC', serif",
-                  fontWeight: 800,
+                  fontWeight: 700,
                   letterSpacing: "0.04em",
                   color: "var(--storefront-primary, #036B52)",
                 }}
