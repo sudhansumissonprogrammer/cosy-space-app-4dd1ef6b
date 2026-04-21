@@ -129,16 +129,8 @@ export default function StorefrontLayoutV20({ slugOverride }: { slugOverride?: s
       defaultButtonRadius="999px"
       wrapperClassName="storefront-font min-h-screen font-sans overflow-x-hidden"
       wrapperStyle={{
-        backgroundColor: "#f6f7f9",
-        color: "#1a1a1a",
-        "--storefront-text": "#1a1a1a",
-        "--storefront-bg": "#ffffff",
+        // Only fallbacks — saved theme config (primary/bg/text) takes priority via themeStyle
         "--storefront-btn-text": "#ffffff",
-        "--background": "0 0% 96%",
-        "--foreground": "0 0% 10%",
-        "--card": "0 0% 100%",
-        "--card-foreground": "0 0% 10%",
-        "--primary-foreground": "0 0% 100%",
       } as React.CSSProperties}
     >
       {({ store }) => <V20Inner store={store} />}
