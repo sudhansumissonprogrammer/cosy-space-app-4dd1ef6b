@@ -11,7 +11,6 @@ import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 
 const LazyV20BottomNav = lazy(() => import("@/components/storefront/v20/V20BottomNav"));
 const LazyV20DesktopCartFab = lazy(() => import("@/components/storefront/v20/V20DesktopCartFab"));
-const LazyCartPlusOne = lazy(() => import("@/components/storefront/CartPlusOneOverlay"));
 
 const V20_STYLES = `
   .storefront-font, .storefront-font * {
@@ -157,7 +156,6 @@ function V20Inner({ store }: { store: any }) {
           <LazyV20DesktopCartFab store={store} />
         </Suspense>
       )}
-      <Suspense fallback={null}><LazyCartPlusOne /></Suspense>
     </>
   );
 }
