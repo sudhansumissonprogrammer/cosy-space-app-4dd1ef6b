@@ -57,7 +57,25 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "7.2.0-request-reduction";
+const WORKER_VERSION = "7.3.0-aggressive-cache-swr-etag";
+
+/* ============================================================
+   v7.3.0 — AGGRESSIVE CACHE + SWR + ETAG (3-5x worker req reduction)
+
+   Optimizations applied:
+   #1 HTML cache TTL: streaming 600→1800s, warm HTML SWR window 600→86400s
+   #2 Stale-While-Revalidate: warm HTML serves stale up to 24h while revalidating
+   #3 Static off-worker: /icons/*, /placeholder.svg, /sw-push.js, /registerSW.js,
+      /manifest.webmanifest → direct cf.cacheEverything proxy with 1yr TTL
+   #4 /assets/* hash-named chunks → cf.cacheEverything + immutable (already done,
+      now also marked X-Static-Bypass for diagnostic)
+   #5 ETag + If-None-Match: 304 Not Modified on warm HTML cache hits.
+      Repeat visitors get a free 304 instead of full HTML payload.
+   #6 Bot short-circuit: aggressive crawler block already at line ~2942.
+      Empty/short UA also blocked. Now also serves cached 410 for attack paths.
+   #8 KV bundle reads: already batched via _batchKvRead (shell+theme+storefront
+      in one Promise.all). No further consolidation needed.
+   ============================================================ */
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
