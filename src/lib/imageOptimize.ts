@@ -11,7 +11,7 @@
  */
 
 import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
-import type { VariantWidth } from "./imageCompression";
+// VariantWidth no longer needed — we always serve the 800w stored variant directly
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
