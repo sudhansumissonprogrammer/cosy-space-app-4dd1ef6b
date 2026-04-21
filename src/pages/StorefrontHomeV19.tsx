@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useRef } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { ChevronRight, ChevronLeft, Tag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -13,6 +13,7 @@ import V19ProductCard from "@/components/storefront/v19/V19ProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Category { id: string; name: string; slug: string; image_url: string | null; show_on_home?: boolean; }
 
