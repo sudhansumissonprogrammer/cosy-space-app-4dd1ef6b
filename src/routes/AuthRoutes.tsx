@@ -55,7 +55,6 @@ const StorePages = lazy(() => import("@/pages/StorePages"));
 const StorePageEditor = lazy(() => import("@/pages/StorePageEditor"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const BestSellerManagement = lazy(() => import("@/pages/BestSellerManagement"));
-const SpacingCheck = lazy(() => import("@/pages/SpacingCheck"));
 const InstallApp = lazy(() => import("@/pages/InstallApp"));
 const Index = lazy(() => import("@/pages/Index"));
 
@@ -125,7 +124,6 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/whatsapp" element={<WhatsAppMarketing />} />
           <Route path="stores/:storeSlug/tracking" element={<StoreTracking />} />
           <Route path="stores/:storeSlug/best-sellers" element={<BestSellerManagement />} />
-          <Route path="stores/:storeSlug/spacing-check" element={<SpacingCheck />} />
           
           <Route path="analytics" element={<StoreAnalytics />} />
           <Route path="settings" element={<UserSettings />} />
