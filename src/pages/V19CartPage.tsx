@@ -36,10 +36,29 @@ export default function V19CartPage() {
   });
 
   // ── Money math ──
+  // Fetch MRP (regular price) for each cart product to compute true product savings.
+  const productIds = items.map((i) => i.productId).filter(Boolean);
+  const { data: priceMap } = useQuery({
+    queryKey: ["v19-cart-mrp", store?.id, productIds.sort().join(",")],
+    enabled: !!store?.id && productIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("id, price, sale_price")
+        .in("id", productIds);
+      const map: Record<string, { price: number; sale_price: number | null }> = {};
+      (data || []).forEach((p: any) => {
+        map[p.id] = { price: Number(p.price || 0), sale_price: p.sale_price ? Number(p.sale_price) : null };
+      });
+      return map;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const itemsTotal = cartTotal; // sale prices already
   const mrpTotal = items.reduce((sum, i) => {
-    // we don't have MRP on cart item; treat as same as price for honesty
-    return sum + i.price * i.quantity;
+    const mrp = priceMap?.[i.productId]?.price ?? i.price;
+    return sum + Math.max(mrp, i.price) * i.quantity;
   }, 0);
   const productSavings = Math.max(0, mrpTotal - itemsTotal);
 

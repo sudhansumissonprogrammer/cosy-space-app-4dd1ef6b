@@ -432,7 +432,7 @@ export default function V19ProductDetail() {
             iconBg="#E8F0FF"
             icon={<Package className="h-5 w-5" style={{ color: "#0B57D0" }} strokeWidth={2.4} />}
             title="Wide Assortment"
-            desc="Over 5,000 products across categories"
+            desc="Hand-picked range across categories"
           />
         </div>
       </div>
