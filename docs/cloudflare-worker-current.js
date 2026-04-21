@@ -92,10 +92,15 @@ const SUPABASE_ANON_KEY =
 const SEARCH_BOT_REGEX =
   /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver/i;
 
-// v6.9.2: Bots blocked at the edge with 403 (zero business value, high request cost).
-// These crawl aggressively and inflate Worker request counts without driving traffic.
+// v6.9.4: Expanded bot block list. These crawlers generate massive request
+// volume with zero business value. Blocked at the edge with 403 + 1-day cache
+// so Cloudflare returns the cached 403 without hitting the Worker again.
 const BLOCKED_BOT_REGEX =
-  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider/i;
+  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|Amazonbot|PerplexityBot|OAI-SearchBot|DuckAssistBot|Google-Extended|GoogleOther|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|cohere-ai|FacebookBot|Bravebot|Timpibot|ChatGPT-User|cohere-training-data-crawler|Meta-ExternalAgent|Meta-ExternalFetcher|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy|python-requests|Go-http-client|node-fetch|axios\//i;
+
+// Common attack/probe paths — return 410 Gone with long cache so CF serves cached.
+const ATTACK_PATH_REGEX =
+  /^\/(wp-admin|wp-login|wp-includes|wp-content|wp-json|xmlrpc\.php|\.env|\.git|\.well-known\/security|\.aws|admin\.php|phpmyadmin|administrator|drupal|joomla|magento|laravel|vendor\/phpunit|fckeditor|HNAP1|cgi-bin|webdav|owa\/|ecp\/|autodiscover|invokefunction|console\/|actuator|hudson|jenkins|solr\/|elasticsearch|server-status|server-info)/i;
 
 const SOCIAL_BOT_REGEX =
   /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
