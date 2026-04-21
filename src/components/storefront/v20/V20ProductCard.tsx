@@ -1,13 +1,16 @@
 /**
  * V20 Product Card — Theme 20 (Multi Purpose). Duplicated from V19ProductCard
  * with `v20-` CSS prefix so it can evolve independently.
+ * Adds: +1 fly-to-cart and brief checkmark morph on add.
  */
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Minus, Package } from "lucide-react";
+import { Plus, Minus, Package, Check } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, resolveProductImages } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
 import { useCart } from "@/contexts/CartContext";
+import { flyToCart } from "@/lib/flyToCart";
 
 interface Props {
   product: any;
@@ -20,6 +23,7 @@ export default function V20ProductCard({ product, slug, store, priority = false 
   const { items, addToCart, updateQuantity } = useCart();
   const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
   const cartQty = cartItem?.quantity || 0;
+  const [justAdded, setJustAdded] = useState(false);
   const effectivePrice = product.sale_price && Number(product.sale_price) < Number(product.price)
     ? Number(product.sale_price)
     : Number(product.price);
@@ -35,6 +39,7 @@ export default function V20ProductCard({ product, slug, store, priority = false 
   const onAdd = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     if (outOfStock) return;
+    flyToCart(e.currentTarget as Element, { label: "+1" });
     addToCart({
       productId: product.id,
       name: product.name,
@@ -42,8 +47,14 @@ export default function V20ProductCard({ product, slug, store, priority = false 
       image: product.image_url || undefined,
       quantity: 1,
     }, { silent: true });
+    setJustAdded(true);
+    window.setTimeout(() => setJustAdded(false), 700);
   };
-  const onInc = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty + 1); };
+  const onInc = (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    flyToCart(e.currentTarget as Element, { label: "+1", size: 22 });
+    updateQuantity(product.id, undefined, cartQty + 1);
+  };
   const onDec = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty - 1); };
 
   const productPath = storefrontPath(slug, `product/${product.slug || product.id}`);
@@ -114,7 +125,13 @@ export default function V20ProductCard({ product, slug, store, priority = false 
               <button onClick={onInc} aria-label="Increase" className="active:scale-90 transition-transform"><Plus className="h-3.5 w-3.5" strokeWidth={3} /></button>
             </div>
           ) : (
-            <button onClick={onAdd} className="v20-add-btn-outline active:scale-95 transition-transform">ADD</button>
+            <button
+              onClick={onAdd}
+              className={`v20-add-btn-outline transition-all duration-200 active:scale-90 ${justAdded ? "v20-add-success" : ""}`}
+              aria-label={justAdded ? "Added to cart" : "Add to cart"}
+            >
+              {justAdded ? <Check className="h-3.5 w-3.5" strokeWidth={3.5} /> : "ADD"}
+            </button>
           )}
         </div>
       </div>
