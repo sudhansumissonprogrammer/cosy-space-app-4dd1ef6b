@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
@@ -10,16 +11,36 @@ interface SectionHeadingProps {
 }
 
 /**
- * Premium section heading with elegant line divider.
- * Desktop shows a clean "View All →" aligned right like Ochaka.
+ * Premium section heading with animated underline draw on viewport entry,
+ * elegant divider, and "View All" link with arrow nudge on hover.
  */
 export default function SectionHeading({ title, slug, linkTo, className = "" }: SectionHeadingProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = headingRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          obs.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <div className={`flex flex-col items-center mb-4 lg:mb-6 ${className}`}>
       <div className="flex items-center justify-between w-full">
         <div className="flex-1" />
         <h2
-          className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold tracking-wide whitespace-nowrap text-center"
+          ref={headingRef}
+          className={`heading-underline-draw text-base sm:text-lg lg:text-xl xl:text-2xl font-bold tracking-wide whitespace-nowrap text-center ${inView ? "in-view" : ""}`}
           style={{
             fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)",
             color: "var(--storefront-text, hsl(var(--foreground)))",
@@ -31,12 +52,12 @@ export default function SectionHeading({ title, slug, linkTo, className = "" }: 
           {slug && linkTo && (
             <Link
               to={storefrontPath(slug, linkTo)}
-              className="text-sm font-semibold flex items-center gap-1 transition-all hover:gap-2 group"
+              className="group text-sm font-semibold flex items-center gap-1 transition-all"
               style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
             >
               <span className="hidden sm:inline">View All</span>
               <span className="sm:hidden">All</span>
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="arrow-nudge h-4 w-4" />
             </Link>
           )}
         </div>
