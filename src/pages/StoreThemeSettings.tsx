@@ -2699,10 +2699,12 @@ export default function StoreThemeSettings() {
               </div>
             </div>
           </div>
+          )}
 
-          <Separator />
+          {currentTheme !== "theme-19" && <Separator />}
 
-          {/* Category Style */}
+          {/* Category Style — hidden for theme-19 (uses dedicated horizontal pills) */}
+          {currentTheme !== "theme-19" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Category Section Design</h4>
             <div className="space-y-1.5">
