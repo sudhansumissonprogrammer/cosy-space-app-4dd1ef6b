@@ -46,7 +46,7 @@ export default function V19Header({ store }: { store: any }) {
   return (
     <>
       {/* ============ MOBILE HEADER (< md) ============ */}
-      <header className="sticky top-0 z-40 shadow-md md:hidden" style={{ background: "#0F0B0A" }}>
+      <header className="sticky top-0 z-40 shadow-md md:hidden" style={{ background: "#036B52" }}>
         <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <Link to={storefrontPath(slug)} className="block">
@@ -108,7 +108,7 @@ export default function V19Header({ store }: { store: any }) {
             ) : (
               <div
                 className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-black text-lg"
-                style={{ background: "#0F0B0A" }}
+                style={{ background: "#036B52" }}
               >
                 {store?.name?.[0]?.toUpperCase() || "S"}
               </div>
@@ -154,12 +154,12 @@ export default function V19Header({ store }: { store: any }) {
           <Link
             to={storefrontPath(slug, "cart")}
             className="relative flex items-center gap-1.5 px-4 h-11 rounded-lg text-white font-bold text-[13px] flex-shrink-0"
-            style={{ background: "#0F0B0A" }}
+            style={{ background: "#036B52" }}
           >
             <ShoppingCart className="h-5 w-5" strokeWidth={2.2} />
             <span>My Cart</span>
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-yellow-400 text-[10px] font-black flex items-center justify-center text-[#0F0B0A]">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-yellow-400 text-[10px] font-black flex items-center justify-center text-[#036B52]">
                 {cartCount > 9 ? "9+" : cartCount}
               </span>
             )}
@@ -175,7 +175,7 @@ export default function V19Header({ store }: { store: any }) {
                   to={storefrontPath(slug)}
                   className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
                     location.pathname.endsWith(slug) || location.pathname.endsWith(slug + "/")
-                      ? "bg-[#0F0B0A] text-white"
+                      ? "bg-[#036B52] text-white"
                       : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
@@ -189,7 +189,7 @@ export default function V19Header({ store }: { store: any }) {
                       key={cat.id}
                       to={path}
                       className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
-                        active ? "bg-[#0F0B0A] text-white" : "text-gray-700 hover:bg-gray-100"
+                        active ? "bg-[#036B52] text-white" : "text-gray-700 hover:bg-gray-100"
                       }`}
                     >
                       {cat.name}
@@ -198,7 +198,7 @@ export default function V19Header({ store }: { store: any }) {
                 })}
                 <Link
                   to={storefrontPath(slug, "categories")}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold text-[#0F0B0A] hover:bg-gray-100 inline-flex items-center gap-1"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold text-[#036B52] hover:bg-gray-100 inline-flex items-center gap-1"
                 >
                   All Categories <ChevronDown className="h-3 w-3" strokeWidth={3} />
                 </Link>
