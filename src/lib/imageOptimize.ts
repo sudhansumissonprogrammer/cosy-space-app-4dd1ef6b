@@ -11,7 +11,7 @@
  */
 
 import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
-import type { VariantWidth } from "./imageCompression";
+// VariantWidth no longer needed — we always serve the 800w stored variant directly
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
@@ -85,27 +85,12 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // ── 1. Our pipeline images: prefer Cloudflare resize at edge ──
+  // ── 1. Our pipeline images: ALREADY pre-resized at upload (800w stored) ──
+  // Serve the stored variant DIRECTLY — no /cf-img, no Worker hit.
+  // Cloudflare's free CDN still caches these at edge automatically.
+  // 800px is plenty for product cards (~400px display × 2 DPR mobile).
   if (isOptimizedUrl(url)) {
-    const baseUrl = resolveVariantUrl(url, 800);
-    if (width >= 800 && !shouldUseCfImg()) return baseUrl;
-    if (shouldUseCfImg()) {
-      return cfImgUrl(baseUrl, width, quality);
-    }
-    // Fallback: Supabase render API
-    try {
-      const u = new URL(baseUrl);
-      u.pathname = u.pathname.replace(
-        "/storage/v1/object/",
-        "/storage/v1/render/image/",
-      );
-      u.searchParams.set("width", String(width));
-      u.searchParams.set("quality", String(quality));
-      u.searchParams.set("resize", "contain");
-      return u.toString();
-    } catch {
-      return baseUrl;
-    }
+    return resolveVariantUrl(url, 800); // ✅ Direct Supabase URL — zero Worker requests
   }
 
   // ── 2. Shopify CDN (incl. custom Shopify domains using /cdn/shop/): native resize ──
