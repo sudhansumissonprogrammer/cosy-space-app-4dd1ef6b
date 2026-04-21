@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "7.1.0-phase2-kv-ttl-extended";
+const WORKER_VERSION = "7.2.0-request-reduction";
 
 /* ============================================================
    v6.4.0 — PRELOAD-SCANNER PRODUCT IMAGES (saves 2-3s on cold load)
@@ -92,10 +92,15 @@ const SUPABASE_ANON_KEY =
 const SEARCH_BOT_REGEX =
   /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver/i;
 
-// v6.9.2: Bots blocked at the edge with 403 (zero business value, high request cost).
-// These crawl aggressively and inflate Worker request counts without driving traffic.
+// v6.9.4: Expanded bot block list. These crawlers generate massive request
+// volume with zero business value. Blocked at the edge with 403 + 1-day cache
+// so Cloudflare returns the cached 403 without hitting the Worker again.
 const BLOCKED_BOT_REGEX =
-  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider/i;
+  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|Amazonbot|PerplexityBot|OAI-SearchBot|DuckAssistBot|Google-Extended|GoogleOther|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|cohere-ai|FacebookBot|Bravebot|Timpibot|ChatGPT-User|cohere-training-data-crawler|Meta-ExternalAgent|Meta-ExternalFetcher|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy|python-requests|Go-http-client|node-fetch|axios\//i;
+
+// Common attack/probe paths — return 410 Gone with long cache so CF serves cached.
+const ATTACK_PATH_REGEX =
+  /^\/(wp-admin|wp-login|wp-includes|wp-content|wp-json|xmlrpc\.php|\.env|\.git|\.well-known\/security|\.aws|admin\.php|phpmyadmin|administrator|drupal|joomla|magento|laravel|vendor\/phpunit|fckeditor|HNAP1|cgi-bin|webdav|owa\/|ecp\/|autodiscover|invokefunction|console\/|actuator|hudson|jenkins|solr\/|elasticsearch|server-status|server-info)/i;
 
 const SOCIAL_BOT_REGEX =
   /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
@@ -2885,29 +2890,77 @@ export default {
     // FIX #5: Record request start time immediately
     const requestStart = Date.now();
 
-    // v6.9.3: Block aggressive SEO/AI crawlers + favicon polling at the edge.
-    // These have zero business value but inflate Worker request counts heavily.
     const earlyUA = request.headers.get("user-agent") || "";
+    const earlyUrl = new URL(request.url);
+    const earlyPath = earlyUrl.pathname;
+    const earlyMethod = request.method;
 
-    // Block favicon.ico polling early (browsers poll this aggressively)
-    const earlyPath = new URL(request.url).pathname;
-    if (earlyPath === "/favicon.ico" || earlyPath === "/apple-touch-icon.png" || earlyPath === "/apple-touch-icon-precomposed.png") {
+    // v6.9.4: Reject unsupported methods immediately. Stops scanners hammering
+    // PUT/DELETE/PATCH/CONNECT/TRACE on every path with a single cheap response.
+    if (
+      earlyMethod !== "GET" &&
+      earlyMethod !== "POST" &&
+      earlyMethod !== "HEAD" &&
+      earlyMethod !== "OPTIONS"
+    ) {
+      return new Response("Method Not Allowed", {
+        status: 405,
+        headers: { "cache-control": "public, max-age=86400", allow: "GET, POST, HEAD, OPTIONS" },
+      });
+    }
+
+    // v6.9.4: Short-circuit common attack/probe paths (wp-admin, .env, .git, etc.)
+    if (ATTACK_PATH_REGEX.test(earlyPath)) {
+      return new Response("Gone", {
+        status: 410,
+        headers: {
+          "content-type": "text/plain",
+          "cache-control": "public, max-age=2592000, immutable",
+          "x-blocked-by": "shopbanao-attack-filter",
+        },
+      });
+    }
+
+    // v6.9.4: Favicon / apple-touch-icon polling — 204 cached for 30 days.
+    if (
+      earlyPath === "/favicon.ico" ||
+      earlyPath === "/apple-touch-icon.png" ||
+      earlyPath === "/apple-touch-icon-precomposed.png" ||
+      earlyPath === "/browserconfig.xml" ||
+      earlyPath === "/crossdomain.xml"
+    ) {
       return new Response(null, {
         status: 204,
         headers: {
-          "cache-control": "public, max-age=604800, immutable",
+          "cache-control": "public, max-age=2592000, immutable",
           "x-served-by": "edge-204",
         },
       });
     }
 
-    if (BLOCKED_BOT_REGEX.test(earlyUA)) {
+    // v6.9.4: Block aggressive crawlers + empty/short UAs (almost always scrapers).
+    if (BLOCKED_BOT_REGEX.test(earlyUA) || !earlyUA || earlyUA.length < 10) {
       return new Response("Forbidden", {
         status: 403,
         headers: {
           "content-type": "text/plain",
-          "cache-control": "public, max-age=86400",
+          "cache-control": "public, max-age=86400, immutable",
           "x-blocked-by": "shopbanao-bot-policy",
+        },
+      });
+    }
+
+    // v6.9.4: OPTIONS preflight short-circuit — never needs origin or pipeline.
+    if (earlyMethod === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "access-control-allow-origin": request.headers.get("origin") || "*",
+          "access-control-allow-methods": "GET, POST, HEAD, OPTIONS",
+          "access-control-allow-headers":
+            request.headers.get("access-control-request-headers") || "*",
+          "access-control-max-age": "86400",
+          "cache-control": "public, max-age=86400",
         },
       });
     }
