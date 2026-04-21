@@ -54,8 +54,16 @@ export default function V19ProductCard({ product, slug, store, priority = false 
       <Link to={productPath} className="block">
         <div className="relative w-full overflow-hidden rounded-lg bg-gray-50 aspect-square">
           {discountPercent && !outOfStock && (
-            <div className="absolute left-1.5 top-1.5 z-10 text-white text-[9px] font-black px-1.5 py-0.5 rounded-sm" style={{ background: "var(--storefront-primary, #036B52)" }}>
-              {discountPercent}% OFF
+            <div
+              className="absolute left-1.5 top-0 z-10 text-white text-[10px] font-black leading-none flex items-center justify-center"
+              style={{
+                background: "#2563eb",
+                width: "30px",
+                height: "26px",
+                clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%)",
+              }}
+            >
+              <span style={{ marginTop: "-3px" }}>{discountPercent}%<br/>OFF</span>
             </div>
           )}
           {outOfStock ? (
