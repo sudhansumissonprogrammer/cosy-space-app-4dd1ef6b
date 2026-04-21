@@ -3093,9 +3093,11 @@ export default {
         url.pathname !== "/robots.txt");
 
     if (isStaticAsset) {
-      if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/static/"))
-        return proxyToOriginCached(request);
-      return proxyToOrigin(request);
+      // v7.3.0 #3+#4: Route ALL static assets through cf.cacheEverything proxy
+      // (not just /assets/* and /static/*). Icons, manifests, SW files, favicons,
+      // and any extensioned file are immutable in practice — cache them at the
+      // edge with 30-day TTL so repeat visitors never re-execute worker logic.
+      return proxyToOriginCached(request);
     }
 
     // ─── PHASE 1 FIX #1: SUPABASE STORAGE IMAGE EDGE CACHE (1yr immutable) ───
