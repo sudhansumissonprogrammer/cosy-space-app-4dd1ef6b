@@ -610,25 +610,22 @@ export default function V19ProductDetail() {
 
       {/* Sticky bottom ADD TO CART bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="flex flex-col">
-            <span className="text-[16px] font-black text-gray-900 leading-none">
+        <div className="max-w-3xl mx-auto px-3 py-2.5 flex items-center gap-3">
+          <StickyAddInfo thumb={images[0] || product.image_url} name={product.name} />
+          <div className="flex flex-col items-end shrink-0">
+            <span className="text-[15px] font-black text-gray-900 leading-none">
               ₹{effectivePrice.toFixed(0)}
             </span>
             {showStrike && (
-              <span className="text-[11px] text-gray-400 line-through font-semibold mt-0.5 leading-none">
+              <span className="text-[10px] text-gray-400 line-through font-semibold mt-0.5 leading-none">
                 ₹{mrpToShow.toFixed(0)}
               </span>
             )}
-            {Number(product.stock_quantity ?? 0) > 0 && Number(product.stock_quantity ?? 0) <= 5 && (
-              <span className="text-[10px] font-bold text-orange-600 mt-0.5">Only {product.stock_quantity} left!</span>
-            )}
           </div>
-          <div className="flex-1" />
           {Number(product.stock_quantity ?? 0) <= 0 && product.stock_quantity !== null ? (
             <button
               disabled
-              className="px-7 h-11 rounded-lg text-gray-500 bg-gray-200 text-[14px] font-extrabold uppercase tracking-wide cursor-not-allowed"
+              className="px-5 h-11 rounded-lg text-gray-500 bg-gray-200 text-[13px] font-extrabold uppercase tracking-wide cursor-not-allowed"
             >
               Out of stock
             </button>
@@ -639,15 +636,15 @@ export default function V19ProductDetail() {
             >
               <button
                 onClick={() => updateQuantity(product.id, selectedVariantId || undefined, cartQty - 1)}
-                className="w-11 h-full flex items-center justify-center active:bg-black/10"
+                className="w-10 h-full flex items-center justify-center active:bg-black/10"
                 aria-label="Decrease"
               >
                 <Minus className="h-4 w-4" strokeWidth={3} />
               </button>
-              <span className="px-3 min-w-[36px] text-center text-[15px]">{cartQty}</span>
+              <span className="px-2 min-w-[32px] text-center text-[15px]">{cartQty}</span>
               <button
                 onClick={() => updateQuantity(product.id, selectedVariantId || undefined, cartQty + 1)}
-                className="w-11 h-full flex items-center justify-center active:bg-black/10"
+                className="w-10 h-full flex items-center justify-center active:bg-black/10"
                 aria-label="Increase"
               >
                 <Plus className="h-4 w-4" strokeWidth={3} />
@@ -656,7 +653,7 @@ export default function V19ProductDetail() {
           ) : (
             <button
               onClick={handleAdd}
-              className="px-7 h-11 rounded-lg text-white text-[14px] font-extrabold uppercase tracking-wide active:scale-[0.98] transition-transform"
+              className="px-5 h-11 rounded-lg text-white text-[13px] font-extrabold uppercase tracking-wide active:scale-[0.98] transition-transform shrink-0"
               style={{ background: "var(--storefront-primary, #036B52)" }}
             >
               Add to cart
@@ -664,6 +661,19 @@ export default function V19ProductDetail() {
           )}
         </div>
       </div>
+
+      {/* Lazy fullscreen zoom overlay */}
+      {zoomOpen && (
+        <Suspense fallback={null}>
+          <ZoomableGallery
+            images={images}
+            initialIndex={galleryIdx}
+            alt={product.name}
+            open={zoomOpen}
+            onClose={() => setZoomOpen(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
