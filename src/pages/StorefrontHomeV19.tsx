@@ -173,14 +173,14 @@ export default function StorefrontHomeV19() {
       {/* Promo carousel */}
       <PromoCarousel slug={slug} />
 
-      {/* Categories — single large tile grid (Blinkit/While style) */}
-      {homeEligible.length > 0 && (
+      {/* Categories — single large tile grid showing ALL categories */}
+      {categories.length > 0 && (
         <section>
           <div className="v19-section-title">
             <h3>Categories</h3>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 lg:gap-3">
-            {homeEligible.map((cat, i) => (
+            {categories.map((cat, i) => (
               <Link
                 key={cat.id}
                 to={storefrontPath(slug, `category/${cat.slug}`)}
