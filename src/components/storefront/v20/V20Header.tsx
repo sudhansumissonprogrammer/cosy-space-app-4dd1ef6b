@@ -54,9 +54,20 @@ export default function V20Header({ store }: { store: any }) {
         <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <Link to={storefrontPath(slug)} className="block">
-              <div className="text-white text-[20px] font-black leading-tight tracking-tight truncate">
-                {store?.name || "Shop"}
-              </div>
+              {logoSrc ? (
+                <img
+                  src={logoSrc}
+                  alt={store?.name || "Logo"}
+                  className="h-9 max-w-[180px] object-contain object-left"
+                />
+              ) : (
+                <div
+                  className="text-white text-[24px] leading-tight truncate"
+                  style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 800, letterSpacing: "0.04em" }}
+                >
+                  {store?.name || "Shop"}
+                </div>
+              )}
             </Link>
             <button
               type="button"
@@ -117,20 +128,26 @@ export default function V20Header({ store }: { store: any }) {
       {/* ============ DESKTOP HEADER (md+) ============ */}
       <header className="hidden md:block sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-3 flex items-center gap-5">
-          <Link to={storefrontPath(slug)} className="flex items-center gap-2 flex-shrink-0">
+          <Link to={storefrontPath(slug)} className="flex items-center flex-shrink-0">
             {logoSrc ? (
-              <img src={logoSrc} alt={store?.name} className="h-10 w-10 rounded-lg object-contain bg-gray-50" />
+              <img
+                src={store?.logo_url ? optimizeImageUrl(store.logo_url, 200, 90) : ""}
+                alt={store?.name}
+                className="h-11 max-w-[220px] object-contain"
+              />
             ) : (
               <div
-                className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-black text-lg"
-                style={{ background: "var(--storefront-primary, #036B52)" }}
+                className="text-[26px] truncate max-w-[260px]"
+                style={{
+                  fontFamily: "'Alegreya SC', serif",
+                  fontWeight: 800,
+                  letterSpacing: "0.04em",
+                  color: "var(--storefront-primary, #036B52)",
+                }}
               >
-                {store?.name?.[0]?.toUpperCase() || "S"}
+                {store?.name || "Shop"}
               </div>
             )}
-            <div className="leading-tight">
-              <div className="text-[16px] font-black text-gray-900 truncate max-w-[220px]">{store?.name}</div>
-            </div>
           </Link>
 
           <Link
