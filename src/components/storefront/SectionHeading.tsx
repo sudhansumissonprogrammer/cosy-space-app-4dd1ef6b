@@ -40,7 +40,7 @@ export default function SectionHeading({ title, slug, linkTo, className = "" }: 
         <div className="flex-1" />
         <h2
           ref={headingRef}
-          className={`heading-underline-draw text-base sm:text-lg lg:text-xl xl:text-2xl font-bold tracking-wide whitespace-nowrap text-center ${inView ? "in-view" : ""}`}
+          className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold tracking-wide whitespace-nowrap text-center"
           style={{
             fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)",
             color: "var(--storefront-text, hsl(var(--foreground)))",
