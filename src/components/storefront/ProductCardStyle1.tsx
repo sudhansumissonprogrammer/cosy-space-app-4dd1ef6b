@@ -66,13 +66,13 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
           }}
         >
           {discountPercent && (
-            <div className="absolute left-2 top-2 z-10">
+            <div className="absolute top-2 z-10" style={{ left: "0.5rem", right: "auto" }}>
               <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground shadow-sm">
                 -{discountPercent}%
               </span>
             </div>
           )}
-          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-2 top-2 z-10 rounded-full p-1.5 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden`} style={{ color: "hsl(var(--destructive))", backgroundColor: iconChrome, boxShadow: "0 1px 4px color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute top-2 z-10 rounded-full p-1.5 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden`} style={{ left: "auto", right: "0.5rem", color: "hsl(var(--destructive))", backgroundColor: iconChrome, boxShadow: "0 1px 4px color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
             <Heart className={`h-4 w-4 drop-shadow-sm transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-card-foreground stroke-[2.25]"}`} aria-hidden="true" />
           </button>
           {(() => {
