@@ -90,7 +90,12 @@ const SUPABASE_ANON_KEY =
    ============================================================ */
 
 const SEARCH_BOT_REGEX =
-  /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot/i;
+  /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver/i;
+
+// v6.9.2: Bots blocked at the edge with 403 (zero business value, high request cost).
+// These crawl aggressively and inflate Worker request counts without driving traffic.
+const BLOCKED_BOT_REGEX =
+  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider/i;
 
 const SOCIAL_BOT_REGEX =
   /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
@@ -2879,6 +2884,21 @@ export default {
   async fetch(request, env, ctx) {
     // FIX #5: Record request start time immediately
     const requestStart = Date.now();
+
+    // v6.9.2: Block aggressive SEO/AI crawlers at the edge with 403.
+    // These bots have no business value but inflate Worker request counts heavily.
+    // Returning early uses ~0ms CPU and prevents subrequests/DB load.
+    const earlyUA = request.headers.get("user-agent") || "";
+    if (BLOCKED_BOT_REGEX.test(earlyUA)) {
+      return new Response("Forbidden", {
+        status: 403,
+        headers: {
+          "content-type": "text/plain",
+          "cache-control": "public, max-age=86400",
+          "x-blocked-by": "shopbanao-bot-policy",
+        },
+      });
+    }
 
     const url = new URL(request.url);
     const hostname = (request.headers.get("host") || url.hostname).toLowerCase().trim();
