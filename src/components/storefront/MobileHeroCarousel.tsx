@@ -74,7 +74,7 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
         onTouchStart={markInteracting}
         onPointerDown={markInteracting}
         className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory px-1"
-        style={{ touchAction: "pan-x", overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch" }}
+        style={{ touchAction: "pan-x pan-y", overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch" }}
       >
         {images.map((url, i) => (
           <Link
