@@ -60,7 +60,7 @@ export default function V20Header({ store }: { store: any }) {
     <>
       {/* ============ UNIFIED HEADER (mobile + desktop both) ============ */}
       <header className="sticky top-0 z-40 shadow-md" style={{ background: "var(--storefront-primary, #036B52)" }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-3 pb-2 flex items-start justify-between gap-3 md:gap-5 md:items-center md:py-3">
+        <div className="max-w-3xl mx-auto px-4 pt-3 pb-2 flex items-start justify-between gap-3 md:gap-4 md:items-center md:py-3">
           <div className="flex-1 min-w-0 md:flex-none">
             <Link to={storefrontPath(slug)} className="block">
               {logoSrc ? (
@@ -185,7 +185,7 @@ export default function V20Header({ store }: { store: any }) {
 
         {topCats.length > 0 && (
           <div className="hidden md:block bg-white border-t border-black/5">
-            <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="max-w-3xl mx-auto px-4">
               <nav className="chip-snap-strip flex items-center gap-1 overflow-x-auto scrollbar-hide py-2">
                 {(() => {
                   const isHome = location.pathname.endsWith(slug) || location.pathname.endsWith(slug + "/");
