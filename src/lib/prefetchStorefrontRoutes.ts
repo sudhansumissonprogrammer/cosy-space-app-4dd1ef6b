@@ -8,6 +8,8 @@ const eagerImports = [
   () => import("@/pages/ProductDetail"),
   () => import("@/pages/CartPage"),
   () => import("@/pages/CheckoutPage"),
+  // Search overlay — used across every theme; prefetch so first click opens instantly
+  () => import("@/components/storefront/StorefrontSearchOverlay"),
 ];
 
 const lazyImports: Record<string, () => Promise<unknown>> = {
