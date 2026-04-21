@@ -55,8 +55,14 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
       onTouchStart={prefetchProductDetail}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; }}
     >
-      <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
-        <div className="card-img-zoom relative flex w-full items-center justify-center overflow-hidden rounded-lg" style={{ aspectRatio: "4/5" }}>
+      <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1.5 pb-0">
+        <div
+          className="card-img-zoom relative isolate w-full overflow-hidden rounded-lg"
+          style={{
+            aspectRatio: "4/5",
+            backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 4%, var(--storefront-bg, hsl(var(--background))))",
+          }}
+        >
           {discountPercent && (
             <div className="absolute left-2 top-2 z-10">
               <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground">
@@ -75,9 +81,9 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             const hasSecond = images.length > 1;
             return (
               <>
-                <img src={optimizeImageUrl(images[0], 400, 80)} srcSet={getImageSrcSet(images[0], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className={`block h-auto max-h-full w-auto max-w-full object-contain object-center transition-all duration-500 ease-out ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "auto"} style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 4%, var(--storefront-bg, hsl(var(--background))))" }} />
+                <img src={optimizeImageUrl(images[0], 400, 80)} srcSet={getImageSrcSet(images[0], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className={`absolute inset-0 h-full w-full object-contain object-center p-2 transition-all duration-500 ease-out sm:p-2.5 ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "auto"} />
                 {hasSecond && (
-                  <img src={optimizeImageUrl(images[1], 400, 80)} srcSet={getImageSrcSet(images[1], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className="absolute inset-0 m-auto block h-auto max-h-full w-auto max-w-full object-contain object-center opacity-0 transition-all duration-500 ease-out group-hover:opacity-100" loading="lazy" decoding="async" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 4%, var(--storefront-bg, hsl(var(--background))))" }} />
+                  <img src={optimizeImageUrl(images[1], 400, 80)} srcSet={getImageSrcSet(images[1], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className="absolute inset-0 h-full w-full object-contain object-center p-2 opacity-0 transition-all duration-500 ease-out group-hover:opacity-100 sm:p-2.5" loading="lazy" decoding="async" />
                 )}
               </>
             );
