@@ -42,6 +42,7 @@ const StorefrontLayoutV16 = lazy(() => import("./layouts/StorefrontLayoutV16"));
 const StorefrontLayoutV17 = lazy(() => import("./layouts/StorefrontLayoutV17"));
 const StorefrontLayoutV18 = lazy(() => import("./layouts/StorefrontLayoutV18"));
 const StorefrontLayoutV19 = lazy(() => import("./layouts/StorefrontLayoutV19"));
+const StorefrontLayoutV20 = lazy(() => import("./layouts/StorefrontLayoutV20"));
 
 // Storefront home pages — ALL lazy loaded
 const StorefrontHome = lazy(() => import("./pages/StorefrontHome"));
@@ -57,6 +58,7 @@ const StorefrontHomeV16 = lazy(() => import("./pages/StorefrontHomeV16"));
 const StorefrontHomeV17 = lazy(() => import("./pages/StorefrontHomeV17"));
 const StorefrontHomeV18 = lazy(() => import("./pages/StorefrontHomeV18"));
 const StorefrontHomeV19 = lazy(() => import("./pages/StorefrontHomeV19"));
+const StorefrontHomeV20 = lazy(() => import("./pages/StorefrontHomeV20"));
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontShop = lazy(() => import("./pages/StorefrontShop"));
 const StorefrontCategoriesPage = lazy(() => import("./pages/StorefrontCategories"));
@@ -69,6 +71,7 @@ const StorefrontPrivacyPolicy = lazy(() => import("./pages/StorefrontPrivacyPoli
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const V19ProductDetail = lazy(() => import("./pages/V19ProductDetail"));
+const V20ProductDetail = lazy(() => import("./pages/V20ProductDetail"));
 const ProductDetailSkeleton = () => (
   <div className="mx-auto max-w-6xl px-4 py-8 space-y-4">
     <div className="h-8 w-48 rounded bg-muted/60" />
@@ -89,6 +92,7 @@ const StorefrontAccount = lazy(() => import("./pages/StorefrontAccount"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
 const V19CartPage = lazy(() => import("./pages/V19CartPage"));
+const V20CartPage = lazy(() => import("./pages/V20CartPage"));
 const InstallApp = lazy(() => import("./pages/InstallApp"));
 
 // Auth + Admin + Dashboard — fully lazy, never loaded on storefront
@@ -171,6 +175,7 @@ const _path = window.location.pathname;
 
     // Fire the layout chunk import — runs in parallel with React/index.js parsing
     const layoutImports: Record<string, () => Promise<any>> = {
+      "theme-20": () => import("./layouts/StorefrontLayoutV20"),
       "theme-19": () => import("./layouts/StorefrontLayoutV19"),
       "theme-18": () => import("./layouts/StorefrontLayoutV18"),
       "theme-17": () => import("./layouts/StorefrontLayoutV17"),
@@ -190,6 +195,7 @@ const _path = window.location.pathname;
     const isHome = path === "/" || /\/store\/[^/]+\/?$/.test(path);
     if (isHome) {
       const homeImports: Record<string, () => Promise<any>> = {
+        "theme-20": () => import("./pages/StorefrontHomeV20"),
         "theme-19": () => import("./pages/StorefrontHomeV19"),
         "theme-18": () => import("./pages/StorefrontHomeV18"),
         "theme-17": () => import("./pages/StorefrontHomeV17"),
@@ -314,7 +320,7 @@ const StorefrontCustomPage = lazy(() => import("./pages/StorefrontCustomPage"));
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
   // V11 re-exports V3 exactly — map directly to avoid double lazy chunk
-  const HomeComponent = theme === "theme-19" ? StorefrontHomeV19 : theme === "theme-18" ? StorefrontHomeV18 : theme === "theme-17" ? StorefrontHomeV17 : theme === "theme-16" ? StorefrontHomeV16 : theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV3 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
+  const HomeComponent = theme === "theme-20" ? StorefrontHomeV20 : theme === "theme-19" ? StorefrontHomeV19 : theme === "theme-18" ? StorefrontHomeV18 : theme === "theme-17" ? StorefrontHomeV17 : theme === "theme-16" ? StorefrontHomeV16 : theme === "theme-15" ? StorefrontHomeV15 : theme === "theme-14" ? StorefrontHomeV14 : theme === "theme-13" ? StorefrontHomeV13 : theme === "theme-12" ? StorefrontHomeV12 : theme === "theme-11" ? StorefrontHomeV3 : theme === "theme-10" ? StorefrontHomeV10 : theme === "theme-3" ? StorefrontHomeV3 : theme === "theme-2" ? StorefrontHomeV2 : StorefrontHome;
   return (
     <>
       <Route index element={<HomeComponent />} />
@@ -328,8 +334,8 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="terms" element={<StorefrontTerms />} />
       <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
       <Route path="category/:categorySlug" element={<CategoryDetail />} />
-      <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
-      <Route path="cart" element={theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
+      <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
+      <Route path="cart" element={theme === "theme-20" ? <V20CartPage /> : theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
       <Route path="wishlist" element={<WishlistPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
       <Route path="login" element={<StorefrontLogin />} />
@@ -366,6 +372,7 @@ function getInstantTheme(slug: string | undefined): string {
 
 function getLayoutComponent(theme: string) {
   switch (theme) {
+    case "theme-20": return StorefrontLayoutV20;
     case "theme-19": return StorefrontLayoutV19;
     case "theme-18": return StorefrontLayoutV18;
     case "theme-17": return StorefrontLayoutV17;
@@ -384,6 +391,7 @@ function getLayoutComponent(theme: string) {
 
 function prefetchLayoutChunk(theme: string) {
   switch (theme) {
+    case "theme-20": return import("./layouts/StorefrontLayoutV20");
     case "theme-19": return import("./layouts/StorefrontLayoutV19");
     case "theme-18": return import("./layouts/StorefrontLayoutV18");
     case "theme-17": return import("./layouts/StorefrontLayoutV17");
