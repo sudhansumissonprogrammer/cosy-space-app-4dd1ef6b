@@ -161,6 +161,24 @@ const COLOR_COMBINATIONS = [
     background: "#FAFAF6",
     marquee: "linear-gradient(90deg, #2B4C3F, #1B5E4B, #2B4C3F)",
   },
+  {
+    id: "quick-commerce-green",
+    name: "Quick Commerce Green",
+    primary: "#036B52",
+    accent: "#FFD33D",
+    text: "#1a1a1a",
+    background: "#f6f7f9",
+    marquee: "linear-gradient(90deg, #FFD33D, #FFC107, #FFD33D)",
+  },
+  {
+    id: "fitness-black",
+    name: "Fitness Black",
+    primary: "#0F0B0A",
+    accent: "#FFD33D",
+    text: "#0F0B0A",
+    background: "#f6f7f9",
+    marquee: "linear-gradient(90deg, #0F0B0A, #2a2422, #0F0B0A)",
+  },
 ];
 
 /* ── Per-theme recommended color combinations (curated for best visual result) ── */
@@ -234,7 +252,7 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "ghost-persian", "emerald-luxe", "plum-cream", "ocean-teal", "teal-elegance",
   ],
   "theme-19": [
-    "ocean-teal", "emerald-luxe", "mint-fresh", "saffron-bloom",
+    "quick-commerce-green", "fitness-black",
   ],
 };
 
@@ -2321,8 +2339,7 @@ export default function StoreThemeSettings() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Color Combinations — hidden for theme-19 (fixed Blinkit-style palette) */}
-          {currentTheme !== "theme-19" && (
+          {/* Color Combinations */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Color Combination</h4>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -2377,9 +2394,8 @@ export default function StoreThemeSettings() {
               })}
             </div>
           </div>
-          )}
 
-          {currentTheme !== "theme-19" && <Separator />}
+          <Separator />
 
           {/* Fonts */}
           <div>
