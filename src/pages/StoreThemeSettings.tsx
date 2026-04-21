@@ -2665,8 +2665,6 @@ export default function StoreThemeSettings() {
           {/* Product Card Style — hidden for theme-19 (uses dedicated V19ProductCard) */}
           {currentTheme !== "theme-19" && (
           <div>
-          {/* Product Card Style */}
-          <div>
             <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
             <div className="space-y-1.5">
               <Label className="text-xs">Product Card Style</Label>
