@@ -108,10 +108,7 @@ export default function V19Header({ store }: { store: any }) {
 
         {marqueeEnabled && (
           <div className="v19-marquee-yellow">
-            <div
-              className="flex gap-10 animate-marquee whitespace-nowrap"
-              style={{ fontFamily: '"Algerian SC", Algerian, "UnifrakturCook", "Trajan Pro", "Cinzel", serif', fontVariant: "small-caps", letterSpacing: "0.06em" }}
-            >
+            <div className="flex gap-10 animate-marquee whitespace-nowrap">
               {Array.from({ length: 6 }).map((_, i) => (
                 <span key={i} className="px-2">{marqueeText}</span>
               ))}
