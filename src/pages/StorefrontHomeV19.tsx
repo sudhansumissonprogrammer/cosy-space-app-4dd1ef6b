@@ -202,19 +202,19 @@ export default function StorefrontHomeV19() {
                 className="group flex flex-col items-center"
               >
                 <div
-                  className="relative w-full overflow-hidden rounded-xl transition-transform group-active:scale-95"
-                  style={{ aspectRatio: "1 / 1", background: PASTELS[i % PASTELS.length] }}
+                  className="relative w-full overflow-hidden rounded-xl transition-transform group-active:scale-95 bg-muted"
+                  style={{ aspectRatio: "1 / 1" }}
                 >
                   {cat.image_url ? (
                     <img
                       src={optimizeImageUrl(cat.image_url, 300, 85)}
                       alt={cat.name}
-                      className="absolute inset-0 w-full h-full object-contain p-2"
+                      className="absolute inset-0 w-full h-full object-cover"
                       loading="lazy"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Tag className="h-8 w-8 text-gray-700" />
+                      <Tag className="h-8 w-8 text-muted-foreground" />
                     </div>
                   )}
                 </div>
