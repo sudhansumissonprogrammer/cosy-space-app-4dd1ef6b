@@ -315,9 +315,10 @@ export default function V19ProductDetail() {
                 <img
                   src={optimizeImageUrl(img, 800, 90)}
                   alt={`${product.name} ${i + 1}`}
-                  className="max-h-full max-w-full object-contain p-6"
+                  className="max-h-full max-w-full object-contain p-6 cursor-zoom-in"
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
+                  onClick={() => setZoomOpen(true)}
                 />
               ) : (
                 <Package className="h-16 w-16 text-gray-300" />
