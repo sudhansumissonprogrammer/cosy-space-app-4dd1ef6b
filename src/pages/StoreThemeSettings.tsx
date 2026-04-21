@@ -254,13 +254,16 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
   "theme-19": [
     "quick-commerce-green", "fitness-black",
   ],
+  "theme-20": [
+    "quick-commerce-green", "fitness-black",
+  ],
 };
 
 /* ── Get sorted color combinations for a given theme ── */
 function getSortedCombinations(themeId: string) {
   const recommended = THEME_RECOMMENDATIONS[themeId] || [];
-  // Theme-19 uses a strictly curated palette — only show recommended combos
-  if (themeId === "theme-19") {
+  // Theme-19 / Theme-20 use a strictly curated palette — only show recommended combos
+  if (themeId === "theme-19" || themeId === "theme-20") {
     return COLOR_COMBINATIONS
       .filter((c) => recommended.includes(c.id))
       .map((c) => ({ ...c, isRecommended: true, score: 0, textBgContrast: 0, primaryBgContrast: 0 }));
@@ -385,6 +388,13 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_text: "Free delivery on all orders! • Fresh & quick • Pay on delivery",
     marquee_enabled: true, product_card_style: "style-1", category_style: "style-4", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
   },
+  "theme-20": {
+    primary_color: "#036B52", accent_color: "#FFD33D", text_color: "#1a1a1a", background_color: "#f6f7f9",
+    heading_font: "Poppins", body_font: "Inter", button_style: "pill",
+    marquee_gradient: "linear-gradient(90deg, #FFD33D, #FFC107, #FFD33D)",
+    marquee_text: "Free delivery on all orders! • Shop everything • Pay on delivery",
+    marquee_enabled: true, product_card_style: "style-1", category_style: "style-4", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
+  },
 };
 
 const THEMES = [
@@ -402,6 +412,7 @@ const THEMES = [
   { id: "theme-17", name: "Streetwear", description: "Dark green streetwear aesthetic with centered logo & trust ticker", available: true },
   { id: "theme-18", name: "Dark Streetwear", description: "All-black editorial layout with edge-to-edge product grids", available: true },
   { id: "theme-19", name: "Quick Commerce Grocery", description: "Blinkit-style green header, yellow category tiles, ADD-to-stepper cards — built for grocery & quick delivery", available: true },
+  { id: "theme-20", name: "Multi Purpose", description: "Versatile Blinkit-style layout adaptable for any category — green header, category tiles, ADD-to-stepper cards", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
@@ -2485,7 +2496,7 @@ export default function StoreThemeSettings() {
           <Separator />
 
           {/* Header Logo Alignment — hidden for theme-19 (fixed Blinkit-style header) */}
-          {currentTheme !== "theme-19" && (
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Header Layout</h4>
             <div className="space-y-1.5">
@@ -2549,7 +2560,7 @@ export default function StoreThemeSettings() {
           </div>
           )}
 
-          {currentTheme !== "theme-19" && <Separator />}
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && <Separator />}
 
           {/* Marquee Strip Text */}
           <div>
@@ -2714,10 +2725,10 @@ export default function StoreThemeSettings() {
             </>
           )}
 
-          {currentTheme !== "theme-19" && <Separator />}
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && <Separator />}
 
           {/* Product Card Style — hidden for theme-19 (uses dedicated V19ProductCard) */}
-          {currentTheme !== "theme-19" && (
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
             <div className="space-y-1.5">
@@ -2755,10 +2766,10 @@ export default function StoreThemeSettings() {
           </div>
           )}
 
-          {currentTheme !== "theme-19" && <Separator />}
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && <Separator />}
 
           {/* Category Style — hidden for theme-19 (uses dedicated horizontal pills) */}
-          {currentTheme !== "theme-19" && (
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Category Section Design</h4>
             <div className="space-y-1.5">
@@ -2798,7 +2809,7 @@ export default function StoreThemeSettings() {
           </div>
           )}
 
-          {currentTheme === "theme-19" && (
+          {(currentTheme === "theme-19" || currentTheme === "theme-20") && (
             <>
               <Separator />
 
