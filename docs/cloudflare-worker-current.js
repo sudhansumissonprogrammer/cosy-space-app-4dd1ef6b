@@ -90,7 +90,12 @@ const SUPABASE_ANON_KEY =
    ============================================================ */
 
 const SEARCH_BOT_REGEX =
-  /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot/i;
+  /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Applebot|Sogou|Exabot|ia_archiver/i;
+
+// v6.9.2: Bots blocked at the edge with 403 (zero business value, high request cost).
+// These crawl aggressively and inflate Worker request counts without driving traffic.
+const BLOCKED_BOT_REGEX =
+  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider/i;
 
 const SOCIAL_BOT_REGEX =
   /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
