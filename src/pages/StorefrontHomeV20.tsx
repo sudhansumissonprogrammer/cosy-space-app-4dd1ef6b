@@ -254,22 +254,6 @@ export default function StorefrontHomeV20() {
 
   return (
     <div className="space-y-5 md:space-y-7 pb-4">
-      {(store as any).banner_url && (
-        <Link to={storefrontPath(slug, "shop")} className="block rounded-2xl overflow-hidden shadow-sm">
-          <div className="w-full" style={{ aspectRatio: "16 / 6" }}>
-            <img
-              src={optimizeImageUrl((store as any).banner_url, 1400, 85)}
-              alt={store.name}
-              className="w-full h-full object-cover block"
-              loading="eager"
-              fetchPriority="high"
-              width={1400}
-              height={525}
-            />
-          </div>
-        </Link>
-      )}
-
       {(() => {
         const heroImagesRaw = (store as any).mobile_hero_images;
         const heroList: string[] = Array.isArray(heroImagesRaw)
@@ -280,13 +264,39 @@ export default function StorefrontHomeV20() {
         if (singleHero && singleHero.trim()) merged.push(singleHero);
         for (const u of heroList) if (!merged.includes(u)) merged.push(u);
         const heroes = merged;
-        if (heroes.length === 0) return <PromoCarousel slug={slug} />;
+        const desktopBanner = (store as any).banner_url as string | undefined;
+        const desktopSrc = desktopBanner && desktopBanner.trim() ? desktopBanner : heroes[0];
+
         return (
-          <MobileHeroCarousel
-            images={heroes}
-            storeName={store.name}
-            linkTo={storefrontPath(slug, "shop")}
-          />
+          <>
+            {desktopSrc && (
+              <Link to={storefrontPath(slug, "shop")} className="hidden md:block rounded-2xl overflow-hidden shadow-sm">
+                <div className="w-full" style={{ aspectRatio: "16 / 6" }}>
+                  <img
+                    src={optimizeImageUrl(desktopSrc, 1400, 85)}
+                    alt={store.name}
+                    className="w-full h-full object-cover block"
+                    loading="eager"
+                    fetchPriority="high"
+                    width={1400}
+                    height={525}
+                  />
+                </div>
+              </Link>
+            )}
+
+            <div className="md:hidden">
+              {heroes.length === 0 ? (
+                <PromoCarousel slug={slug} />
+              ) : (
+                <MobileHeroCarousel
+                  images={heroes}
+                  storeName={store.name}
+                  linkTo={storefrontPath(slug, "shop")}
+                />
+              )}
+            </div>
+          </>
         );
       })()}
 
