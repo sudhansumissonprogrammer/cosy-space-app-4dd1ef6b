@@ -179,7 +179,7 @@ export default function StorefrontHomeV19() {
           <div className="v19-section-title">
             <h3>Categories</h3>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 lg:gap-3">
+          <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 lg:gap-3">
             {categories.map((cat, i) => (
               <Link
                 key={cat.id}
@@ -211,6 +211,29 @@ export default function StorefrontHomeV19() {
           </div>
         </section>
       )}
+
+      {/* Per-category product carousels — only for toggled-on categories that have products */}
+      {visibleCategories.map((cat) => {
+        const items = (productsByCategory.get(cat.name) || []).slice(0, 12);
+        return (
+          <section key={cat.id}>
+            <div className="v19-section-title">
+              <h3>{cat.name}</h3>
+              <Link to={storefrontPath(slug, `category/${cat.slug}`)}>see all <ChevronRight className="h-3 w-3" /></Link>
+            </div>
+            <HorizontalScroller ariaLabel={cat.name}>
+              {items.map((p, i) => (
+                <div
+                  key={p.id}
+                  className="flex-shrink-0 snap-start w-[44%] sm:w-[30%] md:w-[24%] lg:w-[19%] xl:w-[16%]"
+                >
+                  <V19ProductCard product={p} slug={slug} store={store} priority={i < 2} />
+                </div>
+              ))}
+            </HorizontalScroller>
+          </section>
+        );
+      })}
     </div>
   );
 }
