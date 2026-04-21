@@ -92,7 +92,7 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
                   <button
                     key={i}
                     onClick={() => setImgIdx(i)}
-                    className="h-10 w-10 rounded-md overflow-hidden border-2 transition-all"
+                    className={`h-10 w-10 rounded-md overflow-hidden border-2 transition-all ${i === imgIdx ? "gallery-dot-active" : ""}`}
                     style={{
                       borderColor: i === imgIdx
                         ? "var(--storefront-primary, hsl(var(--primary)))"

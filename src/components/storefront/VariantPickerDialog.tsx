@@ -74,9 +74,9 @@ export default function VariantPickerDialog({ open, onClose, product }: Props) {
                   key={v.id}
                   type="button"
                   onClick={() => setSelectedId(selectedId === v.id ? null : v.id)}
-                  className={`relative rounded-xl border-2 px-4 py-2 text-sm font-semibold transition-all active:scale-95 ${
+                  className={`variant-chip-bounce relative rounded-xl border-2 px-4 py-2 text-sm font-semibold ${
                     selectedId === v.id
-                      ? "border-primary bg-primary/10 text-primary"
+                      ? "is-selected border-primary bg-primary/10 text-primary"
                       : "border-border text-foreground hover:border-primary/40"
                   }`}
                 >

@@ -753,6 +753,28 @@
   100% { transform: rotateX(0); opacity: 1; }
 }
 
+/* P11 — Gallery active dot pulse + scale */
+.gallery-dot-active {
+  animation: gallery-dot-pulse 1.6s ease-in-out infinite;
+}
+@keyframes gallery-dot-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 40%, transparent); }
+  50%      { transform: scale(1.15); box-shadow: 0 0 0 4px color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 0%, transparent); }
+}
+
+/* P12 — Variant chip bouncy select */
+.variant-chip-bounce {
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 180ms ease, border-color 180ms ease;
+  will-change: transform;
+}
+.variant-chip-bounce:active { transform: scale(0.92); }
+.variant-chip-bounce.is-selected { animation: variant-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes variant-pop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.10); }
+  100% { transform: scale(1.04); }
+}
+
 /* P10 — Toast bouncy entry (Sonner) */
 [data-sonner-toaster] [data-sonner-toast] {
   animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1) !important;
@@ -768,7 +790,8 @@
   .skeleton-fade-out, .content-fade-in,
   .cart-plus-one, .btn-added::after, .price-strike-draw::after,
   .img-blurup, .header-shrink, .logo-shrink,
-  .back-to-top-enter, .back-to-top-exit, .qty-flip {
+  .back-to-top-enter, .back-to-top-exit, .qty-flip,
+  .gallery-dot-active, .variant-chip-bounce, .variant-chip-bounce.is-selected {
     animation: none !important;
     transition: none !important;
     transform: none !important;
