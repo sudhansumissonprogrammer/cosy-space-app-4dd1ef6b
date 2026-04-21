@@ -397,7 +397,9 @@ export default function V19ProductDetail() {
                     className="flex-shrink-0 px-3 py-2 rounded-lg border-2 text-left min-w-[110px] transition-colors"
                     style={{
                       borderColor: active ? "var(--storefront-primary, #036B52)" : "#e5e7eb",
-                      background: active ? "#F0FAF7" : "#fff",
+                      background: active
+                        ? "linear-gradient(rgba(255,255,255,0.88), rgba(255,255,255,0.88)), var(--storefront-primary, #036B52)"
+                        : "#fff",
                     }}
                   >
                     <div className="text-[12px] font-bold text-gray-900">{v.name}</div>
@@ -449,7 +451,7 @@ export default function V19ProductDetail() {
             desc="Get your order delivered in minutes"
           />
           <TrustItem
-            iconBg="#E5F4EE"
+            iconBg="color-mix(in srgb, var(--storefront-primary, #036B52) 14%, white)"
             icon={<IndianRupee className="h-5 w-5" style={{ color: "var(--storefront-primary, #036B52)" }} strokeWidth={2.4} />}
             title="Best Prices & Offers"
             desc="Best price destination with offers"

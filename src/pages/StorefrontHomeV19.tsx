@@ -20,11 +20,11 @@ interface Category { id: string; name: string; slug: string; image_url: string |
 const PASTELS = ["#FFF1D6", "#FFE5E5", "#DDEBFF", "#E5F7E5", "#FFE7F3", "#F0E5FF", "#FFF7CC", "#D6F5F0", "#FFE9D6", "#E0F0FF"];
 
 const PROMO_CARDS = [
-  { bg: "linear-gradient(135deg, #FFD33D 0%, #FFC107 100%)", title: "Fresh deals", subtitle: "in minutes" },
-  { bg: "linear-gradient(135deg, #FFB7C5 0%, #FF8FA3 100%)", title: "Snack attack", subtitle: "30% off today" },
-  { bg: "linear-gradient(135deg, #B8E6C1 0%, #7DD3A0 100%)", title: "Daily essentials", subtitle: "starting ₹19" },
-  { bg: "linear-gradient(135deg, #C5DDFF 0%, #8FB5FF 100%)", title: "New arrivals", subtitle: "fresh stock daily" },
-  { bg: "linear-gradient(135deg, #FFE7B5 0%, #FFC36A 100%)", title: "Weekend savings", subtitle: "up to 40% off" },
+  { bg: "linear-gradient(135deg, #FFD33D 0%, #FFC107 100%)", title: "Fresh deals", subtitle: "in minutes", darkText: true },
+  { bg: "linear-gradient(135deg, #FFB7C5 0%, #FF8FA3 100%)", title: "Snack attack", subtitle: "30% off today", darkText: true },
+  { bg: "linear-gradient(135deg, var(--storefront-primary, #036B52) 0%, var(--storefront-primary-light, #4ea892) 100%)", title: "Daily essentials", subtitle: "starting ₹19", darkText: false },
+  { bg: "linear-gradient(135deg, #C5DDFF 0%, #8FB5FF 100%)", title: "New arrivals", subtitle: "fresh stock daily", darkText: true },
+  { bg: "linear-gradient(135deg, #FFE7B5 0%, #FFC36A 100%)", title: "Weekend savings", subtitle: "up to 40% off", darkText: true },
 ];
 
 function HorizontalScroller({ children, ariaLabel }: { children: React.ReactNode; ariaLabel?: string }) {
@@ -43,20 +43,10 @@ function HorizontalScroller({ children, ariaLabel }: { children: React.ReactNode
       >
         {children}
       </div>
-      <button
-        type="button"
-        aria-label="Scroll left"
-        onClick={() => scrollBy(-1)}
-        className="v19-carousel-arrow left"
-      >
+      <button type="button" aria-label="Scroll left" onClick={() => scrollBy(-1)} className="v19-carousel-arrow left">
         <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
       </button>
-      <button
-        type="button"
-        aria-label="Scroll right"
-        onClick={() => scrollBy(1)}
-        className="v19-carousel-arrow right"
-      >
+      <button type="button" aria-label="Scroll right" onClick={() => scrollBy(1)} className="v19-carousel-arrow right">
         <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
       </button>
     </div>
@@ -65,8 +55,7 @@ function HorizontalScroller({ children, ariaLabel }: { children: React.ReactNode
 
 function PromoCarousel({ slug }: { slug: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  // Auto-rotate every 5s — only on desktop (where multiple promos visible).
-  // Scroll exactly one card width (matches snap points → no janky mid-card stops).
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!window.matchMedia("(min-width: 1024px)").matches) return;
@@ -74,7 +63,7 @@ function PromoCarousel({ slug }: { slug: string }) {
       const el = ref.current;
       if (!el) return;
       const card = el.querySelector<HTMLElement>(".v19-promo-card");
-      const step = card ? card.offsetWidth + 12 /* gap */ : el.clientWidth * 0.25;
+      const step = card ? card.offsetWidth + 12 : el.clientWidth * 0.25;
       const max = el.scrollWidth - el.clientWidth;
       const next = el.scrollLeft + step;
       el.scrollTo({ left: next > max - 8 ? 0 : next, behavior: "smooth" });
@@ -92,25 +81,29 @@ function PromoCarousel({ slug }: { slug: string }) {
 
   return (
     <div className="v19-carousel-wrap relative">
-      <div
-        ref={ref}
-        className="overflow-x-auto scrollbar-hide -mx-1 snap-x snap-mandatory"
-      >
+      <div ref={ref} className="overflow-x-auto scrollbar-hide -mx-1 snap-x snap-mandatory">
         <div className="flex gap-3 px-1">
-          {PROMO_CARDS.map((promo, i) => (
-            <div
-              key={i}
-              className="v19-promo-card"
-              style={{ background: promo.bg }}
-            >
-              <div>
-                <h2>{promo.title}</h2>
-                <h2 style={{ marginTop: 0 }}>{promo.subtitle}</h2>
-                <p>Tap to explore</p>
+          {PROMO_CARDS.map((promo, i) => {
+            const headingColor = promo.darkText ? "#0a0a0a" : "#ffffff";
+            const bodyColor = promo.darkText ? "rgba(10,10,10,0.85)" : "rgba(255,255,255,0.88)";
+
+            return (
+              <div key={i} className="v19-promo-card" style={{ background: promo.bg }}>
+                <div>
+                  <h2 style={{ color: headingColor }}>{promo.title}</h2>
+                  <h2 style={{ marginTop: 0, color: headingColor }}>{promo.subtitle}</h2>
+                  <p style={{ color: bodyColor }}>Tap to explore</p>
+                </div>
+                <Link
+                  to={storefrontPath(slug, "shop")}
+                  className="cta"
+                  style={promo.darkText ? undefined : { background: "#ffffff", color: "var(--storefront-primary, #036B52)" }}
+                >
+                  Shop Now
+                </Link>
               </div>
-              <Link to={storefrontPath(slug, "shop")} className="cta">Shop Now</Link>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       <button type="button" aria-label="Previous" onClick={() => scrollBy(-1)} className="v19-carousel-arrow left">

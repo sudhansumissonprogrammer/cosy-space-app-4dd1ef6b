@@ -11,9 +11,13 @@ import { useCart } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import type { CSSProperties } from "react";
 
 const GREEN = "var(--storefront-primary, #036B52)";
 const YELLOW = "#FFD300";
+const PRIMARY_TINT = `linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), ${GREEN}`;
+const PRIMARY_TINT_STRONG = `linear-gradient(rgba(255,255,255,0.82), rgba(255,255,255,0.82)), ${GREEN}`;
+const PRIMARY_BORDER = "color-mix(in srgb, var(--storefront-primary, #036B52) 22%, white)";
 
 export default function V19CartPage() {
   const store = useOutletContext<StoreData>();
@@ -87,7 +91,7 @@ export default function V19CartPage() {
           </div>
         </header>
         <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
-          <div className="h-24 w-24 rounded-full flex items-center justify-center mb-5" style={{ background: "#E6F4F0" }}>
+          <div className="h-24 w-24 rounded-full flex items-center justify-center mb-5" style={{ background: PRIMARY_TINT }}>
             <ShoppingCart className="h-12 w-12" style={{ color: GREEN }} />
           </div>
           <h1 className="text-[18px] font-extrabold text-gray-900">Your cart is empty</h1>
@@ -124,7 +128,10 @@ export default function V19CartPage() {
       <div className="max-w-2xl mx-auto px-3 pt-3 space-y-3">
         {/* Savings banner (only when there's actual savings) */}
         {totalSavings > 0 && (
-          <div className="rounded-xl px-3.5 py-2.5 flex items-center gap-2" style={{ background: "#E8F5E9", border: "1px solid #C8E6C9" }}>
+          <div
+            className="rounded-xl px-3.5 py-2.5 flex items-center gap-2"
+            style={{ background: PRIMARY_TINT_STRONG, border: `1px solid ${PRIMARY_BORDER}` }}
+          >
             <Tag className="h-4 w-4" style={{ color: GREEN }} strokeWidth={2.5} />
             <span className="text-[12.5px] font-bold" style={{ color: GREEN }}>
               You're saving ₹{totalSavings.toFixed(0)} on this order
@@ -253,7 +260,7 @@ export default function V19CartPage() {
           </div>
           <BillRow label={`Items total (${cartCount})`} value={`₹${itemsTotal.toFixed(0)}`} />
           {productSavings > 0 && (
-            <BillRow label="Product discount" value={`-₹${productSavings.toFixed(0)}`} valueClass="text-green-700" />
+            <BillRow label="Product discount" value={`-₹${productSavings.toFixed(0)}`} valueStyle={{ color: GREEN }} />
           )}
           <BillRow
             label="Delivery charges"
@@ -264,7 +271,7 @@ export default function V19CartPage() {
                 ? "FREE"
                 : `₹${deliveryFee.toFixed(0)}`
             }
-            valueClass={(!shippingActive || qualifiesFree || flatRate === 0) ? "text-green-700" : ""}
+            valueStyle={(!shippingActive || qualifiesFree || flatRate === 0) ? { color: GREEN } : undefined}
             strike={qualifiesFree && flatRate > 0 ? `₹${flatRate.toFixed(0)}` : undefined}
           />
           <div className="border-t border-dashed border-gray-200 my-2.5" />
@@ -273,7 +280,10 @@ export default function V19CartPage() {
             <span className="text-[16px] font-black text-gray-900">₹{grandTotal.toFixed(0)}</span>
           </div>
           {totalSavings > 0 && (
-            <div className="mt-2 rounded-md py-1.5 px-2.5 text-center text-[11.5px] font-extrabold" style={{ background: "#E8F5E9", color: GREEN }}>
+            <div
+              className="mt-2 rounded-md py-1.5 px-2.5 text-center text-[11.5px] font-extrabold"
+              style={{ background: PRIMARY_TINT_STRONG, color: GREEN }}
+            >
               You saved ₹{totalSavings.toFixed(0)} on this order
             </div>
           )}
@@ -316,14 +326,22 @@ export default function V19CartPage() {
 }
 
 function BillRow({
-  label, value, valueClass = "", strike,
-}: { label: string; value: string; valueClass?: string; strike?: string }) {
+  label,
+  value,
+  valueStyle,
+  strike,
+}: {
+  label: string;
+  value: string;
+  valueStyle?: CSSProperties;
+  strike?: string;
+}) {
   return (
     <div className="flex items-center justify-between py-1">
       <span className="text-[12.5px] text-gray-700 font-medium">{label}</span>
       <span className="flex items-center gap-1.5">
         {strike && <span className="text-[11px] text-gray-400 line-through font-semibold">{strike}</span>}
-        <span className={`text-[12.5px] font-extrabold text-gray-900 ${valueClass}`}>{value}</span>
+        <span className="text-[12.5px] font-extrabold text-gray-900" style={valueStyle}>{value}</span>
       </span>
     </div>
   );
