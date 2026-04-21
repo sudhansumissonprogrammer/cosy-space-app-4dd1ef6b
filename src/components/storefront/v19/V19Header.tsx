@@ -174,6 +174,7 @@ export default function V19Header({ store }: { store: any }) {
             to={storefrontPath(slug, "cart")}
             className="relative flex items-center gap-1.5 px-4 h-11 rounded-lg text-white font-bold text-[13px] flex-shrink-0"
             style={{ background: "var(--storefront-primary, #036B52)" }}
+            data-cart-target
           >
             <ShoppingCart className="h-5 w-5" strokeWidth={2.2} />
             <span>My Cart</span>
