@@ -13,7 +13,8 @@ export default function V19DesktopCartFab({ store }: { store: any }) {
   const { cartCount, cartTotal } = useCart();
   const location = useLocation();
   const isCheckout = location.pathname.includes("/checkout") || location.pathname.endsWith("/cart");
-  if (isCheckout || cartCount === 0) return null;
+  const isProductDetail = /\/product\/[^/]+/.test(location.pathname);
+  if (isCheckout || isProductDetail || cartCount === 0) return null;
 
   const slug = store?.slug || "";
 

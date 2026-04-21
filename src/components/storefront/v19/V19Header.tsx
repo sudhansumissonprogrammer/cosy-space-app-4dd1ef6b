@@ -48,17 +48,23 @@ export default function V19Header({ store }: { store: any }) {
       {/* ============ MOBILE HEADER (< md) ============ */}
       <header className="sticky top-0 z-40 shadow-md md:hidden" style={{ background: "#036B52" }}>
         <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
-          <Link to={storefrontPath(slug)} className="flex-1 min-w-0">
-            <div className="text-white text-[20px] font-black leading-tight tracking-tight truncate">
-              {store?.name || "Shop"}
-            </div>
-            <div className="mt-1 inline-flex items-center gap-1 text-white text-[13px] font-bold max-w-full">
+          <div className="flex-1 min-w-0">
+            <Link to={storefrontPath(slug)} className="block">
+              <div className="text-white text-[20px] font-black leading-tight tracking-tight truncate">
+                {store?.name || "Shop"}
+              </div>
+            </Link>
+            <Link
+              to={storefrontPath(slug, "account")}
+              className="mt-1 inline-flex items-center gap-1 text-white text-[13px] font-bold max-w-full"
+              aria-label="Change delivery address"
+            >
               <span className="font-extrabold">HOME</span>
               <span>·</span>
               <span className="truncate">{addressLine}</span>
               <ChevronDown className="h-4 w-4 flex-shrink-0" strokeWidth={2.5} />
-            </div>
-          </Link>
+            </Link>
+          </div>
           <Link
             to={storefrontPath(slug, "account")}
             className="h-9 w-9 rounded-full flex items-center justify-center bg-white/15 flex-shrink-0"
@@ -113,17 +119,17 @@ export default function V19Header({ store }: { store: any }) {
           </Link>
 
           {/* Location pill */}
-          <button
-            type="button"
+          <Link
+            to={storefrontPath(slug, "account")}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-50 border border-gray-200 flex-shrink-0"
-            aria-label="Change location"
+            aria-label="Change delivery location"
           >
             <div className="leading-tight text-left">
               <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Deliver to</div>
               <div className="text-[13px] font-bold text-gray-900 truncate max-w-[160px]">{addressLine}</div>
             </div>
             <ChevronDown className="h-4 w-4 text-gray-700 flex-shrink-0" strokeWidth={2.5} />
-          </button>
+          </Link>
 
           {/* Big search bar */}
           <button
