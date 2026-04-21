@@ -10,6 +10,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import V20ProductCard from "@/components/storefront/v20/V20ProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import MobileHeroCarousel from "@/components/storefront/MobileHeroCarousel";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -276,44 +277,13 @@ export default function StorefrontHomeV20() {
           : [];
         const singleHero = (store as any).mobile_hero_url as string | undefined;
         const heroes = heroList.length > 0 ? heroList : (singleHero ? [singleHero] : []);
-        if (heroes.length === 0) return null;
+        if (heroes.length === 0) return <PromoCarousel slug={slug} />;
         return (
           <MobileHeroCarousel
             images={heroes}
             storeName={store.name}
             linkTo={storefrontPath(slug, "shop")}
           />
-        );
-      })()}
-      {/* legacy fallback removed */}
-      {false && (() => {
-        const heroes: string[] = [];
-
-        if (heroes.length === 0) return <PromoCarousel slug={slug} />;
-
-        return (
-          <div className="md:hidden -mx-1">
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory px-1">
-              {heroes.map((url, i) => (
-                <Link
-                  key={`${url}-${i}`}
-                  to={storefrontPath(slug, "shop")}
-                  className="block flex-shrink-0 w-full snap-center rounded-2xl overflow-hidden shadow-sm"
-                  style={{ scrollSnapAlign: "center" }}
-                >
-                  <div className="w-full" style={{ aspectRatio: "16 / 9" }}>
-                    <img
-                      src={optimizeImageUrl(url, 900, 85)}
-                      alt={`${store.name} hero ${i + 1}`}
-                      className="w-full h-full object-cover block"
-                      loading={i === 0 ? "eager" : "lazy"}
-                      fetchPriority={i === 0 ? "high" : "low"}
-                    />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
         );
       })()}
 

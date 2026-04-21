@@ -12,6 +12,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import V19ProductCard from "@/components/storefront/v19/V19ProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import MobileHeroCarousel from "@/components/storefront/MobileHeroCarousel";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { supabase } from "@/integrations/supabase/client";
 
