@@ -2493,8 +2493,9 @@ export default function StoreThemeSettings() {
               </div>
             </div>
           </div>
+          )}
 
-          <Separator />
+          {currentTheme !== "theme-19" && <Separator />}
 
           {/* Marquee Strip Text */}
           <div>
