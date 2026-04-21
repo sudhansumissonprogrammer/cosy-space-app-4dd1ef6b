@@ -23,7 +23,7 @@ const lazyImports: Record<string, () => Promise<unknown>> = {
 let prefetched = false;
 const interactionLoaded = new Set<string>();
 
-const PREFETCH_START_DELAY_MS = 2000;
+const PREFETCH_START_DELAY_MS = 800;
 
 function shouldPrefetch() {
   const nav = navigator as Navigator & {
