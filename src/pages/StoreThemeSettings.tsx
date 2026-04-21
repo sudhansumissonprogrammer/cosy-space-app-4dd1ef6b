@@ -354,7 +354,7 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_enabled: false, product_card_style: "style-5", category_style: "style-1", header_logo_alignment: "center", mobile_nav_enabled: true, mobile_nav_style: "modern", header_style: "transparent",
   },
   "theme-19": {
-    primary_color: "#036B52", accent_color: "#FFD33D", text_color: "#1a1a1a", background_color: "#f6f7f9",
+    primary_color: "#0F0B0A", accent_color: "#FFD33D", text_color: "#1a1a1a", background_color: "#f6f7f9",
     heading_font: "Poppins", body_font: "Inter", button_style: "pill",
     marquee_gradient: "linear-gradient(90deg, #FFD33D, #FFC107, #FFD33D)",
     marquee_text: "Free delivery on all orders! • Fresh & quick • Pay on delivery",

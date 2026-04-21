@@ -7,7 +7,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 
-const GREEN = "#036B52";
+const GREEN = "#0F0B0A";
 
 export default function V19BottomNav({ store }: { store: any }) {
   const location = useLocation();

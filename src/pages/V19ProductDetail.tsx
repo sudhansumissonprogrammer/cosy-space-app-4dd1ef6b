@@ -213,7 +213,7 @@ export default function V19ProductDetail() {
   if (isLoading) {
     return (
       <div className="bg-white min-h-screen pb-32">
-        <div className="h-12 bg-[#036B52]" />
+        <div className="h-12 bg-[#0F0B0A]" />
         <div className="aspect-square bg-gray-100 animate-pulse" />
         <div className="p-4 space-y-3">
           <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse" />
@@ -233,7 +233,7 @@ export default function V19ProductDetail() {
         <Link
           to={storefrontPath(slug, "shop")}
           className="mt-4 px-5 py-2.5 rounded-lg text-white text-sm font-bold"
-          style={{ background: "#036B52" }}
+          style={{ background: "#0F0B0A" }}
         >
           Browse store
         </Link>
@@ -285,7 +285,7 @@ export default function V19ProductDetail() {
             {totalItems > 0 && (
               <span
                 className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-[3px] rounded-full text-white text-[9px] font-bold flex items-center justify-center"
-                style={{ background: "#036B52" }}
+                style={{ background: "#0F0B0A" }}
               >
                 {totalItems}
               </span>
@@ -328,7 +328,7 @@ export default function V19ProductDetail() {
                 className="h-1.5 rounded-full transition-all"
                 style={{
                   width: i === galleryIdx ? 16 : 6,
-                  background: i === galleryIdx ? "#036B52" : "#d1d5db",
+                  background: i === galleryIdx ? "#0F0B0A" : "#d1d5db",
                 }}
                 aria-label={`Image ${i + 1}`}
               />
@@ -346,7 +346,7 @@ export default function V19ProductDetail() {
                 key={i}
                 onClick={() => scrollToImage(i)}
                 className="flex-shrink-0 h-14 w-14 rounded-lg border-2 overflow-hidden bg-gray-50"
-                style={{ borderColor: i === galleryIdx ? "#036B52" : "#e5e7eb" }}
+                style={{ borderColor: i === galleryIdx ? "#0F0B0A" : "#e5e7eb" }}
               >
                 <img
                   src={optimizeImageUrl(img, 120, 80)}
@@ -364,7 +364,7 @@ export default function V19ProductDetail() {
       <div className="px-4 pt-2 pb-3">
         <h1 className="text-[18px] font-extrabold text-gray-900 leading-snug">{product.name}</h1>
         {reviews.length > 0 && (
-          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md" style={{ background: "#0C831F" }}>
+          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md" style={{ background: "#0F0B0A" }}>
             <span className="text-[12px] font-bold text-white">{avgRating.toFixed(1)}</span>
             <Star className="h-3 w-3 fill-white text-white" />
             <span className="text-[11px] font-bold text-white">({reviews.length})</span>
@@ -373,7 +373,7 @@ export default function V19ProductDetail() {
         <Link
           to={storefrontPath(slug, "shop")}
           className="text-[12px] font-bold mt-1.5 block"
-          style={{ color: "#036B52" }}
+          style={{ color: "#0F0B0A" }}
         >
           View all by {store?.name} →
         </Link>
@@ -396,12 +396,12 @@ export default function V19ProductDetail() {
                     onClick={() => setSelectedVariantId(active ? null : v.id)}
                     className="flex-shrink-0 px-3 py-2 rounded-lg border-2 text-left min-w-[110px] transition-colors"
                     style={{
-                      borderColor: active ? "#036B52" : "#e5e7eb",
+                      borderColor: active ? "#0F0B0A" : "#e5e7eb",
                       background: active ? "#F0FAF7" : "#fff",
                     }}
                   >
                     <div className="text-[12px] font-bold text-gray-900">{v.name}</div>
-                    <div className="text-[11px] mt-0.5 font-semibold" style={{ color: "#036B52" }}>
+                    <div className="text-[11px] mt-0.5 font-semibold" style={{ color: "#0F0B0A" }}>
                       ₹{vPrice.toFixed(0)}
                     </div>
                   </button>
@@ -425,7 +425,7 @@ export default function V19ProductDetail() {
           {discountPct && (
             <span
               className="text-[10px] font-black px-1.5 py-0.5 rounded text-white uppercase tracking-wide"
-              style={{ background: "#0C831F" }}
+              style={{ background: "#0F0B0A" }}
             >
               {discountPct}% OFF
             </span>
@@ -450,7 +450,7 @@ export default function V19ProductDetail() {
           />
           <TrustItem
             iconBg="#E5F4EE"
-            icon={<IndianRupee className="h-5 w-5" style={{ color: "#036B52" }} strokeWidth={2.4} />}
+            icon={<IndianRupee className="h-5 w-5" style={{ color: "#0F0B0A" }} strokeWidth={2.4} />}
             title="Best Prices & Offers"
             desc="Best price destination with offers"
           />
@@ -522,7 +522,7 @@ export default function V19ProductDetail() {
         <div className="border-t border-gray-100 pt-4 pb-4 px-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[16px] font-extrabold text-gray-900">Ratings & Reviews</h3>
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ background: "#0C831F" }}>
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ background: "#0F0B0A" }}>
               <span className="text-[12px] font-bold text-white">{avgRating.toFixed(1)}</span>
               <Star className="h-3 w-3 fill-white text-white" />
             </div>
@@ -531,7 +531,7 @@ export default function V19ProductDetail() {
             {reviews.slice(0, 4).map((r: any) => (
               <div key={r.id} className="border-b border-gray-100 pb-3 last:border-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ background: "#0C831F" }}>
+                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ background: "#0F0B0A" }}>
                     {r.rating} <Star className="h-2.5 w-2.5 fill-white text-white" />
                   </div>
                   <span className="text-[12px] font-bold text-gray-900">{r.customer_name}</span>
@@ -553,7 +553,7 @@ export default function V19ProductDetail() {
             <Link
               to={storefrontPath(slug, "shop")}
               className="text-[12px] font-bold"
-              style={{ color: "#036B52" }}
+              style={{ color: "#0F0B0A" }}
             >
               See all →
             </Link>
@@ -595,7 +595,7 @@ export default function V19ProductDetail() {
           ) : cartQty > 0 ? (
             <div
               className="inline-flex items-center text-white font-extrabold rounded-lg overflow-hidden"
-              style={{ background: "#036B52", height: 44 }}
+              style={{ background: "#0F0B0A", height: 44 }}
             >
               <button
                 onClick={() => updateQuantity(product.id, selectedVariantId || undefined, cartQty - 1)}
@@ -617,7 +617,7 @@ export default function V19ProductDetail() {
             <button
               onClick={handleAdd}
               className="px-7 h-11 rounded-lg text-white text-[14px] font-extrabold uppercase tracking-wide active:scale-[0.98] transition-transform"
-              style={{ background: "#036B52" }}
+              style={{ background: "#0F0B0A" }}
             >
               Add to cart
             </button>

@@ -7,7 +7,7 @@ import { ShoppingCart, ArrowRight } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 
-const GREEN = "#036B52";
+const GREEN = "#0F0B0A";
 
 export default function V19DesktopCartFab({ store }: { store: any }) {
   const { cartCount, cartTotal } = useCart();
