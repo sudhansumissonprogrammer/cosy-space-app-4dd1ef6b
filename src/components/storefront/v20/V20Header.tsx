@@ -58,20 +58,20 @@ export default function V20Header({ store }: { store: any }) {
 
   return (
     <>
-      {/* ============ MOBILE HEADER (< md) ============ */}
-      <header className="sticky top-0 z-40 shadow-md md:hidden" style={{ background: "var(--storefront-primary, #036B52)" }}>
-        <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
+      {/* ============ UNIFIED HEADER (mobile + desktop both) ============ */}
+      <header className="sticky top-0 z-40 shadow-md" style={{ background: "var(--storefront-primary, #036B52)" }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-3 pb-2 flex items-start justify-between gap-3 md:gap-5 md:items-center md:py-3">
+          <div className="flex-1 min-w-0 md:flex-none">
             <Link to={storefrontPath(slug)} className="block">
               {logoSrc ? (
                 <img
-                  src={logoSrc}
+                  src={store?.logo_url ? optimizeImageUrl(store.logo_url, 200, 90) : ""}
                   alt={store?.name || "Logo"}
-                  className="h-9 max-w-[180px] object-contain object-left"
+                  className="h-9 md:h-11 max-w-[180px] md:max-w-[220px] object-contain object-left"
                 />
               ) : (
                 <div
-                  className="text-white text-[24px] leading-tight truncate"
+                  className="text-white text-[24px] md:text-[26px] leading-tight truncate max-w-[180px] md:max-w-[260px]"
                   style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, letterSpacing: "0.04em" }}
                 >
                   {store?.name || "Shop"}
@@ -81,7 +81,7 @@ export default function V20Header({ store }: { store: any }) {
             <button
               type="button"
               onClick={() => setLocationOpen(true)}
-              className="mt-1 inline-flex items-center gap-1 text-white text-[13px] font-bold max-w-full"
+              className="mt-1 inline-flex items-center gap-1 text-white text-[13px] font-bold max-w-full md:hidden"
               aria-label="Set delivery location"
             >
               <MapPin className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={2.5} />
@@ -89,12 +89,62 @@ export default function V20Header({ store }: { store: any }) {
               <ChevronDown className="h-4 w-4 flex-shrink-0" strokeWidth={2.5} />
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setLocationOpen(true)}
+            className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25 flex-shrink-0 transition-colors"
+            aria-label="Change delivery location"
+          >
+            <MapPin className="h-4 w-4 text-white flex-shrink-0" strokeWidth={2.5} />
+            <div className="leading-tight text-left">
+              <div className="text-[10px] font-bold text-white/80 uppercase tracking-wide">Deliver to</div>
+              <div className="text-[13px] font-bold text-white truncate max-w-[160px]">{savedLabel || addressLine}</div>
+            </div>
+            <ChevronDown className="h-4 w-4 text-white flex-shrink-0" strokeWidth={2.5} />
+          </button>
+
+          <div className="hidden md:block flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="w-full flex items-center gap-2 bg-white rounded-xl px-4 h-11 text-left shadow-sm"
+            >
+              <Search className="h-4 w-4 text-gray-500 flex-shrink-0" strokeWidth={2.5} />
+              <span className="text-[14px] text-gray-600 font-semibold truncate">
+                Search {SEARCH_TERMS[termIdx]}
+              </span>
+            </button>
+          </div>
+
+          <Link
+            to={storefrontPath(slug, "account")}
+            className="hidden md:flex items-center gap-1.5 px-3 h-11 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-[13px] flex-shrink-0 transition-colors"
+          >
+            <User className="h-5 w-5" strokeWidth={2.2} />
+            <span className="hidden lg:inline">Account</span>
+          </Link>
+          <Link
+            to={storefrontPath(slug, "cart")}
+            className="hidden md:flex relative items-center gap-1.5 px-4 h-11 rounded-lg bg-yellow-400 text-[13px] font-black flex-shrink-0"
+            style={{ color: "var(--storefront-primary, #036B52)" }}
+            data-cart-target
+          >
+            <ShoppingCart className="h-5 w-5" strokeWidth={2.4} />
+            <span>My Cart</span>
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[10px] font-black flex items-center justify-center" style={{ color: "var(--storefront-primary, #036B52)" }}>
+                {cartCount > 9 ? "9+" : cartCount}
+              </span>
+            )}
+          </Link>
+
           {store?.whatsapp_number ? (
             <a
               href={`https://wa.me/${String(store.whatsapp_number).replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hi ${store?.name || ""}! I have a question.`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-9 w-9 rounded-full flex items-center justify-center bg-[#25D366] flex-shrink-0 shadow-md active:scale-95 transition-transform"
+              className="md:hidden h-9 w-9 rounded-full flex items-center justify-center bg-[#25D366] flex-shrink-0 shadow-md active:scale-95 transition-transform"
               aria-label="Chat on WhatsApp"
             >
               <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -102,7 +152,7 @@ export default function V20Header({ store }: { store: any }) {
           ) : (
             <Link
               to={storefrontPath(slug, "account")}
-              className="h-9 w-9 rounded-full flex items-center justify-center bg-white/15 flex-shrink-0"
+              className="md:hidden h-9 w-9 rounded-full flex items-center justify-center bg-white/15 flex-shrink-0"
               aria-label="Account"
             >
               <User className="h-5 w-5 text-white" strokeWidth={2.2} />
@@ -110,7 +160,7 @@ export default function V20Header({ store }: { store: any }) {
           )}
         </div>
 
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-3 md:hidden">
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
@@ -132,83 +182,9 @@ export default function V20Header({ store }: { store: any }) {
             </div>
           </div>
         )}
-      </header>
-
-      {/* ============ DESKTOP HEADER (md+) ============ */}
-      <header className={`header-shrink ${scrolled ? "is-shrunk" : ""} hidden md:block sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-3 flex items-center gap-5">
-          <Link to={storefrontPath(slug)} className="logo-shrink flex items-center flex-shrink-0">
-            {logoSrc ? (
-              <img
-                src={store?.logo_url ? optimizeImageUrl(store.logo_url, 200, 90) : ""}
-                alt={store?.name}
-                className="h-11 max-w-[220px] object-contain"
-              />
-            ) : (
-              <div
-                className="text-[26px] truncate max-w-[260px]"
-                style={{
-                  fontFamily: "'Alegreya SC', serif",
-                  fontWeight: 700,
-                  letterSpacing: "0.04em",
-                  color: "var(--storefront-primary, #036B52)",
-                }}
-              >
-                {store?.name || "Shop"}
-              </div>
-            )}
-          </Link>
-
-          <Link
-            to={storefrontPath(slug, "account")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-50 border border-gray-200 flex-shrink-0"
-            aria-label="Change delivery location"
-          >
-            <div className="leading-tight text-left">
-              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Deliver to</div>
-              <div className="text-[13px] font-bold text-gray-900 truncate max-w-[160px]">{addressLine}</div>
-            </div>
-            <ChevronDown className="h-4 w-4 text-gray-700 flex-shrink-0" strokeWidth={2.5} />
-          </Link>
-
-          <div className="search-focus-expand flex-1 rounded-xl min-w-0">
-            <button
-              type="button"
-              onClick={() => setSearchOpen(true)}
-              className="w-full flex items-center gap-2 bg-gray-100 hover:bg-gray-50 border border-gray-200 rounded-xl px-4 h-11 text-left transition-colors min-w-0"
-            >
-              <Search className="h-4 w-4 text-gray-500 flex-shrink-0" strokeWidth={2.5} />
-              <span className="text-[14px] text-gray-600 font-semibold truncate">
-                Search {SEARCH_TERMS[termIdx]}
-              </span>
-            </button>
-          </div>
-
-          <Link
-            to={storefrontPath(slug, "account")}
-            className="flex items-center gap-1.5 px-3 h-11 rounded-lg hover:bg-gray-50 text-gray-800 font-bold text-[13px] flex-shrink-0"
-          >
-            <User className="h-5 w-5" strokeWidth={2.2} />
-            <span className="hidden lg:inline">Account</span>
-          </Link>
-          <Link
-            to={storefrontPath(slug, "cart")}
-            className="relative flex items-center gap-1.5 px-4 h-11 rounded-lg text-white font-bold text-[13px] flex-shrink-0"
-            style={{ background: "var(--storefront-primary, #036B52)" }}
-            data-cart-target
-          >
-            <ShoppingCart className="h-5 w-5" strokeWidth={2.2} />
-            <span>My Cart</span>
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-yellow-400 text-[10px] font-black flex items-center justify-center" style={{ color: "var(--storefront-primary, #036B52)" }}>
-                {cartCount > 9 ? "9+" : cartCount}
-              </span>
-            )}
-          </Link>
-        </div>
 
         {topCats.length > 0 && (
-          <div className="border-t border-gray-100 bg-white">
+          <div className="hidden md:block bg-white border-t border-black/5">
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
               <nav className="chip-snap-strip flex items-center gap-1 overflow-x-auto scrollbar-hide py-2">
                 {(() => {

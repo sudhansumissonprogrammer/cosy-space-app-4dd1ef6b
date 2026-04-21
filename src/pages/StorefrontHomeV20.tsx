@@ -264,45 +264,19 @@ export default function StorefrontHomeV20() {
         if (singleHero && singleHero.trim()) merged.push(singleHero);
         for (const u of heroList) if (!merged.includes(u)) merged.push(u);
         const heroes = merged;
-        const desktopBanner = (store as any).banner_url as string | undefined;
-        const desktopSrc = desktopBanner && desktopBanner.trim() ? desktopBanner : heroes[0];
 
-        return (
-          <>
-            {desktopSrc && (
-              <Link to={storefrontPath(slug, "shop")} className="hidden md:block rounded-2xl overflow-hidden shadow-sm">
-                <div className="w-full" style={{ aspectRatio: "16 / 6" }}>
-                  <img
-                    src={optimizeImageUrl(desktopSrc, 1400, 85)}
-                    alt={store.name}
-                    className="w-full h-full object-cover block"
-                    loading="eager"
-                    fetchPriority="high"
-                    width={1400}
-                    height={525}
-                  />
-                </div>
-              </Link>
-            )}
-
-            <div className="md:hidden">
-              {heroes.length === 0 ? (
-                <PromoCarousel slug={slug} />
-              ) : (
-                <MobileHeroCarousel
-                  images={heroes}
-                  storeName={store.name}
-                  linkTo={storefrontPath(slug, "shop")}
-                />
-              )}
-            </div>
-          </>
-        );
+        // Use the SAME mobile hero carousel on both mobile + desktop (stretched full width)
+        if (heroes.length > 0) {
+          return (
+            <MobileHeroCarousel
+              images={heroes}
+              storeName={store.name}
+              linkTo={storefrontPath(slug, "shop")}
+            />
+          );
+        }
+        return <PromoCarousel slug={slug} />;
       })()}
-
-      <div className="hidden md:block">
-        <PromoCarousel slug={slug} />
-      </div>
 
       {homeEligibleCategories.length > 0 && (
         <section>
