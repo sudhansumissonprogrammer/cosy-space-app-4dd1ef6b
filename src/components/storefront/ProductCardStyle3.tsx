@@ -80,7 +80,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
               {formatPrice(effectivePrice, store.currency)}
             </span>
             {discount && (
-              <span className="text-[11px] line-through opacity-40" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+              <span className="price-strike-draw text-[11px] opacity-40" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                 {formatPrice(product.price, store.currency)}
               </span>
             )}

@@ -136,7 +136,7 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
               {currency}{price.toLocaleString()}
             </span>
             {hasDiscount && (
-              <span className="text-xs line-through opacity-40" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+              <span className="price-strike-draw text-xs opacity-40" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                 {currency}{originalPrice.toLocaleString()}
               </span>
             )}
