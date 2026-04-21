@@ -232,6 +232,15 @@ export default function V20Header({ store }: { store: any }) {
           />
         </Suspense>
       )}
+
+      {store?.id && (
+        <DeliveryLocationDialog
+          open={locationOpen}
+          onClose={() => setLocationOpen(false)}
+          storeId={store.id}
+          onSaved={(label) => setSavedLabel(label)}
+        />
+      )}
     </>
   );
 }
