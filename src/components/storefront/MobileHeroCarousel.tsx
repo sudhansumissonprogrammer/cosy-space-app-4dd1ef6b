@@ -86,7 +86,7 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
             key={`${url}-${i}`}
             to={linkTo}
             draggable={false}
-            className="block flex-shrink-0 snap-center select-none w-full md:w-[62%] lg:w-[55%] xl:w-[50%]"
+            className="block flex-shrink-0 snap-center select-none w-full md:w-[48%] lg:w-[40%] xl:w-[36%]"
           >
             <div className="w-full rounded-2xl overflow-hidden shadow-sm bg-muted" style={{ aspectRatio: "16 / 9" }}>
               <img
