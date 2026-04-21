@@ -129,7 +129,34 @@ export default function StorefrontHomeV19() {
   const slug = params.slug || (store as any)?.slug || "";
   const queryClient = useQueryClient();
   const normalizeCategory = (value?: string | null) =>
-    (value || "").trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+    (value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const getEditDistance = (a: string, b: string) => {
+    const rows = a.length + 1;
+    const cols = b.length + 1;
+    const dp = Array.from({ length: rows }, () => Array<number>(cols).fill(0));
+
+    for (let i = 0; i < rows; i++) dp[i][0] = i;
+    for (let j = 0; j < cols; j++) dp[0][j] = j;
+
+    for (let i = 1; i < rows; i++) {
+      for (let j = 1; j < cols; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost,
+        );
+      }
+    }
+
+    return dp[a.length][b.length];
+  };
 
   const { data: allCategories = [] } = useQuery({
     queryKey: ["storefront-categories-all", store?.id],
@@ -180,11 +207,26 @@ export default function StorefrontHomeV19() {
   }, [allProducts, products]);
 
   const getCategoryItems = (category: Category) => {
-    const byName = productsByCategory.get(normalizeCategory(category.name));
+    const normalizedName = normalizeCategory(category.name);
+    const normalizedSlug = normalizeCategory(category.slug);
+
+    const byName = productsByCategory.get(normalizedName);
     if (byName?.length) return byName;
 
-    const bySlug = productsByCategory.get(normalizeCategory(category.slug));
-    return bySlug || [];
+    const bySlug = productsByCategory.get(normalizedSlug);
+    if (bySlug?.length) return bySlug;
+
+    const fallbackEntry = Array.from(productsByCategory.entries()).find(([key]) => {
+      if (!key) return false;
+      if (normalizedName && (key.includes(normalizedName) || normalizedName.includes(key))) return true;
+      if (normalizedSlug && (key.includes(normalizedSlug) || normalizedSlug.includes(key))) return true;
+
+      const nameDistance = normalizedName ? getEditDistance(key, normalizedName) : Infinity;
+      const slugDistance = normalizedSlug ? getEditDistance(key, normalizedSlug) : Infinity;
+      return Math.min(nameDistance, slugDistance) <= 2;
+    });
+
+    return fallbackEntry?.[1] || [];
   };
 
   if (!store) return null;
