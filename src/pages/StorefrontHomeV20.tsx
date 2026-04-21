@@ -276,6 +276,18 @@ export default function StorefrontHomeV20() {
           : [];
         const singleHero = (store as any).mobile_hero_url as string | undefined;
         const heroes = heroList.length > 0 ? heroList : (singleHero ? [singleHero] : []);
+        if (heroes.length === 0) return null;
+        return (
+          <MobileHeroCarousel
+            images={heroes}
+            storeName={store.name}
+            linkTo={storefrontPath(slug, "shop")}
+          />
+        );
+      })()}
+      {/* legacy fallback removed */}
+      {false && (() => {
+        const heroes: string[] = [];
 
         if (heroes.length === 0) return <PromoCarousel slug={slug} />;
 
