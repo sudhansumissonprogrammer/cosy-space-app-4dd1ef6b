@@ -274,7 +274,46 @@ export default function StorefrontHomeV19() {
         </Link>
       )}
 
-      <PromoCarousel slug={slug} />
+      {(() => {
+        const heroImagesRaw = (store as any).mobile_hero_images;
+        const heroList: string[] = Array.isArray(heroImagesRaw)
+          ? heroImagesRaw.filter((u: any) => typeof u === "string" && u.trim().length > 0)
+          : [];
+        const singleHero = (store as any).mobile_hero_url as string | undefined;
+        const heroes = heroList.length > 0 ? heroList : (singleHero ? [singleHero] : []);
+
+        if (heroes.length === 0) return <PromoCarousel slug={slug} />;
+
+        return (
+          <div className="md:hidden -mx-1">
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory px-1">
+              {heroes.map((url, i) => (
+                <Link
+                  key={`${url}-${i}`}
+                  to={storefrontPath(slug, "shop")}
+                  className="block flex-shrink-0 w-full snap-center rounded-2xl overflow-hidden shadow-sm"
+                  style={{ scrollSnapAlign: "center" }}
+                >
+                  <div className="w-full" style={{ aspectRatio: "16 / 9" }}>
+                    <img
+                      src={optimizeImageUrl(url, 900, 85)}
+                      alt={`${store.name} hero ${i + 1}`}
+                      className="w-full h-full object-cover block"
+                      loading={i === 0 ? "eager" : "lazy"}
+                      fetchPriority={i === 0 ? "high" : "low"}
+                    />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Desktop still gets the promo carousel; mobile shows hero images instead when uploaded */}
+      <div className="hidden md:block">
+        <PromoCarousel slug={slug} />
+      </div>
 
       {homeEligibleCategories.length > 0 && (
         <section>
