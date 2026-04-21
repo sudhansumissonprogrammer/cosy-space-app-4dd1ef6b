@@ -9,7 +9,7 @@ import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft, Search, ShoppingCart, Clock, ChevronDown, ChevronUp,
-  Zap, IndianRupee, Package, Plus, Minus, Share2,
+  Zap, IndianRupee, Package, Plus, Minus, Share2, Star,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
@@ -111,6 +111,25 @@ export default function V19ProductDetail() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch product reviews
+  const { data: reviews = [] } = useQuery({
+    queryKey: ["v19-reviews", product?.id],
+    enabled: !!product?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("product_reviews")
+        .select("id, customer_name, rating, review_text, created_at")
+        .eq("product_id", product!.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const avgRating = reviews.length
+    ? reviews.reduce((s, r: any) => s + (r.rating || 0), 0) / reviews.length
+    : 0;
   useMetaTags({
     title: product ? `${product.name} — ${store?.name}` : undefined,
     description: product?.description || undefined,
