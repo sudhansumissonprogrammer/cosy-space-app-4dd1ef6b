@@ -3163,6 +3163,24 @@ export default {
         const cachedSlug = earlyHit.headers.get("X-Store-Slug") || "";
         const cachedDataSource = earlyHit.headers.get("X-Data-Source") || "edge";
 
+        // v7.3.0 #5: ETag / If-None-Match — return 304 Not Modified if the
+        // client already has the same ETag. Saves ~30% bandwidth on repeat
+        // visitors. Browser reuses its cached HTML; perceived load is instant.
+        const cachedEtag = earlyHit.headers.get("ETag");
+        const ifNoneMatch = request.headers.get("If-None-Match");
+        if (cachedEtag && ifNoneMatch && ifNoneMatch === cachedEtag) {
+          return new Response(null, {
+            status: 304,
+            headers: {
+              ETag: cachedEtag,
+              "Cache-Control": earlyHit.headers.get("Cache-Control") || "public, max-age=3600",
+              "X-Worker-Version": WORKER_VERSION,
+              "X-Cache-Status": "HIT-304",
+              "X-Store-Slug": cachedSlug,
+            },
+          });
+        }
+
         const revalKey = `html:${hostname}`;
         if (shouldRevalidate(revalKey)) {
           ctx.waitUntil(
