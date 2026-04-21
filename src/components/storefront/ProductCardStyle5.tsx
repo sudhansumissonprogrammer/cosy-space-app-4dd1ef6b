@@ -79,7 +79,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
           </span>
           {hasSale && (
             <span
-              className="text-sm line-through"
+              className="price-strike-draw text-sm"
               style={{
                 color: "color-mix(in srgb, var(--storefront-text, #ffffff) 40%, transparent)",
                 fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif",
