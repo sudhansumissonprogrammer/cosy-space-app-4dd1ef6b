@@ -59,7 +59,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
     >
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
         <div
-          className="card-img-zoom relative isolate w-full overflow-hidden rounded-[16px]"
+          className="card-img-zoom relative isolate w-full overflow-hidden rounded-[8px]"
           style={{
             aspectRatio: "3 / 4",
             backgroundColor: imageStageBackground,
