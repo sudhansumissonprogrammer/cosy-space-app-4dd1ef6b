@@ -2496,7 +2496,7 @@ export default function StoreThemeSettings() {
           <Separator />
 
           {/* Header Logo Alignment — hidden for theme-19 (fixed Blinkit-style header) */}
-          {currentTheme !== "theme-19" && (
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Header Layout</h4>
             <div className="space-y-1.5">
@@ -2560,7 +2560,7 @@ export default function StoreThemeSettings() {
           </div>
           )}
 
-          {currentTheme !== "theme-19" && <Separator />}
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && <Separator />}
 
           {/* Marquee Strip Text */}
           <div>
@@ -2725,10 +2725,10 @@ export default function StoreThemeSettings() {
             </>
           )}
 
-          {currentTheme !== "theme-19" && <Separator />}
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && <Separator />}
 
           {/* Product Card Style — hidden for theme-19 (uses dedicated V19ProductCard) */}
-          {currentTheme !== "theme-19" && (
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
             <div className="space-y-1.5">
@@ -2766,10 +2766,10 @@ export default function StoreThemeSettings() {
           </div>
           )}
 
-          {currentTheme !== "theme-19" && <Separator />}
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && <Separator />}
 
           {/* Category Style — hidden for theme-19 (uses dedicated horizontal pills) */}
-          {currentTheme !== "theme-19" && (
+          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Category Section Design</h4>
             <div className="space-y-1.5">
@@ -2809,7 +2809,7 @@ export default function StoreThemeSettings() {
           </div>
           )}
 
-          {currentTheme === "theme-19" && (
+          {(currentTheme === "theme-19" || currentTheme === "theme-20") && (
             <>
               <Separator />
 
