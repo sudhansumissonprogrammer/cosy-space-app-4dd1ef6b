@@ -85,15 +85,12 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // ── 1. Our pipeline images: ALREADY pre-resized at upload ──
-  // Files like "library-400w.jpeg" / "library-800w.jpeg" exist in Supabase Storage.
-  // Pick the closest stored variant and serve it DIRECTLY (no /cf-img, no Worker hit).
+  // ── 1. Our pipeline images: ALREADY pre-resized at upload (800w stored) ──
+  // Serve the stored variant DIRECTLY — no /cf-img, no Worker hit.
   // Cloudflare's free CDN still caches these at edge automatically.
+  // 800px is plenty for product cards (~400px display × 2 DPR mobile).
   if (isOptimizedUrl(url)) {
-    // Pick smallest variant >= requested width (fallback to 800w)
-    const targetVariant: VariantWidth = width <= 400 ? 400 : 800;
-    const baseUrl = resolveVariantUrl(url, targetVariant);
-    return baseUrl; // ✅ Direct Supabase URL — zero Worker requests
+    return resolveVariantUrl(url, 800); // ✅ Direct Supabase URL — zero Worker requests
   }
 
   // ── 2. Shopify CDN (incl. custom Shopify domains using /cdn/shop/): native resize ──
