@@ -343,13 +343,21 @@ export default function StorefrontHomeV20() {
       )}
 
       {visibleCategories.map((cat) => {
-        const items = getCategoryItems(cat).slice(0, 12);
+        const items = getCategoryItems(cat).slice(0, 8);
+        if (items.length === 0) return null;
+        const catHref = storefrontPath(slug, `category/${cat.slug}`);
         return (
           <section key={cat.id}>
-            <div className="v20-section-title">
-              <h3>{cat.name}</h3>
-              <Link to={storefrontPath(slug, `category/${cat.slug}`)}>see all <ChevronRight className="h-3 w-3" /></Link>
-            </div>
+            <Link
+              to={catHref}
+              className="v20-cat-strip"
+              aria-label={`View all ${cat.name}`}
+            >
+              <span className="v20-cat-strip-title">{cat.name}</span>
+              <span className="v20-cat-strip-cta">
+                View all <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </span>
+            </Link>
             <HorizontalScroller ariaLabel={cat.name}>
               {items.map((p, i) => (
                 <div
@@ -359,6 +367,19 @@ export default function StorefrontHomeV20() {
                   <V20ProductCard product={p} slug={slug} store={store} priority={i < 2} />
                 </div>
               ))}
+              <Link
+                to={catHref}
+                className="v20-view-all-card flex-shrink-0 snap-start w-[44%] sm:w-[30%] md:w-[24%] lg:w-[19%] xl:w-[16%]"
+                aria-label={`View all ${cat.name}`}
+              >
+                <div className="v20-view-all-inner">
+                  <div className="v20-view-all-arrow">
+                    <ChevronRight className="h-7 w-7" strokeWidth={2.5} />
+                  </div>
+                  <div className="v20-view-all-text">View all</div>
+                  <div className="v20-view-all-sub">{cat.name}</div>
+                </div>
+              </Link>
             </HorizontalScroller>
           </section>
         );
