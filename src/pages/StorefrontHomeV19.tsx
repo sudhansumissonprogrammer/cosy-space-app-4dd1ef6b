@@ -128,7 +128,21 @@ export default function StorefrontHomeV19() {
   const store = useOutletContext<StoreData>();
   const slug = params.slug || (store as any)?.slug || "";
   const queryClient = useQueryClient();
-  const categories = (queryClient.getQueryData<Category[]>(["storefront-categories", store?.id]) || []) as Category[];
+  // Fetch ALL categories directly (cached seed may be filtered) so the grid always shows everything
+  const { data: allCategories = [] } = useQuery({
+    queryKey: ["storefront-categories-all", store?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("categories")
+        .select("id, name, slug, image_url, show_on_home")
+        .eq("store_id", store!.id)
+        .order("display_order", { ascending: true });
+      return (data || []) as Category[];
+    },
+    enabled: !!store?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+  const categories = allCategories;
   const { products } = useStorefrontProducts(store?.id);
   const { items: recent } = useRecentlyViewed(store?.id);
 
