@@ -3191,8 +3191,9 @@ export default {
                     );
                     const fullHeaders = new Headers();
                     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
-                    // FIX #10
-                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
+                    // v7.3.0 #1+#2: matched bumped TTL/SWR
+                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+                    fullHeaders.set("ETag", `W/"${revalSlug}-${Date.now().toString(36)}"`);
                     fullHeaders.set("X-Store-Slug", revalSlug);
                     fullHeaders.set("X-Data-Source", prefetchResult.source);
                     fullHeaders.set("X-Shell-Source", shellResult.source);
