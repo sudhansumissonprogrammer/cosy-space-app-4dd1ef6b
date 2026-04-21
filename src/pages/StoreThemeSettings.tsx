@@ -1295,7 +1295,7 @@ function LuxuryPreview({ config, storeName, products: propProducts, categories: 
           {products.slice(0, isDesktop ? 4 : 2).map((p) => (
             <div key={p.id} className="border overflow-hidden" style={{ borderColor: config.text_color + "12" }}>
               <div className="flex items-center justify-center overflow-hidden" style={{ aspectRatio: "3/4", backgroundColor: config.primary_color + "08" }}>
-                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : <Package className="h-6 w-6" style={{ color: config.text_color + "15" }} />}
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : <Package className="h-6 w-6" style={{ color: config.text_color + "15" }} />}
               </div>
               <div className="p-2">
                 <p className="text-[5px] tracking-[0.2em] uppercase mb-0.5" style={{ color: config.primary_color }}>Collection</p>
@@ -1316,7 +1316,7 @@ function LuxuryPreview({ config, storeName, products: propProducts, categories: 
           {products.map((p) => (
             <div key={p.id} className="border" style={{ borderColor: config.text_color + "12" }}>
               <div className="flex items-center justify-center overflow-hidden" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
-                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : <Package className="h-5 w-5" style={{ color: config.text_color + "12" }} />}
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : <Package className="h-5 w-5" style={{ color: config.text_color + "12" }} />}
               </div>
               <div className="p-1.5 space-y-0.5">
                 <p className="text-[5px] tracking-[0.2em] uppercase" style={{ color: config.text_color + "50" }}>{p.rating} ★</p>
@@ -1398,7 +1398,7 @@ function ProCleanPreview({ config, storeName, products: propProducts, categories
             </div>
           </div>
           <div className="rounded-xl overflow-hidden" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "08" }}>
-            {products[0]?.image_url ? <img src={products[0].image_url} alt="" className="h-full w-full object-cover" /> : (
+            {products[0]?.image_url ? <img src={products[0].image_url} alt="" className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : (
               <div className="flex h-full w-full items-center justify-center"><Package className="h-8 w-8" style={{ color: config.text_color + "15" }} /></div>
             )}
           </div>
@@ -1430,7 +1430,7 @@ function ProCleanPreview({ config, storeName, products: propProducts, categories
           {products.map((product) => (
             <div key={product.id} className="rounded-xl border overflow-hidden" style={{ borderColor: config.text_color + "08" }}>
               <div className="relative overflow-hidden" style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
-                {product.image_url ? <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" /> : (
+                {product.image_url ? <img src={product.image_url} alt={product.name} className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : (
                   <div className="flex h-full w-full items-center justify-center"><Package className="h-5 w-5" style={{ color: config.text_color + "15" }} /></div>
                 )}
               </div>
@@ -1498,7 +1498,7 @@ function MagazinePreview({ config, storeName, products: propProducts, categories
       <div className={`grid ${isDesktop ? "grid-cols-2" : "grid-cols-1"}`}>
         <div style={{ aspectRatio: isDesktop ? "1/1" : "4/3", backgroundColor: config.primary_color + "08" }}>
           {products[0]?.image_url ? (
-            <img src={products[0].image_url} alt="" className="h-full w-full object-cover" />
+            <img src={products[0].image_url} alt="" className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <span className="text-3xl font-bold opacity-[0.04]" style={{ fontFamily: config.heading_font }}>{storeName.charAt(0)}</span>
@@ -1523,7 +1523,7 @@ function MagazinePreview({ config, storeName, products: propProducts, categories
           {products.map((p) => (
             <div key={p.id} className="flex-shrink-0" style={{ width: isDesktop ? "120px" : "100px" }}>
               <div style={{ aspectRatio: "3/4", backgroundColor: config.primary_color + "06" }} className="overflow-hidden">
-                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : (
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : (
                   <div className="flex h-full w-full items-center justify-center"><span className="text-lg font-bold opacity-[0.04]">{p.name.charAt(0)}</span></div>
                 )}
               </div>
@@ -1543,7 +1543,7 @@ function MagazinePreview({ config, storeName, products: propProducts, categories
           <span className="text-[7px] font-semibold mt-2 uppercase tracking-wider" style={{ color: config.primary_color }}>Learn More →</span>
         </div>
         <div style={{ aspectRatio: isDesktop ? "auto" : "16/9", minHeight: "100px", backgroundColor: config.primary_color + "06" }}>
-          {products[1]?.image_url ? <img src={products[1].image_url} alt="" className="h-full w-full object-cover" /> : null}
+          {products[1]?.image_url ? <img src={products[1].image_url} alt="" className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : null}
         </div>
       </div>
 
@@ -1624,7 +1624,7 @@ function MobileAppPreview({ config, storeName, products: propProducts, categorie
       <div className="px-3 pt-2 pb-1">
         <div className="relative overflow-hidden rounded-2xl" style={{ aspectRatio: "16/8" }}>
           {products[0]?.image_url ? (
-            <img src={products[0].image_url} alt="" className="h-full w-full object-cover" />
+            <img src={products[0].image_url} alt="" className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} />
           ) : (
             <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` }} />
           )}
@@ -1677,7 +1677,7 @@ function MobileAppPreview({ config, storeName, products: propProducts, categorie
           {products.filter(p => p.discount).slice(0, 3).map((p) => (
             <div key={p.id} className="flex-shrink-0 w-20 overflow-hidden rounded-xl" style={{ border: "1px solid " + config.text_color + "08" }}>
               <div className="relative" style={{ aspectRatio: "1/1", backgroundColor: config.primary_color + "06" }}>
-                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : null}
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : null}
                 <span className="absolute top-0.5 left-0.5 rounded-full px-1 py-0.5 text-[4px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>{p.discount}</span>
               </div>
               <div className="p-1">
@@ -1696,7 +1696,7 @@ function MobileAppPreview({ config, storeName, products: propProducts, categorie
           {products.map((p) => (
             <div key={p.id} className="overflow-hidden rounded-xl shadow-sm" style={{ backgroundColor: config.background_color, border: "1px solid " + config.text_color + "06" }}>
               <div style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
-                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : (
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : (
                   <div className="flex h-full w-full items-center justify-center"><Tag className="h-4 w-4" style={{ color: config.text_color + "15" }} /></div>
                 )}
               </div>
@@ -1792,7 +1792,7 @@ function FashionRunwayPreview({ config, storeName, products: propProducts, categ
           {products.slice(0, 3).map((p) => (
             <div key={p.id} className="flex-shrink-0 w-16 overflow-hidden" style={{ borderRadius: "8px", border: `1px solid ${config.text_color}06` }}>
               <div style={{ aspectRatio: "4/5", backgroundColor: config.primary_color + "06" }}>
-                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : null}
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : null}
               </div>
               <div className="p-1">
                 <p className="text-[3px] font-bold uppercase opacity-40">Brand</p>
@@ -1819,7 +1819,7 @@ function FashionRunwayPreview({ config, storeName, products: propProducts, categ
           {products.slice(0, 4).map((p) => (
             <div key={p.id} className="overflow-hidden" style={{ borderRadius: "10px", border: `1px solid ${config.text_color}06` }}>
               <div style={{ aspectRatio: "3/4", backgroundColor: config.primary_color + "06" }}>
-                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : null}
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-contain" style={{ backgroundColor: config.primary_color + "08" }} /> : null}
                 {p.discount && (
                   <div className="absolute top-1 left-1 rounded-full px-1 py-0.5 text-[3px] font-bold" style={{ backgroundColor: config.primary_color, color: btnText }}>{p.discount}</div>
                 )}
