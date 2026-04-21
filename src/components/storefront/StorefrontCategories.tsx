@@ -33,7 +33,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
     <div className="backdrop-blur-md" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", minHeight: 140, contain: "layout style" }}>
         <div className="mx-auto max-w-7xl px-4 py-5">
           <SectionHeading title="Shop by Category" />
-        <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+        <div className="chip-snap-strip flex gap-4 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
           {isLoading ? (
             Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)
           ) : (
@@ -41,7 +41,7 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
               <Link
                 key={cat.id}
                 to={storefrontPath(storeSlug, `category/${cat.slug}`)}
-                className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
+                className="chip-magnetic flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
               >
                 <div className="h-20 w-20 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border" style={{ "--tw-border-opacity": 1 } as any} onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
                   {cat.image_url ? (
