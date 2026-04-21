@@ -50,6 +50,7 @@ export default function V19ProductDetail() {
   const [highlightsOpen, setHighlightsOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [termIdx, setTermIdx] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   // Rotating search placeholder (matches V19Header)
