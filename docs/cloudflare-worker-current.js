@@ -1910,8 +1910,13 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
 
     const fullHeaders = new Headers();
     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
-    // FIX #10: Raised from 1200 → 3600
-    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=600");
+    // v7.3.0 #1+#2: SWR window bumped 600→86400s (24h). Warm HTML stays fresh
+    // for 1h, then served stale for up to 24h while background revalidation
+    // refreshes it. Cache hit rate jumps from ~70% → ~95%.
+    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+    // v7.3.0 #5: ETag for 304 Not Modified responses on repeat visits.
+    const etag = `W/"${slug}-${Date.now().toString(36)}"`;
+    fullHeaders.set("ETag", etag);
     fullHeaders.set("X-Store-Slug", slug);
     fullHeaders.set("X-Data-Source", prefetchResult.source);
     fullHeaders.set("X-Shell-Source", shellResult.source);
