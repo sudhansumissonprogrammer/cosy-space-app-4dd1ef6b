@@ -4,7 +4,7 @@
  * title/price/MRP/%off, variant chips, "Why shop from us" trust strip,
  * Highlights accordion, similar products carousel, sticky bottom ADD bar.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -20,6 +20,12 @@ import { getDiscountPercent } from "@/lib/productUtils";
 import V19ProductCard from "@/components/storefront/v19/V19ProductCard";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { ZoomHint } from "@/components/storefront/ZoomableGallery";
+import {
+  DeliveryEtaPill, CouponTeaser, TopReviewsStrip, BundleCard, StockUrgencyStrip, StickyAddInfo,
+} from "@/components/storefront/PdpEnhancements";
+
+const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
 const SEARCH_TERMS = ['"milk"', '"bread"', '"eggs"', '"atta"', '"chips"', '"chocolate"'];
 
