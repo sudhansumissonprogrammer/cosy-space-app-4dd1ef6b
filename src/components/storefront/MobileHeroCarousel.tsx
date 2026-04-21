@@ -1,5 +1,7 @@
 /**
- * MobileHeroCarousel — auto-rotating mobile hero with dot indicators.
+ * MobileHeroCarousel — auto-rotating hero with dot indicators.
+ * - Mobile: 1 slide per view (full width).
+ * - Desktop: shows ~1.5 slides with side peeks of adjacent banners (Blinkit/Zepto style).
  * Used by Theme 19 & 20 home pages.
  */
 import { useEffect, useState, useRef } from "react";
@@ -36,15 +38,15 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
     const slide = el.children[index] as HTMLElement | undefined;
     if (!slide) return;
     programmaticScrollRef.current = true;
-    el.scrollTo({ left: slide.offsetLeft, behavior: "smooth" });
+    // Center the active slide on desktop (because slides are < 100% width).
+    const target = slide.offsetLeft - (el.clientWidth - slide.clientWidth) / 2;
+    el.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
     const t = window.setTimeout(() => {
       programmaticScrollRef.current = false;
     }, 700);
     return () => window.clearTimeout(t);
   }, [index]);
 
-  // Mark interaction only on real touch/pointer input — prevents vertical page
-  // scroll from being interpreted as carousel interaction (which caused jank).
   const markInteracting = () => {
     userInteractingRef.current = true;
     window.clearTimeout((markInteracting as any)._t);
@@ -58,22 +60,25 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
     const el = trackRef.current;
     if (!el) return;
     if (programmaticScrollRef.current) return;
-    const w = el.clientWidth;
-    if (w === 0) return;
-    const i = Math.round(el.scrollLeft / w);
-    if (i !== index && i >= 0 && i < images.length) setIndex(i);
+    const slide = el.children[0] as HTMLElement | undefined;
+    if (!slide) return;
+    const slideW = slide.clientWidth + 12; // approx gap
+    if (slideW === 0) return;
+    const center = el.scrollLeft + el.clientWidth / 2;
+    const i = Math.max(0, Math.min(images.length - 1, Math.round((center - slide.clientWidth / 2) / slideW)));
+    if (i !== index) setIndex(i);
   };
 
   if (images.length === 0) return null;
 
   return (
-    <div className="md:hidden -mx-1">
+    <div className="-mx-1">
       <div
         ref={trackRef}
         onScroll={onScroll}
         onTouchStart={markInteracting}
         onPointerDown={markInteracting}
-        className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory px-1"
+        className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory px-1 gap-2 md:gap-3"
         style={{ touchAction: "pan-x pan-y", overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch" }}
       >
         {images.map((url, i) => (
@@ -81,11 +86,11 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
             key={`${url}-${i}`}
             to={linkTo}
             draggable={false}
-            className="block flex-shrink-0 w-full snap-center select-none"
+            className="block flex-shrink-0 snap-center select-none w-full md:w-[62%] lg:w-[55%] xl:w-[50%]"
           >
             <div className="w-full rounded-2xl overflow-hidden shadow-sm bg-muted" style={{ aspectRatio: "16 / 9" }}>
               <img
-                src={optimizeImageUrl(url, 900, 85)}
+                src={optimizeImageUrl(url, 1400, 85)}
                 alt={`${storeName} hero ${i + 1}`}
                 className="w-full h-full object-cover block pointer-events-none"
                 loading={i === 0 ? "eager" : "lazy"}
