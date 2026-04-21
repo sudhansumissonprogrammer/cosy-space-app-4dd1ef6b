@@ -2885,10 +2885,22 @@ export default {
     // FIX #5: Record request start time immediately
     const requestStart = Date.now();
 
-    // v6.9.2: Block aggressive SEO/AI crawlers at the edge with 403.
-    // These bots have no business value but inflate Worker request counts heavily.
-    // Returning early uses ~0ms CPU and prevents subrequests/DB load.
+    // v6.9.3: Block aggressive SEO/AI crawlers + favicon polling at the edge.
+    // These have zero business value but inflate Worker request counts heavily.
     const earlyUA = request.headers.get("user-agent") || "";
+
+    // Block favicon.ico polling early (browsers poll this aggressively)
+    const earlyPath = new URL(request.url).pathname;
+    if (earlyPath === "/favicon.ico" || earlyPath === "/apple-touch-icon.png" || earlyPath === "/apple-touch-icon-precomposed.png") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "cache-control": "public, max-age=604800, immutable",
+          "x-served-by": "edge-204",
+        },
+      });
+    }
+
     if (BLOCKED_BOT_REGEX.test(earlyUA)) {
       return new Response("Forbidden", {
         status: 403,
