@@ -2339,8 +2339,7 @@ export default function StoreThemeSettings() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Color Combinations — hidden for theme-19 (fixed Blinkit-style palette) */}
-          {currentTheme !== "theme-19" && (
+          {/* Color Combinations */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Color Combination</h4>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
