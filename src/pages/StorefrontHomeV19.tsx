@@ -281,7 +281,11 @@ export default function StorefrontHomeV19() {
           ? heroImagesRaw.filter((u: any) => typeof u === "string" && u.trim().length > 0)
           : [];
         const singleHero = (store as any).mobile_hero_url as string | undefined;
-        const heroes = heroList.length > 0 ? heroList : (singleHero ? [singleHero] : []);
+        // Merge legacy single + array, dedup, preserve order
+        const merged: string[] = [];
+        if (singleHero && singleHero.trim()) merged.push(singleHero);
+        for (const u of heroList) if (!merged.includes(u)) merged.push(u);
+        const heroes = merged;
 
         if (heroes.length === 0) return <PromoCarousel slug={slug} />;
 
