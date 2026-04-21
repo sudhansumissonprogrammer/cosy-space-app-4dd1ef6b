@@ -1924,8 +1924,8 @@ export default function StoreThemeSettings() {
     ? mapDbProductsToPreview(storeProducts)
     : DEFAULT_PRODUCTS;
 
-  const previewCategories = allCategories && allCategories.length > 0
-    ? mapDbCategoriesToPreview(allCategories.filter((category) => category.show_on_home !== false))
+  const previewCategories = storeCategories && storeCategories.length > 0
+    ? mapDbCategoriesToPreview(storeCategories)
     : DEFAULT_CATEGORIES;
 
   // Local override ensures instant UI tick update when Apply is clicked,
@@ -2249,6 +2249,15 @@ export default function StoreThemeSettings() {
           purgeStoreCache(store.slug, (store as any).custom_domain)
         );
       }
+
+      setTimeout(() => {
+        try {
+          iframeRef.current?.contentWindow?.location.reload();
+          iframeDesktopRef.current?.contentWindow?.location.reload();
+        } catch {
+          setIframeKey((k) => k + 1);
+        }
+      }, 150);
     },
   });
   const homeShownCount = allCategories.filter((c) => c.show_on_home !== false).length;
