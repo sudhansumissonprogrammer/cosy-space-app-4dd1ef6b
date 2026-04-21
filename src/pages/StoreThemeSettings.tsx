@@ -2321,7 +2321,8 @@ export default function StoreThemeSettings() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Color Combinations */}
+          {/* Color Combinations — hidden for theme-19 (fixed Blinkit-style palette) */}
+          {currentTheme !== "theme-19" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Color Combination</h4>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -2376,8 +2377,9 @@ export default function StoreThemeSettings() {
               })}
             </div>
           </div>
+          )}
 
-          <Separator />
+          {currentTheme !== "theme-19" && <Separator />}
 
           {/* Fonts */}
           <div>
@@ -2428,7 +2430,8 @@ export default function StoreThemeSettings() {
 
           <Separator />
 
-          {/* Header Logo Alignment */}
+          {/* Header Logo Alignment — hidden for theme-19 (fixed Blinkit-style header) */}
+          {currentTheme !== "theme-19" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Header Layout</h4>
             <div className="space-y-1.5">
@@ -2490,8 +2493,9 @@ export default function StoreThemeSettings() {
               </div>
             </div>
           </div>
+          )}
 
-          <Separator />
+          {currentTheme !== "theme-19" && <Separator />}
 
           {/* Marquee Strip Text */}
           <div>
@@ -2656,9 +2660,10 @@ export default function StoreThemeSettings() {
             </>
           )}
 
-          <Separator />
+          {currentTheme !== "theme-19" && <Separator />}
 
-          {/* Product Card Style */}
+          {/* Product Card Style — hidden for theme-19 (uses dedicated V19ProductCard) */}
+          {currentTheme !== "theme-19" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
             <div className="space-y-1.5">
@@ -2694,10 +2699,12 @@ export default function StoreThemeSettings() {
               </div>
             </div>
           </div>
+          )}
 
-          <Separator />
+          {currentTheme !== "theme-19" && <Separator />}
 
-          {/* Category Style */}
+          {/* Category Style — hidden for theme-19 (uses dedicated horizontal pills) */}
+          {currentTheme !== "theme-19" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Category Section Design</h4>
             <div className="space-y-1.5">
@@ -2735,6 +2742,7 @@ export default function StoreThemeSettings() {
               </div>
             </div>
           </div>
+          )}
 
           <Separator />
 
