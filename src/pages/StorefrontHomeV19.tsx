@@ -173,16 +173,20 @@ export default function StorefrontHomeV19() {
       {/* Promo carousel */}
       <PromoCarousel slug={slug} />
 
-      {/* Categories — circular pastel, fully responsive */}
+      {/* Categories — horizontal scrolling carousel of pastel circles */}
       {homeEligible.length > 0 && (
         <section>
           <div className="v19-section-title">
             <h3>Shop by category</h3>
             <Link to={storefrontPath(slug, "categories")}>see all <ChevronRight className="h-3 w-3" /></Link>
           </div>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 lg:gap-4">
+          <HorizontalScroller ariaLabel="Shop by category">
             {homeEligible.map((cat, i) => (
-              <Link key={cat.id} to={storefrontPath(slug, `category/${cat.slug}`)} className="v19-cat-circle">
+              <Link
+                key={cat.id}
+                to={storefrontPath(slug, `category/${cat.slug}`)}
+                className="v19-cat-circle flex-shrink-0 snap-start w-[22%] sm:w-[16%] md:w-[12%] lg:w-[10%]"
+              >
                 <div className="circle" style={{ background: PASTELS[i % PASTELS.length] }}>
                   {cat.image_url ? (
                     <img
@@ -200,7 +204,7 @@ export default function StorefrontHomeV19() {
                 <span className="label line-clamp-2">{cat.name}</span>
               </Link>
             ))}
-          </div>
+          </HorizontalScroller>
         </section>
       )}
 
