@@ -83,12 +83,12 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             const hasSecond = images.length > 1;
             return (
               <>
-                <div className="absolute inset-0 flex items-center justify-center p-2.5 sm:p-3">
-                  <img src={optimizeImageUrl(images[0], 400, 80)} srcSet={getImageSrcSet(images[0], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className={`max-h-full max-w-full h-auto w-auto object-contain object-center transition-all duration-500 ease-out ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "auto"} />
+                <div className="absolute inset-0 flex items-center justify-center p-1 sm:p-1.5">
+                  <img src={optimizeImageUrl(images[0], 400, 80)} srcSet={getImageSrcSet(images[0], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={400} data-no-crop="true" className={`max-h-full max-w-full h-auto w-auto object-contain object-center transition-all duration-500 ease-out ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "auto"} />
                 </div>
                 {hasSecond && (
-                  <div className="absolute inset-0 flex items-center justify-center p-2.5 opacity-0 transition-all duration-500 ease-out group-hover:opacity-100 sm:p-3">
-                    <img src={optimizeImageUrl(images[1], 400, 80)} srcSet={getImageSrcSet(images[1], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className="max-h-full max-w-full h-auto w-auto object-contain object-center" loading="lazy" decoding="async" />
+                  <div className="absolute inset-0 flex items-center justify-center p-1 opacity-0 transition-all duration-500 ease-out group-hover:opacity-100 sm:p-1.5">
+                    <img src={optimizeImageUrl(images[1], 400, 80)} srcSet={getImageSrcSet(images[1], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={400} data-no-crop="true" className="max-h-full max-w-full h-auto w-auto object-contain object-center" loading="lazy" decoding="async" />
                   </div>
                 )}
               </>
