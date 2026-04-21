@@ -2194,6 +2194,8 @@ export default function StoreThemeSettings() {
     onSuccess: () => {
       // Invalidate storefront caches so home page reflects change
       queryClient.invalidateQueries({ queryKey: ["storefront-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-categories-all"] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-products-all-v19"] });
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
       if (store?.slug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
