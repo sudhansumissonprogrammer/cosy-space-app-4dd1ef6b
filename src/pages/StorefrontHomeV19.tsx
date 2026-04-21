@@ -128,7 +128,9 @@ export default function StorefrontHomeV19() {
   const store = useOutletContext<StoreData>();
   const slug = params.slug || (store as any)?.slug || "";
   const queryClient = useQueryClient();
-  // Fetch ALL categories directly (cached seed may be filtered) so the grid always shows everything
+  const normalizeCategory = (value?: string | null) =>
+    (value || "").trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+
   const { data: allCategories = [] } = useQuery({
     queryKey: ["storefront-categories-all", store?.id],
     queryFn: async () => {
@@ -142,11 +144,11 @@ export default function StorefrontHomeV19() {
     enabled: !!store?.id,
     staleTime: 5 * 60 * 1000,
   });
+
   const categories = allCategories;
   const { products } = useStorefrontProducts(store?.id);
   const { items: recent } = useRecentlyViewed(store?.id);
 
-  // Fetch ALL products (not just first page) so per-category carousels are complete
   const { data: allProducts = [] } = useQuery({
     queryKey: ["storefront-products-all-v19", store?.id],
     queryFn: async () => {
@@ -164,29 +166,37 @@ export default function StorefrontHomeV19() {
   });
 
   const productsByCategory = useMemo(() => {
-    const m = new Map<string, any[]>();
+    const map = new Map<string, any[]>();
     const source = allProducts.length > 0 ? allProducts : products;
-    for (const p of source) {
-      const cat = (p as any).category || "Other";
-      if (!m.has(cat)) m.set(cat, []);
-      m.get(cat)!.push(p);
+
+    for (const product of source) {
+      const key = normalizeCategory((product as any).category);
+      if (!key) continue;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(product);
     }
-    return m;
+
+    return map;
   }, [allProducts, products]);
+
+  const getCategoryItems = (category: Category) => {
+    const byName = productsByCategory.get(normalizeCategory(category.name));
+    if (byName?.length) return byName;
+
+    const bySlug = productsByCategory.get(normalizeCategory(category.slug));
+    return bySlug || [];
+  };
 
   if (!store) return null;
 
-  // Only categories the merchant chose to show on home (default true) AND have products
-  const homeEligible = categories.filter((c) => c.show_on_home !== false);
-  const visibleCategories = homeEligible.filter((c) => productsByCategory.has(c.name));
+  const homeEligible = categories.filter((category) => category.show_on_home !== false);
+  const visibleCategories = homeEligible.filter((category) => getCategoryItems(category).length > 0);
 
-  // Recent items that still exist in current product list
   const productIds = new Set(products.map((p) => p.id));
   const recentVisible = recent.filter((r) => productIds.has(r.id));
 
   return (
     <div className="space-y-5 md:space-y-7 pb-4">
-      {/* Hero banner with aspect-ratio reservation to prevent CLS */}
       {(store as any).banner_url && (
         <Link to={storefrontPath(slug, "shop")} className="block rounded-2xl overflow-hidden shadow-sm">
           <div className="w-full" style={{ aspectRatio: "16 / 6" }}>
@@ -203,17 +213,15 @@ export default function StorefrontHomeV19() {
         </Link>
       )}
 
-      {/* Promo carousel */}
       <PromoCarousel slug={slug} />
 
-      {/* Categories — single large tile grid showing ALL categories */}
       {categories.length > 0 && (
         <section>
           <div className="v19-section-title">
             <h3>Categories</h3>
           </div>
           <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 lg:gap-3">
-            {categories.map((cat, i) => (
+            {categories.map((cat) => (
               <Link
                 key={cat.id}
                 to={storefrontPath(slug, `category/${cat.slug}`)}
@@ -245,9 +253,8 @@ export default function StorefrontHomeV19() {
         </section>
       )}
 
-      {/* Per-category product carousels — only for toggled-on categories that have products */}
       {visibleCategories.map((cat) => {
-        const items = (productsByCategory.get(cat.name) || []).slice(0, 12);
+        const items = getCategoryItems(cat).slice(0, 12);
         return (
           <section key={cat.id}>
             <div className="v19-section-title">
