@@ -92,15 +92,15 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
           })()}
         </div>
       </Link>
-      <div className="px-3 pt-2 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
-        <div className="flex items-center justify-end border-b pb-1.5" style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 10%, transparent)" }}>
-          <div className="flex items-center gap-0.5">
-            <Star className="h-3 w-3 fill-warning text-warning" />
-            <span className="text-[10px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{getProductRating(product.id)}</span>
+      <div className="px-3 pt-2 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1">
+        <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block">
+          <div className="flex items-start justify-between gap-2 border-b pb-1.5" style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 10%, transparent)" }}>
+            <h3 className="flex-1 text-[13px] font-semibold leading-tight line-clamp-1 transition-colors duration-200" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{product.name}</h3>
+            <div className="flex shrink-0 items-center gap-0.5 pt-0.5">
+              <Star className="h-3 w-3 fill-warning text-warning" />
+              <span className="text-[10px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{getProductRating(product.id)}</span>
+            </div>
           </div>
-        </div>
-        <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)}>
-          <h3 className="text-[13px] font-semibold leading-tight line-clamp-2 transition-colors duration-200" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{product.name}</h3>
         </Link>
         <div className="flex items-center gap-1 min-w-0">
           {product.sale_price ? (
