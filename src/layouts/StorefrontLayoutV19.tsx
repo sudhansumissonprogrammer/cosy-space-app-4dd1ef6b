@@ -129,7 +129,7 @@ export default function StorefrontLayoutV19({ slugOverride }: { slugOverride?: s
     <StorefrontShell
       slugOverride={slugOverride}
       showWhatsApp={false}
-      defaultPrimary="var(--storefront-primary, #036B52)"
+      defaultPrimary="#036B52"
       defaultButtonRadius="999px"
       wrapperClassName="storefront-font min-h-screen font-sans overflow-x-hidden"
       wrapperStyle={{
@@ -137,7 +137,7 @@ export default function StorefrontLayoutV19({ slugOverride }: { slugOverride?: s
         color: "#1a1a1a",
         "--storefront-text": "#1a1a1a",
         "--storefront-bg": "#ffffff",
-        "--storefront-primary": "var(--storefront-primary, #036B52)",
+        "--storefront-primary": "#036B52",
         "--storefront-btn-text": "#ffffff",
         "--background": "0 0% 96%",
         "--foreground": "0 0% 10%",
