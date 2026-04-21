@@ -364,7 +364,7 @@ export default function V19ProductDetail() {
       <div className="px-4 pt-2 pb-3">
         <h1 className="text-[18px] font-extrabold text-gray-900 leading-snug">{product.name}</h1>
         {reviews.length > 0 && (
-          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md" style={{ background: "#0C831F" }}>
+          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md" style={{ background: "#0F0B0A" }}>
             <span className="text-[12px] font-bold text-white">{avgRating.toFixed(1)}</span>
             <Star className="h-3 w-3 fill-white text-white" />
             <span className="text-[11px] font-bold text-white">({reviews.length})</span>
@@ -425,7 +425,7 @@ export default function V19ProductDetail() {
           {discountPct && (
             <span
               className="text-[10px] font-black px-1.5 py-0.5 rounded text-white uppercase tracking-wide"
-              style={{ background: "#0C831F" }}
+              style={{ background: "#0F0B0A" }}
             >
               {discountPct}% OFF
             </span>
@@ -522,7 +522,7 @@ export default function V19ProductDetail() {
         <div className="border-t border-gray-100 pt-4 pb-4 px-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[16px] font-extrabold text-gray-900">Ratings & Reviews</h3>
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ background: "#0C831F" }}>
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ background: "#0F0B0A" }}>
               <span className="text-[12px] font-bold text-white">{avgRating.toFixed(1)}</span>
               <Star className="h-3 w-3 fill-white text-white" />
             </div>
@@ -531,7 +531,7 @@ export default function V19ProductDetail() {
             {reviews.slice(0, 4).map((r: any) => (
               <div key={r.id} className="border-b border-gray-100 pb-3 last:border-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ background: "#0C831F" }}>
+                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ background: "#0F0B0A" }}>
                     {r.rating} <Star className="h-2.5 w-2.5 fill-white text-white" />
                   </div>
                   <span className="text-[12px] font-bold text-gray-900">{r.customer_name}</span>

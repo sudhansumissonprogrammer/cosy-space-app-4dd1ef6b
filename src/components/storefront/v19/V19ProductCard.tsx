@@ -54,7 +54,7 @@ export default function V19ProductCard({ product, slug, store, priority = false 
       <Link to={productPath} className="block">
         <div className="relative w-full overflow-hidden rounded-lg bg-gray-50 aspect-square">
           {discountPercent && !outOfStock && (
-            <div className="absolute left-1.5 top-1.5 z-10 text-white text-[9px] font-black px-1.5 py-0.5 rounded-sm" style={{ background: "#0C831F" }}>
+            <div className="absolute left-1.5 top-1.5 z-10 text-white text-[9px] font-black px-1.5 py-0.5 rounded-sm" style={{ background: "#0F0B0A" }}>
               {discountPercent}% OFF
             </div>
           )}
