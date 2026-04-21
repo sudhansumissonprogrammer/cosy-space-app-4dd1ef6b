@@ -17,6 +17,7 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
   const [index, setIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const userInteractingRef = useRef(false);
+  const programmaticScrollRef = useRef(false);
 
   // Auto-advance
   useEffect(() => {
@@ -28,26 +29,39 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
     return () => clearInterval(id);
   }, [images.length, intervalMs]);
 
-  // Scroll to current index
+  // Scroll to current index (programmatic — don't treat as user interaction)
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
     const slide = el.children[index] as HTMLElement | undefined;
-    if (slide) el.scrollTo({ left: slide.offsetLeft, behavior: "smooth" });
+    if (!slide) return;
+    programmaticScrollRef.current = true;
+    el.scrollTo({ left: slide.offsetLeft, behavior: "smooth" });
+    const t = window.setTimeout(() => {
+      programmaticScrollRef.current = false;
+    }, 700);
+    return () => window.clearTimeout(t);
   }, [index]);
 
-  // Sync index when user manually scrolls
+  // Mark interaction only on real touch/pointer input — prevents vertical page
+  // scroll from being interpreted as carousel interaction (which caused jank).
+  const markInteracting = () => {
+    userInteractingRef.current = true;
+    window.clearTimeout((markInteracting as any)._t);
+    (markInteracting as any)._t = window.setTimeout(() => {
+      userInteractingRef.current = false;
+    }, 2000);
+  };
+
+  // Sync index when user manually scrolls horizontally
   const onScroll = () => {
     const el = trackRef.current;
     if (!el) return;
-    userInteractingRef.current = true;
+    if (programmaticScrollRef.current) return;
     const w = el.clientWidth;
+    if (w === 0) return;
     const i = Math.round(el.scrollLeft / w);
-    if (i !== index) setIndex(i);
-    window.clearTimeout((onScroll as any)._t);
-    (onScroll as any)._t = window.setTimeout(() => {
-      userInteractingRef.current = false;
-    }, 1500);
+    if (i !== index && i >= 0 && i < images.length) setIndex(i);
   };
 
   if (images.length === 0) return null;
@@ -57,21 +71,26 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
       <div
         ref={trackRef}
         onScroll={onScroll}
+        onTouchStart={markInteracting}
+        onPointerDown={markInteracting}
         className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory px-1"
+        style={{ touchAction: "pan-x", overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch" }}
       >
         {images.map((url, i) => (
           <Link
             key={`${url}-${i}`}
             to={linkTo}
-            className="block flex-shrink-0 w-full snap-center"
+            draggable={false}
+            className="block flex-shrink-0 w-full snap-center select-none"
           >
-            <div className="w-full rounded-2xl overflow-hidden shadow-sm" style={{ aspectRatio: "16 / 9" }}>
+            <div className="w-full rounded-2xl overflow-hidden shadow-sm bg-muted" style={{ aspectRatio: "16 / 9" }}>
               <img
                 src={optimizeImageUrl(url, 900, 85)}
                 alt={`${storeName} hero ${i + 1}`}
-                className="w-full h-full object-cover block"
+                className="w-full h-full object-cover block pointer-events-none"
                 loading={i === 0 ? "eager" : "lazy"}
                 fetchPriority={i === 0 ? "high" : "low"}
+                draggable={false}
               />
             </div>
           </Link>
