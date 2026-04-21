@@ -12,7 +12,6 @@ const LazyV19BottomNav = lazy(() => import("@/components/storefront/v19/V19Botto
 const LazyV19DesktopCartFab = lazy(() => import("@/components/storefront/v19/V19DesktopCartFab"));
 
 const V19_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap');
   .storefront-font, .storefront-font * {
     font-family: 'Okra', 'Mulish', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
     font-weight: 600;
@@ -73,6 +72,16 @@ if (typeof document !== "undefined" && !document.getElementById("v19-theme-style
   styleEl.id = "v19-theme-styles";
   styleEl.textContent = V19_STYLES;
   document.head.appendChild(styleEl);
+  // Non-blocking font load (preconnect already handled by shell loadGoogleFonts in most cases)
+  if (!document.getElementById("v19-mulish-font")) {
+    const link = document.createElement("link");
+    link.id = "v19-mulish-font";
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap";
+    link.media = "print";
+    link.onload = () => { link.media = "all"; };
+    document.head.appendChild(link);
+  }
 }
 
 /** Empty fallback — Shell already renders a skeleton, this prevents double-flash. */
