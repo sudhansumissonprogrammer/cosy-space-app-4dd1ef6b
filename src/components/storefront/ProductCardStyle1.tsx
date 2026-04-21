@@ -31,6 +31,8 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
   const bilingualCta = (store as any).theme === "theme-16" && !!themeConfig?.bilingual_cta;
 
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
+  const imageStageBackground = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 3%, var(--storefront-bg, hsl(var(--background))))";
+  const iconChrome = "color-mix(in srgb, var(--storefront-bg, hsl(var(--background))) 92%, transparent)";
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -49,49 +51,53 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
 
   return (
     <div
-      className="card-tilt group rounded-xl overflow-hidden transition-all duration-300 ease-out cursor-pointer relative"
-      style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}
+      className="card-tilt group relative overflow-hidden rounded-2xl transition-all duration-300 ease-out cursor-pointer"
+      style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 10%, transparent)" }}
       onMouseEnter={(e) => { prefetchProductDetail(); e.currentTarget.style.boxShadow = cardHoverShadow; }}
       onTouchStart={prefetchProductDetail}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; }}
     >
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1.5 pb-0">
         <div
-          className="card-img-zoom relative isolate w-full overflow-hidden rounded-lg"
+          className="card-img-zoom relative isolate w-full overflow-hidden rounded-[18px]"
           style={{
-            aspectRatio: "4/5",
-            backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 4%, var(--storefront-bg, hsl(var(--background))))",
+            aspectRatio: "1 / 1.04",
+            backgroundColor: imageStageBackground,
           }}
         >
           {discountPercent && (
             <div className="absolute left-2 top-2 z-10">
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground">
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[8px] font-bold text-destructive-foreground shadow-sm">
                 -{discountPercent}%
               </span>
             </div>
           )}
-          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-2.5 top-2.5 z-10 p-1.5 lg:p-2 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden`} style={{ color: "#ef4444" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
-            <Heart className={`h-4 w-4 lg:h-5 lg:w-5 drop-shadow-md transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"}`} aria-hidden="true" />
+          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-2 top-2 z-10 rounded-full p-1.5 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden`} style={{ color: "hsl(var(--destructive))", backgroundColor: iconChrome, boxShadow: "0 1px 4px color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+            <Heart className={`h-4 w-4 drop-shadow-sm transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-card-foreground stroke-[2.25]"}`} aria-hidden="true" />
           </button>
           {(() => {
             const images = resolveProductImages(product);
             if (images.length === 0) {
-              return <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 5%, var(--storefront-bg, hsl(var(--background))))" }}><Package className="h-10 w-10" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 20%, transparent)" }} /></div>;
+              return <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: imageStageBackground }}><Package className="h-10 w-10" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 20%, transparent)" }} /></div>;
             }
             const hasSecond = images.length > 1;
             return (
               <>
-                <img src={optimizeImageUrl(images[0], 400, 80)} srcSet={getImageSrcSet(images[0], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className={`absolute inset-0 h-full w-full object-contain object-center p-2 transition-all duration-500 ease-out sm:p-2.5 ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "auto"} />
+                <div className="absolute inset-0 flex items-center justify-center p-2.5 sm:p-3">
+                  <img src={optimizeImageUrl(images[0], 400, 80)} srcSet={getImageSrcSet(images[0], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className={`max-h-full max-w-full h-auto w-auto object-contain object-center transition-all duration-500 ease-out ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "auto"} />
+                </div>
                 {hasSecond && (
-                  <img src={optimizeImageUrl(images[1], 400, 80)} srcSet={getImageSrcSet(images[1], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className="absolute inset-0 h-full w-full object-contain object-center p-2 opacity-0 transition-all duration-500 ease-out group-hover:opacity-100 sm:p-2.5" loading="lazy" decoding="async" />
+                  <div className="absolute inset-0 flex items-center justify-center p-2.5 opacity-0 transition-all duration-500 ease-out group-hover:opacity-100 sm:p-3">
+                    <img src={optimizeImageUrl(images[1], 400, 80)} srcSet={getImageSrcSet(images[1], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={500} data-no-crop="true" className="max-h-full max-w-full h-auto w-auto object-contain object-center" loading="lazy" decoding="async" />
+                  </div>
                 )}
               </>
             );
           })()}
         </div>
       </Link>
-      <div className="px-3 pt-2.5 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
-        <div className="flex items-center justify-end">
+      <div className="px-3 pt-2 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1.5">
+        <div className="flex items-center justify-end border-b pb-1.5" style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 10%, transparent)" }}>
           <div className="flex items-center gap-0.5">
             <Star className="h-3 w-3 fill-warning text-warning" />
             <span className="text-[10px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{getProductRating(product.id)}</span>
