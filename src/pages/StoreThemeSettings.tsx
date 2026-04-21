@@ -258,11 +258,18 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
 
 /* ── Get sorted color combinations for a given theme ── */
 function getSortedCombinations(themeId: string) {
-  const recommended = new Set(THEME_RECOMMENDATIONS[themeId] || []);
+  const recommended = THEME_RECOMMENDATIONS[themeId] || [];
+  // Theme-19 uses a strictly curated palette — only show recommended combos
+  if (themeId === "theme-19") {
+    return COLOR_COMBINATIONS
+      .filter((c) => recommended.includes(c.id))
+      .map((c) => ({ ...c, isRecommended: true, score: 0, textBgContrast: 0, primaryBgContrast: 0 }));
+  }
+  const recommendedSet = new Set(recommended);
   const scored = COLOR_COMBINATIONS.map((combo) => {
     const textBgContrast = contrastRatio(combo.text, combo.background);
     const primaryBgContrast = contrastRatio(combo.primary, combo.background);
-    const isRecommended = recommended.has(combo.id);
+    const isRecommended = recommendedSet.has(combo.id);
     // Score: recommended gets huge boost, then contrast quality
     const score = (isRecommended ? 1000 : 0) + textBgContrast * 10 + primaryBgContrast * 5;
     return { ...combo, isRecommended, score, textBgContrast, primaryBgContrast };
