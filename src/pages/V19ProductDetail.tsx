@@ -447,6 +447,11 @@ export default function V19ProductDetail() {
         </div>
       </div>
 
+      {/* PDP enhancements: urgency + delivery + coupon */}
+      <StockUrgencyStrip stock={product.stock_quantity} />
+      <DeliveryEtaPill />
+      <CouponTeaser storeId={store?.id || ""} orderTotal={effectivePrice} />
+
       {/* Why shop from us trust strip */}
       <div className="px-4 py-4 border-t border-gray-100">
         <h3 className="text-[14px] font-extrabold text-gray-900 mb-3">
