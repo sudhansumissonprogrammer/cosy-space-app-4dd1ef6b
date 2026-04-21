@@ -24,12 +24,12 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
   const rating = getProductRating(product.id);
 
   return (
-    <div className="group relative overflow-hidden transition-all active:scale-[0.98]" style={{ borderRadius: "12px", border: "1px solid hsl(var(--border, 0 0% 90%))" }}>
+    <div className="card-tilt group relative overflow-hidden transition-all active:scale-[0.98]" style={{ borderRadius: "12px", border: "1px solid hsl(var(--border, 0 0% 90%))" }}>
       <Link
         to={storefrontPath(slug, `product/${product.slug || product.id}`)}
         className="block"
       >
-        <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
+        <div className="card-img-zoom relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
           {(() => {
             const images = resolveProductImages(product);
             if (images.length === 0) {
