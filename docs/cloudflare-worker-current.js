@@ -1856,8 +1856,9 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
-  // Streaming responses: moderate TTL (data injected inline)
-  newHeaders.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+  // v7.3.0 #1: Streaming HTML TTL bumped 600→1800s (30 min). Storefront data
+  // is injected inline; merchants see edits within 30 min or via purge button.
+  newHeaders.set("Cache-Control", "public, max-age=1800, stale-while-revalidate=86400");
   newHeaders.set("X-Store-Slug", slug);
   newHeaders.set("X-Shell-Source", shellResult.source);
   newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
