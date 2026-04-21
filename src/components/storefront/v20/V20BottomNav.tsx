@@ -76,7 +76,7 @@ export default function V20BottomNav({ store }: { store: any }) {
                 className="flex-1 flex flex-col items-center justify-center gap-0.5 relative"
                 style={{ color: active ? PRIMARY : "#6b7280" }}
               >
-                <div className="relative">
+                <div className="relative" {...(item.key === "cart" ? { "data-cart-target": "" } : {})}>
                   <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.4 : 1.8} />
                   {item.badge && item.badge > 0 ? (
                     <span
