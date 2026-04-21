@@ -365,7 +365,7 @@ export default function StorefrontHomeV19() {
               {items.map((p, i) => (
                 <div
                   key={p.id}
-                  className="flex-shrink-0 snap-start w-[44%] sm:w-[30%] md:w-[24%] lg:w-[19%] xl:w-[16%]"
+                  className="flex-shrink-0 snap-start w-[31%] sm:w-[21%] md:w-[17%] lg:w-[13%] xl:w-[11%]"
                 >
                   <V19ProductCard product={p} slug={slug} store={store} priority={i < 2} />
                 </div>
