@@ -517,6 +517,34 @@ export default function V19ProductDetail() {
         )}
       </div>
 
+      {/* Reviews section */}
+      {reviews.length > 0 && (
+        <div className="border-t border-gray-100 pt-4 pb-4 px-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[16px] font-extrabold text-gray-900">Ratings & Reviews</h3>
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ background: "#0C831F" }}>
+              <span className="text-[12px] font-bold text-white">{avgRating.toFixed(1)}</span>
+              <Star className="h-3 w-3 fill-white text-white" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            {reviews.slice(0, 4).map((r: any) => (
+              <div key={r.id} className="border-b border-gray-100 pb-3 last:border-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ background: "#0C831F" }}>
+                    {r.rating} <Star className="h-2.5 w-2.5 fill-white text-white" />
+                  </div>
+                  <span className="text-[12px] font-bold text-gray-900">{r.customer_name}</span>
+                </div>
+                {r.review_text && (
+                  <p className="text-[12.5px] text-gray-700 leading-relaxed">{r.review_text}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Similar products carousel */}
       {similarProducts.length > 0 && (
         <div className="border-t border-gray-100 pt-4 pb-4">
