@@ -429,7 +429,7 @@ function buildThemeCssFromConfig(tc) {
     `@media(min-width:1280px){.sf-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}` +
     `.sf-card{position:relative;border-radius:12px;overflow:hidden;background:${bgColor};border:1px solid #ececec;display:flex;flex-direction:column;min-height:280px;contain:layout style}` +
     `.sf-card-img{position:relative;width:100%;aspect-ratio:4/5;background:#f5f5f5;overflow:hidden}` +
-    `.sf-card-img img{width:100%;height:100%;object-fit:cover;display:block}` +
+    `.sf-card-img img{width:100%;height:100%;object-fit:contain;display:block}` +
     `.sf-card-body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;flex:1}` +
     `.sf-card-title{font-size:13px;line-height:1.3;color:${textColor};margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}` +
     `.sf-card-price{font-size:14px;font-weight:600;color:${textColor};margin:2px 0 0}` +
@@ -441,7 +441,7 @@ function buildThemeCssFromConfig(tc) {
     /* Header reservation */
     `.sf-header-stub{height:56px;background:${bgColor};border-bottom:1px solid #ececec;contain:layout}` +
     /* Universal anti-CLS for storefront images */
-    `[data-sf-img]{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;background:#f5f5f5}` +
+    `[data-sf-img]{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:contain;background:#f5f5f5}` +
     `</style>\n`;
 
   const fonts = [...new Set([headingFont, bodyFont].filter(Boolean))];

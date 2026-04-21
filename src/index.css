@@ -529,8 +529,8 @@
   will-change: transform;
 }
 @media (hover: hover) {
-  .card-tilt:hover .card-img-zoom img,
-  .card-img-zoom:hover img { transform: scale(1.08); }
+  .card-tilt:hover .card-img-zoom img:not([data-no-crop="true"]),
+  .card-img-zoom:hover img:not([data-no-crop="true"]) { transform: scale(1.08); }
 }
 
 /* #4 Sticky CTA shimmer sweep (every ~7s) */
