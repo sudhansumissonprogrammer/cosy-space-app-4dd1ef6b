@@ -2430,7 +2430,8 @@ export default function StoreThemeSettings() {
 
           <Separator />
 
-          {/* Header Logo Alignment */}
+          {/* Header Logo Alignment — hidden for theme-19 (fixed Blinkit-style header) */}
+          {currentTheme !== "theme-19" && (
           <div>
             <h4 className="mb-3 text-sm font-semibold">Header Layout</h4>
             <div className="space-y-1.5">
