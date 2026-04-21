@@ -21,7 +21,7 @@ const V19_STYLES = `
   .v19-section-title { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; margin-bottom: 10px; }
   .v19-section-title h3 { font-size: 18px; font-weight: 900; color: #0a0a0a; letter-spacing: -0.01em; }
   @media (min-width: 1024px) { .v19-section-title h3 { font-size: 22px; } }
-  .v19-section-title a { font-size: 13px; font-weight: 800; color: #036B52; display: inline-flex; align-items: center; gap: 2px; }
+  .v19-section-title a { font-size: 13px; font-weight: 800; color: var(--storefront-primary, #036B52); display: inline-flex; align-items: center; gap: 2px; }
   .v19-cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
   .v19-cat-circle .circle { width: 100%; padding-top: 100%; border-radius: 14px; position: relative; overflow: hidden; transition: transform 0.18s ease, box-shadow 0.18s ease; }
   @media (hover: hover) { .v19-cat-circle:hover .circle { transform: translateY(-2px); box-shadow: 0 6px 16px -6px rgba(0,0,0,0.18); } }
@@ -29,20 +29,20 @@ const V19_STYLES = `
   .v19-promo-card { flex-shrink: 0; border-radius: 16px; overflow: hidden; padding: 18px; color: #0a0a0a; min-height: 130px; display: flex; flex-direction: column; justify-content: space-between; scroll-snap-align: start; }
   .v19-promo-card h2 { font-size: 22px; font-weight: 900; line-height: 1.05; color: #0a0a0a; }
   .v19-promo-card p { font-size: 13px; font-weight: 600; opacity: 0.85; margin-top: 4px; color: #0a0a0a; }
-  .v19-promo-card .cta { background: #036B52; color: #fff; font-weight: 800; font-size: 13px; padding: 6px 14px; border-radius: 999px; display: inline-block; align-self: flex-start; margin-top: 10px; }
+  .v19-promo-card .cta { background: var(--storefront-primary, #036B52); color: #fff; font-weight: 800; font-size: 13px; padding: 6px 14px; border-radius: 999px; display: inline-block; align-self: flex-start; margin-top: 10px; }
   .v19-card { background: #fff; border-radius: 12px; padding: 8px; border: 1px solid #f0f0f0; transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
   @media (hover: hover) and (min-width: 768px) {
     .v19-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px -10px rgba(0,0,0,0.18); border-color: #e2e2e2; }
   }
-  .v19-add-btn-outline { background: #fff; color: #036B52; font-weight: 900; font-size: 13px; letter-spacing: 0.3px; padding: 6px 18px; border-radius: 8px; text-transform: uppercase; border: 1.5px solid #036B52; }
+  .v19-add-btn-outline { background: #fff; color: var(--storefront-primary, #036B52); font-weight: 900; font-size: 13px; letter-spacing: 0.3px; padding: 6px 18px; border-radius: 8px; text-transform: uppercase; border: 1.5px solid var(--storefront-primary, #036B52); }
   .v19-add-btn-outline:disabled { background: #f3f4f6; color: #9ca3af; border-color: #e5e7eb; cursor: not-allowed; }
-  .v19-stepper { background: #036B52; color: #fff; border-radius: 8px; display: inline-flex; align-items: center; font-weight: 800; font-size: 14px; overflow: hidden; }
+  .v19-stepper { background: var(--storefront-primary, #036B52); color: #fff; border-radius: 8px; display: inline-flex; align-items: center; font-weight: 800; font-size: 14px; overflow: hidden; }
   .v19-stepper button { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
-  .v19-delivery-badge { position: absolute; left: 6px; top: 6px; z-index: 10; background: #fff; color: #036B52; font-size: 10px; font-weight: 900; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); letter-spacing: 0.3px; }
+  .v19-delivery-badge { position: absolute; left: 6px; top: 6px; z-index: 10; background: #fff; color: var(--storefront-primary, #036B52); font-size: 10px; font-weight: 900; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); letter-spacing: 0.3px; }
   .v19-stock-badge { position: absolute; right: 6px; top: 6px; z-index: 10; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.3px; }
   .v19-stock-low { background: #FEF2E2; color: #B25C00; }
   .v19-stock-out { background: #FEE2E2; color: #B91C1C; }
-  .v19-marquee-yellow { background: #FFD33D; color: #036B52; font-weight: 900; font-size: 12px; padding: 7px 0; overflow: hidden; white-space: nowrap; letter-spacing: 0.4px; }
+  .v19-marquee-yellow { background: #FFD33D; color: var(--storefront-primary, #036B52); font-weight: 900; font-size: 12px; padding: 7px 0; overflow: hidden; white-space: nowrap; letter-spacing: 0.4px; }
   .storefront-font main { padding-top: 0; padding-bottom: 80px; }
   @media (min-width: 768px) { .storefront-font main { padding-bottom: 24px; } }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -53,7 +53,7 @@ const V19_STYLES = `
     width: 36px; height: 36px; border-radius: 999px;
     background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     display: none; align-items: center; justify-content: center;
-    z-index: 5; color: #036B52;
+    z-index: 5; color: var(--storefront-primary, #036B52);
   }
   @media (hover: hover) and (min-width: 1024px) {
     .v19-carousel-wrap:hover .v19-carousel-arrow { display: flex; }
@@ -129,7 +129,7 @@ export default function StorefrontLayoutV19({ slugOverride }: { slugOverride?: s
     <StorefrontShell
       slugOverride={slugOverride}
       showWhatsApp={false}
-      defaultPrimary="#036B52"
+      defaultPrimary="var(--storefront-primary, #036B52)"
       defaultButtonRadius="999px"
       wrapperClassName="storefront-font min-h-screen font-sans overflow-x-hidden"
       wrapperStyle={{
@@ -137,7 +137,7 @@ export default function StorefrontLayoutV19({ slugOverride }: { slugOverride?: s
         color: "#1a1a1a",
         "--storefront-text": "#1a1a1a",
         "--storefront-bg": "#ffffff",
-        "--storefront-primary": "#036B52",
+        "--storefront-primary": "var(--storefront-primary, #036B52)",
         "--storefront-btn-text": "#ffffff",
         "--background": "0 0% 96%",
         "--foreground": "0 0% 10%",

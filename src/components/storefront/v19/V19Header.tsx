@@ -46,7 +46,7 @@ export default function V19Header({ store }: { store: any }) {
   return (
     <>
       {/* ============ MOBILE HEADER (< md) ============ */}
-      <header className="sticky top-0 z-40 shadow-md md:hidden" style={{ background: "#036B52" }}>
+      <header className="sticky top-0 z-40 shadow-md md:hidden" style={{ background: "var(--storefront-primary, #036B52)" }}>
         <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <Link to={storefrontPath(slug)} className="block">
@@ -108,7 +108,7 @@ export default function V19Header({ store }: { store: any }) {
             ) : (
               <div
                 className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-black text-lg"
-                style={{ background: "#036B52" }}
+                style={{ background: "var(--storefront-primary, #036B52)" }}
               >
                 {store?.name?.[0]?.toUpperCase() || "S"}
               </div>
@@ -154,7 +154,7 @@ export default function V19Header({ store }: { store: any }) {
           <Link
             to={storefrontPath(slug, "cart")}
             className="relative flex items-center gap-1.5 px-4 h-11 rounded-lg text-white font-bold text-[13px] flex-shrink-0"
-            style={{ background: "#036B52" }}
+            style={{ background: "var(--storefront-primary, #036B52)" }}
           >
             <ShoppingCart className="h-5 w-5" strokeWidth={2.2} />
             <span>My Cart</span>

@@ -12,7 +12,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
-const GREEN = "#036B52";
+const GREEN = "var(--storefront-primary, #036B52)";
 const YELLOW = "#FFD300";
 
 export default function V19CartPage() {
