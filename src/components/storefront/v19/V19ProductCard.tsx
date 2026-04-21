@@ -67,7 +67,7 @@ export default function V19ProductCard({ product, slug, store, priority = false 
             <img
               src={optimizeImageUrl(img, 400, 85)}
               alt={product.name}
-              className={`h-full w-full object-contain p-2 ${outOfStock ? "opacity-50" : ""}`}
+              className={`h-full w-full object-cover ${outOfStock ? "opacity-50" : ""}`}
               loading={priority ? "eager" : "lazy"}
               fetchPriority={priority ? "high" : "auto"}
               width={400}
