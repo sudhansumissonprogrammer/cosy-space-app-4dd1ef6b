@@ -6,6 +6,7 @@ import { Suspense, lazy, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import V19Header from "@/components/storefront/v19/V19Header";
+import PageTransition from "@/components/storefront/PageTransition";
 import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 
 const LazyV19BottomNav = lazy(() => import("@/components/storefront/v19/V19BottomNav"));
@@ -149,7 +150,7 @@ function V19Inner({ store }: { store: any }) {
           }
         >
           <Suspense fallback={<V19RouteSkeleton />}>
-            <Outlet context={store} />
+            <PageTransition><Outlet context={store} /></PageTransition>
           </Suspense>
         </div>
       </main>

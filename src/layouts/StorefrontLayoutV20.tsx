@@ -6,6 +6,7 @@ import { Suspense, lazy, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import StorefrontShell from "@/layouts/StorefrontShell";
 import V20Header from "@/components/storefront/v20/V20Header";
+import PageTransition from "@/components/storefront/PageTransition";
 import { prefetchStorefrontRoutes } from "@/lib/prefetchStorefrontRoutes";
 
 const LazyV20BottomNav = lazy(() => import("@/components/storefront/v20/V20BottomNav"));
@@ -145,7 +146,7 @@ function V20Inner({ store }: { store: any }) {
           }
         >
           <Suspense fallback={<V20RouteSkeleton />}>
-            <Outlet context={store} />
+            <PageTransition><Outlet context={store} /></PageTransition>
           </Suspense>
         </div>
       </main>

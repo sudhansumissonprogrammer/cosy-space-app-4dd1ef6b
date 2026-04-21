@@ -24,7 +24,7 @@ const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
 export default function ProductCardStyle1({ product, slug, store, priority = false, onVariantRequired }: Props) {
-  const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, updateQuantity } = useProductCardActions(product);
+  const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, heartBursting, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const themeConfig = useStorefrontThemeConfig(store.id);
@@ -64,7 +64,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
               </span>
             </div>
           )}
-          <button onClick={handleToggleWishlist} className="absolute right-2.5 top-2.5 z-10 p-1.5 lg:p-2 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden" aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-2.5 top-2.5 z-10 p-1.5 lg:p-2 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden`} style={{ color: "#ef4444" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
             <Heart className={`h-4 w-4 lg:h-5 lg:w-5 drop-shadow-md transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-card/60 text-card stroke-[2.5]"}`} aria-hidden="true" />
           </button>
           {(() => {
