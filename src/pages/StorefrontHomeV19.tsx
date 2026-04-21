@@ -189,8 +189,8 @@ export default function StorefrontHomeV19() {
 
   if (!store) return null;
 
-  const homeEligible = categories.filter((category) => category.show_on_home !== false);
-  const visibleCategories = homeEligible.filter((category) => getCategoryItems(category).length > 0);
+  const homeEligibleCategories = categories.filter((category) => category.show_on_home !== false);
+  const visibleCategories = homeEligibleCategories.filter((category) => getCategoryItems(category).length > 0);
 
   const productIds = new Set(products.map((p) => p.id));
   const recentVisible = recent.filter((r) => productIds.has(r.id));
@@ -215,13 +215,13 @@ export default function StorefrontHomeV19() {
 
       <PromoCarousel slug={slug} />
 
-      {categories.length > 0 && (
+      {homeEligibleCategories.length > 0 && (
         <section>
           <div className="v19-section-title">
             <h3>Categories</h3>
           </div>
           <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 lg:gap-3">
-            {categories.map((cat) => (
+            {homeEligibleCategories.map((cat) => (
               <Link
                 key={cat.id}
                 to={storefrontPath(slug, `category/${cat.slug}`)}
