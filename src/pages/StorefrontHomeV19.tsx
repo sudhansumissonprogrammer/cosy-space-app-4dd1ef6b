@@ -26,17 +26,69 @@ const PROMO_CARDS = [
   { bg: "linear-gradient(135deg, #C5DDFF 0%, #8FB5FF 100%)", title: "New arrivals", subtitle: "fresh stock daily", darkText: true },
   { bg: "linear-gradient(135deg, #FFE7B5 0%, #FFC36A 100%)", title: "Weekend savings", subtitle: "up to 40% off", darkText: true },
 ];
-...
+
+function HorizontalScroller({ children, ariaLabel }: { children: React.ReactNode; ariaLabel?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scrollBy = (dir: 1 | -1) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
+  return (
+    <div className="v19-carousel-wrap relative">
+      <div
+        ref={ref}
+        className="flex gap-2.5 lg:gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 md:mx-0 md:px-0 snap-x"
+        aria-label={ariaLabel}
+      >
+        {children}
+      </div>
+      <button type="button" aria-label="Scroll left" onClick={() => scrollBy(-1)} className="v19-carousel-arrow left">
+        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+      </button>
+      <button type="button" aria-label="Scroll right" onClick={() => scrollBy(1)} className="v19-carousel-arrow right">
+        <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+      </button>
+    </div>
+  );
+}
+
+function PromoCarousel({ slug }: { slug: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(min-width: 1024px)").matches) return;
+    const id = setInterval(() => {
+      const el = ref.current;
+      if (!el) return;
+      const card = el.querySelector<HTMLElement>(".v19-promo-card");
+      const step = card ? card.offsetWidth + 12 : el.clientWidth * 0.25;
+      const max = el.scrollWidth - el.clientWidth;
+      const next = el.scrollLeft + step;
+      el.scrollTo({ left: next > max - 8 ? 0 : next, behavior: "smooth" });
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  const scrollBy = (dir: 1 | -1) => {
+    const el = ref.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>(".v19-promo-card");
+    const step = card ? card.offsetWidth + 12 : el.clientWidth * 0.5;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
+  };
+
+  return (
+    <div className="v19-carousel-wrap relative">
+      <div ref={ref} className="overflow-x-auto scrollbar-hide -mx-1 snap-x snap-mandatory">
+        <div className="flex gap-3 px-1">
           {PROMO_CARDS.map((promo, i) => {
             const headingColor = promo.darkText ? "#0a0a0a" : "#ffffff";
             const bodyColor = promo.darkText ? "rgba(10,10,10,0.85)" : "rgba(255,255,255,0.88)";
 
             return (
-              <div
-                key={i}
-                className="v19-promo-card"
-                style={{ background: promo.bg }}
-              >
+              <div key={i} className="v19-promo-card" style={{ background: promo.bg }}>
                 <div>
                   <h2 style={{ color: headingColor }}>{promo.title}</h2>
                   <h2 style={{ marginTop: 0, color: headingColor }}>{promo.subtitle}</h2>
