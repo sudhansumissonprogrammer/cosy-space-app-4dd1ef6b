@@ -24,6 +24,7 @@ export default function V19Header({ store }: { store: any }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [savedLabel, setSavedLabel] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
   const { cartCount } = useCart();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -40,6 +41,14 @@ export default function V19Header({ store }: { store: any }) {
   useEffect(() => {
     if (store?.id) setSavedLabel(getSavedDeliveryLabel(store.id));
   }, [store?.id]);
+
+  // P5 — Header shrink on scroll (desktop only)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Lazy-load product list for the search overlay only when opened
   const products = (queryClient.getQueryData<any[]>(["storefront-products", store?.id]) || []) as any[];
