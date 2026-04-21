@@ -2660,8 +2660,11 @@ export default function StoreThemeSettings() {
             </>
           )}
 
-          <Separator />
+          {currentTheme !== "theme-19" && <Separator />}
 
+          {/* Product Card Style — hidden for theme-19 (uses dedicated V19ProductCard) */}
+          {currentTheme !== "theme-19" && (
+          <div>
           {/* Product Card Style */}
           <div>
             <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
