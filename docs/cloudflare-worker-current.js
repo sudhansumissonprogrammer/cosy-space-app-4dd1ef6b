@@ -3808,14 +3808,39 @@ export default {
               );
             }
 
-            // FIX #14: Warm ALL stores with concurrency=10
-            // FIX #15: Reuse cronShellResult (fetched once above)
+            // FIX #26: Only warm stores with traffic in last 7 days.
+            // Skips dead/demo stores that consume subrequests for no reason.
+            // Combined with cron schedule reduced from */1 to */5 in wrangler.toml,
+            // this cuts cron-driven subrequests by ~95%.
+            let activeSlugs = new Set();
+            try {
+              const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+              const activeRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/page_views?select=store_id&created_at=gte.${sevenDaysAgo}`,
+                {
+                  headers: {
+                    apikey: SUPABASE_ANON_KEY,
+                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                  },
+                },
+              );
+              if (activeRes.ok) {
+                const rows = await activeRes.json();
+                const activeIds = new Set(rows.map((r) => r.store_id));
+                activeSlugs = new Set(allStores.filter((s) => activeIds.has(s.id)).map((s) => s.slug));
+              }
+            } catch {}
+
+            const storesToWarm = activeSlugs.size > 0
+              ? allStores.filter((s) => activeSlugs.has(s.slug))
+              : allStores; // fallback: warm all if active-detection failed
+
             const CONCURRENCY = 10;
             let warmedHtml = 0,
               warmedProducts = 0;
 
-            for (let i = 0; i < allStores.length; i += CONCURRENCY) {
-              const batch = allStores.slice(i, i + CONCURRENCY);
+            for (let i = 0; i < storesToWarm.length; i += CONCURRENCY) {
+              const batch = storesToWarm.slice(i, i + CONCURRENCY);
               await Promise.all(
                 batch.map(async (s) => {
                   try {
@@ -3855,7 +3880,6 @@ export default {
                       warmedHtml++;
                     } else if (shellResult?.html) {
                       // FIX #25: Cron skeleton fallback — if DB failed, cache a themed skeleton
-                      // so the store is never left completely cold
                       const themeLite = _memThemeCache.get(s.slug)?.lite || null;
                       const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
                       const skeletonHtml = _buildInstantSkeletonPage(s.slug, bg, themeLite, `${s.slug}.${ROOT_DOMAIN}`);
@@ -3885,7 +3909,7 @@ export default {
             }
 
             console.log(
-              `[keepalive] warmed HTML for ${warmedHtml}/${allStores.length} stores, products for ${warmedProducts} stores`,
+              `[keepalive] warmed HTML for ${warmedHtml}/${storesToWarm.length} active stores (skipped ${allStores.length - storesToWarm.length} dead), products for ${warmedProducts} stores`,
             );
           } catch (err) {
             console.log(`[keepalive] store warm failed: ${err?.message || err}`);
