@@ -86,13 +86,18 @@
         }
         if(window.__THEME__){injectGFont(window.__THEME__.hf,window.__THEME__.bf);}
 
-        // If Worker already injected __STOREFRONT_DATA__, just kick off /api/products fetch
+        // If Worker already injected __STOREFRONT_DATA__, we're done — products
+        // are already inlined via window.__PRODUCTS_INLINE__ (set by Worker).
+        // Only prefetch /api/products if the Worker did NOT inline products
+        // (rare cold-cache case). This avoids ~1 redundant Worker request per visit.
         if(window.__STOREFRONT_DATA__){
           if(!window.__THEME__&&window.__STOREFRONT_DATA__.theme){
             var t=window.__STOREFRONT_DATA__.theme;
             injectGFont(t.heading_font,t.body_font);
           }
-          window.__PRODUCTS_PREFETCH__=fetch(location.origin+'/api/products',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).catch(function(){return null});
+          if(!window.__PRODUCTS_INLINE__){
+            window.__PRODUCTS_PREFETCH__=fetch(location.origin+'/api/products',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).catch(function(){return null});
+          }
           return;
         }
 
