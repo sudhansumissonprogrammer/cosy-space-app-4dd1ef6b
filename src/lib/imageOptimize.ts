@@ -37,21 +37,18 @@ function shouldUseCfImg(): boolean {
 }
 
 /**
- * Hosts whitelisted in the Cloudflare Worker's /cf-img endpoint.
- * Must mirror docs/cloudflare-worker-current.js. URLs from any other
- * origin would get 403 "Origin not allowed", so we serve them directly.
+ * Whether the URL is acceptable for the Worker's /cf-img endpoint.
+ * v7.4.2: Worker accepts ANY https image URL (validated by extension /
+ * known image path). Frontend mirrors that — must be https and look like
+ * an image. Otherwise serve direct.
  */
 function isCfImgAllowedOrigin(originUrl: string): boolean {
   try {
-    const h = new URL(originUrl).hostname;
+    const u = new URL(originUrl);
+    if (u.protocol !== "https:") return false;
     return (
-      h.endsWith(".supabase.co") ||
-      h.endsWith(".r2.dev") ||
-      h.endsWith(".cloudinary.com") ||
-      h.endsWith(".unsplash.com") ||
-      h.endsWith(".shopify.com") ||
-      h.endsWith(".myshopify.com") ||
-      h === "cdn.shopify.com"
+      /\.(jpe?g|png|gif|webp|avif|svg|bmp|ico|heic|heif)(\?|$)/i.test(u.pathname) ||
+      /\/(image|images|img|photos?|media|cdn|storage|render|upload)/i.test(u.pathname)
     );
   } catch {
     return false;

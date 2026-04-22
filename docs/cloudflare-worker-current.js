@@ -3358,15 +3358,20 @@ export default {
       } catch {
         return new Response("Invalid url", { status: 400 });
       }
-      const allowed =
-        parsedTarget.hostname.endsWith(".supabase.co") ||
-        parsedTarget.hostname.endsWith(".r2.dev") ||
-        parsedTarget.hostname.endsWith(".cloudinary.com") ||
-        parsedTarget.hostname.endsWith(".unsplash.com") ||
-        parsedTarget.hostname.endsWith(".shopify.com") ||
-        parsedTarget.hostname.endsWith(".myshopify.com") ||
-        parsedTarget.hostname === "cdn.shopify.com";
-      if (!allowed) return new Response("Origin not allowed", { status: 403 });
+      // v7.4.2: Allow ANY https image origin (external CDNs, custom domains,
+      // user-supplied URLs). Only enforce: must be https + must look like an
+      // image path. Blocks abuse (e.g., proxying HTML pages) without limiting
+      // legitimate external product images.
+      const isHttps = parsedTarget.protocol === "https:";
+      const looksLikeImage =
+        /\.(jpe?g|png|gif|webp|avif|svg|bmp|ico|heic|heif)(\?|$)/i.test(parsedTarget.pathname) ||
+        // Many CDNs (Shopify, Cloudinary, Supabase render) serve images without
+        // a file extension — accept known image-serving paths too.
+        /\/(image|images|img|photos?|media|cdn|storage|render|upload)/i.test(parsedTarget.pathname);
+      if (!isHttps || !looksLikeImage) {
+        return new Response("Origin not allowed", { status: 403 });
+      }
+
 
       const w = Math.min(Math.max(parseInt(url.searchParams.get("w") || "800", 10), 16), 2000);
       const q = Math.min(Math.max(parseInt(url.searchParams.get("q") || "82", 10), 30), 95);
