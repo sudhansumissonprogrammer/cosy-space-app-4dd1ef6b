@@ -1043,7 +1043,10 @@ async function prefetchStorefrontDataWithDeadline(slug, ctx, env, deadlineMs) {
 
 const PRODUCTS_CACHE_TTL = 300;
 const PRODUCTS_KV_TTL = 1800;
-const PRODUCTS_PAGE_SIZE = 20;
+// Bumped 20 → 50 (2025-04): bigger initial batch means most visitors
+// never trigger a second /api/products page request. Inline products
+// also get the larger set, so first paint shows more cards.
+const PRODUCTS_PAGE_SIZE = 50;
 const PRODUCT_COLUMNS =
   "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
@@ -3371,8 +3374,13 @@ export default {
           },
         });
         if (!imgRes.ok) {
-          // Fallback: passthrough original
-          return fetch(targetUrl);
+          // Avoid a second passthrough subrequest — return a short-cached 502
+          // so the browser falls back to the original <img src> attribute.
+          // Saves ~1 "Unknown" subrequest per failed transform.
+          return new Response("Image transform failed", {
+            status: 502,
+            headers: { "Cache-Control": "public, max-age=60" },
+          });
         }
         const headers = new Headers(imgRes.headers);
         headers.set("Cache-Control", "public, max-age=31536000, immutable");
@@ -3382,8 +3390,11 @@ export default {
         ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));
         return finalRes;
       } catch {
-        // Last resort fallback
-        return fetch(targetUrl);
+        // Same rationale: skip the redundant passthrough fetch.
+        return new Response("Image transform error", {
+          status: 502,
+          headers: { "Cache-Control": "public, max-age=60" },
+        });
       }
     }
 

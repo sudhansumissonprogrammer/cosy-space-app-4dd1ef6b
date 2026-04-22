@@ -1,8 +1,7 @@
 import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Instagram, Facebook, MessageCircle } from "lucide-react";
-import { useMemo } from "react";
+import { Instagram, Facebook, MessageCircle } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import CustomHtmlRenderer from "@/components/storefront/CustomHtmlRenderer";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -51,13 +50,19 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
   const instagram = (store as any).instagram_url as string | null;
   const facebook = (store as any).facebook_url as string | null;
 
+  // owner_email is now bundled in the storefront shell (get_storefront_shell RPC)
+  // — no extra request needed. Falls back to RPC only if shell didn't include it
+  // (older cached shells from before the migration).
+  const shellEmail = (store as any).owner_email as string | null | undefined;
   const { data: ownerEmail } = useQuery({
     queryKey: ["store-public-email", store.id],
     queryFn: async () => {
       const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
       return (data as string) || null;
     },
+    enabled: shellEmail === undefined, // only fetch if shell didn't include the field
     staleTime: 300000,
+    initialData: shellEmail ?? undefined,
   });
 
   const textColor = "var(--storefront-text, hsl(var(--foreground)))";

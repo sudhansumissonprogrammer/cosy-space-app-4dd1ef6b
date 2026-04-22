@@ -1,4 +1,8 @@
-const PREWARM_COOLDOWN_MS = 10_000;
+// Cooldown bumped 10s → 30s (2025-04): merchants often click Save in rapid
+// succession (theme tweaks, product reorder). Each prewarm fans out to 2-3
+// Worker requests + KV writes, so a tighter debounce saves ~500 req/day with
+// zero UX cost — the storefront cache still refreshes within 30s of the last save.
+const PREWARM_COOLDOWN_MS = 30_000;
 const inflightPrewarms = new Map<string, Promise<void>>();
 const recentPrewarms = new Map<string, number>();
 
