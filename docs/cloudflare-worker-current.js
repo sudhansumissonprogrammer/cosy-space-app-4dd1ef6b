@@ -1955,10 +1955,26 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
 /* ============================================================
    BACKGROUND HTML WARM
    FIX #10: Cache-Control raised to 3600/7200
+   v7.4.0 LEAK FIX #2: 60s in-memory dedup lock prevents the same store
+   from being warmed multiple times within a 60s window. Previously this
+   function was invoked from 6+ code paths on every cache hit, causing
+   ~7k redundant Worker subrequests/day for 2 active stores.
    ============================================================ */
+
+const _warmLocks = new Map(); // slug → timestamp (ms)
 
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname) {
   try {
+    // ── 60s dedup lock ──
+    const _now = Date.now();
+    const _last = _warmLocks.get(slug) || 0;
+    if (_now - _last < 60_000) return; // Already warmed within last 60s
+    _warmLocks.set(slug, _now);
+    // Cleanup old entries to keep map small
+    if (_warmLocks.size > 200) {
+      for (const [k, t] of _warmLocks) if (_now - t > 120_000) _warmLocks.delete(k);
+    }
+
     if (hostname) {
       const earlyKey = getEarlyCacheKey(hostname);
       const existing = await cache.match(earlyKey);
@@ -2498,6 +2514,18 @@ async function handleBot(request, slug, url, isCustom) {
   const botIp = request.headers.get("cf-connecting-ip") || "unknown";
   if (isRateLimited(`bot:${botIp}`, true)) {
     return new Response("Too Many Requests", { status: 429, headers: { "Retry-After": "60" } });
+  }
+
+  // v7.4.0 LEAK FIX #4: Per-IP throttle for ALL bots (incl. Googlebot/
+  // facebookexternalhit/WhatsApp). Previously only "aggressive" bots were
+  // rate-limited; allowed bots crawled product URLs unrestricted, generating
+  // ~10k req/day. 30 req/min ceiling lets SEO + social previews work but
+  // caps abuse. Cached HTML still served from edge → SEO unaffected.
+  if (isRateLimited(`anybot:${botIp}`, 30)) {
+    return new Response("Rate limited", {
+      status: 429,
+      headers: { "Retry-After": "60", "Cache-Control": "no-store" },
+    });
   }
 
   const hostname = request.headers.get("host") || url.hostname;
@@ -3314,15 +3342,14 @@ export default {
     }
 
     // ─── CLOUDFLARE IMAGE RESIZING (/cf-img) ───
-    // v6.3.0: Edge-resized images via Cloudflare's `cf.image` fetch option.
-    // Query params: url (required), w (width), q (quality 1-100).
-    // Cached for 1 year — first hit pays transform cost, all repeats are free.
-    // Falls back to passthrough fetch if Image Resizing isn't enabled in dashboard.
+    // v7.4.0 LEAK FIX #1: Replaced Worker-proxy + cache.match/put pipeline
+    // (which cost 3-4 subrequests per image) with a single 301 redirect to
+    // Cloudflare's native /cdn-cgi/image/ endpoint. Browser caches the 301
+    // for 1 year, so repeat image loads NEVER re-invoke the Worker.
+    // Estimated savings: ~12k Worker req/day for 2 active stores.
     if (url.pathname === "/cf-img") {
       const targetUrl = url.searchParams.get("url");
-      if (!targetUrl) {
-        return new Response("Missing url param", { status: 400 });
-      }
+      if (!targetUrl) return new Response("Missing url param", { status: 400 });
       // Whitelist allowed origins to prevent abuse
       let parsedTarget;
       try {
@@ -3338,64 +3365,19 @@ export default {
         parsedTarget.hostname.endsWith(".shopify.com") ||
         parsedTarget.hostname.endsWith(".myshopify.com") ||
         parsedTarget.hostname === "cdn.shopify.com";
-      if (!allowed) {
-        return new Response("Origin not allowed", { status: 403 });
-      }
+      if (!allowed) return new Response("Origin not allowed", { status: 403 });
 
-      const w = parseInt(url.searchParams.get("w") || "800", 10);
-      const q = parseInt(url.searchParams.get("q") || "82", 10);
-      const width = Math.min(Math.max(w, 16), 2000);
-      const quality = Math.min(Math.max(q, 30), 95);
-
-      // Cache key normalized to (origin URL + width + quality)
-      const cacheKey = new Request(
-        `https://cf-img-cache/${encodeURIComponent(targetUrl)}?w=${width}&q=${quality}`,
-        { method: "GET" }
-      );
-      const cached = await cache.match(cacheKey);
-      if (cached) {
-        const r = new Response(cached.body, cached);
-        r.headers.set("X-CF-Img-Cache", "HIT");
-        return r;
-      }
-
-      try {
-        const imgRes = await fetch(targetUrl, {
-          cf: {
-            image: {
-              width,
-              quality,
-              format: "auto",
-              fit: "scale-down",
-              metadata: "none",
-            },
-            cacheEverything: true,
-            cacheTtl: 31536000,
-          },
-        });
-        if (!imgRes.ok) {
-          // Avoid a second passthrough subrequest — return a short-cached 502
-          // so the browser falls back to the original <img src> attribute.
-          // Saves ~1 "Unknown" subrequest per failed transform.
-          return new Response("Image transform failed", {
-            status: 502,
-            headers: { "Cache-Control": "public, max-age=60" },
-          });
-        }
-        const headers = new Headers(imgRes.headers);
-        headers.set("Cache-Control", "public, max-age=31536000, immutable");
-        headers.set("X-CF-Img-Cache", "MISS");
-        headers.set("Access-Control-Allow-Origin", "*");
-        const finalRes = new Response(imgRes.body, { status: 200, headers });
-        ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));
-        return finalRes;
-      } catch {
-        // Same rationale: skip the redundant passthrough fetch.
-        return new Response("Image transform error", {
-          status: 502,
-          headers: { "Cache-Control": "public, max-age=60" },
-        });
-      }
+      const w = Math.min(Math.max(parseInt(url.searchParams.get("w") || "800", 10), 16), 2000);
+      const q = Math.min(Math.max(parseInt(url.searchParams.get("q") || "82", 10), 30), 95);
+      const redirectUrl = `/cdn-cgi/image/width=${w},quality=${q},format=auto,fit=scale-down,metadata=none/${targetUrl}`;
+      return new Response(null, {
+        status: 301,
+        headers: {
+          "Location": redirectUrl,
+          "Cache-Control": "public, max-age=31536000, immutable",
+          "X-Image-Routing": "native-cdn-redirect",
+        },
+      });
     }
 
     // ─── API ROUTES (rate-limited) ───
