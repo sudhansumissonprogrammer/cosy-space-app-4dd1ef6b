@@ -3342,15 +3342,16 @@ export default {
     }
 
     // ─── CLOUDFLARE IMAGE RESIZING (/cf-img) ───
-    // v7.4.0 LEAK FIX #1: Replaced Worker-proxy + cache.match/put pipeline
-    // (which cost 3-4 subrequests per image) with a single 301 redirect to
-    // Cloudflare's native /cdn-cgi/image/ endpoint. Browser caches the 301
-    // for 1 year, so repeat image loads NEVER re-invoke the Worker.
-    // Estimated savings: ~12k Worker req/day for 2 active stores.
+    // v7.4.1 HOTFIX: Previous version redirected to /cdn-cgi/image/ which
+    // requires Cloudflare Image Resizing (paid add-on). When not enabled,
+    // images returned 404/broken (e.g., serdiyajewellers.shop only showed
+    // 10 product images). Now we redirect to the ORIGIN URL directly
+    // (Supabase render API for Supabase storage, original for others).
+    // Browser caches the 301 for 1 year, so repeat loads still bypass Worker.
+    // Estimated savings preserved: ~12k Worker req/day.
     if (url.pathname === "/cf-img") {
       const targetUrl = url.searchParams.get("url");
       if (!targetUrl) return new Response("Missing url param", { status: 400 });
-      // Whitelist allowed origins to prevent abuse
       let parsedTarget;
       try {
         parsedTarget = new URL(targetUrl);
@@ -3369,13 +3370,51 @@ export default {
 
       const w = Math.min(Math.max(parseInt(url.searchParams.get("w") || "800", 10), 16), 2000);
       const q = Math.min(Math.max(parseInt(url.searchParams.get("q") || "82", 10), 30), 95);
-      const redirectUrl = `/cdn-cgi/image/width=${w},quality=${q},format=auto,fit=scale-down,metadata=none/${targetUrl}`;
+
+      // Build a final URL that ACTUALLY serves the image without requiring
+      // the Cloudflare Image Resizing add-on:
+      //  - Supabase storage  → Supabase render API (free, always works)
+      //  - Unsplash/Shopify  → native CDN params
+      //  - Everything else   → original URL (CDN handles caching)
+      let finalUrl = targetUrl;
+      if (parsedTarget.hostname.endsWith(".supabase.co") && parsedTarget.pathname.includes("/storage/v1/object/")) {
+        try {
+          const u = new URL(targetUrl);
+          u.pathname = u.pathname.replace("/storage/v1/object/", "/storage/v1/render/image/");
+          u.searchParams.set("width", String(w));
+          u.searchParams.set("quality", String(q));
+          u.searchParams.set("resize", "contain");
+          finalUrl = u.toString();
+        } catch {
+          finalUrl = targetUrl;
+        }
+      } else if (parsedTarget.hostname.endsWith(".unsplash.com")) {
+        try {
+          const u = new URL(targetUrl);
+          u.searchParams.set("w", String(w));
+          u.searchParams.set("q", String(q));
+          u.searchParams.set("fm", "webp");
+          u.searchParams.set("auto", "format");
+          finalUrl = u.toString();
+        } catch {
+          finalUrl = targetUrl;
+        }
+      } else if (parsedTarget.hostname.endsWith(".shopify.com") || parsedTarget.hostname === "cdn.shopify.com") {
+        try {
+          const u = new URL(targetUrl);
+          u.searchParams.set("width", String(w));
+          finalUrl = u.toString();
+        } catch {
+          finalUrl = targetUrl;
+        }
+      }
+
       return new Response(null, {
         status: 301,
         headers: {
-          "Location": redirectUrl,
+          "Location": finalUrl,
           "Cache-Control": "public, max-age=31536000, immutable",
-          "X-Image-Routing": "native-cdn-redirect",
+          "X-Image-Routing": "origin-redirect-v7.4.1",
         },
       });
     }
