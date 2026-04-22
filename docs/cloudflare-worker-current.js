@@ -3504,6 +3504,7 @@ export default {
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
+          ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return new Response(injected.html, { status: 200, headers });
         }
 
@@ -3605,6 +3606,7 @@ export default {
       );
 
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
+      ctx.waitUntil(recordPageView(request, storeInfo?.storeId, url.pathname));
 
       return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "streaming" });
     }
@@ -3652,6 +3654,7 @@ export default {
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, resolvedSlugCD, ctx, env, hostname, url.pathname));
+          ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return new Response(injected.html, { status: 200, headers });
         }
 
@@ -3751,6 +3754,12 @@ export default {
       );
 
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResultCD, resolvedSlug, ctx, env, hostname, url.pathname));
+      // Edge-native page view tracking (replaces frontend trackPageView)
+      ctx.waitUntil(
+        earlyStorefrontPromiseCD
+          .then((r) => recordPageView(request, r?.data?.store?.id, url.pathname))
+          .catch(() => {}),
+      );
 
       return addDiagnosticHeaders(responseCD, { slug: resolvedSlug, cacheStatus: "MISS", dataSource: "streaming" });
     }
