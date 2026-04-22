@@ -2155,7 +2155,12 @@ async function handleProductsApi(request, url, ctx, env) {
       if (shouldRevalidate(revalKey)) {
         ctx.waitUntil(_refreshProductsBackground(domain, filters, version, env));
       }
-      return addCorsHeaders(cached, "cache-api");
+      // Re-assert browser Cache-Control for anonymous users so repeat
+      // visits within 5 min are served from the BROWSER cache (zero Worker hit).
+      const fresh = new Response(cached.body, cached);
+      fresh.headers.set("Cache-Control", `public, max-age=${PRODUCTS_CACHE_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`);
+      fresh.headers.set("Vary", "Accept-Encoding");
+      return addCorsHeaders(fresh, "cache-api");
     }
   } catch {}
 
@@ -2272,7 +2277,11 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   const response = new Response(body, {
     headers: {
       "Content-Type": "application/json",
+      // Anonymous browser cache: 5 min fresh + 30 min stale-while-revalidate.
+      // Repeat visits in this window are served from the browser cache and
+      // never hit the Worker at all.
       "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
+      "Vary": "Accept-Encoding",
     },
   });
   ctx.waitUntil(
