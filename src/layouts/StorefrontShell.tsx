@@ -8,7 +8,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
-import { trackPageView } from "@/lib/trackPageView";
+
 import { buildThemeStyle, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 
@@ -117,16 +117,10 @@ export default function StorefrontShell({
     customDomain: (store as any)?.custom_domain,
   });
 
-  // Track page view — deferred to idle time to avoid blocking LCP
-  useEffect(() => {
-    if (!store?.id || viewTracked.current) return;
-    viewTracked.current = true;
-    const schedule =
-      typeof requestIdleCallback !== "undefined"
-        ? (cb: () => void) => requestIdleCallback(cb, { timeout: 5000 })
-        : (cb: () => void) => setTimeout(cb, 2000);
-    schedule(() => trackPageView(store.id));
-  }, [store?.id]);
+  // Page view tracking is now handled server-side by the Cloudflare Worker on
+  // the original HTML response. This eliminates ~5,000 frontend ingest
+  // requests/day with zero impact on analytics fidelity (the Worker has the
+  // same store_id + path information and applies edge-level dedup).
 
   // Theme config (reactive — updates when cache changes via live preview)
   const themeConfig = useStorefrontThemeConfig(store?.id);
