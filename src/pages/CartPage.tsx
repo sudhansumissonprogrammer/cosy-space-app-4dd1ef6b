@@ -210,6 +210,8 @@ export default function CartPage() {
           open={showPhoneModal}
           onOpenChange={setShowPhoneModal}
           storeSlug={store.slug}
+          storeId={store.id}
+          source="quick_buy_cart"
         />
       </Suspense>
     )}

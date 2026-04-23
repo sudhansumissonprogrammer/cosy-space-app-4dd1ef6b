@@ -231,6 +231,8 @@ export default function SideCart({ store }: SideCartProps) {
           open={showPhoneModal}
           onOpenChange={setShowPhoneModal}
           storeSlug={store.slug}
+          storeId={store.id}
+          source="quick_buy_sidecart"
         />
       </Suspense>
     )}
