@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "7.3.0-aggressive-cache-swr-etag";
+const WORKER_VERSION = "7.4.0-html-ttl-bump-1h-2h-swr-7d";
 
 /* ============================================================
    v7.3.0 — AGGRESSIVE CACHE + SWR + ETAG (3-5x worker req reduction)
