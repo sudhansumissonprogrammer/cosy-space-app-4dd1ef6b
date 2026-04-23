@@ -1,80 +1,82 @@
 
 
-## Worker Subrequest Leak — Round 2 Fix Plan
+## Worker Subrequest Leak — Round 3 Fix Plan (`v7.7.0-race-and-dedup-fix`)
 
-The Claude audit is **accurate against the current `7.5.0-cron-leak-fix` worker**. v7.5.0 only fixed the cron fan-out. The remaining leaks are all in the **per-request hot path** — every visitor (and every bot) triggers 3–5 redundant background tasks because in-memory dedup locks (`_warmLocks`, `revalCooldowns`, `_memProductVersion`) reset for every new Cloudflare isolate.
+The Claude audit is **accurate against the current `v7.6.0-request-leak-fix` worker**. v7.6.0 closed the cross-isolate dedup gap and the duplicate KV reads, but introduced a **race condition in the warm-lock**, and left **3 redundant `_getInlineProductsOrNull()` calls per request chain**, plus a **double `cache.put`** in `cachedFetch`.
 
-Cron at `*/30` is already correct → no change there. All fixes are in the request handlers + TTLs.
-
----
-
-### Target version: `v7.6.0-request-leak-fix`
-
-Expected drop: **80k/day → ~15–25k/day** (60–80% reduction).
+Expected drop: another **40–50% reduction** on top of v7.6.0 — idle stores → ~10 req/hour each.
 
 ---
 
 ### Fixes (ordered by impact)
 
-**Fix A — Remove duplicate `_warmFullHtmlInBackground` calls** *(saves ~30% of subrequests)*
-The function is invoked from the cold-data path AND the cold-shell-only path AND the warm path on **every request**, on both subdomain and custom domain handlers (lines 3552, 3570, 3654, 3702, 3719, 3802). Keep ONLY the call at the end of the warm/full path (lines 3654 + 3802). Remove the 4 redundant calls in the cold branches — those branches already serve fully injected HTML, so warming again immediately is pure waste.
-
-**Fix B — Cross-isolate KV lock for `_warmFullHtmlInBackground`** *(saves ~25%)*
-The current `_warmLocks` Map is per-isolate. Replace the 60s in-memory lock with a KV-based lock:
+**Fix 1 — Make warm-lock atomic (`_warmFullHtmlInBackground`)** *(saves ~20%)*
+Current code reads `warm-lock:{slug}` then `ctx.waitUntil(env.STORE_KV.put(...))` — the write is deferred, so 2+ isolates all read `null` and all proceed to warm. Change to:
+```js
+const existing = await env.STORE_KV.get(lockKey);
+if (existing) return;
+await env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(()=>{}); // SYNC, not waitUntil
 ```
-warm-lock:{slug} → '1', expirationTtl: 300 (5 min)
-```
-Check via `env.STORE_KV.get(key)` — if present, return immediately. This is the single biggest fix because Cloudflare runs many parallel isolates even at low traffic.
+Lock is set before any subrequest-heavy work begins. KV is eventually-consistent so this isn't perfectly atomic — but the synchronous write closes the window from ~500ms to ~50ms.
 
-**Fix C — Extend `REVAL_COOLDOWN_MS` 120s → 600s** *(saves ~15%)*
-Line 193. Background SWR revalidations fire every 2 min per isolate — change to 10 min. Shell + storefront data don't change that often.
+**Fix 2 — Pass `inlineProducts` through the chain instead of re-fetching** *(saves ~15%)*
+`_getInlineProductsOrNull()` is currently called 3× per request:
+1. Subdomain/custom-domain handler (already in the `Promise.all`)
+2. `fetchAndInjectSlug()`
+3. `_warmFullHtmlInBackground()`
 
-**Fix D — Eliminate duplicate KV reads in subdomain + custom-domain handlers** *(saves ~10%)*
-Lines 3580 + 3586 (subdomain) and 3743 + 3749 (custom domain) both read `storefront:{slug}` and `store-info:{slug}` from KV in parallel via `prefetchStorefrontDataWithDeadline` AND `_batchKvRead` AND `_resolveStoreInfo`.
-- Remove `storefront` from `_batchKvRead` (line 824) — use the result from `earlyStorefrontPromise` instead.
-- Remove `storeInfo` from `_batchKvRead` (line 825) — use the result from `_resolveStoreInfo` (already in the same Promise.all).
-- `_batchKvRead` becomes `_getThemeLiteFromKv` (one KV read) — or inline it.
+Each call does a `cache.match` (and a KV read on cache miss). Refactor:
+- Extend `fetchAndInjectSlug(request, env, ctx, slug, ..., inlineProducts = null)` — skip internal fetch if passed.
+- Extend `_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, inlineProducts = null)` — same.
+- In both subdomain handler (line ~3654) and custom-domain handler (line ~3802), pass the already-resolved `inlineProducts` from the parent `Promise.all` into both downstream functions.
 
-**Fix E — Extend Shell TTLs** *(saves ~10%)*
-Lines 157, 701, 702:
-```
-MEM_SHELL_TTL: 60_000   → 300_000   (1m → 5m)
-SPA_SHELL_KV_TTL: 300   → 1800      (5m → 30m)
-SPA_SHELL_CACHE_TTL: 60 → 300       (1m → 5m)
-```
-Shell only changes on deploy. Manual purge already busts it.
+Result: 1 fetch per request instead of 3.
 
-**Fix F — Extend `MEM_PV_TTL` for product version** *(saves ~5%)*
-Line 2041: `60_000 → 300_000`. Version-bump on dashboard save already calls `/api/purge`, so 5 min staleness is safe and eliminates the "every fresh isolate does a KV read for the version" leak called out in the audit.
+**Fix 3 — Remove orphaned `storeInEdgeCache` call from `cachedFetch`** *(saves ~10%)*
+`cachedFetch` writes the streaming response (no inline data) to cache; `_warmFullHtmlInBackground` then overwrites it with the full injected version. The streaming write is wasted work AND occasionally races to overwrite the better version. Remove this block from `cachedFetch`:
+```js
+if (res.status === 200 && contentType.includes("text/html")) {
+  if (slug && res.headers.get("X-Store-Slug") === slug) {
+    storeInEdgeCache(ctx, hostname, slug, res);
+  }
+}
+```
+`_warmFullHtmlInBackground` is the single source of truth for HTML cache writes.
 
-**Fix G — Cache `active-slugs-7d` in KV in cron** *(saves Supabase DB load, not Worker subrequests)*
-Lines 3938–3955. The `page_views` query runs every 30 min. Cache the result for 6 hours:
+**Fix 4 — Extend `PREBUILT_HEAD_CACHE_TTL` & `PREBUILT_HEAD_KV_TTL`** *(saves ~5%)*
 ```
-active-slugs-7d → JSON, expirationTtl: 21600
+PREBUILT_HEAD_CACHE_TTL: 60   → 300    (1m → 5m)
+PREBUILT_HEAD_KV_TTL:    300  → 1800   (5m → 30m)
 ```
-On cache hit skip the Supabase query. Refresh once every 6h instead of 48 times/day.
+The prebuilt `<head>` (meta + OG tags) only changes on store-settings save → already triggers a `/api/purge`. Safe to extend.
+
+**Fix 5 — Cache GET requests on Supabase proxy** *(audit-flagged, conditional)*
+The `/rest/v1/` and `/functions/v1/` proxy currently passes every frontend API call through the Worker uncached. For idempotent `GET` requests on `/rest/v1/`, add a 30s edge cache keyed on full URL + auth-presence. Skip caching for `POST/PATCH/DELETE` and any request with a user JWT in `Authorization`. Saves repeat reads on shared anonymous queries (categories, products, store-info).
+
+If you'd rather not touch this path right now (it's lower impact and slightly risky for auth flows), we can skip Fix 5 and ship 1–4 only. **Default: include Fix 5 with the conservative anon-only caching.**
 
 ---
 
 ### Files touched
-- `docs/cloudflare-worker-current.js` (single file, ~10 surgical edits)
-- Update `WORKER_VERSION` → `"7.6.0-request-leak-fix"` and version comment header
-- Update `mem://infrastructure/cf-img-and-font-pipeline` and `mem://constraints/scaling-capacity` with new numbers
+- `docs/cloudflare-worker-current.js` — single file, ~6 surgical edits
+- `WORKER_VERSION` → `"7.7.0-race-and-dedup-fix"` and update header comment
+- Update `mem://constraints/scaling-capacity` with new per-store idle baseline (~10 req/hr)
 
 ### Manual deployment required
-After I apply the patch, you must **copy `docs/cloudflare-worker-current.js` and paste it into Cloudflare Worker → Save & Deploy**. (Same as v7.5.0 — Lovable can't push to Cloudflare directly.)
+After the patch is applied, copy `docs/cloudflare-worker-current.js` → paste into Cloudflare Worker dashboard → **Save & Deploy**. Lovable cannot push to Cloudflare directly.
 
-### Verification (you do, post-deploy)
-1. Wait 1 hour → check Cloudflare dashboard subrequests.
-2. Look for response header `X-Worker-Version: 7.6.0-request-leak-fix` to confirm new code is live.
-3. Expected: idle stores generate <50 req/hour each (vs current ~500–1000/hour).
+### Verification (post-deploy, you do)
+1. Confirm `X-Worker-Version: 7.7.0-race-and-dedup-fix` response header is live.
+2. Wait 1 hour → check Cloudflare subrequests dashboard.
+3. Expected: total subrequests drop from current ~25k/day → **~10–15k/day**.
+4. Per-store idle req/hour should be <20 (vs ~50 after v7.6.0).
 
 ### What I'm NOT doing
-- Not touching `wrangler.toml` cron — already `*/30`, you confirmed.
-- Not removing the cron HTML warming — it's already gated correctly in v7.5.0 (`cache.match` skip).
-- Not changing the products API code path — that's working efficiently.
+- Not touching the cron schedule (`*/30` confirmed correct).
+- Not changing the products inline-fetch logic itself — only how many times it's called.
+- Not changing `MEM_PV_TTL` again — 5min is already correct.
 
 ---
 
-**Approve and I'll switch to default mode and ship `v7.6.0-request-leak-fix` in one edit.**
+**Approve to switch to default mode and ship `v7.7.0-race-and-dedup-fix`. Reply "skip fix 5" if you want to leave the Supabase proxy untouched.**
 
