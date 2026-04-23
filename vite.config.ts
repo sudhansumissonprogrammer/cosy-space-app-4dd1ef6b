@@ -48,6 +48,18 @@ export default defineConfig(({ mode }) => ({
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 },
             },
           },
+          // v7.8: Aggressively cache hashed /assets/* (JS + CSS chunks)
+          // Filenames are content-hashed so they're immutable. CacheFirst means
+          // returning visitors hit local cache → ZERO Cloudflare Worker events.
+          {
+            urlPattern: /\/assets\/.*\.(?:js|css|woff2)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "static-assets",
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: "CacheFirst",
