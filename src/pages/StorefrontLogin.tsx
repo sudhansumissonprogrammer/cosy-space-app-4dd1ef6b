@@ -91,14 +91,22 @@ export default function StorefrontLogin() {
                 id="phone"
                 type="tel"
                 inputMode="numeric"
+                autoComplete="tel"
+                pattern="[0-9]*"
+                maxLength={15}
                 placeholder="10-digit mobile number"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
+                aria-invalid={!!error}
+                aria-describedby={error ? "phone-error" : undefined}
                 required
                 autoFocus
               />
+              {error && (
+                <p id="phone-error" className="text-xs text-destructive">{error}</p>
+              )}
             </div>
-            <Button type="submit" className="w-full" disabled={loading || isLocked}>
+            <Button type="submit" className="w-full" disabled={loading || isLocked || phone.length < 10}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLocked ? `Locked (${remainingSeconds}s)` : "Continue"}
             </Button>
