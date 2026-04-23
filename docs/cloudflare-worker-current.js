@@ -3952,26 +3952,40 @@ export default {
               );
             }
 
-            // FIX #26: Only warm stores with traffic in last 7 days.
-            // Skips dead/demo stores that consume subrequests for no reason.
-            // Combined with cron schedule reduced from */1 to */5 in wrangler.toml,
-            // this cuts cron-driven subrequests by ~95%.
+            // FIX #26 + v7.6.0 Fix G: Only warm stores with traffic in last 7 days.
+            // Active-slug list is cached in KV for 6h to avoid hitting Supabase
+            // page_views (a growing table) on every cron tick.
             let activeSlugs = new Set();
             try {
-              const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-              const activeRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/page_views?select=store_id&created_at=gte.${sevenDaysAgo}`,
-                {
-                  headers: {
-                    apikey: SUPABASE_ANON_KEY,
-                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              let cachedSlugs = null;
+              if (env?.STORE_KV) {
+                cachedSlugs = await env.STORE_KV.get("active-slugs-7d", { type: "json" }).catch(() => null);
+              }
+              if (Array.isArray(cachedSlugs)) {
+                activeSlugs = new Set(cachedSlugs);
+              } else {
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                const activeRes = await fetch(
+                  `${SUPABASE_URL}/rest/v1/page_views?select=store_id&created_at=gte.${sevenDaysAgo}`,
+                  {
+                    headers: {
+                      apikey: SUPABASE_ANON_KEY,
+                      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                    },
                   },
-                },
-              );
-              if (activeRes.ok) {
-                const rows = await activeRes.json();
-                const activeIds = new Set(rows.map((r) => r.store_id));
-                activeSlugs = new Set(allStores.filter((s) => activeIds.has(s.id)).map((s) => s.slug));
+                );
+                if (activeRes.ok) {
+                  const rows = await activeRes.json();
+                  const activeIds = new Set(rows.map((r) => r.store_id));
+                  activeSlugs = new Set(allStores.filter((s) => activeIds.has(s.id)).map((s) => s.slug));
+                  if (env?.STORE_KV) {
+                    ctx.waitUntil(
+                      env.STORE_KV
+                        .put("active-slugs-7d", JSON.stringify([...activeSlugs]), { expirationTtl: 21_600 })
+                        .catch(() => {}),
+                    );
+                  }
+                }
               }
             } catch {}
 
