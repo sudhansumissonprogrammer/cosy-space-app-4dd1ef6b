@@ -110,8 +110,7 @@ export default defineConfig(({ mode }) => ({
             return "supabase";
           }
 
-          // === Radix UI primitives (exclude tiny react-slot to avoid pulling ===
-          // === the entire chunk via Button → ErrorBoundary on every page)    ===
+          // === Radix UI primitives ===
           if (
             id.includes("node_modules/@radix-ui") &&
             !id.includes("react-slot")
@@ -119,15 +118,14 @@ export default defineConfig(({ mode }) => ({
             return "radix";
           }
 
-          // === Lucide icons ===
-          // NOTE: Previously grouped into "icons" chunk (~55KB) — this forced
-          // every storefront cold load to download the full icon library even
-          // though StorefrontNotFound only uses one icon. Letting Vite split
-          // per-route allows tree-shaking: each page only ships the ~3-5 icons
-          // it actually uses (saves ~50KB raw / ~10KB gz on cold load).
-
-          // Charts (recharts/d3) left to Vite's default splitting
-          // to avoid circular dep with framework chunk
+          // === Lucide icons — CONSOLIDATED (v7.8) ===
+          // Reverted per-icon splitting: each icon was a separate ~1KB chunk
+          // = separate Cloudflare Worker invocation = paid observability event.
+          // ~30 icons × every page = 30 worker hits. Bundling into 1 ~25KB gz
+          // chunk = 1 worker hit, cached forever. Net: -29 events per pageview.
+          if (id.includes("node_modules/lucide-react")) {
+            return "icons";
+          }
 
           // === Form utilities ===
           if (
@@ -136,6 +134,24 @@ export default defineConfig(({ mode }) => ({
             id.includes("node_modules/zod")
           ) {
             return "forms";
+          }
+
+          // === App-level shared infra (v7.8) ===
+          // Group tiny shared modules that show up on EVERY storefront page
+          // into one stable chunk to collapse 5-8 micro-requests into 1.
+          // These are imported by the layout shell and never change per-route.
+          if (
+            id.includes("/src/contexts/CartContext") ||
+            id.includes("/src/contexts/WishlistContext") ||
+            id.includes("/src/contexts/StorefrontAuthContext") ||
+            id.includes("/src/components/storefront/CheckoutAwareLayout") ||
+            id.includes("/src/components/storefront/LazyRender") ||
+            id.includes("/src/components/storefront/StoreTextLogo") ||
+            id.includes("/src/components/ContentSkeleton") ||
+            id.includes("/src/hooks/useSmartHeader") ||
+            id.includes("/src/lib/utils")
+          ) {
+            return "storefront-shell";
           }
         },
       },
