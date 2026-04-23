@@ -21,17 +21,28 @@ export default function StorefrontLogin() {
 
   const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
 
-  // Auto-format: digits only, max 15 (E.164 max)
+  // Auto-format: keep digits only (and a single leading +), allow up to 13 chars (e.g. +919876543210)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
-    setPhone(digits);
+    let raw = e.target.value.replace(/[^\d+]/g, "");
+    // keep '+' only at the very start
+    raw = raw.startsWith("+") ? "+" + raw.slice(1).replace(/\+/g, "") : raw.replace(/\+/g, "");
+    setPhone(raw.slice(0, 13));
     if (error) setError(null);
+  };
+
+  // Strip optional +91 / 91 prefix → return the bare 10-digit subscriber number
+  const stripIndiaPrefix = (value: string): string => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
+    if (digits.length === 11 && digits.startsWith("0")) return digits.slice(1);
+    return digits;
   };
 
   const validatePhone = (value: string): string | null => {
     if (!value) return "Mobile number is required";
-    if (value.length < 10) return `Enter at least 10 digits (${value.length}/10)`;
-    if (value.length > 15) return "Number is too long";
+    const local = stripIndiaPrefix(value);
+    if (local.length !== 10) return "Enter a valid 10-digit mobile number";
+    if (!/^[6-9]/.test(local)) return "Mobile number must start with 6, 7, 8 or 9";
     return null;
   };
 
@@ -46,7 +57,7 @@ export default function StorefrontLogin() {
       toast.error(`Too many attempts. Please wait ${remainingSeconds}s.`);
       return;
     }
-    const normalized = phone;
+    const normalized = stripIndiaPrefix(phone);
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("phone-login", {
@@ -94,7 +105,7 @@ export default function StorefrontLogin() {
                 autoComplete="tel"
                 pattern="[0-9]*"
                 maxLength={15}
-                placeholder="10-digit mobile number"
+                placeholder="10-digit mobile number (+91 optional)"
                 value={phone}
                 onChange={handlePhoneChange}
                 aria-invalid={!!error}
@@ -106,7 +117,7 @@ export default function StorefrontLogin() {
                 <p id="phone-error" className="text-xs text-destructive">{error}</p>
               )}
             </div>
-            <Button type="submit" className="w-full" disabled={loading || isLocked || phone.length < 10}>
+            <Button type="submit" className="w-full" disabled={loading || isLocked || stripIndiaPrefix(phone).length !== 10}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLocked ? `Locked (${remainingSeconds}s)` : "Continue"}
             </Button>
