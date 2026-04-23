@@ -57,7 +57,30 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "7.5.0-cron-leak-fix";
+const WORKER_VERSION = "7.6.0-request-leak-fix";
+
+/* ============================================================
+   v7.6.0 — REQUEST HOT-PATH LEAK FIX
+   Targets: 80k/day → ~15-25k/day (60-80% reduction)
+
+   Fix A: Removed 4 redundant _warmFullHtmlInBackground calls in cold
+          branches of subdomain + custom-domain handlers. Cold paths
+          already serve fully injected HTML; warming again is wasted.
+   Fix B: Replaced per-isolate _warmLocks Map with KV-based cross-isolate
+          lock (`warm-lock:{slug}`, 5min TTL). Stops parallel isolates
+          from each warming the same store independently.
+   Fix C: REVAL_COOLDOWN_MS 120s → 600s. SWR background revalidations
+          now fire at most every 10 min per isolate.
+   Fix D: Removed `storefront` + `storeInfo` from _batchKvRead — both
+          were already fetched by earlyStorefrontPromise + _resolveStoreInfo
+          in the same Promise.all (3 KV reads → 1).
+   Fix E: Shell TTLs raised — MEM 1m→5m, KV 5m→30m, Cache 1m→5m.
+          Shell only changes on deploy and /api/purge already busts it.
+   Fix F: MEM_PV_TTL 60s → 300s. Product version is bumped via /api/purge
+          on dashboard saves so 5min staleness is safe.
+   Fix G: Cron `active-slugs-7d` cached in KV for 6h. Reduces Supabase
+          page_views queries from 48/day to 4/day.
+   ============================================================ */
 
 /* ============================================================
    v7.3.0 — AGGRESSIVE CACHE + SWR + ETAG (3-5x worker req reduction)
@@ -154,7 +177,7 @@ let _memShell = null;
 let _memShellTs = 0;
 // v6.9.1: Keep shell memory TTL short so new frontend publishes don't stay pinned
 // on hot isolates after deploys. Storefront data can stay long-lived; the SPA shell cannot.
-const MEM_SHELL_TTL = 60_000; // 1 min
+const MEM_SHELL_TTL = 300_000; // v7.6.0: 1m → 5m. Shell only changes on deploy.
 
 /* ============================================================
    FIX #7 — IN-MEMORY PREBUILT HEAD (built once per isolate)
@@ -190,7 +213,7 @@ const MEM_STOREFRONT_TTL = 1_800_000; // 30 min
    ============================================================ */
 
 const revalCooldowns = new Map();
-const REVAL_COOLDOWN_MS = 120_000;
+const REVAL_COOLDOWN_MS = 600_000; // v7.6.0: 2min → 10min
 const REVAL_MAP_MAX = 5_000;
 
 function shouldRevalidate(key) {
@@ -698,8 +721,8 @@ function _buildLinkPreloadHeader(html) {
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
 // v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
 // custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 300; // 5 min
-const SPA_SHELL_CACHE_TTL = 60; // 1 min
+const SPA_SHELL_KV_TTL = 1800; // v7.6.0: 5min → 30min
+const SPA_SHELL_CACHE_TTL = 300; // v7.6.0: 1min → 5min
 
 let inflightShellFetch = null;
 
@@ -816,17 +839,17 @@ async function getFreshSpaShell(request, ctx, env) {
 const KV_STOREFRONT_TTL = 21_600; // was 14400 → 6h (Phase 2 #6)
 const CACHE_STOREFRONT_TTL = 3_600; // was 1200 → 1h (Phase 2 #6)
 
+// v7.6.0 Fix D: Reduced from 3 KV reads to 1. `storefront` is already fetched
+// by earlyStorefrontPromise (prefetchStorefrontDataWithDeadline) and `storeInfo`
+// is fetched by _resolveStoreInfo in the same Promise.all — fetching them
+// again here was a duplicate KV read on every request.
 async function _batchKvRead(slug, env) {
-  if (!env?.STORE_KV) return { theme: null, storefront: null, storeInfo: null };
+  if (!env?.STORE_KV) return { theme: null };
   try {
-    const [theme, storefront, storeInfo] = await Promise.all([
-      env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null),
-      env.STORE_KV.get(`storefront:${slug}`, { type: "json" }).catch(() => null),
-      env.STORE_KV.get(`store-info:${slug}`, { type: "json" }).catch(() => null),
-    ]);
-    return { theme, storefront, storeInfo };
+    const theme = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null);
+    return { theme };
   } catch {
-    return { theme: null, storefront: null, storeInfo: null };
+    return { theme: null };
   }
 }
 
@@ -1908,10 +1931,8 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
     _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
     _memThemeCache.set(slug, { lite: kvBatch.theme, expiresAt: Date.now() + MEM_THEME_TTL });
   }
-  if (kvBatch.storefront && !_memStorefrontCache.get(slug)?.expiresAt) {
-    _capMapSize(_memStorefrontCache, MEM_STOREFRONT_CACHE_MAX);
-    _memStorefrontCache.set(slug, { data: kvBatch.storefront, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
-  }
+  // v7.6.0 Fix D: kvBatch.storefront removed — prefetchStorefrontData already
+  // populates _memStorefrontCache itself, so no manual hydration needed.
 
   // Resolve theme from memory (already populated above if needed)
   const themeLite = _memThemeCache.get(slug)?.lite || kvBatch.theme || null;
@@ -1961,18 +1982,23 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
    ~7k redundant Worker subrequests/day for 2 active stores.
    ============================================================ */
 
-const _warmLocks = new Map(); // slug → timestamp (ms)
-
+// v7.6.0 Fix B: Cross-isolate KV-based warm lock (5min TTL).
+// The previous in-memory _warmLocks Map only deduped within a single
+// Cloudflare isolate. With multiple parallel isolates each had its own
+// empty map, so the same store was warmed N times concurrently.
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname) {
   try {
-    // ── 60s dedup lock ──
-    const _now = Date.now();
-    const _last = _warmLocks.get(slug) || 0;
-    if (_now - _last < 60_000) return; // Already warmed within last 60s
-    _warmLocks.set(slug, _now);
-    // Cleanup old entries to keep map small
-    if (_warmLocks.size > 200) {
-      for (const [k, t] of _warmLocks) if (_now - t > 120_000) _warmLocks.delete(k);
+    // ── Cross-isolate KV lock ──
+    if (env?.STORE_KV) {
+      const lockKey = `warm-lock:${slug}`;
+      try {
+        const existing = await env.STORE_KV.get(lockKey);
+        if (existing) return; // Another isolate warmed this store recently
+        // Set lock first (5min TTL) before doing any work
+        ctx.waitUntil(
+          env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(() => {}),
+        );
+      } catch {}
     }
 
     if (hostname) {
@@ -2038,7 +2064,7 @@ const inflightDomainResolutions = new Map();
 
 // In-memory version cache: domain → { version, ts }
 const _memProductVersion = new Map();
-const MEM_PV_TTL = 60_000; // 60s — version is cached in-memory to avoid KV reads
+const MEM_PV_TTL = 300_000; // v7.6.0: 60s → 5min. /api/purge bumps version on save.
 const MEM_PV_MAX = 5_000;
 
 async function _getProductVersion(domain, env) {
@@ -3549,7 +3575,8 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
+          // v7.6.0 Fix A: warm call removed — cold-data path already serves
+          // fully injected HTML; warming again immediately was redundant.
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return new Response(injected.html, { status: 200, headers });
         }
@@ -3567,7 +3594,7 @@ export default {
           headers.set("X-Data-Source", "cold-shell-only");
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
+          // v7.6.0 Fix A: warm call removed — cold-shell-only path already
           return new Response(html, { status: 200, headers });
         }
 
@@ -3593,10 +3620,8 @@ export default {
         _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
         _memThemeCache.set(slug, { lite: kvBatch.theme, expiresAt: Date.now() + MEM_THEME_TTL });
       }
-      if (kvBatch.storefront && !(_memStorefrontCache.get(slug)?.expiresAt > Date.now())) {
-        _capMapSize(_memStorefrontCache, MEM_STOREFRONT_CACHE_MAX);
-        _memStorefrontCache.set(slug, { data: kvBatch.storefront, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
-      }
+      // v7.6.0 Fix D: kvBatch.storefront removed — prefetchStorefrontData
+      // (via earlyStorefrontPromise) already populates _memStorefrontCache.
 
       const themeLite = _memThemeCache.get(slug)?.lite || kvBatch.theme || null;
 
@@ -3699,7 +3724,8 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, resolvedSlugCD, ctx, env, hostname, url.pathname));
+          // v7.6.0 Fix A: warm call removed — cold-data path already serves
+          // fully injected HTML; warming again immediately was redundant.
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return new Response(injected.html, { status: 200, headers });
         }
@@ -3716,7 +3742,7 @@ export default {
           headers.set("X-Data-Source", "cold-shell-only");
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, resolvedSlugCD, ctx, env, hostname, url.pathname));
+          // v7.6.0 Fix A: warm call removed — cold-shell-only path
           return new Response(html, { status: 200, headers });
         }
         // Fall through to standard path if shell unavailable
@@ -3756,13 +3782,8 @@ export default {
         _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
         _memThemeCache.set(resolvedSlug, { lite: kvBatchCD.theme, expiresAt: Date.now() + MEM_THEME_TTL });
       }
-      if (kvBatchCD.storefront && !(_memStorefrontCache.get(resolvedSlug)?.expiresAt > Date.now())) {
-        _capMapSize(_memStorefrontCache, MEM_STOREFRONT_CACHE_MAX);
-        _memStorefrontCache.set(resolvedSlug, {
-          data: kvBatchCD.storefront,
-          expiresAt: Date.now() + MEM_STOREFRONT_TTL,
-        });
-      }
+      // v7.6.0 Fix D: kvBatchCD.storefront removed — prefetchStorefrontData
+      // (via earlyStorefrontPromiseCD) already populates _memStorefrontCache.
 
       const themeLiteCD = _memThemeCache.get(resolvedSlug)?.lite || kvBatchCD.theme || null;
 
@@ -3931,26 +3952,40 @@ export default {
               );
             }
 
-            // FIX #26: Only warm stores with traffic in last 7 days.
-            // Skips dead/demo stores that consume subrequests for no reason.
-            // Combined with cron schedule reduced from */1 to */5 in wrangler.toml,
-            // this cuts cron-driven subrequests by ~95%.
+            // FIX #26 + v7.6.0 Fix G: Only warm stores with traffic in last 7 days.
+            // Active-slug list is cached in KV for 6h to avoid hitting Supabase
+            // page_views (a growing table) on every cron tick.
             let activeSlugs = new Set();
             try {
-              const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-              const activeRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/page_views?select=store_id&created_at=gte.${sevenDaysAgo}`,
-                {
-                  headers: {
-                    apikey: SUPABASE_ANON_KEY,
-                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              let cachedSlugs = null;
+              if (env?.STORE_KV) {
+                cachedSlugs = await env.STORE_KV.get("active-slugs-7d", { type: "json" }).catch(() => null);
+              }
+              if (Array.isArray(cachedSlugs)) {
+                activeSlugs = new Set(cachedSlugs);
+              } else {
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                const activeRes = await fetch(
+                  `${SUPABASE_URL}/rest/v1/page_views?select=store_id&created_at=gte.${sevenDaysAgo}`,
+                  {
+                    headers: {
+                      apikey: SUPABASE_ANON_KEY,
+                      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                    },
                   },
-                },
-              );
-              if (activeRes.ok) {
-                const rows = await activeRes.json();
-                const activeIds = new Set(rows.map((r) => r.store_id));
-                activeSlugs = new Set(allStores.filter((s) => activeIds.has(s.id)).map((s) => s.slug));
+                );
+                if (activeRes.ok) {
+                  const rows = await activeRes.json();
+                  const activeIds = new Set(rows.map((r) => r.store_id));
+                  activeSlugs = new Set(allStores.filter((s) => activeIds.has(s.id)).map((s) => s.slug));
+                  if (env?.STORE_KV) {
+                    ctx.waitUntil(
+                      env.STORE_KV
+                        .put("active-slugs-7d", JSON.stringify([...activeSlugs]), { expirationTtl: 21_600 })
+                        .catch(() => {}),
+                    );
+                  }
+                }
               }
             } catch {}
 
