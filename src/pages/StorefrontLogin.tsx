@@ -117,7 +117,7 @@ export default function StorefrontLogin() {
                 <p id="phone-error" className="text-xs text-destructive">{error}</p>
               )}
             </div>
-            <Button type="submit" className="w-full" disabled={loading || isLocked || phone.length < 10}>
+            <Button type="submit" className="w-full" disabled={loading || isLocked || stripIndiaPrefix(phone).length !== 10}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLocked ? `Locked (${remainingSeconds}s)` : "Continue"}
             </Button>
