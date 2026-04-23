@@ -55,10 +55,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Phone is required for phone-only checkout
-    if (!email && !phone) {
+    // Phone is required as primary identifier
+    if (!phone) {
       return new Response(
-        JSON.stringify({ error: "Either email or phone is required" }),
+        JSON.stringify({ error: "Phone number is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -69,15 +69,17 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Generate a pseudo-email from phone if no email provided
-    const normalizedEmail = email
-      ? email.toLowerCase().trim()
-      : `${phone.replace(/[^0-9]/g, "")}@phone.guest`;
+    // Phone is the PRIMARY identifier. Always use phone-based pseudo-email for auth uniqueness.
+    // Real email (if provided) is stored on storefront_customers for communication only.
+    const normalizedPhone = phone.replace(/[^0-9]/g, "");
+    const phoneEmail = `${normalizedPhone}@phone.guest`;
+    const realEmail = email ? email.toLowerCase().trim() : null;
+    const normalizedEmail = phoneEmail; // for downstream session generation
 
-    // Check if user already exists with this email
+    // Lookup existing user by phone-based email (primary key)
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === normalizedEmail
+      (u) => u.email?.toLowerCase() === phoneEmail
     );
 
     let userId: string;
@@ -87,13 +89,18 @@ Deno.serve(async (req) => {
     if (existingUser) {
       userId = existingUser.id;
     } else {
-      // Create a new user with a random password (they can reset later)
+      // Create a new user keyed by phone, with a random password (they can reset later)
       generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
       const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
-        email: normalizedEmail,
+        email: phoneEmail,
         password: generatedPassword,
         email_confirm: true,
-        user_metadata: { full_name: name || null, phone: phone || null, user_type: "customer" },
+        user_metadata: {
+          full_name: name || null,
+          phone: normalizedPhone,
+          contact_email: realEmail,
+          user_type: "customer",
+        },
       });
 
       if (createErr) {
@@ -123,8 +130,8 @@ Deno.serve(async (req) => {
         .from("storefront_customers")
         .update({
           name: name || undefined,
-          phone: phone || undefined,
-          email: email ? normalizedEmail : undefined,
+          phone: normalizedPhone,
+          email: realEmail || undefined,
         })
         .eq("id", customerId);
     } else {
@@ -133,9 +140,9 @@ Deno.serve(async (req) => {
         .insert({
           user_id: userId,
           store_id,
-          email: email ? normalizedEmail : null,
+          email: realEmail,
           name: name || null,
-          phone: phone || null,
+          phone: normalizedPhone,
         })
         .select("id")
         .single();
