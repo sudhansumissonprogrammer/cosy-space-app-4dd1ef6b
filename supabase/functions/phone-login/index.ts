@@ -1,0 +1,159 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+/**
+ * Direct phone login (NO OTP).
+ *
+ * Behavior:
+ * - Looks up an auth user keyed by `${normalizedPhone}@phone.guest`
+ *   (the same scheme used by create-guest-account).
+ * - If found, resets that user's password to a fresh random value and
+ *   returns a real session (access + refresh tokens) for auto-login.
+ * - If not found, creates a new user keyed by phone + creates a
+ *   storefront_customers row for the given store, then signs in.
+ *
+ * The client takes the returned tokens and calls supabase.auth.setSession(...)
+ * to log the user in immediately.
+ */
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const { phone, store_id, name } = await req.json();
+
+    if (!phone || typeof phone !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Phone number is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!/^[0-9\s+\-()]{7,20}$/.test(phone)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid phone format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const normalizedPhone = phone.replace(/[^0-9]/g, "");
+    if (normalizedPhone.length < 7) {
+      return new Response(
+        JSON.stringify({ error: "Phone number too short" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const phoneEmail = `${normalizedPhone}@phone.guest`;
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Find existing user by phone-based pseudo-email
+    const { data: list } = await adminClient.auth.admin.listUsers();
+    const existingUser = list?.users?.find(
+      (u) => u.email?.toLowerCase() === phoneEmail
+    );
+
+    // Generate a fresh password each time so login is deterministic
+    const freshPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
+    let userId: string;
+    let isNewUser = false;
+
+    if (existingUser) {
+      userId = existingUser.id;
+      const { error: updateErr } = await adminClient.auth.admin.updateUserById(userId, {
+        password: freshPassword,
+      });
+      if (updateErr) {
+        return new Response(
+          JSON.stringify({ error: updateErr.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      const { data: newUser, error: createErr } = await adminClient.auth.admin.createUser({
+        email: phoneEmail,
+        password: freshPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: name || null,
+          phone: normalizedPhone,
+          user_type: "customer",
+        },
+      });
+      if (createErr || !newUser?.user) {
+        return new Response(
+          JSON.stringify({ error: createErr?.message || "Could not create user" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      userId = newUser.user.id;
+      isNewUser = true;
+    }
+
+    // Ensure a storefront_customers row exists for this store (if store_id given)
+    if (store_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(store_id)) {
+      const { data: existingCustomer } = await adminClient
+        .from("storefront_customers")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("store_id", store_id)
+        .maybeSingle();
+
+      if (!existingCustomer) {
+        await adminClient.from("storefront_customers").insert({
+          user_id: userId,
+          store_id,
+          phone: normalizedPhone,
+          name: name || null,
+        });
+      }
+    }
+
+    // Sign in to mint a real session
+    const anonClient = createClient(supabaseUrl, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: signInData, error: signInErr } = await anonClient.auth.signInWithPassword({
+      email: phoneEmail,
+      password: freshPassword,
+    });
+
+    if (signInErr || !signInData?.session) {
+      return new Response(
+        JSON.stringify({ error: signInErr?.message || "Could not create session" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        is_new_user: isNewUser,
+        session: {
+          access_token: signInData.session.access_token,
+          refresh_token: signInData.session.refresh_token,
+        },
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unexpected error";
+    return new Response(
+      JSON.stringify({ error: message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
