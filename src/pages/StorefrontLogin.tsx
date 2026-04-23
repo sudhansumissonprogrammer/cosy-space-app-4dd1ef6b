@@ -105,7 +105,7 @@ export default function StorefrontLogin() {
                 autoComplete="tel"
                 pattern="[0-9]*"
                 maxLength={15}
-                placeholder="10-digit mobile number"
+                placeholder="10-digit mobile number (+91 optional)"
                 value={phone}
                 onChange={handlePhoneChange}
                 aria-invalid={!!error}
