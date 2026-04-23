@@ -1931,10 +1931,8 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
     _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
     _memThemeCache.set(slug, { lite: kvBatch.theme, expiresAt: Date.now() + MEM_THEME_TTL });
   }
-  if (kvBatch.storefront && !_memStorefrontCache.get(slug)?.expiresAt) {
-    _capMapSize(_memStorefrontCache, MEM_STOREFRONT_CACHE_MAX);
-    _memStorefrontCache.set(slug, { data: kvBatch.storefront, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
-  }
+  // v7.6.0 Fix D: kvBatch.storefront removed — prefetchStorefrontData already
+  // populates _memStorefrontCache itself, so no manual hydration needed.
 
   // Resolve theme from memory (already populated above if needed)
   const themeLite = _memThemeCache.get(slug)?.lite || kvBatch.theme || null;
@@ -1984,18 +1982,23 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
    ~7k redundant Worker subrequests/day for 2 active stores.
    ============================================================ */
 
-const _warmLocks = new Map(); // slug → timestamp (ms)
-
+// v7.6.0 Fix B: Cross-isolate KV-based warm lock (5min TTL).
+// The previous in-memory _warmLocks Map only deduped within a single
+// Cloudflare isolate. With multiple parallel isolates each had its own
+// empty map, so the same store was warmed N times concurrently.
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname) {
   try {
-    // ── 60s dedup lock ──
-    const _now = Date.now();
-    const _last = _warmLocks.get(slug) || 0;
-    if (_now - _last < 60_000) return; // Already warmed within last 60s
-    _warmLocks.set(slug, _now);
-    // Cleanup old entries to keep map small
-    if (_warmLocks.size > 200) {
-      for (const [k, t] of _warmLocks) if (_now - t > 120_000) _warmLocks.delete(k);
+    // ── Cross-isolate KV lock ──
+    if (env?.STORE_KV) {
+      const lockKey = `warm-lock:${slug}`;
+      try {
+        const existing = await env.STORE_KV.get(lockKey);
+        if (existing) return; // Another isolate warmed this store recently
+        // Set lock first (5min TTL) before doing any work
+        ctx.waitUntil(
+          env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(() => {}),
+        );
+      } catch {}
     }
 
     if (hostname) {
@@ -3572,7 +3575,8 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
+          // v7.6.0 Fix A: warm call removed — cold-data path already serves
+          // fully injected HTML; warming again immediately was redundant.
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return new Response(injected.html, { status: 200, headers });
         }
@@ -3590,7 +3594,7 @@ export default {
           headers.set("X-Data-Source", "cold-shell-only");
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
+          // v7.6.0 Fix A: warm call removed — cold-shell-only path already
           return new Response(html, { status: 200, headers });
         }
 
@@ -3616,10 +3620,8 @@ export default {
         _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
         _memThemeCache.set(slug, { lite: kvBatch.theme, expiresAt: Date.now() + MEM_THEME_TTL });
       }
-      if (kvBatch.storefront && !(_memStorefrontCache.get(slug)?.expiresAt > Date.now())) {
-        _capMapSize(_memStorefrontCache, MEM_STOREFRONT_CACHE_MAX);
-        _memStorefrontCache.set(slug, { data: kvBatch.storefront, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
-      }
+      // v7.6.0 Fix D: kvBatch.storefront removed — prefetchStorefrontData
+      // (via earlyStorefrontPromise) already populates _memStorefrontCache.
 
       const themeLite = _memThemeCache.get(slug)?.lite || kvBatch.theme || null;
 
@@ -3722,7 +3724,8 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, resolvedSlugCD, ctx, env, hostname, url.pathname));
+          // v7.6.0 Fix A: warm call removed — cold-data path already serves
+          // fully injected HTML; warming again immediately was redundant.
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return new Response(injected.html, { status: 200, headers });
         }
@@ -3739,7 +3742,7 @@ export default {
           headers.set("X-Data-Source", "cold-shell-only");
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, resolvedSlugCD, ctx, env, hostname, url.pathname));
+          // v7.6.0 Fix A: warm call removed — cold-shell-only path
           return new Response(html, { status: 200, headers });
         }
         // Fall through to standard path if shell unavailable
@@ -3779,13 +3782,8 @@ export default {
         _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
         _memThemeCache.set(resolvedSlug, { lite: kvBatchCD.theme, expiresAt: Date.now() + MEM_THEME_TTL });
       }
-      if (kvBatchCD.storefront && !(_memStorefrontCache.get(resolvedSlug)?.expiresAt > Date.now())) {
-        _capMapSize(_memStorefrontCache, MEM_STOREFRONT_CACHE_MAX);
-        _memStorefrontCache.set(resolvedSlug, {
-          data: kvBatchCD.storefront,
-          expiresAt: Date.now() + MEM_STOREFRONT_TTL,
-        });
-      }
+      // v7.6.0 Fix D: kvBatchCD.storefront removed — prefetchStorefrontData
+      // (via earlyStorefrontPromiseCD) already populates _memStorefrontCache.
 
       const themeLiteCD = _memThemeCache.get(resolvedSlug)?.lite || kvBatchCD.theme || null;
 
