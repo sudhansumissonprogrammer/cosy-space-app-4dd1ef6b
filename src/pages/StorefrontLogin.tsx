@@ -17,20 +17,36 @@ export default function StorefrontLogin() {
 
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
 
+  // Auto-format: digits only, max 15 (E.164 max)
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
+    setPhone(digits);
+    if (error) setError(null);
+  };
+
+  const validatePhone = (value: string): string | null => {
+    if (!value) return "Mobile number is required";
+    if (value.length < 10) return `Enter at least 10 digits (${value.length}/10)`;
+    if (value.length > 15) return "Number is too long";
+    return null;
+  };
+
   const handlePhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationError = validatePhone(phone);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     if (!checkCanAttempt()) {
       toast.error(`Too many attempts. Please wait ${remainingSeconds}s.`);
       return;
     }
-    const normalized = phone.replace(/[^0-9]/g, "");
-    if (normalized.length < 7) {
-      toast.error("Please enter a valid phone number");
-      return;
-    }
+    const normalized = phone;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("phone-login", {
@@ -75,14 +91,22 @@ export default function StorefrontLogin() {
                 id="phone"
                 type="tel"
                 inputMode="numeric"
+                autoComplete="tel"
+                pattern="[0-9]*"
+                maxLength={15}
                 placeholder="10-digit mobile number"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
+                aria-invalid={!!error}
+                aria-describedby={error ? "phone-error" : undefined}
                 required
                 autoFocus
               />
+              {error && (
+                <p id="phone-error" className="text-xs text-destructive">{error}</p>
+              )}
             </div>
-            <Button type="submit" className="w-full" disabled={loading || isLocked}>
+            <Button type="submit" className="w-full" disabled={loading || isLocked || phone.length < 10}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLocked ? `Locked (${remainingSeconds}s)` : "Continue"}
             </Button>
