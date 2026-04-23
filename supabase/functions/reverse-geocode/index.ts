@@ -118,7 +118,16 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true, address }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          // Cache repeat lat/lng lookups for 1 hour at the edge so users
+          // who re-detect their location don't pay the round-trip cost twice.
+          // 'public' is safe — geocoding results aren't user-specific.
+          "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        },
+      }
     );
   } catch (err) {
     return new Response(

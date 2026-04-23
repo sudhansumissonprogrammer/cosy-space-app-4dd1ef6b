@@ -122,6 +122,13 @@ export function StorefrontAuthProvider({
           setCustomer(null);
         }
         setLoading(false);
+        // Prefetch account-related route chunks once a user is logged in,
+        // so navigating to /account, /wishlist, /cart feels instant.
+        if (sess?.user) {
+          import("@/lib/prefetchAccountRoutes")
+            .then((m) => m.prefetchAccountRoutes())
+            .catch(() => {});
+        }
       });
       subscription = sub;
 
@@ -129,6 +136,11 @@ export function StorefrontAuthProvider({
         setSession(sess);
         setUser(sess?.user ?? null);
         setLoading(false);
+        if (sess?.user) {
+          import("@/lib/prefetchAccountRoutes")
+            .then((m) => m.prefetchAccountRoutes())
+            .catch(() => {});
+        }
       });
     };
 

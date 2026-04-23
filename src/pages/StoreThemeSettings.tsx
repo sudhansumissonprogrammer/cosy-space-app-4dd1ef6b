@@ -1885,6 +1885,8 @@ export default function StoreThemeSettings() {
 
   const { data: themeConfig, isLoading } = useQuery({
     queryKey: ["store-theme-config", storeId],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("store_theme_config")
