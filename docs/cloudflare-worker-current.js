@@ -57,29 +57,35 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "7.6.0-request-leak-fix";
+const WORKER_VERSION = "7.7.0-race-and-dedup-fix";
 
 /* ============================================================
-   v7.6.0 — REQUEST HOT-PATH LEAK FIX
-   Targets: 80k/day → ~15-25k/day (60-80% reduction)
+   v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
+   Targets: ~25k/day → ~10-15k/day (additional 40-50% reduction)
 
-   Fix A: Removed 4 redundant _warmFullHtmlInBackground calls in cold
-          branches of subdomain + custom-domain handlers. Cold paths
-          already serve fully injected HTML; warming again is wasted.
-   Fix B: Replaced per-isolate _warmLocks Map with KV-based cross-isolate
-          lock (`warm-lock:{slug}`, 5min TTL). Stops parallel isolates
-          from each warming the same store independently.
-   Fix C: REVAL_COOLDOWN_MS 120s → 600s. SWR background revalidations
-          now fire at most every 10 min per isolate.
-   Fix D: Removed `storefront` + `storeInfo` from _batchKvRead — both
-          were already fetched by earlyStorefrontPromise + _resolveStoreInfo
-          in the same Promise.all (3 KV reads → 1).
-   Fix E: Shell TTLs raised — MEM 1m→5m, KV 5m→30m, Cache 1m→5m.
-          Shell only changes on deploy and /api/purge already busts it.
-   Fix F: MEM_PV_TTL 60s → 300s. Product version is bumped via /api/purge
-          on dashboard saves so 5min staleness is safe.
-   Fix G: Cron `active-slugs-7d` cached in KV for 6h. Reduces Supabase
-          page_views queries from 48/day to 4/day.
+   Fix 1: warm-lock now SYNC PUT (was ctx.waitUntil deferred). Previously
+          2+ isolates could read null then all proceed; the deferred write
+          left the lock unset for ~500ms. Now set within ~50ms.
+   Fix 2: Pass `inlineProducts` through fetchAndInjectSlug ➜ _warm…().
+          Was being fetched 3× per request chain (handler + inject + warm).
+          Now 1× per request.
+   Fix 3: Removed orphaned storeInEdgeCache() in cachedFetch. The
+          streaming response (no inline data) was overwriting the
+          full-injected version that _warmFullHtmlInBackground writes.
+   Fix 4: PREBUILT_HEAD_CACHE_TTL 60s→300s, KV 300s→1800s. Head only
+          changes on store-settings save (which calls /api/purge).
+   Fix 5: Supabase /rest/v1/ GET requests cached for 30s when anonymous
+          (no user JWT). POST/PATCH/DELETE and authed reads bypass.
+   ============================================================
+
+   v7.6.0 — REQUEST HOT-PATH LEAK FIX (kept for history)
+   Fix A: Removed 4 redundant _warmFullHtmlInBackground calls in cold paths.
+   Fix B: KV-based cross-isolate warm-lock (`warm-lock:{slug}`, 5min TTL).
+   Fix C: REVAL_COOLDOWN_MS 120s → 600s.
+   Fix D: Removed `storefront`+`storeInfo` from _batchKvRead.
+   Fix E: Shell TTLs raised (MEM 5m, KV 30m, Cache 5m).
+   Fix F: MEM_PV_TTL 60s → 300s.
+   Fix G: Cron `active-slugs-7d` cached in KV for 6h.
    ============================================================ */
 
 /* ============================================================
@@ -590,8 +596,8 @@ window.__STOREFRONT_PREFETCH__=fetch("/?__sf_data=1",{cache:"no-store",headers:{
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
 // v6.9.1: Derived from the SPA shell, so it must expire on the same short window.
-const PREBUILT_HEAD_KV_TTL = 300;
-const PREBUILT_HEAD_CACHE_TTL = 60;
+const PREBUILT_HEAD_KV_TTL = 1800; // v7.7.0 Fix 4: 5m → 30m
+const PREBUILT_HEAD_CACHE_TTL = 300; // v7.7.0 Fix 4: 1m → 5m
 
 function _buildPrebuiltHead(html) {
   // FIX #7: Cache result in module-level variable — computed once per isolate
@@ -1911,19 +1917,22 @@ async function serveStreamedHtml(
    FIX #5: deadline anchored to requestStart
    ============================================================ */
 
-async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, requestStart) {
+async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, requestStart, prefetchedInlineProducts = null) {
   // FIX #2 + #5: Kick off storefront fetch IMMEDIATELY.
   // Measure remaining deadline from original request arrival.
   const elapsed = Date.now() - (requestStart || Date.now());
   const remaining = Math.max(400, 1400 - elapsed);
   const storefrontPromise = prefetchStorefrontDataWithDeadline(slug, ctx, env, remaining);
 
-  // FIX #4: Batch KV reads — all three in one Promise.all
+  // v7.7.0 Fix 2: Skip _getInlineProductsOrNull if caller already fetched it.
+  // FIX #4: Batch KV reads in one Promise.all
   const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
     getSpaShell(request, ctx, env),
     _batchKvRead(slug, env),
     _getCachedPrebuiltHead(env),
-    _getInlineProductsOrNull(hostname, slug, env, ctx),
+    prefetchedInlineProducts !== null
+      ? Promise.resolve(prefetchedInlineProducts)
+      : _getInlineProductsOrNull(hostname, slug, env, ctx),
   ]);
 
   // Hydrate in-memory caches from batch KV read
@@ -1968,7 +1977,8 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
     newHeaders,
   );
 
-  ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname));
+  // v7.7.0 Fix 2: pass already-resolved inlineProducts so warm doesn't refetch.
+  ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, inlineProducts));
 
   return { response, dataSource: "streaming" };
 }
@@ -1982,22 +1992,21 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
    ~7k redundant Worker subrequests/day for 2 active stores.
    ============================================================ */
 
-// v7.6.0 Fix B: Cross-isolate KV-based warm lock (5min TTL).
-// The previous in-memory _warmLocks Map only deduped within a single
-// Cloudflare isolate. With multiple parallel isolates each had its own
-// empty map, so the same store was warmed N times concurrently.
-async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname) {
+// v7.6.0 Fix B + v7.7.0 Fix 1: Cross-isolate KV-based warm lock with SYNC put.
+// The lock now writes synchronously (await) BEFORE any subrequest-heavy work,
+// closing the race window from ~500ms (deferred via ctx.waitUntil) to ~50ms.
+// v7.7.0 Fix 2: accept prefetchedInlineProducts to avoid 3rd redundant fetch.
+async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, prefetchedInlineProducts = null) {
   try {
-    // ── Cross-isolate KV lock ──
+    // ── Cross-isolate KV lock (SYNC write, v7.7.0 Fix 1) ──
     if (env?.STORE_KV) {
       const lockKey = `warm-lock:${slug}`;
       try {
         const existing = await env.STORE_KV.get(lockKey);
         if (existing) return; // Another isolate warmed this store recently
-        // Set lock first (5min TTL) before doing any work
-        ctx.waitUntil(
-          env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(() => {}),
-        );
+        // SYNC put before any work — eventually consistent but closes the
+        // window from ~500ms (deferred) to ~50ms (sync).
+        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(() => {});
       } catch {}
     }
 
@@ -2013,9 +2022,12 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const warmKey = `warm-html:${slug}`;
     if (!shouldRevalidate(warmKey)) return;
 
+    // v7.7.0 Fix 2: reuse prefetched inlineProducts when caller passed them.
     const [prefetchResult, inlineProducts] = await Promise.all([
       prefetchStorefrontData(slug, ctx, env),
-      _getInlineProductsOrNull(hostname, slug, env, ctx),
+      prefetchedInlineProducts !== null
+        ? Promise.resolve(prefetchedInlineProducts)
+        : _getInlineProductsOrNull(hostname, slug, env, ctx),
     ]);
     if (!prefetchResult.data) return;
 
@@ -3028,13 +3040,16 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
     return new Response("Server Error", { status: 500 });
   }
 
+  // v7.7.0 Fix 3: removed double cache.put for slug responses.
+  // _warmFullHtmlInBackground (called from fetchAndInjectSlug) is now the
+  // single source of truth for HTML cache writes — it stores the FULLY
+  // injected version. Previously this block stored the streaming version
+  // (no inline data) which then got overwritten or, worse, occasionally
+  // raced to overwrite the better version.
+  // Root-domain (no slug) responses still get cached here.
   const contentType = res.headers.get("content-type") || "";
-  if (res.status === 200 && contentType.includes("text/html")) {
-    if (slug) {
-      if (res.headers.get("X-Store-Slug") === slug) storeInEdgeCache(ctx, hostname, slug, res);
-    } else {
-      storeInEdgeCache(ctx, hostname, "", res);
-    }
+  if (res.status === 200 && contentType.includes("text/html") && !slug) {
+    storeInEdgeCache(ctx, hostname, "", res);
   }
 
   return addDiagnosticHeaders(res, { slug, cacheStatus: "MISS", dataSource });
@@ -3491,16 +3506,48 @@ export default {
     }
 
     // ─── SUPABASE PROXY ───
+    // v7.7.0 Fix 5: Edge-cache anonymous GETs on /rest/v1/ for 30s.
+    // Skip caching for: non-GET, /functions/v1/* (POST-heavy, custom logic),
+    // and any request carrying a user JWT in Authorization (auth'd reads).
     if (url.pathname.startsWith("/rest/v1/") || url.pathname.startsWith("/functions/v1/")) {
       const targetUrl = new URL(request.url);
       targetUrl.hostname = new URL(SUPABASE_URL).hostname;
       targetUrl.port = "";
       const headers = new Headers(request.headers);
       headers.set("Host", new URL(SUPABASE_URL).hostname);
+
+      // Detect user JWT BEFORE we overwrite Authorization with the anon key.
+      // A user JWT is any Authorization: Bearer that isn't our shared anon key.
+      const incomingAuth = headers.get("Authorization") || "";
+      const hasUserJwt = incomingAuth.startsWith("Bearer ") &&
+        incomingAuth.slice(7).trim() !== SUPABASE_ANON_KEY;
+
       if (!headers.has("apikey")) {
         headers.set("apikey", SUPABASE_ANON_KEY);
         headers.set("Authorization", `Bearer ${SUPABASE_ANON_KEY}`);
       }
+
+      const isCacheable =
+        request.method === "GET" &&
+        url.pathname.startsWith("/rest/v1/") &&
+        !hasUserJwt;
+
+      // Try edge cache first for cacheable requests
+      if (isCacheable) {
+        const cacheKey = new Request(`https://__sb-proxy/${url.pathname}${url.search}`, { method: "GET" });
+        try {
+          const hit = await cache.match(cacheKey);
+          if (hit) {
+            const cachedRes = new Response(hit.body, hit);
+            cachedRes.headers.set("Access-Control-Allow-Origin", "*");
+            cachedRes.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+            cachedRes.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+            cachedRes.headers.set("X-Sb-Proxy-Cache", "HIT");
+            return cachedRes;
+          }
+        } catch {}
+      }
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), EDGE_FN_TIMEOUT_MS);
       try {
@@ -3515,6 +3562,20 @@ export default {
         proxyRes.headers.set("Access-Control-Allow-Origin", "*");
         proxyRes.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
         proxyRes.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+
+        // Store cacheable 200s in edge cache for 30s
+        if (isCacheable && res.status === 200) {
+          try {
+            const cacheKey = new Request(`https://__sb-proxy/${url.pathname}${url.search}`, { method: "GET" });
+            const toCache = proxyRes.clone();
+            // Override Cache-Control so cache.put respects our TTL
+            toCache.headers.set("Cache-Control", "public, max-age=30");
+            toCache.headers.set("X-Sb-Proxy-Cache", "MISS-STORED");
+            ctx.waitUntil(cache.put(cacheKey, toCache).catch(() => {}));
+          } catch {}
+        }
+
+        proxyRes.headers.set("X-Sb-Proxy-Cache", isCacheable ? "MISS" : "BYPASS");
         return proxyRes;
       } catch {
         clearTimeout(timeout);
@@ -3676,7 +3737,8 @@ export default {
         responseHeaders,
       );
 
-      ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname));
+      // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
+      ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname, inlineProducts));
       ctx.waitUntil(recordPageView(request, storeInfo?.storeId, url.pathname));
 
       return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "streaming" });
@@ -3820,7 +3882,8 @@ export default {
         responseHeadersCD,
       );
 
-      ctx.waitUntil(_warmFullHtmlInBackground(request, shellResultCD, resolvedSlug, ctx, env, hostname, url.pathname));
+      // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
+      ctx.waitUntil(_warmFullHtmlInBackground(request, shellResultCD, resolvedSlug, ctx, env, hostname, url.pathname, inlineProductsCDReal));
       // Edge-native page view tracking (replaces frontend trackPageView)
       ctx.waitUntil(
         earlyStorefrontPromiseCD
