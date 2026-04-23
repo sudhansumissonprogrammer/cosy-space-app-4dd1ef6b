@@ -130,8 +130,8 @@ Deno.serve(async (req) => {
         .from("storefront_customers")
         .update({
           name: name || undefined,
-          phone: phone || undefined,
-          email: email ? normalizedEmail : undefined,
+          phone: normalizedPhone,
+          email: realEmail || undefined,
         })
         .eq("id", customerId);
     } else {
@@ -140,9 +140,9 @@ Deno.serve(async (req) => {
         .insert({
           user_id: userId,
           store_id,
-          email: email ? normalizedEmail : null,
+          email: realEmail,
           name: name || null,
-          phone: phone || null,
+          phone: normalizedPhone,
         })
         .select("id")
         .single();
