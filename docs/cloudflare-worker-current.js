@@ -57,7 +57,30 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "7.5.0-cron-leak-fix";
+const WORKER_VERSION = "7.6.0-request-leak-fix";
+
+/* ============================================================
+   v7.6.0 — REQUEST HOT-PATH LEAK FIX
+   Targets: 80k/day → ~15-25k/day (60-80% reduction)
+
+   Fix A: Removed 4 redundant _warmFullHtmlInBackground calls in cold
+          branches of subdomain + custom-domain handlers. Cold paths
+          already serve fully injected HTML; warming again is wasted.
+   Fix B: Replaced per-isolate _warmLocks Map with KV-based cross-isolate
+          lock (`warm-lock:{slug}`, 5min TTL). Stops parallel isolates
+          from each warming the same store independently.
+   Fix C: REVAL_COOLDOWN_MS 120s → 600s. SWR background revalidations
+          now fire at most every 10 min per isolate.
+   Fix D: Removed `storefront` + `storeInfo` from _batchKvRead — both
+          were already fetched by earlyStorefrontPromise + _resolveStoreInfo
+          in the same Promise.all (3 KV reads → 1).
+   Fix E: Shell TTLs raised — MEM 1m→5m, KV 5m→30m, Cache 1m→5m.
+          Shell only changes on deploy and /api/purge already busts it.
+   Fix F: MEM_PV_TTL 60s → 300s. Product version is bumped via /api/purge
+          on dashboard saves so 5min staleness is safe.
+   Fix G: Cron `active-slugs-7d` cached in KV for 6h. Reduces Supabase
+          page_views queries from 48/day to 4/day.
+   ============================================================ */
 
 /* ============================================================
    v7.3.0 — AGGRESSIVE CACHE + SWR + ETAG (3-5x worker req reduction)
