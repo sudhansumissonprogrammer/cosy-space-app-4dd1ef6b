@@ -1,82 +1,57 @@
 
 
-## Worker Subrequest Leak — Round 3 Fix Plan (`v7.7.0-race-and-dedup-fix`)
+## Phone-Only Instant Login (No Email, No Password, No OTP)
 
-The Claude audit is **accurate against the current `v7.6.0-request-leak-fix` worker**. v7.6.0 closed the cross-isolate dedup gap and the duplicate KV reads, but introduced a **race condition in the warm-lock**, and left **3 redundant `_getInlineProductsOrNull()` calls per request chain**, plus a **double `cache.put`** in `cachedFetch`.
+Strip the storefront login UI down to a **single phone-number field**. Enter phone → instantly logged in. If the phone is new, an account is auto-created with that number; if it exists, the user is signed back into the same account (with all past orders, addresses, wishlist intact).
 
-Expected drop: another **40–50% reduction** on top of v7.6.0 — idle stores → ~10 req/hour each.
+### What changes
 
----
+**1. `src/pages/StorefrontLogin.tsx` — full rewrite of UI**
+- Remove the Email/Password tab entirely.
+- Remove the Tabs component (no tabs needed — only one method).
+- Remove the "New here? Create an account" link (no separate signup).
+- Change copy:
+  - Title: **"Continue with Mobile Number"**
+  - Description: **"Enter your number to view your orders, addresses & track delivery. No password needed."**
+  - Button: **"Continue"**
+- Keep one `Input` (10-digit phone) + one submit button.
+- Keep client-side rate limiter (`useLoginRateLimit`) — protects against abuse since there's no OTP.
+- Keep the existing `phone-login` edge function call exactly as-is (already does account auto-create + session mint).
 
-### Fixes (ordered by impact)
+**2. `src/pages/StorefrontSignup.tsx` — redirect to login**
+- Replace the entire signup form with a `<Navigate to={storefrontPath(slug, "login")} replace />` since signup and login are now the same single-step flow.
+- Any old links pointing to `/signup` will silently land on the unified phone screen.
 
-**Fix 1 — Make warm-lock atomic (`_warmFullHtmlInBackground`)** *(saves ~20%)*
-Current code reads `warm-lock:{slug}` then `ctx.waitUntil(env.STORE_KV.put(...))` — the write is deferred, so 2+ isolates all read `null` and all proceed to warm. Change to:
-```js
-const existing = await env.STORE_KV.get(lockKey);
-if (existing) return;
-await env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(()=>{}); // SYNC, not waitUntil
+**3. No backend changes needed**
+- `phone-login` edge function already:
+  - Normalizes the phone number.
+  - Creates the auth user (`{phone}@phone.guest`) if missing, with `user_type: "customer"`.
+  - Creates the `storefront_customers` row (where addresses live).
+  - Returns a real Supabase session → instant login.
+- Guest checkout (`create-guest-account`) already keys accounts by the same phone scheme, so an order placed during checkout and a later "Sign In" with the same number both resolve to the **same account** — orders, addresses, and profile data merge automatically.
+
+### User flow after change
+
+```text
+Storefront → "Sign In" / "My Account"
+        │
+        ▼
+ ┌──────────────────────────────────────┐
+ │  Continue with Mobile Number         │
+ │  ┌────────────────────────────────┐  │
+ │  │ 98XXXXXXXX                     │  │
+ │  └────────────────────────────────┘  │
+ │  [        Continue        ]          │
+ └──────────────────────────────────────┘
+        │ (one click, no OTP)
+        ▼
+   Account page — orders, addresses,
+   wishlist all visible, keyed by phone
 ```
-Lock is set before any subrequest-heavy work begins. KV is eventually-consistent so this isn't perfectly atomic — but the synchronous write closes the window from ~500ms to ~50ms.
 
-**Fix 2 — Pass `inlineProducts` through the chain instead of re-fetching** *(saves ~15%)*
-`_getInlineProductsOrNull()` is currently called 3× per request:
-1. Subdomain/custom-domain handler (already in the `Promise.all`)
-2. `fetchAndInjectSlug()`
-3. `_warmFullHtmlInBackground()`
+### Notes / trade-offs
 
-Each call does a `cache.match` (and a KV read on cache miss). Refactor:
-- Extend `fetchAndInjectSlug(request, env, ctx, slug, ..., inlineProducts = null)` — skip internal fetch if passed.
-- Extend `_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, inlineProducts = null)` — same.
-- In both subdomain handler (line ~3654) and custom-domain handler (line ~3802), pass the already-resolved `inlineProducts` from the parent `Promise.all` into both downstream functions.
-
-Result: 1 fetch per request instead of 3.
-
-**Fix 3 — Remove orphaned `storeInEdgeCache` call from `cachedFetch`** *(saves ~10%)*
-`cachedFetch` writes the streaming response (no inline data) to cache; `_warmFullHtmlInBackground` then overwrites it with the full injected version. The streaming write is wasted work AND occasionally races to overwrite the better version. Remove this block from `cachedFetch`:
-```js
-if (res.status === 200 && contentType.includes("text/html")) {
-  if (slug && res.headers.get("X-Store-Slug") === slug) {
-    storeInEdgeCache(ctx, hostname, slug, res);
-  }
-}
-```
-`_warmFullHtmlInBackground` is the single source of truth for HTML cache writes.
-
-**Fix 4 — Extend `PREBUILT_HEAD_CACHE_TTL` & `PREBUILT_HEAD_KV_TTL`** *(saves ~5%)*
-```
-PREBUILT_HEAD_CACHE_TTL: 60   → 300    (1m → 5m)
-PREBUILT_HEAD_KV_TTL:    300  → 1800   (5m → 30m)
-```
-The prebuilt `<head>` (meta + OG tags) only changes on store-settings save → already triggers a `/api/purge`. Safe to extend.
-
-**Fix 5 — Cache GET requests on Supabase proxy** *(audit-flagged, conditional)*
-The `/rest/v1/` and `/functions/v1/` proxy currently passes every frontend API call through the Worker uncached. For idempotent `GET` requests on `/rest/v1/`, add a 30s edge cache keyed on full URL + auth-presence. Skip caching for `POST/PATCH/DELETE` and any request with a user JWT in `Authorization`. Saves repeat reads on shared anonymous queries (categories, products, store-info).
-
-If you'd rather not touch this path right now (it's lower impact and slightly risky for auth flows), we can skip Fix 5 and ship 1–4 only. **Default: include Fix 5 with the conservative anon-only caching.**
-
----
-
-### Files touched
-- `docs/cloudflare-worker-current.js` — single file, ~6 surgical edits
-- `WORKER_VERSION` → `"7.7.0-race-and-dedup-fix"` and update header comment
-- Update `mem://constraints/scaling-capacity` with new per-store idle baseline (~10 req/hr)
-
-### Manual deployment required
-After the patch is applied, copy `docs/cloudflare-worker-current.js` → paste into Cloudflare Worker dashboard → **Save & Deploy**. Lovable cannot push to Cloudflare directly.
-
-### Verification (post-deploy, you do)
-1. Confirm `X-Worker-Version: 7.7.0-race-and-dedup-fix` response header is live.
-2. Wait 1 hour → check Cloudflare subrequests dashboard.
-3. Expected: total subrequests drop from current ~25k/day → **~10–15k/day**.
-4. Per-store idle req/hour should be <20 (vs ~50 after v7.6.0).
-
-### What I'm NOT doing
-- Not touching the cron schedule (`*/30` confirmed correct).
-- Not changing the products inline-fetch logic itself — only how many times it's called.
-- Not changing `MEM_PV_TTL` again — 5min is already correct.
-
----
-
-**Approve to switch to default mode and ship `v7.7.0-race-and-dedup-fix`. Reply "skip fix 5" if you want to leave the Supabase proxy untouched.**
+- **No verification** = anyone who knows a phone number can access that account's order history and saved addresses. You explicitly chose this for speed/UX. Rate limiting (5 attempts / 5 min) is the only guardrail. We can add WhatsApp OTP later as a one-line toggle without changing the UI shape.
+- Existing accounts created via email/password still work in the database — they just can't be logged into from the storefront UI anymore (admin/merchant login is unchanged).
+- The phone format is normalized to digits-only, so "+91 98765 43210" and "9876543210" map to the **same account**.
 
