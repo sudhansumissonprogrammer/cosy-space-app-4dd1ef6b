@@ -105,6 +105,10 @@ export default function BuyNowPhoneModal({
   open,
   onOpenChange,
   storeSlug,
+  storeId,
+  productId,
+  productName,
+  source = "quick_buy",
   onBeforeNavigate,
 }: Props) {
   const navigate = useNavigate();
@@ -124,6 +128,8 @@ export default function BuyNowPhoneModal({
       const saved = localStorage.getItem("checkout_phone");
       if (saved && saved.replace(/\D/g, "").length === 10) {
         didSkip.current = true;
+        // Still capture as a lead — returning user expressed intent again
+        saveLead({ storeId, phone: saved, productId, productName, source });
         onBeforeNavigate?.();
         onOpenChange(false);
         navigate(storefrontPath(storeSlug, "checkout"));
@@ -145,6 +151,9 @@ export default function BuyNowPhoneModal({
     }
 
     try { localStorage.setItem("checkout_phone", cleaned); } catch {}
+
+    // Save lead immediately so it shows up in dashboard → Leads
+    saveLead({ storeId, phone: cleaned, productId, productName, source });
 
     onBeforeNavigate?.();
     onOpenChange(false);
