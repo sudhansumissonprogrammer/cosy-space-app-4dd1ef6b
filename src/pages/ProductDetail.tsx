@@ -1108,6 +1108,10 @@ export default function ProductDetail() {
             open={buyNowModalOpen}
             onOpenChange={setBuyNowModalOpen}
             storeSlug={store.slug}
+            storeId={store.id}
+            productId={product?.id}
+            productName={product?.name}
+            source="quick_buy_pdp"
           />
         </Suspense>
       )}
