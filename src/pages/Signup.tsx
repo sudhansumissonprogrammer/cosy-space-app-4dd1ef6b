@@ -106,7 +106,7 @@ export default function Signup() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { full_name: normalizedFullName || null },
+          data: { full_name: normalizedFullName || null, user_type: "merchant" },
         },
       });
 

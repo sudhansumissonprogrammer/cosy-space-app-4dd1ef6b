@@ -154,7 +154,7 @@ export function StorefrontAuthProvider({
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: name } },
+      options: { data: { full_name: name, user_type: "customer" } },
     });
     return { error };
   };
