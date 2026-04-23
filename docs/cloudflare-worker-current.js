@@ -177,7 +177,7 @@ let _memShell = null;
 let _memShellTs = 0;
 // v6.9.1: Keep shell memory TTL short so new frontend publishes don't stay pinned
 // on hot isolates after deploys. Storefront data can stay long-lived; the SPA shell cannot.
-const MEM_SHELL_TTL = 60_000; // 1 min
+const MEM_SHELL_TTL = 300_000; // v7.6.0: 1m → 5m. Shell only changes on deploy.
 
 /* ============================================================
    FIX #7 — IN-MEMORY PREBUILT HEAD (built once per isolate)
@@ -213,7 +213,7 @@ const MEM_STOREFRONT_TTL = 1_800_000; // 30 min
    ============================================================ */
 
 const revalCooldowns = new Map();
-const REVAL_COOLDOWN_MS = 120_000;
+const REVAL_COOLDOWN_MS = 600_000; // v7.6.0: 2min → 10min
 const REVAL_MAP_MAX = 5_000;
 
 function shouldRevalidate(key) {
@@ -721,8 +721,8 @@ function _buildLinkPreloadHeader(html) {
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
 // v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
 // custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 300; // 5 min
-const SPA_SHELL_CACHE_TTL = 60; // 1 min
+const SPA_SHELL_KV_TTL = 1800; // v7.6.0: 5min → 30min
+const SPA_SHELL_CACHE_TTL = 300; // v7.6.0: 1min → 5min
 
 let inflightShellFetch = null;
 
@@ -839,17 +839,17 @@ async function getFreshSpaShell(request, ctx, env) {
 const KV_STOREFRONT_TTL = 21_600; // was 14400 → 6h (Phase 2 #6)
 const CACHE_STOREFRONT_TTL = 3_600; // was 1200 → 1h (Phase 2 #6)
 
+// v7.6.0 Fix D: Reduced from 3 KV reads to 1. `storefront` is already fetched
+// by earlyStorefrontPromise (prefetchStorefrontDataWithDeadline) and `storeInfo`
+// is fetched by _resolveStoreInfo in the same Promise.all — fetching them
+// again here was a duplicate KV read on every request.
 async function _batchKvRead(slug, env) {
-  if (!env?.STORE_KV) return { theme: null, storefront: null, storeInfo: null };
+  if (!env?.STORE_KV) return { theme: null };
   try {
-    const [theme, storefront, storeInfo] = await Promise.all([
-      env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null),
-      env.STORE_KV.get(`storefront:${slug}`, { type: "json" }).catch(() => null),
-      env.STORE_KV.get(`store-info:${slug}`, { type: "json" }).catch(() => null),
-    ]);
-    return { theme, storefront, storeInfo };
+    const theme = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null);
+    return { theme };
   } catch {
-    return { theme: null, storefront: null, storeInfo: null };
+    return { theme: null };
   }
 }
 
@@ -2061,7 +2061,7 @@ const inflightDomainResolutions = new Map();
 
 // In-memory version cache: domain → { version, ts }
 const _memProductVersion = new Map();
-const MEM_PV_TTL = 60_000; // 60s — version is cached in-memory to avoid KV reads
+const MEM_PV_TTL = 300_000; // v7.6.0: 60s → 5min. /api/purge bumps version on save.
 const MEM_PV_MAX = 5_000;
 
 async function _getProductVersion(domain, env) {
