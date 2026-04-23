@@ -367,18 +367,21 @@ export default function StorefrontAccount() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <User className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-semibold truncate">{customer.name || user.email}</h1>
-            <p className="text-sm truncate" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{user.email}</p>
+            <h1 className="text-lg font-semibold truncate">{customer.name || customer.phone || user.email}</h1>
+            <p className="text-sm truncate" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
+              {customer.phone || user.email}
+            </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={signOut} className="mt-3 w-full sm:w-auto">
-          <LogOut className="mr-2 h-4 w-4" /> Sign Out
+        <Button variant="outline" size="sm" onClick={signOut} className="shrink-0">
+          <LogOut className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Sign Out</span>
         </Button>
       </div>
 
