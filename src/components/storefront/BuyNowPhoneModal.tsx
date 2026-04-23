@@ -19,13 +19,43 @@ import { Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { storefrontPath } from "@/lib/subdomain";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   storeSlug: string;
+  /** Store ID — required to save lead to customer_leads */
+  storeId?: string;
+  /** Optional product context attached to the lead */
+  productId?: string;
+  productName?: string;
+  /** Source label saved in customer_leads.source (default: 'quick_buy') */
+  source?: string;
   /** Called before navigating — lets parent add item to cart etc. */
   onBeforeNavigate?: () => void;
+}
+
+/** Save the captured phone as a lead immediately (fire-and-forget). */
+async function saveLead(opts: {
+  storeId?: string;
+  phone: string;
+  productId?: string;
+  productName?: string;
+  source: string;
+}) {
+  if (!opts.storeId) return;
+  try {
+    await supabase.from("customer_leads").insert({
+      store_id: opts.storeId,
+      phone: opts.phone,
+      product_id: opts.productId ?? null,
+      product_name: opts.productName ?? null,
+      source: opts.source,
+    });
+  } catch (err) {
+    console.warn("[BuyNow] Lead save failed:", err);
+  }
 }
 
 /** Fire-and-forget geolocation + reverse geocode */
