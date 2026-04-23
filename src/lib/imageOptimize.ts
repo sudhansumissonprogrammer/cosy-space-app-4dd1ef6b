@@ -102,21 +102,24 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 3. Unsplash ──
+  // ── 3. Unsplash: native CDN params (no Worker hit) ──
   if (url.includes("images.unsplash.com")) {
-    if (shouldUseCfImg()) return cfImgUrl(url, width, quality);
-    const u = new URL(url);
-    u.searchParams.set("w", String(width));
-    u.searchParams.set("q", String(quality));
-    u.searchParams.set("fm", "webp");
-    u.searchParams.set("auto", "format");
-    return u.toString();
+    try {
+      const u = new URL(url);
+      u.searchParams.set("w", String(width));
+      u.searchParams.set("q", String(quality));
+      u.searchParams.set("fm", "webp");
+      u.searchParams.set("auto", "format");
+      return u.toString();
+    } catch {
+      return url;
+    }
   }
 
-  // ── 4. Supabase Storage (external/legacy uploads): route through CF ──
+  // ── 4. Supabase Storage: DIRECT render API (no Worker redirect) ──
+  // Lovable Cloud's render API handles WebP + resize natively at the edge.
+  // Eliminates ~85% of Worker requests by removing the /cf-img redirect hop.
   if (url.includes("supabase.co/storage")) {
-    if (shouldUseCfImg()) return cfImgUrl(url, width, quality);
-    // Fallback: Supabase render API
     try {
       const u = new URL(url);
       u.pathname = u.pathname.replace(
@@ -132,9 +135,8 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 5. External URL ──
+  // ── 5. External URL: serve direct (browser handles caching) ──
   if (url.startsWith("https://") || url.startsWith("http://")) {
-    if (shouldUseCfImg() && isCfImgAllowedOrigin(url)) return cfImgUrl(url, width, quality);
     if (ENABLE_EDGE_IMAGE_PROXY && SUPABASE_PROJECT_ID) {
       return `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/image-ops?action=resize&url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
     }
