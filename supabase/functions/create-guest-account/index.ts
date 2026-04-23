@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
         email: normalizedEmail,
         password: generatedPassword,
         email_confirm: true,
-        user_metadata: { full_name: name || null, phone: phone || null },
+        user_metadata: { full_name: name || null, phone: phone || null, user_type: "customer" },
       });
 
       if (createErr) {
