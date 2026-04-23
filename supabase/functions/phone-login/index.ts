@@ -60,21 +60,64 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Find existing user by phone-based pseudo-email
-    const { data: list } = await adminClient.auth.admin.listUsers();
-    const existingUser = list?.users?.find(
-      (u) => u.email?.toLowerCase() === phoneEmail
-    );
-
     // Generate a fresh password each time so login is deterministic
     const freshPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
     let userId: string;
     let isNewUser = false;
 
-    if (existingUser) {
-      userId = existingUser.id;
+    // Try to create the user first. If it already exists, fall back to update.
+    // This avoids the unreliable listUsers() pagination scan.
+    const { data: newUser, error: createErr } = await adminClient.auth.admin.createUser({
+      email: phoneEmail,
+      password: freshPassword,
+      email_confirm: true,
+      user_metadata: {
+        full_name: name || null,
+        phone: normalizedPhone,
+        user_type: "customer",
+      },
+    });
+
+    if (newUser?.user) {
+      userId = newUser.user.id;
+      isNewUser = true;
+    } else {
+      // User likely already exists — find them by paginating listUsers
+      const errMsg = createErr?.message?.toLowerCase() || "";
+      const isDuplicate =
+        errMsg.includes("already") ||
+        errMsg.includes("registered") ||
+        errMsg.includes("exists") ||
+        (createErr as any)?.code === "email_exists";
+
+      if (!isDuplicate && createErr) {
+        return new Response(
+          JSON.stringify({ error: createErr.message || "Could not create user" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Paginate through users to find the matching one
+      let foundUser: { id: string } | null = null;
+      for (let page = 1; page <= 20 && !foundUser; page++) {
+        const { data: list } = await adminClient.auth.admin.listUsers({ page, perPage: 200 });
+        if (!list?.users?.length) break;
+        const match = list.users.find((u) => u.email?.toLowerCase() === phoneEmail);
+        if (match) foundUser = { id: match.id };
+        if (list.users.length < 200) break;
+      }
+
+      if (!foundUser) {
+        return new Response(
+          JSON.stringify({ error: "Account exists but could not be located. Please try again." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      userId = foundUser.id;
       const { error: updateErr } = await adminClient.auth.admin.updateUserById(userId, {
         password: freshPassword,
+        email_confirm: true,
       });
       if (updateErr) {
         return new Response(
@@ -82,25 +125,6 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-    } else {
-      const { data: newUser, error: createErr } = await adminClient.auth.admin.createUser({
-        email: phoneEmail,
-        password: freshPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: name || null,
-          phone: normalizedPhone,
-          user_type: "customer",
-        },
-      });
-      if (createErr || !newUser?.user) {
-        return new Response(
-          JSON.stringify({ error: createErr?.message || "Could not create user" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      userId = newUser.user.id;
-      isNewUser = true;
     }
 
     // Ensure a storefront_customers row exists for this store (if store_id given)
