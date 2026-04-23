@@ -43,11 +43,28 @@ async function fetchProducts(storeId: string): Promise<any[]> {
   const isPreview = hostname.endsWith(".lovable.app") || hostname.endsWith(".lovableproject.com");
 
   if (!isLocal && !isPreview) {
+    // ── sessionStorage cache: avoid re-hitting Worker on intra-session navigation ──
+    // Cache for 15min per session — survives Home → Shop → Home round trips
+    // without triggering a fresh /api/products Worker invocation.
+    const SS_KEY = `__sf_products_${hostname}`;
+    const SS_TTL = 15 * 60 * 1000;
+    try {
+      const cached = sessionStorage.getItem(SS_KEY);
+      if (cached) {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < SS_TTL && Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch { /* ignore */ }
+
     const res = await fetch(`${window.location.origin}/api/products`, {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
-    return await res.json();
+    const json = await res.json();
+    try { sessionStorage.setItem(SS_KEY, JSON.stringify({ ts: Date.now(), data: json })); } catch { /* quota */ }
+    return json;
   }
 
   // ── Preview/localhost fallback: direct Supabase ──
@@ -78,7 +95,8 @@ export function useStorefrontProducts(storeId: string | undefined) {
   const { data, isLoading } = useQuery({
     queryKey: ["storefront-products", storeId],
     queryFn: () => fetchProducts(storeId!),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     enabled: !!storeId,
   });
 

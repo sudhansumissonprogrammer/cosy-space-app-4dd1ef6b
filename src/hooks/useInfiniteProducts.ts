@@ -34,9 +34,24 @@ async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<
     if (sort) params.set("sort", sort);
     const qs = params.toString();
     const url = `${window.location.origin}/api/products${qs ? `?${qs}` : ""}`;
+
+    // ── sessionStorage cache: dedupe identical paged requests within a session ──
+    // Survives navigation (Shop → PDP → Shop back) without re-hitting Worker.
+    const SS_KEY = `__sf_pp_${window.location.hostname}_${qs || "root"}`;
+    const SS_TTL = 15 * 60 * 1000;
+    try {
+      const cached = sessionStorage.getItem(SS_KEY);
+      if (cached) {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < SS_TTL && Array.isArray(data)) return data;
+      }
+    } catch { /* ignore */ }
+
     const res = await fetch(url, { headers: { Accept: "application/json" } });
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
-    return await res.json();
+    const json = await res.json();
+    try { sessionStorage.setItem(SS_KEY, JSON.stringify({ ts: Date.now(), data: json })); } catch { /* quota */ }
+    return json;
   }
 
   // ── Preview / localhost: direct Supabase ──
@@ -92,7 +107,8 @@ export function useInfiniteProducts(opts: {
     getNextPageParam: (lastPage) =>
       lastPage.products.length === PAGE_SIZE ? lastPage.page + 1 : undefined,
     enabled: !!storeId && ready,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 }
 
