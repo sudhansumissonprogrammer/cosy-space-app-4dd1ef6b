@@ -16,48 +16,10 @@ import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
 
-/**
- * v6.3.0: Route through Cloudflare Worker `/cf-img` endpoint, which uses
- * Cloudflare Image Resizing (cf.image) at the edge — auto WebP/AVIF, exact
- * size, 1-year edge cache. Disabled on localhost / preview where Worker
- * isn't in front (falls back to direct Supabase render API).
- */
-function shouldUseCfImg(): boolean {
-  if (typeof window === "undefined") return false;
-  const h = window.location.hostname;
-  if (
-    h === "localhost" ||
-    h.startsWith("127.") ||
-    h.endsWith(".lovable.app") ||
-    h.endsWith(".lovableproject.com")
-  ) {
-    return false;
-  }
-  return true;
-}
-
-/**
- * Whether the URL is acceptable for the Worker's /cf-img endpoint.
- * v7.4.2: Worker accepts ANY https image URL (validated by extension /
- * known image path). Frontend mirrors that — must be https and look like
- * an image. Otherwise serve direct.
- */
-function isCfImgAllowedOrigin(originUrl: string): boolean {
-  try {
-    const u = new URL(originUrl);
-    if (u.protocol !== "https:") return false;
-    return (
-      /\.(jpe?g|png|gif|webp|avif|svg|bmp|ico|heic|heif)(\?|$)/i.test(u.pathname) ||
-      /\/(image|images|img|photos?|media|cdn|storage|render|upload)/i.test(u.pathname)
-    );
-  } catch {
-    return false;
-  }
-}
-
-function cfImgUrl(originUrl: string, width: number, quality: number): string {
-  return `/cf-img?url=${encodeURIComponent(originUrl)}&w=${width}&q=${quality}`;
-}
+// v8.0.0: Image requests go DIRECT to Lovable Cloud render API instead of
+// through the Cloudflare Worker `/cf-img` redirect. This eliminates ~85% of
+// Worker requests (no more 301 redirects per image) while keeping WebP/AVIF
+// + edge resize via Lovable Cloud's native render endpoint.
 
 /** We now store only 800w — render API handles responsive sizes */
 const PIPELINE_WIDTHS: number[] = [400, 800];
