@@ -95,8 +95,20 @@
             var t=window.__STOREFRONT_DATA__.theme;
             injectGFont(t.heading_font,t.body_font);
           }
+          // v7.9 (Tier 2): Skip redundant /api/products Worker hit when shell is
+          // inlined but products aren't. React Query will fetch directly from
+          // Supabase REST (which doesn't go through our Worker), saving 1 event
+          // per cold visit where the Worker injected shell-only.
           if(!window.__PRODUCTS_INLINE__){
-            window.__PRODUCTS_PREFETCH__=fetch(location.origin+'/api/products',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).catch(function(){return null});
+            try{
+              var sd=window.__STOREFRONT_DATA__;
+              if(sd&&sd.store&&sd.store.id){
+                var supaUrl='https://dqepeywgftbpxeeqfuwt.supabase.co';
+                var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk';
+                var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+sd.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=14&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
+                window.__PRODUCTS_PREFETCH__=fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){return r.json()}).catch(function(){return null});
+              }
+            }catch(e){}
           }
           return;
         }
