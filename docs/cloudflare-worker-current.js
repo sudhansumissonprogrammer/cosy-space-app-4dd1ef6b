@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "7.4.0-html-ttl-bump-1h-2h-swr-7d";
+const WORKER_VERSION = "7.5.0-cron-leak-fix";
 
 /* ============================================================
    v7.3.0 — AGGRESSIVE CACHE + SWR + ETAG (3-5x worker req reduction)
@@ -3954,13 +3954,26 @@ export default {
               }
             } catch {}
 
+            // v7.5.0 LEAK FIX: Cron no longer warms HTML/products on every tick.
+            // KV is already synced above (which is the only thing that *must*
+            // happen periodically). HTML + products are warmed on-demand by:
+            //  1. The first real visitor (instant skeleton + background warm)
+            //  2. Dashboard saves (explicit /api/prewarm call)
+            //  3. Stale-while-revalidate on the warm HTML cache (7-day window)
+            //
+            // Previous behavior: every cron tick fanned out ~10-20 subrequests
+            // per active store (DB shell fetch + product fetch + 4-6 KV writes
+            // + 4-6 cache puts) even when nothing changed. With 1-2 stores
+            // that was ~1-2k idle Worker subrequests/hour.
+            //
+            // Only warm stores whose HTML cache is COMPLETELY missing (true cold).
             const storesToWarm = activeSlugs.size > 0
               ? allStores.filter((s) => activeSlugs.has(s.slug))
-              : allStores; // fallback: warm all if active-detection failed
+              : []; // No active traffic? Don't warm anything.
 
-            const CONCURRENCY = 10;
-            let warmedHtml = 0,
-              warmedProducts = 0;
+            const CONCURRENCY = 5;
+            let warmedHtml = 0;
+            let skippedAlreadyCached = 0;
 
             for (let i = 0; i < storesToWarm.length; i += CONCURRENCY) {
               const batch = storesToWarm.slice(i, i + CONCURRENCY);
@@ -3969,70 +3982,52 @@ export default {
                   try {
                     if (!s.slug || !s.id) return;
 
-                    // FIX #15: Use the shared cronShellResult
+                    // Skip if HTML already cached (the common case — cuts 90%+ of work)
+                    const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`);
+                    const existing = await cache.match(subEarlyKey).catch(() => null);
+                    if (existing) {
+                      skippedAlreadyCached++;
+                      return;
+                    }
+
                     const shellResult = cronShellResult;
+                    if (!shellResult?.html) return;
 
-                    // Warm storefront data
                     const dataResult = await prefetchStorefrontData(s.slug, ctx, env);
+                    if (!dataResult.data) return;
 
-                    // Warm HTML cache with NORMALIZED key
-                    if (shellResult?.html && dataResult.data) {
-                      const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm");
-                      // FIX #10: Raised to 3600/7200
-                      const htmlResponse = new Response(injected.html, {
-                        status: 200,
-                        headers: {
-                          "Content-Type": "text/html; charset=utf-8",
-                          "Cache-Control": "public, max-age=3600, stale-while-revalidate=600",
-                          "X-Store-Slug": s.slug,
-                          "X-Data-Source": "cron-prewarm",
-                          ...SECURITY_HEADERS,
-                        },
-                      });
-                      const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`);
-                      await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
+                    const injected = injectIntoHtml(shellResult.html, s.slug, dataResult.data, "cron-prewarm");
+                    const htmlResponse = new Response(injected.html, {
+                      status: 200,
+                      headers: {
+                        "Content-Type": "text/html; charset=utf-8",
+                        "Cache-Control": "public, max-age=7200, stale-while-revalidate=604800",
+                        "X-Store-Slug": s.slug,
+                        "X-Data-Source": "cron-prewarm",
+                        ...SECURITY_HEADERS,
+                      },
+                    });
+                    await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
 
-                      if (s.custom_domain) {
-                        const cleanCustom = s.custom_domain
-                          .replace(/^www\./, "")
-                          .toLowerCase()
-                          .trim();
-                        const domEarlyKey = getEarlyCacheKey(cleanCustom);
-                        await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
-                      }
-                      warmedHtml++;
-                    } else if (shellResult?.html) {
-                      // FIX #25: Cron skeleton fallback — if DB failed, cache a themed skeleton
-                      const themeLite = _memThemeCache.get(s.slug)?.lite || null;
-                      const bg = themeLite?.bg || themeLite?.background_color || "#ffffff";
-                      const skeletonHtml = _buildInstantSkeletonPage(s.slug, bg, themeLite, `${s.slug}.${ROOT_DOMAIN}`);
-                      const skeletonResponse = new Response(skeletonHtml, {
-                        status: 200,
-                        headers: {
-                          "Content-Type": "text/html; charset=utf-8",
-                          "Cache-Control": "public, max-age=300",
-                          "X-Data-Source": "cron-skeleton-fallback",
-                          ...SECURITY_HEADERS,
-                        },
-                      });
-                      const subEarlyKey = getEarlyCacheKey(`${s.slug}.${ROOT_DOMAIN}`);
-                      await cache.put(subEarlyKey, skeletonResponse.clone()).catch(() => {});
+                    if (s.custom_domain) {
+                      const cleanCustom = s.custom_domain
+                        .replace(/^www\./, "")
+                        .toLowerCase()
+                        .trim();
+                      const domEarlyKey = getEarlyCacheKey(cleanCustom);
+                      await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
                     }
-
-                    // Warm products
-                    if (dataResult.data?.store?.id) {
-                      await _prewarmProducts(dataResult.data.store.id, s.slug, ctx, env, s.custom_domain).catch(
-                        () => {},
-                      );
-                      warmedProducts++;
-                    }
+                    warmedHtml++;
+                    // NOTE: Products are NOT warmed here. They are warmed lazily
+                    // by _fetchShellFromSupabase via ctx.waitUntil on first visit,
+                    // which happens within milliseconds of the HTML cold load.
                   } catch {}
                 }),
               );
             }
 
             console.log(
-              `[keepalive] warmed HTML for ${warmedHtml}/${storesToWarm.length} active stores (skipped ${allStores.length - storesToWarm.length} dead), products for ${warmedProducts} stores`,
+              `[keepalive] cron: ${warmedHtml} cold-warmed, ${skippedAlreadyCached} already-cached (skipped), ${allStores.length - storesToWarm.length} inactive (skipped)`,
             );
           } catch (err) {
             console.log(`[keepalive] store warm failed: ${err?.message || err}`);
