@@ -3506,16 +3506,48 @@ export default {
     }
 
     // ─── SUPABASE PROXY ───
+    // v7.7.0 Fix 5: Edge-cache anonymous GETs on /rest/v1/ for 30s.
+    // Skip caching for: non-GET, /functions/v1/* (POST-heavy, custom logic),
+    // and any request carrying a user JWT in Authorization (auth'd reads).
     if (url.pathname.startsWith("/rest/v1/") || url.pathname.startsWith("/functions/v1/")) {
       const targetUrl = new URL(request.url);
       targetUrl.hostname = new URL(SUPABASE_URL).hostname;
       targetUrl.port = "";
       const headers = new Headers(request.headers);
       headers.set("Host", new URL(SUPABASE_URL).hostname);
+
+      // Detect user JWT BEFORE we overwrite Authorization with the anon key.
+      // A user JWT is any Authorization: Bearer that isn't our shared anon key.
+      const incomingAuth = headers.get("Authorization") || "";
+      const hasUserJwt = incomingAuth.startsWith("Bearer ") &&
+        incomingAuth.slice(7).trim() !== SUPABASE_ANON_KEY;
+
       if (!headers.has("apikey")) {
         headers.set("apikey", SUPABASE_ANON_KEY);
         headers.set("Authorization", `Bearer ${SUPABASE_ANON_KEY}`);
       }
+
+      const isCacheable =
+        request.method === "GET" &&
+        url.pathname.startsWith("/rest/v1/") &&
+        !hasUserJwt;
+
+      // Try edge cache first for cacheable requests
+      if (isCacheable) {
+        const cacheKey = new Request(`https://__sb-proxy/${url.pathname}${url.search}`, { method: "GET" });
+        try {
+          const hit = await cache.match(cacheKey);
+          if (hit) {
+            const cachedRes = new Response(hit.body, hit);
+            cachedRes.headers.set("Access-Control-Allow-Origin", "*");
+            cachedRes.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+            cachedRes.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+            cachedRes.headers.set("X-Sb-Proxy-Cache", "HIT");
+            return cachedRes;
+          }
+        } catch {}
+      }
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), EDGE_FN_TIMEOUT_MS);
       try {
@@ -3530,6 +3562,20 @@ export default {
         proxyRes.headers.set("Access-Control-Allow-Origin", "*");
         proxyRes.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
         proxyRes.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+
+        // Store cacheable 200s in edge cache for 30s
+        if (isCacheable && res.status === 200) {
+          try {
+            const cacheKey = new Request(`https://__sb-proxy/${url.pathname}${url.search}`, { method: "GET" });
+            const toCache = proxyRes.clone();
+            // Override Cache-Control so cache.put respects our TTL
+            toCache.headers.set("Cache-Control", "public, max-age=30");
+            toCache.headers.set("X-Sb-Proxy-Cache", "MISS-STORED");
+            ctx.waitUntil(cache.put(cacheKey, toCache).catch(() => {}));
+          } catch {}
+        }
+
+        proxyRes.headers.set("X-Sb-Proxy-Cache", isCacheable ? "MISS" : "BYPASS");
         return proxyRes;
       } catch {
         clearTimeout(timeout);
