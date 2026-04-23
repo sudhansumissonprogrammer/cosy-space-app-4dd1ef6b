@@ -285,6 +285,8 @@ function WishlistTab({ customerId, store }: { customerId: string; store: StoreDa
 
   const { data: wishlistItems, isLoading } = useQuery({
     queryKey: ["customer-wishlist-db", customerId],
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("customer_wishlists")
