@@ -23,6 +23,8 @@ export default function StoreTaxSettings() {
 
   const { data: config, isLoading } = useQuery({
     queryKey: ["tax-config", storeId],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("store_tax_config")

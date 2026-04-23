@@ -49,6 +49,8 @@ export default function StorePayments() {
 
   const { data: paymentConfig, isLoading: configLoading } = useQuery({
     queryKey: ["payment-config", storeId],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const [configRes, secretRes] = await Promise.all([
         (supabase as any)

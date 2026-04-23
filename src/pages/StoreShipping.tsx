@@ -22,6 +22,8 @@ export default function StoreShipping() {
 
   const { data: config, isLoading } = useQuery({
     queryKey: ["shipping-config", storeId],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("store_shipping_config")
