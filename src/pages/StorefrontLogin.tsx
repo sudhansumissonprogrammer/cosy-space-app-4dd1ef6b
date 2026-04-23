@@ -57,7 +57,7 @@ export default function StorefrontLogin() {
       toast.error(`Too many attempts. Please wait ${remainingSeconds}s.`);
       return;
     }
-    const normalized = phone;
+    const normalized = stripIndiaPrefix(phone);
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("phone-login", {
