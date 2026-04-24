@@ -73,10 +73,12 @@ export default function CheckoutAwareLayout({
   const headerVisible = useSmartHeader();
 
   useEffect(() => {
-    // Defer route prefetching by 3s to keep critical path fast
+    // v8: Defer route prefetching by 1.2s (was 3s). Internally uses
+    // requestIdleCallback so it still won't block FCP/LCP, but is ready
+    // before users typically tap their first category/product.
     const timer = setTimeout(() => {
       import("@/lib/prefetchStorefrontRoutes").then(m => m.prefetchStorefrontRoutes());
-    }, 3000);
+    }, 1200);
     return () => clearTimeout(timer);
   }, []);
 
