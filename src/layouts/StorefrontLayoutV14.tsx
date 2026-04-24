@@ -7,12 +7,10 @@ import { Suspense, lazy } from "react";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
 import StorefrontShell from "@/layouts/StorefrontShell";
 
-const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
-const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
-const LazyMobileBottomNavV15 = lazy(() => import("@/components/storefront/MobileBottomNavV15"));
-const LazyMobileBottomNavV17 = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
+const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNavSwitcher"));
 
-const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17"];
+const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17"] as const;
+type NavVariant = typeof VALID_NAV_STYLES[number];
 
 export default function StorefrontLayoutV14({ slugOverride }: { slugOverride?: string } = {}) {
   return (
@@ -32,10 +30,7 @@ export default function StorefrontLayoutV14({ slugOverride }: { slugOverride?: s
             mobileNav={
               mobileNavEnabled ? (
                 <Suspense fallback={null}>
-                  {mobileNavStyle === "v17" ? <LazyMobileBottomNavV17 store={store} /> :
-                   mobileNavStyle === "v15" ? <LazyMobileBottomNavV15 store={store} /> :
-                   mobileNavStyle === "modern" ? <LazyMobileBottomNavModern store={store} /> :
-                   <LazyMobileBottomNav store={store} />}
+                  <LazyMobileBottomNav store={store} variant={mobileNavStyle as NavVariant} />
                 </Suspense>
               ) : undefined
             }
