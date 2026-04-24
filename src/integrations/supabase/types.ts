@@ -2383,7 +2383,9 @@ export type Database = {
           view_count: number
         }[]
       }
-      get_storefront_shell: { Args: { _slug: string }; Returns: Json }
+      get_storefront_shell:
+        | { Args: { _slug: string }; Returns: Json }
+        | { Args: { _slug: string; _with_pages?: boolean }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
