@@ -188,7 +188,7 @@ export async function processImage(
 
   // Try the requested dimension first, then fall back to smaller dimensions
   // until we land in the 80–120KB band. Track the best result across attempts.
-  const dimensionsToTry = DOWNSCALE_STEPS.filter((d) => d <= maxDimension);
+  const dimensionsToTry: number[] = DOWNSCALE_STEPS.filter((d) => d <= maxDimension);
   if (dimensionsToTry.length === 0) dimensionsToTry.push(maxDimension);
 
   let bestResult: { blob: Blob; ext: string; mimeType: string } | null = null;
