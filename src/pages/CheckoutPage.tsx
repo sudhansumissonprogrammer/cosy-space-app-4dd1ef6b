@@ -56,6 +56,20 @@ async function callEdgeFunction(fnName: string, body: Record<string, any>) {
   return data;
 }
 
+// Pre-warm an edge function so it's hot when actually invoked.
+// Uses OPTIONS (CORS preflight) — never executes function logic, no side effects.
+function prewarmEdgeFunction(fnName: string) {
+  try {
+    fetch(`${SUPABASE_FUNCTIONS_URL}/${fnName}`, {
+      method: "OPTIONS",
+      headers: {
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type, authorization",
+      },
+    }).catch(() => {});
+  } catch {}
+}
+
 
 
 export default function CheckoutPage() {
@@ -296,9 +310,13 @@ export default function CheckoutPage() {
     }
   }, [hasCod, hasRazorpay, hasAnyPartialPayment]);
 
-  // Preload Razorpay script eagerly so it's ready instantly when user clicks Pay
+  // Preload Razorpay script + pre-warm edge functions so everything is ready instantly when user clicks Pay
   useEffect(() => {
-    if (hasRazorpay) loadRazorpayScript();
+    if (hasRazorpay) {
+      loadRazorpayScript();
+      prewarmEdgeFunction("razorpay-order");
+    }
+    prewarmEdgeFunction("place-order");
   }, [hasRazorpay]);
 
   const currency = store.currency || "USD";
@@ -862,6 +880,12 @@ export default function CheckoutPage() {
 
     setPlacing(true);
     setPaymentFailed(false);
+    // Fire pre-warm pings the instant user clicks — these run in parallel with createOrder
+    // so that razorpay-order is hot by the time we actually call it.
+    if (paymentMethod === "razorpay" || isPartialOrder) {
+      prewarmEdgeFunction("razorpay-order");
+      loadRazorpayScript();
+    }
     try {
       const newOrder = await createOrder();
 
@@ -938,6 +962,26 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium [&_input]:!font-['Montserrat_Alternates'] [&_label]:!font-['Montserrat_Alternates'] [&_span]:!font-['Montserrat_Alternates'] [&_p]:!font-['Montserrat_Alternates'] [&_button]:!font-['Montserrat_Alternates']" style={{ fontFamily: "'Montserrat Alternates', sans-serif" }}>
+
+      {/* Instant payment-opening overlay — shown the moment user clicks Pay/Pay Advance */}
+      {placing && (paymentMethod === "razorpay" || isPartialOrder) && !paymentFailed && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="flex flex-col items-center gap-4 rounded-2xl bg-card border border-border px-8 py-6 shadow-2xl">
+            <div className="relative">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <CreditCard className="absolute inset-0 m-auto h-4 w-4 text-primary" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-foreground">
+                {t("Opening secure payment…", "सुरक्षित भुगतान खुल रहा है…")}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("Please don't close this window", "कृपया यह विंडो बंद न करें")}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 1. Order Summary — Collapsible */}
       <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} defaultOpen className="mb-4 rounded-xl border border-border bg-card">
