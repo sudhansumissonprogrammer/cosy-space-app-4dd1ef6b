@@ -123,42 +123,41 @@ export default defineConfig(({ mode }) => ({
           }
 
           // === Radix UI primitives — SPLIT (storefront vs dashboard) ===
-          // Storefront only uses ~8 Radix packages; dashboard uses ~20+.
-          // Splitting prevents storefront from downloading dashboard primitives.
-          // react-slot stays in vendor (used by button → everywhere).
+          // Strategy: dashboard-only widget primitives go to `radix-dashboard`.
+          // Everything else (storefront widgets + shared internals like
+          // react-roving-focus, react-collection, react-presence, react-portal,
+          // react-focus-scope, etc.) goes to `radix-storefront` so the storefront
+          // chunk is self-contained and never has to fetch the dashboard chunk.
+          // react-slot stays in vendor (used by Button → everywhere).
           if (id.includes("node_modules/@radix-ui") && !id.includes("react-slot")) {
-            // Primitives that appear on storefront pages (dialogs, sheets, tabs,
-            // collapsible accordion-style sections, progress bars, labels, separators).
-            const storefrontRadix = [
-              "react-dialog",
-              "react-dismissable-layer",
-              "react-focus-scope",
-              "react-focus-guards",
-              "react-portal",
-              "react-presence",
-              "react-tabs",
-              "react-collapsible",
-              "react-progress",
-              "react-label",
-              "react-separator",
-              "react-roving-focus",
-              "react-collection",
-              "react-direction",
-              "react-id",
-              "react-use-callback-ref",
-              "react-use-controllable-state",
-              "react-use-escape-keydown",
-              "react-use-layout-effect",
-              "react-use-previous",
-              "react-use-size",
-              "react-compose-refs",
-              "react-context",
-              "react-primitive",
+            // Dashboard-only widget primitives. Storefront pages NEVER import these.
+            const dashboardOnly = [
+              "react-dropdown-menu",
+              "react-context-menu",
+              "react-menubar",
+              "react-navigation-menu",
+              "react-select",
+              "react-popover",
+              "react-tooltip",
+              "react-accordion",
+              "react-alert-dialog",
+              "react-avatar",
+              "react-checkbox",
+              "react-radio-group",
+              "react-switch",
+              "react-slider",
+              "react-scroll-area",
+              "react-hover-card",
+              "react-toggle",
+              "react-toggle-group",
+              "react-aspect-ratio",
+              "react-toast",
             ];
-            if (storefrontRadix.some((pkg) => id.includes(`@radix-ui/${pkg}`))) {
-              return "radix-storefront";
+            if (dashboardOnly.some((pkg) => id.includes(`@radix-ui/${pkg}/`))) {
+              return "radix-dashboard";
             }
-            return "radix-dashboard";
+            // Storefront widgets + all shared internals (atoms used by both buckets)
+            return "radix-storefront";
           }
 
           // === Lucide icons — CONSOLIDATED (v7.8) ===
