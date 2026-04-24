@@ -161,10 +161,12 @@ export default defineConfig(({ mode }) => ({
             return "forms";
           }
 
-          // === App-level shared infra (v7.8) ===
+          // === App-level shared infra (v8) ===
           // Group tiny shared modules that show up on EVERY storefront page
-          // into one stable chunk to collapse 5-8 micro-requests into 1.
-          // These are imported by the layout shell and never change per-route.
+          // into one stable chunk. v8 expands the set to absorb more micro-
+          // chunks (imageOptimize, productUtils, useMetaTags, useJsonLd,
+          // BackToTop, etc.) that were each becoming separate <script> tags
+          // — collapsing 8-12 micro-requests into 1.
           if (
             id.includes("/src/contexts/CartContext") ||
             id.includes("/src/contexts/WishlistContext") ||
@@ -172,9 +174,19 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/components/storefront/CheckoutAwareLayout") ||
             id.includes("/src/components/storefront/LazyRender") ||
             id.includes("/src/components/storefront/StoreTextLogo") ||
+            id.includes("/src/components/storefront/BackToTop") ||
             id.includes("/src/components/ContentSkeleton") ||
             id.includes("/src/hooks/useSmartHeader") ||
-            id.includes("/src/lib/utils")
+            id.includes("/src/hooks/useMetaTags") ||
+            id.includes("/src/hooks/useJsonLd") ||
+            id.includes("/src/hooks/useStorefrontThemeConfig") ||
+            id.includes("/src/lib/utils") ||
+            id.includes("/src/lib/imageOptimize") ||
+            id.includes("/src/lib/productUtils") ||
+            id.includes("/src/lib/flyToCart") ||
+            id.includes("/src/lib/prefetchProductDetail") ||
+            id.includes("/src/lib/prefetchStorefrontRoutes") ||
+            id.includes("/src/lib/subdomain")
           ) {
             return "storefront-shell";
           }
