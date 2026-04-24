@@ -2344,6 +2344,7 @@ export type Database = {
         Returns: boolean
       }
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
+      cleanup_orphan_media_library: { Args: never; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
