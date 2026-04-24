@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
 import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
-import { sendInvoiceToWhatsApp } from "@/lib/sendInvoiceWhatsApp";
+// sendInvoiceToWhatsApp is dynamically imported on demand to keep jspdf/html2canvas out of the initial dashboard bundle
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +71,7 @@ export default function StoreOrders() {
     }
     setSendingInvoiceId(order.id);
     const t = toast.loading("Generating invoice…");
+    const { sendInvoiceToWhatsApp } = await import("@/lib/sendInvoiceWhatsApp");
     const res = await sendInvoiceToWhatsApp({ order, store });
     toast.dismiss(t);
     if (res.success) toast.success("WhatsApp opened — tap Send to deliver invoice ✅");

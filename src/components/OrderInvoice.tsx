@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Printer, X, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { sendInvoiceToWhatsApp } from "@/lib/sendInvoiceWhatsApp";
+// sendInvoiceToWhatsApp is dynamically imported on click to defer jspdf/html2canvas (~250 KB gz)
 import { toast } from "sonner";
 
 interface OrderInvoiceProps {
@@ -406,6 +406,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
           <Button
             onClick={async () => {
               setSending(true);
+              const { sendInvoiceToWhatsApp } = await import("@/lib/sendInvoiceWhatsApp");
               const res = await sendInvoiceToWhatsApp({ order, store, ownerEmail });
               setSending(false);
               if (res.success) toast.success("Invoice ready — choose WhatsApp to send the PDF");
