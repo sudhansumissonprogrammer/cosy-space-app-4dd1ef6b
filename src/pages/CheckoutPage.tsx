@@ -56,6 +56,20 @@ async function callEdgeFunction(fnName: string, body: Record<string, any>) {
   return data;
 }
 
+// Pre-warm an edge function so it's hot when actually invoked.
+// Uses OPTIONS (CORS preflight) — never executes function logic, no side effects.
+function prewarmEdgeFunction(fnName: string) {
+  try {
+    fetch(`${SUPABASE_FUNCTIONS_URL}/${fnName}`, {
+      method: "OPTIONS",
+      headers: {
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type, authorization",
+      },
+    }).catch(() => {});
+  } catch {}
+}
+
 
 
 export default function CheckoutPage() {
