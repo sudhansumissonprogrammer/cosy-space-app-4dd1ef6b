@@ -616,10 +616,12 @@ function _buildPrebuiltHead(html) {
   const DASHBOARD_CHUNK_PATTERN =
     /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
   const seen = new Set();
+  let mpCount = 0;
   for (const m of [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)]) {
     if (!seen.has(m[1]) && !DASHBOARD_CHUNK_PATTERN.test(m[1])) {
       seen.add(m[1]);
       head += `<link rel="modulepreload" href="${m[1]}" />`;
+      if (++mpCount >= 6) break;
     }
   }
 
