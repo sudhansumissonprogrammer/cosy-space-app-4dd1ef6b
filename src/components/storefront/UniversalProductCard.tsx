@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, lazy, Suspense } from "react";
 import type { Tables } from "@/integrations/supabase/types";
 import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardStyle2 from "./ProductCardStyle2";
@@ -8,7 +8,8 @@ import ProductCardStyle5 from "./ProductCardStyle5";
 import V19ProductCard from "./v19/V19ProductCard";
 import V20ProductCard from "./v20/V20ProductCard";
 
-import VariantPickerDialog from "./VariantPickerDialog";
+// Lazy: variant picker only needed when shopper actually clicks add-to-cart on a variant product
+const VariantPickerDialog = lazy(() => import("./VariantPickerDialog"));
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { useVariantCount } from "@/hooks/useVariantCounts";
 
