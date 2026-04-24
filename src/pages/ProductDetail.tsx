@@ -887,7 +887,9 @@ export default function ProductDetail() {
 
           {/* Frequently Bought Together — hidden in V18 */}
           {!isV18 && (
-            <FrequentlyBoughtTogether storeId={store.id} storeSlug={store.slug} currentProductId={product.id} currentCategory={product.category} currency={currency} addToCart={addToCart} productImage={product.image_url} />
+            <Suspense fallback={null}>
+              <FrequentlyBoughtTogether storeId={store.id} storeSlug={store.slug} currentProductId={product.id} currentCategory={product.category} currency={currency} addToCart={addToCart} productImage={product.image_url} />
+            </Suspense>
           )}
 
           {/* V18: SKU & Categories */}
@@ -952,18 +954,22 @@ export default function ProductDetail() {
 
 
       {/* Complete the Look */}
-      <RelatedProducts
-        storeId={store.id}
-        storeSlug={store.slug}
-        currentProductId={product.id}
-        currentCategory={product.category}
-        store={store}
-        addToCart={addToCart}
-        currency={currency}
-      />
+      <Suspense fallback={null}>
+        <RelatedProducts
+          storeId={store.id}
+          storeSlug={store.slug}
+          currentProductId={product.id}
+          currentCategory={product.category}
+          store={store}
+          addToCart={addToCart}
+          currency={currency}
+        />
+      </Suspense>
 
       {/* Customer Reviews */}
-      <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
+      <Suspense fallback={null}>
+        <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
+      </Suspense>
 
       {/* Portal: render fixed elements outside PageTransition animation container */}
       {createPortal(
