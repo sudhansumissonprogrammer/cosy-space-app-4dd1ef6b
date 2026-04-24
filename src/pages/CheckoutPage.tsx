@@ -880,6 +880,12 @@ export default function CheckoutPage() {
 
     setPlacing(true);
     setPaymentFailed(false);
+    // Fire pre-warm pings the instant user clicks — these run in parallel with createOrder
+    // so that razorpay-order is hot by the time we actually call it.
+    if (paymentMethod === "razorpay" || isPartialOrder) {
+      prewarmEdgeFunction("razorpay-order");
+      loadRazorpayScript();
+    }
     try {
       const newOrder = await createOrder();
 
