@@ -1771,12 +1771,18 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
   const DASHBOARD_CHUNK_PATTERN =
     /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
+  // v7.8.0: Cap modulepreload to 6 (parity with Link header on line 716).
+  // Browsers only open ~6 HTTP/2 streams for high-priority preloads; injecting
+  // more causes contention with the LCP image fetch. The first 6 chunks cover
+  // framework + router + main + storefront layout — enough to start hydration.
   let modulePreloads = "";
   const seen = new Set();
+  let mpCount = 0;
   for (const m of [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)]) {
     if (!seen.has(m[1]) && !DASHBOARD_CHUNK_PATTERN.test(m[1])) {
       seen.add(m[1]);
       modulePreloads += `<link rel="modulepreload" href="${m[1]}" />\n`;
+      if (++mpCount >= 6) break;
     }
   }
 
