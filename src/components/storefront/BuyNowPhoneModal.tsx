@@ -58,6 +58,29 @@ async function saveLead(opts: {
   }
 }
 
+/** Phone-only auto-login: creates/locates a storefront customer and sets the session. */
+async function autoLoginByPhone(storeId: string | undefined, phone: string) {
+  if (!storeId) return;
+  try {
+    const { data, error } = await supabase.functions.invoke("create-guest-account", {
+      body: { phone, store_id: storeId },
+    });
+    if (error) {
+      console.warn("[BuyNow] auto-login error:", error.message);
+      return;
+    }
+    const result = data as { session?: { access_token?: string; refresh_token?: string } } | null;
+    if (result?.session?.access_token && result?.session?.refresh_token) {
+      await supabase.auth.setSession({
+        access_token: result.session.access_token,
+        refresh_token: result.session.refresh_token,
+      });
+    }
+  } catch (err) {
+    console.warn("[BuyNow] auto-login failed:", err);
+  }
+}
+
 /** Fire-and-forget geolocation + reverse geocode */
 function triggerGeolocation() {
   if (!("geolocation" in navigator)) {
@@ -154,6 +177,8 @@ export default function BuyNowPhoneModal({
 
     // Save lead immediately so it shows up in dashboard → Leads
     saveLead({ storeId, phone: cleaned, productId, productName, source });
+    // Auto-login the shopper by phone so checkout sees a logged-in customer
+    void autoLoginByPhone(storeId, cleaned);
 
     onBeforeNavigate?.();
     onOpenChange(false);
