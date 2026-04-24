@@ -122,45 +122,22 @@ export default defineConfig(({ mode }) => ({
             return "supabase";
           }
 
-          // === Radix UI primitives — SPLIT (storefront vs dashboard) ===
-          // Strategy: dashboard-only widget primitives go to `radix-dashboard`.
-          // Everything else (storefront widgets + shared internals like
-          // react-roving-focus, react-collection, react-presence, react-portal,
-          // react-focus-scope, etc.) goes to `radix-storefront` so the storefront
-          // chunk is self-contained and never has to fetch the dashboard chunk.
-          // react-slot is used by Button (everywhere) → put it in storefront chunk.
-          if (id.includes("node_modules/@radix-ui/react-slot")) {
-            return "radix-storefront";
-          }
+          // === Radix UI primitives ===
+          // After investigation: splitting into storefront vs dashboard chunks
+          // does NOT reduce critical-path bytes because Rollup hoists shared
+          // atoms (react-presence, react-portal, react-roving-focus, etc.)
+          // and emits side-effect imports that still trigger preloading.
+          //
+          // Best result: ONE radix chunk that all routes share. The chunk is
+          // already cached forever (immutable hash) so a returning visitor
+          // never re-downloads it. Cold load: ~38KB gz one-time cost amortised
+          // across every page in the app.
+          //
+          // Trade-off accepted: ~10KB of dashboard-only Radix code (DropdownMenu,
+          // ContextMenu, Switch, etc.) ships to storefront but is never executed.
+          // Splitting added duplication overhead that wiped out the savings.
           if (id.includes("node_modules/@radix-ui")) {
-            // Dashboard-only widget primitives. Storefront pages NEVER import these.
-            const dashboardOnly = [
-              "react-dropdown-menu",
-              "react-context-menu",
-              "react-menubar",
-              "react-navigation-menu",
-              "react-select",
-              "react-popover",
-              "react-tooltip",
-              "react-accordion",
-              "react-alert-dialog",
-              "react-avatar",
-              "react-checkbox",
-              "react-radio-group",
-              "react-switch",
-              "react-slider",
-              "react-scroll-area",
-              "react-hover-card",
-              "react-toggle",
-              "react-toggle-group",
-              "react-aspect-ratio",
-              "react-toast",
-            ];
-            if (dashboardOnly.some((pkg) => id.includes(`@radix-ui/${pkg}/`))) {
-              return "radix-dashboard";
-            }
-            // Storefront widgets + all shared internals (atoms used by both buckets)
-            return "radix-storefront";
+            return "radix";
           }
 
           // === Lucide icons — CONSOLIDATED (v7.8) ===
