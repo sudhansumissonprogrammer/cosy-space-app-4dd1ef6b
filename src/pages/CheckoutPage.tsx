@@ -141,6 +141,14 @@ export default function CheckoutPage() {
   // Lazily fetch/create customer record on checkout
   useEffect(() => { ensureCustomer(); }, [ensureCustomer]);
 
+  // Scroll to top when the order-placed / upsell screen appears so users
+  // see the confirmation instead of landing on the page footer.
+  useEffect(() => {
+    if (orderPlaced) {
+      try { window.scrollTo({ top: 0, behavior: "auto" }); } catch {}
+    }
+  }, [orderPlaced, showUpsell]);
+
   // Fetch ALL saved addresses for logged-in customer
   const { data: savedAddresses } = useQuery({
     queryKey: ["checkout-saved-addresses", customer?.id],
@@ -731,7 +739,8 @@ export default function CheckoutPage() {
       },
     });
     // Fire all post-order tasks in parallel (non-blocking)
-    if (!customer) createGuestAccount(newOrderId); else saveAddressToAccount();
+    // Auto-login (createGuestAccount) is awaited inside finalizeOrder via the effect below
+    if (!customer) { void createGuestAccount(newOrderId); } else saveAddressToAccount();
     notifyOrderEmail(newOrderId);
     sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
       customer_phone: phone.trim(), customer_name: fullName.trim(),
