@@ -48,41 +48,37 @@ export function AppSidebar() {
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const { isVisible, isComingSoon } = useMenuConfig();
 
-  // Fetch initial pending order count
+  // Poll pending order count (replaces realtime WebSocket to save Supabase connections + DB queries).
+  // Refetches every 60s while tab is visible, and immediately when tab becomes visible after being hidden.
   useEffect(() => {
     if (!storeId || isWhatsAppOnly) return;
+    let cancelled = false;
+
     const fetchCount = async () => {
       const { count } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
         .eq("store_id", storeId)
         .eq("status", "pending");
-      setPendingOrders(count ?? 0);
+      if (!cancelled) setPendingOrders(count ?? 0);
     };
-    fetchCount();
-  }, [storeId]);
 
-  // Real-time subscription for order changes
-  useEffect(() => {
-    if (!storeId || isWhatsAppOnly) return;
-    const channel = supabase
-      .channel("sidebar-orders")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
-        () => {
-          // Re-fetch count on any order change
-          supabase
-            .from("orders")
-            .select("*", { count: "exact", head: true })
-            .eq("store_id", storeId)
-            .eq("status", "pending")
-            .then(({ count }) => setPendingOrders(count ?? 0));
-        }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [storeId]);
+    fetchCount();
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") fetchCount();
+    }, 60_000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchCount();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [storeId, isWhatsAppOnly]);
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
