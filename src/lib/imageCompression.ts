@@ -1,22 +1,26 @@
 /**
  * Central image processing utility for ALL uploads.
  * - Validates file size (rejects raw files > 6MB)
- * - Skips compression for images already under 100KB
+ * - Skips compression for images already under 80KB
  * - Resizes to max dimension (maintains aspect ratio)
  * - Converts to WebP (falls back to JPEG)
- * - Targets 90–120KB output with high quality floor (0.75 min)
+ * - Targets 80–120KB output with a strict iteration loop:
+ *     1. Walk quality from 0.90 → 0.72 in 0.03 steps
+ *     2. If still over target, progressively shrink dimensions
+ *        (1200 → 1000 → 900 → 800) re-running the quality walk
+ *     3. Always returns the smallest acceptable result
  */
 
 const MAX_RAW_SIZE = 6 * 1024 * 1024; // 6MB — reject before processing
-const SKIP_THRESHOLD_KB = 80; // Skip compression if already under 80KB (already in target range)
-const HEAVY_THRESHOLD_KB = 300; // Only "heavy" if image is genuinely large
-const MAX_OUTPUT_KB = 120; // target output size — strict 80-120KB band
-const HEAVY_OUTPUT_KB = 120; // same target — quality stays high regardless
-const DEFAULT_MAX_DIMENSION = 1200; // keep full sharpness on retina screens
-const DEFAULT_QUALITY = 0.92; // near-lossless start
-const HEAVY_QUALITY = 0.88; // higher start for heavy — preserves clarity
-const MIN_QUALITY = 0.85; // strict floor — never visibly degrade
-const HEAVY_MIN_QUALITY = 0.78; // floor for heavy — still visually clean
+const SKIP_THRESHOLD_KB = 80; // Skip compression if already under 80KB (in target band)
+const HEAVY_THRESHOLD_KB = 300; // Anything over this needs aggressive treatment
+const MAX_OUTPUT_KB = 120; // Hard upper bound for the 80–120KB target band
+const DEFAULT_MAX_DIMENSION = 1200; // Sharpness ceiling for retina screens
+const DOWNSCALE_STEPS = [1200, 1000, 900, 800] as const; // Progressive fallbacks
+const DEFAULT_START_QUALITY = 0.9; // Starting quality — high but not max
+const HEAVY_START_QUALITY = 0.86; // Slightly lower start for big photos
+const MIN_QUALITY = 0.72; // Floor — below this WebP starts looking soft
+const QUALITY_STEP = 0.03; // Finer steps → more chances to land in band
 
 /** @deprecated Multi-size variants removed — single 800w upload only */
 export const IMAGE_VARIANT_WIDTHS = [800] as const;
@@ -72,43 +76,60 @@ function renderToCanvas(
   return canvas;
 }
 
-/** Compress a canvas to a WebP/JPEG blob under target size */
-async function compressCanvas(
+/** Encode a canvas to a Blob in the requested format/quality */
+function encodeCanvas(
   canvas: HTMLCanvasElement,
+  format: string,
   quality: number,
+): Promise<Blob | null> {
+  return new Promise((res) => canvas.toBlob((blob) => res(blob), format, quality));
+}
+
+/**
+ * Walk quality from `startQuality` down to `MIN_QUALITY` (in QUALITY_STEP
+ * decrements) and return the first encoding that lands at or below `targetKB`.
+ * If nothing fits, returns the smallest blob produced.
+ */
+async function walkQuality(
+  canvas: HTMLCanvasElement,
+  startQuality: number,
   targetKB: number,
-): Promise<{ blob: Blob; ext: string; mimeType: string }> {
-  const tryFormat = (format: string, q: number): Promise<Blob | null> =>
-    new Promise((res) => canvas.toBlob((blob) => res(blob), format, q));
-
-  let blob = await tryFormat("image/webp", quality);
-  let ext = "webp";
+): Promise<{ blob: Blob; ext: string; mimeType: string; quality: number }> {
+  // Try WebP first; fall back to JPEG if the browser refuses WebP
   let mimeType = "image/webp";
-
+  let ext = "webp";
+  let blob = await encodeCanvas(canvas, mimeType, startQuality);
   if (!blob || blob.size === 0) {
-    blob = await tryFormat("image/jpeg", quality);
-    ext = "jpg";
     mimeType = "image/jpeg";
+    ext = "jpg";
+    blob = await encodeCanvas(canvas, mimeType, startQuality);
   }
   if (!blob) throw new Error("Browser could not encode image");
 
-  // If already under target at high quality, use it directly (no iterative reduction)
+  let bestBlob = blob;
+  let bestQuality = startQuality;
   if (blob.size <= targetKB * 1024) {
-    return { blob, ext, mimeType };
+    return { blob, ext, mimeType, quality: startQuality };
   }
 
-  // Iteratively reduce quality, but never below the floor
-  const qualityFloor = quality <= HEAVY_QUALITY ? HEAVY_MIN_QUALITY : MIN_QUALITY;
-  let currentQuality = quality - 0.05;
-  while (blob.size > targetKB * 1024 && currentQuality >= qualityFloor) {
-    const nextBlob = await tryFormat(mimeType, currentQuality);
-    if (!nextBlob || nextBlob.size === 0) break;
-    blob = nextBlob;
-    currentQuality -= 0.05;
+  // Iterate downward — keep the smallest blob seen along the way
+  for (
+    let q = startQuality - QUALITY_STEP;
+    q >= MIN_QUALITY - 1e-6;
+    q -= QUALITY_STEP
+  ) {
+    const next = await encodeCanvas(canvas, mimeType, Math.max(q, MIN_QUALITY));
+    if (!next || next.size === 0) continue;
+    if (next.size < bestBlob.size) {
+      bestBlob = next;
+      bestQuality = q;
+    }
+    if (next.size <= targetKB * 1024) {
+      return { blob: next, ext, mimeType, quality: q };
+    }
   }
 
-  // Accept the result even if slightly over target — quality > file size
-  return { blob, ext, mimeType };
+  return { blob: bestBlob, ext, mimeType, quality: bestQuality };
 }
 
 /** Calculate scaled dimensions maintaining aspect ratio */
@@ -133,8 +154,15 @@ function scaleDimensions(
 
 /**
  * Process a single image to a given max dimension.
- * Returns a WebP file under 120KB (or best-effort JPEG fallback).
- * Skips compression entirely for images already under 100KB.
+ * Returns a WebP file in the 80–120KB target band whenever possible.
+ *
+ * Strategy:
+ *   1. Skip entirely if already ≤ 80KB
+ *   2. Walk quality at the requested dimension
+ *   3. If still over 120KB, progressively shrink dimensions
+ *      (1200 → 1000 → 900 → 800) and walk quality again
+ *   4. Return the smallest result produced
+ *
  * Throws if the raw file exceeds 6MB.
  */
 export async function processImage(
@@ -148,26 +176,52 @@ export async function processImage(
     throw new Error(`Image too large (${formatSize(file.size)}). Maximum allowed is 6MB.`);
   }
 
-  // Skip compression for any image under 100KB — preserve quality
+  // Already in target band — preserve original quality
   if (file.size <= SKIP_THRESHOLD_KB * 1024) {
     return { file, originalSize, compressedSize: file.size, skipped: true };
   }
 
   const isHeavy = file.size > HEAVY_THRESHOLD_KB * 1024;
-  const effectiveQuality = quality ?? (isHeavy ? HEAVY_QUALITY : DEFAULT_QUALITY);
-  const targetKB = isHeavy ? HEAVY_OUTPUT_KB : MAX_OUTPUT_KB;
+  const startQuality = quality ?? (isHeavy ? HEAVY_START_QUALITY : DEFAULT_START_QUALITY);
 
   const img = await loadImage(file);
-  const { width, height } = scaleDimensions(img.width, img.height, maxDimension);
-  const canvas = renderToCanvas(img, width, height);
-  const { blob, ext } = await compressCanvas(canvas, effectiveQuality, targetKB);
+
+  // Try the requested dimension first, then fall back to smaller dimensions
+  // until we land in the 80–120KB band. Track the best result across attempts.
+  const dimensionsToTry = DOWNSCALE_STEPS.filter((d) => d <= maxDimension);
+  if (dimensionsToTry.length === 0) dimensionsToTry.push(maxDimension);
+
+  let bestResult: { blob: Blob; ext: string; mimeType: string } | null = null;
+
+  for (const dim of dimensionsToTry) {
+    const { width, height } = scaleDimensions(img.width, img.height, dim);
+    const canvas = renderToCanvas(img, width, height);
+    const result = await walkQuality(canvas, startQuality, MAX_OUTPUT_KB);
+
+    if (!bestResult || result.blob.size < bestResult.blob.size) {
+      bestResult = { blob: result.blob, ext: result.ext, mimeType: result.mimeType };
+    }
+    // Landed in band — done
+    if (result.blob.size <= MAX_OUTPUT_KB * 1024) break;
+  }
 
   URL.revokeObjectURL(img.src);
 
-  const baseName = file.name.replace(/\.[^/.]+$/, "");
-  const compressedFile = new File([blob], `${baseName}.${ext}`, { type: blob.type });
+  if (!bestResult) throw new Error("Image compression failed");
 
-  return { file: compressedFile, originalSize, compressedSize: blob.size, skipped: false };
+  const baseName = file.name.replace(/\.[^/.]+$/, "");
+  const compressedFile = new File(
+    [bestResult.blob],
+    `${baseName}.${bestResult.ext}`,
+    { type: bestResult.mimeType },
+  );
+
+  return {
+    file: compressedFile,
+    originalSize,
+    compressedSize: bestResult.blob.size,
+    skipped: false,
+  };
 }
 
 /**
