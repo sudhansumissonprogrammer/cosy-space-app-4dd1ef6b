@@ -62,12 +62,14 @@ export default function UniversalProductCard({ product, slug, store, priority = 
       onTouchStart={prefetchProductDetail}
     >
       {card}
-      {hasVariants && (
-        <VariantPickerDialog
-          open={variantOpen}
-          onClose={() => setVariantOpen(false)}
-          product={product}
-        />
+      {hasVariants && variantOpen && (
+        <Suspense fallback={null}>
+          <VariantPickerDialog
+            open={variantOpen}
+            onClose={() => setVariantOpen(false)}
+            product={product}
+          />
+        </Suspense>
       )}
     </div>
   );
