@@ -49,12 +49,23 @@ async function handleError(req: Request) {
     });
   }
 
+  // Drop info-level noise at the source — only persist 'error' and 'warn'.
+  // 'info' rows were the largest contributor to error_logs growth (~1.5 MB table).
+  // Returning ok:true keeps clients quiet without an extra round-trip cost.
+  const normalizedLevel = ["error", "warn", "info"].includes(level) ? level : "error";
+  if (normalizedLevel === "info") {
+    return new Response(JSON.stringify({ ok: true, dropped: "info" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = getSupabase();
   const { error } = await supabase.from("error_logs").insert({
     message: String(message).slice(0, 500),
     context: context ? String(context).slice(0, 100) : null,
     stack: stack ? String(stack).slice(0, 2000) : null,
-    level: ["error", "warn", "info"].includes(level) ? level : "error",
+    level: normalizedLevel,
     url: url ? String(url).slice(0, 500) : null,
     user_agent: user_agent ? String(user_agent).slice(0, 300) : null,
     metadata: metadata && typeof metadata === "object" ? metadata : null,
