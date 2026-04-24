@@ -188,10 +188,12 @@ export function getImageSrcSet(
 
 /**
  * Standard `sizes` attribute for product cards in a responsive grid.
- * Matches typical 2-col mobile / 3-col tablet / 4-col desktop layouts.
+ * Mobile cards are ~half-viewport (~180-200px CSS = 360-400px DPR-2) so we
+ * advertise the actual rendered width — the browser then picks the closest
+ * srcSet entry (200w/400w) instead of the 800w desktop variant.
  */
 export const PRODUCT_CARD_SIZES =
-  "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
+  "(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 22vw";
 
 /**
  * Standard `sizes` attribute for hero/banner images (full-width).
