@@ -32,6 +32,9 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { lazy, Suspense } from "react";
 
 const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
+const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
+const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
+const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
 
 interface Variant {
   id: string;
