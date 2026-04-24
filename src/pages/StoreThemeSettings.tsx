@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Check, Palette, RotateCcw, Save, Lock, ShoppingCart, Heart, User, Menu, Star, Package, MapPin, Clock, MessageCircle, Store, ShoppingBag, Truck, Shield, Tag, Search, Share2, ChevronRight, ArrowLeft, Minus, Plus, X, ChevronLeft, Eye, Flame, SlidersHorizontal, Sparkles, ArrowRight, Monitor, Smartphone, Zap, Home, LayoutGrid, Compass, TrendingUp } from "lucide-react";
+import { Check, Palette, RotateCcw, Save, Lock, ShoppingCart, Heart, User, Menu, Star, Store, Tag, Search, Monitor, Smartphone, Home, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 
 const FONT_OPTIONS = [
