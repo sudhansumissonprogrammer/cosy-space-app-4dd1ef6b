@@ -153,6 +153,8 @@ export default function BuyNowPhoneModal({
         didSkip.current = true;
         // Still capture as a lead — returning user expressed intent again
         saveLead({ storeId, phone: saved, productId, productName, source });
+        // Auto-login the returning shopper too
+        void autoLoginByPhone(storeId, saved);
         onBeforeNavigate?.();
         onOpenChange(false);
         navigate(storefrontPath(storeSlug, "checkout"));
