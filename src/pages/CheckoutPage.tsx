@@ -310,9 +310,13 @@ export default function CheckoutPage() {
     }
   }, [hasCod, hasRazorpay, hasAnyPartialPayment]);
 
-  // Preload Razorpay script eagerly so it's ready instantly when user clicks Pay
+  // Preload Razorpay script + pre-warm edge functions so everything is ready instantly when user clicks Pay
   useEffect(() => {
-    if (hasRazorpay) loadRazorpayScript();
+    if (hasRazorpay) {
+      loadRazorpayScript();
+      prewarmEdgeFunction("razorpay-order");
+    }
+    prewarmEdgeFunction("place-order");
   }, [hasRazorpay]);
 
   const currency = store.currency || "USD";
