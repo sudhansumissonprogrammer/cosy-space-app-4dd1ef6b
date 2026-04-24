@@ -14,17 +14,17 @@ Deno.serve(async (req) => {
   try {
     const { email, phone, name, store_id, order_id } = await req.json();
 
-    // Validate required fields
-    if (!store_id || !order_id) {
+    // Validate required fields (order_id is now optional — phone-only login at quick-buy time)
+    if (!store_id) {
       return new Response(
-        JSON.stringify({ error: "store_id and order_id are required" }),
+        JSON.stringify({ error: "store_id is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(store_id) || !uuidRegex.test(order_id)) {
+    if (!uuidRegex.test(store_id) || (order_id && !uuidRegex.test(order_id))) {
       return new Response(
         JSON.stringify({ error: "Invalid store_id or order_id format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -160,39 +160,41 @@ Deno.serve(async (req) => {
       customerId = newCustomer.id;
     }
 
-    // Link order to customer
-    await supabase
-      .from("orders")
-      .update({ storefront_customer_id: customerId })
-      .eq("id", order_id);
+    // Link order to customer (only if an order was provided)
+    if (order_id) {
+      await supabase
+        .from("orders")
+        .update({ storefront_customer_id: customerId })
+        .eq("id", order_id);
 
-    // Save address from order to customer_addresses if not exists
-    const { data: orderData } = await supabase
-      .from("orders")
-      .select("street_address, city, state, pincode, customer_name, customer_phone")
-      .eq("id", order_id)
-      .single();
+      // Save address from order to customer_addresses if not exists
+      const { data: orderData } = await supabase
+        .from("orders")
+        .select("street_address, city, state, pincode, customer_name, customer_phone")
+        .eq("id", order_id)
+        .single();
 
-    if (orderData?.street_address) {
-      const { data: existingAddr } = await supabase
-        .from("customer_addresses")
-        .select("id")
-        .eq("storefront_customer_id", customerId)
-        .limit(1)
-        .maybeSingle();
+      if (orderData?.street_address) {
+        const { data: existingAddr } = await supabase
+          .from("customer_addresses")
+          .select("id")
+          .eq("storefront_customer_id", customerId)
+          .limit(1)
+          .maybeSingle();
 
-      if (!existingAddr) {
-        await supabase.from("customer_addresses").insert({
-          storefront_customer_id: customerId,
-          label: "Home",
-          full_name: orderData.customer_name || name || null,
-          phone: orderData.customer_phone || phone || null,
-          street_address: orderData.street_address,
-          city: orderData.city,
-          state: orderData.state,
-          pincode: orderData.pincode,
-          is_default: true,
-        });
+        if (!existingAddr) {
+          await supabase.from("customer_addresses").insert({
+            storefront_customer_id: customerId,
+            label: "Home",
+            full_name: orderData.customer_name || name || null,
+            phone: orderData.customer_phone || phone || null,
+            street_address: orderData.street_address,
+            city: orderData.city,
+            state: orderData.state,
+            pincode: orderData.pincode,
+            is_default: true,
+          });
+        }
       }
     }
 
