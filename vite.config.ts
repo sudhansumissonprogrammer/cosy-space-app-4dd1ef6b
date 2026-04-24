@@ -128,8 +128,11 @@ export default defineConfig(({ mode }) => ({
           // react-roving-focus, react-collection, react-presence, react-portal,
           // react-focus-scope, etc.) goes to `radix-storefront` so the storefront
           // chunk is self-contained and never has to fetch the dashboard chunk.
-          // react-slot stays in vendor (used by Button → everywhere).
-          if (id.includes("node_modules/@radix-ui") && !id.includes("react-slot")) {
+          // react-slot is used by Button (everywhere) → put it in storefront chunk.
+          if (id.includes("node_modules/@radix-ui/react-slot")) {
+            return "radix-storefront";
+          }
+          if (id.includes("node_modules/@radix-ui")) {
             // Dashboard-only widget primitives. Storefront pages NEVER import these.
             const dashboardOnly = [
               "react-dropdown-menu",
