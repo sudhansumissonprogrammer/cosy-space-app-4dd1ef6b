@@ -123,19 +123,22 @@ export default defineConfig(({ mode }) => ({
           }
 
           // === Radix UI primitives ===
-          // After investigation: splitting into storefront vs dashboard chunks
-          // does NOT reduce critical-path bytes because Rollup hoists shared
-          // atoms (react-presence, react-portal, react-roving-focus, etc.)
-          // and emits side-effect imports that still trigger preloading.
-          //
-          // Best result: ONE radix chunk that all routes share. The chunk is
-          // already cached forever (immutable hash) so a returning visitor
-          // never re-downloads it. Cold load: ~38KB gz one-time cost amortised
-          // across every page in the app.
-          //
-          // Trade-off accepted: ~10KB of dashboard-only Radix code (DropdownMenu,
-          // ContextMenu, Switch, etc.) ships to storefront but is never executed.
-          // Splitting added duplication overhead that wiped out the savings.
+          // react-slot is used by Button (shipped in storefront-shell). Splitting
+          // it out keeps the heavy 146KB radix chunk OFF the storefront critical
+          // path — storefront-shell only needs ~1KB of slot logic.
+          // Everything else (Dialog, Popover, DropdownMenu, etc.) stays in the
+          // shared `radix` chunk that loads on demand when those primitives are used.
+          if (id.includes("node_modules/@radix-ui/react-slot")) {
+            return "radix-slot";
+          }
+          if (
+            id.includes("node_modules/@radix-ui/react-compose-refs") ||
+            id.includes("node_modules/@radix-ui/react-primitive")
+          ) {
+            // Tiny shared atoms used by react-slot — co-locate so storefront-shell
+            // doesn't pull the big radix chunk.
+            return "radix-slot";
+          }
           if (id.includes("node_modules/@radix-ui")) {
             return "radix";
           }
