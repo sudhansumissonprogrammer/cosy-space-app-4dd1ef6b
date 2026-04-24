@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useOutletContext, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +19,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
-import PostPurchaseUpsell from "@/components/storefront/PostPurchaseUpsell";
+const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 
 declare global {
   interface Window {
@@ -876,15 +876,17 @@ export default function CheckoutPage() {
     // Show post-purchase upsell first, then confirmation
     if (showUpsell && orderId) {
       return (
-        <PostPurchaseUpsell
-          storeId={store.id}
-          storeName={store.name}
-          orderId={orderId}
-          orderNumber={orderNumber}
-          orderedProductIds={checkoutItems.map((i) => i.productId)}
-          currency={currency}
-          onSkip={() => setShowUpsell(false)}
-        />
+        <Suspense fallback={null}>
+          <PostPurchaseUpsell
+            storeId={store.id}
+            storeName={store.name}
+            orderId={orderId}
+            orderNumber={orderNumber}
+            orderedProductIds={checkoutItems.map((i) => i.productId)}
+            currency={currency}
+            onSkip={() => setShowUpsell(false)}
+          />
+        </Suspense>
       );
     }
 

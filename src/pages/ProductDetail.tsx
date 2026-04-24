@@ -32,6 +32,9 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { lazy, Suspense } from "react";
 
 const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
+const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
+const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
+const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
 
 interface Variant {
   id: string;
@@ -884,7 +887,9 @@ export default function ProductDetail() {
 
           {/* Frequently Bought Together — hidden in V18 */}
           {!isV18 && (
-            <FrequentlyBoughtTogether storeId={store.id} storeSlug={store.slug} currentProductId={product.id} currentCategory={product.category} currency={currency} addToCart={addToCart} productImage={product.image_url} />
+            <Suspense fallback={null}>
+              <FrequentlyBoughtTogether storeId={store.id} storeSlug={store.slug} currentProductId={product.id} currentCategory={product.category} currency={currency} addToCart={addToCart} productImage={product.image_url} />
+            </Suspense>
           )}
 
           {/* V18: SKU & Categories */}
@@ -949,18 +954,22 @@ export default function ProductDetail() {
 
 
       {/* Complete the Look */}
-      <RelatedProducts
-        storeId={store.id}
-        storeSlug={store.slug}
-        currentProductId={product.id}
-        currentCategory={product.category}
-        store={store}
-        addToCart={addToCart}
-        currency={currency}
-      />
+      <Suspense fallback={null}>
+        <RelatedProducts
+          storeId={store.id}
+          storeSlug={store.slug}
+          currentProductId={product.id}
+          currentCategory={product.category}
+          store={store}
+          addToCart={addToCart}
+          currency={currency}
+        />
+      </Suspense>
 
       {/* Customer Reviews */}
-      <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
+      <Suspense fallback={null}>
+        <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
+      </Suspense>
 
       {/* Portal: render fixed elements outside PageTransition animation container */}
       {createPortal(
@@ -1234,381 +1243,7 @@ function RealPaymentLogos() {
   );
 }
 
-/* ── CRO #2: Frequently Bought Together ── */
-function FrequentlyBoughtTogether({
-  storeId,
-  storeSlug,
-  currentProductId,
-  currentCategory,
-  currency,
-  addToCart,
-  productImage,
-}: {
-  storeId: string;
-  storeSlug: string;
-  currentProductId: string;
-  currentCategory: string | null;
-  currency: string;
-  addToCart: (item: any) => void;
-  productImage: string | null;
-}) {
-  const { data: bundleProducts } = useQuery({
-    queryKey: ["bundle-products", storeId, currentProductId],
-    queryFn: async () => {
-      const { data: coIds, error: coErr } = await supabase.rpc("get_co_purchased_products", {
-        _product_id: currentProductId,
-        _limit: 2,
-      });
-      
-      if (!coErr && coIds && coIds.length > 0) {
-        const { data: coProducts, error } = await supabase
-          .from("products")
-          .select("*")
-          .in("id", coIds)
-          .eq("is_active", true);
-        if (!error && coProducts && coProducts.length > 0) return coProducts.slice(0, 2);
-      }
 
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .neq("id", currentProductId)
-        .limit(6);
-      if (error) throw error;
-      if (currentCategory && data.length > 2) {
-        const same = data.filter((p) => p.category === currentCategory);
-        const other = data.filter((p) => p.category !== currentCategory);
-        return [...same, ...other].slice(0, 2);
-      }
-      return data.slice(0, 2);
-    },
-    enabled: !!storeId && !!currentProductId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  if (!bundleProducts || bundleProducts.length === 0) return null;
-
-  const bundleTotal = bundleProducts.reduce((sum, p) => {
-    const price = p.sale_price && p.sale_price < p.price ? p.sale_price : p.price;
-    return sum + price;
-  }, 0);
-  const bundleDiscount = bundleTotal * 0.05;
-  const bundleFinal = bundleTotal - bundleDiscount;
-
-  const handleAddBundle = () => {
-    bundleProducts.forEach((p) => {
-      addToCart({
-        productId: p.id,
-        name: p.name,
-        price: p.sale_price && p.sale_price < p.price ? p.sale_price : p.price,
-        image: p.image_url || undefined,
-        quantity: 1,
-      });
-    });
-    // Side cart opens automatically
-  };
-
-  return (
-    <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Zap className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-bold text-foreground">Frequently Bought Together</h3>
-      </div>
-      <div className="flex items-center gap-2 mb-3 overflow-x-auto">
-        {bundleProducts.map((p, idx) => (
-          <div key={p.id} className="flex items-center gap-2">
-            {idx > 0 && <Plus className="h-4 w-4 text-muted-foreground shrink-0" />}
-            <Link
-              to={storefrontPath(storeSlug, `product/${p.slug || p.id}`)}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card p-2 hover:border-primary/40 transition-colors shrink-0"
-            >
-              <img src={p.image_url || "/placeholder.svg"} alt={p.name} className="h-12 w-12 rounded-md object-cover" loading="lazy" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground line-clamp-1">{p.name}</p>
-                <p className="text-xs font-bold text-primary">
-                  {currency} {(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price).toFixed(0)}
-                </p>
-              </div>
-            </Link>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground line-through">{currency} {bundleTotal.toFixed(0)}</p>
-          <p className="text-sm font-extrabold text-emerald-600">{currency} {bundleFinal.toFixed(0)} <span className="text-[10px] font-semibold">(-5% bundle)</span></p>
-        </div>
-        <button
-          onClick={handleAddBundle}
-          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors active:scale-95"
-        >
-          <ShoppingCart className="h-3.5 w-3.5" />
-          Add Bundle
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ── Customer Reviews Section — matching reference design ── */
-function CustomerReviews({
-  reviews,
-  realReviews,
-  rating,
-  reviewCount,
-  productId,
-  storeId,
-  onReviewSubmitted,
-}: {
-  reviews: ReturnType<typeof getFakeReviews>;
-  realReviews: { id: string; customer_name: string; rating: number; review_text: string | null; is_verified: boolean; created_at: string }[];
-  rating: number;
-  reviewCount: number;
-  productId: string;
-  storeId: string;
-  onReviewSubmitted: () => void;
-}) {
-  const [showAll, setShowAll] = useState(false);
-  const [activeTab, setActiveTab] = useState<"reviews" | "description" | "returns">("reviews");
-  const [showForm, setShowForm] = useState(false);
-  const [formName, setFormName] = useState("");
-  const [formRating, setFormRating] = useState(0);
-  const [formHoverRating, setFormHoverRating] = useState(0);
-  const [formText, setFormText] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  // Merge real reviews with fake ones
-  const realMapped = realReviews.map(r => ({
-    id: r.id,
-    name: r.customer_name,
-    rating: r.rating,
-    text: r.review_text || "",
-    daysAgo: Math.max(1, Math.floor((Date.now() - new Date(r.created_at).getTime()) / 86400000)),
-    verified: r.is_verified,
-    helpful: 0,
-    avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(r.customer_name)}&backgroundColor=c0aede,d1d4f9,b6e3f4,ffd5dc,ffdfbf`,
-    isReal: true,
-  }));
-
-  const allReviews = [...realMapped, ...reviews.map(r => ({ ...r, isReal: false }))];
-  const displayed = showAll ? allReviews : allReviews.slice(0, 3);
-  const totalCount = reviewCount + realReviews.length;
-  const avgRating = realReviews.length > 0
-    ? ((rating * reviewCount + realReviews.reduce((s, r) => s + r.rating, 0)) / totalCount)
-    : rating;
-
-  const starCounts = useMemo(() => {
-    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    allReviews.forEach(r => { if (counts[r.rating as keyof typeof counts] !== undefined) counts[r.rating as keyof typeof counts]++; });
-    return counts;
-  }, [allReviews]);
-
-  const handleSubmit = async () => {
-    if (!formName.trim() || formRating === 0) {
-      toast.error("Please enter your name and select a rating");
-      return;
-    }
-    setSubmitting(true);
-    const { error } = await supabase.from("product_reviews").insert({
-      product_id: productId,
-      store_id: storeId,
-      customer_name: formName.trim(),
-      rating: formRating,
-      review_text: formText.trim() || null,
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error("Failed to submit review");
-      return;
-    }
-    toast.success("Review submitted! Thank you 🎉");
-    setFormName("");
-    setFormRating(0);
-    setFormText("");
-    setShowForm(false);
-    onReviewSubmitted();
-  };
-
-  return (
-    <section className="mt-10 pt-6 border-t border-border">
-      <div className="flex items-center gap-6 mb-6 border-b border-border">
-        {(["reviews", "description", "returns"] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-2.5 text-sm font-semibold transition-colors border-b-2 ${
-              activeTab === tab
-                ? "border-foreground text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab === "reviews" ? "Reviews" : tab === "description" ? "Description" : "Return Policy"}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "reviews" && (
-        <div>
-          <div className="rounded-xl border border-border p-5 mb-6">
-            <h2 className="text-2xl font-bold text-foreground mb-2">Customer Reviews</h2>
-            <div className="flex items-center gap-1 mb-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className={`h-5 w-5 ${i < Math.floor(avgRating) ? "fill-foreground text-foreground" : i < avgRating ? "fill-foreground/50 text-foreground" : "text-muted-foreground/30"}`} />
-              ))}
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">Based on {totalCount} reviews</p>
-
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="w-full rounded-lg border border-border py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
-            >
-              {showForm ? "Cancel" : "Write a review"}
-            </button>
-
-            {/* Review Form */}
-            {showForm && (
-              <div className="mt-4 space-y-3 rounded-lg border border-border p-4 bg-accent/30 animate-in slide-in-from-top-2 duration-200">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Your Name *</label>
-                  <input
-                    type="text"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder="Enter your name"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    maxLength={50}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Rating *</label>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onMouseEnter={() => setFormHoverRating(star)}
-                        onMouseLeave={() => setFormHoverRating(0)}
-                        onClick={() => setFormRating(star)}
-                        className="p-0.5 transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className={`h-7 w-7 transition-colors ${
-                            star <= (formHoverRating || formRating)
-                              ? "fill-amber-400 text-amber-400"
-                              : "text-muted-foreground/30"
-                          }`}
-                        />
-                      </button>
-                    ))}
-                    {formRating > 0 && <span className="ml-2 text-sm font-semibold text-foreground">{formRating}/5</span>}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Your Review</label>
-                  <textarea
-                    value={formText}
-                    onChange={(e) => setFormText(e.target.value)}
-                    placeholder="Share your experience with this product..."
-                    rows={3}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    maxLength={500}
-                  />
-                </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting || !formName.trim() || formRating === 0}
-                  className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-                >
-                  {submitting ? "Submitting..." : "Submit Review"}
-                </button>
-              </div>
-            )}
-
-            <div className="mt-5 space-y-2">
-              {[5, 4, 3, 2, 1].map((stars) => {
-                const count = starCounts[stars as keyof typeof starCounts];
-                const pct = allReviews.length > 0 ? Math.round((count / allReviews.length) * 100) : 0;
-                return (
-                  <div key={stars} className="flex items-center gap-2.5">
-                    <div className="flex items-center gap-0.5 w-24 shrink-0">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`h-4 w-4 ${i < stars ? "fill-foreground text-foreground" : "text-muted-foreground/20"}`} />
-                      ))}
-                    </div>
-                    <div className="flex-1 h-3 rounded-sm bg-accent overflow-hidden border border-border">
-                      <div
-                        className="h-full bg-amber-400 transition-all duration-500"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-muted-foreground w-8 text-right">{pct}%</span>
-                    <span className="text-xs text-muted-foreground w-6 text-right">({count})</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {displayed.map((review) => (
-              <div key={review.id} className="rounded-xl border border-border p-4 transition-all hover:shadow-sm">
-                <div className="flex items-start gap-3">
-                  <img src={review.avatar} alt={review.name} className="h-9 w-9 rounded-full bg-accent" loading="lazy" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-foreground">{review.name}</span>
-                      {review.verified && (
-                        <span className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600">
-                          <Check className="h-3 w-3" /> Verified
-                        </span>
-                      )}
-                      <span className="text-[10px] text-muted-foreground ml-auto">{review.daysAgo}d ago</span>
-                    </div>
-                    <div className="flex items-center gap-0.5 mt-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`h-3 w-3 ${i < review.rating ? "fill-foreground text-foreground" : "text-muted-foreground/20"}`} />
-                      ))}
-                    </div>
-                    <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{review.text}</p>
-                    {review.helpful > 0 && (
-                      <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <ThumbsUp className="h-3 w-3" />
-                        <span>{review.helpful} found this helpful</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {allReviews.length > 3 && !showAll && (
-            <button onClick={() => setShowAll(true)} className="mt-3 text-sm font-semibold text-primary hover:underline">
-              View all {allReviews.length} reviews →
-            </button>
-          )}
-        </div>
-      )}
-
-      {activeTab === "description" && (
-        <div className="text-sm text-muted-foreground leading-relaxed">
-          <p>Product details and specifications are listed above in the product description section.</p>
-        </div>
-      )}
-
-      {activeTab === "returns" && (
-        <div className="text-sm text-muted-foreground leading-relaxed space-y-2">
-          <p>• 7-day easy return policy</p>
-          <p>• Product must be unused and in original packaging</p>
-          <p>• Refund processed within 5-7 business days</p>
-          <p>• Exchange available for size/color variants</p>
-        </div>
-      )}
-    </section>
-  );
-}
 
 /* ── Accordion Item ── */
 function AccordionItem({
@@ -1996,67 +1631,6 @@ function FullscreenLightbox({
   );
 }
 
-/* ── CRO #6: "Complete the Look" (renamed Related Products) ── */
-function RelatedProducts({
-  storeId,
-  storeSlug,
-  currentProductId,
-  currentCategory,
-  store,
-  addToCart,
-  currency,
-}: {
-  storeId: string;
-  storeSlug: string;
-  currentProductId: string;
-  currentCategory: string | null;
-  store: Tables<"stores">;
-  addToCart: (item: any) => void;
-  currency: string;
-}) {
-  const themeConfig = useStorefrontThemeConfig(storeId);
-  const cardStyle = themeConfig?.product_card_style || "style-1";
-
-  const { data: related } = useQuery({
-    queryKey: ["related-products", storeId, currentProductId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .neq("id", currentProductId)
-        .limit(8);
-      if (error) throw error;
-
-      if (currentCategory && data.length > 4) {
-        const sameCategory = data.filter((p) => p.category === currentCategory);
-        const otherCategory = data.filter((p) => p.category !== currentCategory);
-        return [...sameCategory, ...otherCategory].slice(0, 4);
-      }
-      return data.slice(0, 4);
-    },
-    enabled: !!storeId && !!currentProductId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  if (!related || related.length === 0) return null;
-
-  const productIds = related.map((p) => p.id);
-
-  return (
-    <VariantCountProvider productIds={productIds}>
-      <section className="mt-10 pt-8 border-t border-border">
-        <h2 className="text-lg font-bold text-foreground mb-4">Complete the Look ✨</h2>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {related.map((product, i) => (
-            <UniversalProductCard key={product.id} product={product} slug={storeSlug} store={store} cardStyle={cardStyle} index={i} />
-          ))}
-        </div>
-      </section>
-    </VariantCountProvider>
-  );
-}
 
 /* ── Product Detail Skeleton ── */
 export function ProductDetailSkeleton() {
