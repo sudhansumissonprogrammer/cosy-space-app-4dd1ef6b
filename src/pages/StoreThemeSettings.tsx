@@ -452,48 +452,6 @@ export default function StoreThemeSettings() {
     enabled: !!storeId,
   });
 
-  // Fetch real products for preview
-  const { data: storeProducts } = useQuery({
-    queryKey: ["store-products-preview", storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, name, price, sale_price, image_url, is_best_selling, category")
-        .eq("store_id", storeId!)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(8);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Fetch real categories for preview
-  const { data: storeCategories } = useQuery({
-    queryKey: ["store-categories-preview", storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("id, name, image_url")
-        .eq("store_id", storeId!)
-        .limit(6);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const previewProducts = storeProducts && storeProducts.length > 0
-    ? mapDbProductsToPreview(storeProducts)
-    : DEFAULT_PRODUCTS;
-
-  const previewCategories = storeCategories && storeCategories.length > 0
-    ? mapDbCategoriesToPreview(storeCategories)
-    : DEFAULT_CATEGORIES;
-
   // Local override ensures instant UI tick update when Apply is clicked,
   // even if the query cache refetch hasn't completed yet.
   const [themeOverride, setThemeOverride] = useState<string | null>(null);
