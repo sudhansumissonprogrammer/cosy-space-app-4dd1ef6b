@@ -141,6 +141,14 @@ export default function CheckoutPage() {
   // Lazily fetch/create customer record on checkout
   useEffect(() => { ensureCustomer(); }, [ensureCustomer]);
 
+  // Scroll to top when the order-placed / upsell screen appears so users
+  // see the confirmation instead of landing on the page footer.
+  useEffect(() => {
+    if (orderPlaced) {
+      try { window.scrollTo({ top: 0, behavior: "auto" }); } catch {}
+    }
+  }, [orderPlaced, showUpsell]);
+
   // Fetch ALL saved addresses for logged-in customer
   const { data: savedAddresses } = useQuery({
     queryKey: ["checkout-saved-addresses", customer?.id],
@@ -872,14 +880,6 @@ export default function CheckoutPage() {
   };
 
 
-
-  // Scroll to top whenever the order-placed / upsell screen renders so users
-  // see the confirmation instead of landing on the page footer
-  useEffect(() => {
-    if (orderPlaced) {
-      try { window.scrollTo({ top: 0, behavior: "auto" }); } catch {}
-    }
-  }, [orderPlaced, showUpsell]);
 
   if (orderPlaced) {
     // Show post-purchase upsell first, then confirmation
