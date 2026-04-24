@@ -49,7 +49,9 @@ function OptimizedImageInner({
   aspectRatio,
   fallback,
   quality = 85,
-  srcSetSizes = [400, 800],
+  // Finer-grained breakpoints so mobile (50vw on a 360-414px screen ≈ 200px CSS,
+  // 400px DPR-2) gets a tight 200/400 file instead of the 800 desktop variant.
+  srcSetSizes = [200, 400, 600, 800],
   onError,
 }: OptimizedImageProps) {
   const [loaded, setLoaded] = useState(priority);
