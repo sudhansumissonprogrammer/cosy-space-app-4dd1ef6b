@@ -3957,6 +3957,11 @@ export default {
      ============================================================ */
   async scheduled(event, env, ctx) {
     const keepaliveStart = Date.now();
+    // Flush any pending page-view rows so the buffer never holds data >1 cron interval
+    try {
+      const flushPromise = flushPageViewBuffer();
+      if (flushPromise) ctx.waitUntil(flushPromise);
+    } catch {}
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
