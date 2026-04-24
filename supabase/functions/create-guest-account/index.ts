@@ -88,6 +88,9 @@ Deno.serve(async (req) => {
 
     if (existingUser) {
       userId = existingUser.id;
+      // Reset password so we can sign in and return a session for auto-login
+      generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
+      await supabase.auth.admin.updateUserById(userId, { password: generatedPassword });
     } else {
       // Create a new user keyed by phone, with a random password (they can reset later)
       generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
@@ -193,30 +196,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Generate a session for auto-login (only for new users since we know the password)
+    // Generate a session for auto-login (works for both new and returning users since we (re)set the password)
     let session = null;
-    if (isNewUser && generatedPassword) {
-      const { data: tokenData, error: tokenErr } = await supabase.auth.admin.generateLink({
-        type: "magiclink",
+    if (generatedPassword) {
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const anonClient = createClient(supabaseUrl, anonKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { data: signInData, error: signInErr } = await anonClient.auth.signInWithPassword({
         email: normalizedEmail,
+        password: generatedPassword,
       });
 
-      if (!tokenErr && tokenData) {
-        const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-        const anonClient = createClient(supabaseUrl, anonKey, {
-          auth: { autoRefreshToken: false, persistSession: false },
-        });
-        const { data: signInData, error: signInErr } = await anonClient.auth.signInWithPassword({
-          email: normalizedEmail,
-          password: generatedPassword,
-        });
-
-        if (!signInErr && signInData?.session) {
-          session = {
-            access_token: signInData.session.access_token,
-            refresh_token: signInData.session.refresh_token,
-          };
-        }
+      if (!signInErr && signInData?.session) {
+        session = {
+          access_token: signInData.session.access_token,
+          refresh_token: signInData.session.refresh_token,
+        };
+      } else if (signInErr) {
+        console.error("Auto-login signIn error:", signInErr);
       }
     }
 
