@@ -122,12 +122,43 @@ export default defineConfig(({ mode }) => ({
             return "supabase";
           }
 
-          // === Radix UI primitives ===
-          if (
-            id.includes("node_modules/@radix-ui") &&
-            !id.includes("react-slot")
-          ) {
-            return "radix";
+          // === Radix UI primitives — SPLIT (storefront vs dashboard) ===
+          // Storefront only uses ~8 Radix packages; dashboard uses ~20+.
+          // Splitting prevents storefront from downloading dashboard primitives.
+          // react-slot stays in vendor (used by button → everywhere).
+          if (id.includes("node_modules/@radix-ui") && !id.includes("react-slot")) {
+            // Primitives that appear on storefront pages (dialogs, sheets, tabs,
+            // collapsible accordion-style sections, progress bars, labels, separators).
+            const storefrontRadix = [
+              "react-dialog",
+              "react-dismissable-layer",
+              "react-focus-scope",
+              "react-focus-guards",
+              "react-portal",
+              "react-presence",
+              "react-tabs",
+              "react-collapsible",
+              "react-progress",
+              "react-label",
+              "react-separator",
+              "react-roving-focus",
+              "react-collection",
+              "react-direction",
+              "react-id",
+              "react-use-callback-ref",
+              "react-use-controllable-state",
+              "react-use-escape-keydown",
+              "react-use-layout-effect",
+              "react-use-previous",
+              "react-use-size",
+              "react-compose-refs",
+              "react-context",
+              "react-primitive",
+            ];
+            if (storefrontRadix.some((pkg) => id.includes(`@radix-ui/${pkg}`))) {
+              return "radix-storefront";
+            }
+            return "radix-dashboard";
           }
 
           // === Lucide icons — CONSOLIDATED (v7.8) ===
