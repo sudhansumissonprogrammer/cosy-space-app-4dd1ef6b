@@ -9,12 +9,10 @@ export type { Tables };
 export type StoreData = Tables<"stores">;
 export { useStorefront } from "@/layouts/StorefrontLayout.logic";
 
-const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNav"));
-const LazyMobileBottomNavModern = lazy(() => import("@/components/storefront/MobileBottomNavModern"));
-const LazyMobileBottomNavV15 = lazy(() => import("@/components/storefront/MobileBottomNavV15"));
-const LazyMobileBottomNavV17 = lazy(() => import("@/components/storefront/MobileBottomNavV17"));
+const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNavSwitcher"));
 
-const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17"];
+const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17"] as const;
+type NavVariant = typeof VALID_NAV_STYLES[number];
 
 export default function StorefrontLayout({ slugOverride }: { slugOverride?: string } = {}) {
   return (
