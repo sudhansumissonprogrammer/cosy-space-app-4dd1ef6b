@@ -380,20 +380,8 @@ export default function ProductDetail() {
     return () => clearInterval(timer);
   }, [product?.id]);
 
-  /* ── CRO #7: Periodic social proof — inline notification state ── */
-  const [socialProof, setSocialProof] = useState<{ name: string; city: string; visible: boolean } | null>(null);
-  useEffect(() => {
-    if (!product) return;
-    const show = () => {
-      const nameIdx = Math.floor(Math.random() * reviewerNames.length);
-      const cityIdx = Math.floor(Math.random() * socialProofCities.length);
-      setSocialProof({ name: reviewerNames[nameIdx], city: socialProofCities[cityIdx], visible: true });
-      setTimeout(() => setSocialProof((prev) => prev ? { ...prev, visible: false } : null), 5000);
-    };
-    const timer = setInterval(show, 35000 + Math.random() * 20000);
-    const firstTimer = setTimeout(show, 6000 + Math.random() * 4000);
-    return () => { clearInterval(timer); clearTimeout(firstTimer); };
-  }, [product?.id]);
+  /* Social-proof "X from Y just purchased" popup removed per user request */
+  const socialProof = null as null | { name: string; city: string; visible: boolean };
 
   const allImages = (() => {
     const imgs: string[] = [];
