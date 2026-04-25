@@ -37,6 +37,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import ProductForm from "@/components/ProductForm";
 import QuickEditProductModal from "@/components/dashboard/QuickEditProductModal";
+import FAB from "@/components/dashboard/FAB";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
 import { cleanImageUrl } from "@/lib/imageOptimize";
 
 type SortOption = "title-asc" | "title-desc" | "date-new" | "date-old";
