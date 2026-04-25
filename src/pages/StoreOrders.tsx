@@ -359,8 +359,9 @@ export default function StoreOrders() {
         />
       )}
 
-      {/* Search & Filter Bar */}
-      <Card className="border shadow-none">
+      {/* Search & Filter Bar — sticky on mobile so it stays reachable in long lists */}
+      <Card className="border shadow-none sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+
         <CardContent className="p-2.5 space-y-2.5">
           <div className="flex gap-2">
             <div className="relative flex-1">
