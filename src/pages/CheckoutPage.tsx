@@ -1049,7 +1049,7 @@ export default function CheckoutPage() {
                 onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
               />
             </div>
-            <Button variant="outline" onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()}>
+            <Button variant="outline" onClick={() => applyCoupon()} disabled={couponLoading || !couponCode.trim()}>
               {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
             </Button>
           </div>
