@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Package, MapPin, Heart, LogOut, Plus, Trash2, Star, Loader2, User } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { normalizePhone } from "@/lib/phoneUtils";
 
 function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
   const { data: orders, isLoading } = useQuery({
