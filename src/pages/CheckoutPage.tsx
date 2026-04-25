@@ -331,7 +331,10 @@ export default function CheckoutPage() {
 
   const currency = store.currency || "USD";
   const isHindi = store.theme === "theme-16";
-  const t = (en: string, hi: string) => isHindi ? `${en} / ${hi}` : en;
+  // Default: English only. Hindi is added only via tCritical() for payment / COD / key errors
+  // where bilingual labels genuinely help shoppers who aren't comfortable in English.
+  const t = (en: string, _hi: string) => en;
+  const tCritical = (en: string, hi: string) => isHindi ? `${en} / ${hi}` : en;
 
   const checkoutItems = isSingleMode && product
     ? [{
