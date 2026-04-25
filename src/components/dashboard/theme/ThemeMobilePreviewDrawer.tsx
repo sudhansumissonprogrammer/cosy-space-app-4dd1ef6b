@@ -13,21 +13,19 @@ interface Props {
 /**
  * Mobile sticky "Preview" button + slide-up drawer (#2 + #10).
  *
- * PERF: Iframe is pre-mounted (hidden off-screen) on first user interaction
- * intent — we mount it as soon as the page loads in the background so by the
- * time the user taps "Preview" it is already loaded. This avoids the 3-5s
- * cold-load delay seen previously.
+ * PERF: The iframe is mounted once on idle (in the background) and never
+ * unmounted. Opening the drawer just toggles its visibility, so the preview
+ * appears instantly instead of cold-loading 3-5s every time.
  */
 export default function ThemeMobilePreviewDrawer({ storeSlug, iframeKey, onIframeReady, registerIframe }: Props) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"mobile" | "desktop">("mobile");
-  // Pre-mount on idle so the iframe loads in the background before first open.
   const [mounted, setMounted] = useState(false);
   const mobileRef = useRef<HTMLIFrameElement>(null);
   const desktopRef = useRef<HTMLIFrameElement>(null);
 
-  // Pre-mount after the page settles (idle) so the storefront loads in the
-  // background. By the time the user taps Preview, it's already painted.
+  // Pre-mount once the page is idle so the storefront loads in the background
+  // before the user even opens the drawer.
   useEffect(() => {
     if (mounted) return;
     const ric = (window as any).requestIdleCallback as
@@ -52,70 +50,92 @@ export default function ThemeMobilePreviewDrawer({ storeSlug, iframeKey, onIfram
   useEffect(() => {
     if (!registerIframe) return;
     const active = mode === "mobile" ? mobileRef.current : desktopRef.current;
-    registerIframe(active);
+    if (active) registerIframe(active);
     return () => registerIframe(null);
-  }, [open, mode, mounted, registerIframe]);
+  }, [mode, mounted, registerIframe]);
 
-  // Pre-mounted iframes — rendered off-screen until drawer is open, then moved
-  // into place. This avoids the unmount/remount cold-load on every open.
-  const iframes = mounted && (
-    <>
-      <iframe
-        key={`drawer-mobile-${iframeKey}`}
-        ref={mobileRef}
-        src={`/store/${storeSlug}?preview=1`}
-        title="Mobile Preview"
-        loading="eager"
-        onLoad={() => onIframeReady(mobileRef.current)}
-        style={{
-          width: "375px",
-          height: "750px",
-          border: "none",
-          transform: "scale(0.853)",
-          transformOrigin: "top left",
-        }}
-      />
-      <iframe
-        key={`drawer-desktop-${iframeKey}`}
-        ref={desktopRef}
-        src={`/store/${storeSlug}?preview=1`}
-        title="Desktop Preview"
-        loading="eager"
-        onLoad={() => onIframeReady(desktopRef.current)}
-        style={{
-          width: "1440px",
-          height: "900px",
-          border: "none",
-          transform: "scale(0.5)",
-          transformOrigin: "top left",
-        }}
-      />
-    </>
-  );
+  // Wrapper position: while drawer is closed → off-screen tiny; when open →
+  // fixed-positioned over the drawer body. Using inline styles + visibility so
+  // iframes never unmount (preserves loaded storefront state).
+  const stageStyle: React.CSSProperties = open
+    ? {
+        position: "fixed",
+        left: "50%",
+        top: "calc(50% + 30px)",
+        transform: "translate(-50%, -50%)",
+        zIndex: 60,
+        pointerEvents: "auto",
+      }
+    : {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: 1,
+        height: 1,
+        overflow: "hidden",
+        opacity: 0,
+        pointerEvents: "none",
+        zIndex: -1,
+      };
 
   return (
     <>
-      {/* Hidden pre-mount stage — iframes load in background before first open */}
-      {!open && (
-        <div
-          aria-hidden="true"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: 1,
-            height: 1,
-            overflow: "hidden",
-            opacity: 0,
-            pointerEvents: "none",
-            zIndex: -1,
-          }}
-        >
-          {iframes}
+      {/* Persistent iframe stage — never unmounts so re-opens are instant */}
+      {mounted && (
+        <div style={stageStyle} aria-hidden={!open}>
+          {/* Mobile frame */}
+          <div style={{ display: mode === "mobile" ? "block" : "none" }}>
+            <div className="rounded-[2rem] border-[5px] border-gray-900 bg-gray-900 shadow-xl overflow-hidden">
+              <div style={{ width: "320px", height: "640px", overflow: "hidden" }}>
+                <iframe
+                  key={`drawer-mobile-${iframeKey}`}
+                  ref={mobileRef}
+                  src={`/store/${storeSlug}?preview=1`}
+                  title="Mobile Preview"
+                  loading="eager"
+                  onLoad={() => onIframeReady(mobileRef.current)}
+                  style={{
+                    width: "375px",
+                    height: "750px",
+                    border: "none",
+                    transform: "scale(0.853)",
+                    transformOrigin: "top left",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          {/* Desktop frame */}
+          <div style={{ display: mode === "desktop" ? "block" : "none" }}>
+            <div className="rounded-lg border border-border bg-background shadow-lg overflow-hidden w-[min(92vw,720px)]">
+              <div className="flex items-center gap-1 px-2 py-1.5 bg-muted/40 border-b border-border">
+                <div className="h-2 w-2 rounded-full bg-destructive/50" />
+                <div className="h-2 w-2 rounded-full bg-warning/50" />
+                <div className="h-2 w-2 rounded-full bg-success/50" />
+              </div>
+              <div style={{ width: "100%", height: "min(60vh, 560px)", overflow: "hidden" }}>
+                <iframe
+                  key={`drawer-desktop-${iframeKey}`}
+                  ref={desktopRef}
+                  src={`/store/${storeSlug}?preview=1`}
+                  title="Desktop Preview"
+                  loading="eager"
+                  onLoad={() => onIframeReady(desktopRef.current)}
+                  style={{
+                    width: "1440px",
+                    height: "900px",
+                    border: "none",
+                    transform: "scale(0.5)",
+                    transformOrigin: "top left",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Floating Preview FAB — only on mobile/tablet (lg hides it because desktop has split-screen) */}
+      {/* Floating Preview FAB — only on mobile/tablet (lg has split-screen) */}
       <button
         onClick={() => setOpen(true)}
         onPointerDown={() => !mounted && setMounted(true)}
@@ -164,33 +184,16 @@ export default function ThemeMobilePreviewDrawer({ storeSlug, iframeKey, onIfram
             </button>
           </div>
 
-          {/* Iframe stage — show/hide via CSS so iframes never unmount */}
-          <div className="flex-1 overflow-auto bg-muted/30 flex items-start justify-center py-3">
+          {/* Spacer — the actual iframe is positioned over this area via the
+              persistent stage (see top of component). This avoids unmounting
+              the iframe when the drawer closes. */}
+          <div className="flex-1 overflow-hidden bg-muted/30 flex items-center justify-center">
             {!mounted && (
-              <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+              <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
                 <div className="h-8 w-8 rounded-full border-2 border-foreground/20 border-t-foreground animate-spin" />
                 <p className="text-xs">Loading preview…</p>
               </div>
             )}
-            <div style={{ display: mounted && mode === "mobile" ? "block" : "none" }}>
-              <div className="rounded-[2rem] border-[5px] border-gray-900 bg-gray-900 shadow-xl overflow-hidden">
-                <div style={{ width: "320px", height: "640px", overflow: "hidden" }}>
-                  {mounted && mode === "mobile" && mobileRef.current}
-                </div>
-              </div>
-            </div>
-            <div style={{ display: mounted && mode === "desktop" ? "block" : "none" }} className="w-full px-2">
-              <div className="rounded-lg border border-border bg-background shadow-lg overflow-hidden mx-auto w-full max-w-3xl">
-                <div className="flex items-center gap-1 px-2 py-1.5 bg-muted/40 border-b border-border">
-                  <div className="h-2 w-2 rounded-full bg-destructive/50" />
-                  <div className="h-2 w-2 rounded-full bg-warning/50" />
-                  <div className="h-2 w-2 rounded-full bg-success/50" />
-                </div>
-                <div style={{ width: "100%", height: "560px", overflow: "hidden" }}>
-                  {mounted && mode === "desktop" && desktopRef.current}
-                </div>
-              </div>
-            </div>
           </div>
         </SheetContent>
       </Sheet>
