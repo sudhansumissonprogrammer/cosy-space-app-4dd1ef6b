@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   ArrowLeft, Package, ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart,
   Share2, Copy, Facebook, Twitter, X, ZoomIn, Star, Shield, Truck, RotateCcw,
@@ -163,6 +164,7 @@ export default function ProductDetail() {
   const [cartBounce, setCartBounce] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
+  const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
@@ -456,7 +458,7 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     if (hasVariants && !selectedVariant) {
-      toast.error("Please select a variant first");
+      toast.error("Please select a variant first"); setVariantPromptOpen(true);
       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
@@ -477,7 +479,7 @@ export default function ProductDetail() {
 
   const handleBuyNow = () => {
     if (hasVariants && !selectedVariant) {
-      toast.error("Please select a variant first");
+      toast.error("Please select a variant first"); setVariantPromptOpen(true);
       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
@@ -663,7 +665,7 @@ export default function ProductDetail() {
           {/* Variant Selector */}
           {(variants || []).length > 0 && (
             <div id="variant-picker" className="mt-5 space-y-2 scroll-mt-24" style={isV18 ? { borderTop: "1px solid #333", paddingTop: 16 } : {}}>
-              <Label className={isV18 ? "text-xs font-bold uppercase tracking-wider" : "text-xs font-bold uppercase tracking-wider text-muted-foreground"} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>
+              <Label className={isV18 ? "text-xs font-bold uppercase tracking-wider" : "text-sm font-bold uppercase tracking-wider text-muted-foreground"} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>
                 {isV18 ? `SIZE: ${selectedVariant?.name || ""}` : <>Select Variant<span className="text-destructive ml-0.5">*</span>: <span className="text-foreground normal-case tracking-normal">{selectedVariant?.name || "None"}</span></>}
               </Label>
               <div className="flex flex-wrap gap-2">
@@ -679,17 +681,17 @@ export default function ProductDetail() {
                               ? "border-white bg-white text-black"
                               : "border-white/40 text-white hover:border-white"
                           }`
-                        : `relative rounded-xl border-2 px-4 py-2 text-sm font-semibold ${
+                        : `relative rounded-2xl border-2 px-6 py-3.5 text-base font-bold min-w-[64px] ${
                             selectedVariant?.id === v.id
-                              ? "border-primary bg-primary/10 text-primary shadow-sm"
+                              ? "border-primary bg-primary/10 text-primary shadow-md"
                               : "border-border text-foreground hover:border-primary/40 hover:bg-accent/50"
                           }`
                     }`}
                     style={isV18 ? v18Font : {}}
                   >
                     {!isV18 && selectedVariant?.id === v.id && (
-                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
-                        <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />
+                      <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                        <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
                       </span>
                     )}
                     {v.name}
@@ -789,7 +791,7 @@ export default function ProductDetail() {
                   style={{ backgroundColor: "#25D366", boxShadow: "0 6px 24px rgba(37, 211, 102, 0.35)" }}
                   onClick={() => {
                     if (hasVariants && !selectedVariant) {
-                      toast.error("Please select a variant first");
+                      toast.error("Please select a variant first"); setVariantPromptOpen(true);
                       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
                       return;
                     }
@@ -1077,7 +1079,7 @@ export default function ProductDetail() {
                       <button
                         onClick={() => {
                           if (hasVariants && !selectedVariant) {
-                            toast.error("Please select a variant first");
+                            toast.error("Please select a variant first"); setVariantPromptOpen(true);
                             document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
                             return;
                           }
@@ -1114,6 +1116,31 @@ export default function ProductDetail() {
           />
         </Suspense>
       )}
+
+      {/* Variant required prompt */}
+      <Dialog open={variantPromptOpen} onOpenChange={setVariantPromptOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Please select a variant</DialogTitle>
+            <DialogDescription>
+              Choose an option (size / pack / color) before continuing.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              className="w-full"
+              onClick={() => {
+                setVariantPromptOpen(false);
+                setTimeout(() => {
+                  document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 100);
+              }}
+            >
+              Select Variant
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
