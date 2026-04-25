@@ -1,5 +1,4 @@
 import { Check, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const rows = [
   { feature: "Monthly cost", shopbanao: "₹499–₹1,499", shopify: "₹1,500–₹20,000", dukaan: "₹499–₹2,999", whatsapp: "Free but chaotic", shopbanaoType: "neutral", shopifyType: "bad", dukaanType: "neutral", whatsappType: "bad" },
@@ -23,7 +22,6 @@ const CellContent = ({ value, type }: { value: string; type: string }) => {
 };
 
 const ComparisonTable = () => {
-  const navigate = useNavigate();
 
   return (
     <section className="border-b-4 border-foreground py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8">
