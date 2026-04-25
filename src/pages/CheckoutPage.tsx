@@ -898,11 +898,13 @@ export default function CheckoutPage() {
   const handleRetryPayment = async () => {
     if (!pendingOrder) return;
     setPlacing(true);
+    setPlacingStep(2);
     setPaymentFailed(false);
     try {
       await openRazorpayForOrder(pendingOrder);
     } catch (err: any) {
       toast.error(err.message || "Failed to retry payment");
+      setPlacingStep(0);
       setPlacing(false);
       setPaymentFailed(true);
     }
