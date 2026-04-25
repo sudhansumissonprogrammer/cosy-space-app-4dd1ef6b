@@ -164,6 +164,7 @@ export default function ProductDetail() {
   const [cartBounce, setCartBounce] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
+  const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
