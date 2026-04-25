@@ -1340,9 +1340,14 @@ export default function CheckoutPage() {
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">{t("Shipping", "शिपिंग")}</span>
           {shippingCharge > 0 ? (
-            <span className="text-foreground">{currency} {shippingCharge.toFixed(2)}</span>
+            <span className="text-foreground">{currencySymbol}{shippingCharge.toFixed(0)}</span>
+          ) : qualifiesForFreeShipping ? (
+            <span className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground line-through">{currencySymbol}{flatShippingRate.toFixed(0)}</span>
+              <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{t("Free", "मुफ़्त")} 🎉</span>
+            </span>
           ) : (
-            <span className="text-primary font-medium">{t("Free", "मुफ़्त")}</span>
+            <span className="font-medium text-emerald-600 dark:text-emerald-400">{t("Free", "मुफ़्त")}</span>
           )}
         </div>
         {taxActive && (
