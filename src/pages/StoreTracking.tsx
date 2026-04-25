@@ -78,6 +78,7 @@ export default function StoreTracking() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["store-meta-token", storeId] });
       toast.success("Tracking settings saved!");
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
