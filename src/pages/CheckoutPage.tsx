@@ -995,7 +995,7 @@ export default function CheckoutPage() {
   const itemCount = checkoutItems.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium [&_input]:!font-['Montserrat_Alternates'] [&_label]:!font-['Montserrat_Alternates'] [&_span]:!font-['Montserrat_Alternates'] [&_p]:!font-['Montserrat_Alternates'] [&_button]:!font-['Montserrat_Alternates']" style={{ fontFamily: "'Montserrat Alternates', sans-serif" }}>
+    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 pb-24 sm:pb-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium [&_input]:!font-['Montserrat_Alternates'] [&_label]:!font-['Montserrat_Alternates'] [&_span]:!font-['Montserrat_Alternates'] [&_p]:!font-['Montserrat_Alternates'] [&_button]:!font-['Montserrat_Alternates']" style={{ fontFamily: "'Montserrat Alternates', sans-serif" }}>
 
       {/* Instant payment-opening overlay — shown the moment user clicks Pay/Pay Advance */}
       {placing && (paymentMethod === "razorpay" || isPartialOrder) && !paymentFailed && (
