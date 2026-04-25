@@ -22,24 +22,43 @@ export default function HeroRevenue({ storeId, currencySymbol }: HeroRevenueProp
       const todayIso = todayStart.toISOString();
       const yesterdayIso = yesterdayStart.toISOString();
 
-      const [todayRes, yesterdayRes] = await Promise.all([
+      // Revenue counts only orders that are confirmed, shipped, delivered,
+      // or any pending order with a partial advance payment received.
+      const REVENUE_STATUSES = ["confirmed", "shipped", "delivered"];
+
+      const [todayRes, yesterdayRes, todayPartialRes, yesterdayPartialRes] = await Promise.all([
         supabase
           .from("orders")
           .select("total")
           .eq("store_id", storeId)
           .gte("created_at", todayIso)
-          .neq("status", "cancelled"),
+          .in("status", REVENUE_STATUSES),
         supabase
           .from("orders")
           .select("total")
           .eq("store_id", storeId)
           .gte("created_at", yesterdayIso)
           .lt("created_at", todayIso)
-          .neq("status", "cancelled"),
+          .in("status", REVENUE_STATUSES),
+        supabase
+          .from("orders")
+          .select("total")
+          .eq("store_id", storeId)
+          .gte("created_at", todayIso)
+          .eq("status", "pending")
+          .gt("advance_paid", 0),
+        supabase
+          .from("orders")
+          .select("total")
+          .eq("store_id", storeId)
+          .gte("created_at", yesterdayIso)
+          .lt("created_at", todayIso)
+          .eq("status", "pending")
+          .gt("advance_paid", 0),
       ]);
 
-      const todayOrders = todayRes.data || [];
-      const yesterdayOrders = yesterdayRes.data || [];
+      const todayOrders = [...(todayRes.data || []), ...(todayPartialRes.data || [])];
+      const yesterdayOrders = [...(yesterdayRes.data || []), ...(yesterdayPartialRes.data || [])];
       const todayRevenue = todayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
       const yesterdayRevenue = yesterdayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
 
