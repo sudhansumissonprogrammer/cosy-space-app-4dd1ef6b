@@ -619,7 +619,8 @@ export default function CheckoutPage() {
         order: {
           total,
           currency,
-          status: "pending",
+          // COD = confirmed immediately. Razorpay (full/partial) stays pending until razorpay-verify upgrades to confirmed/partially_paid.
+          status: paymentMethod === "cod" && !isPartialOrder ? "confirmed" : "pending",
           customer_name: fullName.trim(),
           customer_phone: normalizePhone(phone),
           street_address: streetAddress.trim(),
