@@ -316,6 +316,7 @@ export default function CustomerLeads() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Status</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Product</TableHead>
@@ -325,8 +326,17 @@ export default function CustomerLeads() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leads.map((lead) => (
-                      <TableRow key={lead.id}>
+                    {visibleLeads.map((lead) => (
+                      <TableRow key={lead.id} className={lead.hasOrdered ? "bg-emerald-50/30" : ""}>
+                        <TableCell>
+                          {lead.hasOrdered ? (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 text-[10px]">
+                              <CheckCircle2 className="mr-1 h-3 w-3" /> Ordered
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] text-muted-foreground">Pending</Badge>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">
                           {lead.name || <span className="text-muted-foreground">—</span>}
                         </TableCell>
