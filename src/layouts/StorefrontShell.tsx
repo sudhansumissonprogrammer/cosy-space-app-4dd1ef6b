@@ -146,7 +146,12 @@ export default function StorefrontShell({
     try {
       const params = new URLSearchParams(window.location.search);
       const c = params.get("coupon");
-      if (c) sessionStorage.setItem("pending_coupon", c.toUpperCase());
+      if (c) {
+        const code = c.toUpperCase();
+        sessionStorage.setItem("pending_coupon", code);
+        localStorage.setItem("pending_coupon", code);
+        console.log("[coupon] captured from URL:", code);
+      }
     } catch {}
   }, [pathname]);
 

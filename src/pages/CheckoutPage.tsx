@@ -159,7 +159,9 @@ export default function CheckoutPage() {
   // Falls back to sessionStorage so the coupon persists across product → cart → checkout navigation.
   const urlCoupon =
     searchParams.get("coupon") ||
-    (typeof window !== "undefined" ? sessionStorage.getItem("pending_coupon") : null);
+    (typeof window !== "undefined"
+      ? sessionStorage.getItem("pending_coupon") || localStorage.getItem("pending_coupon")
+      : null);
   const autoAppliedCouponRef = useRef(false);
 
   // Scroll to top when the order-placed / upsell screen appears so users
@@ -445,12 +447,13 @@ export default function CheckoutPage() {
     setCouponCode("");
   };
 
-  // Auto-apply coupon from URL (e.g. ?coupon=SAVE100 from WhatsApp recovery link)
+  // Auto-apply coupon from URL or sessionStorage (e.g. ?coupon=SAVE100 from WhatsApp recovery link)
   useEffect(() => {
     if (!urlCoupon || autoAppliedCouponRef.current) return;
     if (!store?.id || subtotal <= 0 || appliedCoupon) return;
     autoAppliedCouponRef.current = true;
     const code = urlCoupon.toUpperCase();
+    console.log("[coupon] auto-applying:", code, "subtotal:", subtotal);
     setCouponCode(code);
     applyCoupon(code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -740,7 +743,7 @@ export default function CheckoutPage() {
     }
     setShowUpsell(true);
     setOrderPlaced(true);
-    try { sessionStorage.removeItem("pending_coupon"); } catch {}
+    try { sessionStorage.removeItem("pending_coupon"); localStorage.removeItem("pending_coupon"); } catch {}
     if (!isSingleMode) clearCart();
     saveExpressInfo();
     // Clean up theme-16 BuyNow modal localStorage after order
