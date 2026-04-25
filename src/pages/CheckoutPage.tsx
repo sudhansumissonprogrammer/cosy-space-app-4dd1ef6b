@@ -828,6 +828,7 @@ export default function CheckoutPage() {
             throw new Error("Payment verification failed");
           }
         }
+        setPlacingStep(3);
         setPlacing(false);
         setPaymentFailed(false);
         setPendingOrder(null);
