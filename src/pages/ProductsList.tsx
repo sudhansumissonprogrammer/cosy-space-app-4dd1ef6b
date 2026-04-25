@@ -36,6 +36,7 @@ import BulkEditDialog from "@/components/BulkEditDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import ProductForm from "@/components/ProductForm";
+import QuickEditProductModal from "@/components/dashboard/QuickEditProductModal";
 import { cleanImageUrl } from "@/lib/imageOptimize";
 
 type SortOption = "title-asc" | "title-desc" | "date-new" | "date-old";
