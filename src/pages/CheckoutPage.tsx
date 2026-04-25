@@ -885,6 +885,7 @@ export default function CheckoutPage() {
     const rzp = new window.Razorpay(options);
     rzp.on("payment.failed", (resp: any) => {
       console.error("Razorpay payment failed:", resp?.error);
+      setPlacingStep(0);
       setPendingOrder(order);
       setPaymentFailed(true);
       setPlacing(false);
