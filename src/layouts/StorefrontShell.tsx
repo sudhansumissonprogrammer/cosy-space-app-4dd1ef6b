@@ -235,8 +235,8 @@ export default function StorefrontShell({
           <FloatingWhatsApp store={store} />
         </Suspense>
       )}
-      {/* ExitIntentPopup disabled — SAVE100 is reserved for WhatsApp recovery links only */}
-      {false && showExitIntent && <DeferredExitIntent storeId={store.id} storeName={store.name} />}
+      {/* ExitIntentPopup permanently disabled — SAVE100 reserved for WhatsApp recovery links only.
+          Coupon auto-applies at checkout via ?coupon=SAVE100 in the recovery link. */}
       <Suspense fallback={null}>
         <BackToTop />
       </Suspense>
