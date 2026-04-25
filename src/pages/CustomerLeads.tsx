@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,16 +12,18 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Trash2, Phone, MessageCircle } from "lucide-react";
+import { Users, Trash2, Phone, MessageCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useMyStore } from "@/hooks/useMyStore";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
+import { normalizePhone } from "@/lib/phoneUtils";
 
 export default function CustomerLeads() {
   const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
   const { data: myStore } = useMyStore();
+  const [filterMode, setFilterMode] = useState<"pending" | "all">("pending");
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["customer-leads", storeId],
@@ -43,6 +46,47 @@ export default function CustomerLeads() {
     },
     enabled: !!storeId,
   });
+
+  // Fetch all phone numbers that have already placed an order (excluding cancelled)
+  // — these leads are converted and should be hidden by default.
+  const { data: orderedPhonesSet } = useQuery({
+    queryKey: ["leads-ordered-phones", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("customer_phone, status")
+        .eq("store_id", storeId)
+        .not("customer_phone", "is", null);
+      if (error) throw error;
+      const set = new Set<string>();
+      (data ?? []).forEach((o: any) => {
+        if (o.status === "cancelled") return;
+        const norm = normalizePhone(o.customer_phone).replace(/\D/g, "");
+        if (norm.length >= 10) set.add(norm.slice(-10));
+      });
+      return set;
+    },
+    enabled: !!storeId,
+    staleTime: 60 * 1000,
+  });
+
+  // Annotate each lead with `hasOrdered`, then filter based on toggle
+  const enrichedLeads = useMemo(() => {
+    if (!leads) return [];
+    return leads.map((l) => {
+      const key = normalizePhone(l.phone).replace(/\D/g, "").slice(-10);
+      const hasOrdered = !!(orderedPhonesSet && key.length === 10 && orderedPhonesSet.has(key));
+      return { ...l, hasOrdered };
+    });
+  }, [leads, orderedPhonesSet]);
+
+  const visibleLeads = useMemo(
+    () => filterMode === "pending" ? enrichedLeads.filter((l) => !l.hasOrdered) : enrichedLeads,
+    [enrichedLeads, filterMode]
+  );
+
+  const convertedCount = enrichedLeads.filter((l) => l.hasOrdered).length;
+  const pendingCount = enrichedLeads.length - convertedCount;
 
   // Fetch slugs for products referenced by leads — to build deep product links
   const productIds = Array.from(
@@ -126,27 +170,49 @@ export default function CustomerLeads() {
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Customer Leads</h1>
         <p className="text-sm text-muted-foreground">
-          People who filled their details before ordering via WhatsApp
+          People who showed interest but haven't placed an order yet — recover them via WhatsApp
         </p>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center gap-3 pb-2">
-          <Users className="h-5 w-5 text-primary" />
-          <CardTitle className="text-base">
-            {leads?.length ?? 0} Lead{leads?.length !== 1 ? "s" : ""}
-          </CardTitle>
+        <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <Users className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base">
+              {visibleLeads.length} Lead{visibleLeads.length !== 1 ? "s" : ""}
+              {filterMode === "pending" && convertedCount > 0 && (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  ({convertedCount} already ordered, hidden)
+                </span>
+              )}
+            </CardTitle>
+          </div>
+          {/* Filter toggle: hide/show converted leads */}
+          <div className="inline-flex rounded-lg border border-border bg-muted/30 p-0.5 text-xs">
+            <button
+              onClick={() => setFilterMode("pending")}
+              className={`rounded-md px-3 py-1.5 font-medium transition-colors ${filterMode === "pending" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Not yet ordered ({pendingCount})
+            </button>
+            <button
+              onClick={() => setFilterMode("all")}
+              className={`rounded-md px-3 py-1.5 font-medium transition-colors ${filterMode === "all" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              All ({enrichedLeads.length})
+            </button>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : leads && leads.length > 0 ? (
+          ) : visibleLeads.length > 0 ? (
             <>
               {/* Mobile card list — everything visible, no horizontal scroll */}
               <div className="space-y-3 sm:hidden">
-                {leads.map((lead) => {
+                {visibleLeads.map((lead) => {
                   const sendWhatsApp = () => {
                     const phone = lead.phone.replace(/[^0-9+]/g, "");
                     const message = buildRecoveryMessage(lead);
@@ -170,10 +236,18 @@ export default function CustomerLeads() {
                             <span className="font-medium">{lead.phone}</span>
                           </a>
                         </div>
-                        <Badge variant="secondary" className="flex-shrink-0 text-[10px]">
-                          <MessageCircle className="mr-1 h-2.5 w-2.5" />
-                          {lead.source === "whatsapp_order" ? "WhatsApp" : lead.source}
-                        </Badge>
+                        <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                          {lead.hasOrdered && (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] hover:bg-emerald-100">
+                              <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
+                              Ordered
+                            </Badge>
+                          )}
+                          <Badge variant="secondary" className="text-[10px]">
+                            <MessageCircle className="mr-1 h-2.5 w-2.5" />
+                            {lead.source === "whatsapp_order" ? "WhatsApp" : lead.source}
+                          </Badge>
+                        </div>
                       </div>
 
                       {lead.product_name && (
@@ -242,6 +316,7 @@ export default function CustomerLeads() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Status</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Product</TableHead>
@@ -251,8 +326,17 @@ export default function CustomerLeads() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leads.map((lead) => (
-                      <TableRow key={lead.id}>
+                    {visibleLeads.map((lead) => (
+                      <TableRow key={lead.id} className={lead.hasOrdered ? "bg-emerald-50/30" : ""}>
+                        <TableCell>
+                          {lead.hasOrdered ? (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 text-[10px]">
+                              <CheckCircle2 className="mr-1 h-3 w-3" /> Ordered
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] text-muted-foreground">Pending</Badge>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">
                           {lead.name || <span className="text-muted-foreground">—</span>}
                         </TableCell>
@@ -324,6 +408,14 @@ export default function CustomerLeads() {
                 </Table>
               </div>
             </>
+          ) : filterMode === "pending" && convertedCount > 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+              <p className="text-foreground font-medium">All caught up! 🎉</p>
+              <p className="text-xs text-muted-foreground max-w-xs">
+                All {convertedCount} lead{convertedCount !== 1 ? "s have" : " has"} placed an order. Switch to "All" above to see the converted ones.
+              </p>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-3 py-12">
               <Users className="h-10 w-10 text-muted-foreground" />
