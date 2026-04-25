@@ -865,6 +865,7 @@ export default function CheckoutPage() {
               razorpay_payment_id: "check_order", store_id: store.id, order_id: order.id,
             });
             if (statusData.status === "captured" || statusData.status === "authorized") {
+              setPlacingStep(3);
               setPlacing(false);
               setPaymentFailed(false);
               setPendingOrder(null);
@@ -873,6 +874,7 @@ export default function CheckoutPage() {
             }
           } catch {}
           // Payment not completed — show retry
+          setPlacingStep(0);
           setPendingOrder(order);
           setPaymentFailed(true);
           setPlacing(false);
