@@ -1,16 +1,20 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Check, Palette, RotateCcw, Save, Lock, ShoppingCart, Heart, User, Menu, Star, Store, Tag, Search, Monitor, Smartphone, Home, LayoutGrid } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Check, Palette, Lock, ShoppingCart, Heart, User, Star, Tag, Monitor, Smartphone, Home, LayoutGrid, Layers, Type, LayoutList, MoreHorizontal, Store, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
+import ThemeSectionNav, { ThemeSectionId, ThemeSectionMeta } from "@/components/dashboard/theme/ThemeSectionNav";
+import ThemeStickySaveBar from "@/components/dashboard/theme/ThemeStickySaveBar";
+import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePreviewDrawer";
+import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
 
 const FONT_OPTIONS = [
   "Alegreya SC",
