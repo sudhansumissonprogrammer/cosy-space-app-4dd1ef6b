@@ -23,6 +23,7 @@ export default function CustomerLeads() {
   const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
   const { data: myStore } = useMyStore();
+  const [filterMode, setFilterMode] = useState<"pending" | "all">("pending");
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["customer-leads", storeId],
