@@ -681,17 +681,17 @@ export default function ProductDetail() {
                               ? "border-white bg-white text-black"
                               : "border-white/40 text-white hover:border-white"
                           }`
-                        : `relative rounded-xl border-2 px-4 py-2 text-sm font-semibold ${
+                        : `relative rounded-2xl border-2 px-6 py-3.5 text-base font-bold min-w-[64px] ${
                             selectedVariant?.id === v.id
-                              ? "border-primary bg-primary/10 text-primary shadow-sm"
+                              ? "border-primary bg-primary/10 text-primary shadow-md"
                               : "border-border text-foreground hover:border-primary/40 hover:bg-accent/50"
                           }`
                     }`}
                     style={isV18 ? v18Font : {}}
                   >
                     {!isV18 && selectedVariant?.id === v.id && (
-                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
-                        <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />
+                      <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                        <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
                       </span>
                     )}
                     {v.name}
