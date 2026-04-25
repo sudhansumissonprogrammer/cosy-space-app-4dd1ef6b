@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prodoxy Pricing</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+/* ===== RESET ===== */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:'Inter',sans-serif;
+  padding-top:80px;
+}
+
+/* ===== HEADER ===== */
+
+.header{
+  width:100%;
+  position:fixed;
+  top:0;
+  left:0;
+  background:#ffffff;
+  z-index:1000;
+  transition:0.3s ease;
+}
+
+.header.scrolled{
+  box-shadow:0 10px 30px rgba(0,0,0,0.05);
+}
+
+.container{
+  max-width:1280px;
+  margin:auto;
+  padding:0 24px;
+}
+
+.navbar{
+  height:80px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+/* ===== LOGO ===== */
+.logo img{
+  height:30px;
+}
+
+/* ===== NAV LINKS ===== */
+
+.nav-links{
+  display:flex;
+  align-items:center;
+  gap:28px;
+}
+
+.nav-links a{
+  text-decoration:none;
+  color:#111;
+  font-weight:500;
+  font-size:15px;
+  transition:0.3s;
+}
+
+.nav-links a:hover{
+  color:#df4e1e;
+}
+
+/* ===== DROPDOWN ===== */
+
+.dropdown{
+  position:relative;
+}
+
+.dropdown-menu{
+  position:absolute;
+  top:120%;
+  left:0;
+  background:#fff;
+  padding:15px 0;
+  border-radius:12px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.08);
+  display:none;
+  flex-direction:column;
+  min-width:200px;
+}
+
+.dropdown-menu a{
+  padding:10px 20px;
+  font-size:14px;
+  color:#111;
+}
+
+.dropdown:hover .dropdown-menu{
+  display:flex;
+}
+
+/* ===== BUTTON ===== */
+
+.nav-buttons{
+  display:flex;
+  align-items:center;
+}
+
+.btn-login{
+  padding:8px 18px;
+  margin-left: 100px;
+  border-radius:999px;
+  border:1px solid #df4e1e;
+  font-weight:600;
+  font-size:14px;
+  text-decoration:none;
+color:#111;
+}
+
+/* ===== MOBILE MENU ===== */
+
+.menu-toggle{
+  display:none;
+  flex-direction:column;
+  gap:5px;
+  cursor:pointer;
+}
+
+.menu-toggle span{
+  width:24px;
+  height:2px;
+  background:#111;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media(max-width:992px){
+
+  .nav-links{
+    position:fixed;
+    top:100px;
+    bottom:100px;
+    left:0;
+    width:100%;
+    background:#fff;
+    flex-direction:column;
+    align-items:flex-start;
+    padding:30px 24px;
+    gap:18px;
+    transform:translateY(-120%);
+    transition:0.4s ease;
+  }
+
+  .nav-links.active{
+    transform:translateY(0);
+  }
+
+  .dropdown-menu{
+    position:static;
+    box-shadow:none;
+    padding-left:15px;
+    display:none;
+  }
+
+  .dropdown.active .dropdown-menu{
+    display:flex;
+  }
+
+  .menu-toggle{
+    display:flex;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<header class="header" id="header">
+  <div class="container navbar">
+
+    <!-- LOGO -->
+    <a href="/" class="logo">
+      <img src="https://prodoxy.com/img/prodoxy_logo-without-bg2.png" alt="Prodoxy Logo">
+    </a>
+
+    <!-- NAV LINKS -->
+    <div class="nav-links" id="navMenu">
+
+        <a href="/">Home</a>
+      <a href="https://prodoxy.com/about">About</a>
+      <a href="https://prodoxy.com/pricing">Pricing</a>
+      <a href="https://prodoxy.com/feature">Features</a>
+      <a href="#">Blog</a>
+      <a href="https://prodoxy.com/contact">Contact</a>
+
+      <!-- LEGAL DROPDOWN -->
+      <div class="dropdown" id="legalDropdown">
+        <a href="#">Legal ▾</a>
+        <div class="dropdown-menu">
+          <a href="https://prodoxy.com/privacy_policy">Privacy Policy</a>
+          <a href="https://prodoxy.com/terms">Terms of Service</a>
+          <a href="https://prodoxy.com/refund_policy">Refund Policy</a>
+          <a href="#">Security</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LOGIN BUTTON -->
+    <div class="nav-buttons">
+      <a href="https://prodoxy.com/login" class="btn-login">Log in</a>
+    </div>
+
+    <!-- MOBILE MENU ICON -->
+    <div class="menu-toggle" id="menuToggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+  </div>
+</header>
+
+<script>
+
+/* Elements */
+const toggle = document.getElementById("menuToggle");
+const nav = document.getElementById("navMenu");
+const header = document.getElementById("header");
+const dropdown = document.getElementById("legalDropdown");
+
+/* Mobile Toggle */
+toggle.addEventListener("click",()=>{
+  nav.classList.toggle("active");
+});
+
+/* Mobile Dropdown Toggle */
+dropdown.addEventListener("click",function(){
+  if(window.innerWidth < 992){
+    this.classList.toggle("active");
+  }
+});
+
+/* Scroll Shadow */
+window.addEventListener("scroll",()=>{
+  if(window.scrollY > 20){
+    header.classList.add("scrolled");
+  }else{
+    header.classList.remove("scrolled");
+  }
+});
+
+</script>
+
+</body>
+</html>
+
+<!-- ===== COUNTDOWN TOP BAR START ===== -->
+
+<style>
+.px-topbar{
+  width:100%;
+  background:#c6ff00;
+  color:#000;
+  font-family:'Poppins',sans-serif;
+  font-size:14px;
+  font-weight:500;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:20px;
+  padding:8px 10px;
+  position:relative;
+  z-index:9999;
+}
+
+.px-timer{
+  display:flex;
+  gap:10px;
+  font-weight:600;
+}
+
+.px-time-box{
+  display:flex;
+  gap:4px;
+}
+
+.px-topbar a{
+  color:#000;
+  font-weight:600;
+  text-decoration:underline;
+}
+
+@media(max-width:600px){
+  .px-topbar{
+    font-size:12px;
+    flex-wrap:wrap;
+    text-align:center;
+  }
+}
+</style>
+
+<div class="px-topbar">
+  <div>Don’t miss the limited-time deals!</div>
+
+  <div class="px-timer">
+    <div class="px-time-box"><span id="days">2</span>D</div>
+    <div class="px-time-box"><span id="hours">00</span>H</div>
+    <div class="px-time-box"><span id="minutes">00</span>M</div>
+    <div class="px-time-box"><span id="seconds">00</span>S</div>
+  </div>
+</div>
+
+<script>
+
+// 7 Days + 5 Hours in milliseconds
+const duration = (7 * 24 * 60 * 60 * 1000) + (5 * 60 * 60 * 1000);
+
+let endTime = localStorage.getItem("pxCountdownEnd");
+
+if (!endTime) {
+  endTime = new Date().getTime() + duration;
+  localStorage.setItem("pxCountdownEnd", endTime);
+}
+
+function updateCountdown() {
+  const now = new Date().getTime();
+  let distance = endTime - now;
+
+  if (distance <= 0) {
+    // Reset automatically
+    endTime = new Date().getTime() + duration;
+    localStorage.setItem("pxCountdownEnd", endTime);
+    distance = duration;
+  }
+
+  const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+  document.getElementById("days").innerText = String(days).padStart(2,'0');
+  document.getElementById("hours").innerText = String(hours).padStart(2,'0');
+  document.getElementById("minutes").innerText = String(minutes).padStart(2,'0');
+  document.getElementById("seconds").innerText = String(seconds).padStart(2,'0');
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+</script>
+
+<!-- ===== COUNTDOWN TOP BAR END ===== -->
+
+
+ <!-- ===== PREMIUM PRICING SECTION START ===== -->
+
+<!-- Google Fonts (same as hero, safe to keep again if needed) -->
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+.pricing-section{
+  background:#f8fafc;
+  padding:100px 20px;
+  font-family:'Outfit',sans-serif;
+}
+
+.pricing-container{
+  max-width:900px;
+  margin:auto;
+}
+
+/* ===== TOGGLE ===== */
+
+.billing-toggle{
+  display:flex;
+  justify-content:center;
+  margin-bottom:40px;
+}
+
+.toggle-wrapper{
+  border:2px solid #16a34a;
+  border-radius:999px;
+  padding:4px;
+  display:inline-flex;
+  background:#fff;
+}
+
+.toggle-btn{
+  padding:10px 26px;
+  border-radius:999px;
+  font-family:'Poppins',sans-serif;
+  font-weight:500;
+  font-size:13px;
+  cursor:pointer;
+  border:none;
+  background:none;
+  transition:0.3s;
+}
+
+.toggle-btn.active{
+  background:#111;
+  color:#fff;
+}
+
+/* ===== PLAN TABS ===== */
+
+.plan-tabs{
+  display:flex;
+  border-bottom:1px solid #e5e7eb;
+}
+
+.plan-tab{
+  flex:1;
+  text-align:center;
+  padding:14px 0;
+  font-family:'Poppins',sans-serif;
+  font-size:14px;
+  font-weight:500;
+  cursor:pointer;
+  background:#f3f4f6;
+  transition:0.3s;
+}
+
+.plan-tab.active{
+  background:#fff;
+  border-top:3px solid #16a34a;
+  font-weight:600;
+}
+
+/* ===== GREEN STRIP ===== */
+
+.green-strip{
+  background:#dcfce7;
+  color:#15803d;
+  font-weight:500;
+  text-align:center;
+  padding:10px 0;
+  font-size:14px;
+}
+
+/* ===== CARD ===== */
+
+.plan-card{
+  background:#fff;
+  padding:40px;
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+  box-shadow:0 20px 40px rgba(0,0,0,0.05);
+}
+
+/* ===== TITLE ===== */
+
+.plan-title{
+  font-family:'Poppins',sans-serif;
+  font-size:24px;
+  font-weight:600;
+}
+
+.plan-sub{
+  color:#6b7280;
+  margin-top:5px;
+  margin-bottom:20px;
+  font-size:14px;
+}
+
+.most-popular{
+  background:#df4e1e;
+  color:#fff;
+  padding:4px 12px;
+  border-radius:999px;
+  font-size:11px;
+  font-family:'Poppins',sans-serif;
+  margin-left:10px;
+}
+
+/* ===== PRICE ===== */
+
+.price-label{
+  font-size:13px;
+  color:#9ca3af;
+  margin-bottom:5px;
+}
+
+.price{
+  font-family:'Poppins',sans-serif;
+  font-size:36px;
+  font-weight:600;
+}
+
+.price span{
+  font-family:'Outfit',sans-serif;
+  font-size:14px;
+  font-weight:400;
+  color:#6b7280;
+}
+
+/* ===== FEATURES ===== */
+
+.features{
+  margin-top:25px;
+}
+
+.features ul{
+  list-style:none;
+  padding:0;
+}
+
+.features ul li{
+  margin-bottom:10px;
+  font-size:14px;
+  color:#374151;
+}
+
+/* ===== BUTTON ===== */
+
+.try-btn{
+  margin-top:30px;
+  display:block;
+  width:100%;
+  text-align:center;
+  background:#111;
+  color:#fff;
+  padding:14px;
+  border-radius:999px;
+  font-family:'Poppins',sans-serif;
+  font-size:14px;
+  text-decoration:none;
+  transition:0.3s;
+}
+
+.try-btn:hover{
+  transform:translateY(-2px);
+  opacity:.9;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media(max-width:768px){
+  .plan-card{padding:25px;}
+  .price{font-size:28px;}
+}
+
+</style>
+
+<section class="pricing-section">
+  <div class="pricing-container">
+
+    <!-- Toggle -->
+    <div class="billing-toggle">
+      <div class="toggle-wrapper">
+        <button class="toggle-btn active" onclick="setBilling('monthly', this)">Pay monthly</button>
+        <button class="toggle-btn" onclick="setBilling('yearly', this)">Pay yearly (save 25%)</button>
+      </div>
+    </div>
+
+    <!-- Plan Tabs -->
+    <div class="plan-tabs">
+      <div class="plan-tab active" onclick="setPlan('basic', this)">Basic</div>
+      <div class="plan-tab" onclick="setPlan('grow', this)">Grow</div>
+      <div class="plan-tab" onclick="setPlan('advanced', this)">Advanced</div>
+      <div class="plan-tab" onclick="setPlan('plus', this)">Plus</div>
+    </div>
+
+    <div class="green-strip">
+      ₹99/month for all users
+    </div>
+
+    <div class="plan-card" id="planContent"></div>
+
+  </div>
+</section>
+
+<script>
+
+let billingType = "monthly";
+let currentPlan = "basic";
+
+const plans = {
+
+basic: {
+title:"Basic",
+sub:"For solo entrepreneurs",
+monthly:"₹99",
+yearly:"₹1,100",
+features:[
+"✓ Full Store Setup",
+"✓ Advanced Analytics",
+"✓ Marketing Tools",
+"✓ Live Chat Support",
+"✓ 24/7 Support",
+"✓ Custom Themes",
+"✓ 100 Products",
+"✓ Unlimited Orders",
+"✓ Custom Domain",
+"✓ Free Themes",
+],
+trial:"5 days free trial included"
+},
+
+grow: {
+title:"Grow",
+sub:"For growing teams",
+monthly:"₹499",
+yearly:"₹5,000",
+features:[
+"✓ 1,000 Products",
+"✓ Advanced Analytics Dashboard",
+"✓ Coupon & Discount System",
+"✓ Abandoned Cart Recovery",
+"✓ AI Description Generator (200 per month)",
+"✓ AI Image Enhancer (50 images per month)",
+"✓ AI Marketing Caption Generator",
+"✓ Basic SEO Optimization Tools",
+"✓ Live Chat Support",
+"✓ 24/7 Support",
+"✓ & Inclueding Everything in ₹99 +",
+],
+trial:"10 days free trial included"
+},
+
+advanced:{
+title:"Advanced",
+sub:"For scaling brands",
+monthly:"₹999",
+yearly:"₹11,000",
+features:[
+"✓ Unlimited Products",
+"✓ Staff Accounts",
+"✓ Premium Themes Access",
+"✓ Advanced SEO Tools",
+"✓ Priority Phone Number Support",
+"✓ AI Marketing Generator (Unlimited)",
+"✓ AI Product Description (Unlimited)",
+"✓ AI Image Enhancer (100 images per month)",
+"✓ Live Chat Support",
+"✓ Advanced Sales Reports",
+"✓ 24/7 Support",
+"✓ Abandoned Cart Recovery",
+"✓ & Inclueding Everything in ₹499 +",
+],
+trial:"14 days free trial included"
+},
+
+plus:{
+title:"Plus",
+sub:"For enterprise businesses",
+monthly:"₹1999",
+yearly:"₹21,999",
+features:[
+"✓ Dedicated Account Manager",
+"✓ Custom Integrations",
+"✓ Everything in ₹999 +",
+"✓ Unlimited Staff Accounts",
+"✓ Advanced AI Store Builder (Auto design full site)",
+"✓ AI Ad Copy Generator (Meta / Google)",
+"✓ AI Email Campaign Builder",
+"✓ AI Sales Forecasting",
+"✓ AI Customer Behavior Analysis",
+"✓ Advanced Automation Workflows",
+"✓ Phone Support",
+"✓ Early Feature Access",
+"✓ Custom API Access",
+
+],
+trial:"Contact Sales"
+}
+
+};
+
+function renderPlan(){
+let plan = plans[currentPlan];
+let price = billingType === "monthly" ? plan.monthly : plan.yearly;
+
+document.getElementById("planContent").innerHTML = `
+<div>
+<span class="plan-title">${plan.title}</span>
+${currentPlan==="basic" ? '<span class="most-popular">Most Popular</span>' : ''}
+</div>
+
+<div class="plan-sub">${plan.sub}</div>
+
+<div class="price-label">Starting at</div>
+
+<div class="price">
+${price} <span>${billingType==="monthly" ? "INR/month" : "per year"}</span>
+</div>
+
+<div class="features">
+<ul>
+${plan.features.map(f => `<li>${f}</li>`).join("")}
+</ul>
+<p style="margin-top:20px;color:#9ca3af;font-size:13px;">${plan.trial}</p>
+</div>
+
+<a href="https://prodoxy.com/register/plan" class="try-btn">
+Start Now
+</a>
+`;
+}
+
+function setBilling(type, el){
+billingType = type;
+document.querySelectorAll(".toggle-btn").forEach(btn=>btn.classList.remove("active"));
+el.classList.add("active");
+renderPlan();
+}
+
+function setPlan(plan, el){
+currentPlan = plan;
+document.querySelectorAll(".plan-tab").forEach(tab=>tab.classList.remove("active"));
+el.classList.add("active");
+renderPlan();
+}
+
+renderPlan();
+
+</script>
+
+<!-- ===== PREMIUM PRICING SECTION END ===== -->
+
+</body>
+</html>
