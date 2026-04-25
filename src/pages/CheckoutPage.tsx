@@ -215,6 +215,62 @@ export default function CheckoutPage() {
     if (customer?.email && !email) setEmail(customer.email);
   }, [customer]);
 
+  // ⚡ Returning Customer 1-Tap (guest users) — when phone hits 10 valid digits,
+  // look up the latest order from this store with that phone & offer 1-tap reuse.
+  const [returningOrder, setReturningOrder] = useState<any | null>(null);
+  const [returningDismissed, setReturningDismissed] = useState(false);
+  const [returningUsed, setReturningUsed] = useState(false);
+  const lastLookedUpPhoneRef = useRef<string>("");
+
+  useEffect(() => {
+    // Skip if logged-in customer already has saved addresses
+    if (savedAddresses && savedAddresses.length > 0) return;
+    if (returningDismissed || returningUsed) return;
+    const norm = normalizePhone(phone);
+    if (!isValidIndianPhone(norm)) { setReturningOrder(null); return; }
+    if (norm === lastLookedUpPhoneRef.current) return;
+    lastLookedUpPhoneRef.current = norm;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("orders")
+          .select("id, customer_name, customer_phone, street_address, city, state, pincode, created_at")
+          .eq("store_id", store.id)
+          .eq("customer_phone", norm)
+          .not("street_address", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        if (data && data.street_address && data.pincode) setReturningOrder(data);
+        else setReturningOrder(null);
+      } catch {
+        if (!cancelled) setReturningOrder(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [phone, store.id, savedAddresses, returningDismissed, returningUsed]);
+
+  const useReturningOrder = () => {
+    if (!returningOrder) return;
+    setFullName(returningOrder.customer_name || "");
+    setStreetAddress(returningOrder.street_address || "");
+    setCity(returningOrder.city || "");
+    setState(returningOrder.state || "");
+    setPincode(returningOrder.pincode || "");
+    setReturningUsed(true);
+    setExpressMode(true);
+    toast.success("Welcome back! Address loaded ✨");
+  };
+
+  // 📅 Delivery date estimate based on pincode
+  const deliveryEstimate = useMemo<DeliveryEstimate | null>(
+    () => estimateDelivery(pincode),
+    [pincode]
+  );
+
+
   const isSingleMode = !!productId;
 
   const { data: product, isLoading } = useQuery({
