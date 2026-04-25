@@ -347,8 +347,24 @@ export default function ProductsList() { // v2
 
   const currencySymbol = store?.currency === "INR" ? "₹" : store?.currency === "USD" ? "$" : (store?.currency || "$");
 
+  // Pull-to-refresh — re-fetch products on mobile pull-down
+  const { pull, refreshing } = usePullToRefresh({
+    onRefresh: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+    },
+  });
+
   return (
     <div className="space-y-3">
+      <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
+      {/* Mobile FAB to add a new product (hidden in bulk-mode) */}
+      {!bulkMode && (
+        <FAB
+          onClick={() => setMobileProductId(null)}
+          label="Product"
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Products</h1>
