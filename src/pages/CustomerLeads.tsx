@@ -22,38 +22,6 @@ export default function CustomerLeads() {
   const queryClient = useQueryClient();
   const { data: myStore } = useMyStore();
 
-  const buildRecoveryMessage = (lead: {
-    name: string | null;
-    product_name: string | null;
-    source: string;
-  }) => {
-    const storeName = myStore?.name || "our store";
-    const storeUrl = myStore?.slug
-      ? getStoreBaseUrl(myStore.slug, myStore?.custom_domain)
-      : "";
-    const greeting = lead.name ? `Hi ${lead.name}! 👋` : "Hi there! 👋";
-    const productLine = lead.product_name
-      ? `I noticed you were checking out *${lead.product_name}* on ${storeName} but didn't complete your order.`
-      : `I noticed you showed interest in our products at ${storeName} but didn't complete your order.`;
-
-    return [
-      greeting,
-      "",
-      productLine,
-      "",
-      "Is there anything I can help you with? 😊",
-      "✅ Free assistance with your order",
-      "✅ Quick delivery available",
-      "✅ Easy payment options (UPI / COD)",
-      "",
-      storeUrl ? `👉 Shop now: ${storeUrl}` : "",
-      "",
-      `Thank you,\nTeam ${storeName}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-  };
-
   const { data: leads, isLoading } = useQuery({
     queryKey: ["customer-leads", storeId],
     queryFn: async () => {
@@ -68,12 +36,80 @@ export default function CustomerLeads() {
         name: string | null;
         phone: string;
         product_name: string | null;
+        product_id: string | null;
         source: string;
         created_at: string;
       }[];
     },
     enabled: !!storeId,
   });
+
+  // Fetch slugs for products referenced by leads — to build deep product links
+  const productIds = Array.from(
+    new Set((leads ?? []).map((l) => l.product_id).filter(Boolean) as string[])
+  );
+
+  const { data: productSlugMap } = useQuery({
+    queryKey: ["lead-product-slugs", storeId, productIds.sort().join(",")],
+    queryFn: async () => {
+      if (productIds.length === 0) return {} as Record<string, string>;
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, slug")
+        .in("id", productIds);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((p: any) => {
+        if (p.slug) map[p.id] = p.slug;
+      });
+      return map;
+    },
+    enabled: !!storeId && productIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const buildRecoveryMessage = (lead: {
+    name: string | null;
+    product_name: string | null;
+    product_id: string | null;
+    source: string;
+  }) => {
+    const storeName = myStore?.name || "our store";
+    const storeBase = myStore?.slug
+      ? getStoreBaseUrl(myStore.slug, myStore?.custom_domain)
+      : "";
+    const productSlug = lead.product_id ? productSlugMap?.[lead.product_id] : null;
+    const productUrl =
+      storeBase && productSlug ? `${storeBase}/product/${productSlug}` : "";
+
+    const greeting = lead.name ? `Hi ${lead.name}! 👋` : "Hi there! 👋";
+    const productLine = lead.product_name
+      ? `I noticed you were checking out *${lead.product_name}* on ${storeName} but didn't complete your order.`
+      : `I noticed you showed interest in our products at ${storeName} but didn't complete your order.`;
+
+    const linkLine = productUrl
+      ? `👉 Continue your order here:\n${productUrl}`
+      : storeBase
+        ? `👉 Visit our store: ${storeBase}`
+        : "";
+
+    return [
+      greeting,
+      "",
+      productLine,
+      "",
+      "Is there anything I can help you with? 😊",
+      "✅ Free assistance with your order",
+      "✅ Quick delivery available",
+      "✅ Easy payment options (UPI / COD)",
+      "",
+      linkLine,
+      "",
+      `Thank you,\nTeam ${storeName}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (leadId: string) => {
