@@ -1307,7 +1307,7 @@ export default function CheckoutPage() {
               disabled={placing}
             >
               {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("Retry Payment", "भुगतान पुनः प्रयास करें")} · {currency} {chargeAmount.toFixed(2)}
+              {t("Retry Payment", "भुगतान पुनः प्रयास करें")} · {currencySymbol}{chargeAmount.toFixed(0)}
             </button>
           </div>
         )}
