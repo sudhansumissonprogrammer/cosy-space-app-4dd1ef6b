@@ -1,10 +1,10 @@
 /**
  * LandingApp — ultra-minimal landing-only entry.
  *
- * Used INSTEAD of the full App.tsx when the user lands on `/` (or `/theme`).
+ * Mounted by main.tsx ONLY when initial path is `/` or `/theme`.
  * Goal: critical-path JS includes ONLY React + react-router + landing chunk.
  *
- * Excluded vs App.tsx (~250KB+ on critical path saved):
+ * Excluded vs App.tsx (significant savings on critical path):
  *   - @tanstack/react-query (QueryClient/Provider) — landing has no data
  *   - All storefront layout lazy() refs (14 themes × 2 = 28 lazy wrappers)
  *   - Subdomain/custom-domain detection
@@ -12,27 +12,23 @@
  *   - DashboardProviders bundle (Auth, Toaster, TooltipProvider, Sonner)
  *   - All prewarm IIFEs that scan window.location for storefront paths
  *
- * If the user clicks Login/Signup or any non-landing path, react-router will
- * trigger a React Suspense + lazy-load of the full App.tsx via <FullApp />.
- * Result: landing render ≈ 1 chunk (Index + landing components only).
+ * IMPORTANT: Landing's Navbar/Footer use plain <a href> for cross-app links
+ * (/login, /signup, /dashboard). Browsers do a hard navigation which then
+ * loads the full App.tsx fresh. This avoids nesting two BrowserRouters.
  */
-import { lazy, Suspense, useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 
-// Anything beyond `/` and `/theme` falls back to the full App.
-// Lazy-loaded so visiting landing alone never pays for App.tsx.
-const FullApp = lazy(() => import("./AppRouterFallback"));
 const ThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
 
 /**
- * Idle prefetch: warm up the FullApp chunk after landing is fully painted.
- * Ensures clicks on Login/Signup/Pricing-internal links feel instant without
- * costing a single byte during the critical first paint.
+ * Idle prefetch: warm up the full App chunk after landing is fully painted.
+ * Makes hard navigation to /login feel instant (chunk already in browser cache).
  */
 function prefetchFullAppOnIdle() {
   const start = () => {
-    import("./AppRouterFallback").catch(() => {});
+    import("./App").catch(() => {});
   };
   if ("requestIdleCallback" in window) {
     (window as any).requestIdleCallback(start, { timeout: 4000 });
@@ -55,15 +51,6 @@ const LandingApp = () => {
           element={
             <Suspense fallback={<div className="min-h-screen bg-background" />}>
               <ThemeShowcase />
-            </Suspense>
-          }
-        />
-        {/* Anything else → load the full app graph */}
-        <Route
-          path="*"
-          element={
-            <Suspense fallback={<div className="min-h-screen bg-background" />}>
-              <FullApp />
             </Suspense>
           }
         />
