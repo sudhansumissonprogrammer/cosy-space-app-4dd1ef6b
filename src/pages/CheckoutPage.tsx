@@ -995,7 +995,7 @@ export default function CheckoutPage() {
   const itemCount = checkoutItems.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium [&_input]:!font-['Montserrat_Alternates'] [&_label]:!font-['Montserrat_Alternates'] [&_span]:!font-['Montserrat_Alternates'] [&_p]:!font-['Montserrat_Alternates'] [&_button]:!font-['Montserrat_Alternates']" style={{ fontFamily: "'Montserrat Alternates', sans-serif" }}>
+    <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 pb-24 sm:pb-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium [&_input]:!font-['Montserrat_Alternates'] [&_label]:!font-['Montserrat_Alternates'] [&_span]:!font-['Montserrat_Alternates'] [&_p]:!font-['Montserrat_Alternates'] [&_button]:!font-['Montserrat_Alternates']" style={{ fontFamily: "'Montserrat Alternates', sans-serif" }}>
 
       {/* Instant payment-opening overlay — shown the moment user clicks Pay/Pay Advance */}
       {placing && (paymentMethod === "razorpay" || isPartialOrder) && !paymentFailed && (
@@ -1016,6 +1016,29 @@ export default function CheckoutPage() {
           </div>
         </div>
       )}
+
+      {/* Trust Strip — reassurance above the fold */}
+      <div className="mb-3 flex items-center justify-between gap-1 rounded-xl border border-border bg-card px-2.5 py-2 text-[10.5px] sm:text-xs font-medium text-foreground/80">
+        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
+          <span aria-hidden className="text-base leading-none">🔒</span>
+          <span className="leading-tight">{tCritical("100% Safe", "100% सुरक्षित")}</span>
+        </div>
+        <div className="h-7 w-px bg-border" />
+        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
+          <span aria-hidden className="text-base leading-none">🚚</span>
+          <span className="leading-tight">{tCritical("Fast Delivery", "जल्दी डिलीवरी")}</span>
+        </div>
+        <div className="h-7 w-px bg-border" />
+        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
+          <span aria-hidden className="text-base leading-none">↩️</span>
+          <span className="leading-tight">{tCritical("Easy Returns", "आसान रिटर्न")}</span>
+        </div>
+        <div className="h-7 w-px bg-border" />
+        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
+          <span aria-hidden className="text-base leading-none">⭐</span>
+          <span className="leading-tight">{tCritical("Trusted", "विश्वसनीय")}</span>
+        </div>
+      </div>
 
       {/* 1. Order Summary — Collapsible */}
       <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} defaultOpen className="mb-4 rounded-xl border border-border bg-card">
@@ -1209,6 +1232,13 @@ export default function CheckoutPage() {
                 </p>
               </div>
             </button>
+            {partialPaymentMode === "partial" && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1"><Check className="h-3 w-3 text-primary" />{tCritical("Confirms order instantly", "ऑर्डर तुरंत कन्फर्म")}</span>
+                <span className="flex items-center gap-1"><Check className="h-3 w-3 text-primary" />{tCritical("Faster dispatch", "जल्दी डिस्पैच")}</span>
+                <span className="flex items-center gap-1"><Check className="h-3 w-3 text-primary" />{tCritical("No fake orders", "कोई फ़र्ज़ी ऑर्डर नहीं")}</span>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => { setPartialPaymentMode("full"); setPaymentMethod("razorpay"); }}
@@ -1227,7 +1257,28 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Standard payment options (no partial payment products) */}
+        {/* COD first (highest-converting in India) */}
+        {!hasAnyPartialPayment && hasCod && (
+          <button
+            type="button"
+            onClick={() => { setPaymentMethod("cod"); }}
+            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+          >
+            <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+              {paymentMethod === "cod" && <Check className="h-3 w-3 text-primary-foreground" />}
+            </div>
+            <Banknote className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-foreground">{tCritical("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
+                <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{tCritical("Most Popular", "सबसे लोकप्रिय")}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{tCritical("Pay when your order arrives", "ऑर्डर आने पर भुगतान करें")}</p>
+            </div>
+          </button>
+        )}
+
+        {/* Pay Online */}
         {!hasAnyPartialPayment && hasRazorpay && (
           <button
             type="button"
@@ -1241,24 +1292,6 @@ export default function CheckoutPage() {
             <div>
               <p className="text-sm font-medium text-foreground">{tCritical("Pay Online", "ऑनलाइन भुगतान")}</p>
               <p className="text-xs text-muted-foreground">UPI, Cards, Net Banking, Wallets</p>
-            </div>
-          </button>
-        )}
-
-        {/* COD (only when no partial payment products) */}
-        {!hasAnyPartialPayment && hasCod && (
-          <button
-            type="button"
-            onClick={() => { setPaymentMethod("cod"); }}
-            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-          >
-            <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-              {paymentMethod === "cod" && <Check className="h-3 w-3 text-primary-foreground" />}
-            </div>
-            <Banknote className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium text-foreground">{tCritical("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
-              <p className="text-xs text-muted-foreground">{tCritical("Pay when your order arrives", "ऑर्डर आने पर भुगतान करें")}</p>
             </div>
           </button>
         )}
@@ -1429,6 +1462,49 @@ export default function CheckoutPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Sticky mobile bottom bar — total + view summary */}
+      {!orderPlaced && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 px-4 py-2.5 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur sm:hidden">
+          <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setSummaryOpen(true);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="flex flex-col items-start text-left"
+            >
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {t("Total", "कुल")} · {itemCount} {itemCount === 1 ? t("item", "आइटम") : t("items", "आइटम")}
+              </span>
+              <span className="text-base font-bold leading-tight text-foreground">
+                {currencySymbol}{total.toFixed(0)}
+                <span className="ml-1.5 text-[11px] font-medium text-primary underline-offset-2 hover:underline">
+                  {t("View", "देखें")}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handlePlaceOrder}
+              disabled={placing || paymentFailed}
+              className="flex h-11 flex-1 max-w-[60%] items-center justify-center gap-2 rounded-lg text-xs font-bold btn-gold disabled:opacity-50"
+              style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+            >
+              {placing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                isPartialOrder
+                  ? `${t("Confirm", "कन्फर्म")} · ${currencySymbol}${chargeAmount.toFixed(0)}`
+                  : paymentMethod === "razorpay"
+                    ? `${t("Pay", "भुगतान")} ${currencySymbol}${total.toFixed(0)}`
+                    : `${t("Place Order", "ऑर्डर करें")}`
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
