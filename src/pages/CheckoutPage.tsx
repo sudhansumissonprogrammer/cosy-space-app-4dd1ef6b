@@ -416,13 +416,18 @@ export default function CheckoutPage() {
         .maybeSingle();
 
       if (error) throw error;
-      if (!data) { toast.error("Invalid coupon code"); setCouponLoading(false); return; }
+      if (!data) {
+        autoAppliedCouponRef.current = false;
+        toast.error("Invalid coupon code");
+        setCouponLoading(false);
+        return;
+      }
 
       const now = new Date();
-      if (data.starts_at && new Date(data.starts_at) > now) { toast.error("Coupon not yet active"); setCouponLoading(false); return; }
-      if (data.expires_at && new Date(data.expires_at) < now) { toast.error("Coupon has expired"); setCouponLoading(false); return; }
-      if (data.max_uses && data.used_count >= data.max_uses) { toast.error("Coupon usage limit reached"); setCouponLoading(false); return; }
-      if (subtotal < (data.min_order_amount || 0)) { toast.error(`Minimum order amount is ${currency} ${data.min_order_amount}`); setCouponLoading(false); return; }
+      if (data.starts_at && new Date(data.starts_at) > now) { autoAppliedCouponRef.current = false; toast.error("Coupon not yet active"); setCouponLoading(false); return; }
+      if (data.expires_at && new Date(data.expires_at) < now) { autoAppliedCouponRef.current = false; toast.error("Coupon has expired"); setCouponLoading(false); return; }
+      if (data.max_uses && data.used_count >= data.max_uses) { autoAppliedCouponRef.current = false; toast.error("Coupon usage limit reached"); setCouponLoading(false); return; }
+      if (subtotal < (data.min_order_amount || 0)) { autoAppliedCouponRef.current = false; toast.error(`Minimum order amount is ${currency} ${data.min_order_amount}`); setCouponLoading(false); return; }
 
       let discount = 0;
       if (data.discount_type === "percentage") {
@@ -436,6 +441,7 @@ export default function CheckoutPage() {
       setCouponDiscount(discount);
       toast.success(`Coupon applied! You save ${currency} ${discount.toFixed(2)}`);
     } catch {
+      autoAppliedCouponRef.current = false;
       toast.error("Failed to validate coupon");
     } finally {
       setCouponLoading(false);
@@ -458,7 +464,7 @@ export default function CheckoutPage() {
     setCouponCode(code);
     applyCoupon(code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlCoupon, store?.id, subtotal, appliedCoupon]);
+  }, [urlCoupon, store?.id, subtotal, appliedCoupon, hasActiveCoupons]);
   useEffect(() => {
     if (checkoutItems.length === 0) return;
     const eid = generateEventId();
