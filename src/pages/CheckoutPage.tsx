@@ -1218,8 +1218,8 @@ export default function CheckoutPage() {
               </div>
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium text-foreground">{t("Pay Full Amount Online", "पूरा ऑनलाइन भुगतान")}</p>
-                <p className="text-xs text-muted-foreground">{currency} {total.toFixed(2)} — {t("UPI, Cards, Net Banking", "UPI, कार्ड, नेट बैंकिंग")}</p>
+                <p className="text-sm font-medium text-foreground">{tCritical("Pay Full Amount Online", "पूरा ऑनलाइन भुगतान")}</p>
+                <p className="text-xs text-muted-foreground">{currency} {total.toFixed(2)} — UPI, Cards, Net Banking</p>
               </div>
             </button>
             {/* COD disabled when partial payment products are in cart */}
