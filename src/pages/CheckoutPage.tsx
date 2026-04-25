@@ -83,6 +83,7 @@ export default function CheckoutPage() {
   const qc = useQueryClient();
 
   const [placing, setPlacing] = useState(false);
+  const [placingStep, setPlacingStep] = useState<0 | 1 | 2 | 3>(0); // 0 idle, 1 creating, 2 confirming, 3 sending whatsapp
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
