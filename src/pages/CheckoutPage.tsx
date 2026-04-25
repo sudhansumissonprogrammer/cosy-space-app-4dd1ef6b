@@ -914,6 +914,7 @@ export default function CheckoutPage() {
     if (!pincode.trim()) { toast.error(t("Please enter your pincode", "कृपया अपना पिनकोड दर्ज करें")); return; }
 
     setPlacing(true);
+    setPlacingStep(1);
     setPaymentFailed(false);
     // Fire pre-warm pings the instant user clicks — these run in parallel with createOrder
     // so that razorpay-order is hot by the time we actually call it.
