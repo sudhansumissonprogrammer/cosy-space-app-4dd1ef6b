@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const ExitIntentPopup = () => {
   const [show, setShow] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const cooldownUntil = sessionStorage.getItem("exit_cooldown");
@@ -52,7 +50,8 @@ const ExitIntentPopup = () => {
         <button
           onClick={() => {
             setShow(false);
-            navigate("/signup");
+            // Hard nav to /signup so the full App (auth chunk) loads.
+            window.location.href = "/signup";
           }}
           className="w-full bg-bauhaus-red text-bauhaus-white font-black uppercase tracking-wider text-sm py-3.5 border-3 border-foreground shadow-[4px_4px_0px_0px_hsl(var(--foreground))] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all duration-150"
         >

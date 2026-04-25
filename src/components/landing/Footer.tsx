@@ -1,5 +1,6 @@
 import { MessageCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+// Plain <a> for cross-app links — landing runs on a slim BrowserRouter that
+// doesn't know about /about-us, /privacy-policy, etc. Hard nav loads FullApp.
 import logo from "@/assets/shopbanao-logo.webp";
 
 const Footer = () => {
@@ -43,7 +44,7 @@ const Footer = () => {
             <h4 className="font-bold uppercase tracking-widest text-xs text-primary-foreground/50 mb-4">Company</h4>
             <div className="space-y-2">
               {companyLinks.map((l) => (
-                <Link key={l.label} to={l.to} className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">{l.label}</Link>
+                <a key={l.label} href={l.to} className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">{l.label}</a>
               ))}
             </div>
           </div>
@@ -51,7 +52,7 @@ const Footer = () => {
             <h4 className="font-bold uppercase tracking-widest text-xs text-primary-foreground/50 mb-4">Legal</h4>
             <div className="space-y-2">
               {legalLinks.map((l) => (
-                <Link key={l.label} to={l.to} className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">{l.label}</Link>
+                <a key={l.label} href={l.to} className="block font-medium text-sm text-primary-foreground/70 hover:text-bauhaus-yellow transition-colors duration-200">{l.label}</a>
               ))}
             </div>
           </div>

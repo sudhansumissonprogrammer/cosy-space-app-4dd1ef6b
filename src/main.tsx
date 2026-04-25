@@ -1,5 +1,4 @@
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
 import "./index.css";
 import { isCustomDomainHost, isSubdomainHost, isRootDomainHost, isPreviewHost, isLocalHost } from "@/lib/subdomain";
 import { installChunkLoadRecovery } from "@/lib/chunkLoadRecovery";
@@ -21,6 +20,29 @@ if (typeof window !== "undefined" && typeof (window as any).cancelIdleCallback !
 }
 
 installChunkLoadRecovery();
+
+/**
+ * 🚀 LANDING-ONLY FAST PATH
+ * If the initial URL is the marketing landing page (`/` or `/theme`) on the
+ * root marketing host, mount a slimmed-down `<LandingApp />` instead of the
+ * full `<App />`. This keeps the storefront (14 themes), dashboard, auth,
+ * Supabase client, and react-query OFF the landing critical path entirely.
+ *
+ * The full App is still prefetched at idle so subsequent hard-navigation to
+ * /login or /dashboard feels instant.
+ */
+function shouldUseLandingFastPath(): boolean {
+  if (typeof window === "undefined") return false;
+  const path = window.location.pathname;
+  if (path !== "/" && path !== "/theme") return false;
+  // Storefront subdomains and custom domains must always use the full App
+  // (they render storefront at `/`, not the marketing landing).
+  const host = window.location.hostname;
+  if (isSubdomainHost(host) || isCustomDomainHost(host)) return false;
+  // Worker-injected storefront data also means storefront flow.
+  if ((window as any).__STORE_SLUG__ || (window as any).__STOREFRONT_DATA__) return false;
+  return true;
+}
 
 // Defer non-critical font CSS imports — they block initial render for ALL routes
 // but are only needed by dashboard (Montserrat Alternates) and landing (Plus Jakarta Sans).
@@ -54,7 +76,31 @@ if ("requestIdleCallback" in window) {
 
 const rootElement = document.getElementById("root")!;
 
-createRoot(rootElement).render(<App />);
+/**
+ * Two-tier entry point:
+ *
+ * 1. Landing fast-path  → import("./LandingApp")  (Rollup statically traces this
+ *    so LandingApp + Index + landing components are bundled and modulepreload-hinted)
+ *
+ * 2. Everything else    → import("./App") via a dynamically-built string so Rollup
+ *    CANNOT see this as a graph edge. App + radix + supabase + react-query are
+ *    NOT added to the landing critical-path modulepreload list.
+ *
+ * Without the dynamic-string trick, Rollup walks both branches and emits
+ * <link rel="modulepreload"> for ~500KB of code that landing never executes.
+ */
+if (shouldUseLandingFastPath()) {
+  import("./LandingApp").then(({ default: LandingApp }) => {
+    createRoot(rootElement).render(<LandingApp />);
+  });
+} else {
+  // Build the path at runtime so Rollup's static analyzer doesn't follow it.
+  // Vite still resolves /src/App.tsx at runtime via its module graph.
+  const appPath = "./App" + ".tsx";
+  import(/* @vite-ignore */ appPath).then(({ default: App }) => {
+    createRoot(rootElement).render(<App />);
+  });
+}
 
 // storefront:mounted is no longer used for skeleton removal.
 // Worker skeleton is removed only by storefront:content-ready or 12s fallback.
