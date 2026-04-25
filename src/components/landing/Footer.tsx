@@ -1,6 +1,6 @@
 import { MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-import logo from "@/assets/shopbanao-logo.png";
+import logo from "@/assets/shopbanao-logo.webp";
 
 const Footer = () => {
   const productLinks: { label: string; href: string }[] = [
