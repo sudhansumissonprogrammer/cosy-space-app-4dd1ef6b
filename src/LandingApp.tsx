@@ -19,6 +19,7 @@
 import { useEffect, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const ThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
 
@@ -43,19 +44,21 @@ const LandingApp = () => {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route
-          path="/theme"
-          element={
-            <Suspense fallback={<div className="min-h-screen bg-background" />}>
-              <ThemeShowcase />
-            </Suspense>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route
+            path="/theme"
+            element={
+              <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                <ThemeShowcase />
+              </Suspense>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 
