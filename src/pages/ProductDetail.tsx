@@ -478,6 +478,7 @@ export default function ProductDetail() {
   const handleBuyNow = () => {
     if (hasVariants && !selectedVariant) {
       toast.error("Please select a variant first");
+      document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
