@@ -1205,7 +1205,7 @@ export default function CheckoutPage() {
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{tCritical("Recommended", "अनुशंसित")}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {tCritical("Pay", "भुगतान")} {currency} {partialAdvanceTotal.toFixed(0)} {tCritical("now", "अभी")} + {currency} {partialBalanceDue.toFixed(0)} {tCritical("on delivery (COD)", "डिलीवरी पर (COD)")}
+                  {currencySymbol}{partialAdvanceTotal.toFixed(0)} {tCritical("now", "अभी")} + {currencySymbol}{partialBalanceDue.toFixed(0)} {tCritical("on delivery", "डिलीवरी पर")}
                 </p>
               </div>
             </button>
