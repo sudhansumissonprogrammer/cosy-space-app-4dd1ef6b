@@ -25,11 +25,16 @@ const ThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
 
 /**
  * Idle prefetch: warm up the full App chunk after landing is fully painted.
- * Makes hard navigation to /login feel instant (chunk already in browser cache).
+ * Uses a runtime-constructed import path so Rollup's static analyzer can NOT
+ * see this as a graph edge — it stays out of <link rel="modulepreload">.
+ * Without this trick, Vite would preload App.tsx (and all its 30+ chunks)
+ * on the landing critical path, defeating the whole point of LandingApp.
  */
 function prefetchFullAppOnIdle() {
   const start = () => {
-    import("./App").catch(() => {});
+    // /* @vite-ignore */ + variable URL prevents static graph inclusion
+    const url = "/src/App.tsx";
+    import(/* @vite-ignore */ url).catch(() => {});
   };
   if ("requestIdleCallback" in window) {
     (window as any).requestIdleCallback(start, { timeout: 4000 });
