@@ -103,6 +103,7 @@ export default function StoreCustomers() {
 
   return (
     <div className="space-y-6">
+      <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div>
