@@ -1142,7 +1142,7 @@ export default function CheckoutPage() {
             {/* Use my location button - hidden for now */}
             <div className="space-y-1">
               <Label htmlFor="pincode" className="text-xs">{t("Pincode", "पिनकोड")} * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
-              <Input id="pincode" placeholder={isHindi ? "पिनकोड डालें" : "Enter pincode to auto-fill city & state"} value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
+              <Input id="pincode" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="street" className="text-xs">{t("Street Address", "पता")} *</Label>
