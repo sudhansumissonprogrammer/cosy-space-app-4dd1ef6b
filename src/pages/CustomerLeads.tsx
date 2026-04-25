@@ -85,36 +85,22 @@ export default function CustomerLeads() {
       storeBase && productSlug ? `${storeBase}/product/${productSlug}${couponQuery}` : "";
     const storeUrlWithCoupon = storeBase ? `${storeBase}${couponQuery}` : "";
 
-    const greeting = lead.name ? `Hey ${lead.name} 👋` : "Hey 👋";
+    const greeting = lead.name ? `Hi ${lead.name} 👋` : "Hi 👋";
     const hook = lead.product_name
-      ? `Saw that you almost ordered *${lead.product_name}* from ${storeName} but something stopped you mid-way 🤔`
-      : `Saw that you almost placed an order on ${storeName} but something stopped you mid-way 🤔`;
+      ? `You left *${lead.product_name}* in your cart at ${storeName}.`
+      : `You left an item in your cart at ${storeName}.`;
 
-    const ctaLine = productUrl
-      ? `🛒 *Tap here to claim your ₹100 OFF* 👇\n${productUrl}`
-      : storeUrlWithCoupon
-        ? `🛒 *Tap here to claim your ₹100 OFF* 👇\n${storeUrlWithCoupon}`
-        : "";
+    const link = productUrl || storeUrlWithCoupon;
+    const ctaLine = link ? `👉 ${link}` : "";
 
     return [
       greeting,
-      "",
       hook,
       "",
-      "Good news — I've reserved it for you for the next *2 hours* ⏳",
-      "",
-      `🎁 *Special gift only for you today* — Flat *₹100 OFF* on this order!`,
-      `✨ Coupon *${COUPON}* will be *auto-applied* when you tap the link below — no need to type anything.`,
-      "",
+      `🎁 Flat *₹100 OFF* — coupon *${COUPON}* auto-applied (valid 2 hrs ⏳)`,
       ctaLine,
       "",
-      "💳 Pay easily via UPI / Card / COD",
-      "🚚 Fast delivery across India",
-      "🔒 100% safe & trusted by 1000+ happy customers",
-      "",
-      `Need help choosing size / color / payment? Just reply here, I'll personally assist you 😊`,
-      "",
-      `— Team ${storeName}`,
+      `— ${storeName}`,
     ]
       .filter(Boolean)
       .join("\n");
