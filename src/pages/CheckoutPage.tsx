@@ -1395,7 +1395,7 @@ export default function CheckoutPage() {
                         storefront_customer_id: customer.id,
                         label: newAddr.label.trim() || "Home",
                         full_name: newAddr.full_name.trim(),
-                        phone: newAddr.phone.trim(),
+                        phone: normalizePhone(newAddr.phone),
                         street_address: newAddr.street_address.trim(),
                         city: newAddr.city.trim(),
                         state: newAddr.state.trim(),
