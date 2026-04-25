@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Trash2, Phone, MessageCircle, CheckCircle2 } from "lucide-react";
+import { Users, Trash2, Phone, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useMyStore } from "@/hooks/useMyStore";
@@ -23,7 +23,6 @@ export default function CustomerLeads() {
   const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
   const { data: myStore } = useMyStore();
-  const [filterMode, setFilterMode] = useState<"pending" | "all">("pending");
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["customer-leads", storeId],
@@ -81,12 +80,9 @@ export default function CustomerLeads() {
   }, [leads, orderedPhonesSet]);
 
   const visibleLeads = useMemo(
-    () => filterMode === "pending" ? enrichedLeads.filter((l) => !l.hasOrdered) : enrichedLeads,
-    [enrichedLeads, filterMode]
+    () => enrichedLeads.filter((l) => !l.hasOrdered),
+    [enrichedLeads]
   );
-
-  const convertedCount = enrichedLeads.filter((l) => l.hasOrdered).length;
-  const pendingCount = enrichedLeads.length - convertedCount;
 
   // Fetch slugs for products referenced by leads — to build deep product links
   const productIds = Array.from(
@@ -180,27 +176,7 @@ export default function CustomerLeads() {
             <Users className="h-5 w-5 text-primary" />
             <CardTitle className="text-base">
               {visibleLeads.length} Lead{visibleLeads.length !== 1 ? "s" : ""}
-              {filterMode === "pending" && convertedCount > 0 && (
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  ({convertedCount} already ordered, hidden)
-                </span>
-              )}
             </CardTitle>
-          </div>
-          {/* Filter toggle: hide/show converted leads */}
-          <div className="inline-flex rounded-lg border border-border bg-muted/30 p-0.5 text-xs">
-            <button
-              onClick={() => setFilterMode("pending")}
-              className={`rounded-md px-3 py-1.5 font-medium transition-colors ${filterMode === "pending" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Not yet ordered ({pendingCount})
-            </button>
-            <button
-              onClick={() => setFilterMode("all")}
-              className={`rounded-md px-3 py-1.5 font-medium transition-colors ${filterMode === "all" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              All ({enrichedLeads.length})
-            </button>
           </div>
         </CardHeader>
         <CardContent>
