@@ -660,7 +660,7 @@ export default function ProductDetail() {
 
           {/* Variant Selector */}
           {(variants || []).length > 0 && (
-            <div className="mt-5 space-y-2" style={isV18 ? { borderTop: "1px solid #333", paddingTop: 16 } : {}}>
+            <div id="variant-picker" className="mt-5 space-y-2 scroll-mt-24" style={isV18 ? { borderTop: "1px solid #333", paddingTop: 16 } : {}}>
               <Label className={isV18 ? "text-xs font-bold uppercase tracking-wider" : "text-xs font-bold uppercase tracking-wider text-muted-foreground"} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>
                 {isV18 ? `SIZE: ${selectedVariant?.name || ""}` : <>Select: <span className="text-foreground normal-case tracking-normal">{selectedVariant?.name || "None"}</span></>}
               </Label>
