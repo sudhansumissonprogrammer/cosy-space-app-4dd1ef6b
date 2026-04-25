@@ -1218,8 +1218,8 @@ export default function CheckoutPage() {
       <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">{t("Pay via", "भुगतान करें")}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">3</span>
+            <span className="text-sm font-medium text-foreground">{t("Payment", "भुगतान")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {couponDiscount > 0 && (
