@@ -1116,6 +1116,31 @@ export default function ProductDetail() {
           />
         </Suspense>
       )}
+
+      {/* Variant required prompt */}
+      <Dialog open={variantPromptOpen} onOpenChange={setVariantPromptOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Please select a variant</DialogTitle>
+            <DialogDescription>
+              Choose an option (size / pack / color) before continuing.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              className="w-full"
+              onClick={() => {
+                setVariantPromptOpen(false);
+                setTimeout(() => {
+                  document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 100);
+              }}
+            >
+              Select Variant
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
