@@ -170,7 +170,7 @@ export default function CustomerLeads() {
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Customer Leads</h1>
         <p className="text-sm text-muted-foreground">
-          People who filled their details before ordering via WhatsApp
+          People who showed interest but haven't placed an order yet — recover them via WhatsApp
         </p>
       </div>
 
