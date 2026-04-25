@@ -894,7 +894,9 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error(t("Please enter your full name", "कृपया अपना पूरा नाम दर्ज करें")); return; }
-    if (!phone.trim() || phone.trim().length < 10) { toast.error(t("Please enter a valid phone number", "कृपया एक वैध फ़ोन नंबर दर्ज करें")); return; }
+    const normalizedPhone = normalizePhone(phone);
+    if (!isValidIndianPhone(normalizedPhone)) { toast.error(t("Please enter a valid 10-digit mobile number", "कृपया एक वैध 10-अंकीय मोबाइल नंबर दर्ज करें")); return; }
+    if (normalizedPhone !== phone.trim()) setPhone(normalizedPhone);
     if (!streetAddress.trim()) { toast.error(t("Please enter your street address", "कृपया अपना पता दर्ज करें")); return; }
     if (!city.trim()) { toast.error(t("Please enter your city", "कृपया अपना शहर दर्ज करें")); return; }
     if (!state.trim()) { toast.error(t("Please enter your state", "कृपया अपना राज्य दर्ज करें")); return; }
