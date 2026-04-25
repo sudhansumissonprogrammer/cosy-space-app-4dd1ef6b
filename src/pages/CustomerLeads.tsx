@@ -82,30 +82,35 @@ export default function CustomerLeads() {
     const productUrl =
       storeBase && productSlug ? `${storeBase}/product/${productSlug}` : "";
 
-    const greeting = lead.name ? `Hi ${lead.name}! 👋` : "Hi there! 👋";
-    const productLine = lead.product_name
-      ? `I noticed you were checking out *${lead.product_name}* on ${storeName} but didn't complete your order.`
-      : `I noticed you showed interest in our products at ${storeName} but didn't complete your order.`;
+    const greeting = lead.name ? `Hey ${lead.name} 👋` : "Hey 👋";
+    const hook = lead.product_name
+      ? `Saw that you almost ordered *${lead.product_name}* from ${storeName} but something stopped you mid-way 🤔`
+      : `Saw that you almost placed an order on ${storeName} but something stopped you mid-way 🤔`;
 
-    const linkLine = productUrl
-      ? `👉 Continue your order here:\n${productUrl}`
+    const ctaLine = productUrl
+      ? `🛒 Complete your order in 1 click 👇\n${productUrl}`
       : storeBase
-        ? `👉 Visit our store: ${storeBase}`
+        ? `🛒 Complete your order in 1 click 👇\n${storeBase}`
         : "";
 
     return [
       greeting,
       "",
-      productLine,
+      hook,
       "",
-      "Is there anything I can help you with? 😊",
-      "✅ Free assistance with your order",
-      "✅ Quick delivery available",
-      "✅ Easy payment options (UPI / COD)",
+      "Good news — I've kept it reserved for you for the next *2 hours* ⏳",
       "",
-      linkLine,
+      "🎁 *Use code WELCOME10* to get an *extra 10% OFF* + Free Delivery on this order (today only).",
       "",
-      `Thank you,\nTeam ${storeName}`,
+      ctaLine,
+      "",
+      "💳 Pay easily via UPI / Card / COD",
+      "🚚 Fast delivery across India",
+      "🔒 100% safe & trusted by 1000+ happy customers",
+      "",
+      `Need help choosing size / color / payment? Just reply here, I'll personally assist you 😊`,
+      "",
+      `— Team ${storeName}`,
     ]
       .filter(Boolean)
       .join("\n");
