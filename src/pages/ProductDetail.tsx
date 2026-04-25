@@ -457,6 +457,7 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (hasVariants && !selectedVariant) {
       toast.error("Please select a variant first");
+      document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     addToCart({
@@ -477,6 +478,7 @@ export default function ProductDetail() {
   const handleBuyNow = () => {
     if (hasVariants && !selectedVariant) {
       toast.error("Please select a variant first");
+      document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -630,28 +632,6 @@ export default function ProductDetail() {
            )}
           </div>
 
-          {/* Partial Payment Badge */}
-          {(store as any).partial_payment_enabled && (store as any).partial_payment_value && (
-            (() => {
-              const ppType = (store as any).partial_payment_type;
-              const ppValue = Number((store as any).partial_payment_value);
-              const advance = ppType === "percentage"
-                ? Math.max(50, Math.round(variantPrice * (ppValue / 100)))
-                : Math.max(50, Math.min(ppValue, variantPrice));
-              const balance = Math.max(0, variantPrice - advance);
-              return balance > 0 ? (
-                <div className="mt-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-3 flex items-center gap-3">
-                  <CreditCard className="h-5 w-5 text-primary shrink-0" />
-                  <div>
-                    <p className="text-sm font-bold text-foreground">
-                      Pay {currency} {advance.toFixed(0)} now, {currency} {balance.toFixed(0)} on delivery
-                    </p>
-                    <p className="text-xs text-muted-foreground">Book with small advance • Pay rest via COD</p>
-                  </div>
-                </div>
-              ) : null;
-            })()
-          )}
 
           {/* Live viewers — hidden in V18 */}
           {!isV18 && (
@@ -682,7 +662,7 @@ export default function ProductDetail() {
 
           {/* Variant Selector */}
           {(variants || []).length > 0 && (
-            <div className="mt-5 space-y-2" style={isV18 ? { borderTop: "1px solid #333", paddingTop: 16 } : {}}>
+            <div id="variant-picker" className="mt-5 space-y-2 scroll-mt-24" style={isV18 ? { borderTop: "1px solid #333", paddingTop: 16 } : {}}>
               <Label className={isV18 ? "text-xs font-bold uppercase tracking-wider" : "text-xs font-bold uppercase tracking-wider text-muted-foreground"} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>
                 {isV18 ? `SIZE: ${selectedVariant?.name || ""}` : <>Select: <span className="text-foreground normal-case tracking-normal">{selectedVariant?.name || "None"}</span></>}
               </Label>
@@ -808,6 +788,11 @@ export default function ProductDetail() {
                   className="group relative flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-extrabold text-base uppercase tracking-wide transition-all duration-200 hover:shadow-2xl hover:brightness-110 active:scale-[0.98]"
                   style={{ backgroundColor: "#25D366", boxShadow: "0 6px 24px rgba(37, 211, 102, 0.35)" }}
                   onClick={() => {
+                    if (hasVariants && !selectedVariant) {
+                      toast.error("Please select a variant first");
+                      document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      return;
+                    }
                     const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
                     const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
                     const productUrl = `${window.location.origin}${window.location.pathname}`;
@@ -1091,6 +1076,11 @@ export default function ProductDetail() {
                       </div>
                       <button
                         onClick={() => {
+                          if (hasVariants && !selectedVariant) {
+                            toast.error("Please select a variant first");
+                            document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                            return;
+                          }
                           navigate(storefrontPath(store.slug, `checkout?product=${product.id}${selectedVariant ? `&variant=${selectedVariant.id}` : ""}`));
                         }}
                         className="flex h-12 items-center gap-2 rounded-xl px-5 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
