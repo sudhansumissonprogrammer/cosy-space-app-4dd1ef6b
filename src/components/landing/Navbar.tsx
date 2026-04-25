@@ -2,18 +2,10 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import logo from "@/assets/shopbanao-logo.webp";
 
-/**
- * Prefetch the FullApp chunk on first hover/touch of an auth link so that
- * the hard navigation to /login or /signup feels instant. We use plain
- * `<a href>` for cross-app links to avoid mounting a second BrowserRouter
- * (LandingApp has its own minimal router).
- */
-let prefetched = false;
-function prefetchFullApp() {
-  if (prefetched) return;
-  prefetched = true;
-  import("@/App").catch(() => {});
-}
+// NOTE: We deliberately do NOT prefetch App.tsx from landing — any
+// `import("@/App")` reference here would make Rollup add modulepreload links
+// for App + radix + supabase + react-query (~500KB) onto the landing critical
+// path. Hard nav to /login or /signup loads them on demand.
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
