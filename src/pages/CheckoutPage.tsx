@@ -743,7 +743,7 @@ export default function CheckoutPage() {
     }
     setShowUpsell(true);
     setOrderPlaced(true);
-    try { sessionStorage.removeItem("pending_coupon"); } catch {}
+    try { sessionStorage.removeItem("pending_coupon"); localStorage.removeItem("pending_coupon"); } catch {}
     if (!isSingleMode) clearCart();
     saveExpressInfo();
     // Clean up theme-16 BuyNow modal localStorage after order
