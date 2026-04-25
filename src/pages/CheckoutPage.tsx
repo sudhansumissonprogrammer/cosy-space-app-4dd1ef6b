@@ -1017,6 +1017,29 @@ export default function CheckoutPage() {
         </div>
       )}
 
+      {/* Trust Strip — reassurance above the fold */}
+      <div className="mb-3 flex items-center justify-between gap-1 rounded-xl border border-border bg-card px-2.5 py-2 text-[10.5px] sm:text-xs font-medium text-foreground/80">
+        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
+          <span aria-hidden className="text-base leading-none">🔒</span>
+          <span className="leading-tight">{tCritical("100% Safe", "100% सुरक्षित")}</span>
+        </div>
+        <div className="h-7 w-px bg-border" />
+        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
+          <span aria-hidden className="text-base leading-none">🚚</span>
+          <span className="leading-tight">{tCritical("Fast Delivery", "जल्दी डिलीवरी")}</span>
+        </div>
+        <div className="h-7 w-px bg-border" />
+        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
+          <span aria-hidden className="text-base leading-none">↩️</span>
+          <span className="leading-tight">{tCritical("Easy Returns", "आसान रिटर्न")}</span>
+        </div>
+        <div className="h-7 w-px bg-border" />
+        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
+          <span aria-hidden className="text-base leading-none">⭐</span>
+          <span className="leading-tight">{tCritical("Trusted", "विश्वसनीय")}</span>
+        </div>
+      </div>
+
       {/* 1. Order Summary — Collapsible */}
       <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} defaultOpen className="mb-4 rounded-xl border border-border bg-card">
         <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
