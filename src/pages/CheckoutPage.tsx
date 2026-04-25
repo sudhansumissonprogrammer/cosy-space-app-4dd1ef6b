@@ -1146,7 +1146,7 @@ export default function CheckoutPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="street" className="text-xs">{t("Street Address", "पता")} *</Label>
-              <Input id="street" placeholder={isHindi ? "मकान/फ्लैट नंबर, बिल्डिंग, गली" : "House/Flat No., Building, Street"} value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+              <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
