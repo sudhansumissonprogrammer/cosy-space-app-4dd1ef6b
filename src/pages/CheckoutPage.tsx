@@ -926,13 +926,16 @@ export default function CheckoutPage() {
       const newOrder = await createOrder();
 
       if (paymentMethod === "razorpay" || isPartialOrder) {
+        setPlacingStep(2);
         await openRazorpayForOrder(newOrder);
         return;
       }
 
       // COD flow
+      setPlacingStep(3);
       finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
     } catch (err: any) {
+      setPlacingStep(0);
       toast.error(err.message || "Failed to place order");
     } finally {
       if (paymentMethod !== "razorpay" && !isPartialOrder) setPlacing(false);
