@@ -505,13 +505,19 @@ export default function StoreOrders() {
           {/* ── MOBILE: Card list view ── */}
           {isMobile ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 px-1">
-                <Checkbox
-                  checked={paginatedOrders.length > 0 && selectedOrders.size === paginatedOrders.length}
-                  onCheckedChange={toggleSelectAll}
-                />
-                <span className="text-xs text-muted-foreground">Select all</span>
-              </div>
+              {selectedOrders.size > 0 ? (
+                <div className="flex items-center gap-2 px-1">
+                  <Checkbox
+                    checked={paginatedOrders.length > 0 && selectedOrders.size === paginatedOrders.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                  <span className="text-xs text-muted-foreground">Select all on this page</span>
+                </div>
+              ) : (
+                <p className="px-1 text-[10px] text-muted-foreground">
+                  Tip: swipe → to ship • swipe ← for WhatsApp • long-press to bulk-select
+                </p>
+              )}
               {groupedByDay.map((group) => {
                 const dayTotal = group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
                 const currency = group.orders[0]?.currency || "";
