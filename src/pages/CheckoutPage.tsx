@@ -442,7 +442,16 @@ export default function CheckoutPage() {
     setCouponCode("");
   };
 
-  // Facebook Pixel + CAPI: InitiateCheckout
+  // Auto-apply coupon from URL (e.g. ?coupon=SAVE100 from WhatsApp recovery link)
+  useEffect(() => {
+    if (!urlCoupon || autoAppliedCouponRef.current) return;
+    if (!store?.id || subtotal <= 0 || appliedCoupon) return;
+    autoAppliedCouponRef.current = true;
+    const code = urlCoupon.toUpperCase();
+    setCouponCode(code);
+    applyCoupon(code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlCoupon, store?.id, subtotal, appliedCoupon]);
   useEffect(() => {
     if (checkoutItems.length === 0) return;
     const eid = generateEventId();
