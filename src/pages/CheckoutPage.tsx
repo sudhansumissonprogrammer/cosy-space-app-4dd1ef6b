@@ -1257,7 +1257,28 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Standard payment options (no partial payment products) */}
+        {/* COD first (highest-converting in India) */}
+        {!hasAnyPartialPayment && hasCod && (
+          <button
+            type="button"
+            onClick={() => { setPaymentMethod("cod"); }}
+            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+          >
+            <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+              {paymentMethod === "cod" && <Check className="h-3 w-3 text-primary-foreground" />}
+            </div>
+            <Banknote className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-foreground">{tCritical("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
+                <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{tCritical("Most Popular", "सबसे लोकप्रिय")}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{tCritical("Pay when your order arrives", "ऑर्डर आने पर भुगतान करें")}</p>
+            </div>
+          </button>
+        )}
+
+        {/* Pay Online */}
         {!hasAnyPartialPayment && hasRazorpay && (
           <button
             type="button"
@@ -1271,24 +1292,6 @@ export default function CheckoutPage() {
             <div>
               <p className="text-sm font-medium text-foreground">{tCritical("Pay Online", "ऑनलाइन भुगतान")}</p>
               <p className="text-xs text-muted-foreground">UPI, Cards, Net Banking, Wallets</p>
-            </div>
-          </button>
-        )}
-
-        {/* COD (only when no partial payment products) */}
-        {!hasAnyPartialPayment && hasCod && (
-          <button
-            type="button"
-            onClick={() => { setPaymentMethod("cod"); }}
-            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-          >
-            <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-              {paymentMethod === "cod" && <Check className="h-3 w-3 text-primary-foreground" />}
-            </div>
-            <Banknote className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium text-foreground">{tCritical("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
-              <p className="text-xs text-muted-foreground">{tCritical("Pay when your order arrives", "ऑर्डर आने पर भुगतान करें")}</p>
             </div>
           </button>
         )}
