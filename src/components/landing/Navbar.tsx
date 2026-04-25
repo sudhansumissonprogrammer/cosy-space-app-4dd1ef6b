@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import logo from "@/assets/shopbanao-logo.png";
+import logo from "@/assets/shopbanao-logo.webp";
 
 /** Prefetch DashboardProviders + Login chunk on first hover/touch of login link */
 let prefetched = false;
@@ -28,7 +28,7 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 bg-bauhaus-white border-b-4 border-foreground">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between h-14 md:h-20">
         <Link to="/" className="flex items-center -space-x-1">
-          <img src={logo} alt="ShopBanao" className="h-14 md:h-16 w-auto" />
+          <img src={logo} alt="ShopBanao" width="64" height="64" className="h-14 md:h-16 w-auto" fetchPriority="high" decoding="async" />
           <span className="text-2xl md:text-3xl text-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>
             ShopBanao
           </span>
