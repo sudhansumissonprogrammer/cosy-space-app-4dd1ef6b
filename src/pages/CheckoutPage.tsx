@@ -1256,8 +1256,8 @@ export default function CheckoutPage() {
             </div>
             <Banknote className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium text-foreground">{t("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
-              <p className="text-xs text-muted-foreground">{t("Pay when your order arrives", "ऑर्डर आने पर भुगतान करें")}</p>
+              <p className="text-sm font-medium text-foreground">{tCritical("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
+              <p className="text-xs text-muted-foreground">{tCritical("Pay when your order arrives", "ऑर्डर आने पर भुगतान करें")}</p>
             </div>
           </button>
         )}
