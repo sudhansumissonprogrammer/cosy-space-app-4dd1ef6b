@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,11 +12,12 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Trash2, Phone, MessageCircle } from "lucide-react";
+import { Users, Trash2, Phone, MessageCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useMyStore } from "@/hooks/useMyStore";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
+import { normalizePhone } from "@/lib/phoneUtils";
 
 export default function CustomerLeads() {
   const { storeId } = useStoreSlugParam();
