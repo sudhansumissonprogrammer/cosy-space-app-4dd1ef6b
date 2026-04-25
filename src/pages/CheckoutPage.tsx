@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ArrowLeft, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, Tag, X, Pencil, LocateFixed } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, ArrowRight, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, Tag, X, Pencil, LocateFixed } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -83,6 +83,7 @@ export default function CheckoutPage() {
   const qc = useQueryClient();
 
   const [placing, setPlacing] = useState(false);
+  const [placingStep, setPlacingStep] = useState<0 | 1 | 2 | 3>(0); // 0 idle, 1 creating, 2 confirming, 3 sending whatsapp
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -145,6 +146,7 @@ export default function CheckoutPage() {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
   const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [showCityStateEdit, setShowCityStateEdit] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
 
   // Coupon
@@ -359,10 +361,11 @@ export default function CheckoutPage() {
 
   // Shipping calculation
   const shippingActive = shippingConfig?.is_active;
+  const flatShippingRate = shippingActive ? Number(shippingConfig?.flat_rate) || 0 : 0;
+  const freeShippingThreshold = shippingActive ? Number(shippingConfig?.free_shipping_above) || 0 : 0;
+  const qualifiesForFreeShipping = shippingActive && freeShippingThreshold > 0 && subtotal >= freeShippingThreshold && flatShippingRate > 0;
   const shippingCharge = shippingActive
-    ? (shippingConfig.free_shipping_above && subtotal >= Number(shippingConfig.free_shipping_above)
-        ? 0
-        : Number(shippingConfig.flat_rate) || 0)
+    ? (qualifiesForFreeShipping ? 0 : flatShippingRate)
     : 0;
 
   // Tax calculation
@@ -827,12 +830,14 @@ export default function CheckoutPage() {
             throw new Error("Payment verification failed");
           }
         }
+        setPlacingStep(3);
         setPlacing(false);
         setPaymentFailed(false);
         setPendingOrder(null);
         finalizeOrder(order.id, order.number, order.profit);
       } catch (err: any) {
         console.error("Payment verification error:", err);
+        setPlacingStep(0);
         setPlacing(false);
         setPendingOrder(order);
         setPaymentFailed(true);
@@ -862,6 +867,7 @@ export default function CheckoutPage() {
               razorpay_payment_id: "check_order", store_id: store.id, order_id: order.id,
             });
             if (statusData.status === "captured" || statusData.status === "authorized") {
+              setPlacingStep(3);
               setPlacing(false);
               setPaymentFailed(false);
               setPendingOrder(null);
@@ -870,6 +876,7 @@ export default function CheckoutPage() {
             }
           } catch {}
           // Payment not completed — show retry
+          setPlacingStep(0);
           setPendingOrder(order);
           setPaymentFailed(true);
           setPlacing(false);
@@ -880,6 +887,7 @@ export default function CheckoutPage() {
     const rzp = new window.Razorpay(options);
     rzp.on("payment.failed", (resp: any) => {
       console.error("Razorpay payment failed:", resp?.error);
+      setPlacingStep(0);
       setPendingOrder(order);
       setPaymentFailed(true);
       setPlacing(false);
@@ -892,11 +900,13 @@ export default function CheckoutPage() {
   const handleRetryPayment = async () => {
     if (!pendingOrder) return;
     setPlacing(true);
+    setPlacingStep(2);
     setPaymentFailed(false);
     try {
       await openRazorpayForOrder(pendingOrder);
     } catch (err: any) {
       toast.error(err.message || "Failed to retry payment");
+      setPlacingStep(0);
       setPlacing(false);
       setPaymentFailed(true);
     }
@@ -913,6 +923,7 @@ export default function CheckoutPage() {
     if (!pincode.trim()) { toast.error(t("Please enter your pincode", "कृपया अपना पिनकोड दर्ज करें")); return; }
 
     setPlacing(true);
+    setPlacingStep(1);
     setPaymentFailed(false);
     // Fire pre-warm pings the instant user clicks — these run in parallel with createOrder
     // so that razorpay-order is hot by the time we actually call it.
@@ -924,13 +935,16 @@ export default function CheckoutPage() {
       const newOrder = await createOrder();
 
       if (paymentMethod === "razorpay" || isPartialOrder) {
+        setPlacingStep(2);
         await openRazorpayForOrder(newOrder);
         return;
       }
 
       // COD flow
+      setPlacingStep(3);
       finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
     } catch (err: any) {
+      setPlacingStep(0);
       toast.error(err.message || "Failed to place order");
     } finally {
       if (paymentMethod !== "razorpay" && !isPartialOrder) setPlacing(false);
@@ -997,22 +1011,29 @@ export default function CheckoutPage() {
   return (
     <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 pb-24 sm:pb-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium [&_input]:!font-['Montserrat_Alternates'] [&_label]:!font-['Montserrat_Alternates'] [&_span]:!font-['Montserrat_Alternates'] [&_p]:!font-['Montserrat_Alternates'] [&_button]:!font-['Montserrat_Alternates']" style={{ fontFamily: "'Montserrat Alternates', sans-serif" }}>
 
-      {/* Instant payment-opening overlay — shown the moment user clicks Pay/Pay Advance */}
-      {placing && (paymentMethod === "razorpay" || isPartialOrder) && !paymentFailed && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="flex flex-col items-center gap-4 rounded-2xl bg-card border border-border px-8 py-6 shadow-2xl">
-            <div className="relative">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <CreditCard className="absolute inset-0 m-auto h-4 w-4 text-primary" />
+      {/* Stepped progress overlay — shown while placing order */}
+      {placing && !paymentFailed && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/85 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-[88%] max-w-xs rounded-2xl bg-card border border-border p-5 shadow-2xl">
+            <div className="space-y-2.5">
+              {[
+                { n: 1, label: t("Creating your order", "ऑर्डर बनाया जा रहा है") },
+                { n: 2, label: t("Confirming payment", "भुगतान कन्फर्म हो रहा है"), hide: paymentMethod === "cod" && !isPartialOrder },
+                { n: 3, label: t("Sending WhatsApp confirmation", "व्हाट्सऐप पर भेज रहे हैं") },
+              ].filter((s) => !s.hide).map((s) => {
+                const active = placingStep === s.n;
+                const done = placingStep > s.n;
+                return (
+                  <div key={s.n} className="flex items-center gap-3">
+                    <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-primary-foreground" : active ? "border-primary bg-primary/10" : "border-border bg-muted"}`}>
+                      {done ? <Check className="h-4 w-4" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> : <span className="text-[11px] font-semibold text-muted-foreground">{s.n}</span>}
+                    </div>
+                    <span className={`text-xs font-medium ${active ? "text-foreground" : done ? "text-muted-foreground" : "text-muted-foreground/70"}`}>{s.label}</span>
+                  </div>
+                );
+              })}
             </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold text-foreground">
-                {t("Opening secure payment…", "सुरक्षित भुगतान खुल रहा है…")}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t("Please don't close this window", "कृपया यह विंडो बंद न करें")}
-              </p>
-            </div>
+            <p className="mt-4 text-center text-[10.5px] text-muted-foreground">{t("Please don't close this window", "कृपया यह विंडो बंद न करें")}</p>
           </div>
         </div>
       )}
@@ -1044,7 +1065,7 @@ export default function CheckoutPage() {
       <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} defaultOpen className="mb-4 rounded-xl border border-border bg-card">
         <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
           <div className="flex items-center gap-2">
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">1</span>
             <span className="text-sm font-medium text-foreground">{t("Order Summary", "ऑर्डर सारांश")} ({itemCount} {itemCount === 1 ? t("item", "आइटम") : t("items", "आइटम")})</span>
           </div>
           <div className="flex items-center gap-2">
@@ -1112,7 +1133,7 @@ export default function CheckoutPage() {
       {/* 3. Delivery Details */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-4">
         <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">2</span>
           <span className="text-sm font-medium text-foreground">{t("Delivery Details", "डिलीवरी विवरण")}</span>
         </div>
 
@@ -1172,16 +1193,29 @@ export default function CheckoutPage() {
               <Label htmlFor="street" className="text-xs">{tCritical("Street Address", "पता")} *</Label>
               <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
-                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+            {/* City + State — auto-filled from pincode, shown compactly when both are present */}
+            {pincode.length === 6 && city && state && !showCityStateEdit ? (
+              <div className="flex items-center justify-between rounded-lg border border-border bg-accent/30 px-3 py-2 text-xs">
+                <div className="flex items-center gap-1.5 text-foreground">
+                  <Check className="h-3.5 w-3.5 text-primary" />
+                  <span className="font-medium">{city}, {state}</span>
+                </div>
+                <button type="button" onClick={() => setShowCityStateEdit(true)} className="text-[11px] font-medium text-primary hover:underline">
+                  {t("Change", "बदलें")}
+                </button>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
-                <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+            ) : pincode.length === 6 || city || state || showCityStateEdit ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
+                  <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
+                  <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+                </div>
               </div>
-            </div>
+            ) : null}
             {/* Email optional — collapsible */}
             <Collapsible>
               <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -1199,8 +1233,8 @@ export default function CheckoutPage() {
       <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">{t("Pay via", "भुगतान करें")}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">3</span>
+            <span className="text-sm font-medium text-foreground">{t("Payment", "भुगतान")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {couponDiscount > 0 && (
@@ -1306,9 +1340,14 @@ export default function CheckoutPage() {
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">{t("Shipping", "शिपिंग")}</span>
           {shippingCharge > 0 ? (
-            <span className="text-foreground">{currency} {shippingCharge.toFixed(2)}</span>
+            <span className="text-foreground">{currencySymbol}{shippingCharge.toFixed(0)}</span>
+          ) : qualifiesForFreeShipping ? (
+            <span className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground line-through">{currencySymbol}{flatShippingRate.toFixed(0)}</span>
+              <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{t("Free", "मुफ़्त")} 🎉</span>
+            </span>
           ) : (
-            <span className="text-primary font-medium">{t("Free", "मुफ़्त")}</span>
+            <span className="font-medium text-emerald-600 dark:text-emerald-400">{t("Free", "मुफ़्त")}</span>
           )}
         </div>
         {taxActive && (
@@ -1345,15 +1384,26 @@ export default function CheckoutPage() {
           </div>
         )}
         <button
-          className="flex h-12 w-full items-center justify-center gap-2 text-sm font-bold btn-gold disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+          className="group relative flex h-14 w-full items-center justify-center gap-2 overflow-hidden text-base font-bold btn-gold shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          style={{ borderRadius: "var(--storefront-button-radius, 0.75rem)" }}
           onClick={handlePlaceOrder}
           disabled={placing || paymentFailed}
         >
+          {/* subtle shine layer */}
+          <span aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity group-hover:opacity-100" />
           {placing ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t("Placing order...", "ऑर्डर हो रहा है...")}</>
+            <><Loader2 className="mr-2 h-5 w-5 animate-spin" />{t("Placing order...", "ऑर्डर हो रहा है...")}</>
           ) : (
-            isPartialOrder ? `${t("Confirm Order", "ऑर्डर कन्फर्म करें")} · ${currencySymbol}${chargeAmount.toFixed(0)}` : paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currencySymbol}${total.toFixed(0)}` : `${t("Place Order", "ऑर्डर करें")} · ${currencySymbol}${total.toFixed(0)}`
+            <>
+              <span>
+                {isPartialOrder
+                  ? `${t("Confirm Order", "ऑर्डर कन्फर्म करें")} · ${currencySymbol}${chargeAmount.toFixed(0)}`
+                  : paymentMethod === "razorpay"
+                    ? `${t("Pay Securely", "सुरक्षित भुगतान करें")} ${currencySymbol}${total.toFixed(0)}`
+                    : `${t("Place Order", "ऑर्डर करें")} · ${currencySymbol}${total.toFixed(0)}`}
+              </span>
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+            </>
           )}
         </button>
       </div>
