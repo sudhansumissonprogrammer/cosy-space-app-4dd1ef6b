@@ -201,7 +201,7 @@ export default function CheckoutAwareLayout({
                 <ArrowLeft className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
               </Button>
               {LogoElement}
-              <span className="text-sm font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "'Montserrat Alternates', sans-serif" }}>{store.theme === "theme-16" ? "Checkout / चेकआउट" : "Checkout"}</span>
+              <span className="text-sm font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "'Montserrat Alternates', sans-serif" }}>Checkout</span>
               <div className="flex-1" />
             </>
           ) : isCentered ? (
