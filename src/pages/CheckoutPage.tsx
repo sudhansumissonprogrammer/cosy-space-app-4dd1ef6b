@@ -1232,6 +1232,13 @@ export default function CheckoutPage() {
                 </p>
               </div>
             </button>
+            {partialPaymentMode === "partial" && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1"><Check className="h-3 w-3 text-primary" />{tCritical("Confirms order instantly", "ऑर्डर तुरंत कन्फर्म")}</span>
+                <span className="flex items-center gap-1"><Check className="h-3 w-3 text-primary" />{tCritical("Faster dispatch", "जल्दी डिस्पैच")}</span>
+                <span className="flex items-center gap-1"><Check className="h-3 w-3 text-primary" />{tCritical("No fake orders", "कोई फ़र्ज़ी ऑर्डर नहीं")}</span>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => { setPartialPaymentMode("full"); setPaymentMethod("razorpay"); }}
