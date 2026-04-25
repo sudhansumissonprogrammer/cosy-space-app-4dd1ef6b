@@ -143,91 +143,187 @@ export default function CustomerLeads() {
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           ) : leads && leads.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {leads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell className="font-medium">
-                        {lead.name || <span className="text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          {lead.phone}
+            <>
+              {/* Mobile card list — everything visible, no horizontal scroll */}
+              <div className="space-y-3 sm:hidden">
+                {leads.map((lead) => {
+                  const sendWhatsApp = () => {
+                    const phone = lead.phone.replace(/[^0-9+]/g, "");
+                    const message = buildRecoveryMessage(lead);
+                    window.open(
+                      `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`,
+                      "_blank"
+                    );
+                  };
+                  return (
+                    <div key={lead.id} className="rounded-lg border border-border bg-card p-3 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {lead.name || <span className="text-muted-foreground font-normal">No name</span>}
+                          </p>
+                          <a
+                            href={`tel:${lead.phone}`}
+                            className="mt-0.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            <Phone className="h-3 w-3" />
+                            <span className="font-medium">{lead.phone}</span>
+                          </a>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        {lead.product_name || <span className="text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-xs">
-                          <MessageCircle className="mr-1 h-3 w-3" />
+                        <Badge variant="secondary" className="flex-shrink-0 text-[10px]">
+                          <MessageCircle className="mr-1 h-2.5 w-2.5" />
                           {lead.source === "whatsapp_order" ? "WhatsApp" : lead.source}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {format(new Date(lead.created_at), "MMM d, yyyy h:mm a")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            title="Send recovery message on WhatsApp"
-                            onClick={() => {
-                              const phone = lead.phone.replace(/[^0-9+]/g, "");
-                              const message = buildRecoveryMessage(lead);
-                              window.open(
-                                `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`,
-                                "_blank"
-                              );
-                            }}
-                          >
-                            <MessageCircle className="h-4 w-4 text-primary" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete this lead?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently remove this lead record.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(lead.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
+                      </div>
+
+                      {lead.product_name && (
+                        <p className="mt-2 truncate text-xs text-foreground/80">
+                          <span className="text-muted-foreground">Product: </span>
+                          {lead.product_name}
+                        </p>
+                      )}
+
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {format(new Date(lead.created_at), "MMM d, yyyy · h:mm a")}
+                      </p>
+
+                      <div className="mt-3 flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          className="h-9 flex-1 gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
+                          onClick={sendWhatsApp}
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          Send WhatsApp
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-9 w-9 flex-shrink-0 p-0"
+                          asChild
+                          title="Call"
+                        >
+                          <a href={`tel:${lead.phone}`}>
+                            <Phone className="h-4 w-4" />
+                          </a>
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 w-9 flex-shrink-0 p-0">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this lead?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently remove this lead record.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteMutation.mutate(lead.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden overflow-x-auto sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {leads.map((lead) => (
+                      <TableRow key={lead.id}>
+                        <TableCell className="font-medium">
+                          {lead.name || <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3 w-3 text-muted-foreground" />
+                            {lead.phone}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {lead.product_name || <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">
+                            <MessageCircle className="mr-1 h-3 w-3" />
+                            {lead.source === "whatsapp_order" ? "WhatsApp" : lead.source}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {format(new Date(lead.created_at), "MMM d, yyyy h:mm a")}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="Send recovery message on WhatsApp"
+                              onClick={() => {
+                                const phone = lead.phone.replace(/[^0-9+]/g, "");
+                                const message = buildRecoveryMessage(lead);
+                                window.open(
+                                  `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`,
+                                  "_blank"
+                                );
+                              }}
+                            >
+                              <MessageCircle className="h-4 w-4 text-primary" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete this lead?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently remove this lead record.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteMutation.mutate(lead.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center gap-3 py-12">
               <Users className="h-10 w-10 text-muted-foreground" />
