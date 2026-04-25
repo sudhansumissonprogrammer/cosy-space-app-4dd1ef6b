@@ -953,81 +953,134 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
         )}
       </div>
 
-      {/* ── Bottom Actions ── */}
-      <div className="border-t px-4 py-3 space-y-2.5 bg-background" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
-        {order.payment_type === "partial" && order.status !== "delivered" && Number(order.balance_due) > 0 && (
-          <Button
-            variant="outline"
-            className="w-full h-10 text-sm font-medium border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950/30"
+      {/* ── Sticky one-tap actions toolbar (#2) ── */}
+      <div
+        className="border-t bg-background"
+        style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
+      >
+        {/* Quick action grid */}
+        <div className="grid grid-cols-4 gap-1 px-3 pt-3">
+          <a
+            href={order.customer_phone ? `tel:${order.customer_phone}` : undefined}
+            onClick={(e) => { if (!order.customer_phone) { e.preventDefault(); toast.info("No phone on this order"); } }}
+            className="flex flex-col items-center gap-1 py-2 rounded-lg active:bg-accent transition-colors"
+          >
+            <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <span className="text-[10px] font-medium text-foreground">Call</span>
+          </a>
+          <a
+            href={order.customer_phone ? `https://wa.me/${order.customer_phone.replace(/[^0-9]/g, "")}` : undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => { if (!order.customer_phone) { e.preventDefault(); toast.info("No phone on this order"); } }}
+            className="flex flex-col items-center gap-1 py-2 rounded-lg active:bg-accent transition-colors"
+          >
+            <div className="h-9 w-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <MessageCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <span className="text-[10px] font-medium text-foreground">WhatsApp</span>
+          </a>
+          <button
+            onClick={() => onStatusChange("shipped")}
+            disabled={order.status === "shipped" || order.status === "delivered"}
+            className="flex flex-col items-center gap-1 py-2 rounded-lg active:bg-accent transition-colors disabled:opacity-40"
+          >
+            <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <Truck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <span className="text-[10px] font-medium text-foreground">Ship</span>
+          </button>
+          <button
             onClick={() => {
-              (supabase as any).from("orders").update({ balance_due: 0, status: "delivered" }).eq("id", order.id).then(() => {
-                toast.success("Order marked as fully paid");
-                onStatusChange("delivered");
-              });
+              if (!address) { toast.info("No address on this order"); return; }
+              copyToClipboard(address);
             }}
+            className="flex flex-col items-center gap-1 py-2 rounded-lg active:bg-accent transition-colors"
           >
-            ✅ Mark as Fully Paid (Collected {order.currency} {Number(order.balance_due).toFixed(0)})
-          </Button>
-        )}
-        {order.customer_phone && (
-          <Button
-            variant="outline"
-            className="w-full h-10 text-sm font-medium border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
-            onClick={onSendInvoice}
-            disabled={isSendingInvoice}
-          >
-            {isSendingInvoice ? (
-              <><div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" /> Sending invoice…</>
-            ) : (
-              <><MessageCircle className="h-4 w-4 mr-2" /> Send Invoice on WhatsApp</>
-            )}
-          </Button>
-        )}
-        <div className="flex gap-2">
-          <Select value={order.status} onValueChange={onStatusChange}>
-            <SelectTrigger
-              className="flex-1 h-11 text-sm font-semibold border-2 border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors shadow-sm [&>svg]:opacity-100 [&>svg]:text-primary"
-              aria-label="Change order status"
+            <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
+              <MapPin className="h-4 w-4 text-foreground" />
+            </div>
+            <span className="text-[10px] font-medium text-foreground">Address</span>
+          </button>
+        </div>
+
+        <div className="px-4 pt-2 pb-3 space-y-2">
+          {order.payment_type === "partial" && order.status !== "delivered" && Number(order.balance_due) > 0 && (
+            <Button
+              variant="outline"
+              className="w-full h-10 text-sm font-medium border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950/30"
+              onClick={() => {
+                (supabase as any).from("orders").update({ balance_due: 0, status: "delivered" }).eq("id", order.id).then(() => {
+                  toast.success("Order marked as fully paid");
+                  onStatusChange("delivered");
+                });
+              }}
             >
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-primary/70">Status:</span>
-                <SelectValue placeholder="Update status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map(s => (
-                <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="icon" className="h-11 w-11 shrink-0" onClick={onInvoice}>
-            <FileText className="h-4 w-4" />
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 text-destructive hover:bg-destructive/10">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Order?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete this order and all its items. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={onDelete}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {isDeleting ? "Deleting..." : "Delete"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              ✅ Mark as Fully Paid (Collected {order.currency} {Number(order.balance_due).toFixed(0)})
+            </Button>
+          )}
+          {order.customer_phone && (
+            <Button
+              variant="outline"
+              className="w-full h-9 text-xs font-medium border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+              onClick={onSendInvoice}
+              disabled={isSendingInvoice}
+            >
+              {isSendingInvoice ? (
+                <><div className="h-3.5 w-3.5 mr-2 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" /> Sending invoice…</>
+              ) : (
+                <><MessageCircle className="h-3.5 w-3.5 mr-2" /> Send Invoice on WhatsApp</>
+              )}
+            </Button>
+          )}
+          <div className="flex gap-2">
+            <Select value={order.status} onValueChange={onStatusChange}>
+              <SelectTrigger
+                className="flex-1 h-11 text-sm font-semibold border-2 border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors shadow-sm [&>svg]:opacity-100 [&>svg]:text-primary"
+                aria-label="Change order status"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-primary/70">Status:</span>
+                  <SelectValue placeholder="Update status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map(s => (
+                  <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" className="h-11 w-11 shrink-0" onClick={onInvoice}>
+              <FileText className="h-4 w-4" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 text-destructive hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Order?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete this order and all its items. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={onDelete}
+                    disabled={isDeleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
     </>
