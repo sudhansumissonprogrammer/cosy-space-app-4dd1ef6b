@@ -317,8 +317,22 @@ export default function StoreOrders() {
     );
   }
 
+  // Pull-to-refresh — re-fetch orders on mobile pull-down
+  const { pull, refreshing } = usePullToRefresh({
+    onRefresh: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] }),
+        queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] }),
+      ]);
+    },
+  });
+
   return (
     <div className="space-y-4">
+      <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
+      {/* Mobile FAB to create a manual order */}
+      <FAB onClick={() => setCreateOrderOpen(true)} label="Order" />
+
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div className="flex-1 min-w-0">
