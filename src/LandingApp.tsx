@@ -30,10 +30,6 @@ const ThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
 // to /login or /dashboard loads the full app on demand — fast enough.
 
 const LandingApp = () => {
-  useEffect(() => {
-    prefetchFullAppOnIdle();
-  }, []);
-
   return (
     <ErrorBoundary>
       <BrowserRouter>
