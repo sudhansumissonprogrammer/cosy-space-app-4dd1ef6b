@@ -341,12 +341,12 @@ export default function StoreOrders() {
         </div>
         <Button
           size="sm"
-          className="h-9 gap-1.5 shrink-0"
+          className="hidden sm:inline-flex h-9 gap-1.5 shrink-0"
           onClick={() => setCreateOrderOpen(true)}
           disabled={!storeId}
         >
           <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Create Order</span>
+          <span>Create Order</span>
         </Button>
       </div>
 
