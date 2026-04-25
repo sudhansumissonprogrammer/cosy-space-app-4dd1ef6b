@@ -1,0 +1,206 @@
+{
+  "results": [
+    {
+      "submitter": {},
+      "task": {
+        "visibility": "public",
+        "method": "api",
+        "domain": "prodoxysupport.online",
+        "apexDomain": "prodoxysupport.online",
+        "time": "2026-02-27T10:17:06.543Z",
+        "uuid": "019c9e9a-0622-775f-b794-1ca0646f3f7f",
+        "url": "https://prodoxysupport.online/"
+      },
+      "stats": {
+        "uniqIPs": 6,
+        "uniqCountries": 2,
+        "dataLength": 857815,
+        "encodedDataLength": 453664,
+        "requests": 10
+      },
+      "page": {
+        "country": "DE",
+        "server": "hcdn",
+        "ip": "2a02:4780:44:e94d:9289:71e7:8c92:6dc6",
+        "apexDomainAgeDays": 1,
+        "language": "en",
+        "mimeType": "text/html",
+        "title": "Prodoxy – Support Center | Best eCommerce Platform in India",
+        "url": "https://prodoxysupport.online/",
+        "tlsValidDays": 89,
+        "tlsAgeDays": 1,
+        "domainAgeDays": 1,
+        "tlsValidFrom": "2026-02-25T22:43:45.000Z",
+        "domain": "prodoxysupport.online",
+        "apexDomain": "prodoxysupport.online",
+        "asnname": "AS-HOSTINGER Hostinger International Limited, CY",
+        "asn": "AS47583",
+        "tlsIssuer": "R12",
+        "status": "200"
+      },
+      "_id": "019c9e9a-0622-775f-b794-1ca0646f3f7f",
+      "_score": null,
+      "sort": [
+        1772187426543,
+        "019c9e9a-0622-775f-b794-1ca0646f3f7f"
+      ],
+      "result": "https://urlscan.io/api/v1/result/019c9e9a-0622-775f-b794-1ca0646f3f7f/",
+      "screenshot": "https://urlscan.io/screenshots/019c9e9a-0622-775f-b794-1ca0646f3f7f.png"
+    },
+    {
+      "submitter": {},
+      "task": {
+        "visibility": "public",
+        "method": "api",
+        "domain": "prodoxysupport.online",
+        "apexDomain": "prodoxysupport.online",
+        "time": "2026-02-26T20:24:49.589Z",
+        "uuid": "019c9ba0-076c-731b-bb95-aa00f4043db6",
+        "url": "http://prodoxysupport.online/",
+        "tags": [
+          "@ecarlesi",
+          "possiblethreat",
+          "phishing"
+        ]
+      },
+      "stats": {
+        "uniqIPs": 6,
+        "uniqCountries": 1,
+        "dataLength": 857815,
+        "encodedDataLength": 453666,
+        "requests": 10
+      },
+      "page": {
+        "country": "US",
+        "server": "hcdn",
+        "redirected": "https-only",
+        "ip": "2a02:4780:1e:b619:d644:b75e:f192:b84b",
+        "apexDomainAgeDays": 0,
+        "language": "en",
+        "mimeType": "text/html",
+        "title": "Prodoxy – Support Center | Best eCommerce Platform in India",
+        "url": "https://prodoxysupport.online/",
+        "tlsValidDays": 89,
+        "tlsAgeDays": 0,
+        "domainAgeDays": 0,
+        "tlsValidFrom": "2026-02-25T22:43:45.000Z",
+        "domain": "prodoxysupport.online",
+        "apexDomain": "prodoxysupport.online",
+        "asnname": "AS-HOSTINGER Hostinger International Limited, CY",
+        "asn": "AS47583",
+        "tlsIssuer": "R12",
+        "status": "200"
+      },
+      "_id": "019c9ba0-076c-731b-bb95-aa00f4043db6",
+      "_score": null,
+      "sort": [
+        1772137489589,
+        "019c9ba0-076c-731b-bb95-aa00f4043db6"
+      ],
+      "result": "https://urlscan.io/api/v1/result/019c9ba0-076c-731b-bb95-aa00f4043db6/",
+      "screenshot": "https://urlscan.io/screenshots/019c9ba0-076c-731b-bb95-aa00f4043db6.png"
+    },
+    {
+      "submitter": {},
+      "task": {
+        "visibility": "public",
+        "method": "api",
+        "domain": "prodoxysupport.online",
+        "apexDomain": "prodoxysupport.online",
+        "time": "2026-02-26T04:31:32.569Z",
+        "uuid": "019c9837-4a6b-722f-a03e-624383bcc9f1",
+        "url": "https://prodoxysupport.online/",
+        "tags": [
+          "@ecarlesi",
+          "possiblethreat",
+          "phishing"
+        ]
+      },
+      "stats": {
+        "uniqIPs": 5,
+        "uniqCountries": 2,
+        "dataLength": 842953,
+        "encodedDataLength": 451960,
+        "requests": 9
+      },
+      "page": {
+        "country": "DE",
+        "server": "hcdn",
+        "ip": "92.113.23.219",
+        "apexDomainAgeDays": 0,
+        "language": "en",
+        "mimeType": "text/html",
+        "title": "Prodoxy – Support Center | Best eCommerce Platform in India",
+        "url": "https://prodoxysupport.online/",
+        "tlsValidDays": 89,
+        "tlsAgeDays": 0,
+        "domainAgeDays": 0,
+        "tlsValidFrom": "2026-02-25T22:43:45.000Z",
+        "domain": "prodoxysupport.online",
+        "apexDomain": "prodoxysupport.online",
+        "asnname": "AS-HOSTINGER Hostinger International Limited, CY",
+        "asn": "AS47583",
+        "tlsIssuer": "R12",
+        "status": "200"
+      },
+      "_id": "019c9837-4a6b-722f-a03e-624383bcc9f1",
+      "_score": null,
+      "sort": [
+        1772080292569,
+        "019c9837-4a6b-722f-a03e-624383bcc9f1"
+      ],
+      "result": "https://urlscan.io/api/v1/result/019c9837-4a6b-722f-a03e-624383bcc9f1/",
+      "screenshot": "https://urlscan.io/screenshots/019c9837-4a6b-722f-a03e-624383bcc9f1.png"
+    },
+    {
+      "task": {
+        "visibility": "public",
+        "method": "automatic",
+        "domain": "www.prodoxysupport.online",
+        "apexDomain": "prodoxysupport.online",
+        "time": "2026-02-25T23:56:07.341Z",
+        "source": "certstream-suspicious",
+        "uuid": "019c973b-1c3d-7033-8467-10875bb89795",
+        "url": "https://www.prodoxysupport.online/"
+      },
+      "stats": {
+        "uniqIPs": 5,
+        "uniqCountries": 2,
+        "dataLength": 842953,
+        "encodedDataLength": 451961,
+        "requests": 9
+      },
+      "page": {
+        "country": "CY",
+        "server": "hcdn",
+        "ip": "2.57.91.71",
+        "apexDomainAgeDays": 0,
+        "language": "en",
+        "mimeType": "text/html",
+        "title": "Prodoxy – Support Center | Best eCommerce Platform in India",
+        "url": "https://www.prodoxysupport.online/",
+        "tlsValidDays": 89,
+        "tlsAgeDays": 0,
+        "domainAgeDays": 0,
+        "tlsValidFrom": "2026-02-25T22:43:45.000Z",
+        "domain": "www.prodoxysupport.online",
+        "apexDomain": "prodoxysupport.online",
+        "asnname": "AS-HOSTINGER Hostinger International Limited, CY",
+        "asn": "AS47583",
+        "tlsIssuer": "R12",
+        "status": "200"
+      },
+      "_id": "019c973b-1c3d-7033-8467-10875bb89795",
+      "_score": null,
+      "sort": [
+        1772063767341,
+        "019c973b-1c3d-7033-8467-10875bb89795"
+      ],
+      "result": "https://urlscan.io/api/v1/result/019c973b-1c3d-7033-8467-10875bb89795/",
+      "screenshot": "https://urlscan.io/screenshots/019c973b-1c3d-7033-8467-10875bb89795.png"
+    }
+  ],
+  "total": 4,
+  "took": 250,
+  "has_more": false
+}

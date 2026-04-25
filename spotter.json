@@ -1,0 +1,22 @@
+[
+	{
+		"id":"14025646238",
+		"tbs_sha256":"023d177cd2624246fb47d7a5619f5c9bd3cdd36a35e3cfde5435476f689d8db4",
+		"cert_sha256":"d4f34ba730dab684ceb2db25d51e982d79454b6751cbc717cc84570316902172",
+		"dns_names":["seller.prodoxy.com","www.seller.prodoxy.com"],
+		"pubkey_sha256":"fafbb13e0977d6929cae67b8fe06258512252e01f99e33cfcb58facb365d7c13",
+		"not_before":"2026-03-05T00:00:00Z",
+		"not_after":"2026-06-03T23:59:59Z",
+		"revoked":false
+	},
+	{
+		"id":"14088530077",
+		"tbs_sha256":"445263a80c846d3c53cdbfeb7f58901c956ca611544490f130b09a2d16fff782",
+		"cert_sha256":"0e133e5df3d1d2b209bb7db2ec4c29398880a10a8af11a566b4310b7647ff2f8",
+		"dns_names":["prodoxy.com","www.prodoxy.com"],
+		"pubkey_sha256":"9668a3dfd9ef4066d3a70861b7c58669ff97ec2000c17edc3ec3cefbdefb92e1",
+		"not_before":"2026-03-10T22:22:20Z",
+		"not_after":"2026-06-08T22:22:19Z",
+		"revoked":false
+	}
+]

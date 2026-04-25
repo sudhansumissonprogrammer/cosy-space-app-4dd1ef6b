@@ -1,0 +1,707 @@
+<!-- Features -->
+                        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="RGD6lUADkMTGxM2oF3KEgA4fZkAQdAFehA7EHuZr">
+    <title>Choose Your Plan</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="/img/prodoxy fav.jpg">
+
+
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1951113928813435');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1951113928813435&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+
+    <!-- Bootstrap 5 CSS (optional, can be removed if not used elsewhere) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #4338CA;
+            --secondary: #10B981;
+            --accent: #F59E0B;
+            --dark: #111827;
+            --light: #F9FAFB;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .feature-card {
+            transition: all 0.3s ease;
+            border: 1px solid #E5E7EB;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #F3F4F6;
+        }
+
+        .nav-link {
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            bottom: -5px;
+            left: 0;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+        }
+
+        .palestine-banner {
+            background: linear-gradient(to right, #000000, #006400, #FFFFFF, #006400, #000000);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .palestine-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .hero-bg {
+            background: radial-gradient(circle at 20% 50%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Palestine Banner -->
+    <div class="palestine-banner text-white py-3 relative z-10">
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="flex justify-center items-center text-xs sm:text-sm">
+                <div class="flex items-center gap-4">
+                    <a href="mailto:contact@prodoxy.com" class="flex items-center hover:text-green-300 transition">
+                        <i class="fas fa-envelope mr-2"></i>
+                        <span class="hidden sm:inline">contact@prodoxy.com</span>
+                        <span class="sm:hidden">Email Us</span>
+                    </a>
+                    <span class="text-white/40">|</span>
+                    <a href="tel:+919876543210" class="flex items-center hover:text-green-300 transition">
+                        <i class="fas fa-phone mr-2"></i>
+                        <span class="hidden sm:inline">+91 98765 43210</span>
+                        <span class="sm:hidden">Call Now</span>
+                    </a>
+                    <span class="text-white/40">|</span>
+                    <a href="/contact" class="flex items-center hover:text-green-300 transition">
+                        <i class="fas fa-comments mr-2"></i>
+                        <span>24/7 Support</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-3">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <img src="/img/prodoxy_logo-without-bg2.png" width="160px" alt="PRODOXY">
+                </div>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="https://prodoxy.com/register/plan" class="nav-link text-gray-700 font-medium hover:text-indigo-600">Pricing</a>
+                    <a href="#features" class="nav-link text-gray-700 font-medium hover:text-indigo-600">Features</a>
+                    <a href="#how-it-works" class="nav-link text-gray-700 font-medium hover:text-indigo-600">How It Works</a>
+                    <a href="#testimonials" class="nav-link text-gray-700 font-medium hover:text-indigo-600">Success Stories</a>
+                    <a href="https://prodoxy.com/login" class="text-gray-700 font-medium hover:text-indigo-600">Log In</a>
+                    <a href="https://prodoxy.com/register/plan" class="btn-primary px-6 py-2.5 rounded-lg font-medium">Start Free Trial</a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-button" class="md:hidden text-gray-700">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden py-4 border-t border-gray-100">
+                <div class="flex flex-col space-y-4">
+                    <a href="https://prodoxy.com/register/plan" class="text-gray-700 font-medium hover:text-indigo-600">Pricing</a>
+                    <a href="#features" class="text-gray-700 font-medium hover:text-indigo-600">Features</a>
+                    <a href="#how-it-works" class="text-gray-700 font-medium hover:text-indigo-600">How It Works</a>
+                    <a href="#testimonials" class="text-gray-700 font-medium hover:text-indigo-600">Success Stories</a>
+                    <a href="https://prodoxy.com/login" class="text-gray-700 font-medium hover:text-indigo-600">Log In</a>
+                    <a href="https://prodoxy.com/register/plan" class="btn-primary px-6 py-3 rounded-lg font-medium text-center">Start Free Trial</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <div class="auth-container">
+    <div class="auth-card" style="max-width: 1200px;">
+        <!-- Heading -->
+        <div class="brand">
+            <img src="/img/prodoxy_logo-without-bg2.png" alt="Prodoxy Logo">
+            <h1>Choose your plan</h1>
+            <p>Select the plan that fits your business needs</p>
+        </div>
+
+        <!-- Plans Grid -->
+        <div class="plans-grid">
+                            <div class="plan-card  popular ">
+                                            <div class="popular-tag">Most Popular</div>
+                    
+                    <h3 class="plan-name">Starter</h3>
+                    <div class="plan-price">
+                        ₹99
+                        <span>/month</span>
+                    </div>
+                                            <div class="plan-yearly">
+                            ₹9,999/year
+                        </div>
+                    
+                    <hr>
+
+                    <ul class="plan-features">
+                                                                                                            <li><i class="fas fa-check-circle"></i> Basic Store</li>
+                                                            <li><i class="fas fa-check-circle"></i> 5 Products</li>
+                                                            <li><i class="fas fa-check-circle"></i> Manual Orders</li>
+                                                            <li><i class="fas fa-check-circle"></i> Email Support</li>
+                                                                        </ul>
+
+                                            <div class="trial-badge">14 days free trial</div>
+                    
+                    <form method="POST" action="https://prodoxy.com/register/plan">
+                        <input type="hidden" name="_token" value="RGD6lUADkMTGxM2oF3KEgA4fZkAQdAFehA7EHuZr" autocomplete="off">                        <input type="hidden" name="plan_id" value="1">
+                        <button type="submit" class="btn-plan  btn-premium ">
+                            Choose Plan
+                        </button>
+                    </form>
+                </div>
+                            <div class="plan-card  popular ">
+                                            <div class="popular-tag">Most Popular</div>
+                    
+                    <h3 class="plan-name">Growth</h3>
+                    <div class="plan-price">
+                        ₹499
+                        <span>/month</span>
+                    </div>
+                                            <div class="plan-yearly">
+                            ₹19,999/year
+                        </div>
+                    
+                    <hr>
+
+                    <ul class="plan-features">
+                                                                                                            <li><i class="fas fa-check-circle"></i> Advanced Store</li>
+                                                            <li><i class="fas fa-check-circle"></i> Unlimited Products</li>
+                                                            <li><i class="fas fa-check-circle"></i> AI Photo Studio</li>
+                                                            <li><i class="fas fa-check-circle"></i> Marketing Tools</li>
+                                                            <li><i class="fas fa-check-circle"></i> Priority Support</li>
+                                                                        </ul>
+
+                                            <div class="trial-badge">14 days free trial</div>
+                    
+                    <form method="POST" action="https://prodoxy.com/register/plan">
+                        <input type="hidden" name="_token" value="RGD6lUADkMTGxM2oF3KEgA4fZkAQdAFehA7EHuZr" autocomplete="off">                        <input type="hidden" name="plan_id" value="2">
+                        <button type="submit" class="btn-plan  btn-premium ">
+                            Choose Plan
+                        </button>
+                    </form>
+                </div>
+                            <div class="plan-card  popular ">
+                                            <div class="popular-tag">Most Popular</div>
+                    
+                    <h3 class="plan-name">Premium</h3>
+                    <div class="plan-price">
+                        ₹999
+                        <span>/month</span>
+                    </div>
+                                            <div class="plan-yearly">
+                            ₹49,999/year
+                        </div>
+                    
+                    <hr>
+
+                    <ul class="plan-features">
+                                                                                                            <li><i class="fas fa-check-circle"></i> Premium Store</li>
+                                                            <li><i class="fas fa-check-circle"></i> All AI Tools</li>
+                                                            <li><i class="fas fa-check-circle"></i> Advanced Analytics</li>
+                                                            <li><i class="fas fa-check-circle"></i> Custom Domain</li>
+                                                            <li><i class="fas fa-check-circle"></i> 24/7 Support</li>
+                                                                        </ul>
+
+                                            <div class="trial-badge">14 days free trial</div>
+                    
+                    <form method="POST" action="https://prodoxy.com/register/plan">
+                        <input type="hidden" name="_token" value="RGD6lUADkMTGxM2oF3KEgA4fZkAQdAFehA7EHuZr" autocomplete="off">                        <input type="hidden" name="plan_id" value="3">
+                        <button type="submit" class="btn-plan  btn-premium ">
+                            Choose Plan
+                        </button>
+                    </form>
+                </div>
+                    </div>
+    </div>
+</div>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: #f8f9fc;
+        line-height: 1.5;
+        color: #1e293b;
+    }
+
+    .auth-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 2rem;
+    }
+
+    .auth-card {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+        padding: 2rem;
+        width: 100%;
+        transition: box-shadow 0.2s;
+    }
+
+    /* Brand */
+    .brand {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .brand img {
+        display: block;
+        margin: 0 auto 1rem auto;
+        max-width: 180px;
+        height: auto;
+    }
+
+    .brand h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+    }
+
+    .brand p {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+
+    /* Plans grid */
+    .plans-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2.3rem;
+        margin-top: 1.5rem;
+    }
+
+    .plan-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.75rem;
+        position: relative;
+        transition: all 0.25s ease;
+        border: 1px solid #e9edf2;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .plan-card:hover {
+        transform: translateY(-4px);
+        border-color: #cbd5e1;
+        box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.08);
+    }
+
+    .plan-card.popular {
+        border: 1px solid #2c5e2e;
+        background: #ffffff;
+        box-shadow: 0 10px 25px -5px rgba(44, 94, 46, 0.1);
+    }
+
+    .popular-tag {
+        position: absolute;
+        top: -12px;
+        right: 1.25rem;
+        background: #2c5e2e;
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.25rem 0.85rem;
+        border-radius: 20px;
+        letter-spacing: 0.3px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .plan-name {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: #2c5e2e;
+    }
+
+    .plan-price {
+        font-size: 2.25rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.02em;
+    }
+
+    .plan-price span {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #64748b;
+    }
+
+    .plan-yearly {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+
+    hr {
+        margin: 1.25rem 0;
+        border: none;
+        border-top: 1px solid #edf2f7;
+    }
+
+    .plan-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1.25rem 0;
+    }
+
+    .plan-features li {
+        font-size: 0.875rem;
+        margin-bottom: 0.6rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: #334155;
+    }
+
+    .plan-features li i {
+        color: #2c5e2e;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+
+    .trial-badge {
+        background: #f1f5f9;
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.5rem;
+        font-size: 0.7rem;
+        text-align: center;
+        color: #2c5e2e;
+        font-weight: 600;
+        margin-bottom: 1.25rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-plan {
+        width: 100%;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+    }
+
+    .btn-free {
+        background: #f8fafc;
+        color: #2c5e2e;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-free:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+        transform: translateY(-1px);
+    }
+
+    .btn-premium {
+        background: #2c5e2e;
+        color: white;
+        border: none;
+    }
+
+    .btn-premium:hover {
+        background: #1f4520;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(44, 94, 46, 0.2);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .auth-container {
+            padding: 1rem;
+        }
+        .auth-card {
+            padding: 1.5rem;
+        }
+        .plans-grid {
+            gap: 1.25rem;
+        }
+        .plan-card {
+            padding: 1.25rem;
+        }
+    }
+</style>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white pt-16 pb-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
+                <div class="lg:col-span-2">
+                    <div class="flex items-center mb-6">
+                        <img src="/img/prodoxy_logo-without-bg2.png" width="180px" alt="PRODOXY">
+                    </div>
+                    <p class="text-gray-400 mb-6 max-w-md">Everything you need to start, run, and grow your online business. No coding required.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-indigo-600 transition">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-indigo-600 transition">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-indigo-600 transition">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-indigo-600 transition">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-6">Product</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#features" class="text-gray-400 hover:text-white transition">Features</a></li>
+                        <li><a href="https://prodoxy.com/register/plan" class="text-gray-400 hover:text-white transition">Pricing</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Themes</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">AI Tools</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Integrations</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-6">Resources</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Blog</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Help Center</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Community</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Documentation</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">API</a></li>
+                        <li><a href="https://prodoxy.com/refund_policy" class="text-gray-400 hover:text-white transition">Refund Policy</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-6">Company</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Careers</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                        <li><a href="https://prodoxy.com/privacy_policy" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                        <li><a href="https://prodoxy.com/terms-and-conditions" class="text-gray-400 hover:text-white transition">Terms and Conditions</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-800 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-gray-400 text-sm mb-4 md:mb-0">
+                        &copy; 2026 PRODOXY. All rights reserved.
+                    </div>
+                    <div class="text-gray-400 text-sm flex items-center">
+                        <span class="inline-block w-4 h-3 bg-gradient-to-r from-black via-white to-green-800 rounded-sm mr-2"></span>
+                        We stand for justice, peace, and human rights for all.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS (if needed) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery (optional) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+    <script>
+        // Mobile Menu Toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Smooth Scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    const mobileMenu = document.getElementById('mobile-menu');
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                    }
+                }
+            });
+        });
+
+        // Animation on Scroll (optional)
+        const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+        document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+    </script>
+
+    </body>
+</html>

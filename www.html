@@ -1,0 +1,4213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prodoxy - Build Your Online Store at ₹99/month | Best eCommerce Platform in India</title>
+
+<meta name="description" content="Create your online store with Prodoxy. Start selling products with powerful tools, AI features, and seamless payment integration at just ₹99/month.">
+
+<meta name="keywords" content="online store builder, ecommerce platform India, shopify alternative India, create online store, prodoxy">
+
+
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0,1&family=DM+Sans:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+
+  :root{
+    --accent:#df4e1e;
+    --white:#fff;
+    --black:#111;
+  }
+
+  html,body{
+    height:100%;
+    font-family:'DM Sans',sans-serif;
+    scroll-behavior:smooth;
+  }
+
+  body.menu-open{
+    overflow:hidden;
+  }
+
+  .header{
+    width:100%;
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:1000;
+    background:transparent;
+    transition:background 0.35s ease, box-shadow 0.35s ease, backdrop-filter 0.35s ease, -webkit-backdrop-filter 0.35s ease, border-color 0.35s ease;
+  }
+
+  .header.scrolled{
+    background:rgba(8,8,8,0.55);
+    backdrop-filter:blur(18px) saturate(160%);
+    -webkit-backdrop-filter:blur(18px) saturate(160%);
+    box-shadow:0 10px 35px rgba(0,0,0,0.35);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+
+  .header.scrolled .nav-links a,
+  .header.scrolled .logo-text{
+    color:#fff;
+  }
+
+  .header.scrolled .menu-toggle span{
+    background:#fff;
+  }
+
+  .navbar{
+    max-width:1280px;
+    margin:auto;
+    padding:0 28px;
+    height:72px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+  }
+
+  .logo{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    text-decoration:none;
+    flex:0 0 auto;
+  }
+
+  .logo img{
+    height:28px;
+    filter:brightness(0) invert(1);
+    transition:filter 0.4s;
+    display:block;
+  }
+
+  .header.scrolled .logo img{
+    filter:brightness(0) invert(1);
+  }
+
+  .nav-links{
+    display:flex;
+    align-items:center;
+    gap:30px;
+  }
+
+  .nav-links a{
+    text-decoration:none;
+    color:rgba(255,255,255,0.85);
+    font-size:14px;
+    font-weight:400;
+    letter-spacing:.2px;
+    transition:color 0.25s, opacity 0.25s;
+  }
+
+  .nav-links a:hover{color:#fff}
+  .header.scrolled .nav-links a{color:rgba(255,255,255,0.82)}
+  .header.scrolled .nav-links a:hover{color:#fff}
+
+  .dropdown{position:relative}
+
+  .dropdown-menu{
+    position:absolute;
+    top:calc(100% + 12px);
+    left:50%;
+    transform:translateX(-50%);
+    background:#fff;
+    border-radius:12px;
+    padding:8px 0;
+    box-shadow:0 12px 40px rgba(0,0,0,0.12);
+    display:none;
+    flex-direction:column;
+    min-width:190px;
+    border:1px solid rgba(0,0,0,0.06);
+  }
+
+  .dropdown-menu a{
+    padding:9px 18px;
+    font-size:13.5px;
+    color:#222 !important;
+    display:block;
+    white-space:nowrap;
+  }
+
+  .dropdown-menu a:hover{background:#f5f5f5}
+  .dropdown:hover .dropdown-menu{display:flex}
+
+  .nav-buttons{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex:0 0 auto;
+  }
+
+  .btn-signin{
+    text-decoration:none;
+    color:rgba(255,255,255,0.85);
+    font-size:14px;
+    font-weight:400;
+    letter-spacing:.2px;
+    transition:color 0.25s;
+  }
+
+  .btn-signin:hover{color:#fff}
+  .header.scrolled .btn-signin{color:rgba(255,255,255,0.85)}
+  .header.scrolled .btn-signin:hover{color:#fff}
+
+  .btn-cta{
+    text-decoration:none;
+    background:#fff;
+    color:#111;
+    padding:8px 20px;
+    border-radius:999px;
+    font-size:13.5px;
+    font-weight:500;
+    transition:opacity 0.25s, transform 0.25s, background 0.25s, color 0.25s;
+  }
+
+  .btn-cta:hover{opacity:.88; transform:translateY(-1px)}
+  .header.scrolled .btn-cta{
+    background:#fff;
+    color:#111;
+  }
+
+  .menu-toggle{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    cursor:pointer;
+    padding:10px;
+    border:none;
+    background:transparent;
+    flex:0 0 auto;
+  }
+
+  .menu-toggle span{
+    width:22px;
+    height:1.5px;
+    background:#fff;
+    display:block;
+    transition:background 0.3s, transform 0.3s, opacity 0.3s;
+  }
+
+  body.menu-open .menu-toggle span:nth-child(1){
+    transform:translateY(6.5px) rotate(45deg);
+  }
+
+  body.menu-open .menu-toggle span:nth-child(2){
+    opacity:0;
+  }
+
+  body.menu-open .menu-toggle span:nth-child(3){
+    transform:translateY(-6.5px) rotate(-45deg);
+  }
+
+  .hero{
+    position:relative;
+    width:100%;
+    height:100vh;
+    min-height:600px;
+    overflow:hidden;
+    display:flex;
+    align-items:flex-end;
+  }
+
+  .hero-bg{
+    position:absolute;
+    inset:0;
+    z-index:0;
+  }
+
+  .hero-bg video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center top;
+  }
+
+  .hero-bg-fallback{
+    width:100%;
+    height:100%;
+    background:linear-gradient(135deg,#2a1810 0%,#5c3320 40%,#8b4a2a 70%,#c17a50 100%);
+  }
+
+  .hero-overlay{
+    position:absolute;
+    inset:0;
+    z-index:1;
+    background:linear-gradient(
+      to right,
+      rgba(0,0,0,0.55) 0%,
+      rgba(0,0,0,0.25) 55%,
+      rgba(0,0,0,0.10) 100%
+    );
+  }
+
+  .hero-body{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:1280px;
+    margin:0 auto;
+    padding:0 28px 80px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    height:100vh;
+  }
+  .hero-subtext {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #d1d5db; /* light grey */
+  max-width: 500px;
+  margin-top: 15px;
+  font-weight: 400;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .hero-subtext {
+    font-size: 14px;
+    max-width: 100%;
+  }
+}
+
+  .hero-left{
+    flex:0 0 auto;
+    max-width:520px;
+  }
+
+  .hero-heading{
+    font-family:'Inter',sans-serif;
+    font-size:clamp(38px,5.5vw,62px);
+    font-weight:300;
+    color:#fff;
+    line-height:1.12;
+    margin-bottom:28px;
+    letter-spacing:-.04em;
+  }
+
+  .dynamic-word{
+    display:inline-block;
+    min-height:1.08em;
+    transition:opacity 0.35s ease, transform 0.35s ease;
+    will-change:opacity, transform;
+  }
+
+  .dynamic-word.is-fading{
+    opacity:0;
+    transform:translateY(6px);
+  }
+
+  .hero-cta{
+    display:inline-block;
+    background:#fff;
+    color:#111;
+    padding:13px 28px;
+    border-radius:999px;
+    font-family:'DM Sans',sans-serif;
+    font-size:14px;
+    font-weight:500;
+    text-decoration:none;
+    transition:opacity 0.25s, transform 0.2s;
+  }
+
+  .hero-cta:hover{opacity:.88; transform:translateY(-2px)}
+
+  .hero-right{
+    flex:0 0 auto;
+    width:340px;
+    margin-bottom:8px;
+  }
+
+  .chat-widget{
+    background:rgba(50,30,20,0.6);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    border-radius:20px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.1);
+  }
+
+  .chat-user-msg{
+    color:rgba(255,255,255,0.55);
+    font-size:13px;
+    padding:18px 18px 10px;
+    font-weight:300;
+  }
+
+  .chat-agent-block{
+    background:rgba(255,255,255,0.07);
+    margin:0 12px 12px;
+    border-radius:14px;
+    padding:14px 16px;
+  }
+
+  .chat-agent-name{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-bottom:8px;
+  }
+
+  .chat-agent-icon{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .chat-agent-icon svg{width:10px;height:10px}
+
+  .chat-agent-label{
+    color:rgba(255,255,255,0.7);
+    font-size:12px;
+    font-weight:400;
+  }
+
+  .chat-agent-msg{
+    color:#fff;
+    font-size:15px;
+    font-weight:500;
+    line-height:1.45;
+  }
+
+  .order-card{
+    margin:0 12px 12px;
+    background:rgba(255,255,255,0.08);
+    border-radius:14px;
+    padding:14px 16px;
+  }
+
+  .order-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+  }
+
+  .order-label{
+    color:rgba(255,255,255,0.55);
+    font-size:11.5px;
+  }
+
+  .order-status{
+    background:rgba(223,78,30,0.25);
+    color:#f87040;
+    font-size:11px;
+    padding:3px 9px;
+    border-radius:999px;
+    font-weight:500;
+  }
+
+  .order-items{
+    display:flex;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  
+  /* DESKTOP */
+.hero-subtext {
+  font-family: 'Inter', sans-serif;
+  font-size: 17px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.9);
+  max-width: 480px;
+  margin-top: 12px;
+  margin-bottom: 20px;
+}
+
+/* MOBILE FIX */
+@media (max-width: 768px) {
+  .hero-subtext {
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 100%;
+    margin-top: 10px;
+  }
+}
+
+
+.hero-left {
+  width: 100%;
+  max-width: 100%;
+}
+
+  .order-item{
+    flex:1;
+    background:rgba(255,255,255,0.06);
+    border-radius:10px;
+    padding:10px 8px;
+    text-align:center;
+  }
+
+  .order-item-icon{
+    font-size:22px;
+    margin-bottom:4px;
+  }
+
+  .order-item-name{
+    color:rgba(255,255,255,0.7);
+    font-size:11px;
+  }
+
+  .order-item-price{
+    color:#fff;
+    font-size:12px;
+    font-weight:600;
+    margin-top:2px;
+  }
+
+  .order-confirm-btn{
+    width:100%;
+    background:#fff;
+    color:#111;
+    border:none;
+    border-radius:10px;
+    padding:10px;
+    font-family:'DM Sans',sans-serif;
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+    transition:opacity 0.2s;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+  }
+
+  .order-confirm-btn:hover{opacity:.85}
+
+  /* DYNAMIC MENU DRAWER */
+  .drawer-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.42);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s ease;
+    z-index:995;
+  }
+
+  .nav-drawer{
+    position:fixed;
+    top:72px;
+    right:20px;
+    width:min(380px, calc(100vw - 40px));
+    max-height:calc(100vh - 92px);
+    overflow:auto;
+    background:rgba(8,8,8,0.92);
+    backdrop-filter:blur(18px) saturate(160%);
+    -webkit-backdrop-filter:blur(18px) saturate(160%);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px;
+    box-shadow:0 18px 60px rgba(0,0,0,0.4);
+    padding:16px;
+    opacity:0;
+    transform:translateY(-12px) scale(0.98);
+    pointer-events:none;
+    transition:opacity 0.25s ease, transform 0.25s ease;
+    z-index:996;
+  }
+
+  .nav-drawer-inner{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .nav-drawer a{
+    text-decoration:none;
+    color:#fff;
+    font-size:15px;
+    font-weight:400;
+    padding:12px 12px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  
+  
+  /* BUTTON WRAPPER */
+.hero-buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 25px;
+  flex-wrap: wrap;
+}
+
+/* COMMON */
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 26px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  border-radius: 30px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+/* PRIMARY */
+.primary-btn {
+  background: #ffffff;
+  color: #000;
+}
+
+.primary-btn:hover {
+  background: #e5e5e5;
+}
+
+/* SECONDARY */
+.secondary-btn {
+  border: 1.5px solid #ffffff;
+  color: #ffffff;
+  background: transparent;
+}
+
+.secondary-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* PLAY ICON */
+.play-icon {
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+
+  .hero-buttons {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-cta {
+    width: auto;
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+}
+
+
+
+  .nav-drawer a:hover{
+    background:rgba(255,255,255,0.06);
+  }
+
+  .nav-drawer .drawer-buttons{
+    display:flex;
+    gap:10px;
+    margin-top:8px;
+    flex-wrap:wrap;
+  }
+
+  .nav-drawer .drawer-buttons a{
+    flex:1 1 120px;
+    text-align:center;
+  }
+
+  body.menu-open .drawer-backdrop{
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  body.menu-open .nav-drawer{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    pointer-events:auto;
+  }
+
+  @media(max-width:900px){
+    .hero-right{display:none}
+    .hero-overlay{
+      background:linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.25) 0%,
+        rgba(0,0,0,0.55) 100%
+      );
+    }
+    .hero-body{justify-content:flex-start}
+  }
+
+  @media(max-width:992px){
+    .nav-links{
+      position:fixed;
+      top:72px;
+      left:0;
+      width:100%;
+      bottom:0;
+      background:#fff;
+      flex-direction:column;
+      align-items:flex-start;
+      padding:28px 24px;
+      gap:4px;
+      transform:translateX(-100%);
+      transition:transform 0.38s cubic-bezier(.4,0,.2,1);
+      overflow-y:auto;
+      display:flex;
+    }
+
+    .nav-links.active{transform:translateX(0)}
+
+    .nav-links a{
+      color:#111 !important;
+      font-size:16px;
+      padding:10px 0;
+      border-bottom:1px solid #f0f0f0;
+      width:100%;
+      background:transparent;
+      border-radius:0;
+      border-left:0;
+      border-right:0;
+      border-top:0;
+    }
+
+    .dropdown-menu{
+      position:static;
+      box-shadow:none;
+      border:none;
+      padding-left:12px;
+      background:transparent;
+      display:none;
+      min-width:0;
+      transform:none;
+      left:auto;
+      top:auto;
+    }
+
+    .dropdown.active .dropdown-menu{display:flex}
+    .dropdown-menu a{font-size:14px; color:#555 !important; padding:8px 0}
+    .menu-toggle{display:flex}
+    .btn-signin{display:none}
+    .header.scrolled .menu-toggle span{background:#fff}
+
+    .nav-drawer{
+      right:10px;
+      left:10px;
+      width:auto;
+    }
+  }
+
+  @media(min-width:993px){
+    .menu-toggle{
+      display:flex;
+    }
+  }
+
+  @media(max-width:600px){
+    .hero-body{padding:0 20px 60px}
+    .hero-heading{font-size:clamp(32px,5vw,52px)}
+    .nav-drawer{
+      top:72px;
+      left:10px;
+      right:10px;
+      width:auto;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+<div class="nav-drawer" id="navDrawer" aria-hidden="true">
+  <div class="nav-drawer-inner">
+    <a href="https://www.prodoxy.com/about">About</a>
+    <a href="https://www.prodoxy.com/pricing">Pricing</a>
+    <a href="https://www.prodoxy.com/feature">Features</a>
+    <a href="#">Blog</a>
+    <a href="https://www.prodoxy.com/contact">Contact</a>
+    <a href="https://www.prodoxy.com/privacy_policy">Privacy Policy</a>
+    <a href="https://www.prodoxy.com/terms">Terms of Service</a>
+    <a href="https://www.prodoxy.com/refund_policy">Refund Policy</a>
+
+    <div class="drawer-buttons">
+      <a href="https://www.prodoxy.com/login" class="btn-cta">Sign in</a>
+      <a href="#pricing99" class="btn-cta">Get started</a>
+    </div>
+  </div>
+</div>
+
+<header class="header" id="header">
+  <nav class="navbar">
+    <a href="/" class="logo">
+      <img src="/img/prodoxy_logo-without-bg2.png" alt="Prodoxy">
+    </a>
+
+    <div class="nav-links" id="navMenu">
+      <a href="https://www.prodoxy.com/about">About</a>
+      <a href="https://www.prodoxy.com/pricing">Pricing</a>
+      <a href="https://www.prodoxy.com/feature">Features</a>
+      <a href="#">Blog</a>
+      <a href="https://www.prodoxy.com/contact">Contact</a>
+      <div class="dropdown" id="legalDropdown">
+        <a href="#">Legal ▾</a>
+        <div class="dropdown-menu">
+          <a href="https://www.prodoxy.com/privacy_policy">Privacy Policy</a>
+          <a href="https://www.prodoxy.com/terms">Terms of Service</a>
+          <a href="https://www.prodoxy.com/refund_policy">Refund Policy</a>
+          <a href="#">Security</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <a href="https://www.prodoxy.com/login" class="btn-cta">Sign in</a>
+      <a href="#pricing99" class="btn-signin hero-scroll-link">Get started</a>
+    </div>
+
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-bg">
+    <video autoplay muted loop playsinline>
+      <source src="/img/hero-video.mp4" type="video/mp4">
+    </video>
+    <div class="hero-bg-fallback"></div>
+  </div>
+
+  <div class="hero-overlay"></div>
+
+  <div class="hero-body">
+    <div class="hero-left">
+      <h1 class="hero-heading" aria-live="polite">
+        <span id="dynamicText" class="dynamic-word">Build Your Online Store</span><br>
+        at Just<br>₹99/month.
+      </h1>
+      <!-- NEW PARAGRAPH -->
+    <p class="hero-subtext">
+      Launch your dream store in minutes. No coding needed just powerful tools, stunning designs, and everything you need to grow fast.
+    </p>
+      <div class="pf-btn-group">
+
+  <!-- PRIMARY BUTTON -->
+  <a href="#pricing99" class="pf-btn primary-btn">
+    Get started
+    <span class="arrow">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M5 12H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M13 6L19 12L13 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </span>
+  </a>
+
+  <!-- SECONDARY BUTTON -->
+  <a href="#video" class="pf-btn secondary-btn">
+    <span class="play-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 8L16 12L10 16V8Z" fill="currentColor"/>
+      </svg>
+    </span>
+    Why we build Prodoxy
+  </a>
+
+</div>
+
+<style>
+/* BUTTON WRAPPER */
+.pf-btn-group{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:nowrap;
+  max-width:100%;
+}
+
+/* BUTTON BASE */
+.pf-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:12px 20px;
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  border-radius:999px;
+  text-decoration:none;
+  white-space:nowrap;
+  flex-shrink:0; /* shrink nahi hoga */
+}
+
+/* PRIMARY */
+.primary-btn{
+  background:#fff;
+  color:#000;
+}
+
+/* SECONDARY */
+.secondary-btn{
+  border:1px solid rgba(255,255,255,0.3);
+  color:#fff;
+  background:transparent;
+}
+
+/* 🔥 IMPORTANT FIX */
+.hero-content{
+  max-width:100%;
+  overflow:hidden; /* cut issue fix */
+}
+</style>
+
+
+    </div>
+  </div>
+</section>
+
+<script>
+  const toggle = document.getElementById("menuToggle");
+  const nav = document.getElementById("navMenu");
+  const header = document.getElementById("header");
+  const dropdown = document.getElementById("legalDropdown");
+  const body = document.body;
+  const backdrop = document.getElementById("drawerBackdrop");
+  const drawer = document.getElementById("navDrawer");
+
+  function openMenu() {
+    body.classList.add("menu-open");
+    toggle.setAttribute("aria-expanded", "true");
+    if (drawer) drawer.setAttribute("aria-hidden", "false");
+  }
+
+  function closeMenu() {
+    body.classList.remove("menu-open");
+    toggle.setAttribute("aria-expanded", "false");
+    if (drawer) drawer.setAttribute("aria-hidden", "true");
+  }
+
+  function toggleMenu() {
+    if (body.classList.contains("menu-open")) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  }
+
+  toggle.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleMenu();
+  });
+
+  if (backdrop) {
+    backdrop.addEventListener("click", closeMenu);
+  }
+
+  if (drawer) {
+    drawer.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  dropdown.addEventListener("click", function(e) {
+    if (window.innerWidth < 992) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.classList.toggle("active");
+    }
+  });
+
+  window.addEventListener("scroll", () => {
+    header.classList.toggle("scrolled", window.scrollY > 20);
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 992 && body.classList.contains("menu-open")) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMenu();
+  });
+
+  const texts = [
+    "Build Your Online Store",
+    "Launch Your Brand Online",
+    "Sell Products Anywhere",
+    "Grow Your Business Faster",
+    "Make Your First Sale",
+    "Start Selling Today"
+  ];
+
+  const textEl = document.getElementById("dynamicText");
+  let i = 0;
+
+  function swapText() {
+    if (!textEl) return;
+
+    textEl.classList.add("is-fading");
+
+    window.setTimeout(() => {
+      i = (i + 1) % texts.length;
+      textEl.textContent = texts[i];
+      textEl.classList.remove("is-fading");
+    }, 350);
+  }
+
+  window.setInterval(swapText, 2000);
+
+  document.querySelectorAll('a[href="#pricing99"], .hero-scroll-link').forEach((anchor) => {
+    anchor.addEventListener("click", (e) => {
+      const target = document.getElementById("pricing99");
+      if (!target) return;
+
+      e.preventDefault();
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      closeMenu();
+    });
+  });
+</script>
+
+</body>
+</html>
+
+</body>
+</html>
+
+<section class="logo-section">
+
+  <style>
+    .logo-section{
+      padding:30px 0;
+      background:#030303;
+      position:relative;
+      overflow:hidden;
+    }
+
+    /* TEXT */
+    .logo-title{
+      text-align:center;
+      color:rgba(255,255,255,.5);
+      font-size:14px;
+      margin-bottom:25px;
+      letter-spacing:.3px;
+    }
+
+    /* FULL WIDTH BOX */
+    .logo-box{
+      width:90%;
+      margin:auto;
+      border-radius:30px;
+      padding:28px 0;
+      overflow:hidden;
+      position:relative;
+
+      background:linear-gradient(
+        180deg,
+        rgba(255,255,255,0.04),
+        rgba(255,255,255,0.01)
+      );
+
+      border:1px solid rgba(255,255,255,0.08);
+
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+
+      box-shadow:
+        0 20px 80px rgba(0,0,0,.7),
+        inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    /* FADE LEFT RIGHT */
+    .logo-box::before,
+    .logo-box::after{
+      content:"";
+      position:absolute;
+      top:0;
+      width:120px;
+      height:100%;
+      z-index:2;
+      pointer-events:none;
+    }
+
+    .logo-box::before{
+      left:0;
+      background:linear-gradient(to right,#030303,transparent);
+    }
+
+    .logo-box::after{
+      right:0;
+      background:linear-gradient(to left,#030303,transparent);
+    }
+
+    /* TRACK */
+    .logo-track{
+      display:flex;
+      gap:80px;
+      animation:scroll 30s linear infinite;
+      align-items:center;
+      width:max-content;
+    }
+
+    /* ITEM */
+    .logo-item{
+      width:140px;
+      height:45px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+    }
+
+    /* WHITE LOGO */
+    .logo-item img{
+      max-width:100%;
+      max-height:100%;
+      object-fit:contain;
+      filter:brightness(0) invert(1);
+      opacity:.7;
+      transition:.3s;
+    }
+
+    .logo-item img:hover{
+      opacity:1;
+      transform:scale(1.1);
+      filter:brightness(0) invert(1) drop-shadow(0 0 6px rgba(255,255,255,.4));
+    }
+
+    /* ANIMATION */
+    @keyframes scroll{
+      0%{transform:translateX(0)}
+      100%{transform:translateX(-50%)}
+    }
+
+    /* MOBILE */
+    @media(max-width:768px){
+      .logo-box{
+        width:95%;
+        border-radius:18px;
+        padding:18px 0;
+      }
+
+      .logo-item{
+        width:100px;
+        height:30px;
+      }
+
+      .logo-track{
+        gap:40px;
+      }
+    }
+  </style>
+
+  <div class="logo-title">
+    Trusted by leading platforms & payment partners
+  </div>
+
+  <div class="logo-box">
+    <div class="logo-track">
+
+      <!-- LOGOS -->
+      <div class="logo-item"><img src="/img/paypal-logo2.webp"></div>
+      <div class="logo-item"><img src="/img/Razorpay_logo2.svg"></div>
+      <div class="logo-item"><img src="/img/Stripe_Logo.png"></div>
+      <div class="logo-item"><img src="/img/shiprocket.png"></div>
+      <div class="logo-item"><img src="/img/aisensy-logo.png"></div>
+      <div class="logo-item"><img src="/img/PayU.svg.png"></div>
+      <div class="logo-item"><img src="/img/paytm.webp"></div>
+      <div class="logo-item"><img src="/img/Delhivery_Logo_(2019).png"></div>
+
+      <!-- DUPLICATE (SMOOTH LOOP) -->
+      <div class="logo-item"><img src="/img/paypal-logo2.webp"></div>
+      <div class="logo-item"><img src="/img/Razorpay_logo2.svg"></div>
+      <div class="logo-item"><img src="/img/Stripe_Logo.png"></div>
+      <div class="logo-item"><img src="/img/shiprocket.png"></div>
+      <div class="logo-item"><img src="/img/aisensy-logo.png"></div>
+      <div class="logo-item"><img src="/img/PayU.svg.png"></div>
+      <div class="logo-item"><img src="/img/paytm.webp"></div>
+      <div class="logo-item"><img src="/img/Delhivery_Logo_(2019).png"></div>
+
+    </div>
+  </div>
+
+</section>
+
+<!-- ===== PREMIUM DARK PRICING SECTION START ===== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#050505;
+    --bg-2:#0a0a0a;
+    --card:#0f1115;
+    --card-2:#12151b;
+    --line:rgba(255,255,255,.08);
+    --line-2:rgba(255,255,255,.12);
+    --text:#f5f7fa;
+    --muted:#a7b0bb;
+    --muted-2:#7f8792;
+    --accent:#df4e1e;
+    --accent-2:#ff6a3d;
+    --success:#22c55e;
+  }
+
+  *{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+  }
+
+  html{
+    scroll-behavior:smooth;
+  }
+
+  body{
+    font-family:'Inter',sans-serif;
+    font-weight:300;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  .pricing-section-dark{
+    position:relative;
+    padding:96px 20px;
+    background:
+      radial-gradient(circle at top, rgba(223,78,30,.10), transparent 24%),
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,.04), transparent 22%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    overflow:hidden;
+  }
+
+  .pricing-section-dark::before,
+  .pricing-section-dark::after{
+    content:"";
+    position:absolute;
+    width:680px;
+    height:680px;
+    border-radius:50%;
+    filter:blur(120px);
+    opacity:.22;
+    pointer-events:none;
+  }
+
+  .pricing-section-dark::before{
+    top:-220px;
+    left:-220px;
+    background:rgba(223,78,30,.28);
+  }
+
+  .pricing-section-dark::after{
+    bottom:-260px;
+    right:-240px;
+    background:rgba(255,255,255,.08);
+  }
+
+  .pricing-container{
+    position:relative;
+    z-index:2;
+    max-width:1280px;
+    margin:0 auto;
+  }
+
+  .pricing-head{
+    text-align:center;
+    max-width:780px;
+    margin:0 auto 34px;
+  }
+
+  .pricing-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.04);
+    color:#d7dde3;
+    font-size:12px;
+    font-weight:400;
+    letter-spacing:.02em;
+    margin-bottom:16px;
+  }
+
+  .pricing-kicker .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:linear-gradient(180deg, var(--accent-2), var(--accent));
+    box-shadow:0 0 0 4px rgba(223,78,30,.12);
+  }
+
+  .pricing-title{
+    font-size:clamp(2rem, 4vw, 3.8rem);
+    line-height:1.05;
+    letter-spacing:-.04em;
+    font-weight:300;
+    margin-bottom:14px;
+  }
+
+  .pricing-subtitle{
+    font-size:16px;
+    color:var(--muted);
+    line-height:1.7;
+    font-weight:300;
+    max-width:640px;
+    margin:0 auto;
+  }
+
+  .billing-toggle{
+    display:flex;
+    justify-content:center;
+    margin:28px 0 26px;
+  }
+
+  .toggle-pill{
+    display:inline-flex;
+    align-items:center;
+    padding:5px;
+    gap:6px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    background:rgba(255,255,255,.03);
+    backdrop-filter:blur(12px);
+  }
+
+  .toggle-btn{
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    font-size:13px;
+    font-weight:500;
+    padding:11px 18px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:all .2s ease;
+    white-space:nowrap;
+  }
+
+  .toggle-btn.active{
+    background:#fff;
+    color:#111;
+    box-shadow:0 8px 24px rgba(0,0,0,.18);
+  }
+
+  .plans-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:18px;
+    align-items:stretch;
+  }
+
+  .plan-card{
+    position:relative;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 20px 60px rgba(0,0,0,.28);
+    backdrop-filter:blur(12px);
+    display:flex;
+    flex-direction:column;
+    min-height:100%;
+    transition:transform .22s ease, border-color .22s ease, background .22s ease;
+  }
+
+  .plan-card:hover{
+    transform:translateY(-4px);
+    border-color:rgba(255,255,255,.18);
+    background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
+  }
+
+  .plan-card.popular{
+    border-color:rgba(223,78,30,.38);
+    background:
+      linear-gradient(180deg, rgba(223,78,30,.12), rgba(255,255,255,.03)),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  }
+
+  .popular-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:7px 10px;
+    border-radius:999px;
+    background:rgba(223,78,30,.16);
+    color:#ffb59c;
+    border:1px solid rgba(223,78,30,.22);
+    font-size:11px;
+    font-weight:500;
+    width:max-content;
+    margin-bottom:14px;
+  }
+
+  .popular-badge .mini-dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--accent-2);
+  }
+
+  .plan-name{
+    font-size:24px;
+    line-height:1.1;
+    font-weight:500;
+    letter-spacing:-.02em;
+    margin-bottom:8px;
+  }
+
+  .plan-desc{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.6;
+    font-weight:300;
+    margin-bottom:18px;
+  }
+
+  .price-wrap{
+    padding:18px 0 16px;
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    margin-bottom:18px;
+  }
+
+  .price-label{
+    font-size:12px;
+    color:var(--muted-2);
+    margin-bottom:8px;
+    font-weight:400;
+  }
+
+  .price-row{
+    display:flex;
+    align-items:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .price{
+    font-size:clamp(2rem, 3vw, 2.7rem);
+    line-height:1;
+    font-weight:500;
+    letter-spacing:-.03em;
+  }
+
+  .price small{
+    font-size:14px;
+    color:var(--muted);
+    font-weight:400;
+  }
+
+  .price-note{
+    font-size:13px;
+    color:var(--muted);
+    line-height:1.55;
+    margin-top:10px;
+    font-weight:300;
+  }
+
+  .feature-list{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin:0 0 18px;
+    padding:0;
+    flex:1;
+  }
+
+  .feature-list li{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    font-size:14px;
+    line-height:1.5;
+    color:#dce2e8;
+    font-weight:300;
+  }
+
+  .check{
+    width:18px;
+    height:18px;
+    flex:0 0 18px;
+    margin-top:1px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    background:rgba(34,197,94,.14);
+    color:#8ef0a8;
+    border:1px solid rgba(34,197,94,.22);
+  }
+
+  .check svg{
+    width:11px;
+    height:11px;
+  }
+
+  .cta-btn{
+    width:100%;
+    border:none;
+    border-radius:14px;
+    padding:14px 16px;
+    background:#fff;
+    color:#111;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    transition:transform .18s ease, opacity .18s ease, background .18s ease;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    text-decoration:none;
+  }
+
+  .cta-btn:hover{
+    transform:translateY(-1px);
+    opacity:.95;
+  }
+
+  .cta-btn.dark{
+    background:#171a20;
+    color:#fff;
+    border:1px solid var(--line);
+  }
+
+  .cta-btn.dark:hover{
+    background:#1b1f27;
+  }
+
+  .plan-foot{
+    margin-top:10px;
+    font-size:12px;
+    color:var(--muted-2);
+    text-align:center;
+    font-weight:300;
+  }
+
+  .pricing-footnote{
+    text-align:center;
+    margin-top:18px;
+    color:var(--muted-2);
+    font-size:12px;
+    line-height:1.6;
+    font-weight:300;
+  }
+
+  @media (max-width: 1180px){
+    .plans-grid{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px){
+    .pricing-section-dark{
+      padding:72px 14px;
+    }
+
+    .pricing-head{
+      margin-bottom:22px;
+    }
+
+    .pricing-subtitle{
+      font-size:14px;
+    }
+
+    .billing-toggle{
+      margin:22px 0 18px;
+    }
+
+    .toggle-pill{
+      width:100%;
+      justify-content:space-between;
+    }
+
+    .toggle-btn{
+      flex:1;
+      font-size:12px;
+      padding:10px 12px;
+    }
+
+    .plans-grid{
+      grid-template-columns:1fr;
+      gap:14px;
+    }
+
+    .plan-card{
+      padding:20px;
+      border-radius:20px;
+    }
+
+    .plan-name{
+      font-size:22px;
+    }
+  }
+</style>
+
+
+  <div class="pricing-container">
+
+    <div class="pricing-head">
+      <div class="pricing-kicker">
+        <span class="dot"></span>
+        Simple plans for every stage
+      </div>
+
+      <h2 class="pricing-title">Choose the plan that fits your store.</h2>
+      <p class="pricing-subtitle">
+        Premium Prodoxy-style pricing with a clean, dark interface built for mobile and desktop.
+      </p>
+    </div>
+    <section class="pricing-section-dark" id="pricing99">
+
+    <div class="billing-toggle">
+      <div class="toggle-pill">
+        <button type="button" class="toggle-btn active" onclick="setBilling('monthly', this)">Pay monthly</button>
+        <button type="button" class="toggle-btn" onclick="setBilling('yearly', this)">Pay yearly (save 25%)</button>
+      </div>
+    </div>
+
+    <div class="plans-grid" id="plansGrid"></div>
+
+    <div class="pricing-footnote">
+      All plans include secure checkout, store setup support, and a professional dashboard experience.
+    </div>
+
+  </div>
+</section>
+
+<script>
+  let billingType = "monthly";
+
+  const plans = {
+    basic: {
+      id: 1,
+      title: "Basic",
+      sub: "For solo entrepreneurs",
+      monthly: "₹99",
+      yearly: "₹1,100",
+      note: "Best for new stores and personal brands.",
+      popular: false,
+      cta: "Start now",
+      features: [
+        "Full store setup",
+        "Payment gateway integration",
+        "Coupon & discount system",
+        "Custom domain support",
+        "100 products",
+        "Unlimited orders"
+      ]
+    },
+    grow: {
+      id: 2,
+      title: "Grow",
+      sub: "For growing teams",
+      monthly: "₹499",
+      yearly: "₹5,000",
+      note: "Designed for teams that want more control.",
+      popular: true,
+      cta: "Start now",
+      features: [
+        "1,000 products",
+        "Advanced analytics dashboard",
+        "Abandoned cart recovery",
+        "Live chat support",
+        "24/7 support",
+        "Basic SEO tools"
+      ]
+    },
+    advanced: {
+      id: 3,
+      title: "Advanced",
+      sub: "For scaling brands",
+      monthly: "₹999",
+      yearly: "₹11,000",
+      note: "For serious sellers who want to grow fast.",
+      popular: false,
+      cta: "Start now",
+      features: [
+        "Unlimited products",
+        "Staff accounts",
+        "Premium themes access",
+        "Advanced SEO tools",
+        "Priority support",
+        "Advanced sales reports"
+      ]
+    },
+    plus: {
+      id: 4,
+      title: "Plus",
+      sub: "For enterprise businesses",
+      monthly: "₹1,999",
+      yearly: "₹21,999",
+      note: "For brands needing custom workflows and scale.",
+      popular: false,
+      cta: "Contact sales",
+      features: [
+        "Dedicated account manager",
+        "Custom integrations",
+        "Unlimited staff accounts",
+        "Custom API access",
+        "Advanced automation workflows",
+        "Early feature access"
+      ]
+    }
+  };
+
+  function checkIcon() {
+    return `
+      <span class="check" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </span>
+    `;
+  }
+
+  function renderPlans() {
+    const grid = document.getElementById("plansGrid");
+    grid.innerHTML = "";
+
+    Object.keys(plans).forEach((key) => {
+      const plan = plans[key];
+      const price = billingType === "monthly" ? plan.monthly : plan.yearly;
+      const cycleLabel = billingType === "monthly" ? "/month" : "/year";
+
+      const card = document.createElement("div");
+      card.className = `plan-card ${plan.popular ? "popular" : ""}`;
+
+      card.innerHTML = `
+        ${plan.popular ? `<div class="popular-badge"><span class="mini-dot"></span>Most popular</div>` : ""}
+
+        <div class="plan-name">${plan.title}</div>
+        <div class="plan-desc">${plan.sub}</div>
+
+        <div class="price-wrap">
+          <div class="price-label">Starting at</div>
+          <div class="price-row">
+            <div class="price">${price} <small>${cycleLabel}</small></div>
+          </div>
+          <div class="price-note">${plan.note}</div>
+        </div>
+
+        <ul class="feature-list">
+          ${plan.features.map(feature => `<li>${checkIcon()}<span>${feature}</span></li>`).join("")}
+        </ul>
+
+        <form method="POST" action="https://www.prodoxy.com/register/plan">
+          <input type="hidden" name="_token" value="AAqMRfZyZcnsqMudwt8NDA95PDbTtmRPmmHXvXxz" autocomplete="off">          <input type="hidden" name="plan_id" value="${plan.id}">
+          <input type="hidden" name="billing_cycle" value="${billingType}">
+          <button type="submit" class="cta-btn ${plan.popular ? "" : "dark"}">${plan.cta}</button>
+        </form>
+      `;
+
+      grid.appendChild(card);
+    });
+  }
+
+  function setBilling(type, el) {
+    billingType = type;
+    document.querySelectorAll(".toggle-btn").forEach(btn => btn.classList.remove("active"));
+    el.classList.add("active");
+    renderPlans();
+  }
+
+  renderPlans();
+</script>
+
+<!-- ===== PREMIUM DARK PRICING SECTION END ===== -->
+
+<!-- ===== SHOPIFY STYLE FEATURE SECTION ===== -->
+
+<style>
+.px-section{
+  background: radial-gradient(circle at top left, #0b2c2c, #020909);
+  padding:80px 20px;
+  color:#fff;
+  font-family:'Inter', sans-serif;
+}
+
+/* TOP AREA */
+.px-top{
+  max-width:1200px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  gap:40px;
+  margin-bottom:60px;
+  flex-wrap:wrap;
+}
+
+.px-top-left span{
+  font-size:14px;
+  color:#00d1c1;
+}
+
+.px-top-left h2{
+  font-size:44px;
+  font-weight:400;
+  margin-top:10px;
+}
+
+.px-top-right{
+  max-width:400px;
+  font-size:15px;
+  color:#cbd5e1;
+}
+
+/* CARDS GRID */
+.px-grid{
+  max-width:1200px;
+  margin:auto;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:24px;
+}
+
+/* CARD */
+.px-card{
+  background:rgba(255,255,255,0.03);
+  border-radius:20px;
+  padding:20px;
+  position:relative;
+  overflow:hidden;
+  transition:0.3s;
+}
+
+.px-card:hover{
+  transform:translateY(-5px);
+}
+
+/* IMAGE */
+.px-card img{
+  width:100%;
+  border-radius:12px;
+  margin-bottom:15px;
+}
+
+/* TITLE */
+.px-card h3{
+  font-size:16px;
+  margin-bottom:8px;
+}
+
+/* TEXT */
+.px-card p{
+  font-size:14px;
+  color:#cbd5e1;
+}
+
+/* RESPONSIVE */
+@media(max-width:992px){
+  .px-grid{
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+@media(max-width:600px){
+  .px-grid{
+    grid-template-columns:1fr;
+  }
+
+  .px-top-left h2{
+    font-size:30px;
+  }
+}
+</style>
+
+<section class="px-section">
+
+  <!-- TOP TEXT -->
+  <div class="px-top">
+    <div class="px-top-left">
+      <span>Online and in person</span>
+      <h2>Sell here, there, and everywhere</h2>
+    </div>
+
+    <div class="px-top-right">
+      Get a stunning store that’s made to sell. Design fast with AI,
+      choose a stylish theme, or build completely custom for full control.
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="px-grid">
+
+    <!-- CARD 1 -->
+    <div class="px-card">
+      <img src="/img/card1.png" alt="">
+      <h3>In-person point of sale</h3>
+      <p>Sell face to face and keep offline and online sales in sync.</p>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="px-card">
+      <img src="/img/card2.png" alt="">
+      <h3>Publish across channels</h3>
+      <p>Show up everywhere buyers scroll, search, and shop.</p>
+    </div>
+
+    <!-- CARD 3 -->
+    <div class="px-card">
+      <img src="/img/card3.png" alt="">
+      <h3>Powered checkout</h3>
+      <p>Fast, customizable checkout optimized to close more sales.</p>
+    </div>
+
+  </div>
+
+</section>
+
+<!-- ===== PRODOXY INDIA MAP SECTION START ===== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+.px-india-section{
+  position:relative;
+  width:100%;
+  background:#041710;
+  overflow:hidden;
+  font-family:'Barlow',sans-serif;
+}
+
+.px-india-bg{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  overflow:hidden;
+}
+
+/* stars */
+.px-star{
+  position:absolute;
+  background:#fff;
+  border-radius:50%;
+  opacity:0;
+  animation:px-twinkle var(--d,3s) ease-in-out var(--delay,0s) infinite;
+}
+@keyframes px-twinkle{
+  0%,100%{opacity:0}
+  50%{opacity:var(--op,0.6)}
+}
+
+.px-india-inner{
+  position:relative;
+  z-index:2;
+  max-width:1280px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:90px 72px;
+  gap:40px;
+  min-height:580px;
+}
+
+/* ── MAP SIDE ── */
+.px-map-wrap{
+  flex:0 0 auto;
+  width:340px;
+  position:relative;
+}
+
+.px-map-wrap svg.px-india-map{
+  width:100%;
+  height:auto;
+  overflow:visible;
+  filter:drop-shadow(0 0 32px rgba(0,200,120,0.18));
+}
+
+/* India fill */
+.px-land{
+  fill:#0d2e20;
+  stroke:#1a5c3a;
+  stroke-width:0.8;
+}
+
+/* city dots */
+.px-city-dot{
+  fill:#00e896;
+  opacity:0;
+  animation:px-dot-in .6s ease forwards;
+}
+@keyframes px-dot-in{to{opacity:1}}
+
+/* pulse ring */
+.px-pulse{
+  fill:none;
+  stroke:#00e896;
+  stroke-width:1;
+  opacity:0;
+  animation:px-pulse-ring var(--pd,2.4s) ease-out var(--pdelay,0s) infinite;
+}
+@keyframes px-pulse-ring{
+  0%{r:3;opacity:.7}
+  100%{r:14;opacity:0}
+}
+
+/* arc lines */
+.px-arc{
+  fill:none;
+  stroke:rgba(255,255,255,0.55);
+  stroke-width:0.9;
+  stroke-dasharray:var(--len,200);
+  stroke-dashoffset:var(--len,200);
+  animation:px-draw var(--dur,1.5s) ease var(--ddelay,0.5s) forwards;
+}
+@keyframes px-draw{
+  to{stroke-dashoffset:0}
+}
+
+/* dot label */
+.px-city-label{
+  font-family:'Barlow',sans-serif;
+  font-size:7px;
+  font-weight:400;
+  fill:rgba(255,255,255,0.45);
+  pointer-events:none;
+}
+
+/* ── TEXT SIDE ── */
+.px-india-text{
+  flex:1;
+  max-width:440px;
+}
+
+.px-india-heading{
+  font-family:'Barlow',sans-serif;
+  font-size:clamp(30px,3.8vw,52px);
+  font-weight:300;
+  color:#fff;
+  line-height:1.12;
+  margin:0 0 18px;
+  letter-spacing:-.3px;
+}
+
+.px-india-body{
+  font-size:15px;
+  font-weight:300;
+  color:rgba(255,255,255,0.48);
+  line-height:1.78;
+  margin:0 0 38px;
+  max-width:380px;
+}
+
+.px-india-stats{
+  display:flex;
+  gap:36px;
+  flex-wrap:wrap;
+}
+
+.px-india-stat-val{
+  font-size:30px;
+  font-weight:500;
+  color:#fff;
+  line-height:1;
+}
+
+.px-india-stat-label{
+  font-size:11.5px;
+  font-weight:300;
+  color:rgba(255,255,255,0.36);
+  margin-top:5px;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+}
+
+/* ── GLOW ORBS ── */
+.px-orb{
+  position:absolute;
+  border-radius:50%;
+  pointer-events:none;
+  z-index:1;
+}
+.px-orb-1{
+  width:420px;height:420px;
+  background:radial-gradient(circle,rgba(0,200,100,0.09) 0%,transparent 70%);
+  top:-80px;left:-60px;
+}
+.px-orb-2{
+  width:300px;height:300px;
+  background:radial-gradient(circle,rgba(0,100,200,0.07) 0%,transparent 70%);
+  bottom:0;right:10%;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .px-india-inner{
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    padding:70px 28px 60px;
+    min-height:auto;
+    gap:20px;
+  }
+  .px-map-wrap{width:260px}
+  .px-india-text{max-width:100%}
+  .px-india-body{margin-left:auto;margin-right:auto}
+  .px-india-stats{justify-content:center}
+}
+
+@media(max-width:480px){
+  .px-map-wrap{width:200px}
+  .px-india-heading{font-size:28px}
+}
+</style>
+
+<section class="px-india-section">
+
+  <!-- BG STARS -->
+  <div class="px-india-bg" id="pxStarBg"></div>
+
+  <!-- GLOW ORBS -->
+  <div class="px-orb px-orb-1"></div>
+  <div class="px-orb px-orb-2"></div>
+
+  <div class="px-india-inner">
+
+    <!-- MAP -->
+    <div class="px-map-wrap">
+      <svg class="px-india-map" viewBox="0 0 220 280" xmlns="http://www.w3.org/2000/svg" id="pxIndiaMapSvg">
+
+        <!-- India Outline -->
+        <path class="px-land" d="
+          M 95,8
+          L 102,6 L 110,8 L 118,7 L 125,10 L 132,9 L 138,13
+          L 143,12 L 148,16 L 150,22 L 155,24 L 158,30
+          L 162,34 L 165,40 L 168,46 L 170,52 L 172,58
+          L 175,63 L 176,70 L 174,76 L 172,82 L 170,87
+          L 168,93 L 165,98 L 162,103 L 160,108 L 158,115
+          L 155,120 L 152,126 L 149,132 L 147,138 L 145,143
+          L 142,148 L 140,154 L 138,160 L 136,165 L 133,170
+          L 130,175 L 127,180 L 124,186 L 122,191 L 120,196
+          L 118,200 L 116,205 L 114,210 L 112,215 L 110,220
+          L 108,225 L 106,230 L 104,234 L 102,239 L 100,243
+          L 98,248 L 96,253 L 94,257 L 92,261 L 90,265
+          L 88,269 L 86,272 L 84,270 L 82,266 L 80,261
+          L 78,256 L 76,251 L 74,246 L 72,241 L 70,236
+          L 68,231 L 66,226 L 64,221 L 62,216 L 60,211
+          L 58,206 L 57,200 L 55,195 L 54,189 L 53,183
+          L 52,177 L 51,171 L 50,165 L 50,159 L 51,153
+          L 52,147 L 53,141 L 55,136 L 57,130 L 59,125
+          L 61,120 L 63,115 L 65,110 L 67,105 L 68,100
+          L 69,95 L 70,90 L 71,85 L 72,80 L 73,75
+          L 74,70 L 75,65 L 76,60 L 78,55 L 80,50
+          L 82,46 L 84,42 L 86,38 L 88,34 L 90,30
+          L 91,26 L 93,22 L 94,17 Z
+
+          M 60,211 L 62,216 L 60,220 L 57,218 L 55,214 L 57,210 Z
+          M 54,189 L 56,193 L 54,197 L 51,195 L 49,191 L 51,187 Z
+        "/>
+
+        <!-- Andaman & Nicobar rough -->
+        <ellipse cx="192" cy="185" rx="4" ry="9" class="px-land"/>
+        <ellipse cx="190" cy="200" rx="3" ry="6" class="px-land"/>
+
+        <!-- Sri Lanka -->
+        <ellipse cx="115" cy="270" rx="6" ry="9" class="px-land" style="opacity:0.5"/>
+
+        <!-- ───── ARCS (drawn first, below dots) ───── -->
+        <!-- Mumbai → Delhi -->
+        <path id="arc-md" class="px-arc" d="M 70,140 Q 80,80 108,52"
+          style="--len:150;--dur:1.4s;--ddelay:1.0s"/>
+        <!-- Delhi → Kolkata -->
+        <path id="arc-dk" class="px-arc" d="M 108,52 Q 138,55 152,105"
+          style="--len:140;--dur:1.3s;--ddelay:1.3s"/>
+        <!-- Kolkata → Chennai -->
+        <path id="arc-kc" class="px-arc" d="M 152,105 Q 140,155 105,190"
+          style="--len:160;--dur:1.4s;--ddelay:1.6s" stroke="rgba(0,232,150,0.5)"/>
+        <!-- Chennai → Mumbai -->
+        <path id="arc-cm" class="px-arc" d="M 105,190 Q 75,175 70,140"
+          style="--len:120;--dur:1.2s;--ddelay:1.9s"/>
+        <!-- Bengaluru → Hyderabad -->
+        <path id="arc-bh" class="px-arc" d="M 98,195 Q 108,172 118,158"
+          style="--len:80;--dur:1.0s;--ddelay:2.1s" stroke="rgba(0,232,150,0.45)"/>
+        <!-- Delhi → Ahmedabad -->
+        <path id="arc-da" class="px-arc" d="M 108,52 Q 88,85 68,120"
+          style="--len:120;--dur:1.2s;--ddelay:2.3s"/>
+        <!-- Kolkata → Andaman -->
+        <path id="arc-ka" class="px-arc" d="M 152,105 Q 175,130 192,185"
+          style="--len:130;--dur:1.3s;--ddelay:2.5s" stroke="rgba(255,255,255,0.3)"/>
+
+        <!-- ───── CITY DOTS + PULSES ───── -->
+
+        <!-- Delhi -->
+        <circle class="px-pulse" cx="108" cy="52" r="3" style="--pd:2.2s;--pdelay:1.8s"/>
+        <circle class="px-city-dot" cx="108" cy="52" r="2.8" style="animation-delay:1.6s"/>
+        <text class="px-city-label" x="112" y="51">Delhi</text>
+
+        <!-- Mumbai -->
+        <circle class="px-pulse" cx="70" cy="140" r="3" style="--pd:2.4s;--pdelay:2.0s"/>
+        <circle class="px-city-dot" cx="70" cy="140" r="2.8" style="animation-delay:1.8s"/>
+        <text class="px-city-label" x="74" y="139">Mumbai</text>
+
+        <!-- Kolkata -->
+        <circle class="px-pulse" cx="152" cy="105" r="3" style="--pd:2.3s;--pdelay:2.2s"/>
+        <circle class="px-city-dot" cx="152" cy="105" r="2.8" style="animation-delay:2.0s"/>
+        <text class="px-city-label" x="156" y="104">Kolkata</text>
+
+        <!-- Chennai -->
+        <circle class="px-pulse" cx="105" cy="190" r="3" style="--pd:2.5s;--pdelay:1.9s"/>
+        <circle class="px-city-dot" cx="105" cy="190" r="2.8" style="animation-delay:2.2s"/>
+        <text class="px-city-label" x="109" y="189">Chennai</text>
+
+        <!-- Bengaluru -->
+        <circle class="px-pulse" cx="98" cy="197" r="2.5" style="--pd:2.1s;--pdelay:2.4s"/>
+        <circle class="px-city-dot" cx="98" cy="197" r="2.2" style="animation-delay:2.4s"/>
+        <text class="px-city-label" x="77" y="200">Bengaluru</text>
+
+        <!-- Hyderabad -->
+        <circle class="px-pulse" cx="118" cy="158" r="2.5" style="--pd:2.2s;--pdelay:2.6s"/>
+        <circle class="px-city-dot" cx="118" cy="158" r="2.2" style="animation-delay:2.6s"/>
+        <text class="px-city-label" x="122" y="157">Hyderabad</text>
+
+        <!-- Ahmedabad -->
+        <circle class="px-pulse" cx="68" cy="120" r="2.5" style="--pd:2.0s;--pdelay:2.8s"/>
+        <circle class="px-city-dot" cx="68" cy="120" r="2.2" style="animation-delay:2.8s"/>
+        <text class="px-city-label" x="45" y="118">Ahmedabad</text>
+
+        <!-- Pune -->
+        <circle class="px-pulse" cx="76" cy="153" r="2" style="--pd:1.9s;--pdelay:3.0s"/>
+        <circle class="px-city-dot" cx="76" cy="153" r="1.8" style="animation-delay:3.0s"/>
+        <text class="px-city-label" x="58" y="151">Pune</text>
+
+        <!-- Jaipur -->
+        <circle class="px-pulse" cx="92" cy="72" r="2" style="--pd:2.0s;--pdelay:3.1s"/>
+        <circle class="px-city-dot" cx="92" cy="72" r="1.8" style="animation-delay:3.1s"/>
+        <text class="px-city-label" x="95" y="71">Jaipur</text>
+
+        <!-- Lucknow -->
+        <circle class="px-pulse" cx="128" cy="72" r="2" style="--pd:2.1s;--pdelay:3.2s"/>
+        <circle class="px-city-dot" cx="128" cy="72" r="1.8" style="animation-delay:3.2s"/>
+        <text class="px-city-label" x="132" y="71">Lucknow</text>
+
+        <!-- Bhopal -->
+        <circle class="px-city-dot" cx="106" cy="105" r="1.8" style="animation-delay:3.3s;fill:#00e896;opacity:0"/>
+        <text class="px-city-label" x="110" y="104">Bhopal</text>
+
+        <!-- Andaman -->
+        <circle class="px-pulse" cx="192" cy="185" r="2" style="--pd:2.5s;--pdelay:3.4s"/>
+        <circle class="px-city-dot" cx="192" cy="185" r="1.8" style="animation-delay:3.4s;fill:#44ddff"/>
+
+      </svg>
+    </div>
+
+    <!-- TEXT -->
+    <div class="px-india-text">
+      <h2 class="px-india-heading">Rock steady<br>and blazing fast</h2>
+      <p class="px-india-body">
+        Prodoxy puts your store within reach of every shopper across India,
+        with the infrastructure to handle even the most epic product drops —
+        from Delhi to Kanyakumari.
+      </p>
+      <div class="px-india-stats">
+        <div>
+          <div class="px-india-stat-val">99.9%</div>
+          <div class="px-india-stat-label">Uptime</div>
+        </div>
+        <div>
+          <div class="px-india-stat-val">&lt;80ms</div>
+          <div class="px-india-stat-label">Response</div>
+        </div>
+        <div>
+          <div class="px-india-stat-val">24/7</div>
+          <div class="px-india-stat-label">Support</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+(function(){
+  /* ── STARS ── */
+  var bg = document.getElementById('pxStarBg');
+  if(!bg) return;
+  var W = bg.offsetWidth || window.innerWidth;
+  var H = bg.offsetHeight || 580;
+  for(var i=0;i<110;i++){
+    var s=document.createElement('div');
+    s.className='px-star';
+    var sz=(0.5+Math.random()*1.8).toFixed(1);
+    var op=(0.25+Math.random()*0.55).toFixed(2);
+    var dur=(2+Math.random()*4).toFixed(1);
+    var del=(Math.random()*6).toFixed(1);
+    s.style.cssText=[
+      'width:'+sz+'px','height:'+sz+'px',
+      'left:'+(Math.random()*100)+'%',
+      'top:'+(Math.random()*100)+'%',
+      '--d:'+dur+'s','--delay:'+del+'s','--op:'+op
+    ].join(';');
+    bg.appendChild(s);
+  }
+
+  /* ── ARC LENGTH CALC (for accurate dasharray) ── */
+  var arcs=['arc-md','arc-dk','arc-kc','arc-cm','arc-bh','arc-da','arc-ka'];
+  arcs.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    try{
+      var len=Math.ceil(el.getTotalLength());
+      el.style.setProperty('--len',len);
+      el.style.strokeDasharray=len;
+      el.style.strokeDashoffset=len;
+    }catch(e){}
+  });
+})();
+</script>
+
+<!-- ===== PRODOXY INDIA MAP SECTION END ===== -->
+
+
+
+
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+<section class="start-selling">
+  <div class="container">
+
+    <!-- LEFT IMAGES -->
+    <div class="images">
+      <img src="/img/left1.webp" class="img img1">
+      <img src="/img/left2.webp" class="img img2">
+    </div>
+
+    <!-- RIGHT CONTENT -->
+    <div class="content">
+      <h2>It's easy to start selling</h2>
+
+      <div class="steps">
+
+        <div class="step">
+          <span class="num">01</span>
+          <div class="text">
+            <h3>Add your first product</h3>
+            <div class="line"></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="num">02</span>
+          <div class="text">
+            <h3>Customize your store</h3>
+            <div class="line"></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="num">03</span>
+          <div class="text">
+            <h3>Set up payments</h3>
+          </div>
+        </div>
+
+      </div>
+
+      <a href="#" class="btn">Take your shot</a>
+    </div>
+
+  </div>
+</section>
+
+<style>
+.start-selling{
+  background:#050505;
+  padding:80px 20px;
+  font-family:'Inter',sans-serif;
+  color:#fff;
+  overflow:hidden;
+}
+
+.container{
+  max-width:1200px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:60px;
+}
+
+/* LEFT IMAGES */
+.images{
+  position:relative;
+  width:50%;
+}
+
+.img{
+  width:280px;
+  border-radius:20px;
+  object-fit:cover;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+
+.img1{
+  position:relative;
+  z-index:2;
+}
+
+.img2{
+  position:absolute;
+  top:60px;
+  left:220px;
+  z-index:1;
+}
+
+/* RIGHT CONTENT */
+.content{
+  width:50%;
+}
+
+.content h2{
+  font-size:48px;
+  font-weight:300;
+  margin-bottom:40px;
+}
+
+/* STEPS */
+.steps{
+  display:flex;
+  flex-direction:column;
+  gap:30px;
+}
+
+.step{
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+
+.num{
+  color:#2cff9c;
+  font-size:18px;
+  font-weight:400;
+}
+
+.text h3{
+  font-size:32px;
+  font-weight:300;
+  margin:0;
+}
+
+.line{
+  height:1px;
+  width:100%;
+  background:rgba(255,255,255,0.2);
+  margin-top:10px;
+}
+
+/* BUTTON */
+.btn{
+  display:inline-block;
+  margin-top:40px;
+  padding:14px 28px;
+  border-radius:30px;
+  background:#fff;
+  color:#000;
+  text-decoration:none;
+  font-size:14px;
+  transition:.3s;
+}
+
+.btn:hover{
+  opacity:.85;
+}
+
+/* MOBILE */
+@media(max-width:900px){
+  .container{
+    flex-direction:column;
+    text-align:center;
+  }
+
+  .images{
+    width:100%;
+    height:350px;
+  }
+
+  .img1{
+    width:220px;
+  }
+
+  .img2{
+    width:220px;
+    left:140px;
+    top:50px;
+  }
+
+  .content{
+    width:100%;
+  }
+
+  .content h2{
+    font-size:34px;
+  }
+
+  .text h3{
+    font-size:24px;
+  }
+}
+</style>
+
+
+<!-- ===== PRODOXY THEME SHOWCASE START ===== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+.pxt-section *{box-sizing:border-box;margin:0;padding:0}
+
+.pxt-section{
+  background:#fff;
+  padding:90px 0 100px;
+  font-family:'Barlow',sans-serif;
+  overflow:hidden;
+}
+
+/* ── HEADER ── */
+.pxt-header{
+  padding:0 clamp(24px,6vw,80px);
+  margin-bottom:48px;
+}
+
+.pxt-header h2{
+  font-family:'Barlow',sans-serif;
+  font-size:clamp(26px,3.5vw,42px);
+  font-weight:500;
+  color:#111;
+  line-height:1.15;
+  margin-bottom:10px;
+  max-width:360px;
+}
+
+.pxt-header p{
+  font-size:15px;
+  font-weight:300;
+  color:#555;
+  line-height:1.65;
+  max-width:400px;
+}
+
+/* ── ROWS WRAPPER ── */
+.pxt-rows{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+/* ── SINGLE ROW ── */
+.pxt-row{
+  display:flex;
+  gap:16px;
+  width:max-content;
+  animation:pxt-scroll-left 50s linear infinite;
+}
+
+.pxt-row.reverse{
+  animation:pxt-scroll-right 55s linear infinite;
+}
+
+/* pause on section hover */
+.pxt-section:hover .pxt-row{
+  animation-play-state:paused;
+}
+
+@keyframes pxt-scroll-left{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
+}
+
+@keyframes pxt-scroll-right{
+  0%{transform:translateX(-50%)}
+  100%{transform:translateX(0)}
+}
+
+/* ── CARD ── */
+.pxt-card{
+  position:relative;
+  flex-shrink:0;
+  width:clamp(240px,22vw,340px);
+  border-radius:14px;
+  overflow:hidden;
+  cursor:pointer;
+  background:#f0f0f0;
+}
+
+.pxt-card img{
+  width:100%;
+  height:clamp(180px,18vw,280px);
+  object-fit:cover;
+  object-position:top center;
+  display:block;
+  transition:transform .5s cubic-bezier(.4,0,.2,1);
+}
+
+.pxt-card:hover img{
+  transform:scale(1.04);
+}
+
+/* ── OVERLAY ── */
+.pxt-overlay{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  transition:opacity .28s ease;
+  border-radius:14px;
+}
+
+.pxt-card:hover .pxt-overlay{
+  opacity:1;
+}
+
+/* ── PREVIEW BUTTON ── */
+.pxt-preview-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  background:#fff;
+  color:#111;
+  padding:10px 22px;
+  border-radius:999px;
+  font-family:'Barlow',sans-serif;
+  font-size:13px;
+  font-weight:500;
+  text-decoration:none;
+  letter-spacing:.1px;
+  transform:translateY(6px);
+  transition:transform .28s ease, opacity .28s ease;
+  opacity:0;
+  pointer-events:none;
+}
+
+.pxt-card:hover .pxt-preview-btn{
+  transform:translateY(0);
+  opacity:1;
+  pointer-events:auto;
+}
+
+.pxt-preview-btn svg{
+  flex-shrink:0;
+}
+
+/* ── MOBILE: slow down + slightly smaller ── */
+@media(max-width:600px){
+  .pxt-card{
+    width:200px;
+  }
+  .pxt-card img{
+    height:155px;
+  }
+  .pxt-row{
+    animation-duration:35s;
+  }
+  .pxt-row.reverse{
+    animation-duration:40s;
+  }
+  .pxt-header h2{font-size:24px}
+}
+</style>
+
+<section class="pxt-section">
+
+  <!-- HEADER -->
+  <div class="pxt-header">
+    <h2>Hundreds of themes,<br>millions of merchants</h2>
+    <p>Prodoxy themes flex to fit every kind and size of business — including yours</p>
+  </div>
+
+  <div class="pxt-rows">
+
+    <!-- ROW 1 — scrolls left (duplicated for seamless loop) -->
+    <div class="pxt-row" id="pxtRow1">
+
+      <div class="pxt-card"><img src="/img/theme1.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme2.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme3.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme4.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme1.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme2.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme3.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme4.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <!-- DUPLICATE for seamless loop -->
+      <div class="pxt-card"><img src="/img/theme1.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme2.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme3.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme4.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme1.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme2.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme3.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme4.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+    </div>
+
+    <!-- ROW 2 — scrolls right -->
+    <div class="pxt-row reverse" id="pxtRow2">
+
+      <div class="pxt-card"><img src="/img/theme2.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme4.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme1.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme3.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme2.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme4.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme1.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme3.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <!-- DUPLICATE -->
+      <div class="pxt-card"><img src="/img/theme2.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme4.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme1.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme3.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme2.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme4.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme1.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+      <div class="pxt-card"><img src="/img/theme3.jpg" alt="Theme"><div class="pxt-overlay"><a href="#" class="pxt-preview-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4Z" stroke="#111" stroke-width="1.3"/><circle cx="6.5" cy="6.5" r="1.5" fill="#111"/></svg>Preview</a></div></div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== PRODOXY THEME SHOWCASE END ===== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<section class="px-hero">
+
+  <div class="px-container">
+
+    <!-- LEFT -->
+    <div class="px-left">
+
+      <h1>
+        The world’s best-<br>
+        converting checkout
+      </h1>
+
+      <div class="px-stats">
+
+        <div class="px-stat">
+          <p class="label">↑ HIGHER CONVERSIONS</p>
+          <h2>15%</h2>
+        </div>
+
+        <div class="px-stat">
+          <p class="label">SHOP PAY BUYERS</p>
+          <h2>250M+</h2>
+        </div>
+
+      </div>
+
+      <p class="px-desc">
+        <span>Prodoxy Checkout</span> converts up to 50% higher than guest checkout 
+        and exposes your brand to millions of buyers.
+      </p>
+
+      <p class="px-small">
+        Based on internal performance data.
+      </p>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="px-right">
+      <img src="/img/checkout-ui.webp" alt="Checkout UI">
+    </div>
+
+  </div>
+
+</section>
+
+<style>
+
+/* FULL WIDTH FIX */
+.px-hero{
+  width:100%;
+  background:#050505;
+  padding:120px 60px;
+  font-family:'Inter',sans-serif;
+  color:#fff;
+}
+
+/* REMOVE BOX FEEL */
+.px-container{
+  width:100%;
+  max-width:1400px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:80px;
+}
+
+/* LEFT */
+.px-left{
+  flex:1;
+}
+
+.px-left h1{
+  font-size:64px;
+  font-weight:300;
+  line-height:1.1;
+  margin-bottom:50px;
+  letter-spacing:-1px;
+}
+
+/* STATS */
+.px-stats{
+  display:flex;
+  gap:80px;
+  margin-bottom:30px;
+}
+
+.label{
+  font-size:12px;
+  letter-spacing:1px;
+  color:rgba(255,255,255,0.6);
+  margin-bottom:10px;
+}
+
+.px-stat h2{
+  font-size:72px;
+  font-weight:300;
+}
+
+/* TEXT */
+.px-desc{
+  font-size:16px;
+  color:rgba(255,255,255,0.7);
+  max-width:520px;
+  margin-top:20px;
+  line-height:1.6;
+}
+
+.px-desc span{
+  text-decoration:underline;
+}
+
+.px-small{
+  margin-top:20px;
+  font-size:12px;
+  color:rgba(255,255,255,0.5);
+}
+
+/* RIGHT */
+.px-right{
+  flex:1;
+  display:flex;
+  justify-content:flex-end;
+}
+
+.px-right img{
+  width:100%;
+  max-width:600px;
+  border-radius:18px;
+  box-shadow:0 50px 120px rgba(0,0,0,0.8);
+}
+
+/* MOBILE */
+@media(max-width:992px){
+
+  .px-hero{
+    padding:80px 20px;
+  }
+
+  .px-container{
+    flex-direction:column;
+    text-align:center;
+  }
+
+  .px-left h1{
+    font-size:36px;
+  }
+
+  .px-stats{
+    justify-content:center;
+    gap:40px;
+  }
+
+  .px-stat h2{
+    font-size:40px;
+  }
+
+  .px-right{
+    justify-content:center;
+  }
+
+  .px-right img{
+    max-width:100%;
+    margin-top:30px;
+  }
+
+}
+
+</style>
+
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<section class="pf-growth-section">
+
+  <div class="pf-growth-container">
+
+    <h2 class="pf-growth-title">Find your forever customers</h2>
+
+    <div class="pf-growth-grid">
+
+      <!-- CARD 1 -->
+      <div class="pf-growth-card">
+
+        <div class="pf-growth-image">
+          <img src="/img/marketing-ui.webp" alt="">
+        </div>
+
+        <div class="pf-growth-content">
+          <h3>Reach the right people</h3>
+          <p>
+            Acquire new customers and keep them coming back with 
+            integrated marketing tools and insightful analytics.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- CARD 2 -->
+      <div class="pf-growth-card">
+
+        <div class="pf-growth-image">
+          <img src="/img/b2b-ui.webp" alt="">
+        </div>
+
+        <div class="pf-growth-content">
+          <h3>Unlock new growth with B2B</h3>
+          <p>
+            Create custom experiences for wholesale buyers with flexible 
+            pricing, discounts, and payment terms.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<style>
+
+/* ===== SECTION ===== */
+.pf-growth-section{
+  width:100%;
+  background:#050505;
+  padding:120px 40px;
+  font-family:'Inter',sans-serif;
+  color:#fff;
+}
+
+/* ===== CONTAINER ===== */
+.pf-growth-container{
+  max-width:1400px;
+  margin:auto;
+}
+
+/* ===== TITLE ===== */
+.pf-growth-title{
+  font-size:52px;
+  font-weight:300;
+  margin-bottom:60px;
+}
+
+/* ===== GRID ===== */
+.pf-growth-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:30px;
+}
+
+/* ===== CARD ===== */
+.pf-growth-card{
+  background:#062f2a;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,0.08);
+  transition:all .3s ease;
+}
+
+.pf-growth-card:hover{
+  transform:translateY(-6px);
+}
+
+/* ===== IMAGE AREA ===== */
+.pf-growth-image{
+  padding:30px;
+
+  background:
+    linear-gradient(rgba(0,0,0,0.25),rgba(0,0,0,0.25)),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.04) 0px,
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.04) 0px,
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 40px
+    );
+}
+
+.pf-growth-image img{
+  width:100%;
+  border-radius:12px;
+  display:block;
+}
+
+/* ===== CONTENT ===== */
+.pf-growth-content{
+  padding:25px 30px 30px;
+}
+
+.pf-growth-content h3{
+  font-size:22px;
+  font-weight:400;
+  margin-bottom:10px;
+}
+
+.pf-growth-content p{
+  font-size:14px;
+  color:rgba(255,255,255,0.7);
+  line-height:1.6;
+}
+
+/* ===== MOBILE ===== */
+@media(max-width:992px){
+
+  .pf-growth-section{
+    padding:80px 20px;
+  }
+
+  .pf-growth-grid{
+    grid-template-columns:1fr;
+  }
+
+  .pf-growth-title{
+    font-size:32px;
+  }
+
+}
+
+</style>
+
+<!-- ===== PRODOXY AI TOOLS SHOWCASE START ===== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<section class="px-ai-section" id="ai-tools">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    .px-ai-section {
+      position: relative;
+      overflow: hidden;
+      background: #050505;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      padding: 54px 20px 64px;
+    }
+
+    .px-ai-section::before,
+    .px-ai-section::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: .20;
+    }
+
+    .px-ai-section::before {
+      width: 460px;
+      height: 460px;
+      top: -180px;
+      left: -160px;
+      background: rgba(255,255,255,.07);
+    }
+
+    .px-ai-section::after {
+      width: 400px;
+      height: 400px;
+      bottom: -180px;
+      right: -160px;
+      background: rgba(223,78,30,.10);
+    }
+
+    .px-ai-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .px-ai-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      align-items: start;
+      margin-top: 18px;
+    }
+
+    .px-ai-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 0;
+    }
+
+    .px-scroll-stage {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    .px-card-shell {
+      position: relative;
+      min-height: 110vh;
+      display: flex;
+      align-items: flex-start;
+      padding-bottom: 24px;
+    }
+
+    .px-tool-card {
+      position: sticky;
+      top: 92px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+      gap: 18px;
+      padding: 22px;
+      width: 100%;
+      min-height: clamp(250px, 44vh, 360px);
+      border-radius: 24px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.22);
+      overflow: hidden;
+      scroll-snap-align: start;
+      scroll-margin-top: 96px;
+      transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease, background .25s ease;
+    }
+
+    .px-tool-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 18% 18%, rgba(255,255,255,.04), transparent 28%);
+      pointer-events: none;
+    }
+
+    .px-tool-card {
+      opacity: .42;
+      transform: scale(.965);
+      filter: blur(1.5px);
+    }
+
+    .px-tool-card.active {
+      border-color: rgba(223,78,30,0.28);
+      box-shadow: 0 22px 62px rgba(0,0,0,.30);
+      transform: scale(1);
+      opacity: 1;
+      filter: blur(0);
+      background: rgba(255,255,255,0.05);
+      z-index: 2;
+    }
+
+    .px-tool-copy,
+    .px-tool-visual {
+      position: relative;
+      z-index: 1;
+    }
+
+    .px-tool-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100%;
+    }
+
+    .px-tool-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .px-live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      color: rgba(255,255,255,.78);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .px-live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #df4e1e;
+      box-shadow: 0 0 0 5px rgba(223,78,30,.12);
+    }
+
+    .px-tool-title {
+      font-size: clamp(22px, 2.8vw, 34px);
+      line-height: 1.06;
+      font-weight: 300;
+      letter-spacing: -0.04em;
+      margin: 0 0 12px;
+      max-width: 520px;
+    }
+
+    .px-tool-desc {
+      font-size: 14px;
+      line-height: 1.75;
+      color: rgba(255,255,255,.56);
+      font-weight: 300;
+      max-width: 560px;
+      margin: 0 0 14px;
+    }
+
+    .px-tool-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .px-point {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.06);
+      color: rgba(255,255,255,.78);
+      font-size: 11.5px;
+      font-weight: 400;
+      letter-spacing: .01em;
+    }
+
+    .px-tool-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    .px-use-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      background: #fff;
+      color: #111;
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
+      box-shadow: 0 14px 28px rgba(0,0,0,.14);
+    }
+
+    .px-use-btn:hover {
+      transform: translateY(-1px);
+      opacity: .95;
+    }
+
+    .px-tool-note {
+      color: rgba(255,255,255,.42);
+      font-size: 11.5px;
+      line-height: 1.5;
+      font-weight: 300;
+    }
+
+    .px-tool-visual {
+      border-radius: 20px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .px-tool-visual::before {
+      content: "";
+      position: absolute;
+      inset: auto auto -20% -10%;
+      width: 230px;
+      height: 230px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,.08), transparent 70%);
+      filter: blur(18px);
+    }
+
+    .px-tool-visual-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .px-icon-circle {
+      width: 92px;
+      height: 92px;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .px-icon-circle svg {
+      width: 30px;
+      height: 30px;
+      stroke: #fff;
+      fill: none;
+      opacity: .96;
+    }
+
+    .px-visual-copy {
+      max-width: 230px;
+      color: rgba(255,255,255,.55);
+      font-size: 12.5px;
+      line-height: 1.65;
+      font-weight: 300;
+    }
+
+    .px-visual-copy strong {
+      display: block;
+      color: #fff;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .px-section-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 18px;
+      color: rgba(255,255,255,.38);
+      font-size: 12px;
+      font-weight: 300;
+    }
+
+    .px-footer-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+    }
+
+    @media (max-width: 1100px) {
+      .px-card-shell {
+        min-height: 96vh;
+      }
+
+      .px-tool-card {
+        top: 86px;
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+
+      .px-tool-visual {
+        min-height: 220px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .px-ai-section {
+        padding: 64px 14px 56px;
+      }
+
+      .px-card-shell {
+        min-height: 90vh;
+        padding-bottom: 18px;
+      }
+
+      .px-tool-card {
+        top: 74px;
+        border-radius: 20px;
+        padding: 18px;
+      }
+
+      .px-tool-title {
+        font-size: 23px;
+      }
+
+      .px-tool-desc {
+        font-size: 13.5px;
+      }
+
+      .px-icon-circle {
+        width: 84px;
+        height: 84px;
+        border-radius: 22px;
+      }
+
+      .px-icon-circle svg {
+        width: 28px;
+        height: 28px;
+      }
+    }
+  </style>
+
+  <div class="px-ai-container">
+    <div class="px-ai-grid">
+      <div class="px-ai-cards">
+        <div class="px-scroll-stage">
+          <div class="px-card-shell">
+
+            <article class="px-tool-card active" id="tool-01" data-title="Product Description Generator">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Product Description Generator</h3>
+                <p class="px-tool-desc">
+                  Create high-converting product descriptions in seconds with a tone that matches your brand.
+                </p>
+                <div class="px-tool-points">
+                  
+                </div>
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/product-description-generator">Use Tool</a>
+                <div class="px-tool-note">Generate compelling descriptions for every product.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M6 4h12M6 9h12M6 14h8M6 19h10" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Product copy made simple</strong>
+                  Long-form descriptions, short descriptions, and feature highlights generated instantly.
+                </div>
+              </div>
+            </div>
+          </article>
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-02" data-title="Product Title Generator">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Product Title Generator</h3>
+                <p class="px-tool-desc">
+                  Write clear, catchy, SEO-friendly product titles that feel premium and easy to search.
+                </p>
+            
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/product-title-generator">Use Tool</a>
+                <div class="px-tool-note">Generate titles that improve clarity and clicks.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 7h14M9 7v10M15 7v10" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Sharper product naming</strong>
+                  Titles that are easier to read and better aligned with product search intent.
+                </div>
+              </div>
+            </div>
+          </article>
+
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-03" data-title="SEO Optimizer">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">SEO Optimizer</h3>
+                <p class="px-tool-desc">
+                  Optimize store content for better visibility with SEO-focused suggestions and improvements.
+                </p>
+                
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/seo-optimizer">Use Tool</a>
+                <div class="px-tool-note">Improve product and page discoverability.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="5.5" stroke-width="1.8"/>
+                    <path d="M16 16l4 4" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>SEO signals that matter</strong>
+                  Fine-tune content structure, metadata, and ranking opportunities.
+                </div>
+              </div>
+            </div>
+          </article>
+
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-04" data-title="Ad Copy Generator">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Ad Copy Generator</h3>
+                <p class="px-tool-desc">
+                  Create compelling ad copy for Meta, Google, and more with a sharper conversion-first angle.
+                </p>
+                
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/ad-copy-generator">Use Tool</a>
+                <div class="px-tool-note">Generate ad lines that match your campaign style.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 15l11-4 2-7 3 12-3 1-1 4-2-7-10 3z" stroke-width="1.7" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Better ads, faster</strong>
+                  Draft ad variations with stronger hooks and cleaner messaging.
+                </div>
+              </div>
+            </div>
+          </article>
+
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-05" data-title="Email Campaign Generator">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Email Campaign Generator</h3>
+                <p class="px-tool-desc">
+                  Build polished marketing emails for launches, offers, follow-ups, and store updates.
+                </p>
+                
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/email-campaign-generator">Use Tool</a>
+                <div class="px-tool-note">Create email workflows that feel premium and personal.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="4" y="5" width="16" height="14" rx="2" stroke-width="1.7"/>
+                    <path d="M5 7l7 5 7-5" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Email campaigns made simple</strong>
+                  From welcome flows to campaigns, generate copy quickly and consistently.
+                </div>
+              </div>
+            </div>
+          </article>
+
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-06" data-title="Social Media Posts">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Social Media Posts</h3>
+                <p class="px-tool-desc">
+                  Create social content for Instagram, Facebook, and other platforms without writing from scratch.
+                </p>
+                
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/social-media-posts">Use Tool</a>
+                <div class="px-tool-note">Generate engaging posts that stay on brand.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 5a7 7 0 1 0 7 7" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M12 12l6-6" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Posts that feel polished</strong>
+                  Use AI to speed up your content pipeline across channels.
+                </div>
+              </div>
+            </div>
+          </article>
+
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-07" data-title="Blog Post Generator">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Blog Post Generator</h3>
+                <p class="px-tool-desc">
+                  Write structured blog posts that help your store build authority, traffic, and trust.
+                </p>
+                
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/blog-post-generator">Use Tool</a>
+                <div class="px-tool-note">Turn ideas into publish-ready blog posts.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M7 5h10M7 9h10M7 13h7M7 17h5" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Content that supports growth</strong>
+                  Build long-form content that feels clear and helpful, not generic.
+                </div>
+              </div>
+            </div>
+          </article>
+
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-08" data-title="Product Image Generator">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Product Image Generator</h3>
+                <p class="px-tool-desc">
+                  Generate product visuals that help you create better listings and marketing creatives.
+                </p>
+                
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/product-image-generator">Use Tool</a>
+                <div class="px-tool-note">Create product visuals for your store and campaigns.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="16" height="16" rx="3" stroke-width="1.7"/>
+                    <path d="M7 16l3-3 2 2 3-4 2 5" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="9" cy="9" r="1" stroke-width="1.7"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Sharper product imagery</strong>
+                  Make your listings and creative assets look more polished and professional.
+                </div>
+              </div>
+            </div>
+          </article>
+
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-09" data-title="Keyword Generator">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Keyword Generator</h3>
+                <p class="px-tool-desc">
+                  Find relevant search terms and keyword ideas to improve store visibility and planning.
+                </p>
+                
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/keyword-generator">Use Tool</a>
+                <div class="px-tool-note">Generate keyword ideas to support your SEO workflow.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M11 19a8 8 0 1 1 5.3-2L20 20" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="10.5" cy="10.5" r="4" stroke-width="1.8"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Better keyword planning</strong>
+                  Get search terms that help you shape stronger content and product pages.
+                </div>
+              </div>
+            </div>
+          </article>
+
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-10" data-title="Product Idea Generator">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Product Idea Generator</h3>
+                <p class="px-tool-desc">
+                  Discover new product ideas and creative directions for your store, collection, or brand.
+                </p>
+                
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/product-idea-generator">Use Tool</a>
+                <div class="px-tool-note">Brainstorm products and collection concepts faster.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 4a5 5 0 0 1 5 5c0 2.2-1.3 3.3-2.2 4.4-.8 1-1.3 1.9-1.3 3.6H10.5c0-1.7-.5-2.6-1.3-3.6C8.3 12.3 7 11.2 7 9a5 5 0 0 1 5-5Z" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M10 20h4" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Idea generation for growth</strong>
+                  Explore product concepts with a clean workflow that stays useful.
+                </div>
+              </div>
+            </div>
+          </article>
+
+
+          </div>
+
+          <div class="px-card-shell">
+
+
+            <article class="px-tool-card" id="tool-11" data-title="Hashtag Generator">
+            <div class="px-tool-copy">
+              <div>
+                <div class="px-tool-top">
+                  <div class="px-live-badge"><span class="px-live-dot"></span>Live tool</div>
+                </div>
+                <h3 class="px-tool-title">Hashtag Generator</h3>
+                <p class="px-tool-desc">
+                  Generate relevant hashtag sets for social content, launches, and promotional campaigns.
+                </p>
+               
+              </div>
+
+              <div class="px-tool-actions">
+                <a class="px-use-btn" href="https://www.prodoxy.com/ai-tools/hashtag-generator">Use Tool</a>
+                <div class="px-tool-note">Create hashtag sets for social posts in seconds.</div>
+              </div>
+            </div>
+
+            <div class="px-tool-visual">
+              <div class="px-tool-visual-inner">
+                <div class="px-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M9 3l-1 5h4l1-5M8 16h4l1-5H9M15 3l-1 5h4l1-5M14 16h4l1-5h-4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="px-visual-copy">
+                  <strong>Hashtags that fit your content</strong>
+                  Build social sets that feel more relevant and less random.
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          
+
+
+          </div>
+        </div>
+        
+
+        <div class="px-section-footer">
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const cards = Array.from(document.querySelectorAll('.px-tool-card'));
+      const shells = Array.from(document.querySelectorAll('.px-card-shell'));
+      const totalCount = document.getElementById('pxTotalCount');
+      const currentIndex = document.getElementById('pxCurrentIndex');
+      const currentTool = document.getElementById('pxCurrentTool');
+      const progressFill = document.getElementById('pxProgressFill');
+
+      if (!cards.length) return;
+      if (totalCount) totalCount.textContent = String(cards.length).padStart(2, '0');
+
+      function setActive(index) {
+        cards.forEach((card, i) => card.classList.toggle('active', i === index));
+
+        if (progressFill) {
+          const pct = cards.length > 1 ? (index / (cards.length - 1)) * 100 : 100;
+          progressFill.style.width = `${pct}%`;
+        }
+
+        if (currentIndex) {
+          currentIndex.textContent = String(index + 1).padStart(2, '0');
+        }
+
+        if (currentTool) {
+          currentTool.textContent = cards[index]?.dataset.title || '';
+        }
+      }
+
+      let ticking = false;
+
+      function updateActive() {
+        const triggerPoint = window.innerHeight * 0.42;
+        let activeIndex = 0;
+
+        shells.forEach((shell, index) => {
+          const rect = shell.getBoundingClientRect();
+          if (rect.top <= triggerPoint && rect.bottom >= triggerPoint) {
+            activeIndex = index;
+          }
+        });
+
+        setActive(activeIndex);
+      }
+
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(() => {
+          updateActive();
+          ticking = false;
+        });
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+      updateActive();
+    })();
+  </script>
+</section>
+
+<!-- ===== PRODOXY AI TOOLS SHOWCASE END ===== -->
+
+
+
+
+<footer class="px-footer">
+
+  <div class="px-footer-container">
+
+    <!-- LOGO + DESC -->
+    <div class="px-footer-brand">
+      <img src="/img/white_logo2-removebg.png" alt="Prodoxy" class="px-logo">
+      <p>
+        Build, grow and scale your online business with powerful tools,
+        automation and AI — all in one place.
+      </p>
+    </div>
+
+    <!-- LINKS -->
+    <div class="px-footer-links">
+
+      <div class="px-col">
+        <h4>Product</h4>
+        <a href="#">Features</a>
+        <a href="#">Pricing</a>
+        <a href="#">AI Tools</a>
+        <a href="#">Integrations</a>
+      </div>
+
+      <div class="px-col">
+        <h4>Company</h4>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+        <a href="#">Careers</a>
+        <a href="#">Blog</a>
+      </div>
+
+      <div class="px-col">
+        <h4>Support</h4>
+        <a href="#">Help Center</a>
+        <a href="#">Terms</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Refund Policy</a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="px-footer-bottom">
+    <p>© 2026 Prodoxy. All rights reserved.</p>
+  </div>
+
+</footer>
+
+<style>
+.px-footer{
+  background:#050505;
+  color:#fff;
+  font-family:'Inter',sans-serif;
+  padding:70px 20px 20px;
+  border-top:1px solid rgba(255,255,255,0.08);
+}
+
+/* CONTAINER */
+.px-footer-container{
+  max-width:1200px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  gap:60px;
+  flex-wrap:wrap;
+}
+
+/* LOGO */
+.px-logo{
+  width:140px;
+  margin-bottom:20px;
+  filter:brightness(0) invert(1);
+}
+
+.px-footer-brand{
+  max-width:320px;
+}
+
+.px-footer-brand p{
+  color:rgba(255,255,255,0.6);
+  font-size:14px;
+  line-height:1.7;
+}
+
+/* LINKS */
+.px-footer-links{
+  display:flex;
+  gap:60px;
+  flex-wrap:wrap;
+}
+
+.px-col{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.px-col h4{
+  font-size:14px;
+  font-weight:500;
+  margin-bottom:10px;
+}
+
+.px-col a{
+  text-decoration:none;
+  color:rgba(255,255,255,0.6);
+  font-size:13px;
+  transition:.3s;
+}
+
+.px-col a:hover{
+  color:#fff;
+  transform:translateX(3px);
+}
+
+/* BOTTOM */
+.px-footer-bottom{
+  border-top:1px solid rgba(255,255,255,0.08);
+  margin-top:40px;
+  padding-top:20px;
+  text-align:center;
+}
+
+.px-footer-bottom p{
+  font-size:12px;
+  color:rgba(255,255,255,0.5);
+}
+
+/* MOBILE */
+@media(max-width:768px){
+
+  .px-footer-container{
+    flex-direction:column;
+    gap:40px;
+  }
+
+  .px-footer-links{
+    gap:30px;
+  }
+
+}
+</style>
+
+<div class="pf-video-card">
+
+  <video autoplay muted loop playsinline>
+    <source src="/img/hero-video.mp4" type="video/mp4">
+  </video>
+
+  <div class="pf-video-overlay">
+    
+    <div class="pf-play">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="white" stroke-width="1.5"/>
+        <path d="M10 8L16 12L10 16V8Z" fill="white"/>
+      </svg>
+    </div>
+
+    <span>Why we build Prodoxy</span>
+
+  </div>
+
+</div>
+
+<style>
+    
+
+/* VIDEO CARD */
+.pf-video-card{
+  position:fixed;
+  bottom:25px;
+  right:25px; /* 🔥 RIGHT SIDE */
+  width:200px;   /* smaller */
+  height:115px;  /* smaller */
+  border-radius:14px;
+  overflow:hidden;
+  z-index:999;
+  cursor:pointer;
+  box-shadow:0 15px 50px rgba(0,0,0,0.5);
+  border:1px solid rgba(255,255,255,0.08);
+  transition:.3s ease;
+
+  opacity:0;             /* hidden by default */
+  transform:translateY(20px);
+  pointer-events:none;
+}
+
+/* SHOW AFTER SCROLL */
+.pf-video-card.show{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+}
+
+/* HOVER */
+.pf-video-card:hover{
+  transform:translateY(-3px) scale(1.03);
+}
+
+/* VIDEO */
+.pf-video-card video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* OVERLAY */
+.pf-video-overlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  background:rgba(0,0,0,0.35);
+  color:#fff;
+  font-size:12px;
+  font-family:'Inter',sans-serif;
+}
+
+/* PLAY ICON */
+.pf-play{
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,0.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* MOBILE HIDE */
+@media(max-width:768px){
+  .pf-video-card{
+    display:none;
+  }
+}
+</style>
+
+<script>
+const videoCard = document.querySelector(".pf-video-card");
+
+window.addEventListener("scroll", () => {
+  if(window.scrollY > 300){ // 👈 hero ke baad show
+    videoCard.classList.add("show");
+  } else {
+    videoCard.classList.remove("show");
+  }
+});
+</script>
+
+</body>
+</html>
