@@ -499,7 +499,7 @@ export default function CheckoutPage() {
         const { data } = await (supabase as any).from("abandoned_carts").insert({
           store_id: store.id,
           customer_email: email || null,
-          customer_phone: phone || null,
+          customer_phone: normalizePhone(phone) || null,
           cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
         }).select("id").single();
         if (data?.id) {
