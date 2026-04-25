@@ -1074,32 +1074,6 @@ export default function CheckoutPage() {
   return (
     <div className="mx-auto max-w-lg px-4 py-6 sm:py-8 pb-24 sm:pb-8 text-[13px] [&_input]:!h-11 [&_input::placeholder]:!text-[11px] [&_input::placeholder]:!font-medium [&_input]:!font-['Montserrat_Alternates'] [&_label]:!font-['Montserrat_Alternates'] [&_span]:!font-['Montserrat_Alternates'] [&_p]:!font-['Montserrat_Alternates'] [&_button]:!font-['Montserrat_Alternates']" style={{ fontFamily: "'Montserrat Alternates', sans-serif" }}>
 
-      {/* Stepped progress overlay — shown while placing order */}
-      {placing && !paymentFailed && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/85 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-[88%] max-w-xs rounded-2xl bg-card border border-border p-5 shadow-2xl">
-            <div className="space-y-2.5">
-              {[
-                { n: 1, label: t("Creating your order", "ऑर्डर बनाया जा रहा है") },
-                { n: 2, label: t("Confirming payment", "भुगतान कन्फर्म हो रहा है"), hide: paymentMethod === "cod" && !isPartialOrder },
-                { n: 3, label: t("Sending WhatsApp confirmation", "व्हाट्सऐप पर भेज रहे हैं") },
-              ].filter((s) => !s.hide).map((s) => {
-                const active = placingStep === s.n;
-                const done = placingStep > s.n;
-                return (
-                  <div key={s.n} className="flex items-center gap-3">
-                    <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-primary-foreground" : active ? "border-primary bg-primary/10" : "border-border bg-muted"}`}>
-                      {done ? <Check className="h-4 w-4" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> : <span className="text-[11px] font-semibold text-muted-foreground">{s.n}</span>}
-                    </div>
-                    <span className={`text-xs font-medium ${active ? "text-foreground" : done ? "text-muted-foreground" : "text-muted-foreground/70"}`}>{s.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="mt-4 text-center text-[10.5px] text-muted-foreground">{t("Please don't close this window", "कृपया यह विंडो बंद न करें")}</p>
-          </div>
-        </div>
-      )}
 
       {/* Trust Strip — reassurance above the fold */}
       <div className="mb-3 grid grid-cols-4 items-stretch gap-1.5 rounded-xl border border-border bg-card px-1.5 py-2.5">
