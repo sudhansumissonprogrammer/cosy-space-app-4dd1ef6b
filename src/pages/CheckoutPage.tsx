@@ -551,7 +551,7 @@ export default function CheckoutPage() {
           currency,
           status: "pending",
           customer_name: fullName.trim(),
-          customer_phone: phone.trim(),
+          customer_phone: normalizedPhone,
           street_address: streetAddress.trim(),
           city: city.trim(),
           state: state.trim(),
@@ -569,7 +569,7 @@ export default function CheckoutPage() {
         })),
         lead: {
           name: fullName.trim(),
-          phone: phone.trim(),
+          phone: normalizedPhone,
           product_name: checkoutItems.map((i) => i.name).join(", "),
           product_id: checkoutItems.length === 1 ? checkoutItems[0].productId : null,
           source: "website_order",
@@ -596,7 +596,7 @@ export default function CheckoutPage() {
       const { data, error } = await supabase.functions.invoke("create-guest-account", {
         body: {
           email: email.trim(),
-          phone: phone.trim(),
+          phone: normalizedPhone,
           name: fullName.trim(),
           store_id: store.id,
           order_id: ordId,
@@ -655,7 +655,7 @@ export default function CheckoutPage() {
         storefront_customer_id: customer.id,
         label: "Home",
         full_name: fullName.trim(),
-        phone: phone.trim(),
+        phone: normalizedPhone,
         street_address: streetAddress.trim(),
         city: city.trim(),
         state: state.trim(),
@@ -728,7 +728,7 @@ export default function CheckoutPage() {
   const saveExpressInfo = () => {
     try {
       localStorage.setItem(`express_checkout_${store.id}`, JSON.stringify({
-        fullName: fullName.trim(), phone: phone.trim(),
+        fullName: fullName.trim(), phone: normalizedPhone,
         streetAddress: streetAddress.trim(), city: city.trim(),
         state: state.trim(), pincode: pincode.trim(),
       }));
@@ -761,7 +761,7 @@ export default function CheckoutPage() {
       eventName: "Purchase",
       eventId: purchaseEid,
       userEmail: email.trim() || undefined,
-      userPhone: phone.trim() || undefined,
+      userPhone: normalizedPhone || undefined,
       externalId: customer?.id || undefined,
       firstName,
       lastName,
@@ -783,7 +783,7 @@ export default function CheckoutPage() {
     if (!customer) { void createGuestAccount(newOrderId); } else saveAddressToAccount();
     notifyOrderEmail(newOrderId);
     sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
-      customer_phone: phone.trim(), customer_name: fullName.trim(),
+      customer_phone: normalizedPhone, customer_name: fullName.trim(),
       total, currency,
       product_names: checkoutItems.map((i) => i.name).join(", "),
       store_name: store.name,
