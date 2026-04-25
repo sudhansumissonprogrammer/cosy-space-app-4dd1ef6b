@@ -1119,15 +1119,33 @@ export default function ProductDetail() {
 
       {/* Variant required prompt */}
       <Dialog open={variantPromptOpen} onOpenChange={setVariantPromptOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm z-[200]">
           <DialogHeader>
             <DialogTitle className="text-lg">Please select a variant</DialogTitle>
             <DialogDescription>
               Choose an option (size / pack / color) before continuing.
             </DialogDescription>
           </DialogHeader>
+          {hasVariants && (
+            <div className="flex flex-wrap gap-2 pt-2">
+              {(variants || []).map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedVariant(v);
+                    setVariantPromptOpen(false);
+                  }}
+                  className="rounded-xl border-2 border-border px-4 py-2.5 text-sm font-bold hover:border-primary hover:bg-primary/10 transition-all"
+                >
+                  {v.name}
+                </button>
+              ))}
+            </div>
+          )}
           <DialogFooter>
             <Button
+              variant="outline"
               className="w-full"
               onClick={() => {
                 setVariantPromptOpen(false);
@@ -1136,7 +1154,7 @@ export default function ProductDetail() {
                 }, 100);
               }}
             >
-              Select Variant
+              Go to options
             </Button>
           </DialogFooter>
         </DialogContent>
