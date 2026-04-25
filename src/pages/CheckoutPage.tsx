@@ -408,7 +408,7 @@ export default function CheckoutPage() {
         .from("coupons")
         .select("*")
         .eq("store_id", store.id)
-        .eq("code", couponCode.trim().toUpperCase())
+        .eq("code", code.toUpperCase())
         .eq("is_active", true)
         .maybeSingle();
 
