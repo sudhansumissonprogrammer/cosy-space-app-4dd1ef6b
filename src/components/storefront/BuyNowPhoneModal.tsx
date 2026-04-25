@@ -20,6 +20,7 @@ import { toast } from "sonner";
 
 import { storefrontPath } from "@/lib/subdomain";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 interface Props {
   open: boolean;
