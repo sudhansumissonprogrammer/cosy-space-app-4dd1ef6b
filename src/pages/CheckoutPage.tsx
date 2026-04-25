@@ -851,13 +851,18 @@ export default function CheckoutPage() {
     // Fire all post-order tasks in parallel (non-blocking)
     // Auto-login (createGuestAccount) is awaited inside finalizeOrder via the effect below
     if (!customer) { void createGuestAccount(newOrderId); } else saveAddressToAccount();
-    notifyOrderEmail(newOrderId);
-    sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
-      customer_phone: normalizePhone(phone), customer_name: fullName.trim(),
-      total, currency,
-      product_names: checkoutItems.map((i) => i.name).join(", "),
-      store_name: store.name,
-    });
+    // 🚫 Post-order automations temporarily disabled (re-enable when ready):
+    // - notify-order email (notifyOrderEmail)
+    // - WhatsApp order_confirmation (sendOrderWhatsApp)
+    // notifyOrderEmail(newOrderId);
+    // sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
+    //   customer_phone: normalizePhone(phone), customer_name: fullName.trim(),
+    //   total, currency,
+    //   product_names: checkoutItems.map((i) => i.name).join(", "),
+    //   store_name: store.name,
+    // });
+    void notifyOrderEmail; // keep refs to avoid unused warnings
+    void sendOrderWhatsApp;
   };
 
   // Open Razorpay modal for an existing order (used for both initial and retry)
