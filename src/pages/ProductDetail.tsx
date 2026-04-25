@@ -1074,6 +1074,11 @@ export default function ProductDetail() {
                       </div>
                       <button
                         onClick={() => {
+                          if (hasVariants && !selectedVariant) {
+                            toast.error("Please select a variant first");
+                            document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                            return;
+                          }
                           navigate(storefrontPath(store.slug, `checkout?product=${product.id}${selectedVariant ? `&variant=${selectedVariant.id}` : ""}`));
                         }}
                         className="flex h-12 items-center gap-2 rounded-xl px-5 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
