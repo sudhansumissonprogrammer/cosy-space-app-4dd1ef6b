@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <meta name="description" content="Prodoxy is an affordable eCommerce platform to build your online store at just ₹99/month. Sell products, manage orders and grow your business easily. Start your free trial today.">
+    <!-- ===== FAVICON START ===== -->
+<link rel="icon" type="image/png" sizes="32x32" href="https://patternfoldagency.com/wp-content/uploads/2026/02/Black-and-Green-Modern-Business-Instagram-Post-7.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://patternfoldagency.com/wp-content/uploads/2026/02/Black-and-Green-Modern-Business-Instagram-Post-7.png">
+<link rel="apple-touch-icon" href="https://patternfoldagency.com/wp-content/uploads/2026/02/Black-and-Green-Modern-Business-Instagram-Post-7.png">
+<!-- ===== FAVICON END ===== -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prodoxy – Support Center | Best eCommerce Platform in India</title>
+
+<script>
+(function(){if(!window.chatbase||window.chatbase("getState")!=="initialized"){window.chatbase=(...arguments)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(arguments)};window.chatbase=new Proxy(window.chatbase,{get(target,prop){if(prop==="q"){return target.q}return(...args)=>target(prop,...args)}})}const onLoad=function(){const script=document.createElement("script");script.src="https://www.chatbase.co/embed.min.js";script.id="hR8uHFdQcNbhlgicXnUYu";script.domain="www.chatbase.co";document.body.appendChild(script)};if(document.readyState==="complete"){onLoad()}else{window.addEventListener("load",onLoad)}})();
+</script>
+
+<!-- Premium SaaS Font -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+/* ===== RESET ===== */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:'Inter',sans-serif;
+  padding-top:80px;
+}
+
+/* ===== HEADER ===== */
+
+.header{
+  width:100%;
+  position:fixed;
+  top:0;
+  left:0;
+  background:#ffffff;
+  z-index:1000;
+  transition:0.3s ease;
+}
+
+.header.scrolled{
+  box-shadow:0 10px 30px rgba(0,0,0,0.05);
+}
+
+.container{
+  max-width:1280px;
+  margin:auto;
+  padding:0 24px;
+}
+
+.navbar{
+  height:80px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+/* ===== LOGO ===== */
+.logo img{
+  height:30px;
+}
+
+/* ===== NAV LINKS ===== */
+
+.nav-links{
+  display:flex;
+  align-items:center;
+  gap:28px;
+}
+
+.nav-links a{
+  text-decoration:none;
+  color:#111;
+  font-weight:500;
+  font-size:15px;
+  transition:0.3s;
+}
+
+.nav-links a:hover{
+  color:#df4e1e;
+}
+
+/* ===== DROPDOWN ===== */
+
+.dropdown{
+  position:relative;
+}
+
+.dropdown-menu{
+  position:absolute;
+  top:120%;
+  left:0;
+  background:#fff;
+  padding:15px 0;
+  border-radius:12px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.08);
+  display:none;
+  flex-direction:column;
+  min-width:200px;
+}
+
+.dropdown-menu a{
+  padding:10px 20px;
+  font-size:14px;
+  color:#111;
+}
+
+.dropdown:hover .dropdown-menu{
+  display:flex;
+}
+
+/* ===== BUTTON ===== */
+
+.nav-buttons{
+  display:flex;
+  align-items:center;
+}
+
+.btn-login{
+  padding:8px 18px;
+  margin-left: 100px;
+  border-radius:999px;
+  border:1px solid #df4e1e;
+  font-weight:600;
+  font-size:14px;
+  text-decoration:none;
+color:#111;
+}
+
+/* ===== MOBILE MENU ===== */
+
+.menu-toggle{
+  display:none;
+  flex-direction:column;
+  gap:5px;
+  cursor:pointer;
+}
+
+.menu-toggle span{
+  width:24px;
+  height:2px;
+  background:#111;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media(max-width:992px){
+
+  .nav-links{
+    position:fixed;
+    top:100px;
+    bottom:100px;
+    left:0;
+    width:100%;
+    background:#fff;
+    flex-direction:column;
+    align-items:flex-start;
+    padding:30px 24px;
+    gap:18px;
+    transform:translateY(-120%);
+    transition:0.4s ease;
+  }
+
+  .nav-links.active{
+    transform:translateY(0);
+  }
+
+  .dropdown-menu{
+    position:static;
+    box-shadow:none;
+    padding-left:15px;
+    display:none;
+  }
+
+  .dropdown.active .dropdown-menu{
+    display:flex;
+  }
+
+  .menu-toggle{
+    display:flex;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<header class="header" id="header">
+  <div class="container navbar">
+
+    <!-- LOGO -->
+    <a href="/" class="logo">
+      <img src="https://prodoxy.com/img/prodoxy_logo-without-bg2.png" alt="Prodoxy Logo">
+    </a>
+
+    <!-- NAV LINKS -->
+    <div class="nav-links" id="navMenu">
+
+        <a href="/">Home</a>
+      <a href="https://prodoxy.com/about">About</a>
+      <a href="https://prodoxy.com/pricing">Pricing</a>
+      <a href="https://prodoxy.com/feature">Features</a>
+      <a href="#">Blog</a>
+      <a href="https://prodoxy.com/contact">Contact</a>
+
+      <!-- LEGAL DROPDOWN -->
+      <div class="dropdown" id="legalDropdown">
+        <a href="#">Legal ▾</a>
+        <div class="dropdown-menu">
+          <a href="https://prodoxy.com/privacy_policy">Privacy Policy</a>
+          <a href="https://prodoxy.com/terms">Terms of Service</a>
+          <a href="https://prodoxy.com/refund_policy">Refund Policy</a>
+          <a href="#">Security</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LOGIN BUTTON -->
+    <div class="nav-buttons">
+      <a href="https://prodoxy.com/login" class="btn-login">Log in</a>
+    </div>
+
+    <!-- MOBILE MENU ICON -->
+    <div class="menu-toggle" id="menuToggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+  </div>
+</header>
+
+<script>
+
+/* Elements */
+const toggle = document.getElementById("menuToggle");
+const nav = document.getElementById("navMenu");
+const header = document.getElementById("header");
+const dropdown = document.getElementById("legalDropdown");
+
+/* Mobile Toggle */
+toggle.addEventListener("click",()=>{
+  nav.classList.toggle("active");
+});
+
+/* Mobile Dropdown Toggle */
+dropdown.addEventListener("click",function(){
+  if(window.innerWidth < 992){
+    this.classList.toggle("active");
+  }
+});
+
+/* Scroll Shadow */
+window.addEventListener("scroll",()=>{
+  if(window.scrollY > 20){
+    header.classList.add("scrolled");
+  }else{
+    header.classList.remove("scrolled");
+  }
+});
+
+</script>
+
+</body>
+</html>
+
+<!-- ===== COUNTDOWN TOP BAR START ===== -->
+
+<style>
+.px-topbar{
+  width:100%;
+  background:#c6ff00;
+  color:#000;
+  font-family:'Poppins',sans-serif;
+  font-size:14px;
+  font-weight:500;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:20px;
+  padding:8px 10px;
+  position:relative;
+  z-index:9999;
+}
+
+.px-timer{
+  display:flex;
+  gap:10px;
+  font-weight:600;
+}
+
+.px-time-box{
+  display:flex;
+  gap:4px;
+}
+
+.px-topbar a{
+  color:#000;
+  font-weight:600;
+  text-decoration:underline;
+}
+
+@media(max-width:600px){
+  .px-topbar{
+    font-size:12px;
+    flex-wrap:wrap;
+    text-align:center;
+  }
+}
+</style>
+
+<div class="px-topbar">
+  <div>Don’t miss the limited-time deals!</div>
+
+  <div class="px-timer">
+    <div class="px-time-box"><span id="days">2</span>D</div>
+    <div class="px-time-box"><span id="hours">00</span>H</div>
+    <div class="px-time-box"><span id="minutes">00</span>M</div>
+    <div class="px-time-box"><span id="seconds">00</span>S</div>
+  </div>
+</div>
+
+<script>
+
+// 7 Days + 5 Hours in milliseconds
+const duration = (7 * 24 * 60 * 60 * 1000) + (5 * 60 * 60 * 1000);
+
+let endTime = localStorage.getItem("pxCountdownEnd");
+
+if (!endTime) {
+  endTime = new Date().getTime() + duration;
+  localStorage.setItem("pxCountdownEnd", endTime);
+}
+
+function updateCountdown() {
+  const now = new Date().getTime();
+  let distance = endTime - now;
+
+  if (distance <= 0) {
+    // Reset automatically
+    endTime = new Date().getTime() + duration;
+    localStorage.setItem("pxCountdownEnd", endTime);
+    distance = duration;
+  }
+
+  const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+  document.getElementById("days").innerText = String(days).padStart(2,'0');
+  document.getElementById("hours").innerText = String(hours).padStart(2,'0');
+  document.getElementById("minutes").innerText = String(minutes).padStart(2,'0');
+  document.getElementById("seconds").innerText = String(seconds).padStart(2,'0');
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+</script>
+
+<!-- ===== COUNTDOWN TOP BAR END ===== -->
+<!-- ===== PRODoxy Modern SaaS Support Section ===== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  font-family:'Inter',sans-serif;
+  background:#f3f4f6;
+}
+
+.prodoxy-support{
+  margin-top: -30px;
+  padding:100px 20px;
+}
+
+.support-header{
+  text-align:center;
+  max-width:750px;
+  margin:auto;
+  margin-bottom:70px;
+}
+
+.support-badge{
+  display:inline-block;
+  background:#df4e1e;
+  color:#fff;
+  padding:8px 18px;
+  margin-top: -50px;
+  border-radius:30px;
+  font-size:13px;
+  font-weight:500;
+  margin-bottom:20px;
+}
+
+.support-header h2{
+  font-size:28px;
+  color:#111827;
+  margin-bottom:15px;
+}
+
+.support-header h2 span{
+  color:#df4e1e;
+}
+
+.support-header p{
+  color:#6b7280;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.support-grid{
+  max-width:1100px;
+  margin:auto;
+  display:flex;
+  flex-wrap:wrap;
+  gap:50px;
+  align-items:flex-start;
+}
+
+.support-info{
+  flex:1;
+  min-width:280px;
+}
+
+.info-card{
+  background:#df4e1e;
+  padding:25px;
+  border-radius:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.05);
+  margin-bottom:20px;
+}
+
+.info-card h4{
+  margin-bottom:8px;
+  color:#ffffff;
+  font-size: 16px;
+}
+
+.info-card p{
+  color:#ffffff;
+  font-size:14px;
+}
+
+.support-form{
+  flex:1;
+  background:#ffffff;
+  padding:40px;
+  border-radius:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.08);
+  min-width:300px;
+}
+
+.support-form label{
+  font-size:13px;
+  font-weight:500;
+  color:#374151;
+}
+
+.support-form input,
+.support-form select,
+.support-form textarea{
+  width:100%;
+  padding:14px;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  margin:8px 0 20px;
+  font-size:14px;
+  transition:0.3s;
+}
+
+.support-form input:focus,
+.support-form select:focus,
+.support-form textarea:focus{
+  outline:none;
+  border-color:#df4e1e;
+}
+
+.support-form textarea{
+  height:110px;
+  resize:none;
+}
+
+.hidden{
+  display:none;
+}
+
+.submit-btn{
+  width:100%;
+  padding:15px;
+  border:none;
+  border-radius:14px;
+  background:#df4e1e;
+  color:#fff;
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+.submit-btn:hover{
+  opacity:0.9;
+}
+
+.popup{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100vh;
+  background:rgba(0,0,0,0.5);
+  display:none;
+  justify-content:center;
+  align-items:center;
+}
+
+.popup-box{
+  background:#fff;
+  padding:40px;
+  border-radius:20px;
+  text-align:center;
+  max-width:420px;
+}
+
+.popup-box h3{
+  color:#111827;
+  margin-bottom:10px;
+}
+
+.ticket{
+  color:#df4e1e;
+  font-weight:600;
+}
+
+@media(max-width:768px){
+  .support-grid{
+    flex-direction:column;
+  }
+}
+</style>
+
+<section class="prodoxy-support">
+
+<div class="support-header">
+  <div class="support-badge">Prodoxy Support</div>
+  <h2>We're Here to <span>Help You</span></h2>
+  <p>Facing issues with payments, subscriptions, or AI tools? Submit your request and our team will respond within 24 hours.</p>
+</div>
+
+</div>
+
+<div class="support-form">
+
+<form id="supportForm" action="https://formsubmit.co/support@prodoxy.com" method="POST" enctype="multipart/form-data">
+
+<input type="hidden" name="_captcha" value="false">
+<input type="hidden" name="ticket_id" id="ticketInput">
+
+<label>Full Name</label>
+<input type="text" name="name" required>
+
+<label>Contact Number</label>
+<input type="number" name="number" required>
+
+<label>Email Address</label>
+<input type="email" name="email" required>
+
+<label>Select Issue</label>
+<select id="issueType" name="issue" required>
+<option value="">Choose your issue</option>
+<option value="Payment Issue">Payment Issue</option>
+<option value="Subscription Issue">Subscription Issue</option>
+<option value="Login Issue">Login Issue</option>
+<option value="AI Tool Issue">AI Tool Issue</option>
+</select>
+
+<div id="paymentField" class="hidden">
+<label>Transaction ID</label>
+<input type="text" name="transaction_id">
+</div>
+
+<label>Describe Your Problem</label>
+<textarea name="message" required></textarea>
+
+<div id="screenshotField" class="hidden">
+<label>Upload Screenshot</label>
+<input type="file" name="attachment" accept="image/*">
+</div>
+
+<button type="submit" class="submit-btn">Submit Support Request</button>
+
+</form>
+
+</div>
+
+</div>
+</section>
+
+<div class="popup" id="popup">
+  <div class="popup-box">
+    <h3>Support Request Submitted</h3>
+    <p>Your Ticket ID: <span class="ticket" id="ticketDisplay"></span></p>
+    <p>We will contact you within 24 hours.</p>
+  </div>
+</div>
+
+<script>
+const issueType=document.getElementById("issueType");
+const paymentField=document.getElementById("paymentField");
+const screenshotField=document.getElementById("screenshotField");
+const form=document.getElementById("supportForm");
+const popup=document.getElementById("popup");
+const ticketDisplay=document.getElementById("ticketDisplay");
+const ticketInput=document.getElementById("ticketInput");
+
+issueType.addEventListener("change",function(){
+paymentField.classList.add("hidden");
+screenshotField.classList.add("hidden");
+
+if(this.value==="Payment Issue"){
+paymentField.classList.remove("hidden");
+screenshotField.classList.remove("hidden");
+}
+});
+
+form.addEventListener("submit",function(e){
+e.preventDefault();
+let ticket="PDX"+Date.now().toString().slice(-6);
+ticketInput.value=ticket;
+ticketDisplay.innerText=ticket;
+
+fetch(this.action,{
+method:"POST",
+body:new FormData(this)
+}).then(()=>{
+popup.style.display="flex";
+form.reset();
+setTimeout(()=>{popup.style.display="none";},5000);
+});
+});
+</script>
+
+<!-- ===== Prodoxy Trust & Testimonial Section ===== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+.prodoxy-trust-section{
+  background:#f3f4f6;
+  padding:100px 20px;
+  margin-top: -90px;
+  font-family:'Inter',sans-serif;
+}
+
+/* Satisfaction Badge */
+
+.trust-container{
+  max-width:1100px;
+  margin:auto;
+  text-align:center;
+  margin-bottom:80px;
+}
+
+.trust-badge{
+  display:inline-block;
+  background:#15803d;
+  color:#fff;
+  padding:10px 22px;
+  border-radius:30px;
+  font-size:14px;
+  font-weight:500;
+  margin-bottom:20px;
+}
+
+.trust-heading{
+  font-size:21px;
+  color:#111827;
+  margin-bottom:15px;
+}
+
+.trust-heading span{
+  color:#df4e1e;
+}
+
+.trust-sub{
+  color:#6b7280;
+  font-size:13px;
+  margin-bottom:35px;
+}
+
+.rating-box{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:40px;
+}
+
+.rating-card{
+  background:#ffffff;
+  padding:30px;
+  border-radius:20px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.06);
+  min-width:220px;
+}
+
+.rating-card h3{
+  font-size: 20px;
+  color:#df4e1e;
+  margin-bottom:8px;
+}
+
+.rating-card p{
+  font-size:14px;
+  color:#6b7280;
+}
+
+/* Testimonial Section */
+
+.testimonial-wrapper{
+  max-width:1100px;
+  margin:auto;
+}
+
+.testimonial-header{
+  text-align:center;
+  margin-bottom:60px;
+}
+
+.testimonial-header h2{
+  font-size:26px;
+  color:#111827;
+  margin-bottom:10px;
+}
+
+.testimonial-header span{
+  color:#df4e1e;
+}
+
+.testimonial-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:40px;
+  justify-content:center;
+}
+
+.testimonial-card{
+  background:#ffffff;
+  padding:30px;
+  border-radius:22px;
+  box-shadow:0 20px 50px rgba(0,0,0,0.07);
+  max-width:320px;
+  transition:0.3s;
+}
+
+.testimonial-card:hover{
+  transform:translateY(-8px);
+}
+
+.testimonial-text{
+  font-size:15px;
+  color:#374151;
+  line-height:1.6;
+  margin-bottom:20px;
+}
+
+.testimonial-user{
+  font-weight:600;
+  color:#111827;
+  font-size:14px;
+}
+
+.testimonial-role{
+  font-size:13px;
+  color:#6b7280;
+}
+
+@media(max-width:768px){
+  .rating-box{
+    flex-direction:column;
+    align-items:center;
+  }
+  .testimonial-grid{
+    flex-direction:column;
+    align-items:center;
+  }
+}
+</style>
+
+<section class="prodoxy-trust-section">
+
+  <!-- Customer Satisfaction -->
+  <div class="trust-container">
+
+    <div class="trust-badge">Customer Satisfaction</div>
+
+    <h2 class="trust-heading">
+      Trusted by <span>Thousands of Businesses</span>
+    </h2>
+
+    <p class="trust-sub">
+      Prodoxy is powering online growth with reliable support and fast issue resolution.
+    </p>
+
+    <div class="rating-box">
+
+      <div class="rating-card">
+        <h3>4.9/5 ⭐</h3>
+        <p>Average Customer Rating</p>
+      </div>
+
+      <div class="rating-card">
+        <h3>5,000+</h3>
+        <p>Active Users</p>
+      </div>
+
+      <div class="rating-card">
+        <h3>98%</h3>
+        <p>Issue Resolution Rate</p>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- Testimonial Section -->
+  <div class="testimonial-wrapper">
+
+    <div class="testimonial-header">
+      <h2>What Our <span>Users Say</span></h2>
+    </div>
+
+    <div class="testimonial-grid">
+
+      <div class="testimonial-card">
+        <div class="testimonial-text">
+          “Prodoxy support resolved my payment issue within 2 hours. Extremely professional and responsive team.”
+        </div>
+        <div class="testimonial-user">Rahul Sharma</div>
+        <div class="testimonial-role">eCommerce Store Owner</div>
+      </div>
+
+      <div class="testimonial-card">
+        <div class="testimonial-text">
+          “The AI tools are powerful, and whenever I faced issues, support handled it quickly. Highly recommended.”
+        </div>
+        <div class="testimonial-user">Neha Verma</div>
+        <div class="testimonial-role">Digital Marketer</div>
+      </div>
+
+      <div class="testimonial-card">
+        <div class="testimonial-text">
+          “Best SaaS experience I’ve had so far. Clean system, fast replies, and very secure.”
+        </div>
+        <div class="testimonial-user">Amit Gupta</div>
+        <div class="testimonial-role">Startup Founder</div>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>

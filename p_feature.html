@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prodoxy Features</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+
+
+<style>
+
+/* ===== RESET ===== */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:'Inter',sans-serif;
+  padding-top:80px;
+}
+
+/* ===== HEADER ===== */
+
+.header{
+  width:100%;
+  position:fixed;
+  top:0;
+  left:0;
+  background:#ffffff;
+  z-index:1000;
+  transition:0.3s ease;
+}
+
+.header.scrolled{
+  box-shadow:0 10px 30px rgba(0,0,0,0.05);
+}
+
+.container{
+  max-width:1280px;
+  margin:auto;
+  padding:0 24px;
+}
+
+.navbar{
+  height:80px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+/* ===== LOGO ===== */
+.logo img{
+  height:30px;
+}
+
+/* ===== NAV LINKS ===== */
+
+.nav-links{
+  display:flex;
+  align-items:center;
+  gap:28px;
+}
+
+.nav-links a{
+  text-decoration:none;
+  color:#111;
+  font-weight:500;
+  font-size:15px;
+  transition:0.3s;
+}
+
+.nav-links a:hover{
+  color:#df4e1e;
+}
+
+/* ===== DROPDOWN ===== */
+
+.dropdown{
+  position:relative;
+}
+
+.dropdown-menu{
+  position:absolute;
+  top:120%;
+  left:0;
+  background:#fff;
+  padding:15px 0;
+  border-radius:12px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.08);
+  display:none;
+  flex-direction:column;
+  min-width:200px;
+}
+
+.dropdown-menu a{
+  padding:10px 20px;
+  font-size:14px;
+  color:#111;
+}
+
+.dropdown:hover .dropdown-menu{
+  display:flex;
+}
+
+/* ===== BUTTON ===== */
+
+.nav-buttons{
+  display:flex;
+  align-items:center;
+}
+
+.btn-login{
+  padding:8px 18px;
+  margin-left: 100px;
+  border-radius:999px;
+  border:1px solid #df4e1e;
+  font-weight:600;
+  font-size:14px;
+  text-decoration:none;
+color:#111;
+}
+
+/* ===== MOBILE MENU ===== */
+
+.menu-toggle{
+  display:none;
+  flex-direction:column;
+  gap:5px;
+  cursor:pointer;
+}
+
+.menu-toggle span{
+  width:24px;
+  height:2px;
+  background:#111;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media(max-width:992px){
+
+  .nav-links{
+    position:fixed;
+    top:100px;
+    bottom:100px;
+    left:0;
+    width:100%;
+    background:#fff;
+    flex-direction:column;
+    align-items:flex-start;
+    padding:30px 24px;
+    gap:18px;
+    transform:translateY(-120%);
+    transition:0.4s ease;
+  }
+
+  .nav-links.active{
+    transform:translateY(0);
+  }
+
+  .dropdown-menu{
+    position:static;
+    box-shadow:none;
+    padding-left:15px;
+    display:none;
+  }
+
+  .dropdown.active .dropdown-menu{
+    display:flex;
+  }
+
+  .menu-toggle{
+    display:flex;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<header class="header" id="header">
+  <div class="container navbar">
+
+    <!-- LOGO -->
+    <a href="/" class="logo">
+      <img src="https://prodoxy.com/img/prodoxy_logo-without-bg2.png" alt="Prodoxy Logo">
+    </a>
+
+    <!-- NAV LINKS -->
+    <div class="nav-links" id="navMenu">
+
+        <a href="/">Home</a>
+      <a href="https://prodoxy.com/about">About</a>
+      <a href="https://prodoxy.com/pricing">Pricing</a>
+      <a href="https://prodoxy.com/feature">Features</a>
+      <a href="#">Blog</a>
+      <a href="https://prodoxy.com/contact">Contact</a>
+
+      <!-- LEGAL DROPDOWN -->
+      <div class="dropdown" id="legalDropdown">
+        <a href="#">Legal ▾</a>
+        <div class="dropdown-menu">
+          <a href="https://prodoxy.com/privacy_policy">Privacy Policy</a>
+          <a href="https://prodoxy.com/terms">Terms of Service</a>
+          <a href="https://prodoxy.com/refund_policy">Refund Policy</a>
+          <a href="#">Security</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LOGIN BUTTON -->
+    <div class="nav-buttons">
+      <a href="https://prodoxy.com/login" class="btn-login">Log in</a>
+    </div>
+
+    <!-- MOBILE MENU ICON -->
+    <div class="menu-toggle" id="menuToggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+  </div>
+</header>
+
+<script>
+
+/* Elements */
+const toggle = document.getElementById("menuToggle");
+const nav = document.getElementById("navMenu");
+const header = document.getElementById("header");
+const dropdown = document.getElementById("legalDropdown");
+
+/* Mobile Toggle */
+toggle.addEventListener("click",()=>{
+  nav.classList.toggle("active");
+});
+
+/* Mobile Dropdown Toggle */
+dropdown.addEventListener("click",function(){
+  if(window.innerWidth < 992){
+    this.classList.toggle("active");
+  }
+});
+
+/* Scroll Shadow */
+window.addEventListener("scroll",()=>{
+  if(window.scrollY > 20){
+    header.classList.add("scrolled");
+  }else{
+    header.classList.remove("scrolled");
+  }
+});
+
+</script>
+
+</body>
+</html>
+
+<!-- ===== COUNTDOWN TOP BAR START ===== -->
+
+<style>
+.px-topbar{
+  width:100%;
+  background:#c6ff00;
+  color:#000;
+  font-family:'Poppins',sans-serif;
+  font-size:14px;
+  font-weight:500;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:20px;
+  padding:8px 10px;
+  position:relative;
+  z-index:9999;
+}
+
+.px-timer{
+  display:flex;
+  gap:10px;
+  font-weight:600;
+}
+
+.px-time-box{
+  display:flex;
+  gap:4px;
+}
+
+.px-topbar a{
+  color:#000;
+  font-weight:600;
+  text-decoration:underline;
+}
+
+@media(max-width:600px){
+  .px-topbar{
+    font-size:12px;
+    flex-wrap:wrap;
+    text-align:center;
+  }
+}
+</style>
+
+<div class="px-topbar">
+  <div>Don’t miss the limited-time deals!</div>
+
+  <div class="px-timer">
+    <div class="px-time-box"><span id="days">2</span>D</div>
+    <div class="px-time-box"><span id="hours">00</span>H</div>
+    <div class="px-time-box"><span id="minutes">00</span>M</div>
+    <div class="px-time-box"><span id="seconds">00</span>S</div>
+  </div>
+</div>
+
+<script>
+
+// 7 Days + 5 Hours in milliseconds
+const duration = (7 * 24 * 60 * 60 * 1000) + (5 * 60 * 60 * 1000);
+
+let endTime = localStorage.getItem("pxCountdownEnd");
+
+if (!endTime) {
+  endTime = new Date().getTime() + duration;
+  localStorage.setItem("pxCountdownEnd", endTime);
+}
+
+function updateCountdown() {
+  const now = new Date().getTime();
+  let distance = endTime - now;
+
+  if (distance <= 0) {
+    // Reset automatically
+    endTime = new Date().getTime() + duration;
+    localStorage.setItem("pxCountdownEnd", endTime);
+    distance = duration;
+  }
+
+  const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+  document.getElementById("days").innerText = String(days).padStart(2,'0');
+  document.getElementById("hours").innerText = String(hours).padStart(2,'0');
+  document.getElementById("minutes").innerText = String(minutes).padStart(2,'0');
+  document.getElementById("seconds").innerText = String(seconds).padStart(2,'0');
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+</script>
+
+<!-- ===== COUNTDOWN TOP BAR END ===== -->
+<style>
+
+/* ===== RESET ===== */
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Inter',sans-serif;
+  background:#f8fafc;
+  color:#111827;
+  overflow-x:hidden;
+}
+
+/* ===== GLOBAL ===== */
+section{padding:120px 20px;}
+.container{max-width:1200px;margin:auto;}
+.section-title{
+  text-align:center;
+  font-size:42px;
+  font-weight:800;
+  margin-bottom:20px;
+}
+.section-subtitle{
+  text-align:center;
+  color:#6b7280;
+  max-width:700px;
+  margin:0 auto 80px auto;
+  font-size:18px;
+  line-height:1.7;
+}
+
+/* ===== HERO ===== */
+.features-hero{
+  text-align:center;
+  padding-top:160px;
+  padding-bottom:120px;
+  margin-top: -80px;
+}
+.features-hero h1{
+  font-size:32px;
+  font-weight:400;
+  margin-bottom:20px;
+}
+.features-hero span{
+  color:#df4e1e;
+}
+.features-hero p{
+  font-size:16px;
+  color:#6b7280;
+  max-width:750px;
+  margin:auto;
+  line-height:1.7;
+}
+
+/* ===== GRID FEATURES ===== */
+.features-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:30px;
+}
+
+.feature-card{
+  background:#ffffff;
+  padding:40px;
+  border-radius:24px;
+  border:1px solid #eee;
+  transition:0.4s ease;
+  box-shadow:0 25px 60px rgba(0,0,0,0.05);
+}
+
+.feature-card:hover{
+  transform:translateY(-10px);
+  border-color:#df4e1e;
+}
+
+.feature-card h3{
+  font-size:22px;
+  margin-bottom:15px;
+  color:#df4e1e;
+}
+
+.feature-card p{
+  font-size:15px;
+  line-height:1.7;
+  color:#6b7280;
+}
+
+/* ===== DARK SECTION ===== */
+.dark-section{
+  background:linear-gradient(180deg,#050b16,#0b1a2a);
+  color:#ffffff;
+}
+
+.dark-section .feature-card{
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:none;
+}
+
+.dark-section .feature-card h3{
+  color:#df4e1e;
+}
+
+.dark-section .feature-card p{
+  color:#d1d5db;
+}
+
+/* ===== CTA ===== */
+.features-cta{
+  text-align:center;
+  background:#f8fafc;
+}
+
+.features-cta h2{
+  font-size:44px;
+  font-weight:800;
+  margin-bottom:20px;
+}
+
+.features-cta p{
+  font-size:18px;
+  color:#6b7280;
+  margin-bottom:35px;
+}
+
+.cta-btn{
+  display:inline-block;
+  padding:16px 40px;
+  background:#df4e1e;
+  color:#fff;
+  border-radius:999px;
+  text-decoration:none;
+  font-weight:600;
+  transition:0.3s;
+}
+
+.cta-btn:hover{
+  transform:translateY(-5px);
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:992px){
+
+  .features-hero h1{
+    font-size:38px;
+  }
+
+  .section-title{
+    font-size:32px;
+  }
+
+}
+
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="features-hero">
+  <div class="container">
+    <h1>Powerful Features to <span>Grow Your Business</span></h1>
+    <p>
+      Prodoxy gives you everything you need to build, manage, and scale your online store —
+      without technical complexity or high costs.
+    </p>
+  </div>
+</section>
+
+
+<!-- ===== STEP SECTION START ===== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+<section class="px-step-section">
+
+  <div class="px-step-container">
+
+    <!-- LEFT CONTENT -->
+    <div class="px-step-left">
+
+      <div class="px-step-number">AI</div>
+
+      <h2 class="px-step-title">
+        Sign Up & Setup in Minutes
+      </h2>
+
+      <p class="px-step-desc">
+        Get started with your online store quickly. 
+        Prodoxy helps you create a professional store in minutes.
+      </p>
+
+    </div>
+
+    <!-- VIDEO AREA -->
+    <div class="px-video-area">
+      <video 
+        autoplay 
+        muted 
+        loop 
+        playsinline 
+        preload="auto"
+        class="px-video"
+      >
+        <source src="assets/videos/Untitled design.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+
+  </div>
+
+</section>
+
+<style>
+
+.px-step-section{
+  padding-top: 80px;
+  padding-bottom: 120px;
+  padding-left: 30px;
+  padding-right: 30px;
+  margin-top: -50px;
+  background:linear-gradient(180deg,#050b16,#0b1a2a);
+  font-family:'Outfit',sans-serif;
+  color:#ffffff;
+}
+
+/* DESKTOP FULL HEIGHT ALIGN */
+@media(min-width:992px){
+  .px-step-section{
+    min-height:90vh;
+    display:flex;
+    align-items:center;
+  }
+}
+
+.px-step-container{
+  max-width:1200px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:80px;
+}
+
+/* LEFT SIDE */
+
+.px-step-left{
+  flex:1;
+  max-width:520px;
+}
+
+.px-step-number{
+  width:60px;
+  height:60px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.15);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Poppins',sans-serif;
+  font-size:22px;
+  font-weight:600;
+  margin-bottom:30px;
+  background:rgba(255,255,255,0.04);
+}
+
+.px-step-title{
+  font-family:'Poppins',sans-serif;
+  font-size:30px;
+  font-weight:600;
+  margin-bottom:15px;
+}
+
+@media(min-width:992px){
+  .px-step-title{
+    font-size:36px;
+  }
+}
+
+.px-step-desc{
+  font-size:16px;
+  color:#c6d7f0;
+  margin-bottom:25px;
+  line-height:1.7;
+}
+
+@media(min-width:992px){
+  .px-step-desc{
+    font-size:18px;
+  }
+}
+
+/* VIDEO AREA */
+
+.px-video-area{
+  flex:1;
+  max-width:600px;
+  border-radius:20px;
+  margin-top:0;
+  overflow:hidden;
+  background:#000;
+  box-shadow:0 40px 90px rgba(0,0,0,0.7);
+}
+
+@media(min-width:992px){
+  .px-video-area{
+    margin-top:-40px;
+  }
+}
+
+.px-video-area video{
+  width:100%;
+  display:block;
+  border-radius:20px;
+  transition:0.4s ease;
+}
+
+.px-video-area video:hover{
+  transform:scale(1.02);
+}
+
+/* RESPONSIVE (MOBILE SAME AS BEFORE) */
+
+@media(max-width:992px){
+
+  .px-step-container{
+    flex-direction:column;
+    text-align:left;
+    gap:40px;
+  }
+
+  .px-video-area{
+    width:100%;
+  }
+
+}
+
+@media(max-width:600px){
+
+  .px-step-title{
+    font-size:24px;
+  }
+
+}
+
+</style>
+
+<!-- ===== STEP SECTION END ===== -->
+
+<!-- ===== STEP SECTION START ===== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+<section class="px-step-section">
+
+  <div class="px-step-container">
+
+    <!-- LEFT CONTENT -->
+    <div class="px-step-left">
+
+      <div class="px-step-number">Themes</div>
+
+      <h2 class="px-step-title">
+        Smart Themes. Instant Setup.
+      </h2>
+
+      <p class="px-step-desc">
+        No design skills needed.
+Pick a powerful theme, customize in minutes, and start selling instantly with layouts optimized for conversions.
+      </p>
+    </div>
+        <!-- VIDEO AREA -->
+<div class="px-video-area">
+  <video 
+    autoplay 
+    muted 
+    loop 
+    playsinline 
+    preload="auto"
+    class="px-video"
+  >
+    <source src="assets/videos/shivam.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<style>
+
+.px-step-section{
+  padding-top: 40px;
+  padding-bottom: 120px;
+  padding-left: 30px;
+  padding-right: 30px;
+  background:linear-gradient(180deg,#050b16,#0b1a2a);
+  font-family:'Outfit',sans-serif;
+  color:#ffffff;
+}
+
+.px-step-container{
+  max-width:1200px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:60px;
+}
+
+/* LEFT SIDE */
+
+.px-step-left{
+  flex:1;
+}
+
+.px-step-number{
+  width:120px;
+  height:60px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.15);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Poppins',sans-serif;
+  font-size:20px;
+  font-weight:600;
+  margin-bottom:30px;
+  background:rgba(255,255,255,0.04);
+}
+
+.px-step-title{
+  font-family:'Poppins',sans-serif;
+  font-size:30px;
+  font-weight:600;
+  margin-bottom:15px;
+}
+
+.px-step-desc{
+  font-size:16px;
+  color:#c6d7f0;
+  margin-bottom:25px;
+  line-height:1.7;
+}
+
+.px-step-list{
+  list-style:none;
+  padding:0;
+}
+
+.px-step-list li{
+  margin-bottom:12px;
+  font-size:15px;
+  position:relative;
+  padding-left:25px;
+}
+
+.px-step-list li::before{
+  content:"✓";
+  position:absolute;
+  left:0;
+  color:#df4e1e;
+  font-weight:600;
+}
+
+/* RIGHT SIDE */
+
+.px-step-right{
+  flex:1;
+  display:flex;
+  justify-content:center;
+}
+
+.px-step-card{
+  width:100%;
+  max-width:520px;
+  background:linear-gradient(135deg,#111827,#1f2937);
+  border-radius:20px;
+  padding:25px;
+  box-shadow:0 30px 70px rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.08);
+  transition:0.4s ease;
+}
+
+.px-step-card:hover{
+  transform:translateY(-6px);
+}
+
+.px-card-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:20px;
+}
+
+.px-card-header h3{
+  font-family:'Poppins',sans-serif;
+  font-size:18px;
+  color:#df4e1e;
+  margin:0;
+}
+
+.px-badge{
+  background:#df4e1e;
+  color:#fff;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-family:'Poppins',sans-serif;
+}
+
+.px-video-area{
+  border-radius:16px;
+  margin-top: -50px;
+  overflow:hidden;
+  background:#000;
+}
+
+.px-video-area video{
+  width:100%;
+  display:block;
+  border-radius:16px;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:992px){
+
+  .px-step-container{
+    flex-direction:column;
+    text-align:left;
+  }
+
+  .px-step-right{
+    width:100%;
+  }
+
+}
+
+@media(max-width:600px){
+
+  .px-step-title{
+    font-size:24px;
+  }
+
+}
+
+</style>
+
+<!-- ===== STEP SECTION END ===== -->
+
+<!-- STORE MANAGEMENT -->
+<section>
+  <div class="container">
+    <h2 class="section-title">Store Management</h2>
+    <p class="section-subtitle">
+      Launch and manage your store with complete control and flexibility.
+    </p>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <h3>Instant Store Setup</h3>
+        <p>Create your online store within minutes using our guided setup system.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Customizable Themes</h3>
+        <p>Professional and responsive themes designed for modern businesses.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Unlimited Products</h3>
+        <p>Add and manage unlimited products with inventory tracking support.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Inventory Management</h3>
+        <p>Track stock levels, manage variants, and control supply efficiently.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- AI & AUTOMATION -->
+<section class="dark-section">
+  <div class="container">
+    <h2 class="section-title">AI & Automation Tools</h2>
+    <p class="section-subtitle">
+      Save time and boost performance with built-in intelligent automation.
+    </p>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <h3>AI Store Builder</h3>
+        <p>Automatically generate a ready-to-sell store layout instantly.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>AI Product Description Generator</h3>
+        <p>Create high-converting descriptions optimized for search engines.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>AI Marketing Assistant</h3>
+        <p>Generate social media captions, ads, and email campaigns effortlessly.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>AI Image Generator</h3>
+        <p>Generate Your Image in just one click.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PAYMENTS & SALES -->
+<section>
+  <div class="container">
+    <h2 class="section-title">Payments & Sales</h2>
+    <p class="section-subtitle">
+      Accept payments securely and optimize your revenue streams.
+    </p>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <h3>Multiple Payment Gateways</h3>
+        <p>Integrate Razorpay, Stripe, Paytm, and more with ease.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Secure Checkout</h3>
+        <p>Fast and encrypted checkout experience to maximize conversions.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Discount & Coupon System</h3>
+        <p>Create promotional offers to increase sales and engagement.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Order Management</h3>
+        <p>Track, process, and manage customer orders from one dashboard.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SUPPORT -->
+<section class="dark-section">
+  <div class="container">
+    <h2 class="section-title">Support & Reliability</h2>
+    <p class="section-subtitle">
+      Built with security, performance, and customer success in mind.
+    </p>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <h3>24/7 Customer Support</h3>
+        <p>Dedicated assistance whenever you need help.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>High Performance Hosting</h3>
+        <p>Fast-loading stores powered by reliable infrastructure.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Data Security</h3>
+        <p>Advanced protection measures to keep your business secure.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Regular Updates</h3>
+        <p>Continuous improvements and new features added regularly.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="features-cta">
+  <div class="container">
+    <h2>Ready to Experience Prodoxy?</h2>
+    <p>Start building your professional online store today.</p>
+    <a href="https://prodoxy.com/register/plan" class="cta-btn">Start Now</a>
+  </div>
+</section>
+
+</body>
+</html>
