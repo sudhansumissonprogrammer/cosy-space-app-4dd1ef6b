@@ -361,10 +361,11 @@ export default function CheckoutPage() {
 
   // Shipping calculation
   const shippingActive = shippingConfig?.is_active;
+  const flatShippingRate = shippingActive ? Number(shippingConfig?.flat_rate) || 0 : 0;
+  const freeShippingThreshold = shippingActive ? Number(shippingConfig?.free_shipping_above) || 0 : 0;
+  const qualifiesForFreeShipping = shippingActive && freeShippingThreshold > 0 && subtotal >= freeShippingThreshold && flatShippingRate > 0;
   const shippingCharge = shippingActive
-    ? (shippingConfig.free_shipping_above && subtotal >= Number(shippingConfig.free_shipping_above)
-        ? 0
-        : Number(shippingConfig.flat_rate) || 0)
+    ? (qualifiesForFreeShipping ? 0 : flatShippingRate)
     : 0;
 
   // Tax calculation
