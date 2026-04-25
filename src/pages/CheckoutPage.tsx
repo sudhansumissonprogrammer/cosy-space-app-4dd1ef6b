@@ -20,6 +20,7 @@ import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
+import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 
 declare global {
@@ -213,6 +214,62 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (customer?.email && !email) setEmail(customer.email);
   }, [customer]);
+
+  // ⚡ Returning Customer 1-Tap (guest users) — when phone hits 10 valid digits,
+  // look up the latest order from this store with that phone & offer 1-tap reuse.
+  const [returningOrder, setReturningOrder] = useState<any | null>(null);
+  const [returningDismissed, setReturningDismissed] = useState(false);
+  const [returningUsed, setReturningUsed] = useState(false);
+  const lastLookedUpPhoneRef = useRef<string>("");
+
+  useEffect(() => {
+    // Skip if logged-in customer already has saved addresses
+    if (savedAddresses && savedAddresses.length > 0) return;
+    if (returningDismissed || returningUsed) return;
+    const norm = normalizePhone(phone);
+    if (!isValidIndianPhone(norm)) { setReturningOrder(null); return; }
+    if (norm === lastLookedUpPhoneRef.current) return;
+    lastLookedUpPhoneRef.current = norm;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("orders")
+          .select("id, customer_name, customer_phone, street_address, city, state, pincode, created_at")
+          .eq("store_id", store.id)
+          .eq("customer_phone", norm)
+          .not("street_address", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        if (data && data.street_address && data.pincode) setReturningOrder(data);
+        else setReturningOrder(null);
+      } catch {
+        if (!cancelled) setReturningOrder(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [phone, store.id, savedAddresses, returningDismissed, returningUsed]);
+
+  const useReturningOrder = () => {
+    if (!returningOrder) return;
+    setFullName(returningOrder.customer_name || "");
+    setStreetAddress(returningOrder.street_address || "");
+    setCity(returningOrder.city || "");
+    setState(returningOrder.state || "");
+    setPincode(returningOrder.pincode || "");
+    setReturningUsed(true);
+    setExpressMode(true);
+    toast.success("Welcome back! Address loaded ✨");
+  };
+
+  // 📅 Delivery date estimate based on pincode
+  const deliveryEstimate = useMemo<DeliveryEstimate | null>(
+    () => estimateDelivery(pincode),
+    [pincode]
+  );
+
 
   const isSingleMode = !!productId;
 
@@ -1058,6 +1115,22 @@ export default function CheckoutPage() {
         </div>
       </div>
 
+      {/* 📅 Estimated delivery — visible above order summary when pincode known */}
+      {deliveryEstimate && (
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <Truck className="h-4 w-4 text-primary shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[11px] text-muted-foreground leading-tight">Estimated delivery</p>
+              <p className="text-sm font-semibold text-foreground leading-tight truncate">By {deliveryEstimate.shortLabel}</p>
+            </div>
+          </div>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-primary bg-primary/10 px-2 py-1 rounded-full whitespace-nowrap">
+            {deliveryEstimate.tier === "metro" ? "⚡ Fastest" : deliveryEstimate.tier === "tier1" ? "Fast" : "Standard"}
+          </span>
+        </div>
+      )}
+
       {/* 1. Order Summary — Collapsible */}
       <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} defaultOpen className="mb-4 rounded-xl border border-border bg-card">
         <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
@@ -1181,10 +1254,46 @@ export default function CheckoutPage() {
                 <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
             </div>
+
+            {/* ⚡ Returning Customer 1-Tap — auto-detected via phone lookup */}
+            {returningOrder && !returningUsed && (
+              <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-3.5 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <p className="text-sm font-semibold text-foreground">Welcome back{returningOrder.customer_name ? `, ${returningOrder.customer_name.split(" ")[0]}` : ""}! 👋</p>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mb-2">Ship to your last address?</p>
+                    <p className="text-xs text-foreground/80 leading-snug line-clamp-2">
+                      {[returningOrder.street_address, returningOrder.city, returningOrder.state, returningOrder.pincode].filter(Boolean).join(", ")}
+                    </p>
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <Button size="sm" className="h-8 text-xs px-3" onClick={useReturningOrder}>
+                        <Check className="h-3.5 w-3.5 mr-1" /> Use this address
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8 text-xs px-2 text-muted-foreground" onClick={() => setReturningDismissed(true)}>
+                        New address
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Use my location button - hidden for now */}
             <div className="space-y-1">
               <Label htmlFor="pincode" className="text-xs">{tCritical("Pincode", "पिनकोड")} * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
               <Input id="pincode" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
+              {deliveryEstimate && (
+                <div className="flex items-center gap-1.5 pt-1 text-[11px] font-medium text-primary">
+                  <Truck className="h-3.5 w-3.5" />
+                  <span>Delivery by <span className="font-semibold">{deliveryEstimate.shortLabel}</span></span>
+                  <span className="text-muted-foreground font-normal">· {deliveryEstimate.daysAway}-{Math.ceil((deliveryEstimate.maxDate.getTime() - Date.now()) / 86400000)} days</span>
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <Label htmlFor="street" className="text-xs">{tCritical("Street Address", "पता")} *</Label>
