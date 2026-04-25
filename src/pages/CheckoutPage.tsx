@@ -159,7 +159,9 @@ export default function CheckoutPage() {
   // Falls back to sessionStorage so the coupon persists across product → cart → checkout navigation.
   const urlCoupon =
     searchParams.get("coupon") ||
-    (typeof window !== "undefined" ? sessionStorage.getItem("pending_coupon") : null);
+    (typeof window !== "undefined"
+      ? sessionStorage.getItem("pending_coupon") || localStorage.getItem("pending_coupon")
+      : null);
   const autoAppliedCouponRef = useRef(false);
 
   // Scroll to top when the order-placed / upsell screen appears so users
