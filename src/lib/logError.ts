@@ -45,6 +45,9 @@ interface LogErrorOptions {
 
 export function logError(options: LogErrorOptions): void {
   try {
+    // Skip known third-party / WebView noise (FB in-app browser etc.)
+    if (isIgnoredError(options.message || "", options.stack)) return;
+
     // Throttle check
     if (errorCount >= MAX_ERRORS_PER_MINUTE) return;
     errorCount++;
