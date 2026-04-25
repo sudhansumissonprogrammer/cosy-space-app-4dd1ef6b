@@ -1115,6 +1115,22 @@ export default function CheckoutPage() {
         </div>
       </div>
 
+      {/* 📅 Estimated delivery — visible above order summary when pincode known */}
+      {deliveryEstimate && (
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <Truck className="h-4 w-4 text-primary shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[11px] text-muted-foreground leading-tight">Estimated delivery</p>
+              <p className="text-sm font-semibold text-foreground leading-tight truncate">By {deliveryEstimate.shortLabel}</p>
+            </div>
+          </div>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-primary bg-primary/10 px-2 py-1 rounded-full whitespace-nowrap">
+            {deliveryEstimate.tier === "metro" ? "⚡ Fastest" : deliveryEstimate.tier === "tier1" ? "Fast" : "Standard"}
+          </span>
+        </div>
+      )}
+
       {/* 1. Order Summary — Collapsible */}
       <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} defaultOpen className="mb-4 rounded-xl border border-border bg-card">
         <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
