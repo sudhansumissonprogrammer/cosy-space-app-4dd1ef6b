@@ -835,6 +835,7 @@ export default function CheckoutPage() {
         finalizeOrder(order.id, order.number, order.profit);
       } catch (err: any) {
         console.error("Payment verification error:", err);
+        setPlacingStep(0);
         setPlacing(false);
         setPendingOrder(order);
         setPaymentFailed(true);
