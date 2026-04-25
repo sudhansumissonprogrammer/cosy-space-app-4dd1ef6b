@@ -76,14 +76,28 @@ if ("requestIdleCallback" in window) {
 
 const rootElement = document.getElementById("root")!;
 
+/**
+ * Two-tier entry point:
+ *
+ * 1. Landing fast-path  → import("./LandingApp")  (Rollup statically traces this
+ *    so LandingApp + Index + landing components are bundled and modulepreload-hinted)
+ *
+ * 2. Everything else    → import("./App") via a dynamically-built string so Rollup
+ *    CANNOT see this as a graph edge. App + radix + supabase + react-query are
+ *    NOT added to the landing critical-path modulepreload list.
+ *
+ * Without the dynamic-string trick, Rollup walks both branches and emits
+ * <link rel="modulepreload"> for ~500KB of code that landing never executes.
+ */
 if (shouldUseLandingFastPath()) {
-  // Critical path: only React + react-router + landing chunk
   import("./LandingApp").then(({ default: LandingApp }) => {
     createRoot(rootElement).render(<LandingApp />);
   });
 } else {
-  // Storefront / dashboard / auth — load full App
-  import("./App").then(({ default: App }) => {
+  // Build the path at runtime so Rollup's static analyzer doesn't follow it.
+  // Vite still resolves /src/App.tsx at runtime via its module graph.
+  const appPath = "./App" + ".tsx";
+  import(/* @vite-ignore */ appPath).then(({ default: App }) => {
     createRoot(rootElement).render(<App />);
   });
 }
