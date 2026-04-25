@@ -77,20 +77,28 @@ Deno.serve(async (req) => {
     const normalizedEmail = phoneEmail; // for downstream session generation
 
     // Lookup existing user by phone-based email (primary key)
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === phoneEmail
-    );
+    // Find existing user by paginating (listUsers default = 50 per page)
+    let existingUser: any = null;
+    for (let page = 1; page <= 20; page++) {
+      const { data, error: listErr } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+      if (listErr) break;
+      const found = data?.users?.find((u) => u.email?.toLowerCase() === phoneEmail);
+      if (found) { existingUser = found; break; }
+      if (!data?.users || data.users.length < 1000) break;
+    }
 
     let userId: string;
     let generatedPassword: string | null = null;
     let isNewUser = false;
 
+    const resetExisting = async (id: string) => {
+      generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
+      await supabase.auth.admin.updateUserById(id, { password: generatedPassword });
+    };
+
     if (existingUser) {
       userId = existingUser.id;
-      // Reset password so we can sign in and return a session for auto-login
-      generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
-      await supabase.auth.admin.updateUserById(userId, { password: generatedPassword });
+      await resetExisting(userId);
     } else {
       // Create a new user keyed by phone, with a random password (they can reset later)
       generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
@@ -107,14 +115,38 @@ Deno.serve(async (req) => {
       });
 
       if (createErr) {
-        console.error("Create user error:", createErr);
-        return new Response(
-          JSON.stringify({ error: createErr.message }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // Race / pagination miss: user already exists. Look them up and reset password.
+        const code = (createErr as any).code || "";
+        const msg = (createErr.message || "").toLowerCase();
+        if (code === "email_exists" || msg.includes("already been registered") || msg.includes("already registered")) {
+          let foundUser: any = null;
+          for (let page = 1; page <= 50; page++) {
+            const { data, error: listErr } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+            if (listErr) break;
+            const f = data?.users?.find((u) => u.email?.toLowerCase() === phoneEmail);
+            if (f) { foundUser = f; break; }
+            if (!data?.users || data.users.length < 1000) break;
+          }
+          if (!foundUser) {
+            console.error("Create user error (could not locate existing):", createErr);
+            return new Response(
+              JSON.stringify({ error: createErr.message }),
+              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          userId = foundUser.id;
+          await resetExisting(userId);
+        } else {
+          console.error("Create user error:", createErr);
+          return new Response(
+            JSON.stringify({ error: createErr.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
+        userId = newUser.user.id;
+        isNewUser = true;
       }
-      userId = newUser.user.id;
-      isNewUser = true;
     }
 
     // Upsert storefront_customer
