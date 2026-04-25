@@ -236,10 +236,18 @@ export default function CustomerLeads() {
                             <span className="font-medium">{lead.phone}</span>
                           </a>
                         </div>
-                        <Badge variant="secondary" className="flex-shrink-0 text-[10px]">
-                          <MessageCircle className="mr-1 h-2.5 w-2.5" />
-                          {lead.source === "whatsapp_order" ? "WhatsApp" : lead.source}
-                        </Badge>
+                        <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                          {lead.hasOrdered && (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] hover:bg-emerald-100">
+                              <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
+                              Ordered
+                            </Badge>
+                          )}
+                          <Badge variant="secondary" className="text-[10px]">
+                            <MessageCircle className="mr-1 h-2.5 w-2.5" />
+                            {lead.source === "whatsapp_order" ? "WhatsApp" : lead.source}
+                          </Badge>
+                        </div>
                       </div>
 
                       {lead.product_name && (
