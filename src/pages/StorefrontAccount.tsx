@@ -161,6 +161,7 @@ function AddressesTab({ customerId }: { customerId: string }) {
       const { error } = await supabase.from("customer_addresses").insert({
         storefront_customer_id: customerId,
         ...form,
+        phone: normalizePhone(form.phone),
         is_default: !addresses?.length,
       });
       if (error) throw error;
