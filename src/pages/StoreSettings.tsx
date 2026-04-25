@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Link, useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeSVG } from "qrcode.react";
+import SettingsTabsNav, { type SettingsTab } from "@/components/dashboard/SettingsTabsNav";
 
 /** Generate a URL-safe slug from a store name */
 function generateSlug(name: string): string {
@@ -247,6 +248,18 @@ export default function StoreSettings() {
         </div>
       </div>
 
+      <SettingsTabsNav
+        tabs={[
+          { id: "settings-basic", label: "General", icon: Store },
+          { id: "settings-location", label: "Location", icon: MapPin },
+          { id: "settings-media", label: "Media", icon: Image },
+          { id: "settings-display", label: "Display", icon: Flame },
+          { id: "settings-pages", label: "Pages", icon: FileText },
+          { id: "settings-seo", label: "SEO", icon: Search },
+          { id: "settings-domain", label: "Domain", icon: Globe },
+        ]}
+      />
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -255,7 +268,7 @@ export default function StoreSettings() {
         className="space-y-6"
       >
         {/* ── 1. Basic Info ── */}
-        <Card>
+        <Card id="settings-basic" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Store className="h-5 w-5 text-primary" /> Basic Information
@@ -322,7 +335,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 2. Location & Hours ── */}
-        <Card>
+        <Card id="settings-location" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <MapPin className="h-5 w-5 text-primary" /> Location & Hours
@@ -347,7 +360,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 3. Images & Media ── */}
-        <Card>
+        <Card id="settings-media" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Image className="h-5 w-5 text-primary" /> Images & Media
@@ -425,7 +438,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 4. Storefront Display ── */}
-        <Card>
+        <Card id="settings-display" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Flame className="h-5 w-5 text-primary" /> Storefront Display
@@ -445,7 +458,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 5. Pages & Policies ── */}
-        <Card>
+        <Card id="settings-pages" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <FileText className="h-5 w-5 text-primary" /> Pages & Policies
@@ -467,7 +480,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 6. SEO ── */}
-        <Card>
+        <Card id="settings-seo" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Search className="h-5 w-5 text-primary" /> SEO Settings
@@ -508,7 +521,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 7. Domain shortcut ── */}
-        <Card>
+        <Card id="settings-domain" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Globe className="h-5 w-5 text-primary" /> Custom Domain

@@ -35,6 +35,9 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SwipeableOrderRow from "@/components/dashboard/SwipeableOrderRow";
+import FAB from "@/components/dashboard/FAB";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
 
 const STATUS_OPTIONS = ["confirmed", "shipped", "delivered", "cancelled", "partially_paid"] as const;
 
@@ -314,8 +317,22 @@ export default function StoreOrders() {
     );
   }
 
+  // Pull-to-refresh — re-fetch orders on mobile pull-down
+  const { pull, refreshing } = usePullToRefresh({
+    onRefresh: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] }),
+        queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] }),
+      ]);
+    },
+  });
+
   return (
     <div className="space-y-4">
+      <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
+      {/* Mobile FAB to create a manual order */}
+      <FAB onClick={() => setCreateOrderOpen(true)} label="Order" />
+
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div className="flex-1 min-w-0">
@@ -324,12 +341,12 @@ export default function StoreOrders() {
         </div>
         <Button
           size="sm"
-          className="h-9 gap-1.5 shrink-0"
+          className="hidden sm:inline-flex h-9 gap-1.5 shrink-0"
           onClick={() => setCreateOrderOpen(true)}
           disabled={!storeId}
         >
           <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Create Order</span>
+          <span>Create Order</span>
         </Button>
       </div>
 
@@ -342,8 +359,9 @@ export default function StoreOrders() {
         />
       )}
 
-      {/* Search & Filter Bar */}
-      <Card className="border shadow-none">
+      {/* Search & Filter Bar — sticky on mobile so it stays reachable in long lists */}
+      <Card className="border shadow-none sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+
         <CardContent className="p-2.5 space-y-2.5">
           <div className="flex gap-2">
             <div className="relative flex-1">

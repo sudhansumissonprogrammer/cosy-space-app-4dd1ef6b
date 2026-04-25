@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,9 +24,19 @@ import PaginationControls from "@/components/PaginationControls";
 export default function StoreCustomers() {
   const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
 
   const { data: store } = useStoreData(storeId);
+
+  const { pull, refreshing } = usePullToRefresh({
+    onRefresh: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["store-customers-count", storeId] }),
+        queryClient.invalidateQueries({ queryKey: ["store-customers", storeId] }),
+      ]);
+    },
+  });
 
   const { data: countData } = useQuery({
     queryKey: ["store-customers-count", storeId],
@@ -91,6 +103,7 @@ export default function StoreCustomers() {
 
   return (
     <div className="space-y-6">
+      <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild><Link to="/dashboard/stores"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div>

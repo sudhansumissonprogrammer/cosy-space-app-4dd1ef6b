@@ -21,6 +21,9 @@ import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedI
 import { Skeleton } from "@/components/ui/skeleton";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import CategoryProductsDialog from "@/components/CategoryProductsDialog";
+import FAB from "@/components/dashboard/FAB";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
 
 const MAX_FILE_SIZE = 6 * 1024 * 1024;
 
@@ -182,8 +185,16 @@ export default function CategoryManagement() {
     onError: (err: any) => toast.error(err.message || "Failed to delete"),
   });
 
+  const { pull, refreshing } = usePullToRefresh({
+    onRefresh: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+    },
+  });
+
   return (
     <div className="space-y-4">
+      <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
+      <FAB onClick={openCreate} label="Category" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground">Categories</h1>

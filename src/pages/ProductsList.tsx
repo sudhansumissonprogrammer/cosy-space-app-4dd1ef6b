@@ -37,6 +37,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import ProductForm from "@/components/ProductForm";
 import QuickEditProductModal from "@/components/dashboard/QuickEditProductModal";
+import FAB from "@/components/dashboard/FAB";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
 import { cleanImageUrl } from "@/lib/imageOptimize";
 
 type SortOption = "title-asc" | "title-desc" | "date-new" | "date-old";
@@ -344,8 +347,24 @@ export default function ProductsList() { // v2
 
   const currencySymbol = store?.currency === "INR" ? "₹" : store?.currency === "USD" ? "$" : (store?.currency || "$");
 
+  // Pull-to-refresh — re-fetch products on mobile pull-down
+  const { pull, refreshing } = usePullToRefresh({
+    onRefresh: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+    },
+  });
+
   return (
     <div className="space-y-3">
+      <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
+      {/* Mobile FAB to add a new product (hidden in bulk-mode) */}
+      {!bulkMode && (
+        <FAB
+          onClick={() => setMobileProductId(null)}
+          label="Product"
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Products</h1>
@@ -363,11 +382,7 @@ export default function ProductsList() { // v2
               </Button>
             </>
           )}
-          {isMobile ? (
-            <Button size="sm" disabled={limitInfo && !limitInfo.can_create} onClick={() => setMobileProductId(null)}>
-              <Plus className="mr-1 h-4 w-4" />
-            </Button>
-          ) : (
+          {isMobile ? null : (
             <Button size="sm" asChild disabled={limitInfo && !limitInfo.can_create}>
               <Link to={`/dashboard/stores/${storeSlug}/products/create`}><Plus className="mr-1 h-4 w-4" />Add Product</Link>
             </Button>
@@ -452,8 +467,9 @@ export default function ProductsList() { // v2
         </div>
       )}
 
-      {/* Search + Filter + Sort bar */}
-      <Card className="border shadow-none">
+      {/* Search + Filter + Sort bar — sticky on mobile so it stays in view as the list scrolls */}
+      <Card className="border shadow-none sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+
         <CardContent className="p-2.5 space-y-2.5">
           <div className="flex gap-2">
             <div className="relative flex-1">

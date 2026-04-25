@@ -271,11 +271,11 @@ export default function Dashboard() {
             ))}
           </div>
 
+          {/* Store Checklist — promoted above Pending Actions so new owners see setup tasks first */}
+          {storeId && <StoreChecklist storeId={storeId} storeSlug={store?.slug || ""} />}
+
           {/* Pending Actions */}
           {storeId && !isWhatsAppOnly && <PendingActions storeId={storeId} storeSlug={store?.slug || ""} />}
-
-          {/* Store Checklist */}
-          {storeId && <StoreChecklist storeId={storeId} storeSlug={store?.slug || ""} />}
 
           {/* Recent Orders */}
           {storeId && !isWhatsAppOnly && (
