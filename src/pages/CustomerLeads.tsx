@@ -14,10 +14,45 @@ import {
 import { Users, Trash2, Phone, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useMyStore } from "@/hooks/useMyStore";
+import { getStoreBaseUrl } from "@/lib/storeUrl";
 
 export default function CustomerLeads() {
   const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
+  const { data: myStore } = useMyStore();
+
+  const buildRecoveryMessage = (lead: {
+    name: string | null;
+    product_name: string | null;
+    source: string;
+  }) => {
+    const storeName = myStore?.name || "our store";
+    const storeUrl = myStore?.slug
+      ? getStoreBaseUrl(myStore.slug, myStore?.custom_domain)
+      : "";
+    const greeting = lead.name ? `Hi ${lead.name}! 👋` : "Hi there! 👋";
+    const productLine = lead.product_name
+      ? `I noticed you were checking out *${lead.product_name}* on ${storeName} but didn't complete your order.`
+      : `I noticed you showed interest in our products at ${storeName} but didn't complete your order.`;
+
+    return [
+      greeting,
+      "",
+      productLine,
+      "",
+      "Is there anything I can help you with? 😊",
+      "✅ Free assistance with your order",
+      "✅ Quick delivery available",
+      "✅ Easy payment options (UPI / COD)",
+      "",
+      storeUrl ? `👉 Shop now: ${storeUrl}` : "",
+      "",
+      `Thank you,\nTeam ${storeName}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["customer-leads", storeId],
@@ -119,9 +154,14 @@ export default function CustomerLeads() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
+                            title="Send recovery message on WhatsApp"
                             onClick={() => {
                               const phone = lead.phone.replace(/[^0-9+]/g, "");
-                              window.open(`https://wa.me/${encodeURIComponent(phone)}`, "_blank");
+                              const message = buildRecoveryMessage(lead);
+                              window.open(
+                                `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`,
+                                "_blank"
+                              );
                             }}
                           >
                             <MessageCircle className="h-4 w-4 text-primary" />
