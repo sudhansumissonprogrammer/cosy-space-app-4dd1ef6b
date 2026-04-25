@@ -211,6 +211,12 @@ export default function CartPage() {
           onOpenChange={setShowPhoneModal}
           storeSlug={store.slug}
           storeId={store.id}
+          productId={items[items.length - 1]?.productId}
+          productName={
+            items.length > 1
+              ? `${items[items.length - 1]?.name} +${items.length - 1} more`
+              : items[items.length - 1]?.name
+          }
           source="quick_buy_cart"
         />
       </Suspense>
