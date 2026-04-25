@@ -86,10 +86,21 @@ export function getSubdomainSlug(): string | null {
  */
 export function storefrontPath(slug: string, path: string = ""): string {
   const subdomain = getSubdomainSlug();
-  if (subdomain) {
-    return path ? `/${path}` : "/";
+  let targetPath = path;
+  if (targetPath.startsWith("checkout") && !/[?&]coupon=/i.test(targetPath)) {
+    try {
+      const currentCoupon = new URLSearchParams(window.location.search).get("coupon")
+        || sessionStorage.getItem("pending_coupon")
+        || localStorage.getItem("pending_coupon");
+      if (currentCoupon) {
+        targetPath += `${targetPath.includes("?") ? "&" : "?"}coupon=${encodeURIComponent(currentCoupon.toUpperCase())}`;
+      }
+    } catch {}
   }
-  return path ? `/store/${slug}/${path}` : `/store/${slug}`;
+  if (subdomain) {
+    return targetPath ? `/${targetPath}` : "/";
+  }
+  return targetPath ? `/store/${slug}/${targetPath}` : `/store/${slug}`;
 }
 
 export { ROOT_DOMAIN };
