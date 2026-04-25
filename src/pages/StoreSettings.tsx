@@ -248,6 +248,18 @@ export default function StoreSettings() {
         </div>
       </div>
 
+      <SettingsTabsNav
+        tabs={[
+          { id: "settings-basic", label: "General", icon: Store },
+          { id: "settings-location", label: "Location", icon: MapPin },
+          { id: "settings-media", label: "Media", icon: Image },
+          { id: "settings-display", label: "Display", icon: Flame },
+          { id: "settings-pages", label: "Pages", icon: FileText },
+          { id: "settings-seo", label: "SEO", icon: Search },
+          { id: "settings-domain", label: "Domain", icon: Globe },
+        ]}
+      />
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -256,7 +268,7 @@ export default function StoreSettings() {
         className="space-y-6"
       >
         {/* ── 1. Basic Info ── */}
-        <Card>
+        <Card id="settings-basic" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Store className="h-5 w-5 text-primary" /> Basic Information
