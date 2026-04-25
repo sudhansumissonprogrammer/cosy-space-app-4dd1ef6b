@@ -797,714 +797,833 @@ export default function StoreThemeSettings() {
       c.background === config.background_color
   );
 
-  return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Theme Settings</h1>
-        <p className="text-sm text-muted-foreground">Customize your storefront's look and feel</p>
+  // ── Section meta + which sections show "configured" badge (#11) ──
+  const SECTIONS: ThemeSectionMeta[] = useMemo(() => [
+    { id: "template", label: "Template", icon: Layers, description: "Pick a website template" },
+    { id: "colors", label: "Colors", icon: Palette, description: "Color combinations" },
+    { id: "typography", label: "Typography", icon: Type, description: "Heading & body fonts" },
+    { id: "layout", label: "Buttons", icon: LayoutList, description: "Button shape & corners" },
+    { id: "header", label: "Header & Nav", icon: LayoutGrid, description: "Logo, header, mobile nav" },
+    { id: "cards", label: "Product Cards", icon: ShoppingCart, description: "Product card design" },
+    { id: "categories", label: "Categories", icon: Tag, description: "Category section style" },
+    { id: "extras", label: "Extras", icon: MoreHorizontal, description: "Marquee & advanced" },
+  ], []);
+
+  const configuredMap = useMemo(() => {
+    const d = defaults;
+    return {
+      template: true,
+      colors: !!selectedCombo,
+      typography: config.heading_font !== d.heading_font || config.body_font !== d.body_font,
+      layout: config.button_style !== d.button_style,
+      header: config.header_logo_alignment !== d.header_logo_alignment || config.header_style !== d.header_style || config.mobile_nav_style !== d.mobile_nav_style,
+      cards: config.product_card_style !== d.product_card_style,
+      categories: config.category_style !== d.category_style,
+      extras: config.marquee_text !== d.marquee_text || !!config.bilingual_cta,
+    } as Record<ThemeSectionId, boolean>;
+  }, [config, defaults, selectedCombo]);
+
+  const [activeSection, setActiveSection] = useState<ThemeSectionId>("template");
+
+  // Custom color helpers (#9)
+  const updateColor = (key: keyof ThemeConfig, hex: string) => {
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
+    updateField(key, hex);
+  };
+
+  // Theme thumbnail palette mapping (#4) — uses real screenshots if you add to /src/assets/themes/, falls back to gradients
+  const themeGradient = (id: string) => {
+    const map: Record<string, string> = {
+      "theme-1": "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #000000 100%)",
+      "theme-2": "linear-gradient(135deg, #ffffff 0%, #2563eb 50%, #1e293b 100%)",
+      "theme-3": "linear-gradient(135deg, #F97316 0%, #3B82F6 50%, #1e293b 100%)",
+      "theme-4": "linear-gradient(135deg, #F8F5F0 0%, #C8A96A 50%, #1C1C1C 100%)",
+      "theme-6": "linear-gradient(135deg, #F8FAFC 0%, #2563EB 50%, #1e293b 100%)",
+      "theme-7": "linear-gradient(135deg, #ffffff 0%, #1a1a1a 50%, #000000 100%)",
+      "theme-8": "linear-gradient(135deg, #F8FAFC 0%, #6C5CE7 50%, #FD79A8 100%)",
+      "theme-10": "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)",
+      "theme-11": "linear-gradient(135deg, #F5F5F5 0%, #1a1a1a 50%, #EF4444 100%)",
+      "theme-12": "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)",
+      "theme-13": "linear-gradient(135deg, #25D366 0%, #128C7E 50%, #075E54 100%)",
+      "theme-14": "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)",
+      "theme-15": "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)",
+      "theme-16": "linear-gradient(135deg, #ffffff 0%, #000000 50%, #333333 100%)",
+      "theme-17": "linear-gradient(135deg, #1B3A2D 0%, #2d5a45 50%, #0a0a0a 100%)",
+      "theme-18": "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #333333 100%)",
+      "theme-19": "linear-gradient(135deg, #FFD33D 0%, #036B52 50%, #0F0B0A 100%)",
+      "theme-20": "linear-gradient(135deg, #FFD33D 0%, #036B52 50%, #0F0B0A 100%)",
+    };
+    return map[id] || "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)";
+  };
+
+  // Build a real mini-storefront thumbnail (#4) using the theme palette
+  const ThemeThumbnail = ({ themeId }: { themeId: string }) => {
+    const def = THEME_DEFAULTS[themeId] || THEME_DEFAULTS["theme-1"];
+    return (
+      <div className="relative h-28 w-full overflow-hidden" style={{ background: def.background_color }}>
+        {/* Header bar */}
+        <div
+          className="absolute top-0 left-0 right-0 flex items-center justify-between px-2 py-1.5"
+          style={{ background: def.primary_color }}
+        >
+          <div className="h-1.5 w-6 rounded-sm" style={{ background: def.background_color, opacity: 0.85 }} />
+          <div className="flex gap-0.5">
+            <div className="h-1.5 w-1.5 rounded-full" style={{ background: def.background_color, opacity: 0.6 }} />
+            <div className="h-1.5 w-1.5 rounded-full" style={{ background: def.background_color, opacity: 0.6 }} />
+          </div>
+        </div>
+        {/* Hero gradient */}
+        <div
+          className="absolute left-2 right-2 top-7 h-7 rounded"
+          style={{ background: themeGradient(themeId) }}
+        />
+        {/* Product grid */}
+        <div className="absolute left-2 right-2 bottom-2 grid grid-cols-3 gap-1">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-7 rounded"
+              style={{
+                background: def.text_color,
+                opacity: 0.12 + i * 0.05,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Section renderers
+  const renderTemplateSection = () => (
+    <Section title="Pick a Template" hint="The base layout of your storefront. You can customize colors, fonts and more in other tabs.">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 xl:grid-cols-4">
+        {THEMES.map((theme) => {
+          const isApplied = currentTheme === theme.id;
+          return (
+            <div
+              key={theme.id}
+              className={`group relative overflow-hidden rounded-xl border-2 transition-all ${
+                isApplied
+                  ? "border-foreground shadow-md"
+                  : theme.available
+                  ? "border-border hover:border-foreground/40"
+                  : "border-border opacity-60"
+              }`}
+            >
+              <ThemeThumbnail themeId={theme.id} />
+              <div className="p-2.5 flex flex-col items-center text-center gap-1.5">
+                <h3 className="text-sm font-semibold leading-tight">{theme.name}</h3>
+                <p className="text-[10px] leading-tight text-muted-foreground line-clamp-2 min-h-[24px]">{theme.description}</p>
+                {isApplied ? (
+                  <Badge variant="secondary" className="gap-1 text-xs">
+                    <Check className="h-3 w-3" /> Active
+                  </Badge>
+                ) : theme.available ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 w-full text-xs"
+                    onClick={() => applyThemeMutation.mutate(theme.id)}
+                    disabled={applyThemeMutation.isPending}
+                  >
+                    Apply
+                  </Button>
+                ) : (
+                  <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
+                    <Lock className="h-3 w-3" /> Soon
+                  </Badge>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Section>
+  );
+
+  const renderColorsSection = () => (
+    <Section title="Color Combination" hint="Pre-tested palettes. Recommended ones look best with your active template.">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+        {getSortedCombinations(currentTheme).map((combo) => {
+          const isSelected = selectedCombo?.id === combo.id;
+          return (
+            <button
+              key={combo.id}
+              onClick={() => {
+                const newConfig = {
+                  ...config,
+                  primary_color: combo.primary,
+                  accent_color: combo.accent,
+                  text_color: combo.text,
+                  background_color: combo.background,
+                  marquee_gradient: combo.marquee,
+                };
+                setConfig(newConfig);
+                setDirty(true);
+                sendToIframe(newConfig);
+              }}
+              className={`text-left overflow-hidden rounded-xl border-2 transition-all ${
+                isSelected ? "border-foreground shadow-md" : "border-border hover:border-foreground/40"
+              }`}
+            >
+              <div className="flex h-10">
+                <div className="flex-1" style={{ backgroundColor: combo.primary }} />
+                <div className="flex-1" style={{ backgroundColor: combo.accent }} />
+                <div className="flex-1" style={{ backgroundColor: combo.background }} />
+                <div className="flex-1" style={{ backgroundColor: combo.text }} />
+              </div>
+              <div className="flex flex-col gap-0.5 p-2.5">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-sm font-medium truncate">{combo.name}</span>
+                  {isSelected && (
+                    <Check className="h-3.5 w-3.5 flex-shrink-0 text-foreground" />
+                  )}
+                </div>
+                {combo.isRecommended && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                    <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                    Recommended
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Section 1: Theme Selector */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-extrabold tracking-tight">Pick the Website Template That You Love</CardTitle>
-          <CardDescription>Select a layout theme for your storefront</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          {/* All Themes Grid */}
-          <div>
-            <h4 className="text-sm font-semibold mb-3">All Themes</h4>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-              {THEMES.map((theme) => {
-                const isApplied = currentTheme === theme.id;
-                return (
-                  <div
-                    key={theme.id}
-                    className={`relative overflow-hidden rounded-xl border-2 transition-all ${
-                      isApplied
-                        ? "border-foreground shadow-md"
-                        : theme.available
-                        ? "border-border hover:border-foreground/40"
-                        : "border-border opacity-60"
-                    }`}
-                  >
-                    {/* Theme preview strip */}
-                    <div
-                      className="h-24 w-full"
-                      style={{
-                        background: theme.id === "theme-1"
-                          ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #000000 100%)"
-                          : theme.id === "theme-2"
-                          ? "linear-gradient(135deg, #ffffff 0%, #2563eb 50%, #1e293b 100%)"
-                          : theme.id === "theme-3"
-                          ? "linear-gradient(135deg, #F97316 0%, #3B82F6 50%, #1e293b 100%)"
-                          : theme.id === "theme-4"
-                          ? "linear-gradient(135deg, #F8F5F0 0%, #C8A96A 50%, #1C1C1C 100%)"
-                          : theme.id === "theme-6"
-                          ? "linear-gradient(135deg, #F8FAFC 0%, #2563EB 50%, #1e293b 100%)"
-                          : theme.id === "theme-7"
-                          ? "linear-gradient(135deg, #ffffff 0%, #1a1a1a 50%, #000000 100%)"
-                          : theme.id === "theme-8"
-                          ? "linear-gradient(135deg, #F8FAFC 0%, #6C5CE7 50%, #FD79A8 100%)"
-                          : theme.id === "theme-10"
-                          ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
-                          : theme.id === "theme-11"
-                          ? "linear-gradient(135deg, #F5F5F5 0%, #1a1a1a 50%, #EF4444 100%)"
-                          : theme.id === "theme-12"
-                          ? "linear-gradient(135deg, #FFFFFF 0%, #FF3F6C 50%, #111111 100%)"
-                          : theme.id === "theme-14"
-                          ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)"
-                          : theme.id === "theme-15"
-                          ? "linear-gradient(135deg, #F0EDE5 0%, #004643 50%, #222222 100%)"
-                          : theme.id === "theme-17"
-                          ? "linear-gradient(135deg, #1B3A2D 0%, #2d5a45 50%, #0a0a0a 100%)"
-                          : theme.id === "theme-18"
-                          ? "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #333333 100%)"
-                          : "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)",
-                      }}
-                    />
-                    <div className="p-2.5 flex flex-col items-center text-center gap-1.5">
-                      <h3 className="text-sm font-semibold leading-tight">{theme.name}</h3>
-                      {isApplied ? (
-                        <Badge variant="secondary" className="gap-1 text-xs">
-                          <Check className="h-3 w-3" /> Applied
-                        </Badge>
-                      ) : theme.available ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs px-4"
-                          onClick={() => applyThemeMutation.mutate(theme.id)}
-                          disabled={applyThemeMutation.isPending}
-                        >
-                          Apply
-                        </Button>
-                      ) : (
-                        <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
-                          <Lock className="h-3 w-3" /> Soon
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Section 2: Theme Customization */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Palette className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <CardTitle className="text-lg">Customize Theme</CardTitle>
-              <CardDescription>Adjust colors, fonts, and styles for your active theme</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Color Combinations */}
-          <div>
-            <h4 className="mb-3 text-sm font-semibold">Color Combination</h4>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {getSortedCombinations(currentTheme).map((combo) => {
-                const isSelected = selectedCombo?.id === combo.id;
-                return (
-                  <div
-                    key={combo.id}
-                    onClick={() => {
-                      const newConfig = {
-                        ...config,
-                        primary_color: combo.primary,
-                        accent_color: combo.accent,
-                        text_color: combo.text,
-                        background_color: combo.background,
-                        marquee_gradient: combo.marquee,
-                      };
-                      setConfig(newConfig);
-                      setDirty(true);
-                      sendToIframe(newConfig);
-                    }}
-                    className={`cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${
-                      isSelected
-                        ? "border-foreground shadow-md"
-                        : "border-border hover:border-foreground/40"
-                    }`}
-                  >
-                    <div className="flex h-10">
-                      <div className="flex-1" style={{ backgroundColor: combo.primary }} />
-                      <div className="flex-1" style={{ backgroundColor: combo.accent }} />
-                      <div className="flex-1" style={{ backgroundColor: combo.background }} />
-                      <div className="flex-1" style={{ backgroundColor: combo.text }} />
-                    </div>
-                    <div className="flex flex-col gap-0.5 p-2.5">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-sm font-medium truncate">{combo.name}</span>
-                        {isSelected && (
-                          <Badge variant="secondary" className="gap-1 flex-shrink-0 text-[10px] px-1.5 py-0.5">
-                            <Check className="h-3 w-3" /> Selected
-                          </Badge>
-                        )}
-                      </div>
-                      {combo.isRecommended && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                          <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                          Recommended
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Fonts */}
-          <div>
-            <h4 className="mb-3 text-sm font-semibold">Typography</h4>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Heading Font</Label>
-                <Select value={config.heading_font} onValueChange={(v) => updateField("heading_font", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {FONT_OPTIONS.map((f) => (
-                      <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Body Font</Label>
-                <Select value={config.body_font} onValueChange={(v) => updateField("body_font", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {FONT_OPTIONS.map((f) => (
-                      <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+      {/* Custom color picker (#9) */}
+      <div className="rounded-xl border border-border bg-muted/30 p-3 sm:p-4 space-y-3">
+        <div>
+          <h5 className="text-sm font-semibold">Custom Colors</h5>
+          <p className="text-xs text-muted-foreground mt-0.5">Fine-tune any color by hex code.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { key: "primary_color" as const, label: "Primary" },
+            { key: "accent_color" as const, label: "Accent" },
+            { key: "background_color" as const, label: "Background" },
+            { key: "text_color" as const, label: "Text" },
+          ].map((c) => (
+            <div key={c.key} className="space-y-1">
+              <Label className="text-[11px] font-medium">{c.label}</Label>
+              <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2 py-1.5">
+                <input
+                  type="color"
+                  value={config[c.key] as string}
+                  onChange={(e) => updateColor(c.key, e.target.value)}
+                  className="h-6 w-6 cursor-pointer rounded border border-border bg-transparent p-0"
+                />
+                <input
+                  type="text"
+                  value={config[c.key] as string}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (/^#[0-9A-Fa-f]{0,6}$/.test(v) || v === "") {
+                      const next = { ...config, [c.key]: v };
+                      setConfig(next);
+                      if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+                        setDirty(true);
+                        sendToIframe(next);
+                      }
+                    }
+                  }}
+                  className="w-full bg-transparent text-xs font-mono uppercase outline-none"
+                  maxLength={7}
+                />
               </div>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
 
-          <Separator />
+  const renderTypographySection = () => (
+    <Section title="Typography" hint="Heading font is used for titles & product names. Body font is used for descriptions & UI text.">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Heading Font</Label>
+          <Select value={config.heading_font} onValueChange={(v) => updateField("heading_font", v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {FONT_OPTIONS.map((f) => (
+                <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-1 text-lg font-bold" style={{ fontFamily: config.heading_font }}>The Quick Brown Fox</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Body Font</Label>
+          <Select value={config.body_font} onValueChange={(v) => updateField("body_font", v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {FONT_OPTIONS.map((f) => (
+                <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-1 text-sm text-muted-foreground" style={{ fontFamily: config.body_font }}>Beautifully crafted for your shoppers.</p>
+        </div>
+      </div>
+    </Section>
+  );
 
-          {/* Button Style */}
-          <div>
-            <h4 className="mb-3 text-sm font-semibold">Style</h4>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Button Style</Label>
-              <Select value={config.button_style} onValueChange={(v) => updateField("button_style", v)}>
-                <SelectTrigger className="w-full sm:w-1/2"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {BUTTON_STYLES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+  const renderLayoutSection = () => (
+    <Section title="Button Style" hint="Affects all primary buttons (Add to cart, Buy now, etc).">
+      <div className="grid grid-cols-3 gap-3">
+        {BUTTON_STYLES.map((s) => (
+          <button
+            key={s.value}
+            onClick={() => updateField("button_style", s.value)}
+            className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+              config.button_style === s.value
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-border hover:border-primary/30"
+            }`}
+          >
+            {config.button_style === s.value && (
+              <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Check className="h-3 w-3" />
+              </div>
+            )}
+            <div
+              className={`flex h-7 w-full items-center justify-center bg-foreground text-background text-[10px] font-bold ${
+                s.value === "rounded" ? "rounded-md" : s.value === "pill" ? "rounded-full" : "rounded-none"
+              }`}
+            >
+              Buy Now
             </div>
+            <span className="text-xs font-semibold">{s.label}</span>
+          </button>
+        ))}
+      </div>
+    </Section>
+  );
+
+  const renderHeaderSection = () => (
+    <div className="space-y-6">
+      {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
+        <Section title="Logo Alignment" hint="Where the logo sits in your desktop header.">
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { value: "left", label: "Left", icon: (
+                <div className="flex items-center gap-1 w-full">
+                  <div className="h-2.5 w-6 rounded bg-foreground/80" />
+                  <div className="flex-1" />
+                  <div className="flex gap-0.5">
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                  </div>
+                </div>
+              )},
+              { value: "center", label: "Center", icon: (
+                <div className="flex items-center w-full">
+                  <div className="h-2 w-2 rounded bg-muted-foreground/40" />
+                  <div className="flex-1 flex justify-center">
+                    <div className="h-2.5 w-6 rounded bg-foreground/80" />
+                  </div>
+                  <div className="flex gap-0.5">
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                  </div>
+                </div>
+              )},
+              { value: "left-with-search", label: "With Search", icon: (
+                <div className="flex items-center gap-1 w-full">
+                  <div className="h-2.5 w-4 rounded bg-foreground/80" />
+                  <div className="flex-1 h-2 rounded-full bg-muted-foreground/20 border border-muted-foreground/30" />
+                  <div className="flex gap-0.5">
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                  </div>
+                </div>
+              )},
+            ].map((s) => (
+              <button
+                key={s.value}
+                onClick={() => updateField("header_logo_alignment", s.value)}
+                className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                  config.header_logo_alignment === s.value
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border hover:border-primary/30"
+                }`}
+              >
+                <div className="w-full rounded-lg border border-border bg-card p-2">{s.icon}</div>
+                <span className="text-[11px] font-semibold">{s.label}</span>
+                {config.header_logo_alignment === s.value && (
+                  <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-3 w-3" />
+                  </div>
+                )}
+              </button>
+            ))}
           </div>
+        </Section>
+      )}
 
-          <Separator />
+      {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-15" || currentTheme === "theme-16" || currentTheme === "theme-18") && (
+        <>
+          <Section title="Header Style" hint="How the desktop header looks against the page.">
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: "normal", label: "Normal", desc: "Solid background" },
+                { value: "transparent", label: "Transparent", desc: "See-through" },
+                { value: "glassmorphic", label: "Glass", desc: "Rounded blur" },
+              ].map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => updateField("header_style", s.value)}
+                  className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all ${
+                    config.header_style === s.value
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-border hover:border-primary/30"
+                  }`}
+                >
+                  {config.header_style === s.value && (
+                    <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <Check className="h-3 w-3" />
+                    </div>
+                  )}
+                  <div className={`w-full h-6 rounded-md border ${
+                    s.value === "normal" ? "bg-muted border-border" :
+                    s.value === "transparent" ? "bg-transparent border-dashed border-muted-foreground/30" :
+                    "bg-muted/40 backdrop-blur-sm border-muted-foreground/20 shadow-inner"
+                  }`} />
+                  <span className="text-[11px] font-semibold">{s.label}</span>
+                  <span className="text-[9px] text-muted-foreground">{s.desc}</span>
+                </button>
+              ))}
+            </div>
+          </Section>
 
-          {/* Header Logo Alignment — hidden for theme-19 (fixed Blinkit-style header) */}
-          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
-          <div>
-            <h4 className="mb-3 text-sm font-semibold">Header Layout</h4>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Logo Alignment</Label>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: "left", label: "Left", desc: "Logo on the left side", icon: (
-                    <div className="flex items-center gap-1 w-full">
-                      <div className="h-2.5 w-6 rounded bg-foreground/80" />
-                      <div className="flex-1" />
-                      <div className="flex gap-0.5">
-                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                      </div>
+          <Section title="Mobile Bottom Navigation" hint="The fixed bottom bar shoppers see on phones.">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
+                { value: "modern", label: "Modern", desc: "Floating pill with cart" },
+                ...(currentTheme === "theme-18" ? [{ value: "v15", label: "Minimal", desc: "Clean minimal icons" }] : []),
+                ...(["theme-1", "theme-14", "theme-15", "theme-18"].includes(currentTheme) ? [{ value: "v17", label: "Streetwear", desc: "Bold streetwear style" }] : []),
+              ].map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => updateField("mobile_nav_style", s.value)}
+                  className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                    (config.mobile_nav_style || "classic") === s.value
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-border hover:border-primary/30"
+                  }`}
+                >
+                  {(config.mobile_nav_style || "classic") === s.value && (
+                    <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <Check className="h-3 w-3" />
                     </div>
-                  )},
-                  { value: "center", label: "Center", desc: "Logo centered in header", icon: (
-                    <div className="flex items-center w-full">
-                      <div className="h-2 w-2 rounded bg-muted-foreground/40" />
-                      <div className="flex-1 flex justify-center">
-                        <div className="h-2.5 w-6 rounded bg-foreground/80" />
-                      </div>
-                      <div className="flex gap-0.5">
-                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                      </div>
-                    </div>
-                  )},
-                  { value: "left-with-search", label: "With Search", desc: "Logo left, search bar in center", icon: (
-                    <div className="flex items-center gap-1 w-full">
-                      <div className="h-2.5 w-4 rounded bg-foreground/80" />
-                      <div className="flex-1 h-2 rounded-full bg-muted-foreground/20 border border-muted-foreground/30" />
-                      <div className="flex gap-0.5">
-                        <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                      </div>
-                    </div>
-                  )},
-                ].map((s) => (
-                  <button
-                    key={s.value}
-                    onClick={() => updateField("header_logo_alignment", s.value)}
-                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
-                      config.header_logo_alignment === s.value
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-primary/30"
-                    }`}
-                  >
-                    <div className="w-full rounded-lg border border-border bg-card p-2">
-                      {s.icon}
-                    </div>
-                    <span className="text-[10px] font-medium">{s.label}</span>
-                    {config.header_logo_alignment === s.value && (
-                      <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <Check className="h-3 w-3" />
-                      </div>
+                  )}
+                  <div className="w-full h-8 rounded-lg border border-border bg-muted/30 flex items-center justify-around px-2">
+                    {s.value === "classic" ? (
+                      <>
+                        <Home className="h-3 w-3 text-muted-foreground" />
+                        <Store className="h-3 w-3 text-muted-foreground" />
+                        <LayoutGrid className="h-3 w-3 text-muted-foreground" />
+                        <Heart className="h-3 w-3 text-muted-foreground" />
+                        <User className="h-3 w-3 text-muted-foreground" />
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5">
+                          <Home className="h-2.5 w-2.5 text-primary" />
+                          <span className="text-[7px] font-bold text-primary">Home</span>
+                        </div>
+                        <Store className="h-3 w-3 text-muted-foreground" />
+                        <Heart className="h-3 w-3 text-muted-foreground" />
+                        <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                          <ShoppingCart className="h-2.5 w-2.5 text-primary-foreground" />
+                        </div>
+                      </>
                     )}
-                  </button>
-                ))}
-              </div>
+                  </div>
+                  <span className="text-[11px] font-semibold">{s.label}</span>
+                  <span className="text-[9px] text-muted-foreground text-center leading-tight">{s.desc}</span>
+                </button>
+              ))}
             </div>
+          </Section>
+        </>
+      )}
+    </div>
+  );
+
+  const renderCardsSection = () => {
+    if (currentTheme === "theme-19" || currentTheme === "theme-20") {
+      return (
+        <Section title="Product Cards" hint="">
+          <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            This template uses a fixed product card design optimized for grocery / quick commerce.
           </div>
-          )}
-
-          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && <Separator />}
-
-          {/* Marquee Strip Text */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h4 className="text-sm font-semibold">Marquee Strip</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Toggle the scrolling announcement ribbon on your storefront.
-                </p>
+        </Section>
+      );
+    }
+    return (
+      <Section title="Product Card Design" hint="How each product appears in your store grid.">
+        {/* #7 — Fixed columns: 2 mobile / 3 tablet / 5 desktop (was 5-everywhere) */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            { value: "style-1", label: "Clean Minimal" },
+            { value: "style-2", label: "Badge Overlay" },
+            { value: "style-3", label: "Bold Modern" },
+            { value: "style-4", label: "Menu List" },
+            { value: "style-5", label: "Dark Streetwear" },
+          ].map((s) => (
+            <button
+              key={s.value}
+              onClick={() => updateField("product_card_style", s.value)}
+              className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                config.product_card_style === s.value
+                  ? "border-foreground bg-muted shadow-sm"
+                  : "border-border hover:border-foreground/30"
+              }`}
+            >
+              {config.product_card_style === s.value && (
+                <div className="absolute top-1.5 right-1.5">
+                  <Check className="h-4 w-4 text-foreground" />
+                </div>
+              )}
+              {/* Mini product card mockup */}
+              <div className="w-full rounded-lg border border-border bg-background p-1.5">
+                <div className="aspect-square rounded bg-muted mb-1.5" />
+                <div className="h-1.5 w-3/4 rounded bg-foreground/40 mb-1" />
+                <div className="h-1.5 w-1/2 rounded bg-foreground/20" />
               </div>
+              <span className="text-[11px] font-semibold text-center">{s.label}</span>
+            </button>
+          ))}
+        </div>
+      </Section>
+    );
+  };
+
+  const renderCategoriesSection = () => {
+    if (currentTheme === "theme-19" || currentTheme === "theme-20") {
+      return (
+        <Section title="Home Page Categories" hint="Choose which categories appear on your storefront home page.">
+          <div className="mb-3 flex items-center justify-between">
+            <Badge variant="secondary" className="text-xs">
+              {homeShownCount} of {allCategories.length} shown
+            </Badge>
+          </div>
+          {allCategories.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              No categories yet. Create categories first.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[420px] overflow-y-auto rounded-lg border border-border p-2 bg-muted/30">
+              {allCategories.map((cat) => {
+                const isOn = cat.show_on_home !== false;
+                return (
+                  <label
+                    key={cat.id}
+                    htmlFor={`home-cat-${cat.id}`}
+                    className={`flex items-center gap-3 rounded-md border p-2.5 cursor-pointer transition-colors ${
+                      isOn ? "border-foreground/20 bg-background" : "border-border bg-background/50"
+                    }`}
+                  >
+                    <div className="h-10 w-10 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                      {cat.image_url ? (
+                        <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <Tag className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                    <span className="flex-1 text-sm font-medium truncate">{cat.name}</span>
+                    <Switch
+                      id={`home-cat-${cat.id}`}
+                      checked={isOn}
+                      onCheckedChange={(checked) => toggleCategoryHome.mutate({ id: cat.id, show: checked })}
+                    />
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </Section>
+      );
+    }
+
+    return (
+      <Section title="Category Section Design" hint="How category navigation appears on your home page.">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {[
+            { value: "style-1", label: "Circle Carousel" },
+            { value: "style-2", label: "Square Carousel" },
+            { value: "style-3", label: "Grid Modern" },
+            { value: "style-4", label: "Square Grid" },
+            { value: "style-5", label: "Pill Tags" },
+            { value: "style-6", label: "Reveal Grid" },
+            { value: "style-8", label: "Spotlight" },
+            { value: "style-10", label: "Magazine" },
+            { value: "style-11", label: "2-Row Circles" },
+          ].map((s) => (
+            <button
+              key={s.value}
+              onClick={() => updateField("category_style", s.value)}
+              className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                config.category_style === s.value
+                  ? "border-foreground bg-muted shadow-sm"
+                  : "border-border hover:border-foreground/30"
+              }`}
+            >
+              {config.category_style === s.value && (
+                <div className="absolute top-1.5 right-1.5">
+                  <Check className="h-3.5 w-3.5 text-foreground" />
+                </div>
+              )}
+              <ThemeCategoryStyleIcon style={s.value} />
+              <span className="text-[11px] font-semibold text-center">{s.label}</span>
+            </button>
+          ))}
+        </div>
+      </Section>
+    );
+  };
+
+  const renderExtrasSection = () => (
+    <div className="space-y-4">
+      {/* Marquee — collapsible (#13) */}
+      <Accordion type="multiple" defaultValue={["marquee"]} className="space-y-2">
+        <AccordionItem value="marquee" className="rounded-xl border border-border bg-card px-4">
+          <AccordionTrigger className="hover:no-underline">
+            <div className="flex flex-col items-start text-left">
+              <span className="text-sm font-semibold">Marquee Strip</span>
+              <span className="text-xs text-muted-foreground font-normal">Scrolling announcement ribbon</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-1 pb-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Show marquee on storefront</Label>
               <Switch
                 checked={config.marquee_enabled}
                 onCheckedChange={(checked) => updateField("marquee_enabled", checked)}
               />
             </div>
             {config.marquee_enabled && (
-              <>
-                <p className="mb-2 text-xs text-muted-foreground">
-                  Customize the scrolling ribbon text. Use " • " to separate items.
-                </p>
-                <div className="space-y-2">
-                  <textarea
-                    value={config.marquee_text}
-                    onChange={(e) => updateField("marquee_text", e.target.value)}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[80px] resize-y"
-                    placeholder="🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => updateField("marquee_text", DEFAULT_MARQUEE_TEXT)}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
-                  >
-                    Reset to default
-                  </button>
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label className="text-xs">Marquee Text (use " • " between items)</Label>
+                <textarea
+                  value={config.marquee_text}
+                  onChange={(e) => updateField("marquee_text", e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[80px] resize-y"
+                  placeholder="🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments"
+                />
+                <button
+                  type="button"
+                  onClick={() => updateField("marquee_text", DEFAULT_MARQUEE_TEXT)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+                >
+                  Reset to default
+                </button>
+              </div>
             )}
-          </div>
+          </AccordionContent>
+        </AccordionItem>
 
-          {/* Bilingual CTA — Theme 16 (Classic + Quick Buy) only */}
-          {currentTheme === "theme-16" && (
-            <>
-              <Separator />
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <h4 className="text-sm font-semibold">Bilingual CTA Buttons (English + Hindi)</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Show "Add to Cart / कार्ट में जोड़ें" and "Buy Now / अभी खरीदें" on product cards & product page. Designed to boost conversions for Hindi-speaking shoppers.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={!!config.bilingual_cta}
-                    onCheckedChange={(checked) => updateField("bilingual_cta" as any, checked)}
-                  />
-                </div>
+        {currentTheme === "theme-16" && (
+          <AccordionItem value="bilingual" className="rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-semibold">Bilingual CTA (English + Hindi)</span>
+                <span className="text-xs text-muted-foreground font-normal">For Hindi-speaking shoppers</span>
               </div>
-            </>
-          )}
-
-          {/* Mobile Bottom Navigation Style */}
-          {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-15" || currentTheme === "theme-16" || currentTheme === "theme-18") && (
-            <>
-              <Separator />
-              <div>
-                <h4 className="text-sm font-semibold mb-1">Mobile Bottom Navigation</h4>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Choose the navigation bar style for mobile devices. Always visible on mobile.
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Shows "Add to Cart / कार्ट में जोड़ें" and "Buy Now / अभी खरीदें" on product cards.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
-                    { value: "modern", label: "Modern", desc: "Floating pill with cart" },
-                    ...(currentTheme === "theme-18" ? [
-                      { value: "v15", label: "Minimal", desc: "Clean minimal icons" },
-                    ] : []),
-                    ...(["theme-1", "theme-14", "theme-15", "theme-18"].includes(currentTheme) ? [
-                      { value: "v17", label: "Streetwear", desc: "Bold streetwear style" },
-                    ] : []),
-                  ].map((s) => (
-                    <button
-                      key={s.value}
-                      onClick={() => updateField("mobile_nav_style", s.value)}
-                      className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
-                        (config.mobile_nav_style || "classic") === s.value
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-primary/30"
-                      }`}
-                    >
-                      {(config.mobile_nav_style || "classic") === s.value && (
-                        <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <Check className="h-3 w-3" />
-                        </div>
-                      )}
-                      {/* Mini preview */}
-                      <div className="w-full h-8 rounded-lg border border-border bg-muted/30 flex items-center justify-around px-2">
-                        {s.value === "classic" ? (
-                          <>
-                            <Home className="h-3 w-3 text-muted-foreground" />
-                            <Store className="h-3 w-3 text-muted-foreground" />
-                            <LayoutGrid className="h-3 w-3 text-muted-foreground" />
-                            <Heart className="h-3 w-3 text-muted-foreground" />
-                            <User className="h-3 w-3 text-muted-foreground" />
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5">
-                              <Home className="h-2.5 w-2.5 text-primary" />
-                              <span className="text-[7px] font-bold text-primary">Home</span>
-                            </div>
-                            <Store className="h-3 w-3 text-muted-foreground" />
-                            <Heart className="h-3 w-3 text-muted-foreground" />
-                            <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                              <ShoppingCart className="h-2.5 w-2.5 text-primary-foreground" />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-semibold">{s.label}</span>
-                      <span className="text-[9px] text-muted-foreground">{s.desc}</span>
-                    </button>
-                  ))}
-                </div>
+                <Switch
+                  checked={!!config.bilingual_cta}
+                  onCheckedChange={(checked) => updateField("bilingual_cta" as any, checked)}
+                />
               </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+      </Accordion>
+    </div>
+  );
 
-              <div>
-                <h4 className="text-sm font-semibold mb-2">Header Style</h4>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Choose how the header looks on your storefront.
-                </p>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { value: "normal", label: "Normal", desc: "Solid background" },
-                    { value: "transparent", label: "Transparent", desc: "See-through" },
-                    { value: "glassmorphic", label: "Glass", desc: "Rounded blur" },
-                  ].map((s) => (
-                    <button
-                      key={s.value}
-                      onClick={() => updateField("header_style", s.value)}
-                      className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all ${
-                        config.header_style === s.value
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-primary/30"
-                      }`}
-                    >
-                      {config.header_style === s.value && (
-                        <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <Check className="h-3 w-3" />
-                        </div>
-                      )}
-                      <div className={`w-full h-6 rounded-md border ${
-                        s.value === "normal" ? "bg-muted border-border" :
-                        s.value === "transparent" ? "bg-transparent border-dashed border-muted-foreground/30" :
-                        "bg-muted/40 backdrop-blur-sm border-muted-foreground/20 shadow-inner"
-                      }`} />
-                      <span className="text-[10px] font-semibold">{s.label}</span>
-                      <span className="text-[9px] text-muted-foreground">{s.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case "template": return renderTemplateSection();
+      case "colors": return renderColorsSection();
+      case "typography": return renderTypographySection();
+      case "layout": return renderLayoutSection();
+      case "header": return renderHeaderSection();
+      case "cards": return renderCardsSection();
+      case "categories": return renderCategoriesSection();
+      case "extras": return renderExtrasSection();
+    }
+  };
 
-          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && <Separator />}
-
-          {/* Product Card Style — hidden for theme-19 (uses dedicated V19ProductCard) */}
-          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
-          <div>
-            <h4 className="mb-3 text-sm font-semibold">Product Card Design</h4>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Product Card Style</Label>
-              <div className="grid grid-cols-5 gap-3">
-                {[
-                  { value: "style-1", label: "Style 1", desc: "Clean minimal" },
-                  { value: "style-2", label: "Style 2", desc: "Badge & overlay" },
-                  { value: "style-3", label: "Style 3", desc: "Bold modern" },
-                  { value: "style-4", label: "Style 4", desc: "Menu list" },
-                  { value: "style-5", label: "Style 5", desc: "Dark streetwear" },
-                  
-                ].map((s) => (
-                  <button
-                    key={s.value}
-                    onClick={() => updateField("product_card_style", s.value)}
-                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
-                      config.product_card_style === s.value
-                        ? "border-foreground bg-muted shadow-sm"
-                        : "border-border hover:border-foreground/30"
-                    }`}
-                  >
-                    {config.product_card_style === s.value && (
-                      <div className="absolute top-2 right-2">
-                        <Check className="h-4 w-4 text-foreground" />
-                      </div>
-                    )}
-                    <ShoppingCart className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-xs font-semibold">{s.label}</span>
-                    <span className="text-[10px] text-muted-foreground">{s.desc}</span>
-                  </button>
-                ))}
+  // ── Desktop split-screen preview iframe (#1) ──
+  const desktopPreviewIframe = (
+    <div className="rounded-xl border-2 border-border bg-background overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/40 border-b border-border">
+        <div className="flex items-center gap-1">
+          <div className="h-2.5 w-2.5 rounded-full bg-destructive/50" />
+          <div className="h-2.5 w-2.5 rounded-full bg-warning/50" />
+          <div className="h-2.5 w-2.5 rounded-full bg-success/50" />
+        </div>
+        <div className="flex-1 mx-3 rounded-full bg-background/80 border border-border px-3 py-0.5 truncate">
+          <span className="text-[10px] text-muted-foreground">{store?.slug}.shopbanao.in</span>
+        </div>
+        <div className="flex items-center gap-1 rounded-md border border-border bg-background p-0.5">
+          <button
+            onClick={() => setPreviewMode("mobile")}
+            className={`flex items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold transition-all ${
+              previewMode === "mobile" ? "bg-foreground text-background" : "text-muted-foreground"
+            }`}
+          >
+            <Smartphone className="h-3 w-3" />
+          </button>
+          <button
+            onClick={() => setPreviewMode("desktop")}
+            className={`flex items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold transition-all ${
+              previewMode === "desktop" ? "bg-foreground text-background" : "text-muted-foreground"
+            }`}
+          >
+            <Monitor className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
+      {store?.slug && (
+        <div className="bg-muted/30 flex items-center justify-center p-3">
+          {previewMode === "mobile" ? (
+            <div className="rounded-[1.75rem] border-[5px] border-gray-900 bg-gray-900 shadow-xl overflow-hidden">
+              <div style={{ width: "300px", height: "640px", overflow: "hidden" }}>
+                <iframe
+                  key={`split-mobile-${iframeKey}`}
+                  ref={iframeRef}
+                  src={`/store/${store.slug}?preview=1`}
+                  title="Mobile Preview"
+                  onLoad={() => setupPreviewIframe(iframeRef.current)}
+                  style={{ width: "375px", height: "800px", border: "none", transform: "scale(0.8)", transformOrigin: "top left" }}
+                />
               </div>
             </div>
-          </div>
-          )}
-
-          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && <Separator />}
-
-          {/* Category Style — hidden for theme-19 (uses dedicated horizontal pills) */}
-          {currentTheme !== "theme-19" && currentTheme !== "theme-20" && (
-          <div>
-            <h4 className="mb-3 text-sm font-semibold">Category Section Design</h4>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Category Style</Label>
-               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-                {[
-                  { value: "style-1", label: "Circle Carousel", icon: "○ ○ ○" },
-                  { value: "style-2", label: "Square Carousel", icon: "□ □ □" },
-                  { value: "style-3", label: "Grid Modern", icon: "■■■\n■■■" },
-                  { value: "style-4", label: "Square Grid", icon: "□□\n□□" },
-                  { value: "style-5", label: "Pill Tags", icon: "⬭ ⬭ ⬭" },
-                  { value: "style-6", label: "Reveal Grid", icon: "▣▣\n↕" },
-                  { value: "style-8", label: "Spotlight", icon: "◁ ◉ ▷" },
-                  { value: "style-10", label: "Magazine", icon: "▬▬\n▬▬" },
-                  { value: "style-11", label: "2-Row Circles", icon: "●●●\n●●●" },
-                ].map((s) => (
-                  <button
-                    key={s.value}
-                    onClick={() => updateField("category_style", s.value)}
-                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
-                      config.category_style === s.value
-                        ? "border-foreground bg-muted shadow-sm"
-                        : "border-border hover:border-foreground/30"
-                    }`}
-                  >
-                    {config.category_style === s.value && (
-                      <div className="absolute top-1.5 right-1.5">
-                        <Check className="h-3.5 w-3.5 text-foreground" />
-                      </div>
-                    )}
-                    <span className="text-lg font-mono leading-tight whitespace-pre text-muted-foreground">{s.icon}</span>
-                    <span className="text-[10px] font-semibold text-center">{s.label}</span>
-                  </button>
-                ))}
-              </div>
+          ) : (
+            <div style={{ width: "100%", height: "640px", overflow: "hidden" }} className="rounded-lg border border-border bg-background">
+              <iframe
+                key={`split-desktop-${iframeKey}`}
+                ref={iframeDesktopRef}
+                src={`/store/${store.slug}?preview=1`}
+                title="Desktop Preview"
+                onLoad={() => setupPreviewIframe(iframeDesktopRef.current)}
+                style={{ width: "1440px", height: "1280px", border: "none", transform: "scale(0.45)", transformOrigin: "top left" }}
+              />
             </div>
-          </div>
           )}
+        </div>
+      )}
+    </div>
+  );
 
-          {(currentTheme === "theme-19" || currentTheme === "theme-20") && (
-            <>
-              <Separator />
+  if (isLoading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="h-8 w-48 rounded-lg bg-muted animate-pulse mb-2" />
+        <div className="h-4 w-64 rounded bg-muted animate-pulse" />
+      </div>
+    );
+  }
 
-              {/* Home Page Categories — per-category visibility toggle (Theme 19 only) */}
-              <div>
-                <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
-                  <div>
-                    <h4 className="text-sm font-semibold">Home Page Categories</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Choose which categories appear as sections on your storefront home page.
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {homeShownCount} of {allCategories.length} shown
-                  </Badge>
-                </div>
-
-                {allCategories.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                    No categories yet. Create categories first to manage their home page visibility.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[420px] overflow-y-auto rounded-lg border border-border p-2 bg-muted/30">
-                    {allCategories.map((cat) => {
-                      const isOn = cat.show_on_home !== false;
-                      return (
-                        <label
-                          key={cat.id}
-                          htmlFor={`home-cat-${cat.id}`}
-                          className={`flex items-center gap-3 rounded-md border p-2.5 cursor-pointer transition-colors ${
-                            isOn ? "border-foreground/20 bg-background" : "border-border bg-background/50"
-                          }`}
-                        >
-                          <div className="h-10 w-10 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
-                            {cat.image_url ? (
-                              <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
-                            ) : (
-                              <Tag className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </div>
-                          <span className="flex-1 text-sm font-medium truncate">{cat.name}</span>
-                          <Switch
-                            id={`home-cat-${cat.id}`}
-                            checked={isOn}
-                            onCheckedChange={(checked) =>
-                              toggleCategoryHome.mutate({ id: cat.id, show: checked })
-                            }
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  💡 Categories with no products are automatically hidden. Toggle changes apply instantly to your live storefront.
-                </p>
-              </div>
-            </>
-          )}
-
-          <Separator />
-
-          {/* Full Storefront Preview */}
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-sm font-semibold">Full Storefront Preview</h4>
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-1">
-                <button
-                  onClick={() => setPreviewMode("mobile")}
-                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                    previewMode === "mobile"
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Smartphone className="h-3.5 w-3.5" />
-                  Mobile
-                </button>
-                <button
-                  onClick={() => setPreviewMode("desktop")}
-                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                    previewMode === "desktop"
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Monitor className="h-3.5 w-3.5" />
-                  Desktop
-                </button>
-              </div>
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="pb-24">
+        {/* Page header */}
+        <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 pb-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Theme Settings</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">Customize your storefront — changes preview live.</p>
             </div>
             {dirty && (
-              <p className="mb-3 text-xs text-muted-foreground">💡 Preview updates live. Click "Save Changes" to apply to your store.</p>
-            )}
-            {store?.slug ? (
-              <div className="flex justify-center">
-                {previewMode === "mobile" ? (
-                  <div className="relative mx-auto" style={{ width: "375px" }}>
-                    <div className="rounded-[2.5rem] border-[6px] border-gray-800 bg-gray-800 shadow-2xl overflow-hidden">
-                      <div className="relative z-10 mx-auto flex h-6 w-32 items-center justify-center rounded-b-2xl bg-gray-800">
-                        <div className="h-2 w-2 rounded-full bg-gray-600" />
-                      </div>
-                      <div style={{ width: "363px", height: "680px", overflow: "hidden" }}>
-                        <iframe
-                          key={`mobile-${iframeKey}`}
-                          ref={iframeRef}
-                          src={`/store/${store.slug}?preview=1`}
-                          title="Store Preview"
-                          onLoad={() => {
-                            setupPreviewIframe(iframeRef.current);
-                          }}
-                          style={{
-                            width: "375px",
-                            height: "700px",
-                            border: "none",
-                            transform: "scale(0.968)",
-                            transformOrigin: "top left",
-                          }}
-                        />
-                      </div>
-                      <div className="flex h-5 items-center justify-center bg-gray-800">
-                        <div className="h-1 w-24 rounded-full bg-gray-600" />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full max-w-4xl rounded-xl border-2 border-border overflow-hidden shadow-lg">
-                    <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 border-b border-border">
-                      <div className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
-                      <div className="h-2.5 w-2.5 rounded-full bg-warning/60" />
-                      <div className="h-2.5 w-2.5 rounded-full bg-success/60" />
-                      <div className="flex-1 mx-8 rounded-full bg-background/80 border border-border px-3 py-0.5">
-                        <span className="text-[9px] text-muted-foreground">{store.slug}.shopbanao.in</span>
-                      </div>
-                    </div>
-                    <div style={{ width: "100%", height: `${Math.round(900 * Math.min(1, 896 / 1440))}px`, overflow: "hidden" }}>
-                      <iframe
-                        key={`desktop-${iframeKey}`}
-                        ref={iframeDesktopRef}
-                        src={`/store/${store.slug}?preview=1`}
-                        title="Store Preview Desktop"
-                        onLoad={() => {
-                          setupPreviewIframe(iframeDesktopRef.current);
-                        }}
-                        style={{
-                          width: "1440px",
-                          height: "900px",
-                          border: "none",
-                          transform: `scale(${Math.min(1, 896 / 1440)})`,
-                          transformOrigin: "top left",
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">Loading preview...</p>
+              <Badge variant="outline" className="hidden sm:inline-flex gap-1.5 border-amber-500/30 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Unsaved
+              </Badge>
             )}
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-3 pt-2">
-            <Button
-              onClick={() => saveConfigMutation.mutate()}
-              disabled={!dirty || saveConfigMutation.isPending}
-              className="gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {saveConfigMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-            <Button variant="outline" onClick={resetToDefaults} className="gap-2">
-              <RotateCcw className="h-4 w-4" />
-              Reset to Defaults
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        {/* ── Split-screen layout (#1) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,42%)] gap-4 lg:gap-6 px-4 sm:px-6 lg:px-8">
+          {/* Left: section nav */}
+          <aside>
+            <ThemeSectionNav
+              sections={SECTIONS}
+              active={activeSection}
+              onSelect={setActiveSection}
+              configuredMap={configuredMap}
+            />
+          </aside>
+
+          {/* Center: active section content */}
+          <main className="min-w-0 space-y-4">
+            {renderActiveSection()}
+          </main>
+
+          {/* Right: pinned preview (desktop only) */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-4">
+              {desktopPreviewIframe}
+              {dirty && (
+                <p className="mt-2 text-[11px] text-center text-muted-foreground">
+                  💡 Click "Save Changes" to apply to your live store.
+                </p>
+              )}
+            </div>
+          </aside>
+        </div>
+
+        {/* Mobile sticky preview button + drawer (#2 + #10) */}
+        {store?.slug && (
+          <ThemeMobilePreviewDrawer
+            storeSlug={store.slug}
+            iframeKey={iframeKey}
+            onIframeReady={setupPreviewIframe}
+          />
+        )}
+
+        {/* Sticky save bar (#6) */}
+        <ThemeStickySaveBar
+          dirty={dirty}
+          saving={saveConfigMutation.isPending}
+          onSave={() => saveConfigMutation.mutate()}
+          onReset={resetToDefaults}
+        />
+      </div>
+    </TooltipProvider>
+  );
+}
+
+/** Section card with title + optional help tooltip (#15). */
+function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-base font-bold tracking-tight">{title}</h3>
+        {hint && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                <HelpCircle className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs text-xs">{hint}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      {children}
+    </section>
   );
 }
