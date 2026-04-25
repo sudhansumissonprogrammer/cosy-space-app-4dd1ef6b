@@ -396,8 +396,9 @@ export default function CheckoutPage() {
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
 
   // Coupon logic
-  const applyCoupon = async () => {
-    if (!couponCode.trim()) return;
+  const applyCoupon = async (overrideCode?: string) => {
+    const code = (overrideCode ?? couponCode).trim();
+    if (!code) return;
     setCouponLoading(true);
     try {
       const { data, error } = await supabase
