@@ -335,7 +335,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 2. Location & Hours ── */}
-        <Card>
+        <Card id="settings-location" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <MapPin className="h-5 w-5 text-primary" /> Location & Hours
@@ -360,7 +360,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 3. Images & Media ── */}
-        <Card>
+        <Card id="settings-media" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Image className="h-5 w-5 text-primary" /> Images & Media
@@ -438,7 +438,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 4. Storefront Display ── */}
-        <Card>
+        <Card id="settings-display" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Flame className="h-5 w-5 text-primary" /> Storefront Display
@@ -458,7 +458,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 5. Pages & Policies ── */}
-        <Card>
+        <Card id="settings-pages" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <FileText className="h-5 w-5 text-primary" /> Pages & Policies
@@ -480,7 +480,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 6. SEO ── */}
-        <Card>
+        <Card id="settings-seo" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Search className="h-5 w-5 text-primary" /> SEO Settings
@@ -521,7 +521,7 @@ export default function StoreSettings() {
         </Card>
 
         {/* ── 7. Domain shortcut ── */}
-        <Card>
+        <Card id="settings-domain" className="scroll-mt-28">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Globe className="h-5 w-5 text-primary" /> Custom Domain
