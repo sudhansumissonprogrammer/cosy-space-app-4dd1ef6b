@@ -523,44 +523,71 @@ export default function StoreOrders() {
                         {group.orders.length} order{group.orders.length > 1 ? "s" : ""} · {currency} {dayTotal.toFixed(0)}
                       </span>
                     </div>
-                    {group.orders.map((order: any) => (
-                      <div
-                        key={order.id}
-                        className="flex items-start gap-2 rounded-xl border bg-card p-3.5 transition-colors"
-                      >
-                        <Checkbox
-                          checked={selectedOrders.has(order.id)}
-                          onCheckedChange={() => toggleOrderSelection(order.id)}
-                          className="mt-1 shrink-0"
-                        />
-                        <button
-                          onClick={() => setMobileDetailOrder(order)}
-                          className="flex-1 text-left active:bg-accent/50 transition-colors"
+                    {group.orders.map((order: any) => {
+                      const inBulkMode = selectedOrders.size > 0;
+                      const phone = order.customer_phone?.replace(/[^0-9]/g, "");
+                      const openWhatsApp = () => {
+                        if (!phone) { toast.info("No phone on this order"); return; }
+                        window.open(`https://wa.me/${phone}`, "_blank", "noopener,noreferrer");
+                      };
+                      const markShipped = () => {
+                        if (order.status === "shipped" || order.status === "delivered") {
+                          toast.info(`Already ${order.status}`);
+                          return;
+                        }
+                        handleStatusChange(order, "shipped");
+                      };
+                      return (
+                        <SwipeableOrderRow
+                          key={order.id}
+                          disabled={inBulkMode}
+                          onSwipeRight={markShipped}
+                          onSwipeLeft={openWhatsApp}
+                          onLongPress={() => toggleOrderSelection(order.id)}
+                          rightLabel={order.status === "shipped" ? "Shipped" : "Ship"}
+                          leftLabel="WhatsApp"
                         >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-mono text-xs font-semibold text-foreground">{getOrderDisplayId(order)}</span>
-                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", statusColor(order.status))}>
-                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                            </span>
+                          <div className="flex items-start gap-2 rounded-xl border bg-card p-3.5 transition-colors">
+                            {inBulkMode && (
+                              <Checkbox
+                                checked={selectedOrders.has(order.id)}
+                                onCheckedChange={() => toggleOrderSelection(order.id)}
+                                className="mt-1 shrink-0"
+                              />
+                            )}
+                            <button
+                              onClick={() => {
+                                if (inBulkMode) { toggleOrderSelection(order.id); return; }
+                                setMobileDetailOrder(order);
+                              }}
+                              className="flex-1 text-left active:bg-accent/50 transition-colors"
+                            >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="font-mono text-xs font-semibold text-foreground">{getOrderDisplayId(order)}</span>
+                                <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", statusColor(order.status))}>
+                                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                </span>
+                              </div>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{order.customer_name || "Guest"}</p>
+                                <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</p>
+                              </div>
+                              <p className="text-sm font-bold text-foreground shrink-0">{order.currency} {Number(order.total).toFixed(0)}</p>
+                            </div>
+                            {order.order_items && order.order_items.length > 0 && (
+                              <p className="mt-1.5 text-[11px] text-muted-foreground line-clamp-1">
+                                {order.order_items.map((i: any) => i.product_name).join(", ")}
+                              </p>
+                            )}
+                            </button>
                           </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{order.customer_name || "Guest"}</p>
-                            <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</p>
-                          </div>
-                          <p className="text-sm font-bold text-foreground shrink-0">{order.currency} {Number(order.total).toFixed(0)}</p>
-                        </div>
-                        {order.order_items && order.order_items.length > 0 && (
-                          <p className="mt-1.5 text-[11px] text-muted-foreground line-clamp-1">
-                            {order.order_items.map((i: any) => i.product_name).join(", ")}
-                          </p>
-                        )}
-                        </button>
-                      </div>
-                    ))}
+                        </SwipeableOrderRow>
+                      );
+                    })}
                   </div>
                 );
               })}
