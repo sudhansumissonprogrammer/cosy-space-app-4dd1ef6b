@@ -34,6 +34,7 @@ import PaginationControls from "@/components/PaginationControls";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
+import SwipeableOrderRow from "@/components/dashboard/SwipeableOrderRow";
 
 const STATUS_OPTIONS = ["confirmed", "shipped", "delivered", "cancelled", "partially_paid"] as const;
 
