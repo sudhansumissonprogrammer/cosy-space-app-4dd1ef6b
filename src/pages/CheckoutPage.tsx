@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useOutletContext, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -154,6 +154,13 @@ export default function CheckoutPage() {
 
   // Lazily fetch/create customer record on checkout
   useEffect(() => { ensureCustomer(); }, [ensureCustomer]);
+
+  // Track URL coupon (e.g. ?coupon=SAVE100 from WhatsApp recovery link) — auto-applied below.
+  // Falls back to sessionStorage so the coupon persists across product → cart → checkout navigation.
+  const urlCoupon =
+    searchParams.get("coupon") ||
+    (typeof window !== "undefined" ? sessionStorage.getItem("pending_coupon") : null);
+  const autoAppliedCouponRef = useRef(false);
 
   // Scroll to top when the order-placed / upsell screen appears so users
   // see the confirmation instead of landing on the page footer.
@@ -392,8 +399,9 @@ export default function CheckoutPage() {
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
 
   // Coupon logic
-  const applyCoupon = async () => {
-    if (!couponCode.trim()) return;
+  const applyCoupon = async (overrideCode?: string) => {
+    const code = (overrideCode ?? couponCode).trim();
+    if (!code) return;
     setCouponLoading(true);
     try {
       const { data, error } = await supabase
@@ -437,7 +445,16 @@ export default function CheckoutPage() {
     setCouponCode("");
   };
 
-  // Facebook Pixel + CAPI: InitiateCheckout
+  // Auto-apply coupon from URL (e.g. ?coupon=SAVE100 from WhatsApp recovery link)
+  useEffect(() => {
+    if (!urlCoupon || autoAppliedCouponRef.current) return;
+    if (!store?.id || subtotal <= 0 || appliedCoupon) return;
+    autoAppliedCouponRef.current = true;
+    const code = urlCoupon.toUpperCase();
+    setCouponCode(code);
+    applyCoupon(code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlCoupon, store?.id, subtotal, appliedCoupon]);
   useEffect(() => {
     if (checkoutItems.length === 0) return;
     const eid = generateEventId();
@@ -723,6 +740,7 @@ export default function CheckoutPage() {
     }
     setShowUpsell(true);
     setOrderPlaced(true);
+    try { sessionStorage.removeItem("pending_coupon"); } catch {}
     if (!isSingleMode) clearCart();
     saveExpressInfo();
     // Clean up theme-16 BuyNow modal localStorage after order
@@ -1044,7 +1062,7 @@ export default function CheckoutPage() {
                 onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
               />
             </div>
-            <Button variant="outline" onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()}>
+            <Button variant="outline" onClick={() => applyCoupon()} disabled={couponLoading || !couponCode.trim()}>
               {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
             </Button>
           </div>

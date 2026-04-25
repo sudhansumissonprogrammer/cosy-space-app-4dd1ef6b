@@ -140,6 +140,16 @@ export default function StorefrontShell({
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, [pathname]);
 
+  // Capture ?coupon=CODE from any storefront URL into sessionStorage so it survives
+  // navigation through product → cart → checkout (where it auto-applies).
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const c = params.get("coupon");
+      if (c) sessionStorage.setItem("pending_coupon", c.toUpperCase());
+    } catch {}
+  }, [pathname]);
+
   // Build theme style before early returns so hooks stay in stable order
   const { themeStyle, primaryColor, btnTextColor } = buildThemeStyle(
     themeConfig,

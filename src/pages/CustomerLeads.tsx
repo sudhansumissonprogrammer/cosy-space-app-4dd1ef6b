@@ -79,8 +79,11 @@ export default function CustomerLeads() {
       ? getStoreBaseUrl(myStore.slug, myStore?.custom_domain)
       : "";
     const productSlug = lead.product_id ? productSlugMap?.[lead.product_id] : null;
+    const COUPON = "SAVE100";
+    const couponQuery = `?coupon=${COUPON}`;
     const productUrl =
-      storeBase && productSlug ? `${storeBase}/product/${productSlug}` : "";
+      storeBase && productSlug ? `${storeBase}/product/${productSlug}${couponQuery}` : "";
+    const storeUrlWithCoupon = storeBase ? `${storeBase}${couponQuery}` : "";
 
     const greeting = lead.name ? `Hey ${lead.name} 👋` : "Hey 👋";
     const hook = lead.product_name
@@ -88,9 +91,9 @@ export default function CustomerLeads() {
       : `Saw that you almost placed an order on ${storeName} but something stopped you mid-way 🤔`;
 
     const ctaLine = productUrl
-      ? `🛒 Complete your order in 1 click 👇\n${productUrl}`
-      : storeBase
-        ? `🛒 Complete your order in 1 click 👇\n${storeBase}`
+      ? `🛒 *Tap here to claim your ₹100 OFF* 👇\n${productUrl}`
+      : storeUrlWithCoupon
+        ? `🛒 *Tap here to claim your ₹100 OFF* 👇\n${storeUrlWithCoupon}`
         : "";
 
     return [
@@ -98,9 +101,10 @@ export default function CustomerLeads() {
       "",
       hook,
       "",
-      "Good news — I've kept it reserved for you for the next *2 hours* ⏳",
+      "Good news — I've reserved it for you for the next *2 hours* ⏳",
       "",
-      "🎁 *Use code WELCOME10* to get an *extra 10% OFF* + Free Delivery on this order (today only).",
+      `🎁 *Special gift only for you today* — Flat *₹100 OFF* on this order!`,
+      `✨ Coupon *${COUPON}* will be *auto-applied* when you tap the link below — no need to type anything.`,
       "",
       ctaLine,
       "",
