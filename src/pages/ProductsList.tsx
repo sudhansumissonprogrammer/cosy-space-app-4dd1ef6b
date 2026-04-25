@@ -82,6 +82,7 @@ export default function ProductsList() { // v2
 
   // Mobile product sheet state
   const [mobileProductId, setMobileProductId] = useState<string | null | undefined>(undefined); // undefined = closed, null = create, string = edit
+  const [quickEditProduct, setQuickEditProduct] = useState<any | null>(null); // tap price/stock pill → quick edit
 
   // Long-press state
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
