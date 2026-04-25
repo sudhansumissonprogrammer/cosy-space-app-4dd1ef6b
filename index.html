@@ -50,10 +50,18 @@
     </style>
     <script>
       (function(){
-        /* ─── Phase 1: Pre-React Facebook Pixel shim + early init ───
-           Create fbq shim synchronously so any event queued before React loads
-           is buffered. If Worker injected __STOREFRONT_DATA__ with a pixel ID,
-           fire init+PageView NOW (saves ~500ms vs waiting for React useEffect). */
+        /* ─── Phase 1: Pre-React Facebook Pixel shim ───
+           Only set up the shim if we're actually on a storefront route — landing
+           and auth pages never have a pixel ID, so running this code wastes parse
+           time on the critical path. */
+        var p=location.pathname;var h=location.hostname;
+        var isSf=p.indexOf('/store/')===0;
+        if(!isSf && h.endsWith('.shopbanao.in') && h!=='shopbanao.in' && h!=='www.shopbanao.in'){
+          var sub=h.replace('.shopbanao.in','');if(sub&&sub.indexOf('.')===-1)isSf=true;
+        }
+        if(!isSf && window.__STORE_SLUG__)isSf=true;
+        if(!isSf)return; // landing/auth — skip pixel shim entirely
+
         (function initFbqEarly(){
           var w=window;if(w.fbq)return;
           var q=function(){q.callMethod?q.callMethod.apply(q,arguments):q.queue.push(arguments)};
@@ -63,7 +71,6 @@
             w.__SF_PIXEL_INITED__=pid;
             w.fbq('init',pid);
             w.fbq('track','PageView');
-            /* Defer the actual SDK download to idle — events stay queued in shim */
             var loadSdk=function(){
               if(document.getElementById('fb-pixel-script'))return;
               var s=document.createElement('script');s.id='fb-pixel-script';s.async=true;
