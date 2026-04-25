@@ -154,9 +154,14 @@ export default function CustomerLeads() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
+                            title="Send recovery message on WhatsApp"
                             onClick={() => {
                               const phone = lead.phone.replace(/[^0-9+]/g, "");
-                              window.open(`https://wa.me/${encodeURIComponent(phone)}`, "_blank");
+                              const message = buildRecoveryMessage(lead);
+                              window.open(
+                                `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`,
+                                "_blank"
+                              );
                             }}
                           >
                             <MessageCircle className="h-4 w-4 text-primary" />
