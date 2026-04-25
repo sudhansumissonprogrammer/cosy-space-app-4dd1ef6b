@@ -12,6 +12,29 @@ let errorCount = 0;
 let resetTimer: ReturnType<typeof setTimeout> | null = null;
 const MAX_ERRORS_PER_MINUTE = 10;
 
+/**
+ * Known noisy errors from in-app browsers (Facebook/Instagram WebView, iOS WKWebView,
+ * third-party extensions, cross-origin scripts). These are NOT bugs in our code —
+ * they originate from the host app's injected JS and would just spam our logs.
+ */
+const IGNORED_ERROR_PATTERNS: RegExp[] = [
+  /_AutofillCallbackHandler/i,           // FB/IG iOS WebView autofill bridge
+  /window\.webkit\.messageHandlers/i,    // iOS WKWebView native bridge
+  /^Script error\.?$/i,                   // Cross-origin script (no details available)
+  /Non-Error promise rejection captured/i,
+  /ResizeObserver loop limit exceeded/i,
+  /ResizeObserver loop completed with undelivered notifications/i,
+  /Java exception was raised during method invocation/i, // Android WebView
+  /__gCrWeb/i,                            // Chrome iOS WebView bridge
+  /instantSearchSDKJSBridgeClearHighlight/i, // Bing app WebView
+  /webkitExitFullScreen/i,                // Safari fullscreen quirks
+];
+
+function isIgnoredError(message: string, stack?: string): boolean {
+  const haystack = `${message} ${stack || ""}`;
+  return IGNORED_ERROR_PATTERNS.some((rx) => rx.test(haystack));
+}
+
 interface LogErrorOptions {
   message: string;
   context?: string; // e.g. "CartContext", "CheckoutPage", "ErrorBoundary"
