@@ -103,12 +103,26 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
 
   if (allDone) return null;
 
+  // Highlight strongly when progress is < 60% (new store) — softer when nearly done.
+  const isEarly = progress < 60;
+
   return (
-    <Card className="border shadow-none hover:shadow-md transition-shadow duration-200">
+    <Card
+      ref={ref}
+      className={
+        isEarly
+          ? "border-primary/40 bg-gradient-to-br from-primary/8 via-primary/4 to-transparent shadow-sm"
+          : "border shadow-none hover:shadow-md transition-shadow duration-200"
+      }
+    >
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Store Setup</p>
-          <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">
+          <div className="flex items-center gap-2">
+            <p className={`text-[11px] font-bold uppercase tracking-[0.1em] ${isEarly ? "text-primary" : "text-muted-foreground"}`}>
+              {isEarly ? "🚀 Finish Setup" : "Store Setup"}
+            </p>
+          </div>
+          <span className={`text-[10px] font-bold rounded-full px-2.5 py-0.5 ${isEarly ? "bg-primary text-primary-foreground" : "text-primary bg-primary/10"}`}>
             {doneCount}/{checks.length} done
           </span>
         </div>
