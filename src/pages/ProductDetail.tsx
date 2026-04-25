@@ -786,6 +786,11 @@ export default function ProductDetail() {
                   className="group relative flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-extrabold text-base uppercase tracking-wide transition-all duration-200 hover:shadow-2xl hover:brightness-110 active:scale-[0.98]"
                   style={{ backgroundColor: "#25D366", boxShadow: "0 6px 24px rgba(37, 211, 102, 0.35)" }}
                   onClick={() => {
+                    if (hasVariants && !selectedVariant) {
+                      toast.error("Please select a variant first");
+                      document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      return;
+                    }
                     const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
                     const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
                     const productUrl = `${window.location.origin}${window.location.pathname}`;
