@@ -20,6 +20,7 @@ import { toast } from "sonner";
 
 import { storefrontPath } from "@/lib/subdomain";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 interface Props {
   open: boolean;
@@ -149,12 +150,13 @@ export default function BuyNowPhoneModal({
     if (!open || didSkip.current) return;
     try {
       const saved = localStorage.getItem("checkout_phone");
-      if (saved && saved.replace(/\D/g, "").length === 10) {
+      const normalized = normalizePhone(saved);
+      if (normalized && isValidIndianPhone(normalized)) {
         didSkip.current = true;
-        // Still capture as a lead — returning user expressed intent again
-        saveLead({ storeId, phone: saved, productId, productName, source });
-        // Auto-login the returning shopper too
-        void autoLoginByPhone(storeId, saved);
+        // Persist normalized version going forward
+        try { localStorage.setItem("checkout_phone", normalized); } catch {}
+        saveLead({ storeId, phone: normalized, productId, productName, source });
+        void autoLoginByPhone(storeId, normalized);
         onBeforeNavigate?.();
         onOpenChange(false);
         navigate(storefrontPath(storeSlug, "checkout"));
@@ -169,18 +171,18 @@ export default function BuyNowPhoneModal({
   }, [open]);
 
   const handleContinue = () => {
-    const cleaned = phone.replace(/\D/g, "");
-    if (cleaned.length !== 10) {
+    const normalized = normalizePhone(phone);
+    if (!isValidIndianPhone(normalized)) {
       toast.error("Please enter a valid 10-digit mobile number");
       return;
     }
 
-    try { localStorage.setItem("checkout_phone", cleaned); } catch {}
+    try { localStorage.setItem("checkout_phone", normalized); } catch {}
 
     // Save lead immediately so it shows up in dashboard → Leads
-    saveLead({ storeId, phone: cleaned, productId, productName, source });
+    saveLead({ storeId, phone: normalized, productId, productName, source });
     // Auto-login the shopper by phone so checkout sees a logged-in customer
-    void autoLoginByPhone(storeId, cleaned);
+    void autoLoginByPhone(storeId, normalized);
 
     onBeforeNavigate?.();
     onOpenChange(false);

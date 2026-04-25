@@ -19,6 +19,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
+import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 
 declare global {
@@ -498,7 +499,7 @@ export default function CheckoutPage() {
         const { data } = await (supabase as any).from("abandoned_carts").insert({
           store_id: store.id,
           customer_email: email || null,
-          customer_phone: phone || null,
+          customer_phone: normalizePhone(phone) || null,
           cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
         }).select("id").single();
         if (data?.id) {
@@ -550,7 +551,7 @@ export default function CheckoutPage() {
           currency,
           status: "pending",
           customer_name: fullName.trim(),
-          customer_phone: phone.trim(),
+          customer_phone: normalizePhone(phone),
           street_address: streetAddress.trim(),
           city: city.trim(),
           state: state.trim(),
@@ -568,7 +569,7 @@ export default function CheckoutPage() {
         })),
         lead: {
           name: fullName.trim(),
-          phone: phone.trim(),
+          phone: normalizePhone(phone),
           product_name: checkoutItems.map((i) => i.name).join(", "),
           product_id: checkoutItems.length === 1 ? checkoutItems[0].productId : null,
           source: "website_order",
@@ -595,7 +596,7 @@ export default function CheckoutPage() {
       const { data, error } = await supabase.functions.invoke("create-guest-account", {
         body: {
           email: email.trim(),
-          phone: phone.trim(),
+          phone: normalizePhone(phone),
           name: fullName.trim(),
           store_id: store.id,
           order_id: ordId,
@@ -654,7 +655,7 @@ export default function CheckoutPage() {
         storefront_customer_id: customer.id,
         label: "Home",
         full_name: fullName.trim(),
-        phone: phone.trim(),
+        phone: normalizePhone(phone),
         street_address: streetAddress.trim(),
         city: city.trim(),
         state: state.trim(),
@@ -727,7 +728,7 @@ export default function CheckoutPage() {
   const saveExpressInfo = () => {
     try {
       localStorage.setItem(`express_checkout_${store.id}`, JSON.stringify({
-        fullName: fullName.trim(), phone: phone.trim(),
+        fullName: fullName.trim(), phone: normalizePhone(phone),
         streetAddress: streetAddress.trim(), city: city.trim(),
         state: state.trim(), pincode: pincode.trim(),
       }));
@@ -760,7 +761,7 @@ export default function CheckoutPage() {
       eventName: "Purchase",
       eventId: purchaseEid,
       userEmail: email.trim() || undefined,
-      userPhone: phone.trim() || undefined,
+      userPhone: normalizePhone(phone) || undefined,
       externalId: customer?.id || undefined,
       firstName,
       lastName,
@@ -782,7 +783,7 @@ export default function CheckoutPage() {
     if (!customer) { void createGuestAccount(newOrderId); } else saveAddressToAccount();
     notifyOrderEmail(newOrderId);
     sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
-      customer_phone: phone.trim(), customer_name: fullName.trim(),
+      customer_phone: normalizePhone(phone), customer_name: fullName.trim(),
       total, currency,
       product_names: checkoutItems.map((i) => i.name).join(", "),
       store_name: store.name,
@@ -893,7 +894,9 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     if (!fullName.trim()) { toast.error(t("Please enter your full name", "कृपया अपना पूरा नाम दर्ज करें")); return; }
-    if (!phone.trim() || phone.trim().length < 10) { toast.error(t("Please enter a valid phone number", "कृपया एक वैध फ़ोन नंबर दर्ज करें")); return; }
+    const normalizedPhone = normalizePhone(phone);
+    if (!isValidIndianPhone(normalizedPhone)) { toast.error(t("Please enter a valid 10-digit mobile number", "कृपया एक वैध 10-अंकीय मोबाइल नंबर दर्ज करें")); return; }
+    if (normalizedPhone !== phone.trim()) setPhone(normalizedPhone);
     if (!streetAddress.trim()) { toast.error(t("Please enter your street address", "कृपया अपना पता दर्ज करें")); return; }
     if (!city.trim()) { toast.error(t("Please enter your city", "कृपया अपना शहर दर्ज करें")); return; }
     if (!state.trim()) { toast.error(t("Please enter your state", "कृपया अपना राज्य दर्ज करें")); return; }
@@ -1392,7 +1395,7 @@ export default function CheckoutPage() {
                         storefront_customer_id: customer.id,
                         label: newAddr.label.trim() || "Home",
                         full_name: newAddr.full_name.trim(),
-                        phone: newAddr.phone.trim(),
+                        phone: normalizePhone(newAddr.phone),
                         street_address: newAddr.street_address.trim(),
                         city: newAddr.city.trim(),
                         state: newAddr.state.trim(),

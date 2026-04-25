@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Package, MapPin, Heart, LogOut, Plus, Trash2, Star, Loader2, User } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { normalizePhone } from "@/lib/phoneUtils";
 
 function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
   const { data: orders, isLoading } = useQuery({
@@ -160,6 +161,7 @@ function AddressesTab({ customerId }: { customerId: string }) {
       const { error } = await supabase.from("customer_addresses").insert({
         storefront_customer_id: customerId,
         ...form,
+        phone: normalizePhone(form.phone),
         is_default: !addresses?.length,
       });
       if (error) throw error;
