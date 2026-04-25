@@ -330,6 +330,7 @@ export default function CheckoutPage() {
   }, [hasRazorpay]);
 
   const currency = store.currency || "USD";
+  const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : `${currency} `;
   const isHindi = store.theme === "theme-16";
   // Default: English only. Hindi is added only via tCritical() for payment / COD / key errors
   // where bilingual labels genuinely help shoppers who aren't comfortable in English.
@@ -1204,7 +1205,7 @@ export default function CheckoutPage() {
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{tCritical("Recommended", "अनुशंसित")}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {tCritical("Pay", "भुगतान")} {currency} {partialAdvanceTotal.toFixed(0)} {tCritical("now", "अभी")} + {currency} {partialBalanceDue.toFixed(0)} {tCritical("on delivery (COD)", "डिलीवरी पर (COD)")}
+                  {currencySymbol}{partialAdvanceTotal.toFixed(0)} {tCritical("now", "अभी")} + {currencySymbol}{partialBalanceDue.toFixed(0)} {tCritical("on delivery", "डिलीवरी पर")}
                 </p>
               </div>
             </button>
@@ -1306,7 +1307,7 @@ export default function CheckoutPage() {
               disabled={placing}
             >
               {placing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("Retry Payment", "भुगतान पुनः प्रयास करें")} · {currency} {chargeAmount.toFixed(2)}
+              {t("Retry Payment", "भुगतान पुनः प्रयास करें")} · {currencySymbol}{chargeAmount.toFixed(0)}
             </button>
           </div>
         )}
@@ -1319,14 +1320,9 @@ export default function CheckoutPage() {
           {placing ? (
             <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t("Placing order...", "ऑर्डर हो रहा है...")}</>
           ) : (
-            isPartialOrder ? `${t("Confirm Order", "ऑर्डर कन्फर्म करें")} · ${currency} ${chargeAmount.toFixed(2)}` : paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currency} ${total.toFixed(2)}` : `${t("Place Order", "ऑर्डर करें")} · ${currency} ${total.toFixed(2)}`
+            isPartialOrder ? `${t("Confirm Order", "ऑर्डर कन्फर्म करें")} · ${currencySymbol}${chargeAmount.toFixed(0)}` : paymentMethod === "razorpay" ? `${t("Pay", "भुगतान करें")} ${currencySymbol}${total.toFixed(0)}` : `${t("Place Order", "ऑर्डर करें")} · ${currencySymbol}${total.toFixed(0)}`
           )}
         </button>
-        {isPartialOrder && !placing && (
-          <div className="mt-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-center text-xs font-medium text-foreground">
-            {tCritical("Pay only", "सिर्फ़")} <span className="font-bold text-primary">{currency}{partialAdvanceTotal.toFixed(0)}</span> {tCritical("now", "अभी दें")}, {tCritical("remaining", "बाक़ी")} <span className="font-bold">{currency}{partialBalanceDue.toFixed(0)}</span> {tCritical("on delivery", "डिलीवरी पर")}
-          </div>
-        )}
       </div>
 
       {/* Address Picker Dialog (change or add new) */}
