@@ -1200,11 +1200,11 @@ export default function CheckoutPage() {
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-foreground">{t("Pay Advance Only", "सिर्फ़ एडवांस दें")}</p>
-                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{t("Recommended", "अनुशंसित")}</Badge>
+                  <p className="text-sm font-medium text-foreground">{tCritical("Pay Advance Only", "सिर्फ़ एडवांस दें")}</p>
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{tCritical("Recommended", "अनुशंसित")}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {t("Pay", "भुगतान")} {currency} {partialAdvanceTotal.toFixed(0)} {t("now", "अभी")} + {currency} {partialBalanceDue.toFixed(0)} {t("on delivery (COD)", "डिलीवरी पर (COD)")}
+                  {tCritical("Pay", "भुगतान")} {currency} {partialAdvanceTotal.toFixed(0)} {tCritical("now", "अभी")} + {currency} {partialBalanceDue.toFixed(0)} {tCritical("on delivery (COD)", "डिलीवरी पर (COD)")}
                 </p>
               </div>
             </button>
