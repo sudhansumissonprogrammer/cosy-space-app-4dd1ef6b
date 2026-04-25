@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ArrowLeft, ArrowRight, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, Tag, X, Pencil, LocateFixed } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, ArrowRight, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, Tag, X, Pencil, LocateFixed, ShieldCheck, Truck, RotateCcw, Star } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -1039,25 +1039,22 @@ export default function CheckoutPage() {
       )}
 
       {/* Trust Strip — reassurance above the fold */}
-      <div className="mb-3 flex items-center justify-between gap-1 rounded-xl border border-border bg-card px-2.5 py-2 text-[10.5px] sm:text-xs font-medium text-foreground/80">
-        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
-          <span aria-hidden className="text-base leading-none">🔒</span>
-          <span className="leading-tight">{tCritical("100% Safe", "100% सुरक्षित")}</span>
+      <div className="mb-3 grid grid-cols-4 items-stretch gap-1.5 rounded-xl border border-border bg-card px-1.5 py-2.5">
+        <div className="flex flex-col items-center justify-center gap-1 text-center">
+          <ShieldCheck className="h-4 w-4 text-primary" strokeWidth={2.25} />
+          <span className="text-[10px] sm:text-[11px] font-medium leading-tight text-foreground/80">Secure</span>
         </div>
-        <div className="h-7 w-px bg-border" />
-        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
-          <span aria-hidden className="text-base leading-none">🚚</span>
-          <span className="leading-tight">{tCritical("Fast Delivery", "जल्दी डिलीवरी")}</span>
+        <div className="flex flex-col items-center justify-center gap-1 border-l border-border text-center">
+          <Truck className="h-4 w-4 text-primary" strokeWidth={2.25} />
+          <span className="text-[10px] sm:text-[11px] font-medium leading-tight text-foreground/80">Fast Delivery</span>
         </div>
-        <div className="h-7 w-px bg-border" />
-        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
-          <span aria-hidden className="text-base leading-none">↩️</span>
-          <span className="leading-tight">{tCritical("Easy Returns", "आसान रिटर्न")}</span>
+        <div className="flex flex-col items-center justify-center gap-1 border-l border-border text-center">
+          <RotateCcw className="h-4 w-4 text-primary" strokeWidth={2.25} />
+          <span className="text-[10px] sm:text-[11px] font-medium leading-tight text-foreground/80">Easy Returns</span>
         </div>
-        <div className="h-7 w-px bg-border" />
-        <div className="flex flex-1 flex-col items-center gap-0.5 text-center">
-          <span aria-hidden className="text-base leading-none">⭐</span>
-          <span className="leading-tight">{tCritical("Trusted", "विश्वसनीय")}</span>
+        <div className="flex flex-col items-center justify-center gap-1 border-l border-border text-center">
+          <Star className="h-4 w-4 fill-primary text-primary" strokeWidth={2.25} />
+          <span className="text-[10px] sm:text-[11px] font-medium leading-tight text-foreground/80">4.8 Rated</span>
         </div>
       </div>
 
