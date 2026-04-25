@@ -408,6 +408,14 @@ export default function CustomerLeads() {
                 </Table>
               </div>
             </>
+          ) : filterMode === "pending" && convertedCount > 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+              <p className="text-foreground font-medium">All caught up! 🎉</p>
+              <p className="text-xs text-muted-foreground max-w-xs">
+                All {convertedCount} lead{convertedCount !== 1 ? "s have" : " has"} placed an order. Switch to "All" above to see the converted ones.
+              </p>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-3 py-12">
               <Users className="h-10 w-10 text-muted-foreground" />
