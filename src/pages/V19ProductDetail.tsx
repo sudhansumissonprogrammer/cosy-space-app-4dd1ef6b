@@ -11,6 +11,7 @@ import {
   ArrowLeft, Search, ShoppingCart, Clock, ChevronDown, ChevronUp,
   Zap, IndianRupee, Package, Plus, Minus, Share2, Star,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -179,8 +180,16 @@ export default function V19ProductDetail() {
   );
   const cartQty = cartItem?.quantity || 0;
 
+  const hasVariants = !!(product?.product_variants && product.product_variants.filter((v: any) => v.is_active).length > 0);
+
   const handleAdd = () => {
     if (!product) return;
+    if (hasVariants && !selectedVariantId) {
+      toast.error("Please select a pack/variant first");
+      // Smoothly scroll to the variant chips
+      document.getElementById("v19-variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     addToCart({
       productId: product.id,
       variantId: selectedVariantId || undefined,
@@ -390,8 +399,10 @@ export default function V19ProductDetail() {
 
       {/* Variant pack-size chips */}
       {product.product_variants && product.product_variants.length > 0 && (
-        <div className="px-4 pt-1 pb-3">
-          <div className="text-[12px] font-bold text-gray-900 mb-2">Select Pack</div>
+        <div id="v19-variant-picker" className="px-4 pt-1 pb-3">
+          <div className="text-[12px] font-bold text-gray-900 mb-2">
+            Select Pack <span className="text-red-500">*</span>
+          </div>
           <div className="v19pdp-noscrollbar flex gap-2 overflow-x-auto">
             {product.product_variants
               .filter((v: any) => v.is_active)
