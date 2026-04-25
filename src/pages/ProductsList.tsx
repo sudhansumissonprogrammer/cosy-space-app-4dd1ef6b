@@ -1018,6 +1018,14 @@ export default function ProductsList() { // v2
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Quick edit modal — opens when tapping price/stock pill on mobile (#4) */}
+      <QuickEditProductModal
+        open={!!quickEditProduct}
+        onOpenChange={(v) => { if (!v) setQuickEditProduct(null); }}
+        product={quickEditProduct}
+        storeId={storeId}
+      />
     </div>
   );
 }
