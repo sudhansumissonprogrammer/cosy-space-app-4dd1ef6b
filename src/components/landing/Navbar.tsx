@@ -28,8 +28,8 @@ const Navbar = () => {
           <a
             href="/login"
             className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200"
-            onMouseEnter={prefetchFullApp}
-            onTouchStart={prefetchFullApp}
+            
+            
           >
             Store Owner Login
           </a>
@@ -39,8 +39,8 @@ const Navbar = () => {
           <a
             href="/signup"
             className="bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs px-4 py-2 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200"
-            onMouseEnter={prefetchFullApp}
-            onTouchStart={prefetchFullApp}
+            
+            
           >
             Start Free
           </a>
@@ -62,7 +62,7 @@ const Navbar = () => {
           <a
             href="/login"
             className="block font-bold uppercase tracking-wider text-foreground"
-            onClick={() => { setMobileOpen(false); prefetchFullApp(); }}
+            onClick={() => () => setMobileOpen(false)}
           >
             Store Owner Login
           </a>
@@ -70,7 +70,7 @@ const Navbar = () => {
             <a
               href="/signup"
               className="block text-center bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider px-6 py-3 border-2 border-foreground shadow-bauhaus"
-              onClick={() => { setMobileOpen(false); prefetchFullApp(); }}
+              onClick={() => () => setMobileOpen(false)}
             >
               Start Free
             </a>
