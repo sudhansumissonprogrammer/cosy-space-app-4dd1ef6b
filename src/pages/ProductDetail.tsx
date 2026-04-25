@@ -458,7 +458,7 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     if (hasVariants && !selectedVariant) {
-      toast.error("Please select a variant first");
+      toast.error("Please select a variant first"); setVariantPromptOpen(true);
       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
@@ -479,7 +479,7 @@ export default function ProductDetail() {
 
   const handleBuyNow = () => {
     if (hasVariants && !selectedVariant) {
-      toast.error("Please select a variant first");
+      toast.error("Please select a variant first"); setVariantPromptOpen(true);
       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
@@ -791,7 +791,7 @@ export default function ProductDetail() {
                   style={{ backgroundColor: "#25D366", boxShadow: "0 6px 24px rgba(37, 211, 102, 0.35)" }}
                   onClick={() => {
                     if (hasVariants && !selectedVariant) {
-                      toast.error("Please select a variant first");
+                      toast.error("Please select a variant first"); setVariantPromptOpen(true);
                       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
                       return;
                     }
@@ -1079,7 +1079,7 @@ export default function ProductDetail() {
                       <button
                         onClick={() => {
                           if (hasVariants && !selectedVariant) {
-                            toast.error("Please select a variant first");
+                            toast.error("Please select a variant first"); setVariantPromptOpen(true);
                             document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
                             return;
                           }
