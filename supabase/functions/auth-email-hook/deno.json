@@ -1,5 +1,9 @@
 {
   "nodeModulesDir": "auto",
+  "imports": {
+    "@lovable.dev/email-js": "npm:@lovable.dev/email-js@0.0.4",
+    "@lovable.dev/webhooks-js": "npm:@lovable.dev/webhooks-js@0.0.1"
+  },
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "npm:react@18.3.1",
