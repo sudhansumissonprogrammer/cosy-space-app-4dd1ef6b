@@ -47,6 +47,47 @@ export default function CustomerLeads() {
     enabled: !!storeId,
   });
 
+  // Fetch all phone numbers that have already placed an order (excluding cancelled)
+  // — these leads are converted and should be hidden by default.
+  const { data: orderedPhonesSet } = useQuery({
+    queryKey: ["leads-ordered-phones", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("customer_phone, status")
+        .eq("store_id", storeId)
+        .not("customer_phone", "is", null);
+      if (error) throw error;
+      const set = new Set<string>();
+      (data ?? []).forEach((o: any) => {
+        if (o.status === "cancelled") return;
+        const norm = normalizePhone(o.customer_phone).replace(/\D/g, "");
+        if (norm.length >= 10) set.add(norm.slice(-10));
+      });
+      return set;
+    },
+    enabled: !!storeId,
+    staleTime: 60 * 1000,
+  });
+
+  // Annotate each lead with `hasOrdered`, then filter based on toggle
+  const enrichedLeads = useMemo(() => {
+    if (!leads) return [];
+    return leads.map((l) => {
+      const key = normalizePhone(l.phone).replace(/\D/g, "").slice(-10);
+      const hasOrdered = !!(orderedPhonesSet && key.length === 10 && orderedPhonesSet.has(key));
+      return { ...l, hasOrdered };
+    });
+  }, [leads, orderedPhonesSet]);
+
+  const visibleLeads = useMemo(
+    () => filterMode === "pending" ? enrichedLeads.filter((l) => !l.hasOrdered) : enrichedLeads,
+    [enrichedLeads, filterMode]
+  );
+
+  const convertedCount = enrichedLeads.filter((l) => l.hasOrdered).length;
+  const pendingCount = enrichedLeads.length - convertedCount;
+
   // Fetch slugs for products referenced by leads — to build deep product links
   const productIds = Array.from(
     new Set((leads ?? []).map((l) => l.product_id).filter(Boolean) as string[])
