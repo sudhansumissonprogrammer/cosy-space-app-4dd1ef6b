@@ -94,10 +94,7 @@ if (shouldUseLandingFastPath()) {
     createRoot(rootElement).render(<LandingApp />);
   });
 } else {
-  // Build the path at runtime so Rollup's static analyzer doesn't follow it.
-  // Vite still resolves /src/App.tsx at runtime via its module graph.
-  const appPath = "./App" + ".tsx";
-  import(/* @vite-ignore */ appPath).then(({ default: App }) => {
+  import("./App").then(({ default: App }) => {
     createRoot(rootElement).render(<App />);
   });
 }
