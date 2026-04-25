@@ -155,18 +155,9 @@ export default function CheckoutPage() {
   // Lazily fetch/create customer record on checkout
   useEffect(() => { ensureCustomer(); }, [ensureCustomer]);
 
-  // Auto-apply coupon from URL (e.g. ?coupon=SAVE100 from WhatsApp recovery link)
+  // Track URL coupon (e.g. ?coupon=SAVE100 from WhatsApp recovery link) — auto-applied below
   const urlCoupon = searchParams.get("coupon");
   const autoAppliedCouponRef = useRef(false);
-  useEffect(() => {
-    if (!urlCoupon || autoAppliedCouponRef.current) return;
-    if (!store?.id || subtotal <= 0 || appliedCoupon) return;
-    autoAppliedCouponRef.current = true;
-    const code = urlCoupon.toUpperCase();
-    setCouponCode(code);
-    setTimeout(() => { applyCoupon(code); }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlCoupon, store?.id, subtotal, appliedCoupon]);
 
   // Scroll to top when the order-placed / upsell screen appears so users
   // see the confirmation instead of landing on the page footer.
