@@ -155,8 +155,11 @@ export default function CheckoutPage() {
   // Lazily fetch/create customer record on checkout
   useEffect(() => { ensureCustomer(); }, [ensureCustomer]);
 
-  // Track URL coupon (e.g. ?coupon=SAVE100 from WhatsApp recovery link) — auto-applied below
-  const urlCoupon = searchParams.get("coupon");
+  // Track URL coupon (e.g. ?coupon=SAVE100 from WhatsApp recovery link) — auto-applied below.
+  // Falls back to sessionStorage so the coupon persists across product → cart → checkout navigation.
+  const urlCoupon =
+    searchParams.get("coupon") ||
+    (typeof window !== "undefined" ? sessionStorage.getItem("pending_coupon") : null);
   const autoAppliedCouponRef = useRef(false);
 
   // Scroll to top when the order-placed / upsell screen appears so users
