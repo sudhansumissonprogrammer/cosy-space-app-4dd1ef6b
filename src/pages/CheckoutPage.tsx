@@ -1238,10 +1238,46 @@ export default function CheckoutPage() {
                 <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
             </div>
+
+            {/* ⚡ Returning Customer 1-Tap — auto-detected via phone lookup */}
+            {returningOrder && !returningUsed && (
+              <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-3.5 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <p className="text-sm font-semibold text-foreground">Welcome back{returningOrder.customer_name ? `, ${returningOrder.customer_name.split(" ")[0]}` : ""}! 👋</p>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mb-2">Ship to your last address?</p>
+                    <p className="text-xs text-foreground/80 leading-snug line-clamp-2">
+                      {[returningOrder.street_address, returningOrder.city, returningOrder.state, returningOrder.pincode].filter(Boolean).join(", ")}
+                    </p>
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <Button size="sm" className="h-8 text-xs px-3" onClick={useReturningOrder}>
+                        <Check className="h-3.5 w-3.5 mr-1" /> Use this address
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8 text-xs px-2 text-muted-foreground" onClick={() => setReturningDismissed(true)}>
+                        New address
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Use my location button - hidden for now */}
             <div className="space-y-1">
               <Label htmlFor="pincode" className="text-xs">{tCritical("Pincode", "पिनकोड")} * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
               <Input id="pincode" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
+              {deliveryEstimate && (
+                <div className="flex items-center gap-1.5 pt-1 text-[11px] font-medium text-primary">
+                  <Truck className="h-3.5 w-3.5" />
+                  <span>Delivery by <span className="font-semibold">{deliveryEstimate.shortLabel}</span></span>
+                  <span className="text-muted-foreground font-normal">· {deliveryEstimate.daysAway}-{Math.ceil((deliveryEstimate.maxDate.getTime() - Date.now()) / 86400000)} days</span>
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <Label htmlFor="street" className="text-xs">{tCritical("Street Address", "पता")} *</Label>
