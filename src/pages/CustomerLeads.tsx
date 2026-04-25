@@ -213,12 +213,6 @@ export default function CustomerLeads() {
                           </a>
                         </div>
                         <div className="flex flex-shrink-0 flex-col items-end gap-1">
-                          {lead.hasOrdered && (
-                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] hover:bg-emerald-100">
-                              <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
-                              Ordered
-                            </Badge>
-                          )}
                           <Badge variant="secondary" className="text-[10px]">
                             <MessageCircle className="mr-1 h-2.5 w-2.5" />
                             {lead.source === "whatsapp_order" ? "WhatsApp" : lead.source}
@@ -292,7 +286,6 @@ export default function CustomerLeads() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Status</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Product</TableHead>
@@ -303,16 +296,7 @@ export default function CustomerLeads() {
                   </TableHeader>
                   <TableBody>
                     {visibleLeads.map((lead) => (
-                      <TableRow key={lead.id} className={lead.hasOrdered ? "bg-emerald-50/30" : ""}>
-                        <TableCell>
-                          {lead.hasOrdered ? (
-                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 text-[10px]">
-                              <CheckCircle2 className="mr-1 h-3 w-3" /> Ordered
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] text-muted-foreground">Pending</Badge>
-                          )}
-                        </TableCell>
+                      <TableRow key={lead.id}>
                         <TableCell className="font-medium">
                           {lead.name || <span className="text-muted-foreground">—</span>}
                         </TableCell>
@@ -384,14 +368,6 @@ export default function CustomerLeads() {
                 </Table>
               </div>
             </>
-          ) : filterMode === "pending" && convertedCount > 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-              <p className="text-foreground font-medium">All caught up! 🎉</p>
-              <p className="text-xs text-muted-foreground max-w-xs">
-                All {convertedCount} lead{convertedCount !== 1 ? "s have" : " has"} placed an order. Switch to "All" above to see the converted ones.
-              </p>
-            </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-3 py-12">
               <Users className="h-10 w-10 text-muted-foreground" />
