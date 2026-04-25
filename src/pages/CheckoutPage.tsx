@@ -1238,8 +1238,8 @@ export default function CheckoutPage() {
             </div>
             <CreditCard className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium text-foreground">{t("Pay Online", "ऑनलाइन भुगतान")}</p>
-              <p className="text-xs text-muted-foreground">{t("UPI, Cards, Net Banking, Wallets", "UPI, कार्ड, नेट बैंकिंग, वॉलेट")}</p>
+              <p className="text-sm font-medium text-foreground">{tCritical("Pay Online", "ऑनलाइन भुगतान")}</p>
+              <p className="text-xs text-muted-foreground">UPI, Cards, Net Banking, Wallets</p>
             </div>
           </button>
         )}
