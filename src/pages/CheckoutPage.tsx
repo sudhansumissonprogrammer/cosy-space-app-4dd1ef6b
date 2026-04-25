@@ -331,7 +331,10 @@ export default function CheckoutPage() {
 
   const currency = store.currency || "USD";
   const isHindi = store.theme === "theme-16";
-  const t = (en: string, hi: string) => isHindi ? `${en} / ${hi}` : en;
+  // Default: English only. Hindi is added only via tCritical() for payment / COD / key errors
+  // where bilingual labels genuinely help shoppers who aren't comfortable in English.
+  const t = (en: string, _hi: string) => en;
+  const tCritical = (en: string, hi: string) => isHindi ? `${en} / ${hi}` : en;
 
   const checkoutItems = isSingleMode && product
     ? [{
@@ -1133,26 +1136,26 @@ export default function CheckoutPage() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="fullName" className="text-xs">{t("Full Name", "पूरा नाम")} *</Label>
-                <Input id="fullName" placeholder={isHindi ? "अपना नाम लिखें" : "John Doe"} value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+                <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
             </div>
             {/* Use my location button - hidden for now */}
             <div className="space-y-1">
               <Label htmlFor="pincode" className="text-xs">{t("Pincode", "पिनकोड")} * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
-              <Input id="pincode" placeholder={isHindi ? "पिनकोड डालें" : "Enter pincode to auto-fill city & state"} value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
+              <Input id="pincode" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="street" className="text-xs">{t("Street Address", "पता")} *</Label>
-              <Input id="street" placeholder={isHindi ? "मकान/फ्लैट नंबर, बिल्डिंग, गली" : "House/Flat No., Building, Street"} value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+              <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
-                <Input id="city" placeholder={isHindi ? "शहर" : "Mumbai"} value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
-                <Input id="state" placeholder={isHindi ? "राज्य" : "Maharashtra"} value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+                <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
               </div>
             </div>
             {/* Email optional — collapsible */}
@@ -1197,11 +1200,11 @@ export default function CheckoutPage() {
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-foreground">{t("Pay Advance Only", "सिर्फ़ एडवांस दें")}</p>
-                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{t("Recommended", "अनुशंसित")}</Badge>
+                  <p className="text-sm font-medium text-foreground">{tCritical("Pay Advance Only", "सिर्फ़ एडवांस दें")}</p>
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{tCritical("Recommended", "अनुशंसित")}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {t("Pay", "भुगतान")} {currency} {partialAdvanceTotal.toFixed(0)} {t("now", "अभी")} + {currency} {partialBalanceDue.toFixed(0)} {t("on delivery (COD)", "डिलीवरी पर (COD)")}
+                  {tCritical("Pay", "भुगतान")} {currency} {partialAdvanceTotal.toFixed(0)} {tCritical("now", "अभी")} + {currency} {partialBalanceDue.toFixed(0)} {tCritical("on delivery (COD)", "डिलीवरी पर (COD)")}
                 </p>
               </div>
             </button>
@@ -1215,8 +1218,8 @@ export default function CheckoutPage() {
               </div>
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium text-foreground">{t("Pay Full Amount Online", "पूरा ऑनलाइन भुगतान")}</p>
-                <p className="text-xs text-muted-foreground">{currency} {total.toFixed(2)} — {t("UPI, Cards, Net Banking", "UPI, कार्ड, नेट बैंकिंग")}</p>
+                <p className="text-sm font-medium text-foreground">{tCritical("Pay Full Amount Online", "पूरा ऑनलाइन भुगतान")}</p>
+                <p className="text-xs text-muted-foreground">{currency} {total.toFixed(2)} — UPI, Cards, Net Banking</p>
               </div>
             </button>
             {/* COD disabled when partial payment products are in cart */}
@@ -1235,8 +1238,8 @@ export default function CheckoutPage() {
             </div>
             <CreditCard className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium text-foreground">{t("Pay Online", "ऑनलाइन भुगतान")}</p>
-              <p className="text-xs text-muted-foreground">{t("UPI, Cards, Net Banking, Wallets", "UPI, कार्ड, नेट बैंकिंग, वॉलेट")}</p>
+              <p className="text-sm font-medium text-foreground">{tCritical("Pay Online", "ऑनलाइन भुगतान")}</p>
+              <p className="text-xs text-muted-foreground">UPI, Cards, Net Banking, Wallets</p>
             </div>
           </button>
         )}
@@ -1253,8 +1256,8 @@ export default function CheckoutPage() {
             </div>
             <Banknote className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium text-foreground">{t("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
-              <p className="text-xs text-muted-foreground">{t("Pay when your order arrives", "ऑर्डर आने पर भुगतान करें")}</p>
+              <p className="text-sm font-medium text-foreground">{tCritical("Cash on Delivery", "कैश ऑन डिलीवरी")}</p>
+              <p className="text-xs text-muted-foreground">{tCritical("Pay when your order arrives", "ऑर्डर आने पर भुगतान करें")}</p>
             </div>
           </button>
         )}
