@@ -1155,7 +1155,7 @@ export default function CheckoutPage() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
-                <Input id="state" placeholder={isHindi ? "राज्य" : "Maharashtra"} value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+                <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
               </div>
             </div>
             {/* Email optional — collapsible */}
