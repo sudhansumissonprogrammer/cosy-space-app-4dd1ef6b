@@ -1136,7 +1136,7 @@ export default function CheckoutPage() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="fullName" className="text-xs">{t("Full Name", "पूरा नाम")} *</Label>
-                <Input id="fullName" placeholder={isHindi ? "अपना नाम लिखें" : "John Doe"} value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+                <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
             </div>
             {/* Use my location button - hidden for now */}
