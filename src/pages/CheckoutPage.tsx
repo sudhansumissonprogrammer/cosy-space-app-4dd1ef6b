@@ -447,12 +447,13 @@ export default function CheckoutPage() {
     setCouponCode("");
   };
 
-  // Auto-apply coupon from URL (e.g. ?coupon=SAVE100 from WhatsApp recovery link)
+  // Auto-apply coupon from URL or sessionStorage (e.g. ?coupon=SAVE100 from WhatsApp recovery link)
   useEffect(() => {
     if (!urlCoupon || autoAppliedCouponRef.current) return;
     if (!store?.id || subtotal <= 0 || appliedCoupon) return;
     autoAppliedCouponRef.current = true;
     const code = urlCoupon.toUpperCase();
+    console.log("[coupon] auto-applying:", code, "subtotal:", subtotal);
     setCouponCode(code);
     applyCoupon(code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
