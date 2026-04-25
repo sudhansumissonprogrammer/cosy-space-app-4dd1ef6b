@@ -235,7 +235,8 @@ export default function StorefrontShell({
           <FloatingWhatsApp store={store} />
         </Suspense>
       )}
-      {showExitIntent && <DeferredExitIntent storeId={store.id} storeName={store.name} />}
+      {/* ExitIntentPopup disabled — SAVE100 is reserved for WhatsApp recovery links only */}
+      {false && showExitIntent && <DeferredExitIntent storeId={store.id} storeName={store.name} />}
       <Suspense fallback={null}>
         <BackToTop />
       </Suspense>
