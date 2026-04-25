@@ -640,28 +640,60 @@ export default function ProductsList() { // v2
                       if (bulkMode) { toggleBulkSelect(product.id); return; }
                       setMobileProductId(product.id);
                     }}
-                    className="flex items-center gap-3 flex-1 min-w-0 active:bg-accent/50 transition-colors text-left"
+                    className="flex-1 min-w-0 active:bg-accent/50 transition-colors text-left"
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                    <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                      {/* Tappable PRICE pill — opens quick-edit (#4) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (longPressTriggered.current) return;
+                          setQuickEditProduct(product);
+                        }}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-border bg-muted/40 text-[11px] font-semibold text-foreground active:bg-muted"
+                      >
+                        {currencySymbol}
+                        {Number(product.sale_price ?? product.price).toFixed(0)}
+                        {product.sale_price && Number(product.sale_price) < Number(product.price) && (
+                          <span className="text-[9px] text-muted-foreground line-through ml-0.5">{Number(product.price).toFixed(0)}</span>
+                        )}
+                      </button>
+                      {/* Tappable STOCK pill */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (longPressTriggered.current) return;
+                          setQuickEditProduct(product);
+                        }}
+                        className={cn(
+                          "inline-flex items-center px-1.5 py-0.5 rounded-md border text-[11px] font-semibold active:bg-muted",
+                          product.stock_quantity >= 999999
+                            ? "border-border bg-muted/40 text-muted-foreground"
+                            : product.stock_quantity > 0
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
+                            : "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400"
+                        )}
+                      >
                         {product.stock_quantity >= 999999
-                          ? "Unlimited"
+                          ? "∞"
                           : product.stock_quantity > 0
-                          ? `${product.stock_quantity} available`
+                          ? `${product.stock_quantity} in stock`
                           : "Out of stock"}
-                      </p>
+                      </button>
                     </div>
-                    <Badge
-                      variant={product.is_active ? "default" : "secondary"}
-                      className={cn(
-                        "shrink-0 text-[11px]",
-                        product.is_active && "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0"
-                      )}
-                    >
-                      {product.is_active ? "Active" : "Draft"}
-                    </Badge>
                   </button>
+                  <Badge
+                    variant={product.is_active ? "default" : "secondary"}
+                    className={cn(
+                      "shrink-0 text-[11px]",
+                      product.is_active && "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0"
+                    )}
+                  >
+                    {product.is_active ? "Active" : "Draft"}
+                  </Badge>
                 </div>
               ))}
             </div>
