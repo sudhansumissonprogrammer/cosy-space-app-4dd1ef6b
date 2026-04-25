@@ -175,22 +175,44 @@ export default function CustomerLeads() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center gap-3 pb-2">
-          <Users className="h-5 w-5 text-primary" />
-          <CardTitle className="text-base">
-            {leads?.length ?? 0} Lead{leads?.length !== 1 ? "s" : ""}
-          </CardTitle>
+        <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <Users className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base">
+              {visibleLeads.length} Lead{visibleLeads.length !== 1 ? "s" : ""}
+              {filterMode === "pending" && convertedCount > 0 && (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  ({convertedCount} already ordered, hidden)
+                </span>
+              )}
+            </CardTitle>
+          </div>
+          {/* Filter toggle: hide/show converted leads */}
+          <div className="inline-flex rounded-lg border border-border bg-muted/30 p-0.5 text-xs">
+            <button
+              onClick={() => setFilterMode("pending")}
+              className={`rounded-md px-3 py-1.5 font-medium transition-colors ${filterMode === "pending" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Not yet ordered ({pendingCount})
+            </button>
+            <button
+              onClick={() => setFilterMode("all")}
+              className={`rounded-md px-3 py-1.5 font-medium transition-colors ${filterMode === "all" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              All ({enrichedLeads.length})
+            </button>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : leads && leads.length > 0 ? (
+          ) : visibleLeads.length > 0 ? (
             <>
               {/* Mobile card list — everything visible, no horizontal scroll */}
               <div className="space-y-3 sm:hidden">
-                {leads.map((lead) => {
+                {visibleLeads.map((lead) => {
                   const sendWhatsApp = () => {
                     const phone = lead.phone.replace(/[^0-9+]/g, "");
                     const message = buildRecoveryMessage(lead);
