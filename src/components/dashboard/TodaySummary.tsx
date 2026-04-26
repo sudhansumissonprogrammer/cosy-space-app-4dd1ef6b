@@ -18,7 +18,7 @@ export default function TodaySummary({ storeId, currencySymbol }: TodaySummaryPr
     queryFn: async () => {
       const iso = todayStart.toISOString();
       const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"];
-      const [ordersRes, partialRes, customersRes] = await Promise.all([
+      const [ordersRes, customersRes] = await Promise.all([
         supabase
           .from("orders")
           .select("total")
@@ -26,19 +26,12 @@ export default function TodaySummary({ storeId, currencySymbol }: TodaySummaryPr
           .gte("created_at", iso)
           .in("status", REVENUE_STATUSES),
         supabase
-          .from("orders")
-          .select("total")
-          .eq("store_id", storeId)
-          .gte("created_at", iso)
-          .eq("status", "pending")
-          .gt("advance_paid", 0),
-        supabase
           .from("customers")
           .select("id", { count: "exact", head: true })
           .eq("store_id", storeId)
           .gte("created_at", iso),
       ]);
-      const orders = [...(ordersRes.data || []), ...(partialRes.data || [])];
+      const orders = ordersRes.data || [];
       const revenue = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
       return {
         orders: orders.length,

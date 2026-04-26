@@ -22,11 +22,11 @@ export default function HeroRevenue({ storeId, currencySymbol }: HeroRevenueProp
       const todayIso = todayStart.toISOString();
       const yesterdayIso = yesterdayStart.toISOString();
 
-      // Revenue counts orders that are confirmed, shipped, delivered, partially_paid,
-      // or any pending order with a partial advance payment received.
+      // Revenue counts only confirmed, shipped, delivered, or partially_paid orders.
+      // Pending orders are excluded even if they have an advance payment.
       const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"];
 
-      const [todayRes, yesterdayRes, todayPartialRes, yesterdayPartialRes] = await Promise.all([
+      const [todayRes, yesterdayRes] = await Promise.all([
         supabase
           .from("orders")
           .select("total")
@@ -40,25 +40,10 @@ export default function HeroRevenue({ storeId, currencySymbol }: HeroRevenueProp
           .gte("created_at", yesterdayIso)
           .lt("created_at", todayIso)
           .in("status", REVENUE_STATUSES),
-        supabase
-          .from("orders")
-          .select("total,id")
-          .eq("store_id", storeId)
-          .gte("created_at", todayIso)
-          .eq("status", "pending")
-          .gt("advance_paid", 0),
-        supabase
-          .from("orders")
-          .select("total,id")
-          .eq("store_id", storeId)
-          .gte("created_at", yesterdayIso)
-          .lt("created_at", todayIso)
-          .eq("status", "pending")
-          .gt("advance_paid", 0),
       ]);
 
-      const todayOrders = [...(todayRes.data || []), ...(todayPartialRes.data || [])];
-      const yesterdayOrders = [...(yesterdayRes.data || []), ...(yesterdayPartialRes.data || [])];
+      const todayOrders = todayRes.data || [];
+      const yesterdayOrders = yesterdayRes.data || [];
       const todayRevenue = todayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
       const yesterdayRevenue = yesterdayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
 
