@@ -64,9 +64,9 @@ export default function BillingPaywall({ state, storeId }: Props) {
             <AlertTriangle className="h-7 w-7 text-destructive" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-foreground">Your store is suspended</h1>
+            <h1 className="text-xl font-semibold text-foreground">Subscription payment due</h1>
             <p className="text-sm text-muted-foreground mt-2">
-              Your subscription payment is overdue. Pay now to reactivate immediately — your products, orders, and settings are safe.
+              Your dashboard is locked until your monthly subscription is paid. Your storefront is still live and serving customers — pay now to regain dashboard access.
             </p>
           </div>
           <div className="rounded-lg border bg-muted/40 p-4 text-left">
@@ -81,8 +81,14 @@ export default function BillingPaywall({ state, storeId }: Props) {
           </div>
           <Button onClick={handlePay} disabled={paying} size="lg" className="w-full">
             {paying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Pay ₹{state.price} & Reactivate
+            Pay ₹{state.price} & Unlock Dashboard
           </Button>
+          <button
+            onClick={() => navigate("/dashboard/settings")}
+            className="block w-full text-xs text-muted-foreground hover:text-foreground"
+          >
+            Go to Profile / Billing settings
+          </button>
           <button
             onClick={async () => { await signOut(); navigate("/login"); }}
             className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
