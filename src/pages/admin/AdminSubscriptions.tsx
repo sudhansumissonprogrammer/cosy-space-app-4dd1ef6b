@@ -535,3 +535,103 @@ function DeletePlanButton({ planId, planName, onSuccess }: { planId: string; pla
     </AlertDialog>
   );
 }
+
+function BillingCell({ assignment }: { assignment: any }) {
+  if (assignment.is_unassigned) return <span className="text-xs text-muted-foreground">—</span>;
+  if (assignment.is_free_lifetime) return <span className="text-xs text-muted-foreground">Lifetime</span>;
+  if (assignment.is_one_time) return <span className="text-xs text-muted-foreground">One-time</span>;
+
+  const status = assignment.billing_status;
+  const fmt = (d: string | null) => d ? new Date(d).toLocaleDateString() : "—";
+
+  if (status === "trialing" && assignment.trial_ends_at) {
+    return (
+      <div className="text-xs">
+        <div className="text-amber-600">Trial</div>
+        <div className="text-muted-foreground">ends {fmt(assignment.trial_ends_at)}</div>
+      </div>
+    );
+  }
+  if (status === "active" && assignment.current_period_end) {
+    return (
+      <div className="text-xs">
+        <div className="text-green-600">Active</div>
+        <div className="text-muted-foreground">renews {fmt(assignment.current_period_end)}</div>
+      </div>
+    );
+  }
+  if (status === "past_due") {
+    return (
+      <div className="text-xs">
+        <div className="text-destructive">Past due</div>
+        <div className="text-muted-foreground">grace {fmt(assignment.grace_period_ends_at)}</div>
+      </div>
+    );
+  }
+  if (status === "suspended") {
+    return <div className="text-xs text-destructive">Suspended</div>;
+  }
+  return <span className="text-xs text-muted-foreground">{status || "—"}</span>;
+}
+
+function BillingActions({ assignment, onSuccess }: { assignment: any; onSuccess: () => void }) {
+  const [busy, setBusy] = useState(false);
+
+  const extend30 = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const base = assignment.current_period_end && new Date(assignment.current_period_end) > new Date()
+        ? new Date(assignment.current_period_end)
+        : new Date();
+      const newEnd = new Date(base.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { error } = await supabase
+        .from("store_plan_assignments" as any)
+        .update({
+          current_period_end: newEnd,
+          billing_status: "active",
+          grace_period_ends_at: null,
+        })
+        .eq("id", assignment.id);
+      if (error) throw error;
+      // Unsuspend if billing-suspended
+      await supabase.from("stores")
+        .update({ is_suspended: false, suspension_reason: null })
+        .eq("id", assignment.store_id)
+        .eq("suspension_reason", "billing");
+      toast.success("Extended by 30 days");
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const forceSuspend = async () => {
+    if (busy) return;
+    if (!confirm("Suspend this store now? This will block dashboard & storefront.")) return;
+    setBusy(true);
+    try {
+      await supabase.from("store_plan_assignments" as any)
+        .update({ billing_status: "suspended" })
+        .eq("id", assignment.id);
+      await supabase.from("stores")
+        .update({ is_suspended: true, suspension_reason: "billing" })
+        .eq("id", assignment.store_id);
+      toast.success("Store suspended");
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={extend30} disabled={busy} title="Extend 30 days">+30d</Button>
+      <Button variant="outline" size="sm" onClick={forceSuspend} disabled={busy} title="Force suspend" className="text-destructive">⏸</Button>
+    </>
+  );
+}
