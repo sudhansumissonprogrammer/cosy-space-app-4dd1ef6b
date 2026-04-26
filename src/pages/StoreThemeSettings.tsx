@@ -687,7 +687,7 @@ export default function StoreThemeSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
-      queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+      // storefront-bulk not invalidated — iframe reload handles preview refresh.
       setDirty(false);
 
       // Purge edge cache so storefront visitors see new theme immediately.
