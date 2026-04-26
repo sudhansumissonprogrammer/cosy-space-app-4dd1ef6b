@@ -4002,6 +4002,23 @@ export default {
       clearTimeout(timeout);
       const dbPingMs = Date.now() - keepaliveStart;
 
+      // v8.0.0 cost-cut: Throttle the heavy store-sync path to once per 60 min,
+      // even if cron fires every 30 min. DB keepalive (above) still runs every tick.
+      let _shouldRunFullSync = true;
+      if (env?.STORE_KV) {
+        try {
+          const lastSync = await env.STORE_KV.get("cron-last-full-sync");
+          if (lastSync && Date.now() - parseInt(lastSync, 10) < 55 * 60 * 1000) {
+            _shouldRunFullSync = false;
+            console.log("[keepalive] skipping full sync — ran <55min ago");
+          }
+        } catch {}
+      }
+      if (!_shouldRunFullSync) {
+        console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status} (sync skipped)`);
+        return;
+      }
+
       // FIX #15: Fetch shell once, outside the per-store loop
       let cronShellResult = null;
       try {
