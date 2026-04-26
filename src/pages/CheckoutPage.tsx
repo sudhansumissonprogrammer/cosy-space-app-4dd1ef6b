@@ -977,6 +977,116 @@ export default function CheckoutPage() {
     rzp.open();
   };
 
+  // Open Cashfree drop-in checkout for an existing order (used for both initial and retry)
+  const openCashfreeForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
+    const env = (paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production";
+    const [cashfree, cfData] = await Promise.all([
+      loadCashfree(env),
+      callEdgeFunction("store-cashfree-create-order", {
+        store_id: store.id,
+        amount: chargeAmount,
+        currency,
+        order_id: order.id,
+        customer_name: fullName,
+        customer_phone: phone,
+        customer_email: email || undefined,
+      }),
+    ]);
+
+    pendingCfOrderRef.current = cfData.cf_order_id;
+
+    const verifyAndFinalize = async () => {
+      try {
+        const verdict = await callEdgeFunction("store-cashfree-verify", {
+          store_id: store.id, order_id: order.id, cf_order_id: cfData.cf_order_id,
+        });
+        if (verdict?.status === "PAID") {
+          setPlacingStep(3);
+          setPlacing(false);
+          setPaymentFailed(false);
+          setPendingOrder(null);
+          pendingCfOrderRef.current = null;
+          finalizeOrder(order.id, order.number, order.profit);
+          return true;
+        }
+      } catch (e) {
+        console.warn("Cashfree verify failed:", e);
+      }
+      return false;
+    };
+
+    try {
+      const result = await cashfree.checkout({
+        paymentSessionId: cfData.payment_session_id,
+        redirectTarget: "_modal",
+      });
+      // Cashfree SDK returns when modal closes (success / fail / cancel)
+      if (result?.error) {
+        // user cancelled or payment failed — try server-side verify in case of UPI race
+        const ok = await verifyAndFinalize();
+        if (!ok) {
+          setPlacingStep(0);
+          setPendingOrder(order);
+          setPaymentFailed(true);
+          setPlacing(false);
+          if (result.error.code !== "user_cancelled") {
+            toast.error(result.error.message || "Payment failed. You can retry below.");
+          }
+        }
+        return;
+      }
+      // paymentDetails / redirect path → verify with backend (single source of truth)
+      const ok = await verifyAndFinalize();
+      if (!ok) {
+        setPlacingStep(0);
+        setPendingOrder(order);
+        setPaymentFailed(true);
+        setPlacing(false);
+        toast.error("Payment not confirmed. You can retry below.");
+      }
+    } catch (err: any) {
+      // SDK threw — try one more verify before failing
+      const ok = await verifyAndFinalize();
+      if (!ok) {
+        setPlacingStep(0);
+        setPendingOrder(order);
+        setPaymentFailed(true);
+        setPlacing(false);
+        toast.error(err?.message || "Payment failed. You can retry below.");
+      }
+    }
+  };
+
+  // Auto-recheck pending Cashfree payment when user returns to the tab (UPI completed in another app)
+  useEffect(() => {
+    const recheck = async () => {
+      const cfId = pendingCfOrderRef.current;
+      const order = pendingOrder;
+      if (!cfId || !order || !paymentFailed) return;
+      try {
+        const verdict = await callEdgeFunction("store-cashfree-status", {
+          store_id: store.id, order_id: order.id, cf_order_id: cfId,
+        });
+        if (verdict?.status === "PAID") {
+          setPlacingStep(3);
+          setPlacing(false);
+          setPaymentFailed(false);
+          setPendingOrder(null);
+          pendingCfOrderRef.current = null;
+          finalizeOrder(order.id, order.number, order.profit);
+        }
+      } catch {}
+    };
+    const onFocus = () => recheck();
+    const onVis = () => { if (document.visibilityState === "visible") recheck(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [pendingOrder, paymentFailed, store.id]);
+
   // Retry payment for a pending order
   const handleRetryPayment = async () => {
     if (!pendingOrder) return;
@@ -984,7 +1094,11 @@ export default function CheckoutPage() {
     setPlacingStep(2);
     setPaymentFailed(false);
     try {
-      await openRazorpayForOrder(pendingOrder);
+      if (activeGateway === "cashfree") {
+        await openCashfreeForOrder(pendingOrder);
+      } else {
+        await openRazorpayForOrder(pendingOrder);
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to retry payment");
       setPlacingStep(0);
