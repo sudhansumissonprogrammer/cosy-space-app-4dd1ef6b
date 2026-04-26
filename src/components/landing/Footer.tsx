@@ -62,7 +62,7 @@ const Footer = () => {
               <a href="https://wa.me/919692282485" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-bauhaus-yellow text-foreground font-bold uppercase tracking-wider text-xs px-4 py-2.5 border-2 border-primary-foreground/30 hover:bg-bauhaus-yellow/90 transition-colors duration-200">
                 <MessageCircle className="h-4 w-4" /> WhatsApp Us
               </a>
-              <p className="font-medium text-sm text-primary-foreground/60">shopbanaoofficial@gmail.com</p>
+              <p className="font-medium text-sm text-primary-foreground/60">sudhansusahoo313@gmail.com</p>
             </div>
           </div>
         </div>

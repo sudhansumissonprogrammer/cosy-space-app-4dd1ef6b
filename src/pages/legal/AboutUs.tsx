@@ -29,7 +29,7 @@ const AboutUs = () => (
     <p>ShopBanao was founded with a simple belief — that small Indian sellers shouldn't have to choose between being invisible on social media or paying 25%+ commissions to giant marketplaces. We built ShopBanao to give them a third option: their own branded store, on their own domain, on their own terms.</p>
 
     <h2>Get in Touch</h2>
-    <p>WhatsApp: <a href="https://wa.me/919692282485">+91 96922 82485</a><br/>Email: shopbanaoofficial@gmail.com<br/>Website: <a href="https://shopbanao.in">https://shopbanao.in</a></p>
+    <p>WhatsApp: <a href="https://wa.me/919692282485">+91 96922 82485</a><br/>Email: sudhansusahoo313@gmail.com<br/>Website: <a href="https://shopbanao.in">https://shopbanao.in</a></p>
   </LegalLayout>
 );
 
