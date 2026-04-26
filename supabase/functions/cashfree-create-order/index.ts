@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("create-order error", err);
-    return jsonRes({ error: String(err?.message || err) }, 500);
+    return jsonRes({ error: String((err as any)?.message || err) }, 500);
   }
 });
 

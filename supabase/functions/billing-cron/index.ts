@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     }), { headers: { ...corsHeaders, "content-type": "application/json" } });
   } catch (err) {
     console.error("billing-cron error", err);
-    return new Response(JSON.stringify({ error: String(err?.message || err) }), {
+    return new Response(JSON.stringify({ error: String((err as any)?.message || err) }), {
       status: 500,
       headers: { ...corsHeaders, "content-type": "application/json" },
     });

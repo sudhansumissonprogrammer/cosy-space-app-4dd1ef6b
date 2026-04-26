@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     return jsonRes({ status: "failed", cf_status: status });
   } catch (err) {
     console.error("verify error", err);
-    return jsonRes({ error: String(err?.message || err) }, 500);
+    return jsonRes({ error: String((err as any)?.message || err) }, 500);
   }
 });
 
