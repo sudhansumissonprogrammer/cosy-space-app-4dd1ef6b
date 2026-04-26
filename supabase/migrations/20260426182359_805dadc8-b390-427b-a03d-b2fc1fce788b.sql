@@ -1,0 +1,1 @@
+UPDATE public.plans SET currency = 'INR' WHERE currency = 'USD';
