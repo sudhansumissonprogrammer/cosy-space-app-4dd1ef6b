@@ -308,16 +308,7 @@ export default function StoreOrders() {
     updateWebStatus.mutate({ orderId: order.id, status: v });
   };
 
-  if (!store && !isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <p className="text-muted-foreground">Store not found</p>
-        <Button asChild variant="outline"><Link to="/dashboard/stores">Back to stores</Link></Button>
-      </div>
-    );
-  }
-
-  // Pull-to-refresh — re-fetch orders on mobile pull-down
+  // Pull-to-refresh must be declared before any early return to keep hook order stable.
   const { pull, refreshing } = usePullToRefresh({
     onRefresh: async () => {
       await Promise.all([
@@ -326,6 +317,15 @@ export default function StoreOrders() {
       ]);
     },
   });
+
+  if (!store && !isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-12">
+        <p className="text-muted-foreground">Store not found</p>
+        <Button asChild variant="outline"><Link to="/dashboard/stores">Back to stores</Link></Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
