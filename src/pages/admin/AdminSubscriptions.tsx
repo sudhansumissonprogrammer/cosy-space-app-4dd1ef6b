@@ -247,16 +247,24 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                         )}
                       </TableCell>
                       <TableCell>
+                        <BillingCell assignment={assignment} />
+                      </TableCell>
+                      <TableCell>
                         <Badge variant={assignment.status === "active" ? "default" : "secondary"}>
-                          {assignment.status}
+                          {assignment.billing_status || assignment.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <StoreOverrideDialog
-                          assignment={assignment}
-                          plans={plans}
-                          onSuccess={invalidate}
-                        />
+                        <div className="flex gap-1">
+                          <StoreOverrideDialog
+                            assignment={assignment}
+                            plans={plans}
+                            onSuccess={invalidate}
+                          />
+                          {!assignment.is_unassigned && (
+                            <BillingActions assignment={assignment} onSuccess={invalidate} />
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
