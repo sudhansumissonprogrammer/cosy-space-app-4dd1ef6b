@@ -2039,18 +2039,8 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
 // v7.7.0 Fix 2: accept prefetchedInlineProducts to avoid 3rd redundant fetch.
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, prefetchedInlineProducts = null) {
   try {
-    // ── Cross-isolate KV lock (SYNC write, v7.7.0 Fix 1) ──
-    if (env?.STORE_KV) {
-      const lockKey = `warm-lock:${slug}`;
-      try {
-        const existing = await env.STORE_KV.get(lockKey);
-        if (existing) return; // Another isolate warmed this store recently
-        // SYNC put before any work — eventually consistent but closes the
-        // window from ~500ms (deferred) to ~50ms (sync).
-        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 1800 }).catch(() => {}); // v8.0.0: 5m → 30m (longer dedup window)
-      } catch {}
-    }
-
+    // v8.0.0 cost-cut: Check early cache FIRST. If full HTML already cached,
+    // skip the warm-lock write entirely (avoids ~30% of warm-lock KV writes).
     if (hostname) {
       const earlyKey = getEarlyCacheKey(hostname);
       const existing = await cache.match(earlyKey);
@@ -2059,6 +2049,17 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
         if (ds && ds !== "fast-shell" && ds !== "fast-shell-themed" && ds !== "streaming") return;
       }
     }
+
+    // ── Cross-isolate KV lock (SYNC write, v7.7.0 Fix 1) ──
+    if (env?.STORE_KV) {
+      const lockKey = `warm-lock:${slug}`;
+      try {
+        const existing = await env.STORE_KV.get(lockKey);
+        if (existing) return; // Another isolate warmed this store recently
+        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 1800 }).catch(() => {}); // v8.0.0: 5m → 30m
+      } catch {}
+    }
+
 
     const warmKey = `warm-html:${slug}`;
     if (!shouldRevalidate(warmKey)) return;
