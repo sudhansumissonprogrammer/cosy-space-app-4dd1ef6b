@@ -230,14 +230,18 @@ export default function DashboardLayout() {
     isLoading: storeLoading,
   }), [store, storeId, storeSlug, storeLoading]);
 
-  // Billing paywall — only for own store with billing-driven suspension
+  // Billing paywall — block dashboard when trial ended OR grace period expired and unpaid.
+  // User can still access /dashboard/settings (Profile) to pay.
+  // Storefront is NEVER suspended for billing reasons.
   const ownStoreId = !isAdminView ? ownStore?.id : undefined;
   const { data: billingState } = useBillingState(ownStoreId);
-  const showPaywall =
+  const isProfileRoute = location.pathname.startsWith("/dashboard/settings");
+  const billingBlocked =
     !isAdminView &&
     !!ownStoreId &&
-    billingState?.billing_status === "suspended" &&
-    (ownStore as any)?.suspension_reason === "billing";
+    (billingState?.billing_status === "past_due" || billingState?.billing_status === "suspended") &&
+    billingState?.requires_payment === true;
+  const showPaywall = billingBlocked && !isProfileRoute;
 
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({

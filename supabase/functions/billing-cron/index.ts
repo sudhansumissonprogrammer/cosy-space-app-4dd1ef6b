@@ -73,6 +73,8 @@ Deno.serve(async (req) => {
     }
 
     // 3. past_due → suspended (grace period ended)
+    // NOTE: We do NOT touch stores.is_suspended — storefront stays live.
+    // The dashboard paywall blocks merchant access until they pay.
     const { data: expiredGrace } = await supabase
       .from("store_plan_assignments")
       .select("id, store_id")
@@ -83,11 +85,6 @@ Deno.serve(async (req) => {
       await supabase.from("store_plan_assignments")
         .update({ billing_status: "suspended" })
         .eq("id", row.id);
-      // Only auto-suspend if not already admin-suspended
-      await supabase.from("stores")
-        .update({ is_suspended: true, suspension_reason: "billing" })
-        .eq("id", row.store_id)
-        .or("suspension_reason.is.null,suspension_reason.eq.billing");
       suspended++;
     }
 
