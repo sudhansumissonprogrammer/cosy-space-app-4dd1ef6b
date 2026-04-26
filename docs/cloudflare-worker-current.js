@@ -1481,7 +1481,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
         .put(infoCacheKey, new Response(JSON.stringify(nfData), { headers: { "Cache-Control": "public, max-age=15" } }))
         .catch(() => {});
       if (env?.STORE_KV) {
-        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 30 }).catch(() => {});
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 1800 }).catch(() => {}); // v8.0.0: 30s → 30m (NOT_FOUND rarely flips)
       }
       return { storeId: null, customDomain: null };
     }
@@ -1574,7 +1574,7 @@ async function _resolveStoreId(domain, env) {
       .put(storeIdCacheKey, new Response(storeId, { headers: { "Cache-Control": "public, max-age=600" } }))
       .catch(() => {});
     if (env?.STORE_KV) {
-      env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 3600 }).catch(() => {});
+      env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 86400 }).catch(() => {}); // v8.0.0: 1h → 24h
     }
   } else {
     _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
@@ -2047,7 +2047,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
         if (existing) return; // Another isolate warmed this store recently
         // SYNC put before any work — eventually consistent but closes the
         // window from ~500ms (deferred) to ~50ms (sync).
-        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(() => {});
+        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 1800 }).catch(() => {}); // v8.0.0: 5m → 30m (longer dedup window)
       } catch {}
     }
 
@@ -2863,7 +2863,7 @@ async function handlePrewarm(request, url, ctx, env) {
           .catch(() => {}),
       ];
       if (env?.STORE_KV)
-        idWrites.push(env.STORE_KV.put(`store-id:${subDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(() => {}));
+        idWrites.push(env.STORE_KV.put(`store-id:${subDomain}`, storeIdStr, { expirationTtl: 86400 }).catch(() => {}));
       if (domain) {
         const cleanDomain = domain
           .replace(/^www\./, "")
@@ -2879,7 +2879,7 @@ async function handlePrewarm(request, url, ctx, env) {
         );
         if (env?.STORE_KV)
           idWrites.push(
-            env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(() => {}),
+            env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 86400 }).catch(() => {}),
           );
       }
       await Promise.all(idWrites);
@@ -4027,7 +4027,7 @@ export default {
                   );
                   const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
                   kvWrites.push(
-                    env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {}),
+                    env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 86400 }).catch(() => {}),
                   );
                   if (s.custom_domain) {
                     const cleanCustom = s.custom_domain
@@ -4035,7 +4035,7 @@ export default {
                       .toLowerCase()
                       .trim();
                     kvWrites.push(
-                      env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 3600 }).catch(() => {}),
+                      env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 86400 }).catch(() => {}),
                     );
                     kvWrites.push(
                       env.STORE_KV.put(`domain:${cleanCustom}`, JSON.stringify({ slug: s.slug }), {
