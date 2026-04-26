@@ -431,6 +431,8 @@ export default function DashboardLayout() {
         </div>
       </header>
 
+      <BillingBanner />
+
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
         <Suspense fallback={<ContentSkeleton />}>
           <Outlet />
