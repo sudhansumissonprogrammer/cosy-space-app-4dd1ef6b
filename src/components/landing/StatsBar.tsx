@@ -6,7 +6,7 @@ const stats = [
   { target: 2000, suffix: "+", label: "Products Listed", shape: "diamond" },
 ];
 
-function useCountUp(target: number, duration = 1800) {
+function useCountUp(target: number, duration = 1200) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const started = useRef(false);
@@ -14,16 +14,35 @@ function useCountUp(target: number, duration = 1800) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Respect reduced-motion: jump straight to final value (no animation, no scroll jank)
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      setCount(target);
+      started.current = true;
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !started.current) {
           started.current = true;
+          observer.disconnect();
           const start = performance.now();
+          let lastValue = -1;
           const step = (now: number) => {
             const progress = Math.min((now - start) / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(eased * target));
+            const next = Math.floor(eased * target);
+            // Only setState when the displayed integer actually changes —
+            // avoids dozens of no-op renders per second during scroll.
+            if (next !== lastValue) {
+              lastValue = next;
+              setCount(next);
+            }
             if (progress < 1) requestAnimationFrame(step);
+            else setCount(target);
           };
           requestAnimationFrame(step);
         }
