@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +53,37 @@ export default function BillingPaywall({ state, storeId }: Props) {
     qc.invalidateQueries({ queryKey: ["billing-state"] });
     setTimeout(() => window.location.reload(), 1200);
   };
+
+  // Auto-verify on tab focus / visibility change.
+  // Catches the UPI case: user paid in their bank app, came back, but modal was closed.
+  useEffect(() => {
+    const recheck = async () => {
+      const order = pendingOrderRef.current;
+      if (!order) return;
+      if (stage === "creating" || stage === "checkout" || stage === "verifying" || stage === "success") return;
+      setStage("verifying");
+      setStatusMsg("Checking payment status…");
+      const verdict = await verifyOrder(order.order_id, 2);
+      if (verdict === "paid") return onSuccess();
+      if (verdict === "failed") {
+        pendingOrderRef.current = null;
+        setStage("failed");
+        setStatusMsg("Payment failed. Please try again.");
+        return;
+      }
+      setStage("pending");
+      setStatusMsg("Payment is processing. Tap 'Check status' in a moment.");
+    };
+
+    const onVisible = () => { if (document.visibilityState === "visible") recheck(); };
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", recheck);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
 
   // Open Cashfree for an existing session (initial OR retry)
   const openCashfreeForSession = async (order_id: string, payment_session_id: string) => {
