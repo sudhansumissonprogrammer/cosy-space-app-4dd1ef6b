@@ -135,11 +135,12 @@ async function markPaid(supabase: any, payment: any, cfOrder: any) {
     .update(updates)
     .eq("store_id", payment.store_id);
 
-  // Unsuspend the store if it was suspended for non-payment
+  // Unsuspend only if billing-suspended
   await supabase
     .from("stores")
-    .update({ is_suspended: false })
-    .eq("id", payment.store_id);
+    .update({ is_suspended: false, suspension_reason: null })
+    .eq("id", payment.store_id)
+    .eq("suspension_reason", "billing");
 }
 
 function jsonRes(data: unknown, status = 200) {
