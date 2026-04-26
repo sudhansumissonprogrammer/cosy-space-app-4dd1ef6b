@@ -4214,6 +4214,13 @@ export default {
             console.log(
               `[keepalive] cron: ${warmedHtml} cold-warmed, ${skippedAlreadyCached} already-cached (skipped), ${allStores.length - storesToWarm.length} inactive (skipped)`,
             );
+
+            // v8.0.0 cost-cut: stamp last-full-sync so the next 30-min tick can skip.
+            if (env?.STORE_KV) {
+              await env.STORE_KV
+                .put("cron-last-full-sync", String(Date.now()), { expirationTtl: 7200 })
+                .catch(() => {});
+            }
           } catch (err) {
             console.log(`[keepalive] store warm failed: ${err?.message || err}`);
           }
