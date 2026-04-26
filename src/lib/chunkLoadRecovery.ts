@@ -16,12 +16,15 @@ const PRIMARY_CHUNK_ERROR_PATTERNS = [
   /Unable to preload CSS/i,
   /Loading CSS chunk \d+ failed/i,
   /ChunkLoadError/i,
+  /_result is undefined/i,
+  /reading ['"]default['"]/i,
 ];
 
 const FOLLOW_UP_RECOVERY_PATTERNS = [
   /Cannot read properties of undefined \(reading ['"]default['"]\)/i,
   /Cannot read property ['"]default['"] of undefined/i,
   /does not provide an export named ['"]default['"]/i,
+  /_result is undefined/i,
 ];
 
 function getErrorMessage(error: unknown): string {
