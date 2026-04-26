@@ -88,7 +88,7 @@ const Pricing = () => {
             );
           })}
         </div>
-        <p className="text-center font-medium text-sm text-muted-foreground mt-8">👉 Most users start with the Growth plan and upgrade later.</p>
+        <p className="text-center font-medium text-sm text-muted-foreground mt-8">👉 Start free with Starter and upgrade to Pro or Growth as you scale.</p>
         <p className="text-center font-medium text-xs text-muted-foreground mt-3 max-w-2xl mx-auto px-4">
           All prices are in INR and exclusive of 18% GST. Monthly plans are billed every 30 days; annual plans are billed once for 12 months. Cancel anytime from your dashboard — see our <a href="/refund-policy" className="underline font-bold">Refund Policy</a> and <a href="/terms" className="underline font-bold">Terms</a>.
         </p>
