@@ -1226,6 +1226,9 @@ export type Database = {
       }
       store_payment_config: {
         Row: {
+          cashfree_app_id: string | null
+          cashfree_env: string
+          cashfree_secret_key: string | null
           created_at: string
           id: string
           payment_methods: Json
@@ -1235,6 +1238,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cashfree_app_id?: string | null
+          cashfree_env?: string
+          cashfree_secret_key?: string | null
           created_at?: string
           id?: string
           payment_methods?: Json
@@ -1244,6 +1250,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cashfree_app_id?: string | null
+          cashfree_env?: string
+          cashfree_secret_key?: string | null
           created_at?: string
           id?: string
           payment_methods?: Json
@@ -2438,6 +2447,7 @@ export type Database = {
         Args: { _limit?: number; _product_id: string }
         Returns: string[]
       }
+      get_own_cashfree_secret: { Args: { _store_id: string }; Returns: string }
       get_own_domain_token: { Args: { _store_id: string }; Returns: string }
       get_own_payment_secret: { Args: { _store_id: string }; Returns: string }
       get_own_store_meta_token: { Args: { _store_id: string }; Returns: string }
