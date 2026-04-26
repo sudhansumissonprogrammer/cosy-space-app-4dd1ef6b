@@ -1,24 +1,69 @@
-// Cooldown bumped 10s → 30s (2025-04): merchants often click Save in rapid
-// succession (theme tweaks, product reorder). Each prewarm fans out to 2-3
-// Worker requests + KV writes, so a tighter debounce saves ~500 req/day with
-// zero UX cost — the storefront cache still refreshes within 30s of the last save.
-const PREWARM_COOLDOWN_MS = 30_000;
+// Cooldown bumped 30s → 90s (2026-04): merchants editing themes/products
+// often Save in rapid succession. Each prewarm fans out to 2-3 Worker requests
+// + KV writes. A 90s window collapses bursts into one warm with zero shopper-
+// visible cost — Worker KV TTLs (shell 6h, products 2h) absorb the gap easily.
+const PREWARM_COOLDOWN_MS = 90_000;
+const TRAILING_DELAY_MS = 1_500; // batch trailing-edge: collapse multi-saves within 1.5s
+
 const inflightPrewarms = new Map<string, Promise<void>>();
 const recentPrewarms = new Map<string, number>();
+const trailingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+interface PrewarmOptions {
+  /**
+   * If true, this prewarm is for a "trivial" save (booleans, display_order,
+   * SKU, internal flags). It will be SKIPPED if a recent prewarm already ran.
+   * Use for changes shoppers can't see. Default: false.
+   */
+  trivial?: boolean;
+  /**
+   * If true, this save is for hidden/inactive content (is_active=false,
+   * draft product, suspended store). Skipped entirely. Default: false.
+   */
+  hidden?: boolean;
+}
 
 /**
  * Trigger cache pre-warm for a store via the prewarm-store edge function.
- * Called after: store creation, custom domain connect, product changes.
- * This ensures the first real user gets an instant cache HIT from the Cloudflare Worker.
+ * Called after: store creation, custom domain connect, product/theme changes.
  *
- * Awaitable — callers can choose to await (e.g. store creation) or fire-and-forget.
+ * Coalescing rules:
+ *  1. If `hidden=true` → skip (nothing on storefront to refresh).
+ *  2. If `trivial=true` AND a recent warm ran within cooldown → skip.
+ *  3. Cooldown window: only 1 warm per store per 90s.
+ *  4. Trailing-edge debounce: bursts within 1.5s collapse into one final warm
+ *     (so the LAST save in the burst still triggers a warm, not just the first).
+ *  5. Inflight de-dup: concurrent calls reuse the same promise.
  */
-export async function prewarmStore(slug: string, domain?: string | null): Promise<void> {
+export async function prewarmStore(
+  slug: string,
+  domain?: string | null,
+  options: PrewarmOptions = {}
+): Promise<void> {
+  if (options.hidden) return;
+
   const key = `${slug}:${domain ?? ""}`;
   const now = Date.now();
 
   const recentTs = recentPrewarms.get(key);
-  if (recentTs && now - recentTs < PREWARM_COOLDOWN_MS) return;
+  const withinCooldown = recentTs && now - recentTs < PREWARM_COOLDOWN_MS;
+
+  // Trivial saves never warm if a recent warm already happened.
+  if (options.trivial && withinCooldown) return;
+
+  // For non-trivial saves inside cooldown, schedule a trailing-edge warm so
+  // the LAST change in a burst still propagates — but coalesced into one call.
+  if (withinCooldown) {
+    if (trailingTimers.has(key)) return; // already scheduled
+    const timer = setTimeout(() => {
+      trailingTimers.delete(key);
+      // Reset cooldown so the trailing warm runs.
+      recentPrewarms.delete(key);
+      void prewarmStore(slug, domain);
+    }, TRAILING_DELAY_MS);
+    trailingTimers.set(key, timer);
+    return;
+  }
 
   const inflight = inflightPrewarms.get(key);
   if (inflight) return inflight;
