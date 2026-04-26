@@ -1507,12 +1507,12 @@ function LightboxImage({
   return (
     <>
       {!loaded && !errored && (
-        <div className="absolute inset-0 flex items-center justify-center text-white/70 text-sm">
+        <div className="absolute inset-0 flex items-center justify-center text-neutral-500 text-sm">
           Loading…
         </div>
       )}
       {errored && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/70 text-sm px-6 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-neutral-600 text-sm px-6 text-center">
           <span>Image couldn't be loaded.</span>
           <span className="text-xs opacity-60 break-all">{src}</span>
         </div>
