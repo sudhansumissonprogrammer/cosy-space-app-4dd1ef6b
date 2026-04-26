@@ -1256,45 +1256,63 @@ export type Database = {
       }
       store_plan_assignments: {
         Row: {
+          billing_status: string
           created_at: string
+          current_period_end: string | null
           custom_plan_name: string | null
           custom_price: number | null
           custom_product_limit: number | null
+          grace_period_ends_at: string | null
           id: string
           is_free_lifetime: boolean
           is_one_time: boolean
+          last_payment_at: string | null
+          next_billing_amount: number | null
           notes: string | null
           plan_id: string
           status: string
           store_id: string
+          trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
+          billing_status?: string
           created_at?: string
+          current_period_end?: string | null
           custom_plan_name?: string | null
           custom_price?: number | null
           custom_product_limit?: number | null
+          grace_period_ends_at?: string | null
           id?: string
           is_free_lifetime?: boolean
           is_one_time?: boolean
+          last_payment_at?: string | null
+          next_billing_amount?: number | null
           notes?: string | null
           plan_id: string
           status?: string
           store_id: string
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
+          billing_status?: string
           created_at?: string
+          current_period_end?: string | null
           custom_plan_name?: string | null
           custom_price?: number | null
           custom_product_limit?: number | null
+          grace_period_ends_at?: string | null
           id?: string
           is_free_lifetime?: boolean
           is_one_time?: boolean
+          last_payment_at?: string | null
+          next_billing_amount?: number | null
           notes?: string | null
           plan_id?: string
           status?: string
           store_id?: string
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1678,6 +1696,63 @@ export type Database = {
           theme?: string
           updated_at?: string
           whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
+      subscription_payments: {
+        Row: {
+          amount: number
+          cashfree_order_id: string
+          cashfree_payment_id: string | null
+          created_at: string
+          currency: string
+          failure_reason: string | null
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          period_end: string | null
+          period_start: string | null
+          plan_id: string | null
+          raw_payload: Json | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          cashfree_order_id: string
+          cashfree_payment_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan_id?: string | null
+          raw_payload?: Json | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cashfree_order_id?: string
+          cashfree_payment_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan_id?: string | null
+          raw_payload?: Json | null
+          status?: string
+          store_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2372,6 +2447,7 @@ export type Database = {
         }[]
       }
       get_store_as_admin: { Args: { _slug: string }; Returns: Json }
+      get_store_billing_state: { Args: { _store_id: string }; Returns: Json }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
       get_store_public: { Args: { _slug: string }; Returns: Json }
       get_store_public_email: { Args: { _store_id: string }; Returns: string }
