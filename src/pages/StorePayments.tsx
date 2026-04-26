@@ -513,6 +513,11 @@ export default function StorePayments() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!onlineEnabled && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                Select an online gateway (Razorpay or Cashfree) above for partial payment to take effect at checkout.
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground">Enable Partial Payment</p>
