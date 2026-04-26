@@ -688,13 +688,12 @@ export default function StoreThemeSettings() {
       queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
       setDirty(false);
 
-      // Purge edge cache so storefront visitors see new theme immediately
+      // Purge edge cache so storefront visitors see new theme immediately.
+      // No prewarm here — the next shopper visit warms naturally (cold-miss
+      // ~150ms). Halves KV writes per theme-settings save.
       if (store?.slug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
           purgeStoreCache(store.slug, (store as any).custom_domain)
-        );
-        import("@/lib/prewarmStore").then(({ prewarmStore }) =>
-          prewarmStore(store.slug, (store as any).custom_domain)
         );
       }
 
