@@ -165,9 +165,12 @@ export default function BillingPaywall({ state, storeId }: Props) {
     setStage("creating");
     setStatusMsg("Setting up secure checkout…");
     try {
-      const { data, error } = await supabase.functions.invoke("cashfree-create-order", {
-        body: { store_id: storeId },
-      });
+      // Parallelize: create order + ensure SDK loaded simultaneously
+      const [orderRes] = await Promise.all([
+        supabase.functions.invoke("cashfree-create-order", { body: { store_id: storeId } }),
+        loadCashfree("production").catch(() => null),
+      ]);
+      const { data, error } = orderRes;
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       if (!data?.payment_session_id || !data?.order_id) {
