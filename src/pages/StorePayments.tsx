@@ -59,22 +59,24 @@ export default function StorePayments() {
 
   const { data: paymentConfig, isLoading: configLoading } = useQuery({
     queryKey: ["payment-config", storeId],
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    // Always re-fetch on mount so the form reflects the latest saved state
+    // (avoids showing stale "None" when DB has a gateway configured).
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: "always",
     queryFn: async () => {
+      // Use SECURITY DEFINER RPC so the SELECT works for store owners
+      // even if RLS edge cases (admin view, multi-store) get in the way.
       const [configRes, rzpSecretRes, cfSecretRes] = await Promise.all([
-        (supabase as any)
-          .from("store_payment_config")
-          .select("id, store_id, payment_methods, razorpay_key_id, cashfree_app_id, cashfree_env, created_at, updated_at")
-          .eq("store_id", storeId!)
-          .maybeSingle(),
+        supabase.rpc("get_store_payment_config" as any, { _store_id: storeId! }),
         supabase.rpc("get_own_payment_secret", { _store_id: storeId! }),
         supabase.rpc("get_own_cashfree_secret" as any, { _store_id: storeId! }),
       ]);
       if (configRes.error) throw configRes.error;
-      if (!configRes.data) return null;
+      const cfg = configRes.data as any;
+      if (!cfg) return null;
       return {
-        ...configRes.data,
+        ...cfg,
         razorpay_key_secret: (rzpSecretRes.data as string) || null,
         cashfree_secret_key: (cfSecretRes.data as string) || null,
       };
@@ -499,8 +501,8 @@ export default function StorePayments() {
         </Card>
       )}
 
-      {/* Section 3: Partial Payment Defaults */}
-      {showPaymentConfig && onlineEnabled && (
+      {/* Section 3: Partial Payment Defaults — visible whenever website checkout is on */}
+      {showPaymentConfig && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -511,6 +513,11 @@ export default function StorePayments() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!onlineEnabled && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                Select an online gateway (Razorpay or Cashfree) above for partial payment to take effect at checkout.
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground">Enable Partial Payment</p>
