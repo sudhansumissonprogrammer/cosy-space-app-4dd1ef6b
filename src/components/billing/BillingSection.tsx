@@ -7,40 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Crown, Loader2, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { loadCashfree } from "@/lib/loadCashfree";
-
-interface BillingState {
-  plan_id: string;
-  plan_name: string;
-  plan_slug: string;
-  price: number;
-  currency: string;
-  is_free_lifetime: boolean;
-  is_one_time: boolean;
-  billing_status: string;
-  trial_ends_at: string | null;
-  current_period_end: string | null;
-  grace_period_ends_at: string | null;
-  last_payment_at: string | null;
-  is_suspended: boolean;
-  days_until_action: number | null;
-  requires_payment: boolean;
-}
+import { useBillingState } from "@/hooks/useBillingState";
 
 export default function BillingSection({ storeId }: { storeId: string | null }) {
   const queryClient = useQueryClient();
   const [paying, setPaying] = useState(false);
 
-  const { data: state, isLoading, refetch } = useQuery({
-    queryKey: ["billing-state", storeId],
-    queryFn: async () => {
-      if (!storeId) return null;
-      const { data, error } = await supabase.rpc("get_store_billing_state", { _store_id: storeId });
-      if (error) throw error;
-      return data as unknown as BillingState | null;
-    },
-    enabled: !!storeId,
-    staleTime: 30_000,
-  });
+  const { data: state, isLoading, refetch } = useBillingState(storeId);
 
   const { data: payments } = useQuery({
     queryKey: ["sub-payments", storeId],

@@ -1605,6 +1605,7 @@ export type Database = {
           shipping_policy: string | null
           slug: string
           state: string | null
+          suspension_reason: string | null
           theme: string
           updated_at: string
           whatsapp_number: string | null
@@ -1649,6 +1650,7 @@ export type Database = {
           shipping_policy?: string | null
           slug: string
           state?: string | null
+          suspension_reason?: string | null
           theme?: string
           updated_at?: string
           whatsapp_number?: string | null
@@ -1693,6 +1695,7 @@ export type Database = {
           shipping_policy?: string | null
           slug?: string
           state?: string | null
+          suspension_reason?: string | null
           theme?: string
           updated_at?: string
           whatsapp_number?: string | null

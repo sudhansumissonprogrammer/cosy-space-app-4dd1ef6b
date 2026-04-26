@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import BillingBanner from "@/components/billing/BillingBanner";
+import BillingPaywall from "@/components/BillingPaywall";
+import { useBillingState } from "@/hooks/useBillingState";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
@@ -228,6 +230,15 @@ export default function DashboardLayout() {
     isLoading: storeLoading,
   }), [store, storeId, storeSlug, storeLoading]);
 
+  // Billing paywall — only for own store with billing-driven suspension
+  const ownStoreId = !isAdminView ? ownStore?.id : undefined;
+  const { data: billingState } = useBillingState(ownStoreId);
+  const showPaywall =
+    !isAdminView &&
+    !!ownStoreId &&
+    billingState?.billing_status === "suspended" &&
+    (ownStore as any)?.suspension_reason === "billing";
+
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
     queryKey: ["pending-actions", storeId],
@@ -338,7 +349,9 @@ export default function DashboardLayout() {
               <BillingBanner />
               <main className="flex-1 overflow-auto p-6">
                 <Suspense fallback={<ContentSkeleton />}>
-                  <Outlet />
+                  {showPaywall && ownStoreId
+                    ? <BillingPaywall state={billingState!} storeId={ownStoreId} />
+                    : <Outlet />}
                 </Suspense>
               </main>
             </div>
@@ -435,7 +448,9 @@ export default function DashboardLayout() {
 
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
         <Suspense fallback={<ContentSkeleton />}>
-          <Outlet />
+          {showPaywall && ownStoreId
+            ? <BillingPaywall state={billingState!} storeId={ownStoreId} />
+            : <Outlet />}
         </Suspense>
       </main>
 

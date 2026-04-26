@@ -106,8 +106,11 @@ Deno.serve(async (req) => {
           .eq("store_id", payment.store_id);
       }
 
-      // Unsuspend
-      await supabase.from("stores").update({ is_suspended: false }).eq("id", payment.store_id);
+      // Unsuspend only if it was a billing suspension (don't override admin bans)
+      await supabase.from("stores")
+        .update({ is_suspended: false, suspension_reason: null })
+        .eq("id", payment.store_id)
+        .eq("suspension_reason", "billing");
     } else if (eventType === "PAYMENT_FAILED_WEBHOOK") {
       await supabase
         .from("subscription_payments")

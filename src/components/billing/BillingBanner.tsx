@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AlertTriangle, Clock, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useBillingState } from "@/hooks/useBillingState";
 
 export default function BillingBanner() {
   const { user } = useAuth();
@@ -24,17 +25,7 @@ export default function BillingBanner() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: state } = useQuery({
-    queryKey: ["billing-state-banner", storeId],
-    queryFn: async () => {
-      if (!storeId) return null;
-      const { data } = await supabase.rpc("get_store_billing_state", { _store_id: storeId });
-      return data as any;
-    },
-    enabled: !!storeId,
-    staleTime: 60_000,
-    refetchInterval: 5 * 60 * 1000,
-  });
+  const { data: state } = useBillingState(storeId);
 
   if (!state) return null;
   if (state.is_free_lifetime || state.is_one_time) return null;

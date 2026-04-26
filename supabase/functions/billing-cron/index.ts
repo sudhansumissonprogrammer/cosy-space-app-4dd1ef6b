@@ -83,9 +83,11 @@ Deno.serve(async (req) => {
       await supabase.from("store_plan_assignments")
         .update({ billing_status: "suspended" })
         .eq("id", row.id);
+      // Only auto-suspend if not already admin-suspended
       await supabase.from("stores")
-        .update({ is_suspended: true })
-        .eq("id", row.store_id);
+        .update({ is_suspended: true, suspension_reason: "billing" })
+        .eq("id", row.store_id)
+        .or("suspension_reason.is.null,suspension_reason.eq.billing");
       suspended++;
     }
 
