@@ -1641,7 +1641,7 @@ function FullscreenLightbox({
       </div>
 
       <div
-        className="flex flex-1 items-center justify-center overflow-hidden touch-none select-none"
+        className="relative flex flex-1 items-center justify-center overflow-hidden touch-none select-none"
         onTouchStart={(e) => { handleTouchStart(e); handleSwipeStart(e); }}
         onTouchMove={handleTouchMove}
         onTouchEnd={(e) => { handleTouchEnd(); handleSwipeEnd(e); }}
