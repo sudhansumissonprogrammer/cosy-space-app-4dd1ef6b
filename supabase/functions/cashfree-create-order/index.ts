@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     // Verify caller owns the store
     const { data: store } = await supabase
       .from("stores")
-      .select("id, owner_id, name, owner_email")
+      .select("id, owner_id, name, owner_email, whatsapp_number")
       .eq("id", storeId)
       .single();
 
@@ -85,7 +85,10 @@ Deno.serve(async (req) => {
 
     // Create Cashfree order
     const orderId = `sub_${storeId.slice(0, 8)}_${Date.now()}`;
-    const customerPhone = (user.phone || "9999999999").replace(/\D/g, "").slice(-10).padStart(10, "9");
+    // Prefer store WhatsApp number, then auth phone, then a safe default
+    const rawPhone = store.whatsapp_number || user.phone || "";
+    const digitsOnly = String(rawPhone).replace(/\D/g, "").slice(-10);
+    const customerPhone = digitsOnly.length === 10 ? digitsOnly : "9999999999";
 
     const cfPayload = {
       order_id: orderId,
