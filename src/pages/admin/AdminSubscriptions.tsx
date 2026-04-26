@@ -197,8 +197,9 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                   <TableHead>Store</TableHead>
                   <TableHead>Current Plan</TableHead>
                   <TableHead>Override</TableHead>
+                  <TableHead>Billing</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-24"></TableHead>
+                  <TableHead className="w-40"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
