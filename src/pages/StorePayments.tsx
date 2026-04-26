@@ -14,10 +14,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import {
   Loader2, MessageCircle, Globe, CreditCard, Banknote,
-  ChevronDown, ExternalLink, ShieldCheck, Layers, IndianRupee, Percent,
+  ChevronDown, ExternalLink, ShieldCheck, Layers, IndianRupee, Percent, Zap,
 } from "lucide-react";
 
 type OrderMode = "whatsapp" | "website" | "both";
+type OnlineGateway = "none" | "razorpay" | "cashfree";
 
 export default function StorePayments() {
   const { storeId } = useStoreSlugParam();
@@ -26,10 +27,20 @@ export default function StorePayments() {
 
   const [orderMode, setOrderMode] = useState<OrderMode>("whatsapp");
   const [codEnabled, setCodEnabled] = useState(true);
-  const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+
+  // Mutually-exclusive online gateway selection
+  const [onlineGateway, setOnlineGateway] = useState<OnlineGateway>("none");
+
+  // Razorpay creds
   const [razorpayKeyId, setRazorpayKeyId] = useState("");
   const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
   const [razorpayOpen, setRazorpayOpen] = useState(false);
+
+  // Cashfree creds
+  const [cashfreeAppId, setCashfreeAppId] = useState("");
+  const [cashfreeSecretKey, setCashfreeSecretKey] = useState("");
+  const [cashfreeEnv, setCashfreeEnv] = useState<"production" | "sandbox">("production");
+  const [cashfreeOpen, setCashfreeOpen] = useState(false);
 
   // Partial payment defaults
   const [partialEnabled, setPartialEnabled] = useState(false);
@@ -38,7 +49,6 @@ export default function StorePayments() {
 
   const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
-  // Initialize partial payment from store
   useEffect(() => {
     if (store) {
       setPartialEnabled((store as any).partial_payment_enabled ?? false);
@@ -52,61 +62,78 @@ export default function StorePayments() {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const [configRes, secretRes] = await Promise.all([
+      const [configRes, rzpSecretRes, cfSecretRes] = await Promise.all([
         (supabase as any)
           .from("store_payment_config")
-          .select("id, store_id, payment_methods, razorpay_key_id, created_at, updated_at")
+          .select("id, store_id, payment_methods, razorpay_key_id, cashfree_app_id, cashfree_env, created_at, updated_at")
           .eq("store_id", storeId!)
           .maybeSingle(),
         supabase.rpc("get_own_payment_secret", { _store_id: storeId! }),
+        supabase.rpc("get_own_cashfree_secret" as any, { _store_id: storeId! }),
       ]);
       if (configRes.error) throw configRes.error;
       if (!configRes.data) return null;
       return {
         ...configRes.data,
-        razorpay_key_secret: (secretRes.data as string) || null,
-      } as {
-        id: string;
-        store_id: string;
-        payment_methods: string[];
-        razorpay_key_id: string | null;
-        razorpay_key_secret: string | null;
+        razorpay_key_secret: (rzpSecretRes.data as string) || null,
+        cashfree_secret_key: (cfSecretRes.data as string) || null,
       };
     },
     enabled: !!storeId,
   });
 
   useEffect(() => {
-    if (store) {
-      setOrderMode((store.order_mode as OrderMode) || "whatsapp");
-    }
+    if (store) setOrderMode((store.order_mode as OrderMode) || "whatsapp");
   }, [store]);
 
   useEffect(() => {
     if (paymentConfig) {
       const methods: string[] = paymentConfig.payment_methods || ["cod"];
       setCodEnabled(methods.includes("cod"));
-      setRazorpayEnabled(methods.includes("razorpay"));
+
+      if (methods.includes("razorpay")) {
+        setOnlineGateway("razorpay");
+        setRazorpayOpen(true);
+      } else if (methods.includes("cashfree")) {
+        setOnlineGateway("cashfree");
+        setCashfreeOpen(true);
+      } else {
+        setOnlineGateway("none");
+      }
+
       setRazorpayKeyId(paymentConfig.razorpay_key_id || "");
       setRazorpayKeySecret(paymentConfig.razorpay_key_secret || "");
-      if (methods.includes("razorpay")) setRazorpayOpen(true);
+      setCashfreeAppId(paymentConfig.cashfree_app_id || "");
+      setCashfreeSecretKey(paymentConfig.cashfree_secret_key || "");
+      setCashfreeEnv((paymentConfig.cashfree_env as any) || "production");
     }
   }, [paymentConfig]);
 
   const showPaymentConfig = orderMode === "website" || orderMode === "both";
+  const onlineEnabled = onlineGateway !== "none";
+
+  // Mutually exclusive switch handler
+  const switchGateway = (next: OnlineGateway) => {
+    setOnlineGateway(next);
+    if (next === "razorpay") {
+      setRazorpayOpen(true);
+      setCashfreeOpen(false);
+    } else if (next === "cashfree") {
+      setCashfreeOpen(true);
+      setRazorpayOpen(false);
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // 1. Update order_mode + partial payment on store
       const partialUpdate: Record<string, any> = {
         order_mode: orderMode,
-        partial_payment_enabled: partialEnabled && razorpayEnabled,
+        partial_payment_enabled: partialEnabled && onlineEnabled,
         partial_payment_type: partialType,
         partial_payment_value: partialEnabled && partialValue ? Number(partialValue) : null,
       };
-      
-      // Validate partial payment values
-      if (partialEnabled && razorpayEnabled && partialValue) {
+
+      if (partialEnabled && onlineEnabled && partialValue) {
         const val = Number(partialValue);
         if (partialType === "percentage" && (val < 10 || val > 80)) {
           throw new Error("Percentage must be between 10% and 80%");
@@ -115,33 +142,40 @@ export default function StorePayments() {
           throw new Error("Fixed amount must be at least ₹50");
         }
       }
-      
+
       const { error: storeErr } = await (supabase as any)
         .from("stores")
         .update(partialUpdate)
         .eq("id", storeId!);
       if (storeErr) throw storeErr;
 
-      // 2. Upsert payment config if website/both
       if (showPaymentConfig) {
         const methods: string[] = [];
         if (codEnabled) methods.push("cod");
-        if (razorpayEnabled) methods.push("razorpay");
+        if (onlineGateway === "razorpay") methods.push("razorpay");
+        if (onlineGateway === "cashfree") methods.push("cashfree");
         if (methods.length === 0) {
           throw new Error("At least one payment method must be enabled");
         }
-        if (razorpayEnabled && !razorpayKeyId.trim()) {
-          throw new Error("Razorpay Key ID is required");
+        if (onlineGateway === "razorpay") {
+          if (!razorpayKeyId.trim()) throw new Error("Razorpay Key ID is required");
+          if (!razorpayKeySecret.trim()) throw new Error("Razorpay Key Secret is required");
         }
-        if (razorpayEnabled && !razorpayKeySecret.trim()) {
-          throw new Error("Razorpay Key Secret is required");
+        if (onlineGateway === "cashfree") {
+          if (!cashfreeAppId.trim()) throw new Error("Cashfree App ID is required");
+          if (!cashfreeSecretKey.trim()) throw new Error("Cashfree Secret Key is required");
         }
 
-        const payload = {
+        // Persist BOTH sets of credentials so the merchant can flip between gateways
+        // without re-typing — but only the active gateway is in `payment_methods`.
+        const payload: Record<string, any> = {
           store_id: storeId!,
           payment_methods: methods,
-          razorpay_key_id: razorpayEnabled ? razorpayKeyId.trim() : null,
-          razorpay_key_secret: razorpayEnabled ? razorpayKeySecret.trim() : null,
+          razorpay_key_id: razorpayKeyId.trim() || null,
+          razorpay_key_secret: razorpayKeySecret.trim() || null,
+          cashfree_app_id: cashfreeAppId.trim() || null,
+          cashfree_secret_key: cashfreeSecretKey.trim() || null,
+          cashfree_env: cashfreeEnv,
         };
 
         if (paymentConfig) {
@@ -162,6 +196,7 @@ export default function StorePayments() {
       queryClient.invalidateQueries({ queryKey: ["store", storeId] });
       queryClient.invalidateQueries({ queryKey: ["payment-config", storeId] });
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
+      queryClient.invalidateQueries({ queryKey: ["store-payment-config"] });
       toast.success("Payment settings saved!");
     },
     onError: (err: any) => toast.error(err.message || "Failed to save"),
@@ -198,13 +233,7 @@ export default function StorePayments() {
             onValueChange={(v) => setOrderMode(v as OrderMode)}
             className="grid gap-3"
           >
-            <label
-              className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${
-                orderMode === "whatsapp"
-                  ? "border-primary bg-primary/5"
-                  : "border-input hover:border-primary/30"
-              }`}
-            >
+            <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
               <RadioGroupItem value="whatsapp" className="mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -216,13 +245,7 @@ export default function StorePayments() {
               </div>
             </label>
 
-            <label
-              className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${
-                orderMode === "website"
-                  ? "border-primary bg-primary/5"
-                  : "border-input hover:border-primary/30"
-              }`}
-            >
+            <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "website" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
               <RadioGroupItem value="website" className="mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -234,13 +257,7 @@ export default function StorePayments() {
               </div>
             </label>
 
-            <label
-              className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${
-                orderMode === "both"
-                  ? "border-primary bg-primary/5"
-                  : "border-input hover:border-primary/30"
-              }`}
-            >
+            <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "both" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
               <RadioGroupItem value="both" className="mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -263,7 +280,7 @@ export default function StorePayments() {
               <CreditCard className="h-5 w-5" /> Payment Methods
             </CardTitle>
             <CardDescription>
-              Configure payment options for website checkout
+              Configure payment options for website checkout. You can enable COD and one online gateway.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -283,93 +300,207 @@ export default function StorePayments() {
               <Switch checked={codEnabled} onCheckedChange={setCodEnabled} />
             </div>
 
-            {/* Razorpay */}
-            <Collapsible open={razorpayOpen} onOpenChange={setRazorpayOpen}>
-              <div className="rounded-xl border">
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950">
-                      <CreditCard className="h-5 w-5 text-blue-600" />
+            {/* Online gateway selector */}
+            <div className="rounded-xl border p-4 space-y-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">Online Payment Gateway</p>
+                <p className="text-xs text-muted-foreground">
+                  Choose one. Only the selected gateway will be used at checkout.
+                </p>
+              </div>
+              <RadioGroup
+                value={onlineGateway}
+                onValueChange={(v) => switchGateway(v as OnlineGateway)}
+                className="grid gap-2 sm:grid-cols-3"
+              >
+                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${onlineGateway === "none" ? "border-primary bg-primary/5" : "border-input"}`}>
+                  <RadioGroupItem value="none" />
+                  <span className="text-sm font-medium">None</span>
+                </label>
+                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${onlineGateway === "razorpay" ? "border-primary bg-primary/5" : "border-input"}`}>
+                  <RadioGroupItem value="razorpay" />
+                  <CreditCard className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium">Razorpay</span>
+                </label>
+                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${onlineGateway === "cashfree" ? "border-primary bg-primary/5" : "border-input"}`}>
+                  <RadioGroupItem value="cashfree" />
+                  <Zap className="h-4 w-4 text-violet-600" />
+                  <span className="text-sm font-medium">Cashfree</span>
+                </label>
+              </RadioGroup>
+            </div>
+
+            {/* Razorpay creds */}
+            {onlineGateway === "razorpay" && (
+              <Collapsible open={razorpayOpen} onOpenChange={setRazorpayOpen}>
+                <div className="rounded-xl border">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950">
+                        <CreditCard className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Razorpay</p>
+                        <p className="text-xs text-muted-foreground">
+                          Cards, UPI, Net Banking, Wallets • 2% per transaction
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Razorpay</p>
-                      <p className="text-xs text-muted-foreground">
-                        Cards, UPI, Net Banking, Wallets • 2% per transaction
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={razorpayEnabled}
-                      onCheckedChange={(v) => {
-                        setRazorpayEnabled(v);
-                        if (v) setRazorpayOpen(true);
-                      }}
-                    />
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <ChevronDown className={`h-4 w-4 transition-transform ${razorpayOpen ? "rotate-180" : ""}`} />
                       </Button>
                     </CollapsibleTrigger>
                   </div>
+
+                  <CollapsibleContent>
+                    <div className="border-t px-4 pb-4 pt-3 space-y-4">
+                      <div className="rounded-lg bg-accent/50 p-3 text-xs text-muted-foreground space-y-1">
+                        <p className="font-medium text-foreground flex items-center gap-1.5">
+                          <ShieldCheck className="h-3.5 w-3.5" /> Get your Razorpay API Keys
+                        </p>
+                        <ol className="list-decimal list-inside space-y-0.5 pl-1">
+                          <li>
+                            Go to{" "}
+                            <a
+                              href="https://dashboard.razorpay.com/app/keys"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline inline-flex items-center gap-0.5"
+                            >
+                              Razorpay Dashboard <ExternalLink className="h-2.5 w-2.5" />
+                            </a>
+                          </li>
+                          <li>Navigate to Settings → API Keys</li>
+                          <li>Generate or copy your Key ID and Key Secret</li>
+                        </ol>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="rzp-key">Razorpay Key ID *</Label>
+                        <Input
+                          id="rzp-key"
+                          placeholder="rzp_live_xxxxxxxxxxxxx"
+                          value={razorpayKeyId}
+                          onChange={(e) => setRazorpayKeyId(e.target.value)}
+                          maxLength={50}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="rzp-secret">Razorpay Key Secret *</Label>
+                        <Input
+                          id="rzp-secret"
+                          type="password"
+                          placeholder="••••••••••••••••••••"
+                          value={razorpayKeySecret}
+                          onChange={(e) => setRazorpayKeySecret(e.target.value)}
+                          maxLength={100}
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
                 </div>
+              </Collapsible>
+            )}
 
-                <CollapsibleContent>
-                  <div className="border-t px-4 pb-4 pt-3 space-y-4">
-                    {/* Instructions */}
-                    <div className="rounded-lg bg-accent/50 p-3 text-xs text-muted-foreground space-y-1">
-                      <p className="font-medium text-foreground flex items-center gap-1.5">
-                        <ShieldCheck className="h-3.5 w-3.5" /> Get your Razorpay API Keys
-                      </p>
-                      <ol className="list-decimal list-inside space-y-0.5 pl-1">
-                        <li>
-                          Go to{" "}
-                          <a
-                            href="https://dashboard.razorpay.com/app/keys"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary underline inline-flex items-center gap-0.5"
-                          >
-                            Razorpay Dashboard <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
-                        </li>
-                        <li>Navigate to Settings → API Keys</li>
-                        <li>Generate or copy your Key ID and Key Secret</li>
-                      </ol>
+            {/* Cashfree creds */}
+            {onlineGateway === "cashfree" && (
+              <Collapsible open={cashfreeOpen} onOpenChange={setCashfreeOpen}>
+                <div className="rounded-xl border">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-950">
+                        <Zap className="h-5 w-5 text-violet-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Cashfree</p>
+                        <p className="text-xs text-muted-foreground">
+                          UPI, Cards, Net Banking, Wallets, Pay Later • Lower fees
+                        </p>
+                      </div>
                     </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="rzp-key">Razorpay Key ID *</Label>
-                      <Input
-                        id="rzp-key"
-                        placeholder="rzp_live_xxxxxxxxxxxxx"
-                        value={razorpayKeyId}
-                        onChange={(e) => setRazorpayKeyId(e.target.value)}
-                        maxLength={50}
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="rzp-secret">Razorpay Key Secret *</Label>
-                      <Input
-                        id="rzp-secret"
-                        type="password"
-                        placeholder="••••••••••••••••••••"
-                        value={razorpayKeySecret}
-                        onChange={(e) => setRazorpayKeySecret(e.target.value)}
-                        maxLength={100}
-                      />
-                    </div>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <ChevronDown className={`h-4 w-4 transition-transform ${cashfreeOpen ? "rotate-180" : ""}`} />
+                      </Button>
+                    </CollapsibleTrigger>
                   </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
+
+                  <CollapsibleContent>
+                    <div className="border-t px-4 pb-4 pt-3 space-y-4">
+                      <div className="rounded-lg bg-accent/50 p-3 text-xs text-muted-foreground space-y-1">
+                        <p className="font-medium text-foreground flex items-center gap-1.5">
+                          <ShieldCheck className="h-3.5 w-3.5" /> Get your Cashfree API Keys
+                        </p>
+                        <ol className="list-decimal list-inside space-y-0.5 pl-1">
+                          <li>
+                            Go to{" "}
+                            <a
+                              href="https://merchant.cashfree.com/merchants/pg/developers/api"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline inline-flex items-center gap-0.5"
+                            >
+                              Cashfree Dashboard <ExternalLink className="h-2.5 w-2.5" />
+                            </a>
+                          </li>
+                          <li>Navigate to Developers → API Keys</li>
+                          <li>Copy your App ID and Secret Key (use Production for live, Sandbox for testing)</li>
+                        </ol>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Environment *</Label>
+                        <RadioGroup
+                          value={cashfreeEnv}
+                          onValueChange={(v) => setCashfreeEnv(v as "production" | "sandbox")}
+                          className="flex gap-4"
+                        >
+                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-all ${cashfreeEnv === "production" ? "border-primary bg-primary/5" : "border-input"}`}>
+                            <RadioGroupItem value="production" />
+                            <span className="text-sm font-medium">Production (Live)</span>
+                          </label>
+                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-all ${cashfreeEnv === "sandbox" ? "border-primary bg-primary/5" : "border-input"}`}>
+                            <RadioGroupItem value="sandbox" />
+                            <span className="text-sm font-medium">Sandbox (Test)</span>
+                          </label>
+                        </RadioGroup>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="cf-id">Cashfree App ID *</Label>
+                        <Input
+                          id="cf-id"
+                          placeholder="TEST… or production App ID"
+                          value={cashfreeAppId}
+                          onChange={(e) => setCashfreeAppId(e.target.value)}
+                          maxLength={100}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="cf-secret">Cashfree Secret Key *</Label>
+                        <Input
+                          id="cf-secret"
+                          type="password"
+                          placeholder="••••••••••••••••••••"
+                          value={cashfreeSecretKey}
+                          onChange={(e) => setCashfreeSecretKey(e.target.value)}
+                          maxLength={200}
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* Section 3: Partial Payment Defaults */}
-      {showPaymentConfig && razorpayEnabled && (
+      {showPaymentConfig && onlineEnabled && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -397,16 +528,12 @@ export default function StorePayments() {
                     onValueChange={(v) => setPartialType(v as "percentage" | "fixed")}
                     className="flex gap-4"
                   >
-                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-all ${
-                      partialType === "percentage" ? "border-primary bg-primary/5" : "border-input"
-                    }`}>
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-all ${partialType === "percentage" ? "border-primary bg-primary/5" : "border-input"}`}>
                       <RadioGroupItem value="percentage" />
                       <Percent className="h-4 w-4" />
                       <span className="text-sm font-medium">Percentage</span>
                     </label>
-                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-all ${
-                      partialType === "fixed" ? "border-primary bg-primary/5" : "border-input"
-                    }`}>
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-all ${partialType === "fixed" ? "border-primary bg-primary/5" : "border-input"}`}>
                       <RadioGroupItem value="fixed" />
                       <IndianRupee className="h-4 w-4" />
                       <span className="text-sm font-medium">Fixed ₹</span>
@@ -433,7 +560,6 @@ export default function StorePayments() {
                   </p>
                 </div>
 
-                {/* Preview */}
                 {partialValue && Number(partialValue) > 0 && (
                   <div className="rounded-lg border bg-accent/30 p-3">
                     <p className="text-xs font-medium text-foreground mb-1">Preview (for ₹1,000 product):</p>
