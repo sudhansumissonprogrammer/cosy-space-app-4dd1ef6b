@@ -448,7 +448,9 @@ export default function DashboardLayout() {
 
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
         <Suspense fallback={<ContentSkeleton />}>
-          <Outlet />
+          {showPaywall && ownStoreId
+            ? <BillingPaywall state={billingState!} storeId={ownStoreId} />
+            : <Outlet />}
         </Suspense>
       </main>
 
