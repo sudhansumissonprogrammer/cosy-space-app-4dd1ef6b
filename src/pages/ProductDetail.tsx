@@ -1641,19 +1641,21 @@ function FullscreenLightbox({
       </div>
 
       <div
-        className="relative flex flex-1 items-center justify-center overflow-hidden touch-none select-none"
+        className="relative flex flex-1 items-center justify-center overflow-hidden touch-none select-none p-3 sm:p-6"
         onTouchStart={(e) => { handleTouchStart(e); handleSwipeStart(e); }}
         onTouchMove={handleTouchMove}
         onTouchEnd={(e) => { handleTouchEnd(); handleSwipeEnd(e); }}
         onDoubleClick={handleDoubleClick}
         style={{ cursor: scale > 1 ? "grab" : "default" }}
       >
-        <LightboxImage
-          src={images[activeIndex]}
-          alt={productName}
-          translate={translate}
-          scale={scale}
-        />
+        <div className="relative flex items-center justify-center w-full h-full rounded-2xl bg-white overflow-hidden shadow-2xl">
+          <LightboxImage
+            src={images[activeIndex]}
+            alt={productName}
+            translate={translate}
+            scale={scale}
+          />
+        </div>
       </div>
 
       {images.length > 1 && scale <= 1 && (
