@@ -22,9 +22,9 @@ export default function HeroRevenue({ storeId, currencySymbol }: HeroRevenueProp
       const todayIso = todayStart.toISOString();
       const yesterdayIso = yesterdayStart.toISOString();
 
-      // Revenue counts only orders that are confirmed, shipped, delivered,
+      // Revenue counts orders that are confirmed, shipped, delivered, partially_paid,
       // or any pending order with a partial advance payment received.
-      const REVENUE_STATUSES = ["confirmed", "shipped", "delivered"];
+      const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"];
 
       const [todayRes, yesterdayRes, todayPartialRes, yesterdayPartialRes] = await Promise.all([
         supabase
@@ -42,14 +42,14 @@ export default function HeroRevenue({ storeId, currencySymbol }: HeroRevenueProp
           .in("status", REVENUE_STATUSES),
         supabase
           .from("orders")
-          .select("total")
+          .select("total,id")
           .eq("store_id", storeId)
           .gte("created_at", todayIso)
           .eq("status", "pending")
           .gt("advance_paid", 0),
         supabase
           .from("orders")
-          .select("total")
+          .select("total,id")
           .eq("store_id", storeId)
           .gte("created_at", yesterdayIso)
           .lt("created_at", todayIso)

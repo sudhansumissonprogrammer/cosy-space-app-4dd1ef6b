@@ -17,7 +17,7 @@ export default function TodaySummary({ storeId, currencySymbol }: TodaySummaryPr
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const iso = todayStart.toISOString();
-      const REVENUE_STATUSES = ["confirmed", "shipped", "delivered"];
+      const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"];
       const [ordersRes, partialRes, customersRes] = await Promise.all([
         supabase
           .from("orders")
