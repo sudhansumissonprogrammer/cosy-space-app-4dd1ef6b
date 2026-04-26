@@ -1120,18 +1120,27 @@ export default function CheckoutPage() {
     setPlacing(true);
     setPlacingStep(1);
     setPaymentFailed(false);
-    // Fire pre-warm pings the instant user clicks — these run in parallel with createOrder
-    // so that razorpay-order is hot by the time we actually call it.
-    if (paymentMethod === "razorpay" || isPartialOrder) {
-      prewarmEdgeFunction("razorpay-order");
-      loadRazorpayScript();
+    // Fire pre-warm pings the instant user clicks — runs in parallel with createOrder
+    const isOnline = paymentMethod === "razorpay" || isPartialOrder;
+    if (isOnline) {
+      if (activeGateway === "cashfree") {
+        prewarmEdgeFunction("store-cashfree-create-order");
+        loadCashfree(((paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      } else {
+        prewarmEdgeFunction("razorpay-order");
+        loadRazorpayScript();
+      }
     }
     try {
       const newOrder = await createOrder();
 
-      if (paymentMethod === "razorpay" || isPartialOrder) {
+      if (isOnline) {
         setPlacingStep(2);
-        await openRazorpayForOrder(newOrder);
+        if (activeGateway === "cashfree") {
+          await openCashfreeForOrder(newOrder);
+        } else {
+          await openRazorpayForOrder(newOrder);
+        }
         return;
       }
 
@@ -1142,7 +1151,7 @@ export default function CheckoutPage() {
       setPlacingStep(0);
       toast.error(err.message || "Failed to place order");
     } finally {
-      if (paymentMethod !== "razorpay" && !isPartialOrder) setPlacing(false);
+      if (!isOnline) setPlacing(false);
     }
   };
 
