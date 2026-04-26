@@ -12,6 +12,7 @@ import { Loader2, Upload, X, Crown, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+import BillingSection from "@/components/billing/BillingSection";
 
 const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 
@@ -148,6 +149,9 @@ export default function UserSettings() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">Account Settings</h1>
+
+      {/* Billing & Subscription */}
+      <BillingSection storeId={userStore?.id || null} />
 
       {/* Current Plan */}
       <Card>

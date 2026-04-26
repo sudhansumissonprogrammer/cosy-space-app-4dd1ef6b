@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
+import BillingBanner from "@/components/billing/BillingBanner";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
@@ -334,6 +335,7 @@ export default function DashboardLayout() {
                   {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
                 </div>
               </header>
+              <BillingBanner />
               <main className="flex-1 overflow-auto p-6">
                 <Suspense fallback={<ContentSkeleton />}>
                   <Outlet />
@@ -428,6 +430,8 @@ export default function DashboardLayout() {
           </Button>
         </div>
       </header>
+
+      <BillingBanner />
 
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
         <Suspense fallback={<ContentSkeleton />}>
