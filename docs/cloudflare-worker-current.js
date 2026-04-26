@@ -2039,7 +2039,9 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
 // v7.7.0 Fix 2: accept prefetchedInlineProducts to avoid 3rd redundant fetch.
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, prefetchedInlineProducts = null) {
   try {
-    // v8.0.0 cost-cut: Check early cache FIRST. If full HTML already cached,
+    // v8.0.0 cost-cut: bots that fall through to the warm path skip all KV writes.
+    if (ctx?.__skipKvWarm) return;
+
     // skip the warm-lock write entirely (avoids ~30% of warm-lock KV writes).
     if (hostname) {
       const earlyKey = getEarlyCacheKey(hostname);
