@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     // Verify caller owns the store
     const { data: store } = await supabase
       .from("stores")
-      .select("id, owner_id, name, owner_email")
+      .select("id, owner_id, name, owner_email, whatsapp_number")
       .eq("id", storeId)
       .single();
 
