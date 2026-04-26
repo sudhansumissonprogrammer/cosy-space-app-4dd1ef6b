@@ -596,7 +596,7 @@ window.__STOREFRONT_PREFETCH__=fetch("/?__sf_data=1",{cache:"no-store",headers:{
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
 // v6.9.1: Derived from the SPA shell, so it must expire on the same short window.
-const PREBUILT_HEAD_KV_TTL = 1800; // v7.7.0 Fix 4: 5m → 30m
+const PREBUILT_HEAD_KV_TTL = 21600; // v8.0.0 cost-cut: 30m → 6h (purge bumps version)
 const PREBUILT_HEAD_CACHE_TTL = 300; // v7.7.0 Fix 4: 1m → 5m
 
 function _buildPrebuiltHead(html) {
@@ -729,7 +729,7 @@ function _buildLinkPreloadHeader(html) {
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
 // v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
 // custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 1800; // v7.6.0: 5min → 30min
+const SPA_SHELL_KV_TTL = 21600; // v8.0.0 cost-cut: 30min → 6h
 const SPA_SHELL_CACHE_TTL = 300; // v7.6.0: 1min → 5min
 
 let inflightShellFetch = null;
@@ -865,7 +865,7 @@ async function _batchKvRead(slug, env) {
    FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
    ============================================================ */
 
-const THEME_LITE_KV_TTL = 3600;
+const THEME_LITE_KV_TTL = 21600; // v8.0.0 cost-cut: 1h → 6h
 const THEME_LITE_CACHE_TTL = 600;
 
 function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
@@ -1073,7 +1073,7 @@ async function prefetchStorefrontDataWithDeadline(slug, ctx, env, deadlineMs) {
    ============================================================ */
 
 const PRODUCTS_CACHE_TTL = 300;
-const PRODUCTS_KV_TTL = 1800;
+const PRODUCTS_KV_TTL = 7200; // v8.0.0 cost-cut: 30min → 2h (purge bumps version)
 // Bumped 20 → 50 (2025-04): bigger initial batch means most visitors
 // never trigger a second /api/products page request. Inline products
 // also get the larger set, so first paint shows more cards.
@@ -1282,7 +1282,7 @@ function _buildProductPreloaderGrid(inlineProductsStr, count = 8) {
    DOMAIN RESOLUTION (in-memory → Cache API → KV → DB)
    ============================================================ */
 
-const KV_DOMAIN_TTL = 3600;
+const KV_DOMAIN_TTL = 86400; // v8.0.0 cost-cut: 1h → 24h
 
 async function resolveDomain(hostname, env) {
   const domain = hostname
@@ -1377,7 +1377,7 @@ async function getCustomDomainForSlug(slug) {
 
 const _storeInfoCache = new Map();
 const STORE_INFO_CACHE_MAX = 2_000;
-const STORE_INFO_KV_TTL = 3600;
+const STORE_INFO_KV_TTL = 86400; // v8.0.0 cost-cut: 1h → 24h (cron read-before-write skips unchanged)
 
 const domainStoreIdCache = new Map();
 const DOMAIN_STORE_ID_CACHE_MAX = 5_000;
