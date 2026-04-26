@@ -596,7 +596,7 @@ window.__STOREFRONT_PREFETCH__=fetch("/?__sf_data=1",{cache:"no-store",headers:{
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
 // v6.9.1: Derived from the SPA shell, so it must expire on the same short window.
-const PREBUILT_HEAD_KV_TTL = 1800; // v7.7.0 Fix 4: 5m → 30m
+const PREBUILT_HEAD_KV_TTL = 21600; // v8.0.0 cost-cut: 30m → 6h (purge bumps version)
 const PREBUILT_HEAD_CACHE_TTL = 300; // v7.7.0 Fix 4: 1m → 5m
 
 function _buildPrebuiltHead(html) {
@@ -729,7 +729,7 @@ function _buildLinkPreloadHeader(html) {
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
 // v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
 // custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 1800; // v7.6.0: 5min → 30min
+const SPA_SHELL_KV_TTL = 21600; // v8.0.0 cost-cut: 30min → 6h
 const SPA_SHELL_CACHE_TTL = 300; // v7.6.0: 1min → 5min
 
 let inflightShellFetch = null;
@@ -865,7 +865,7 @@ async function _batchKvRead(slug, env) {
    FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
    ============================================================ */
 
-const THEME_LITE_KV_TTL = 3600;
+const THEME_LITE_KV_TTL = 21600; // v8.0.0 cost-cut: 1h → 6h
 const THEME_LITE_CACHE_TTL = 600;
 
 function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
@@ -1073,7 +1073,7 @@ async function prefetchStorefrontDataWithDeadline(slug, ctx, env, deadlineMs) {
    ============================================================ */
 
 const PRODUCTS_CACHE_TTL = 300;
-const PRODUCTS_KV_TTL = 1800;
+const PRODUCTS_KV_TTL = 7200; // v8.0.0 cost-cut: 30min → 2h (purge bumps version)
 // Bumped 20 → 50 (2025-04): bigger initial batch means most visitors
 // never trigger a second /api/products page request. Inline products
 // also get the larger set, so first paint shows more cards.
@@ -1282,7 +1282,7 @@ function _buildProductPreloaderGrid(inlineProductsStr, count = 8) {
    DOMAIN RESOLUTION (in-memory → Cache API → KV → DB)
    ============================================================ */
 
-const KV_DOMAIN_TTL = 3600;
+const KV_DOMAIN_TTL = 86400; // v8.0.0 cost-cut: 1h → 24h
 
 async function resolveDomain(hostname, env) {
   const domain = hostname
@@ -1377,7 +1377,7 @@ async function getCustomDomainForSlug(slug) {
 
 const _storeInfoCache = new Map();
 const STORE_INFO_CACHE_MAX = 2_000;
-const STORE_INFO_KV_TTL = 3600;
+const STORE_INFO_KV_TTL = 86400; // v8.0.0 cost-cut: 1h → 24h (cron read-before-write skips unchanged)
 
 const domainStoreIdCache = new Map();
 const DOMAIN_STORE_ID_CACHE_MAX = 5_000;
@@ -1481,7 +1481,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
         .put(infoCacheKey, new Response(JSON.stringify(nfData), { headers: { "Cache-Control": "public, max-age=15" } }))
         .catch(() => {});
       if (env?.STORE_KV) {
-        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 30 }).catch(() => {});
+        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 1800 }).catch(() => {}); // v8.0.0: 30s → 30m (NOT_FOUND rarely flips)
       }
       return { storeId: null, customDomain: null };
     }
@@ -1574,7 +1574,7 @@ async function _resolveStoreId(domain, env) {
       .put(storeIdCacheKey, new Response(storeId, { headers: { "Cache-Control": "public, max-age=600" } }))
       .catch(() => {});
     if (env?.STORE_KV) {
-      env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 3600 }).catch(() => {});
+      env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 86400 }).catch(() => {}); // v8.0.0: 1h → 24h
     }
   } else {
     _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
@@ -2039,18 +2039,10 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
 // v7.7.0 Fix 2: accept prefetchedInlineProducts to avoid 3rd redundant fetch.
 async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, prefetchedInlineProducts = null) {
   try {
-    // ── Cross-isolate KV lock (SYNC write, v7.7.0 Fix 1) ──
-    if (env?.STORE_KV) {
-      const lockKey = `warm-lock:${slug}`;
-      try {
-        const existing = await env.STORE_KV.get(lockKey);
-        if (existing) return; // Another isolate warmed this store recently
-        // SYNC put before any work — eventually consistent but closes the
-        // window from ~500ms (deferred) to ~50ms (sync).
-        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(() => {});
-      } catch {}
-    }
+    // v8.0.0 cost-cut: bots that fall through to the warm path skip all KV writes.
+    if (ctx?.__skipKvWarm) return;
 
+    // skip the warm-lock write entirely (avoids ~30% of warm-lock KV writes).
     if (hostname) {
       const earlyKey = getEarlyCacheKey(hostname);
       const existing = await cache.match(earlyKey);
@@ -2059,6 +2051,17 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
         if (ds && ds !== "fast-shell" && ds !== "fast-shell-themed" && ds !== "streaming") return;
       }
     }
+
+    // ── Cross-isolate KV lock (SYNC write, v7.7.0 Fix 1) ──
+    if (env?.STORE_KV) {
+      const lockKey = `warm-lock:${slug}`;
+      try {
+        const existing = await env.STORE_KV.get(lockKey);
+        if (existing) return; // Another isolate warmed this store recently
+        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 1800 }).catch(() => {}); // v8.0.0: 5m → 30m
+      } catch {}
+    }
+
 
     const warmKey = `warm-html:${slug}`;
     if (!shouldRevalidate(warmKey)) return;
@@ -2863,7 +2866,7 @@ async function handlePrewarm(request, url, ctx, env) {
           .catch(() => {}),
       ];
       if (env?.STORE_KV)
-        idWrites.push(env.STORE_KV.put(`store-id:${subDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(() => {}));
+        idWrites.push(env.STORE_KV.put(`store-id:${subDomain}`, storeIdStr, { expirationTtl: 86400 }).catch(() => {}));
       if (domain) {
         const cleanDomain = domain
           .replace(/^www\./, "")
@@ -2879,7 +2882,7 @@ async function handlePrewarm(request, url, ctx, env) {
         );
         if (env?.STORE_KV)
           idWrites.push(
-            env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 3600 }).catch(() => {}),
+            env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 86400 }).catch(() => {}),
           );
       }
       await Promise.all(idWrites);
@@ -3163,6 +3166,27 @@ export default {
           "x-blocked-by": "shopbanao-bot-policy",
         },
       });
+    }
+
+    // v8.0.0 cost-cut: Non-blocked SEO/social bots (Googlebot, Bingbot, etc.) trigger
+    // the same warm/lock/KV write cascade as humans. For storefront HTML routes,
+    // serve cached HTML if present and otherwise mark the request so the warm
+    // pipeline skips KV writes. Cuts ~15-20% of writes from crawler traffic.
+    const earlyIsBot = BOT_UA_REGEX.test(earlyUA);
+    const earlyIsStorefrontHtml =
+      earlyMethod === "GET" &&
+      (earlyPath === "/" || /^\/[a-zA-Z0-9_-]+\/?$/.test(earlyPath)) &&
+      !earlyPath.startsWith("/api/") &&
+      !earlyPath.startsWith("/cf-img") &&
+      !earlyPath.includes(".");
+    if (earlyIsBot && earlyIsStorefrontHtml) {
+      try {
+        const earlyHostname = earlyUrl.hostname.toLowerCase().replace(/^www\./, "");
+        const cached = await cache.match(getEarlyCacheKey(earlyHostname));
+        if (cached) return cached;
+      } catch {}
+      // No cached HTML — let pipeline proceed but suppress all KV warm writes.
+      ctx.__skipKvWarm = true;
     }
 
     // v6.9.4: OPTIONS preflight short-circuit — never needs origin or pipeline.
@@ -3978,6 +4002,23 @@ export default {
       clearTimeout(timeout);
       const dbPingMs = Date.now() - keepaliveStart;
 
+      // v8.0.0 cost-cut: Throttle the heavy store-sync path to once per 60 min,
+      // even if cron fires every 30 min. DB keepalive (above) still runs every tick.
+      let _shouldRunFullSync = true;
+      if (env?.STORE_KV) {
+        try {
+          const lastSync = await env.STORE_KV.get("cron-last-full-sync");
+          if (lastSync && Date.now() - parseInt(lastSync, 10) < 55 * 60 * 1000) {
+            _shouldRunFullSync = false;
+            console.log("[keepalive] skipping full sync — ran <55min ago");
+          }
+        } catch {}
+      }
+      if (!_shouldRunFullSync) {
+        console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status} (sync skipped)`);
+        return;
+      }
+
       // FIX #15: Fetch shell once, outside the per-store loop
       let cronShellResult = null;
       try {
@@ -4027,7 +4068,7 @@ export default {
                   );
                   const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
                   kvWrites.push(
-                    env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 3600 }).catch(() => {}),
+                    env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 86400 }).catch(() => {}),
                   );
                   if (s.custom_domain) {
                     const cleanCustom = s.custom_domain
@@ -4035,7 +4076,7 @@ export default {
                       .toLowerCase()
                       .trim();
                     kvWrites.push(
-                      env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 3600 }).catch(() => {}),
+                      env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 86400 }).catch(() => {}),
                     );
                     kvWrites.push(
                       env.STORE_KV.put(`domain:${cleanCustom}`, JSON.stringify({ slug: s.slug }), {
@@ -4173,6 +4214,13 @@ export default {
             console.log(
               `[keepalive] cron: ${warmedHtml} cold-warmed, ${skippedAlreadyCached} already-cached (skipped), ${allStores.length - storesToWarm.length} inactive (skipped)`,
             );
+
+            // v8.0.0 cost-cut: stamp last-full-sync so the next 30-min tick can skip.
+            if (env?.STORE_KV) {
+              await env.STORE_KV
+                .put("cron-last-full-sync", String(Date.now()), { expirationTtl: 7200 })
+                .catch(() => {});
+            }
           } catch (err) {
             console.log(`[keepalive] store warm failed: ${err?.message || err}`);
           }
