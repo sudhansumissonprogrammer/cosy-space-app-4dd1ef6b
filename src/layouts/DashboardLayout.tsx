@@ -230,6 +230,15 @@ export default function DashboardLayout() {
     isLoading: storeLoading,
   }), [store, storeId, storeSlug, storeLoading]);
 
+  // Billing paywall — only for own store with billing-driven suspension
+  const ownStoreId = !isAdminView ? ownStore?.id : undefined;
+  const { data: billingState } = useBillingState(ownStoreId);
+  const showPaywall =
+    !isAdminView &&
+    !!ownStoreId &&
+    billingState?.billing_status === "suspended" &&
+    (ownStore as any)?.suspension_reason === "billing";
+
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
     queryKey: ["pending-actions", storeId],
