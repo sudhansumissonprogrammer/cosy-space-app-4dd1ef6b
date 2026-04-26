@@ -349,7 +349,9 @@ export default function DashboardLayout() {
               <BillingBanner />
               <main className="flex-1 overflow-auto p-6">
                 <Suspense fallback={<ContentSkeleton />}>
-                  <Outlet />
+                  {showPaywall && ownStoreId
+                    ? <BillingPaywall state={billingState!} storeId={ownStoreId} />
+                    : <Outlet />}
                 </Suspense>
               </main>
             </div>
