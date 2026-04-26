@@ -1627,8 +1627,8 @@ function FullscreenLightbox({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black/95 animate-in fade-in duration-200">
-      <div className="flex items-center justify-between px-4 py-3 text-white">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-neutral-900/98 animate-in fade-in duration-200">
+      <div className="flex items-center justify-between px-4 py-3 text-white bg-black/40">
         <span className="text-sm font-medium opacity-80">
           {images.length > 1 ? `${activeIndex + 1} / ${images.length}` : productName}
         </span>
