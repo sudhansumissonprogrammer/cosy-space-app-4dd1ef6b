@@ -1,22 +1,32 @@
-## Goal
+## Good news — this is already working exactly as you described
 
-The Leads page should only show people who entered their phone number (Buy Now popup / WhatsApp order intent) but **did NOT complete a successful order**. People who already placed an order must not appear here at all — they belong in Orders, not Leads.
+I checked the code and your live data for `serdiyajewellers`. The flow you want is already implemented end-to-end. No code changes are needed.
 
-## Changes (single file: `src/pages/CustomerLeads.tsx`)
+### How it works today
 
-1. **Remove the "Pending / All" toggle** at the top right of the Leads card. Always filter to "not yet ordered" only.
-2. **Remove the "Status" column** from the desktop table (no more "Pending / Ordered" badge — every row is pending by definition).
-3. **Remove the green "Ordered" badge** from the mobile card view.
-4. **Update the header copy** to say `{N} Leads` only — drop the `(X already ordered, hidden)` hint since converted leads are no longer tracked here.
-5. **Keep the underlying `orderedPhonesSet` query** — still needed to filter out anyone whose phone matches a non-cancelled order in the `orders` table.
-6. **Subtitle stays**: "People who showed interest but haven't placed an order yet — recover them via WhatsApp" (already accurate).
+**1. First Buy Now click (any product)**
+- Phone popup appears.
+- Customer enters phone → saved to browser (`localStorage`) **AND** a row is inserted into `customer_leads` with that product's name/id.
 
-## Filtering logic (unchanged, just always-on)
+**2. Same person clicks Buy Now on a different product**
+- The popup detects the saved phone and **skips asking again** (no double prompt).
+- It still creates a **new lead row** for the new product, so you see the second product in your Leads list too.
+- Then sends them straight to checkout.
 
-A lead is hidden if its phone (last 10 digits, normalized) matches the `customer_phone` of any order in the `orders` table for this store with `status != 'cancelled'`. Everything else stays visible — including users who opened the phone popup, dropped off at checkout, or have a cancelled order.
+**3. If they place an order**
+- The Leads page fetches every order's `customer_phone` for your store, normalizes to the last 10 digits, and **hides every lead** whose phone matches a non-cancelled order.
+- So the moment they order, **all their leads (across every product they viewed) disappear** from the Leads tab.
 
-## Out of scope
+**4. If the order is cancelled**
+- Their leads come back into the list (so you can recover them again via WhatsApp).
 
-- No new "Confirmed Orders" section — confirmed orders already live under the **Orders** menu. Duplicating them inside Leads would be confusing.
-- No DB / RLS / edge function changes.
-- WhatsApp recovery message, delete action, product deep-links — all unchanged.
+### Verification on your live store
+
+I queried your `serdiyajewellers` data — it confirms:
+- Leads from phones with status `pending` / `partially_paid` / `confirmed` → correctly hidden.
+- Leads from phones with no order yet → correctly shown.
+- Leads from phones whose only order is `cancelled` → correctly still shown.
+
+### Nothing to change
+
+No file edits, no database migration, no plan needed. If you're seeing a specific lead that you think *should* be hidden but isn't (or vice versa), tell me the phone number and I'll trace it.
