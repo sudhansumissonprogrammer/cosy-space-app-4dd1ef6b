@@ -507,9 +507,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         queryClient.invalidateQueries({ queryKey: ["best-selling-products"] }),
       ]);
       
-      // Pre-warm edge caches so storefront reflects changes instantly
+      // Pre-warm edge caches so storefront reflects changes instantly.
+      // Skip entirely for inactive/draft products — they're hidden from shoppers.
       import("@/lib/prewarmStore").then(({ prewarmStore }) => {
-        if (storeSlug) prewarmStore(storeSlug);
+        if (storeSlug) prewarmStore(storeSlug, undefined, { hidden: !isActive });
       }).catch(() => {});
 
       if (onClose) {
