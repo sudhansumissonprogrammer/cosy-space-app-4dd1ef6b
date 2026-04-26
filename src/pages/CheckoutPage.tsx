@@ -21,6 +21,7 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
+import { loadCashfree } from "@/lib/loadCashfree";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 
 declare global {
@@ -101,6 +102,8 @@ export default function CheckoutPage() {
   // Payment retry state: store created order for retry
   const [pendingOrder, setPendingOrder] = useState<{ id: string; number: string | null; profit: number | null } | null>(null);
   const [paymentFailed, setPaymentFailed] = useState(false);
+  // Cashfree order id (per-store gateway): kept in a ref so visibility/focus listeners can re-check status
+  const pendingCfOrderRef = useRef<string | null>(null);
 
   // Form — pre-fill from localStorage for returning users
   // Theme-16 BuyNowPhoneModal stores checkout_phone & checkout_address
@@ -309,7 +312,12 @@ export default function CheckoutPage() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_store_payment_config", { _store_id: store.id });
       if (error) throw error;
-      return data as { payment_methods: string[]; razorpay_key_id: string | null } | null;
+      return data as {
+        payment_methods: string[];
+        razorpay_key_id: string | null;
+        cashfree_app_id: string | null;
+        cashfree_env: string | null;
+      } | null;
     },
   });
 
@@ -366,27 +374,37 @@ export default function CheckoutPage() {
   const availableMethods = paymentConfig?.payment_methods || ["cod"];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
+  const hasCashfree = availableMethods.includes("cashfree");
+  const hasOnline = hasRazorpay || hasCashfree;
+  // Which gateway opens when "online" is selected (mutual exclusion enforced in dashboard)
+  const activeGateway: "razorpay" | "cashfree" | null = hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : null;
 
   useEffect(() => {
-    // When partial payment is enabled, always default to razorpay (COD is hidden)
-    if (hasAnyPartialPayment && hasRazorpay) {
+    // When partial payment is enabled, always default to online (COD is hidden)
+    if (hasAnyPartialPayment && hasOnline) {
       setPaymentMethod("razorpay");
       setPartialPaymentMode("partial");
     } else if (hasCod) {
       setPaymentMethod("cod");
-    } else if (hasRazorpay) {
+    } else if (hasOnline) {
       setPaymentMethod("razorpay");
     }
-  }, [hasCod, hasRazorpay, hasAnyPartialPayment]);
+  }, [hasCod, hasOnline, hasAnyPartialPayment]);
 
-  // Preload Razorpay script + pre-warm edge functions so everything is ready instantly when user clicks Pay
+  // Preload SDKs + pre-warm edge functions so everything is ready instantly when user clicks Pay
   useEffect(() => {
     if (hasRazorpay) {
       loadRazorpayScript();
       prewarmEdgeFunction("razorpay-order");
     }
+    if (hasCashfree) {
+      loadCashfree(((paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      prewarmEdgeFunction("store-cashfree-create-order");
+      prewarmEdgeFunction("store-cashfree-verify");
+      prewarmEdgeFunction("store-cashfree-status");
+    }
     prewarmEdgeFunction("place-order");
-  }, [hasRazorpay]);
+  }, [hasRazorpay, hasCashfree, paymentConfig?.cashfree_env]);
 
   const currency = store.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : `${currency} `;
@@ -959,6 +977,116 @@ export default function CheckoutPage() {
     rzp.open();
   };
 
+  // Open Cashfree drop-in checkout for an existing order (used for both initial and retry)
+  const openCashfreeForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
+    const env = (paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production";
+    const [cashfree, cfData] = await Promise.all([
+      loadCashfree(env),
+      callEdgeFunction("store-cashfree-create-order", {
+        store_id: store.id,
+        amount: chargeAmount,
+        currency,
+        order_id: order.id,
+        customer_name: fullName,
+        customer_phone: phone,
+        customer_email: email || undefined,
+      }),
+    ]);
+
+    pendingCfOrderRef.current = cfData.cf_order_id;
+
+    const verifyAndFinalize = async () => {
+      try {
+        const verdict = await callEdgeFunction("store-cashfree-verify", {
+          store_id: store.id, order_id: order.id, cf_order_id: cfData.cf_order_id,
+        });
+        if (verdict?.status === "PAID") {
+          setPlacingStep(3);
+          setPlacing(false);
+          setPaymentFailed(false);
+          setPendingOrder(null);
+          pendingCfOrderRef.current = null;
+          finalizeOrder(order.id, order.number, order.profit);
+          return true;
+        }
+      } catch (e) {
+        console.warn("Cashfree verify failed:", e);
+      }
+      return false;
+    };
+
+    try {
+      const result = await cashfree.checkout({
+        paymentSessionId: cfData.payment_session_id,
+        redirectTarget: "_modal",
+      });
+      // Cashfree SDK returns when modal closes (success / fail / cancel)
+      if (result?.error) {
+        // user cancelled or payment failed — try server-side verify in case of UPI race
+        const ok = await verifyAndFinalize();
+        if (!ok) {
+          setPlacingStep(0);
+          setPendingOrder(order);
+          setPaymentFailed(true);
+          setPlacing(false);
+          if (result.error.code !== "user_cancelled") {
+            toast.error(result.error.message || "Payment failed. You can retry below.");
+          }
+        }
+        return;
+      }
+      // paymentDetails / redirect path → verify with backend (single source of truth)
+      const ok = await verifyAndFinalize();
+      if (!ok) {
+        setPlacingStep(0);
+        setPendingOrder(order);
+        setPaymentFailed(true);
+        setPlacing(false);
+        toast.error("Payment not confirmed. You can retry below.");
+      }
+    } catch (err: any) {
+      // SDK threw — try one more verify before failing
+      const ok = await verifyAndFinalize();
+      if (!ok) {
+        setPlacingStep(0);
+        setPendingOrder(order);
+        setPaymentFailed(true);
+        setPlacing(false);
+        toast.error(err?.message || "Payment failed. You can retry below.");
+      }
+    }
+  };
+
+  // Auto-recheck pending Cashfree payment when user returns to the tab (UPI completed in another app)
+  useEffect(() => {
+    const recheck = async () => {
+      const cfId = pendingCfOrderRef.current;
+      const order = pendingOrder;
+      if (!cfId || !order || !paymentFailed) return;
+      try {
+        const verdict = await callEdgeFunction("store-cashfree-status", {
+          store_id: store.id, order_id: order.id, cf_order_id: cfId,
+        });
+        if (verdict?.status === "PAID") {
+          setPlacingStep(3);
+          setPlacing(false);
+          setPaymentFailed(false);
+          setPendingOrder(null);
+          pendingCfOrderRef.current = null;
+          finalizeOrder(order.id, order.number, order.profit);
+        }
+      } catch {}
+    };
+    const onFocus = () => recheck();
+    const onVis = () => { if (document.visibilityState === "visible") recheck(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [pendingOrder, paymentFailed, store.id]);
+
   // Retry payment for a pending order
   const handleRetryPayment = async () => {
     if (!pendingOrder) return;
@@ -966,7 +1094,11 @@ export default function CheckoutPage() {
     setPlacingStep(2);
     setPaymentFailed(false);
     try {
-      await openRazorpayForOrder(pendingOrder);
+      if (activeGateway === "cashfree") {
+        await openCashfreeForOrder(pendingOrder);
+      } else {
+        await openRazorpayForOrder(pendingOrder);
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to retry payment");
       setPlacingStep(0);
@@ -988,18 +1120,27 @@ export default function CheckoutPage() {
     setPlacing(true);
     setPlacingStep(1);
     setPaymentFailed(false);
-    // Fire pre-warm pings the instant user clicks — these run in parallel with createOrder
-    // so that razorpay-order is hot by the time we actually call it.
-    if (paymentMethod === "razorpay" || isPartialOrder) {
-      prewarmEdgeFunction("razorpay-order");
-      loadRazorpayScript();
+    // Fire pre-warm pings the instant user clicks — runs in parallel with createOrder
+    const isOnline = paymentMethod === "razorpay" || isPartialOrder;
+    if (isOnline) {
+      if (activeGateway === "cashfree") {
+        prewarmEdgeFunction("store-cashfree-create-order");
+        loadCashfree(((paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      } else {
+        prewarmEdgeFunction("razorpay-order");
+        loadRazorpayScript();
+      }
     }
     try {
       const newOrder = await createOrder();
 
-      if (paymentMethod === "razorpay" || isPartialOrder) {
+      if (isOnline) {
         setPlacingStep(2);
-        await openRazorpayForOrder(newOrder);
+        if (activeGateway === "cashfree") {
+          await openCashfreeForOrder(newOrder);
+        } else {
+          await openRazorpayForOrder(newOrder);
+        }
         return;
       }
 
@@ -1010,7 +1151,7 @@ export default function CheckoutPage() {
       setPlacingStep(0);
       toast.error(err.message || "Failed to place order");
     } finally {
-      if (paymentMethod !== "razorpay" && !isPartialOrder) setPlacing(false);
+      if (!isOnline) setPlacing(false);
     }
   };
 
