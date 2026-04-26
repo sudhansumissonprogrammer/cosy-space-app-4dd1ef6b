@@ -501,8 +501,8 @@ export default function StorePayments() {
         </Card>
       )}
 
-      {/* Section 3: Partial Payment Defaults */}
-      {showPaymentConfig && onlineEnabled && (
+      {/* Section 3: Partial Payment Defaults — visible whenever website checkout is on */}
+      {showPaymentConfig && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
