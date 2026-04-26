@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     const cfPayload = {
       order_id: orderId,
       order_amount: amount,
-      order_currency: state.currency || "INR",
+      order_currency: "INR",
       customer_details: {
         customer_id: user.id,
         customer_email: user.email || store.owner_email || "noreply@shopbanao.in",
@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
       plan_id: state.plan_id,
       cashfree_order_id: orderId,
       amount,
-      currency: state.currency || "INR",
+      currency: "INR",
       status: "pending",
       period_start: periodStart.toISOString(),
       period_end: periodEnd.toISOString(),
@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
       order_id: orderId,
       payment_session_id: cfData.payment_session_id,
       amount,
-      currency: state.currency || "INR",
+      currency: "INR",
       reused: false,
     });
   } catch (err) {
