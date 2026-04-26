@@ -150,6 +150,9 @@ export default function UserSettings() {
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">Account Settings</h1>
 
+      {/* Billing & Subscription */}
+      <BillingSection storeId={userStore?.id || null} />
+
       {/* Current Plan */}
       <Card>
         <CardHeader>
