@@ -25,6 +25,29 @@ export default function BillingPaywall({ state, storeId }: Props) {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  // Preload Cashfree SDK + prewarm edge functions the moment the paywall mounts.
+  // By the time the user clicks Pay, SDK is loaded and edge functions are hot → much faster checkout open.
+  useEffect(() => {
+    // 1. Preload Cashfree JS SDK in background
+    loadCashfree("production").catch(() => {});
+
+    // 2. Prewarm edge functions (CORS preflight — no side effects)
+    const SUPABASE_FUNCTIONS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+    const prewarm = (fn: string) => {
+      try {
+        fetch(`${SUPABASE_FUNCTIONS_URL}/${fn}`, {
+          method: "OPTIONS",
+          headers: {
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type, authorization",
+          },
+        }).catch(() => {});
+      } catch {}
+    };
+    prewarm("cashfree-create-order");
+    prewarm("cashfree-verify-payment");
+  }, []);
+
   const busy = stage === "creating" || stage === "checkout" || stage === "verifying";
 
   // Verify a known order with retry — handles network / propagation delay
