@@ -59,22 +59,24 @@ export default function StorePayments() {
 
   const { data: paymentConfig, isLoading: configLoading } = useQuery({
     queryKey: ["payment-config", storeId],
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    // Always re-fetch on mount so the form reflects the latest saved state
+    // (avoids showing stale "None" when DB has a gateway configured).
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: "always",
     queryFn: async () => {
+      // Use SECURITY DEFINER RPC so the SELECT works for store owners
+      // even if RLS edge cases (admin view, multi-store) get in the way.
       const [configRes, rzpSecretRes, cfSecretRes] = await Promise.all([
-        (supabase as any)
-          .from("store_payment_config")
-          .select("id, store_id, payment_methods, razorpay_key_id, cashfree_app_id, cashfree_env, created_at, updated_at")
-          .eq("store_id", storeId!)
-          .maybeSingle(),
+        supabase.rpc("get_store_payment_config" as any, { _store_id: storeId! }),
         supabase.rpc("get_own_payment_secret", { _store_id: storeId! }),
         supabase.rpc("get_own_cashfree_secret" as any, { _store_id: storeId! }),
       ]);
       if (configRes.error) throw configRes.error;
-      if (!configRes.data) return null;
+      const cfg = configRes.data as any;
+      if (!cfg) return null;
       return {
-        ...configRes.data,
+        ...cfg,
         razorpay_key_secret: (rzpSecretRes.data as string) || null,
         cashfree_secret_key: (cfSecretRes.data as string) || null,
       };
