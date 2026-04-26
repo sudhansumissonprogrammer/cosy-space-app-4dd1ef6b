@@ -3166,6 +3166,27 @@ export default {
       });
     }
 
+    // v8.0.0 cost-cut: Non-blocked SEO/social bots (Googlebot, Bingbot, etc.) trigger
+    // the same warm/lock/KV write cascade as humans. For storefront HTML routes,
+    // serve cached HTML if present and otherwise mark the request so the warm
+    // pipeline skips KV writes. Cuts ~15-20% of writes from crawler traffic.
+    const earlyIsBot = BOT_UA_REGEX.test(earlyUA);
+    const earlyIsStorefrontHtml =
+      earlyMethod === "GET" &&
+      (earlyPath === "/" || /^\/[a-zA-Z0-9_-]+\/?$/.test(earlyPath)) &&
+      !earlyPath.startsWith("/api/") &&
+      !earlyPath.startsWith("/cf-img") &&
+      !earlyPath.includes(".");
+    if (earlyIsBot && earlyIsStorefrontHtml) {
+      try {
+        const earlyHostname = earlyUrl.hostname.toLowerCase().replace(/^www\./, "");
+        const cached = await cache.match(getEarlyCacheKey(earlyHostname));
+        if (cached) return cached;
+      } catch {}
+      // No cached HTML — let pipeline proceed but suppress all KV warm writes.
+      ctx.__skipKvWarm = true;
+    }
+
     // v6.9.4: OPTIONS preflight short-circuit — never needs origin or pipeline.
     if (earlyMethod === "OPTIONS") {
       return new Response(null, {
