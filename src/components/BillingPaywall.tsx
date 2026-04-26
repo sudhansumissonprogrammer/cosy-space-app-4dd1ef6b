@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertTriangle, Loader2, LogOut, ShieldCheck, Lock, BadgeCheck, Flame, Star } from "lucide-react";
+import { AlertTriangle, Loader2, LogOut, ShieldCheck, Lock, BadgeCheck, Flame, Star, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { loadCashfree } from "@/lib/loadCashfree";
@@ -15,59 +15,161 @@ interface Props {
   storeId: string;
 }
 
+type PayStage = "idle" | "creating" | "checkout" | "verifying" | "success" | "pending" | "failed" | "cancelled";
+
 export default function BillingPaywall({ state, storeId }: Props) {
-  const [paying, setPaying] = useState(false);
+  const [stage, setStage] = useState<PayStage>("idle");
+  const [statusMsg, setStatusMsg] = useState<string>("");
+  const pendingOrderRef = useRef<{ order_id: string; payment_session_id: string } | null>(null);
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  const busy = stage === "creating" || stage === "checkout" || stage === "verifying";
+
+  // Verify a known order with retry — handles network / propagation delay
+  const verifyOrder = async (order_id: string, attempts = 4): Promise<"paid" | "pending" | "failed"> => {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const { data, error } = await supabase.functions.invoke("cashfree-verify-payment", {
+          body: { order_id },
+        });
+        if (error) throw error;
+        const s = data?.status;
+        if (s === "paid") return "paid";
+        if (s === "failed" || s === "expired" || s === "cancelled") return "failed";
+        // pending → wait & retry (Cashfree may not have finalized yet)
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+      } catch {
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+    return "pending";
+  };
+
+  const onSuccess = () => {
+    setStage("success");
+    toast.success("Payment successful! Reactivating store…");
+    qc.invalidateQueries({ queryKey: ["billing-state"] });
+    setTimeout(() => window.location.reload(), 1200);
+  };
+
+  // Open Cashfree for an existing session (initial OR retry)
+  const openCashfreeForSession = async (order_id: string, payment_session_id: string) => {
+    setStage("checkout");
+    setStatusMsg("");
+    try {
+      const cf = await loadCashfree("production");
+      // cf.checkout returns when modal closes (success, failure, or user-dismiss)
+      const result = await cf.checkout({
+        paymentSessionId: payment_session_id,
+        redirectTarget: "_modal",
+      }).catch((e: any) => ({ error: e }));
+
+      // Always verify with backend (source of truth) regardless of what SDK reports
+      setStage("verifying");
+      setStatusMsg("Verifying payment…");
+      const verdict = await verifyOrder(order_id);
+
+      if (verdict === "paid") {
+        onSuccess();
+        return;
+      }
+      if (verdict === "pending") {
+        setStage("pending");
+        setStatusMsg("Payment is processing. Tap 'Check status' in a moment.");
+        toast.info("Payment processing. We'll confirm shortly.");
+        return;
+      }
+      // failed / cancelled / closed without paying
+      const wasError = (result as any)?.error;
+      if (wasError) {
+        setStage("cancelled");
+        setStatusMsg("Checkout closed. You can retry below.");
+      } else {
+        setStage("failed");
+        setStatusMsg("Payment was not completed. Please try again.");
+      }
+    } catch (err: any) {
+      // SDK load failure or other unexpected
+      setStage("failed");
+      setStatusMsg(err?.message || "Something went wrong. Please retry.");
+    }
+  };
+
   const handlePay = async () => {
-    if (paying) return;
-    setPaying(true);
+    if (busy) return;
+    // If we already have a pending session, reuse it (don't create a new order)
+    if (pendingOrderRef.current) {
+      await openCashfreeForSession(
+        pendingOrderRef.current.order_id,
+        pendingOrderRef.current.payment_session_id,
+      );
+      return;
+    }
+
+    setStage("creating");
+    setStatusMsg("Setting up secure checkout…");
     try {
       const { data, error } = await supabase.functions.invoke("cashfree-create-order", {
         body: { store_id: storeId },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-
-      const cf = await loadCashfree("production");
-      await cf.checkout({
-        paymentSessionId: data.payment_session_id,
-        redirectTarget: "_modal",
-      });
-
-      const { data: vData } = await supabase.functions.invoke("cashfree-verify-payment", {
-        body: { order_id: data.order_id },
-      });
-      if (vData?.status === "paid") {
-        toast.success("Payment successful! Reactivating store…");
-        qc.invalidateQueries({ queryKey: ["billing-state"] });
-        setTimeout(() => window.location.reload(), 1200);
-      } else if (vData?.status === "pending") {
-        toast.info("Payment processing. Refresh in a minute.");
-      } else {
-        toast.error("Payment was not completed.");
+      if (!data?.payment_session_id || !data?.order_id) {
+        throw new Error("Could not initialize payment. Please retry.");
       }
+      pendingOrderRef.current = {
+        order_id: data.order_id,
+        payment_session_id: data.payment_session_id,
+      };
+      await openCashfreeForSession(data.order_id, data.payment_session_id);
     } catch (err: any) {
-      toast.error(err?.message || "Payment failed");
-    } finally {
-      setPaying(false);
+      setStage("failed");
+      setStatusMsg(err?.message || "Could not start payment. Please retry.");
     }
   };
 
-  // Deterministic "live" weekly counter (changes weekly, stable within the week)
+  // Manual "Check status" — for pending state
+  const handleCheckStatus = async () => {
+    if (!pendingOrderRef.current) return;
+    setStage("verifying");
+    setStatusMsg("Checking payment status…");
+    const verdict = await verifyOrder(pendingOrderRef.current.order_id, 2);
+    if (verdict === "paid") return onSuccess();
+    if (verdict === "failed") {
+      pendingOrderRef.current = null;
+      setStage("failed");
+      setStatusMsg("Payment failed. Please try again.");
+      return;
+    }
+    setStage("pending");
+    setStatusMsg("Still processing. Please wait a moment and check again.");
+  };
+
+  // Deterministic weekly counter
   const weeklyUpgrades = (() => {
     const week = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
-    return 18 + (week % 17); // 18–34 range
+    return 18 + (week % 17);
+  })();
+
+  const showRetry = stage === "failed" || stage === "cancelled";
+  const showPendingActions = stage === "pending";
+
+  const buttonLabel = (() => {
+    if (stage === "creating") return "Preparing checkout…";
+    if (stage === "checkout") return "Waiting for payment…";
+    if (stage === "verifying") return "Verifying…";
+    if (showRetry) return `Retry Payment ₹${state.price}`;
+    return `Pay ₹${state.price} & Unlock Dashboard`;
   })();
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
         <CardContent className="p-6 space-y-5 text-center">
-          <div className="mx-auto h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center">
-            <AlertTriangle className="h-7 w-7 text-destructive" />
+          <div className={`mx-auto h-14 w-14 rounded-full flex items-center justify-center ${stage === "pending" ? "bg-amber-500/10" : "bg-destructive/10"}`}>
+            <AlertTriangle className={`h-7 w-7 ${stage === "pending" ? "text-amber-600" : "text-destructive"}`} />
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">Subscription payment due</h1>
@@ -76,7 +178,7 @@ export default function BillingPaywall({ state, storeId }: Props) {
             </p>
           </div>
 
-          {/* Live social proof counter */}
+          {/* Live social proof */}
           <div className="flex items-center justify-center gap-2 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1.5 text-xs font-medium">
             <Flame className="h-3.5 w-3.5" />
             <span>{weeklyUpgrades} stores upgraded this week</span>
@@ -93,12 +195,32 @@ export default function BillingPaywall({ state, storeId }: Props) {
             </div>
           </div>
 
-          <Button onClick={handlePay} disabled={paying} size="lg" className="w-full">
-            {paying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Pay ₹{state.price} & Unlock Dashboard
+          {/* Status / cancel / failure messaging */}
+          {statusMsg && (
+            <div className={`rounded-lg border px-3 py-2 text-xs ${
+              stage === "failed" ? "border-destructive/30 bg-destructive/5 text-destructive" :
+              stage === "cancelled" ? "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-400" :
+              stage === "pending" ? "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-400" :
+              "border-border bg-muted/40 text-muted-foreground"
+            }`}>
+              {statusMsg}
+            </div>
+          )}
+
+          <Button onClick={handlePay} disabled={busy} size="lg" className="w-full">
+            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {showRetry && !busy && <RefreshCw className="mr-2 h-4 w-4" />}
+            {buttonLabel}
           </Button>
 
-          {/* Trust badges row */}
+          {showPendingActions && (
+            <Button onClick={handleCheckStatus} variant="outline" size="sm" className="w-full" disabled={busy}>
+              {busy ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
+              Check payment status
+            </Button>
+          )}
+
+          {/* Trust badges */}
           <div className="space-y-2 pt-1">
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
               <Lock className="h-3 w-3" />
@@ -117,7 +239,6 @@ export default function BillingPaywall({ state, storeId }: Props) {
             </div>
           </div>
 
-          {/* Social proof testimonial */}
           <div className="rounded-lg border bg-muted/30 p-3 text-left">
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
