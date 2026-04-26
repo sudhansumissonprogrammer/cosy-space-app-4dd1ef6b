@@ -1586,12 +1586,11 @@ function FullscreenLightbox({
         onDoubleClick={handleDoubleClick}
         style={{ cursor: scale > 1 ? "grab" : "default" }}
       >
-        <img
+        <LightboxImage
           src={images[activeIndex]}
           alt={productName}
-          className="max-h-full max-w-full object-contain transition-transform duration-100"
-          style={{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})` }}
-          draggable={false}
+          translate={translate}
+          scale={scale}
         />
       </div>
 
