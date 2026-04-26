@@ -1507,12 +1507,12 @@ function LightboxImage({
   return (
     <>
       {!loaded && !errored && (
-        <div className="absolute inset-0 flex items-center justify-center text-white/70 text-sm">
+        <div className="absolute inset-0 flex items-center justify-center text-neutral-500 text-sm">
           Loading…
         </div>
       )}
       {errored && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/70 text-sm px-6 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-neutral-600 text-sm px-6 text-center">
           <span>Image couldn't be loaded.</span>
           <span className="text-xs opacity-60 break-all">{src}</span>
         </div>
@@ -1627,8 +1627,8 @@ function FullscreenLightbox({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black/95 animate-in fade-in duration-200">
-      <div className="flex items-center justify-between px-4 py-3 text-white">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-neutral-900/98 animate-in fade-in duration-200">
+      <div className="flex items-center justify-between px-4 py-3 text-white bg-black/40">
         <span className="text-sm font-medium opacity-80">
           {images.length > 1 ? `${activeIndex + 1} / ${images.length}` : productName}
         </span>
@@ -1641,19 +1641,21 @@ function FullscreenLightbox({
       </div>
 
       <div
-        className="relative flex flex-1 items-center justify-center overflow-hidden touch-none select-none"
+        className="relative flex flex-1 items-center justify-center overflow-hidden touch-none select-none p-3 sm:p-6"
         onTouchStart={(e) => { handleTouchStart(e); handleSwipeStart(e); }}
         onTouchMove={handleTouchMove}
         onTouchEnd={(e) => { handleTouchEnd(); handleSwipeEnd(e); }}
         onDoubleClick={handleDoubleClick}
         style={{ cursor: scale > 1 ? "grab" : "default" }}
       >
-        <LightboxImage
-          src={images[activeIndex]}
-          alt={productName}
-          translate={translate}
-          scale={scale}
-        />
+        <div className="relative flex items-center justify-center w-full h-full rounded-2xl bg-white overflow-hidden shadow-2xl">
+          <LightboxImage
+            src={images[activeIndex]}
+            alt={productName}
+            translate={translate}
+            scale={scale}
+          />
+        </div>
       </div>
 
       {images.length > 1 && scale <= 1 && (
