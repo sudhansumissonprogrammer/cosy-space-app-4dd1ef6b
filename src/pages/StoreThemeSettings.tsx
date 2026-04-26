@@ -622,7 +622,9 @@ export default function StoreThemeSettings() {
       );
       queryClient.invalidateQueries({ queryKey: ["store-detail", storeId] });
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
-      queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+      // NOTE: storefront-bulk invalidation removed — iframe reloads via
+      // contentWindow.location.reload() below, so dashboard tree doesn't
+      // need this refetched. Saves a Worker GET per theme-apply.
 
       // Update localStorage so the iframe preview (same origin) picks up the
       // new theme instantly without waiting for a background refetch.
