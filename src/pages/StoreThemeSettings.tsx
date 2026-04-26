@@ -622,7 +622,9 @@ export default function StoreThemeSettings() {
       );
       queryClient.invalidateQueries({ queryKey: ["store-detail", storeId] });
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
-      queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+      // NOTE: storefront-bulk invalidation removed — iframe reloads via
+      // contentWindow.location.reload() below, so dashboard tree doesn't
+      // need this refetched. Saves a Worker GET per theme-apply.
 
       // Update localStorage so the iframe preview (same origin) picks up the
       // new theme instantly without waiting for a background refetch.
@@ -685,16 +687,15 @@ export default function StoreThemeSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
-      queryClient.invalidateQueries({ queryKey: ["storefront-bulk"] });
+      // storefront-bulk not invalidated — iframe reload handles preview refresh.
       setDirty(false);
 
-      // Purge edge cache so storefront visitors see new theme immediately
+      // Purge edge cache so storefront visitors see new theme immediately.
+      // No prewarm here — the next shopper visit warms naturally (cold-miss
+      // ~150ms). Halves KV writes per theme-settings save.
       if (store?.slug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
           purgeStoreCache(store.slug, (store as any).custom_domain)
-        );
-        import("@/lib/prewarmStore").then(({ prewarmStore }) =>
-          prewarmStore(store.slug, (store as any).custom_domain)
         );
       }
 
